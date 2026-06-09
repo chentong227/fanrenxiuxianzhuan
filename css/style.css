@@ -153,8 +153,12 @@ html, body {
 /* ===== 叙事区 ===== */
 .panel-narrative { display: flex; flex-direction: column; }
 .narrative { flex: 1; min-height: 120px; overflow-y: auto; padding-right: 8px; }
-.narrative .entry { margin-bottom: 14px; animation: fadein 0.4s ease; }
+.narrative .entry { margin-bottom: 14px; }
+.narrative .entry.latest { animation: fadein 0.4s ease; }
 .narrative .entry .time-stamp { color: var(--gold); font-size: 12px; letter-spacing: 1px; opacity: 0.7; }
+.narrative .entry .time-stamp .ek-icon { margin-right: 5px; opacity: .8; }
+.narrative .entry.good .time-stamp .ek-icon { color: var(--jade-bright); }
+.narrative .entry.bad .time-stamp .ek-icon { color: var(--red); }
 .narrative .entry .body { color: var(--ink); margin-top: 2px; }
 .narrative .entry.event { border-left: 2px solid var(--jade); padding-left: 12px; }
 .narrative .entry.story {

@@ -306,9 +306,11 @@ const UI = {
   renderNarrative() {
     const box = this.el("narrative");
     const s = State.data;
-    box.innerHTML = s.log.map(e => `
-      <div class="entry ${e.kind}">
-        <div class="time-stamp">${e.t}</div>
+    const icons = { good: "✦", bad: "⚠", event: "·", sys: "…" };
+    const last = s.log.length - 1;
+    box.innerHTML = s.log.map((e, i) => `
+      <div class="entry ${e.kind}${i === last ? ' latest' : ''}">
+        <div class="time-stamp"><span class="ek-icon">${icons[e.kind] || "·"}</span>${e.t}</div>
         <div class="body">${e.body}</div>
       </div>`).join("");
     box.scrollTop = box.scrollHeight;
