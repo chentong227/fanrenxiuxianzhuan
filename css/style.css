@@ -658,3 +658,42 @@ html, body {
 .codex-rel.rel-cold { color: var(--red); }
 
 /* 结识提示飘条（沿用 toast，无需额外） */
+
+/* ============================================================
+ * 云游 · 可视化大地图
+ * ============================================================ */
+.worldmap {
+  position: relative; width: 100%; aspect-ratio: 4 / 3;
+  background:
+    radial-gradient(circle at 70% 25%, rgba(106,160,212,0.10), transparent 40%),
+    radial-gradient(circle at 28% 78%, rgba(154,127,212,0.10), transparent 38%),
+    linear-gradient(160deg, #141d24, #0e151a);
+  border: 1px solid var(--border); border-radius: 10px;
+  margin: 10px 0; overflow: hidden;
+}
+.map-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.map-line { stroke: rgba(127,227,192,0.25); stroke-width: 0.4; stroke-dasharray: 1.5 1.5; }
+.map-pin {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  cursor: pointer; z-index: 2;
+}
+.map-pin .pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--jade); box-shadow: 0 0 8px var(--jade);
+  border: 2px solid #0e151a; transition: transform .1s;
+}
+.map-pin:hover .pin-dot { transform: scale(1.35); }
+.map-pin.here .pin-dot { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+.map-pin .pin-label {
+  font-size: 11px; color: var(--ink); white-space: nowrap;
+  background: rgba(8,12,16,0.72); padding: 1px 6px; border-radius: 6px;
+}
+.map-pin.here .pin-label { color: var(--gold); }
+.pin-cost { color: var(--ink-dim); }
+.map-pin:active .pin-dot { transform: scale(1.1); }
+.map-detail {
+  font-size: 13px; color: var(--ink-dim); line-height: 1.6;
+  min-height: 40px; padding: 8px 10px; background: rgba(0,0,0,0.2); border-radius: 8px;
+}
+.map-detail b { color: var(--ink); }

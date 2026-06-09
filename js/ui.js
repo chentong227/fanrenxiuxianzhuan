@@ -473,25 +473,49 @@ const UI = {
     `);
   },
 
-  /* -------- 云游（切换地点）-------- */
+  /* -------- 云游（可视化大地图，点击图标前往）-------- */
   openTravel() {
     const cur = State.data.location;
     const arc = Chapters.active().id;
     const locs = WORLD.locations.filter(l =>
-      (!l.arc || l.arc === arc) && (!l.unlock || l.unlock(State.data)));
-    const html = locs.map(l => {
+      !l.scene && l.map && (!l.arc || l.arc === arc) && (!l.unlock || l.unlock(State.data)));
+
+    // 连线（从当前所在地到各可去之处）便于看出空间关系
+    const curLoc = WORLD.locations.find(l => l.id === cur);
+    const lines = (curLoc && curLoc.map)
+      ? locs.filter(l => l.id !== cur).map(l =>
+          `<line x1="${curLoc.map.x}" y1="${curLoc.map.y}" x2="${l.map.x}" y2="${l.map.y}" class="map-line"/>`).join("")
+      : "";
+
+    const pins = locs.map(l => {
       const here = l.id === cur;
-      return `<button class="travel-item ${here ? 'here' : ''}" ${here ? 'disabled' : `onclick="UI.closeModal(); Engine.travelTo('${l.id}')"`}>
-        <span class="tname">${l.name}</span>${here ? '（当前所在）' : `<span class="tcost">行程 ${l.travelCost} 月</span>`}
-        <span class="tdesc">${l.desc}</span>
-      </button>`;
+      const factor = Balance.travelTimeFactor(State.data.speed);
+      const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
+      return `<div class="map-pin ${here ? 'here' : ''}" style="left:${l.map.x}%;top:${l.map.y}%"
+        ${here ? '' : `onclick="UI._travelPick('${l.id}')"`} title="${l.desc}">
+        <span class="pin-dot"></span>
+        <span class="pin-label">${l.name}${here ? ' ·在此' : `　<span class="pin-cost">${cost}月</span>`}</span>
+      </div>`;
     }).join("");
+
     this.openModal(`
       <h2>云游何处</h2>
-      <p style="color:var(--ink-dim)">七玄门内外，皆可走动。前往需耗光阴。</p>
-      <div class="travel-list">${html}</div>
+      <p style="color:var(--ink-dim);font-size:12px">七玄门内外，点击地图上的地点即可前往。遁速越高，赶路越省光阴。</p>
+      <div class="worldmap">
+        <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
+        ${pins}
+      </div>
+      <div id="map-detail" class="map-detail">${curLoc ? `<b>${curLoc.name}</b>　${curLoc.desc}` : ''}</div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">不去了</button></div>
     `);
+  },
+  _travelPick(locId) {
+    const l = WORLD.locations.find(x => x.id === locId);
+    if (!l) return;
+    const factor = Balance.travelTimeFactor(State.data.speed);
+    const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
+    this.el("map-detail").innerHTML = `<b>${l.name}</b>　${l.desc}
+      <div style="margin-top:8px"><button class="btn btn-primary btn-mini" onclick="UI.closeModal(); Engine.travelTo('${l.id}')">前往（${cost} 月）</button></div>`;
   },
 
   /* -------- 集镇采买 -------- */

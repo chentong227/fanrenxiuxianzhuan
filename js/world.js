@@ -37,6 +37,7 @@ WORLD.locations = [
     name: "墨大夫药庐",
     desc: "你寄身的药庐。煎药、辨药、修炼《长春功》之所。也是小绿瓶藏匿之地。",
     travelCost: 1,
+    map: { x: 50, y: 58 },
     actions: ["cultivate", "rest", "bottle", "alchemy"],
     encounters: [],
   },
@@ -46,6 +47,7 @@ WORLD.locations = [
     name: "七玄门后山",
     desc: "门派后山，灵草丛生，亦有野兽与低阶修士出没。采药、历练的好去处。",
     travelCost: 2,
+    map: { x: 72, y: 28 },
     actions: ["gather", "explore", "adventure"],
     encounters: [
       { id: "herb", weight: 38, kind: "gather" },
@@ -61,6 +63,7 @@ WORLD.locations = [
     name: "演武厅",
     desc: "门中弟子切磋武艺之处。厉飞雨常在此。可习武、切磋、打探消息。",
     travelCost: 2,
+    map: { x: 38, y: 40 },
     actions: ["spar", "adventure"],
     encounters: [
       { id: "spar_lifei", weight: 26, kind: "story_hint" },
@@ -76,6 +79,7 @@ WORLD.locations = [
     name: "山下集镇",
     desc: "七玄门山下的凡俗集镇。可用纹银采买丹药材料，听市井传闻。",
     travelCost: 3,
+    map: { x: 28, y: 78 },
     actions: ["market", "adventure"],
     encounters: [
       { id: "merchant", weight: 28, kind: "market" },
@@ -91,6 +95,7 @@ WORLD.locations = [
     name: "墨大夫密室",
     desc: "墨大夫秘不示人的密室。阴气森森，似藏着不可告人的秘密。",
     travelCost: 2,
+    map: { x: 58, y: 48 },
     actions: ["investigate"],
     unlock: (s) => s.flags.qi_layer_4,   // 修到练气四层、起疑后才会去探
     encounters: [],
