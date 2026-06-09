@@ -1,0 +1,130 @@
+/* ============================================================
+ * data.js — 静态数据 / 配置（忠于「七玄门篇」设定圣经）
+ * 见 docs/lore-七玄门篇.md
+ * ============================================================ */
+
+const DATA = {};
+
+/* ---------- 灵根资质 ----------
+ * 韩立为四灵根（平庸）。测灵根时按动画设定，绝大多数为多灵根/伪灵根。
+ * cul = 修为增长系数（越低越慢），breakBonus = 突破成功率加成
+ */
+DATA.spiritRoots = [
+  { id: "tian",  name: "天灵根",   weight: 1,  cul: 2.4, breakBonus: 0.25, color: "#f0d493",
+    desc: "万中无一的单灵根，修炼速度奇快，乃天生的仙苗。" },
+  { id: "shuang", name: "双灵根",  weight: 6,  cul: 1.7, breakBonus: 0.12, color: "#9a7fd4",
+    desc: "双属性灵根，资质上佳，前途不可限量。" },
+  { id: "san",   name: "三灵根",   weight: 16, cul: 1.25, breakBonus: 0.05, color: "#7fe3c0",
+    desc: "三属性灵根，资质中上，勤修亦可有所成。" },
+  { id: "si",    name: "四灵根",   weight: 30, cul: 0.9, breakBonus: 0.0, color: "#6aa0d4",
+    desc: "四属性杂灵根，资质平庸。修炼缓慢，唯有以苦修与万全准备弥补天资。" },
+  { id: "wu",    name: "五灵根",   weight: 30, cul: 0.7, breakBonus: -0.05, color: "#8b97a7",
+    desc: "五行俱全的伪灵根，资质低劣，修行举步维艰，多止步于练气。" },
+];
+
+// 韩立的命定灵根（默认随机偏向四灵根，符合原著）
+DATA.fixedRootId = "si";
+
+/* ---------- 境界体系 ----------
+ * 七玄门篇封顶练气期。练气分层（动画/原著为十三层），本 MVP 做到练气七层即触发主线收尾。
+ * culMax = 该层「修为」上限；spMax = 灵力上限基准
+ */
+DATA.realms = [
+  { tier: "qi", layer: 1,  name: "练气一层",  culMax: 100,  spMax: 100,  lifespan: 0 },
+  { tier: "qi", layer: 2,  name: "练气二层",  culMax: 160,  spMax: 140,  lifespan: 0 },
+  { tier: "qi", layer: 3,  name: "练气三层",  culMax: 240,  spMax: 190,  lifespan: 5 },
+  { tier: "qi", layer: 4,  name: "练气四层",  culMax: 340,  spMax: 250,  lifespan: 0 },
+  { tier: "qi", layer: 5,  name: "练气五层",  culMax: 470,  spMax: 320,  lifespan: 5 },
+  { tier: "qi", layer: 6,  name: "练气六层",  culMax: 640,  spMax: 400,  lifespan: 0 },
+  { tier: "qi", layer: 7,  name: "练气七层",  culMax: 860,  spMax: 500,  lifespan: 10 },
+  // —— 以下为后续章节（黄枫谷篇）预留，本篇锁定，不可在七玄门突破 ——
+  { tier: "qi", layer: 8,  name: "练气八层",  culMax: 1140, spMax: 620,  lifespan: 0, locked: true },
+];
+
+// 本篇可突破到的最高境界索引（练气七层之后即进入主线收尾，封锁筑基）
+DATA.realmCapIndex = 6; // 对应练气七层
+
+/* ---------- 物品 ----------
+ * rarity: common / rare / epic
+ */
+DATA.items = {
+  qingyuan_dan: { name: "养元丹",   rarity: "common", type: "pill",
+    desc: "墨大夫药庐中的寻常丹药，服用后恢复灵力，略助修炼。", effect: { sp: 60, cul: 20 } },
+  huixue_dan:   { name: "金疮药",   rarity: "common", type: "pill",
+    desc: "墨大夫所制的疗伤之药，恢复气血。", effect: { hp: 50 } },
+  ningshen_dan: { name: "凝神丹",   rarity: "rare", type: "pill",
+    desc: "安神定志，平复心境、压制心魔。", effect: { mood: 40, demon: -20 } },
+  // 小绿瓶催熟灵药服食 —— 韩立逆袭的核心
+  lingyao_dan:  { name: "灵乳灵药", rarity: "rare", type: "pill",
+    desc: "小绿瓶催熟的珍稀灵药，灵气浓郁。服之大补修为，是韩立瞒着墨大夫精进的本钱。", effect: { cul: 120, sp: 40 } },
+  zhuji_dan:    { name: "筑基丹",   rarity: "epic", type: "pill",
+    desc: "突破练气、凝聚灵根成基的无价之宝。七玄门中绝难得见，乃后话。", effect: {} },
+  lingcao:      { name: "灵草",     rarity: "common", type: "material",
+    desc: "可入药的低阶灵草，栽入小绿瓶催熟后可炼成灵药。" },
+  duyao_cao:    { name: "毒草",     rarity: "rare", type: "material",
+    desc: "墨大夫药圃所植的毒草。经小绿瓶催熟后毒性剧增，是反杀墨大夫的杀招。" },
+  lingshi:      { name: "下品灵石", rarity: "rare", type: "currency",
+    desc: "蕴含灵气的灵石，修仙界的硬通货，亦可辅助修炼。" },
+  zhayan_jian:  { name: "眨眼剑法", rarity: "rare", type: "skill",
+    desc: "诡谲难测的近身剑法，身形快如眨眼。决战墨大夫的杀招之一。" },
+  anqi:         { name: "暗器飞针", rarity: "common", type: "consumable",
+    desc: "韩立惯用的隐藏飞针，无视部分闪避。战斗中「暗器飞针」招式的底牌，用一支少一支。" },
+  shengxian_ling: { name: "升仙令", rarity: "epic", type: "key",
+    desc: "金光上人的遗宝，乃踏入更高门派、求取筑基机缘的凭证。持此可赴黄枫谷。" },
+  jinfu:        { name: "金符",     rarity: "epic", type: "treasure",
+    desc: "金光上人遗物，金光灿灿的符箓，威力不俗。（后续章节可用）" },
+  jinzhong_zhao:{ name: "金钟罩",   rarity: "epic", type: "treasure",
+    desc: "金光上人的护身法宝，可结成金色钟罩护体。（后续章节可用）" },
+};
+
+/* ---------- 行动配置 ----------
+ * 时间以月为单位。行动耗时偏短，保证节奏明快又有时间压力（限期任务/寿元）。
+ */
+DATA.actions = {
+  cultivate: { name: "闭关修炼", timeCost: 1, desc: "潜心修炼《长春功》，是修为的主要来源。" },
+  adventure: { name: "外出历练", timeCost: 1, desc: "在七玄门内外走动，可能触发际遇、事件或危险。" },
+  rest:      { name: "打坐调息", timeCost: 1, desc: "恢复气血与心境，平复心魔。" },
+};
+
+/* ---------- 功法库（严格按篇章锁定，见 docs/techniques-lore.md）----------
+ * arc: 所属篇章。七玄门篇仅开放「长春功」；青元剑诀/大衍诀为后续篇章功法，本篇锁定。
+ * locked: true 表示当前篇章不可得（仅作埋线展示，不可学）。
+ */
+DATA.techniques = {
+  changchun: {
+    name: "长春功", arc: "qixuan", attr: "mu", locked: false, grade: 1,
+    grantSpells: ["tuna", "huti", "ningshen", "zhayan"],
+    desc: "墨大夫所授的木属性练气功法（黄阶下品）。资质要求低，正合你这四伪灵根；练至五层有过目不忘之效。",
+    origin: "墨大夫早年机缘所得，授予韩立。",
+  },
+  qingyuan_sword: {
+    name: "青元剑诀", arc: "huangfeng", attr: "jin", locked: true, grade: 3,
+    desc: "精元剑修之法（地阶），以反复散功重修、提纯灵力为门径，故同阶可越级斗法。",
+    origin: "黄枫谷篇：与董萱儿赴燕家堡前，师父李化元许给韩立；最终结合在血色禁地击杀封岳所得的书页而成。",
+    acquireArc: "黄枫谷篇（燕家堡 / 血色禁地）",
+  },
+  great_development: {
+    name: "大衍诀", arc: "huangfeng", attr: "sense", locked: true, grade: 4,
+    desc: "神识类无上功法（天阶），可大幅强化神识、分裂元神、御使傀儡，修炼极难。",
+    origin: "黄枫谷篇：千竹教卧底潜伏谷中，雷万鹤救下韩立并击杀该卧底，韩立于事后捡得此诀。",
+    acquireArc: "黄枫谷篇（雷万鹤相救之后）",
+  },
+};
+
+// 本篇主修功法（恒为长春功，不开放更换）
+DATA.startingTechnique = "changchun";
+
+/* ---------- 神秘小绿瓶（掌天瓶前身） ----------
+ * 韩立逆袭核心：催熟灵草→灵药（服食大补修为），催熟毒草→杀招。
+ * seed 为投入的种子/原材料，matureItem 为成熟收获物。
+ */
+DATA.bottle = {
+  plotCount: 2,           // 初始可种植地块
+  catalyzePerAction: 34,  // 每次"打理"推进的成熟度
+  crops: {
+    lingcao:   { seed: "lingcao",   matureItem: "lingyao_dan", yield: 1, growth: 100, name: "灵草→灵药" },
+    duyao_cao: { seed: "duyao_cao", matureItem: "duyao_cao",   yield: 2, growth: 100, name: "毒草（催熟）" },
+  },
+};
+
+window.DATA = DATA;

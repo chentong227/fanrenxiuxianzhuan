@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>凡人修仙传 · 修仙模拟 MVP</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 开始 / 角色创建界面 -->
+    <section id="screen-create" class="screen active">
+      <div class="create-box">
+        <h1 class="game-title">凡人修仙传</h1>
+        <p class="subtitle">— 真实修仙模拟 · 七玄门篇 —</p>
+
+        <div class="field">
+          <label>道号</label>
+          <input id="input-name" type="text" maxlength="6" value="韩立" />
+        </div>
+
+        <div class="spirit-root-panel">
+          <div class="sr-display">
+            <span class="sr-label">灵根资质</span>
+            <span id="sr-result" class="sr-result untested">未测</span>
+          </div>
+          <div id="sr-desc" class="sr-desc">凡人之躯，尚不知有无仙缘。点击下方测试灵根。</div>
+          <button id="btn-test-root" class="btn btn-secondary">测 灵 根</button>
+        </div>
+
+        <p class="hint">提示：天地灵根稀有，绝大多数修士不过五灵根、伪灵根之流。资质平庸者，唯有以苦修与万全准备弥补天资。</p>
+
+        <button id="btn-start" class="btn btn-primary" disabled>踏 入 仙 途</button>
+        <button id="btn-load" class="btn btn-ghost">读取存档</button>
+      </div>
+    </section>
+
+    <!-- 主游戏界面 -->
+    <section id="screen-game" class="screen">
+      <header class="topbar">
+        <div class="char-brief">
+          <span id="top-name" class="t-name">韩立</span>
+          <span id="top-realm" class="t-realm">练气一层</span>
+        </div>
+        <div class="time-brief">
+          <span id="top-age">13 岁</span>
+          <span class="dot">·</span>
+          <span id="top-lifespan">寿元 100</span>
+        </div>
+        <div class="topbar-actions">
+          <button id="btn-codex" class="btn btn-mini">人物</button>
+          <button id="btn-chronicle" class="btn btn-mini">风云录</button>
+          <button id="btn-techniques" class="btn btn-mini">功法</button>
+          <button id="btn-save" class="btn btn-mini">存档</button>
+          <button id="btn-menu" class="btn btn-mini">主菜单</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <!-- 左侧：属性面板 -->
+        <aside class="panel panel-stats">
+          <h3 class="panel-title">修士状态</h3>
+          <div class="stat-block">
+            <div class="stat-row"><span>灵根</span><b id="st-root">—</b></div>
+            <div class="stat-row"><span>境界</span><b id="st-realm">—</b></div>
+          </div>
+
+          <div class="bar-group">
+            <div class="bar-label"><span>修为</span><span id="cul-text">0 / 100</span></div>
+            <div class="bar"><div id="cul-bar" class="bar-fill cul"></div></div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label"><span>灵力</span><span id="sp-text">0 / 100</span></div>
+            <div class="bar"><div id="sp-bar" class="bar-fill sp"></div></div>
+          </div>
+
+          <div class="stat-block">
+            <div class="stat-row" data-tip="神识：比对手高时可看穿其出招意图，并提升命中与暴击；对元神之敌唯靠功力镇压。"><span>神识</span><b id="st-sense">0</b></div>
+            <div class="stat-row" data-tip="遁速：决定战斗先手，并减少大世界赶路耗时（省光阴=省寿元）。"><span>遁速</span><b id="st-speed">0</b></div>
+            <div class="stat-row" data-tip="悟性：突破时更快削减瓶颈心魔，并提升临场顿悟（额外灵气）与习功法/炼丹效率。"><span>悟性</span><b id="st-insight">0</b></div>
+            <div class="stat-row" data-tip="体魄：影响气血上限与抗打击。"><span>体魄</span><b id="st-body">0</b></div>
+          </div>
+
+          <div class="bar-group">
+            <div class="bar-label"><span>气血</span><span id="hp-text">100</span></div>
+            <div class="bar"><div id="hp-bar" class="bar-fill hp"></div></div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label"><span>心境</span><span id="mood-text">100</span></div>
+            <div class="bar"><div id="mood-bar" class="bar-fill mood"></div></div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label"><span>心魔</span><span id="demon-text">0</span></div>
+            <div class="bar"><div id="demon-bar" class="bar-fill demon"></div></div>
+          </div>
+
+          <div class="stat-block resources">
+            <div class="stat-row"><span>灵石</span><b id="st-stones">0</b></div>
+            <div class="stat-row"><span>岁月</span><b id="st-time">第 1 年</b></div>
+          </div>
+        </aside>
+
+        <!-- 中间：叙事 / 事件区 -->
+        <section class="panel panel-narrative">
+          <div id="objective-bar" class="objective-bar"></div>
+          <div id="narrative" class="narrative"></div>
+          <div id="choices" class="choices"></div>
+        </section>
+
+        <!-- 右侧：所在地 + 行动 + 背包 -->
+        <aside class="panel panel-actions">
+          <h3 class="panel-title">所 在</h3>
+          <div class="loc-box">
+            <div id="loc-name" class="loc-name">墨大夫药庐</div>
+            <div id="loc-desc" class="loc-desc"></div>
+            <button class="btn btn-action btn-travel" data-action="travel">云游他处</button>
+          </div>
+
+          <h3 class="panel-title">行 动</h3>
+          <div id="action-buttons" class="action-buttons"></div>
+
+          <h3 class="panel-title">储 物 袋</h3>
+          <div id="inventory" class="inventory"></div>
+        </aside>
+      </main>
+    </section>
+
+    <!-- 战斗界面 -->
+    <div id="combat-overlay" class="combat-overlay" hidden>
+      <div class="combat-box">
+        <div id="combat-title" class="combat-title">斗 法</div>
+        <div class="combat-field">
+          <div id="combat-enemies" class="combat-enemies"></div>
+          <div class="combat-vs">⚔</div>
+          <div id="combat-player" class="combat-player"></div>
+        </div>
+        <div class="combat-qi" id="combat-qi"></div>
+        <div class="combat-spells" id="combat-spells"></div>
+        <div class="combat-log" id="combat-log"></div>
+        <div class="combat-actions">
+          <button class="btn btn-primary" id="combat-endround">结束本回合</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗容器 -->
+    <div id="modal-overlay" class="modal-overlay" hidden>
+      <div id="modal" class="modal"></div>
+    </div>
+
+    <!-- 浮动提示 -->
+    <div id="toast" class="toast" hidden></div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/chapters.js"></script>
+  <script src="js/balance.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/npcsim.js"></script>
+  <script src="js/interactions.js"></script>
+  <script src="js/combat.js"></script>
+  <script src="js/fortunes.js"></script>
+  <script src="js/quests.js"></script>
+  <script src="js/story.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
