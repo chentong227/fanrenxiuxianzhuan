@@ -269,7 +269,7 @@ const UI = {
   openBreakthrough() {
     const chk = Engine.canBreakthrough();
     const s = State.data;
-    const realm = State.realm();
+    const realm = State.data && State.realm();
     if (!chk.ok) {
       this.openModal(`
         <h2>尝试突破</h2>
@@ -278,30 +278,60 @@ const UI = {
       `);
       return;
     }
+    const nextRealm = DATA.realms[s.realmIndex + 1];
+    const isBig = Engine.isBigRealmBreakthrough();
+
+    // 大境界·渡劫破关：展示秘仪准备清单 + 凶险提示
+    if (isBig) {
+      const rite = Engine._bigRealmRite() || {};
+      const riteChk = Engine.checkRite();
+      this.openModal(`
+        <h2>大境界 · ${rite.name || nextRealm.name}</h2>
+        <p style="color:var(--ink-dim)">${rite.intro || "大境界之关，须十足准备，并历一场凶险心魔劫。"}</p>
+        <div class="prep-list">
+          ${riteChk.items.map(p => `<div class="prep-row"><span>${p.label}</span><span class="${p.ok ? 'ok' : 'no'}">${p.ok ? '✓ 就绪' : '✗ 不足'}</span></div>`).join("")}
+        </div>
+        <p style="color:var(--red);font-size:12px;margin-top:8px">⚠ 渡劫凶险：心魔劫远胜寻常心战，败则跌境、重创、心魔暴涨。</p>
+        <div class="modal-actions">
+          <div class="modal-row">
+            <button class="btn btn-secondary" onclick="UI.closeModal()">再候时机</button>
+            <button class="btn btn-primary" onclick="UI.closeModal(); Engine.attemptBreakthrough();">引动心魔劫 · 破关</button>
+          </div>
+        </div>
+      `);
+      return;
+    }
+
+    // 小境界：心魔可控则水到渠成；心魔过盛则须先闯心战
     const rate = Engine.breakthroughRate();
     const pct = Math.round(rate * 100);
     const cls = rate >= 0.7 ? "high" : rate >= 0.4 ? "mid" : "low";
-    const nextRealm = DATA.realms[s.realmIndex + 1];
+    const demonHigh = s.demon > Balance.demonTrialThreshold();
 
     // 准备清单（体现"靠万全准备突破"）
     const prep = [
       { label: "修为圆满", ok: s.cultivation >= realm.culMax * 0.9 },
       { label: "灵力充盈", ok: s.spirit >= realm.spMax * 0.8 },
       { label: "心境平和", ok: s.mood >= s.moodMax * 0.6 },
-      { label: "心魔已伏", ok: s.demon <= 30 },
+      { label: `心魔可控（≤${Balance.demonTrialThreshold()}）`, ok: !demonHigh },
     ];
+    const trialNote = demonHigh
+      ? `<p style="color:var(--gold);font-size:12px;margin-top:6px">⚠ 心魔过盛（${Math.round(s.demon)}）：冲关须先闯一场「心战」降伏心魔，否则功亏一篑。</p>`
+      : `<p style="color:var(--jade-bright);font-size:12px;margin-top:6px">心魔已伏，可顺势冲关，水到渠成。</p>`;
+
     this.openModal(`
       <h2>突破 · ${nextRealm.name}</h2>
-      <p style="color:var(--ink-dim)">修仙之路，每一步皆如履薄冰。准备愈充分，胜算愈大；强行冲关，反受其害。</p>
+      <p style="color:var(--ink-dim)">同一大境界内的层次进阶——准备愈充分，胜算愈大；强行冲关，反受其害。</p>
       <div class="prep-list">
         ${prep.map(p => `<div class="prep-row"><span>${p.label}</span><span class="${p.ok ? 'ok' : 'no'}">${p.ok ? '✓ 就绪' : '✗ 不足'}</span></div>`).join("")}
       </div>
       <div class="rate-display ${cls}">${pct}%</div>
-      <div class="rate-label">突破成功率</div>
+      <div class="rate-label">${demonHigh ? '心战前·基准成功率' : '顺势冲关成功率'}</div>
+      ${trialNote}
       <div class="modal-actions">
         <div class="modal-row">
           <button class="btn btn-secondary" onclick="UI.closeModal()">再候时机</button>
-          <button class="btn btn-primary" onclick="UI.closeModal(); Engine.attemptBreakthrough();">冲关突破</button>
+          <button class="btn btn-primary" onclick="UI.closeModal(); Engine.attemptBreakthrough();">${demonHigh ? '冲关 · 闯心战' : '顺势冲关'}</button>
         </div>
       </div>
     `);

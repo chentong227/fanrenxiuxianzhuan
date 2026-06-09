@@ -27,22 +27,22 @@ console.log("\n=== 任务系统 ===");
 // 1) 限期任务：期限内达成 → 成功结算
 {
   State.create("韩立", "si");
-  Engine.assignTask("modafu_deadline", 6);
+  Engine.assignTask("modafu_deadline", 24);
   assert(Engine.hasTask("modafu_deadline"), "成功派发限期任务");
   const silver0 = State.data.silver;
-  State.data.realmIndex = 2;
+  State.data.realmIndex = 1;            // 练气二层（凡修可达）
   Engine.passTime(1);
   assert(!Engine.hasTask("modafu_deadline"), "达成后任务移除");
-  assert(State.data.silver === silver0 + 40, `达成赏银（${silver0} → ${State.data.silver}）`);
+  assert(State.data.silver === silver0 + 30, `达成赏银（${silver0} → ${State.data.silver}）`);
 }
 
 // 2) 限期任务：逾期未成 → 失败结算
 {
   State.create("韩立", "si");
-  Engine.assignTask("modafu_deadline", 6);
+  Engine.assignTask("modafu_deadline", 24);
   const mood0 = State.data.mood;
   State.data.realmIndex = 0;
-  Engine.passTime(7);
+  Engine.passTime(25);
   assert(!Engine.hasTask("modafu_deadline"), "逾期后任务移除");
   assert(State.data.mood < mood0, `逾期失败有惩罚（心境 ${mood0} → ${State.data.mood}）`);
 }

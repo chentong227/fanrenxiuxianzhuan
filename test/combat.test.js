@@ -34,6 +34,33 @@ console.log("\n=== 1. 五行灵气生成（韩立四灵根：缺土、木旺、�
   assert(c.qi.mu >= c.qi.huo, `「木」不少于「火」（木属性最旺）`);
 }
 
+console.log("\n=== 1.5 灵气不可无限囤积（结转有上限，随境界放宽）===");
+{
+  // 练气期(realmTier 0)：回合结余灵气仅能结转少量，杜绝越囤越多
+  const cap0 = Balance.qiCarryCap(0);
+  const player = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, realmTier: 0, spells: ["ningshen"] });
+  const c = new Combat({ player, enemies: [{ name: "木桩", hp: 999 }], rng: seqRng([0.99]) });
+  // 连续多回合完全不耗灵气，观察是否会无限累积
+  let peak = 0;
+  for (let r = 0; r < 6; r++) {
+    c.startRound();
+    const total = Object.values(c.qi).reduce((a, b) => a + b, 0);
+    peak = Math.max(peak, total);
+    c.endRound();
+  }
+  const prof = c.player.profile;
+  // 单回合产出 10，加上结转上限 cap0，封顶应为 10 + cap0（不会逐回合膨胀）
+  assert(peak <= 10 + cap0 + 2, `灵气不会无限累积（峰值 ${peak} ≤ 单回合产出+结转上限 ${10 + cap0}(+顿悟2)）`);
+  assert(Balance.qiCarryCap(3) > cap0, `高阶修士结转上限更高（练气${cap0} < 结丹${Balance.qiCarryCap(3)}）`);
+
+  // 凝神蓄气也受同一上限约束，不能靠反复蓄力无限聚气
+  const p2 = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, realmTier: 0, spells: ["ningshen"] });
+  const c2 = new Combat({ player: p2, enemies: [{ name: "木桩", hp: 999 }], rng: seqRng([0.99]) });
+  c2.startRound();
+  for (let i = 0; i < 10; i++) { if (c2.canAfford("ningshen")) c2.cast("ningshen"); }
+  assert(p2.nextQiBonus <= cap0, `凝神蓄气受上限约束（蓄 ${p2.nextQiBonus} ≤ ${cap0}）`);
+}
+
 console.log("\n=== 2. 连招：一回合内连续施法直到灵气耗尽 ===");
 {
   const player = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, spells: ["zhayan", "tuna", "ningshen"] });

@@ -74,7 +74,7 @@ const STORY = [
       State.setFlag("met_modafu");
       s.location = "yaolu";
       State.meetNpc("modafu");
-      Engine.assignTask("modafu_deadline", 6);
+      Engine.assignTask("modafu_deadline", 24);
       Engine.toast("你拜入墨大夫门下，习《长春功》");
     },
     choices: [

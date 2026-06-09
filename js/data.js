@@ -114,6 +114,58 @@ DATA.techniques = {
 // 本篇主修功法（恒为长春功，不开放更换）
 DATA.startingTechnique = "changchun";
 
+/* ---------- 大境界突破·秘仪（每个大境界的破关之法各不相同）----------
+ * 忠于「真实修仙」：小境界（同大境界内的分层）水到渠成，唯心魔过盛才需心战；
+ * 大境界（练气→筑基→结丹→元婴…）则各有独门关隘，须十足准备，并历一场凶险心魔劫。
+ *
+ * 按"目标大境界 tier"索引。字段：
+ *   name        关隘之名
+ *   intro       破关前的演出旁白
+ *   require[]   前置准备（{ kind:'item', id, n } / { kind:'stat', key, min } / { kind:'flag', key }）
+ *   consume[]   破关时消耗的物品（{ id, n }）
+ *   trialHp     心魔劫·心魔气血基数（越高越难）
+ *   trialRounds 心战可战回合基数
+ *   failRealmLoss 失败时是否跌境（true=大境界失败有跌境风险）
+ *
+ * 注：本篇封顶练气，foundation 及以上为后续篇章预留（届时 data.realms 扩展真实境界即生效）。
+ */
+DATA.bigRealmRites = {
+  foundation: {
+    name: "筑基关 · 凝基化灵",
+    intro: "练气至圆满，灵力已无处可纳。欲跻身筑基，须以「筑基丹」化去周身灵力杂质，引天地灵气灌入百窍，凝散为基。此关九死一生，心魔劫尤烈——一旦失手，轻则跌境散功，重则身死道消。",
+    require: [
+      { kind: "item", id: "zhuji_dan", n: 1, label: "筑基丹 ×1" },
+      { kind: "stat", key: "spiritRatio", min: 0.9, label: "灵力近乎圆满" },
+      { kind: "stat", key: "moodRatio", min: 0.6, label: "心境平和" },
+      { kind: "stat", key: "demonMax", min: 30, label: "心魔已伏（≤30）" },
+    ],
+    consume: [{ id: "zhuji_dan", n: 1 }],
+    trialHp: 90, trialRounds: 10, failRealmLoss: true,
+  },
+  core: {
+    name: "结丹关 · 灵力成丹",
+    intro: "筑基灵力已盈，须觅一处灵脉，借天材地宝温养，将一身灵力反复压缩、凝而成丹。结丹心魔为生平执念所化，最是难缠。",
+    require: [
+      { kind: "stat", key: "spiritRatio", min: 0.95, label: "灵力圆满" },
+      { kind: "stat", key: "moodRatio", min: 0.7, label: "道心澄明" },
+      { kind: "stat", key: "demonMax", min: 25, label: "心魔已伏（≤25）" },
+    ],
+    consume: [],
+    trialHp: 260, trialRounds: 12, failRealmLoss: true,
+  },
+  nascent: {
+    name: "元婴关 · 婴变出窍",
+    intro: "破碎金丹，化丹为婴，元婴自识海孕生。此乃脱胎换骨之劫，元神离体最易遭心魔反噬，一念之差便万劫不复。",
+    require: [
+      { kind: "stat", key: "spiritRatio", min: 0.98, label: "灵力极盈" },
+      { kind: "stat", key: "moodRatio", min: 0.8, label: "道心通明" },
+      { kind: "stat", key: "demonMax", min: 20, label: "心魔尽伏（≤20）" },
+    ],
+    consume: [],
+    trialHp: 700, trialRounds: 14, failRealmLoss: true,
+  },
+};
+
 /* ---------- 神秘小绿瓶（掌天瓶前身） ----------
  * 韩立逆袭核心：催熟灵草→灵药（服食大补修为），催熟毒草→杀招。
  * seed 为投入的种子/原材料，matureItem 为成熟收获物。

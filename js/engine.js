@@ -494,7 +494,7 @@ const Engine = {
     if (!silent) this.log("你盘膝打坐，调息养神。灵力、气血与心境皆有恢复。", "event");
   },
 
-  /* -------- 突破成功率计算（本篇仅练气层间小突破）-------- */
+  /* -------- 突破成功率计算（小境界·水到渠成时的直接成功率）-------- */
   breakthroughRate() {
     const s = State.data;
     const root = State.root();
@@ -511,45 +511,136 @@ const Engine = {
   // 是否已达本篇境界上限（封锁更高境界）
   atRealmCap() { return State.data.realmIndex >= Chapters.realmCap(); },
 
+  // 下一境界（可能为 null）
+  _nextRealm() { return DATA.realms[State.data.realmIndex + 1]; },
+
+  // 这一步是否为「大境界」突破（大境界序 tier 改变 = 渡劫式破关）
+  isBigRealmBreakthrough() {
+    const cur = State.realm();
+    const nxt = this._nextRealm();
+    return !!(nxt && nxt.tier !== cur.tier);
+  },
+
+  // 大境界对应的破关秘仪配置（按目标 tier 索引）
+  _bigRealmRite() {
+    const nxt = this._nextRealm();
+    if (!nxt) return null;
+    return (DATA.bigRealmRites && DATA.bigRealmRites[nxt.tier]) || null;
+  },
+
+  // 校验大境界秘仪的前置准备，返回 { ok, items:[{label,ok}] }
+  checkRite() {
+    const s = State.data;
+    const realm = State.realm();
+    const rite = this._bigRealmRite();
+    if (!rite) return { ok: true, items: [] };
+    const items = (rite.require || []).map(req => {
+      let ok = false;
+      if (req.kind === "item") ok = State.count(req.id) >= (req.n || 1);
+      else if (req.kind === "flag") ok = !!s.flags[req.key];
+      else if (req.kind === "stat") {
+        if (req.key === "spiritRatio") ok = s.spirit >= realm.spMax * req.min;
+        else if (req.key === "moodRatio") ok = s.mood >= s.moodMax * req.min;
+        else if (req.key === "demonMax") ok = s.demon <= req.min;
+        else ok = (s[req.key] || 0) >= req.min;
+      }
+      return { label: req.label || req.id, ok };
+    });
+    return { ok: items.every(i => i.ok), items };
+  },
+
   canBreakthrough() {
     const s = State.data;
     const realm = State.realm();
     if (this.atRealmCap()) return { ok: false, reason: "本篇封顶练气期。筑基乃后话，需「筑基丹」与机缘，黄枫谷篇再续。" };
     if (s.cultivation < realm.culMax * 0.6) return { ok: false, reason: "修为尚浅，强行突破必败。再多苦修些时日。" };
+    // 大境界：须备齐秘仪
+    if (this.isBigRealmBreakthrough()) {
+      const rite = this._bigRealmRite();
+      const chk = this.checkRite();
+      if (!chk.ok) {
+        const lack = chk.items.filter(i => !i.ok).map(i => i.label).join("、");
+        return { ok: false, reason: `${rite ? rite.name + "：" : ""}破关之资未备齐——尚缺 ${lack}。`, rite, riteCheck: chk };
+      }
+      return { ok: true, rite, riteCheck: chk };
+    }
     return { ok: true };
   },
 
-  /* -------- 执行突破：进入「与瓶颈心魔」的突破战 -------- */
+  /* -------- 执行突破 --------
+   * 小境界（同大境界内分层）：心魔低于阈值 → 水到渠成，直接判定成功率；
+   *                           心魔高于阈值 → 须先闯「心战」降伏心魔。
+   * 大境界（练气→筑基→…）：消耗秘仪之物，必历一场凶险「心魔劫」，败则有跌境之险。
+   */
   attemptBreakthrough() {
+    const s = State.data;
+    const isBig = this.isBigRealmBreakthrough();
+    if (isBig) {
+      // 消耗破关之物（如筑基丹）
+      const rite = this._bigRealmRite();
+      if (rite && rite.consume) rite.consume.forEach(c => State.take(c.id, c.n || 1));
+      this.passTime(1);
+      this.startBreakthroughFight({ big: true, rite });
+      return;
+    }
+    // 小境界：心魔可控则水到渠成，无须心战
+    const demonHigh = s.demon > Balance.demonTrialThreshold();
+    if (!demonHigh) {
+      this.passTime(1);
+      const win = Math.random() < this.breakthroughRate();
+      this._resolveBreakthroughResult(win);
+      State.save();
+      UI.renderAll();
+      return;
+    }
+    // 心魔过盛：须闯心战
     this.passTime(1);
-    this.startBreakthroughFight();
+    this.startBreakthroughFight({ big: false });
   },
 
   // 突破战结果结算
   _resolveBreakthroughResult(win) {
     const s = State.data;
+    const wasBig = this._btWasBig;
     if (win) {
       s.realmIndex += 1;
       const nr = State.realm();
       s.cultivation = 0;
       s.spirit = nr.spMax;
-      s.sense += 3; s.body += 2;
-      s.hpMax += 15; s.hp = s.hpMax;
+      s.sense += wasBig ? 8 : 3; s.body += wasBig ? 5 : 2;
+      s.hpMax += wasBig ? 40 : 15; s.hp = s.hpMax;
       if (nr.lifespan) s.lifespan += nr.lifespan;
-      s.demon = clamp(s.demon - 5, 0, 100);
-      this.log(`灵力冲关，经脉拓宽，心魔被你一举降伏——你成功突破至「${nr.name}」！`, "good");
+      s.demon = clamp(s.demon - (wasBig ? 12 : 5), 0, 100);
+      if (wasBig) {
+        this.log(`心魔劫已渡！你脱胎换骨，正式跻身「${nr.name}」——这一步，多少修士求而不得。`, "good");
+      } else {
+        this.log(`灵力冲关，经脉拓宽——你顺势突破至「${nr.name}」！`, "good");
+      }
       this.toast(`突破成功：${nr.name}`);
       this.checkStory();
     } else {
-      const loss = Math.round(s.cultivation * 0.3);
-      s.cultivation = Math.max(0, s.cultivation - loss);
-      const dmg = 15 + Math.floor(Math.random() * 15);
-      s.hp = clamp(s.hp - dmg, 1, s.hpMax);
-      s.demon = clamp(s.demon + 12, 0, 100);
-      s.mood = clamp(s.mood - 15, 0, s.moodMax);
-      this.log(`心魔未能降伏，灵力逆冲——突破失败！修为-${loss}，气血-${dmg}，心魔滋长。`, "bad");
-      this.toast("突破失败，反受其害", true);
+      if (wasBig) {
+        // 大境界渡劫失败：凶险——跌回上一层、重创、心魔暴涨
+        const loss = Math.round(s.cultivation * 0.6) + Math.round(State.realm().culMax * 0.3);
+        s.cultivation = Math.max(0, s.cultivation - loss);
+        const dmg = Math.round(s.hpMax * 0.45);
+        s.hp = clamp(s.hp - dmg, 1, s.hpMax);
+        s.demon = clamp(s.demon + 25, 0, 100);
+        s.mood = clamp(s.mood - 25, 0, s.moodMax);
+        this.log(`心魔劫中道心崩动，灵力反噬如怒涛！渡劫失败——你修为大损(-${loss})、气血重创(-${dmg})，心魔几乎吞噬神智。大境界之关，岂容轻忽。`, "bad");
+        this.toast("渡劫失败！反受重创", true);
+      } else {
+        const loss = Math.round(s.cultivation * 0.3);
+        s.cultivation = Math.max(0, s.cultivation - loss);
+        const dmg = 15 + Math.floor(Math.random() * 15);
+        s.hp = clamp(s.hp - dmg, 1, s.hpMax);
+        s.demon = clamp(s.demon + 12, 0, 100);
+        s.mood = clamp(s.mood - 15, 0, s.moodMax);
+        this.log(`心魔未能降伏，灵力逆冲——突破失败！修为-${loss}，气血-${dmg}，心魔滋长。`, "bad");
+        this.toast("突破失败，反受其害", true);
+      }
     }
+    this._btWasBig = false;
   },
 
   /* ===========================================================
@@ -667,31 +758,49 @@ const Engine = {
   },
 
   // 突破战：与瓶颈心魔对战（复用战斗引擎）
-  startBreakthroughFight() {
+  startBreakthroughFight(opts = {}) {
     const s = State.data;
     const realm = State.realm();
     const nextRealm = DATA.realms[s.realmIndex + 1];
+    const isBig = !!opts.big;
+    this._btWasBig = isBig;
 
     // 准备越充分 → 瓶颈越薄、可战回合越多、道心(hp)越足
     const culRatio = clamp(s.cultivation / realm.culMax, 0, 1.2);
-    const bottleneckHp = Math.round(40 + s.realmIndex * 14 - culRatio * 22);
     const daoxin = Math.round(40 + (s.mood / s.moodMax) * 40 - (s.demon / 100) * 25);
     const rounds = 6 + Math.floor((s.spirit / realm.spMax) * 4) - Math.floor(s.demon / 25);
+
+    let bottleneckHp, maxRounds, demonName, demonAtk, intro;
+    if (isBig) {
+      // 大境界·心魔劫：以秘仪配置为基准，远比小境界凶险
+      const rite = opts.rite || this._bigRealmRite() || {};
+      bottleneckHp = Math.round((rite.trialHp || 90) - culRatio * 20);
+      maxRounds = Math.max(6, (rite.trialRounds || 10) + Math.floor((s.spirit / realm.spMax) * 4) - Math.floor(s.demon / 25));
+      demonName = `${rite.name || (nextRealm ? nextRealm.name : "瓶颈")}·心魔劫`;
+      demonAtk = 14;
+      intro = `你按秘仪引动天地之力冲击「${nextRealm ? nextRealm.name : "大境界"}」之关，生平执念尽数化作心魔劫扑面而来——成败、生死，皆在此一战！`;
+    } else {
+      bottleneckHp = Math.round(40 + s.realmIndex * 14 - culRatio * 22);
+      maxRounds = Math.max(4, rounds);
+      demonName = `${nextRealm ? nextRealm.name : "瓶颈"}·心魔`;
+      demonAtk = 9;
+      intro = `心魔过盛，冲关之际它趁虚而起——你须先在心战中降伏它，方能突破至「${nextRealm ? nextRealm.name : "下一层"}」！`;
+    }
 
     const player = this.playerFighter();
     player.hp = Math.max(20, daoxin); player.hpMax = player.hp;
 
     this._combat = new CombatAPI.Combat({
       player,
-      enemies: [{ name: `${nextRealm ? nextRealm.name : "瓶颈"}·心魔`, hp: Math.max(20, bottleneckHp),
-                  sense: 5, agility: 0, atkName: "心魔反噬", atk: 9 }],
-      maxRounds: Math.max(4, rounds),
+      enemies: [{ name: demonName, hp: Math.max(20, bottleneckHp),
+                  sense: 5, agility: 0, atkName: "心魔反噬", atk: demonAtk }],
+      maxRounds,
       mode: "breakthrough",
     });
-    this._combatMeta = { type: "breakthrough" };
+    this._combatMeta = { type: "breakthrough", big: isBig };
     s.combat = true;
     this._combat.startRound();
-    this.log(`你引动灵力冲击「${nextRealm ? nextRealm.name : "瓶颈"}」的瓶颈，心魔随之浮现——突破即一场心战！`, "event");
+    this.log(intro, "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 

@@ -164,6 +164,20 @@
       if (this.rng() < ins.epiphanyChance) { total += 2; this._epiphany = true; }
       else this._epiphany = false;
 
+      // 上回合剩余灵气结转（受境界上限约束）：练气期几乎存不住，高阶方能囤气酝酿大招
+      const carryCap = Balance.qiCarryCap(this.player.realmTier);
+      const carried = {};
+      let carriedTotal = 0;
+      // 优先保留现有量较多的灵气，整体不超过 carryCap
+      const prevPairs = ELEMENTS.map(e => [e, this.qi[e] || 0]).sort((a, b) => b[1] - a[1]);
+      let budget = carryCap;
+      for (const [e, v] of prevPairs) {
+        const keep = Math.min(v, budget);
+        carried[e] = keep;
+        budget -= keep;
+        carriedTotal += keep;
+      }
+
       this.qi = { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 };
       const w = prof.weights;
       const wsum = ELEMENTS.reduce((a, e) => a + w[e], 0) || 1;
@@ -179,9 +193,13 @@
         const e = pool[Math.floor(this.rng() * pool.length)];
         this.qi[e]++; leftover--;
       }
+      // 叠加结转灵气
+      ELEMENTS.forEach(e => { this.qi[e] += (carried[e] || 0); });
       this.player.dodgeBuff = 0;
       this._rollEnemyIntents();
-      this._log(`【第${this.round}回合】灵气：` + this._qiText() + (this._epiphany ? "（顿悟！灵气+2）" : ""));
+      this._log(`【第${this.round}回合】灵气：` + this._qiText()
+        + (this._epiphany ? "（顿悟！灵气+2）" : "")
+        + (carriedTotal > 0 ? `（结转${carriedTotal}）` : ""));
     }
 
     _qiText() {
@@ -281,8 +299,12 @@
         caster.shield += shield;
         this._log(`${caster.name} 施「${sp.name}」，护体 +${shield}（共${caster.shield}）`);
       } else if (sp.type === "buff") {
-        if (sp.nextQiBonus) caster.nextQiBonus = (caster.nextQiBonus || 0) + sp.nextQiBonus;
-        this._log(`${caster.name} 施「${sp.name}」，凝神蓄力（下回合灵气+${sp.nextQiBonus || 0}）`);
+        if (sp.nextQiBonus) {
+          // 蓄气有上限：只有高阶修士才蓄得住更多灵气，杜绝无限聚气
+          const cap = Balance.qiCarryCap(caster.realmTier);
+          caster.nextQiBonus = Math.min(cap, (caster.nextQiBonus || 0) + sp.nextQiBonus);
+        }
+        this._log(`${caster.name} 施「${sp.name}」，凝神蓄力（下回合灵气+${caster.nextQiBonus}，至多${Balance.qiCarryCap(caster.realmTier)}）`);
       }
     }
 

@@ -67,6 +67,19 @@
       return { common: 0.6, strong: 0.9, boss: 1.3 }[name] || 0.6;
     },
 
+    /* ---- 灵气回合结转上限：只有高阶修士才囤得住灵气 ----
+     * 练气(tier0)几乎"用不完即散"，仅能存一两点接续连招；
+     * 境界越高，越能蓄养灵气、酝酿大招。
+     */
+    qiCarryCap(realmTier) {
+      return ({ 0: 2, 1: 4, 2: 7, 3: 11, 4: 16 })[realmTier || 0] != null
+        ? ({ 0: 2, 1: 4, 2: 7, 3: 11, 4: 16 })[realmTier]
+        : 2 + (realmTier || 0) * 3;
+    },
+
+    /* ---- 小境界突破：心魔低于此阈值则可水到渠成；高于则须先闯「心战」 ---- */
+    demonTrialThreshold() { return 35; },
+
     /* ---- 招式有效强度：来源(武学/法术) × 功法品阶 × 境界 ---- */
     // source: "martial"|"art"；grade: 主修功法品阶(1黄~4天)；realmTier: 大境界序(0练气,1筑基,...)
     sourceMul(source) { return source === "martial" ? 0.8 : 1.0; },
