@@ -69,23 +69,50 @@ const UI = {
           `<line x1="${curLoc.map.x}" y1="${curLoc.map.y}" x2="${l.map.x}" y2="${l.map.y}" class="map-line"/>`).join("")
       : "";
     const factor = Balance.travelTimeFactor(State.effectiveSpeed());
+    const sel = this._mapSel;
     const pins = locs.map(l => {
       const here = l.id === cur;
       const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
       const home = l.home ? " home" : "";
-      return `<div class="map-pin${here ? ' here' : ''}${home}" style="left:${l.map.x}%;top:${l.map.y}%"
-        ${here ? '' : `onclick="Engine.travelTo('${l.id}')"`} title="${l.desc}">
+      const seld = (sel === l.id) ? " selected" : "";
+      return `<div class="map-pin${here ? ' here' : ''}${home}${seld}" style="left:${l.map.x}%;top:${l.map.y}%"
+        ${here ? '' : `onclick="UI.selectMapPin('${l.id}')"`} title="${l.desc}">
         <span class="pin-dot"></span>
         <span class="pin-label">${l.name}${here ? '' : `<span class="pin-cost">${cost}月</span>`}</span>
       </div>`;
     }).join("");
+    // 选中某地 → 显示确认前往条
+    let confirmBar = "";
+    if (sel && sel !== cur) {
+      const l = WORLD.locations.find(x => x.id === sel);
+      if (l) {
+        const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
+        confirmBar = `<div class="map-confirm">
+          <div class="mc-info"><b>${l.name}</b><span>${l.desc}</span></div>
+          <button class="btn btn-primary btn-mini" onclick="UI.confirmTravel()">前往（${cost} 月）</button>
+        </div>`;
+      }
+    }
     box.innerHTML = `
       <div class="loc-map-head"><span class="map-tag">舆图</span>
-        <span class="map-speed">遁速 ${State.effectiveSpeed()}　行止由心，点图即往</span></div>
+        <span class="map-speed">遁速 ${State.effectiveSpeed()}　点选地点 → 确认前往</span></div>
       <div class="worldmap inline">
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
         ${pins}
-      </div>`;
+      </div>
+      ${confirmBar}`;
+  },
+  // 点选地图图标：先选中（高亮 + 出确认条），不直接前往
+  selectMapPin(locId) {
+    this._mapSel = (this._mapSel === locId) ? null : locId;
+    const loc = State.location();
+    if (loc) this.renderLocMap(loc);
+  },
+  // 确认前往选中的地点
+  confirmTravel() {
+    const dest = this._mapSel;
+    this._mapSel = null;
+    if (dest) Engine.travelTo(dest);
   },
 
   // 据点在场人物（城内有人气，可交谈）
@@ -307,12 +334,37 @@ const UI = {
     if (seg.beat) return `<div class="seg-beat">${seg.beat || "……"}</div>`; // 停顿/留白
     if (seg.say) {
       const who = seg.say;
-      const tone = seg.tone ? `<span class="dlg-tone">（${seg.tone}）</span>` : "";
-      const cls = seg.hl ? "seg-dlg hl" : "seg-dlg";
-      return `<div class="${cls}"><span class="dlg-name">${who}</span>${tone}<span class="dlg-text">「${seg.text}」</span></div>`;
+      const self = (who === State.data.name || who === "韩立");
+      const av = this._speakerAvatar(who);
+      const side = self ? "right" : "left";
+      const tone = seg.tone ? `<span class="dlg-tone">${seg.tone}</span>` : "";
+      const hl = seg.hl ? " hl" : "";
+      return `<div class="dlg-row ${side}${hl}">
+        <div class="dlg-portrait" style="--pc:${av.color}">${av.icon}</div>
+        <div class="dlg-bubble">
+          <div class="dlg-who"><span class="dlg-name" style="color:${av.color}">${who}</span>${tone}</div>
+          <div class="dlg-text">${seg.text}</div>
+        </div>
+      </div>`;
     }
     if (seg.narr) return `<p class="seg-narr">${seg.narr}</p>`;
     return "";
+  },
+
+  // 说话人 → 头像图标与配色（左右对话演出用）
+  _speakerAvatar(who) {
+    const self = (who === State.data.name || who === "韩立");
+    if (self) return { icon: "🧙", color: "var(--jade-bright)" };
+    const map = {
+      "墨大夫": { icon: "🧓", color: "var(--purple)" },
+      "厉飞雨": { icon: "🧑", color: "var(--blue)" },
+      "张铁":   { icon: "💪", color: "var(--gold)" },
+      "墨彩环": { icon: "👧", color: "var(--purple)" },
+      "小算盘": { icon: "🧮", color: "var(--gold)" },
+      "贾天龙": { icon: "🐺", color: "var(--red)" },
+      "金光上人": { icon: "🟡", color: "var(--gold-bright)" },
+    };
+    return map[who] || { icon: "🧑", color: "var(--ink)" };
   },
   clearStory() { this.el("choices").innerHTML = ""; },
 
