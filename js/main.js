@@ -25,6 +25,11 @@ const Main = {
     const travelBtn = document.querySelector('[data-action="travel"]');
     if (travelBtn) travelBtn.addEventListener("click", () => Engine.doAction("travel"));
 
+    // —— 手机底部分页：切换中间/左/右面板（窄屏）——
+    document.querySelectorAll(".mtab").forEach(tab => {
+      tab.addEventListener("click", () => UI.switchMobileTab(tab.dataset.tab));
+    });
+
     // 点击遮罩空白关闭弹窗（奇遇/剧情等必须选择的弹窗除外）
     UI.el("modal-overlay").addEventListener("click", (e) => {
       if (e.target.id === "modal-overlay" && !Engine._pendingFortune) UI.closeModal();
@@ -94,6 +99,8 @@ const Main = {
   enterGame() {
     UI.el("screen-create").classList.remove("active");
     UI.el("screen-game").classList.add("active");
+    const layout = document.querySelector(".layout");
+    if (layout && !layout.getAttribute("data-mtab")) layout.setAttribute("data-mtab", "narrative");
     UI.renderNarrative();
     UI.renderAll();
     if (State.data.bottle.unlocked) UI.showBottleButton();

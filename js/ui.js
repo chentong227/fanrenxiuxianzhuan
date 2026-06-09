@@ -15,6 +15,15 @@ const UI = {
     this.renderObjective();
   },
 
+  // 手机分页：切换显示哪一栏（narrative=修行 / stats=状态 / actions=储物）
+  switchMobileTab(tab) {
+    const layout = document.querySelector(".layout");
+    if (!layout) return;
+    layout.setAttribute("data-mtab", tab);
+    document.querySelectorAll(".mtab").forEach(t =>
+      t.classList.toggle("active", t.dataset.tab === tab));
+  },
+
   // 当前际遇指引 + 进行中任务（开放世界的"目标"提示）
   renderObjective() {
     const box = this.el("objective-bar");

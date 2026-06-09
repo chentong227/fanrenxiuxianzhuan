@@ -522,7 +522,10 @@ html, body {
   html, body { font-size: 14px; }
 }
 
-/* 窄屏（手机）：三栏改为竖向堆叠，整页可滚动 */
+/* 桌面：底部分页栏隐藏 */
+.mobile-tabs { display: none; }
+
+/* 窄屏（手机）：分页式单栏 + 底部 Tab 栏（更像 App） */
 @media (max-width: 760px) {
   html, body { font-size: 15px; }
   #app { height: auto; min-height: 100vh; overflow: visible; }
@@ -535,21 +538,39 @@ html, body {
   .topbar-actions { flex-wrap: wrap; gap: 6px; }
   .btn-mini { padding: 6px 10px; font-size: 13px; }
 
-  /* 布局：单列竖排，跟随内容高度，整页滚动 */
+  /* 布局：分页——一次只显示一栏，底部 Tab 切换 */
   .layout {
-    display: flex; flex-direction: column;
-    height: auto; gap: 10px; padding: 10px; overflow: visible;
+    display: block; height: auto; gap: 0; padding: 10px 10px 72px; overflow: visible;
   }
-  .panel { overflow: visible; }
-  /* 中间叙事区给一个合理高度，不至于把行动/属性挤到很远 */
-  .panel-narrative { order: 1; }
-  .panel-actions { order: 2; }
-  .panel-stats { order: 3; }
-  .narrative { max-height: 46vh; overflow-y: auto; }
+  .panel { overflow: visible; margin-bottom: 0; }
+  /* 默认显示「修行」栏 */
+  .layout .panel-stats, .layout .panel-actions { display: none; }
+  .layout .panel-narrative { display: flex; }
+  .layout[data-mtab="stats"] .panel-stats { display: block; }
+  .layout[data-mtab="stats"] .panel-narrative,
+  .layout[data-mtab="stats"] .panel-actions { display: none; }
+  .layout[data-mtab="actions"] .panel-actions { display: block; }
+  .layout[data-mtab="actions"] .panel-narrative,
+  .layout[data-mtab="actions"] .panel-stats { display: none; }
+
+  .narrative { max-height: 50vh; overflow-y: auto; }
 
   /* 行动按钮排成两列，方便点 */
   .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .loc-box { margin-bottom: 8px; }
+
+  /* 底部 Tab 栏 */
+  .mobile-tabs {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+    background: var(--bg-panel); border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px rgba(0,0,0,.4);
+  }
+  .mobile-tabs .mtab {
+    flex: 1; padding: 14px 0; background: none; border: none; cursor: pointer;
+    color: var(--ink-dim); font-family: inherit; font-size: 15px; letter-spacing: 3px;
+    border-top: 2px solid transparent;
+  }
+  .mobile-tabs .mtab.active { color: var(--jade-bright); border-top-color: var(--jade); background: rgba(95,184,154,.06); }
 
   /* 弹窗几乎占满屏宽 */
   .modal { width: 94vw; padding: 20px 16px; max-height: 88vh; }
@@ -568,6 +589,10 @@ html, body {
   .btn { padding: 12px 16px; }
   .choices .choice { padding: 14px 16px; }
   .inv-item { padding: 11px 12px; }
+
+  /* 对话肖像在手机上略小 */
+  .dlg-portrait { width: 34px; height: 34px; font-size: 18px; }
+  .dlg-bubble { max-width: 80%; }
 }
 
 /* 极窄屏（小手机）：进一步压缩 */
