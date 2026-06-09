@@ -12,6 +12,26 @@ const Engine = {
   },
   toast(msg, bad = false) { UI.toast(msg, bad); },
 
+  // 据点在场人物的专属对话主题（一次性主题谈过即不再出现，杜绝刷道具/属性）
+  dialogueTopic(npcId, idx) {
+    const s = State.data;
+    if (s.pendingEvent || s.combat) { this.toast("先处理眼前之事"); return; }
+    if (typeof DIALOGUE === "undefined") return;
+    const topics = DIALOGUE.forNpc(npcId, s);
+    const t = topics[idx];
+    if (!t) return;
+    if (t.cond && !t.cond(s)) { this.toast("此时无法如此"); return; }
+    const r = t.effect ? t.effect(s) : { text: "", kind: "event" };
+    if (t.once) DIALOGUE.markDone(s, npcId, t.id);
+    const n = (typeof WORLD !== "undefined" && WORLD.npcById) ? WORLD.npcById(npcId) : null;
+    this.log(`【${n ? n.name : npcId}】${r.text}`, r.kind || "event");
+    if (typeof UI !== "undefined" && UI.closeModal) UI.closeModal();
+    this.checkLifespan();
+    this.checkStory();
+    State.save();
+    if (typeof UI !== "undefined" && UI.renderAll) UI.renderAll();
+  },
+
   // 结识 NPC：首次相遇给出明确反馈（toast + 叙事 + 录入图鉴）
   meetNpc(id, line) {
     const isNew = State.meetNpc(id);
@@ -874,8 +894,9 @@ const Engine = {
       enemies: [jinguang],
       maxRounds: 18,
     });
-    // 金钟罩护体：开局即有厚护盾，暗器(破甲)与毒(持续)是破局关键
+    // 金钟罩护体：开局即有厚护盾，暗器(破甲)与毒(持续)是破局关键；金钟罩为法宝护体，不随回合消退
     this._combat.enemies[0].shield = 40;
+    this._combat.enemies[0]._fixedShield = true;
 
     this._combatMeta = { type: "jinguang" };
     s.combat = true;

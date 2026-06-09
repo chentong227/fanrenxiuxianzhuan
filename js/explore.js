@@ -186,7 +186,8 @@
       const def = CONTENT[cell.content];
       cell.taken = true;
       cell.content = null; cell.loot = null;
-      this._log(state, `你采得「${def.name}」：` + Object.entries(loot).map(([k, n]) => `${k}×${n}`).join("、"));
+      const itemName = (id) => (typeof DATA !== "undefined" && DATA.items && DATA.items[id]) ? DATA.items[id].name : id;
+      this._log(state, `你采得「${def.name}」：` + Object.entries(loot).map(([k, n]) => `${itemName(k)}×${n}`).join("、"));
     },
 
     // 同伴 AI：朝最近的未采资源移动；落到资源格则抢先采走（玩家失之交臂）

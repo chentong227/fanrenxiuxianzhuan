@@ -65,6 +65,7 @@ const State = {
       metNpcs: [],            // 已相识 NPC 的 id（人物图鉴）
       pendingEvent: null,     // 当前待处理的选择事件 id
       explore: null,          // 箱庭探索会话（进入副本时生成）
+      dialogueDone: {},       // 已完成的一次性对话主题（防刷）
     };
     this.give("qingyuan_dan", 2);
     if (typeof NPCSIM !== "undefined") NPCSIM.init(this.data);
@@ -103,6 +104,7 @@ const State = {
     if (!d.metNpcs) d.metNpcs = [];
     if (!d.npcFates || !d.npcFates.length) { if (typeof NPCSIM !== "undefined") NPCSIM.init(d); }
     if (d.explore === undefined) d.explore = null;
+    if (!d.dialogueDone) d.dialogueDone = {};
     if (!d.flightId) d.flightId = "none";
     if (typeof Loadout !== "undefined") Loadout.migrate(d);
   },

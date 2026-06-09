@@ -198,6 +198,10 @@
       ELEMENTS.forEach(e => { this.qi[e] += (carried[e] || 0); });
       this.player.dodgeBuff = 0;
       this._usedOnce = {};
+      // 护体屏障有「上限」：不可逐回合无限叠高（杜绝纯龟缩无敌）。
+      // 上限与气血挂钩——护体只能挡住相当于半数气血上限的伤害，再叠也无用；
+      // 且破甲/蓄力类攻击无视护体。决战仍靠充分准备的爆发，而非堆盾龟缩。
+      this.player._shieldCap = Math.round(this.player.hpMax * 0.5);
       this._rollEnemyIntents();
       this._log(`【第${this.round}回合】灵气：` + this._qiText()
         + (this._epiphany ? "（顿悟！灵气+2）" : "")
@@ -305,8 +309,13 @@
       } else if (sp.type === "def") {
         const boost = (caster.technique === "changchun" && sp.school === "mu") ? 1.4 : 1;
         const shield = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.shield * boost), sp.source, caster.grade, caster.realmTier) * auxMul));
-        caster.shield += shield;
-        this._log(`${caster.name} 施「${sp.name}」，护体 +${shield}（共${caster.shield}）`);
+        const cap = caster._shieldCap || 0;
+        if (cap > 0 && caster.shield >= cap) {
+          this._log(`${caster.name} 周身护体已至极限，再难叠加（护体${caster.shield}）。`);
+        } else {
+          caster.shield = cap > 0 ? Math.min(cap, caster.shield + shield) : caster.shield + shield;
+          this._log(`${caster.name} 施「${sp.name}」，护体 +${shield}（共${caster.shield}${cap ? `/${cap}` : ''}）`);
+        }
       } else if (sp.type === "buff") {
         if (sp.nextQiBonus) {
           // 蓄气有上限：只有高阶修士才蓄得住更多灵气，杜绝无限聚气

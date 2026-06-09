@@ -63,6 +63,33 @@ console.log("\n=== 1.5 灵气不可无限囤积（结转有上限，随境界放
   assert(p2.nextQiBonus <= cap0, `凝神蓄气受上限约束（蓄 ${p2.nextQiBonus} ≤ ${cap0}）`);
 }
 
+console.log("\n=== 1.6 护体不可逐回合无限囤积（杜绝龟缩无敌）===");
+{
+  // 玩家每回合只放护体(huti)+吐纳(tuna)龟缩，面对会破甲的强敌最终应被破防，而非永远无敌
+  const player = new Fighter({ name: "韩立", hp: 60, profile: "hanli_si", insight: 0, technique: "changchun", realmTier: 0, spells: ["huti", "tuna"] });
+  const enemy = new Fighter({ name: "凶修", hp: 9999, sense: 5, agility: 0, atkName: "破甲重击", atk: 16, pierce: true });
+  const c = new Combat({ player, enemies: [enemy], maxRounds: 60, rng: () => 0.99 });
+  // 自动"龟缩流"：每回合尽量先护体、血低则吐纳
+  let guard = 0;
+  while (c.status === "ongoing" && guard++ < 60) {
+    c.startRound();
+    let inner = 0;
+    while (c.affordableSpells().length && inner++ < 10) {
+      const aff = c.affordableSpells();
+      let pick = null;
+      if (player.hp < player.hpMax * 0.6 && aff.includes("tuna")) pick = "tuna";
+      else if (aff.includes("huti")) pick = "huti";
+      else if (aff.includes("tuna")) pick = "tuna";
+      if (!pick) break;
+      if (!c.cast(pick, 0).ok) break;
+    }
+    if (c.status === "ongoing") c.endRound();
+  }
+  assert(c.status === "lose", `纯龟缩(护体+吐纳)无法无限续命，终被破防（结果 ${c.status}，撑了 ${c.round} 回合）`);
+  // 护体确有缓冲价值：撑过若干回合而非秒倒
+  assert(c.round >= 3, `护体仍有价值，能撑数回合（${c.round} 回合）`);
+}
+
 console.log("\n=== 2. 连招：一回合内连续施法直到灵气耗尽 ===");
 {
   const player = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, spells: ["zhayan", "tuna", "ningshen"] });

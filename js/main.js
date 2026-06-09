@@ -21,8 +21,9 @@ const Main = {
     UI.el("btn-codex").addEventListener("click", () => UI.openCodex());
 
     // —— 行动按钮：由 UI.renderActions 动态生成并绑定 ——
-    // 云游按钮是静态的（在所在地面板）
-    document.querySelector('[data-action="travel"]').addEventListener("click", () => Engine.doAction("travel"));
+    // 大地图已内嵌在「所在」面板（renderLocMap），点图标即前往，无需独立云游按钮
+    const travelBtn = document.querySelector('[data-action="travel"]');
+    if (travelBtn) travelBtn.addEventListener("click", () => Engine.doAction("travel"));
 
     // 点击遮罩空白关闭弹窗（奇遇/剧情等必须选择的弹窗除外）
     UI.el("modal-overlay").addEventListener("click", (e) => {

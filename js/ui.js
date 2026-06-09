@@ -46,6 +46,46 @@ const UI = {
     this.el("loc-name").textContent = loc.name;
     this.el("loc-desc").textContent = loc.desc;
     this.renderLocals(loc);
+    this.renderLocMap(loc);
+  },
+
+  // 内嵌大地图：所在面板里直接展示可去之处，点击图标即前往（取代「云游他处」弹窗）
+  renderLocMap(loc) {
+    const box = this.el("loc-map");
+    if (!box) return;
+    const s = State.data;
+    // 过场地点 / 待决剧情 / 战斗中：不显示地图（不可乱走）
+    if (loc.scene || s.pendingEvent || s.combat) { box.innerHTML = ""; box.style.display = "none"; return; }
+    const arc = Chapters.active().id;
+    const cur = s.location;
+    const locs = WORLD.locations.filter(l =>
+      !l.scene && l.map && (!l.arc || l.arc === arc) && (!l.unlock || l.unlock(s)));
+    if (locs.length <= 1) { box.innerHTML = ""; box.style.display = "none"; return; }
+    box.style.display = "";
+
+    const curLoc = WORLD.locations.find(l => l.id === cur);
+    const lines = (curLoc && curLoc.map)
+      ? locs.filter(l => l.id !== cur).map(l =>
+          `<line x1="${curLoc.map.x}" y1="${curLoc.map.y}" x2="${l.map.x}" y2="${l.map.y}" class="map-line"/>`).join("")
+      : "";
+    const factor = Balance.travelTimeFactor(State.effectiveSpeed());
+    const pins = locs.map(l => {
+      const here = l.id === cur;
+      const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
+      const home = l.home ? " home" : "";
+      return `<div class="map-pin${here ? ' here' : ''}${home}" style="left:${l.map.x}%;top:${l.map.y}%"
+        ${here ? '' : `onclick="Engine.travelTo('${l.id}')"`} title="${l.desc}">
+        <span class="pin-dot"></span>
+        <span class="pin-label">${l.name}${here ? '' : `<span class="pin-cost">${cost}月</span>`}</span>
+      </div>`;
+    }).join("");
+    box.innerHTML = `
+      <div class="loc-map-head"><span class="map-tag">舆图</span>
+        <span class="map-speed">遁速 ${State.effectiveSpeed()}　行止由心，点图即往</span></div>
+      <div class="worldmap inline">
+        <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
+        ${pins}
+      </div>`;
   },
 
   // 据点在场人物（城内有人气，可交谈）
@@ -87,6 +127,11 @@ const UI = {
     const line = (n.lines && n.lines.length) ? n.lines[Math.floor(Math.random() * n.lines.length)] : "";
     const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
     const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : wasNew ? "萍水相逢" : "相识";
+    const topics = (typeof DIALOGUE !== "undefined") ? DIALOGUE.forNpc(npcId, s) : [];
+    const topicBtns = topics.map((t, i) =>
+      `<button class="btn btn-secondary" style="text-align:left" onclick="Engine.dialogueTopic('${npcId}', ${i})">
+        ${t.label}${t.hint ? `<span style="display:block;color:var(--ink-dim);font-size:12px">${t.hint}</span>` : ""}
+      </button>`).join("");
     this.openModal(`
       <div class="fortune-tag" style="border-color:var(--jade);color:var(--jade)">闲谈</div>
       <h2>${n.name}<span style="color:var(--gold);font-size:13px;margin-left:8px">${n.role}</span></h2>
@@ -94,6 +139,7 @@ const UI = {
       ${line ? `<div class="seg-dlg"><span class="dlg-name">${n.name}</span><span class="dlg-text">「${line}」</span></div>` : ""}
       <p style="color:var(--ink-dim);font-size:12px">关系：${relTxt}</p>
       <div class="modal-actions">
+        ${topicBtns}
         <button class="btn btn-secondary" onclick="UI.chatLocal('${npcId}')">攀谈叙旧（耗时）</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">告辞</button>
       </div>
@@ -133,10 +179,9 @@ const UI = {
       explore: "深入探索",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
+    // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {
-      if (!acts.includes("rest")) acts.push("rest");
-      if (!acts.includes("breakthrough")) acts.push("breakthrough");
       acts = acts.filter(a => a !== "bottle" || State.data.bottle.unlocked);
     }
 
