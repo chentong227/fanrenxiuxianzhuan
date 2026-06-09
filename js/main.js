@@ -37,22 +37,23 @@ const Main = {
       if (e.target.id === "modal-overlay" && !Engine._pendingFortune) UI.closeModal();
     });
 
-    // —— 一键开启活世界：用 #llmkey=... 打开页面即自动导入密钥并开启（仅本机存储，随后清掉URL）——
+    // —— 一键导入密钥（免输入）——
+    // 形如 #k=<活世界key>&i=<生图key>（也兼容旧的 llmkey=/imgkey=）。
+    // hash 只存在于浏览器地址，不会发往服务器、不入仓库，安全。导入后即写本机并清掉URL。
     try {
-      const h = location.hash || "";
-      const m = h.match(/llmkey=([^&]+)/);
-      if (m && typeof LLM !== "undefined") {
-        LLM.configure({ key: decodeURIComponent(m[1]), on: true });
-        history.replaceState(null, "", location.pathname + location.search);
-        setTimeout(() => UI.toast("已自动开启「活世界」叙述层"), 600);
-      }
-      // 生图密钥：#imgkey=... 一键导入并开启（独立计费的 key2）
-      const mi = h.match(/imgkey=([^&]+)/);
-      if (mi && typeof Art !== "undefined") {
-        Art.configure({ key: decodeURIComponent(mi[1]), on: true });
-        history.replaceState(null, "", location.pathname + location.search);
-        setTimeout(() => UI.toast("已开启「实时配图」"), 900);
-      }
+      const h = decodeURIComponent(location.hash || "");
+      const pick = (re) => { const m = h.match(re); return m ? m[1].trim() : null; };
+      const lk = pick(/[#&](?:k|llmkey)=([^&]+)/);
+      const ik = pick(/[#&](?:i|imgkey)=([^&]+)/);
+      const lm = pick(/[#&]m=([^&]+)/);
+      const im = pick(/[#&]im=([^&]+)/);
+      let imported = false;
+      if (lk && typeof LLM !== "undefined") { LLM.configure({ key: lk, model: lm || undefined, on: true }); imported = true; }
+      else if (lm && typeof LLM !== "undefined") { LLM.configure({ model: lm }); }
+      if (ik && typeof Art !== "undefined") { Art.configure({ key: ik, model: im || undefined, on: true }); imported = true; }
+      else if (im && typeof Art !== "undefined") { Art.configure({ model: im }); }
+      if (lk || ik || lm || im) history.replaceState(null, "", location.pathname + location.search);
+      if (imported) setTimeout(() => UI.toast("已导入密钥：活世界" + (ik ? " + 实时配图" : "") + " 已开启"), 600);
     } catch (e) {}
 
     // 生成的图回来后，刷新界面让立绘/场景即时显现

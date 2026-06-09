@@ -889,6 +889,13 @@ const UI = {
         <input id="art-model" type="text" value="${ac.model || "google/gemini-2.5-flash-image"}" style="width:100%;margin-top:6px" />
       </div>
       <p style="color:${aon ? 'var(--jade-bright)' : 'var(--ink-dim)'};font-size:12px">配图状态：${aon ? "已开启 ✦ 新人物新场景将自动配图" : "未开启（仅用内置图）"}</p>
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0" />
+      <h3 style="color:var(--gold);font-size:14px;margin:0 0 4px">免输入·跨设备</h3>
+      <p style="color:var(--ink-dim);font-size:12px">填好密钥并保存后，点下面生成一条「免输入链接」。在手机/电脑上各打开一次（或加到书签/桌面），以后开这条链接就自动导入并开启，<b style="color:var(--gold)">再也不用手填</b>。链接里的密钥只在你的浏览器地址里，不会上传、不入仓库。</p>
+      <div class="modal-row">
+        <button class="btn btn-secondary" onclick="UI._llmCopyLink()">生成并复制免输入链接</button>
+      </div>
+      <div id="llm-link-out" style="color:var(--ink-dim);font-size:11px;margin-top:6px;word-break:break-all"></div>
       <div class="modal-actions">
         <div class="modal-row">
           <button class="btn btn-primary" onclick="UI._llmSave(true)">保存并开启</button>
@@ -899,6 +906,28 @@ const UI = {
       </div>
       <div id="llm-test-out" style="color:var(--jade-bright);font-size:13px;margin-top:8px"></div>
     `);
+  },
+  // 生成"免输入链接"：把当前已保存的密钥拼进 URL hash（仅本机操作，不外发）
+  _llmCopyLink() {
+    const out = this.el("llm-link-out");
+    const lc = (typeof LLM !== "undefined") ? LLM.config() : { key: "", model: "" };
+    const ac = (typeof Art !== "undefined") ? Art.config() : { key: "", model: "" };
+    const lk = (this.el("llm-key") && this.el("llm-key").value) || lc.key || "";
+    const ik = (this.el("art-key") && this.el("art-key").value) || ac.key || "";
+    if (!lk && !ik) { out.textContent = "请先填入至少一个密钥再生成链接。"; return; }
+    const base = location.origin + location.pathname;
+    const parts = [];
+    if (lk) parts.push("k=" + encodeURIComponent(lk));
+    if (ik) parts.push("i=" + encodeURIComponent(ik));
+    const lm = (this.el("llm-model") && this.el("llm-model").value) || lc.model;
+    const im = (this.el("art-model") && this.el("art-model").value) || ac.model;
+    if (lm) parts.push("m=" + encodeURIComponent(lm));
+    if (im) parts.push("im=" + encodeURIComponent(im));
+    const link = base + "#" + parts.join("&");
+    const done = () => { out.innerHTML = `<span style="color:var(--jade-bright)">已复制！</span> 在另一台设备打开/收藏这条链接即可：<br>${link}`; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(done).catch(() => { out.textContent = link; });
+    } else { out.textContent = link; }
   },
   _llmSave(on) {
     LLM.configure({ key: this.el("llm-key").value, model: this.el("llm-model").value, on });
