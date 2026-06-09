@@ -1006,8 +1006,8 @@ html, body {
   animation: sceneFade .5s ease;
 }
 .loc-scene img {
-  width: 100%; max-height: 200px; object-fit: cover; display: block;
-  filter: saturate(.95);
+  width: 100%; max-height: 170px; height: auto; object-fit: contain; display: block;
+  background: #0c0a08; filter: saturate(.95);
 }
 .loc-scene::after {
   content: ""; position: absolute; inset: 0;
@@ -1113,5 +1113,4 @@ html, body {
   .story-dialog { padding: 16px 18px 28px; }
 }
 
-/* 场景配图改为完整显示（不裁剪），高度自适应 */
-.loc-scene img { max-height: none; height: auto; }
+/* 场景配图：完整显示（不裁剪），尺寸克制，详见上方 .loc-scene img */
