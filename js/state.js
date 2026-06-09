@@ -41,6 +41,9 @@ const State = {
       inventory: {},          // { itemId: count }
       spells: ["tuna", "huti", "ningshen", "zhayan", "weidu"], // 长春功一系 + 眨眼剑法 + 喂毒（七玄门篇真实手段）
       technique: DATA.startingTechnique, // 主修功法（本篇恒为长春功）
+      auxTechniques: [],      // 辅修功法
+      learnedTechniques: [DATA.startingTechnique], // 已习得功法
+      knownSkills: ["tuna", "huti", "ningshen", "zhayan", "weidu"], // 已掌握技能池
       activeChapter: "qixuan",   // 当前篇章
       unlockedChapters: ["qixuan"], // 已解锁篇章
       flags: {},              // 剧情标志位
@@ -99,6 +102,7 @@ const State = {
     if (!d.metNpcs) d.metNpcs = [];
     if (!d.npcFates || !d.npcFates.length) { if (typeof NPCSIM !== "undefined") NPCSIM.init(d); }
     if (d.explore === undefined) d.explore = null;
+    if (typeof Loadout !== "undefined") Loadout.migrate(d);
   },
   hasSave() { return !!localStorage.getItem(SAVE_KEY); },
 

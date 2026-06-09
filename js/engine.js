@@ -425,6 +425,32 @@ const Engine = {
     }
   },
 
+  // 闭关研习功法：习得一卷已持有的功法典籍（耗时）
+  studyTechnique(techId) {
+    const s = State.data;
+    if (typeof Loadout === "undefined") return;
+    const def = DATA.techniques[techId];
+    const r = Loadout.learnTechnique(s, techId);
+    if (!r.ok) { this.toast(r.reason, true); return; }
+    this.passTime(3);
+    this.log(`你闭关静心研习《${def.name}》，初窥门径，自此习得此功法。可在「功法」中设为主修或辅修。`, "good");
+    this.toast(`习得功法：${def.name}`);
+    this.checkLifespan();
+    State.save();
+    UI.renderAll();
+  },
+
+  // 当前可研习的功法（持有典籍、未习得、未锁）
+  studyableTechniques() {
+    const s = State.data;
+    if (typeof Loadout === "undefined") return [];
+    return Object.keys(DATA.techniques).filter(id => {
+      const def = DATA.techniques[id];
+      const bookId = def.book;
+      return bookId && State.count(bookId) > 0 && !def.locked && !Loadout.isLearned(s, id);
+    });
+  },
+
   // 由闭关时长选择器调用：执行闭关并做后续结算
   doCultivate(months) {
     const s = State.data;
@@ -762,6 +788,7 @@ const Engine = {
       agility: Math.round(s.speed * 0.6),   // 遁速提供基础闪避
       profile: "hanli_si",       // 四灵根·缺土
       spells: s.spells.slice(),
+      auxSkills: (typeof Loadout !== "undefined") ? Loadout.auxSkillSet(s) : [],
       technique: s.technique,     // 主修功法（影响同系招式）
       grade: (DATA.techniques[s.technique] || {}).grade || 1,  // 主修功法品阶
       realmTier: Chapters.realmTier(),   // 本章大境界序（影响法术成长）

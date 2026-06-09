@@ -88,6 +88,7 @@
       this.momentum = 0;                 // 剑势（眨眼剑法积累，眨眼连击消耗）
       this.technique = cfg.technique || null;  // 主修功法 id（影响同系招式）
       this.grade = cfg.grade || 1;       // 主修功法品阶（1黄~4天）
+      this.auxSkills = cfg.auxSkills || [];   // 来自辅修功法的技能 id（伤害/效果打折）
       this.realmTier = cfg.realmTier || 0;     // 大境界序（0练气...）影响法术成长
       // 敌人意图：本回合预定的攻击（供神识看穿）
       this.intent = null;
@@ -235,7 +236,7 @@
       if (sp.oncePerRound) { (this._usedOnce || (this._usedOnce = {}))[spellId] = true; }
 
       const target = this.enemies[targetIndex];
-      this._applySpell(this.player, sp, target);
+      this._applySpell(this.player, sp, target, spellId);
       this._checkEnd();
       return { ok: true };
     }
@@ -245,10 +246,12 @@
       (this._fx || (this._fx = [])).push({ ref: targetRef, kind, text });
     }
 
-    _applySpell(caster, sp, target) {
+    _applySpell(caster, sp, target, spellId) {
       // 神识优势 → 命中/暴击加成
       const adv = (caster === this.player) ? this.senseVs(target) : { hitBonus: 0, critBonus: 0 };
       const tref = (caster === this.player) ? `enemy:${this.enemies.indexOf(target)}` : "player";
+      // 辅修功法所授技能：效果打折（主修全效）
+      const auxMul = (spellId && caster.auxSkills && caster.auxSkills.includes(spellId)) ? Balance.auxiliaryMul() : 1;
 
       if (sp.type === "atk" && target) {
         let dodge = (target.dodgeBuff || 0) + (target.agility || 0) / 100;
@@ -259,6 +262,7 @@
         if (sp.spendMomentum) { baseDmg += (caster.momentum || 0) * (sp.momentumDmg || 0); }
         // 来源(武学/法术) × 功法品阶 × 境界 的强度换算
         baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier);
+        baseDmg = Math.max(1, Math.round(baseDmg * auxMul));
         if (this.rng() < dodge) {
           this._log(`${caster.name} 施「${sp.name}」，被 ${target.name} 闪避！`);
           this._emitFx(tref, "miss", "闪避");
@@ -295,12 +299,12 @@
       } else if (sp.type === "heal") {
         // 主修长春功者，木系吐纳回元更多；并随功法品阶/境界成长
         const boost = (caster.technique === "changchun" && sp.school === "mu") ? 1.4 : 1;
-        const heal = Balance.spellPower(Math.round(sp.heal * boost), sp.source, caster.grade, caster.realmTier);
+        const heal = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.heal * boost), sp.source, caster.grade, caster.realmTier) * auxMul));
         caster.hp = clampNum(caster.hp + heal, 0, caster.hpMax);
         this._log(`${caster.name} 施「${sp.name}」，回气血 ${heal}（${Math.round(caster.hp)}/${caster.hpMax}）`);
       } else if (sp.type === "def") {
         const boost = (caster.technique === "changchun" && sp.school === "mu") ? 1.4 : 1;
-        const shield = Balance.spellPower(Math.round(sp.shield * boost), sp.source, caster.grade, caster.realmTier);
+        const shield = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.shield * boost), sp.source, caster.grade, caster.realmTier) * auxMul));
         caster.shield += shield;
         this._log(`${caster.name} 施「${sp.name}」，护体 +${shield}（共${caster.shield}）`);
       } else if (sp.type === "buff") {

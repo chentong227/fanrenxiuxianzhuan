@@ -202,28 +202,79 @@ const UI = {
   },
   clearStory() { this.el("choices").innerHTML = ""; },
 
-  /* -------- 功法阁 -------- */
+  /* -------- 功法阁（配装：主修/辅修 + 技能槽）-------- */
   openTechniques() {
     const s = State.data;
-    const cur = DATA.techniques[s.technique];
-    const others = Object.entries(DATA.techniques).filter(([k]) => k !== s.technique);
-    const lockedHtml = others.map(([k, t]) => `
-      <div class="tech-item ${t.locked ? 'locked' : ''}">
-        <div class="tech-head"><b>${t.name}</b>${t.locked ? `<span class="tech-lock">未得 · ${t.acquireArc || '后续篇章'}</span>` : ''}</div>
+    const L = (typeof Loadout !== "undefined") ? Loadout : null;
+    if (!L) return;
+    const SP = CombatAPI.SPELLS;
+
+    // 功法分区：主修 / 辅修 / 已习未用 / 未习（传说）
+    const learned = (s.learnedTechniques || []);
+    const auxCap = L.auxCap(s), auxNow = (s.auxTechniques || []).length;
+    const techRow = (id) => {
+      const t = DATA.techniques[id];
+      if (!t) return "";
+      const isMain = s.technique === id;
+      const isAux = (s.auxTechniques || []).includes(id);
+      const tag = isMain ? `<span class="tech-cur">主修</span>` : isAux ? `<span class="tech-aux">辅修</span>` : "";
+      let btns = "";
+      if (!isMain) btns += `<button class="btn btn-mini" onclick="UI._loadoutMain('${id}')">设为主修</button>`;
+      if (!isMain && !isAux) btns += `<button class="btn btn-mini" onclick="UI._loadoutAddAux('${id}')">设为辅修</button>`;
+      if (isAux) btns += `<button class="btn btn-mini ghost" onclick="UI._loadoutRemoveAux('${id}')">取消辅修</button>`;
+      return `<div class="tech-item ${isMain ? 'current' : ''}">
+        <div class="tech-head"><b>${t.name}</b>${tag}<span class="tech-grade">${gradeLabel(t.grade)}</span></div>
+        <div class="tech-desc">${t.desc}</div>
+        <div class="tech-skills">授技：${(t.grantSpells || []).map(sk => SP[sk] ? SP[sk].name : sk).join("、") || "—"}</div>
+        <div class="tech-btns">${btns}</div>
+      </div>`;
+    };
+    const lockedRows = Object.entries(DATA.techniques)
+      .filter(([k, t]) => t.locked && !learned.includes(k))
+      .map(([k, t]) => `<div class="tech-item locked">
+        <div class="tech-head"><b>${t.name}</b><span class="tech-lock">未得 · ${t.acquireArc || '后续篇章'}</span></div>
         <div class="tech-desc">${t.desc}</div>
         <div class="tech-origin">来历：${t.origin}</div>
       </div>`).join("");
+
+    // 技能槽
+    const cap = L.skillCap(s), now = (s.spells || []).length;
+    const pool = L.knownPool(s);
+    const skillChip = (sk) => {
+      const sp = SP[sk]; if (!sp) return "";
+      const equipped = L.isEquipped(s, sk);
+      const aux = L.isAuxSkill(s, sk);
+      const cost = Object.entries(sp.cost).map(([e, n]) => `${CombatAPI.ELEM_NAME[e]}${n}`).join(" ") || "无耗";
+      return `<div class="skill-chip ${equipped ? 'on' : ''}" onclick="UI._loadoutToggleSkill('${sk}')">
+        <div class="sk-top"><b>${sp.name}</b>${aux ? '<span class="sk-aux">辅</span>' : ''}${equipped ? '<span class="sk-on">✓出战</span>' : ''}</div>
+        <div class="sk-meta"><span class="qcost">${cost}</span> ${spellEffectText(sp)}</div>
+      </div>`;
+    };
+
     this.openModal(`
-      <h2>功法阁</h2>
-      <div class="tech-item current">
-        <div class="tech-head"><b>${cur.name}</b><span class="tech-cur">主修</span></div>
-        <div class="tech-desc">${cur.desc}</div>
-        <div class="tech-origin">来历：${cur.origin}</div>
+      <h2>功法 · 配装</h2>
+      <p style="color:var(--ink-dim);font-size:12px">功法是背包里的典籍，须在闭关时研习方能习得。主修全效，辅修打折（×${Math.round(Balance.auxiliaryMul()*100)}%）。技能槽随境界增多，自由组合。</p>
+
+      <h3 class="panel-title">功法（主修 ×1，辅修 ${auxNow}/${auxCap}）</h3>
+      <div class="tech-list">
+        ${learned.map(techRow).join("")}
+        ${lockedRows ? `<p style="color:var(--ink-dim);font-size:12px;margin:8px 0 4px">— 道听途说的传说功法（尚不可得）—</p>${lockedRows}` : ""}
       </div>
-      <p style="color:var(--ink-dim);font-size:12px;margin:10px 0 6px">— 道听途说的传说功法（尚不可得）—</p>
-      ${lockedHtml}
+
+      <h3 class="panel-title">出战技能（${now}/${cap}）</h3>
+      <div class="skill-grid">${pool.map(skillChip).join("")}</div>
+
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">收起</button></div>
     `);
+  },
+  _loadoutMain(id) { const r = Loadout.setMain(State.data, id); if (!r.ok) return this.toast(r.reason, true); this.toast("已设为主修"); State.save(); this.openTechniques(); this.renderAll(); },
+  _loadoutAddAux(id) { const r = Loadout.addAux(State.data, id); if (!r.ok) return this.toast(r.reason, true); this.toast("已设为辅修"); State.save(); this.openTechniques(); this.renderAll(); },
+  _loadoutRemoveAux(id) { Loadout.removeAux(State.data, id); this.toast("已取消辅修"); State.save(); this.openTechniques(); this.renderAll(); },
+  _loadoutToggleSkill(sk) {
+    const s = State.data;
+    if (Loadout.isEquipped(s, sk)) { Loadout.unequipSkill(s, sk); this.toast("已卸下"); }
+    else { const r = Loadout.equipSkill(s, sk); if (!r.ok) return this.toast(r.reason, true); this.toast("已装备出战"); }
+    State.save(); this.openTechniques(); this.renderAll();
   },
 
   /* -------- 闭关时长选择（真实修仙：时间是资源也是代价）-------- */
@@ -254,6 +305,21 @@ const UI = {
       ? `<button class="btn btn-primary" onclick="UI.closeModal(); Engine.doCultivate(${need});">闭关至本层圆满　<span style="font-size:12px;opacity:.85">约 ${need} 月</span></button>`
       : "";
 
+    // 闭关研习功法（持有未习的典籍时）
+    const studyable = Engine.studyableTechniques ? Engine.studyableTechniques() : [];
+    const studyHtml = studyable.length ? `
+      <h3 class="panel-title" style="margin-top:10px">闭关研习功法</h3>
+      <div class="study-list">
+        ${studyable.map(id => {
+          const t = DATA.techniques[id];
+          return `<div class="study-item">
+            <div><div class="si-name">${t.name} <span style="color:var(--gold);font-size:11px">${gradeLabel(t.grade)}</span></div>
+            <div class="si-meta">${t.desc}</div></div>
+            <button class="btn btn-mini" onclick="UI.closeModal(); Engine.studyTechnique('${id}');">研习（3月）</button>
+          </div>`;
+        }).join("")}
+      </div>` : "";
+
     this.openModal(`
       <h2>闭关修炼</h2>
       <p style="color:var(--ink-dim)">于修仙者而言，光阴最是宝贵，也最不值钱。闭得越久，修为越深，可寿元、心境亦在流逝。
@@ -263,6 +329,7 @@ const UI = {
         ${optHtml}
         <button class="btn btn-ghost" onclick="UI.closeModal()">再想想</button>
       </div>
+      ${studyHtml}
     `);
   },
 
@@ -851,6 +918,7 @@ const UI = {
 };
 
 function rarityLabel(r) { return { common: "凡品", rare: "灵品", epic: "宝品" }[r] || "凡品"; }
+function gradeLabel(g) { return { 1: "黄阶", 2: "玄阶", 3: "地阶", 4: "天阶" }[g] || "黄阶"; }
 function typeLabel(t) { return { pill: "丹药", material: "材料", currency: "通货", skill: "功法" }[t] || "杂物"; }
 function spellEffectText(sp) {
   if (sp.type === "atk") return "伤" + sp.dmg + (sp.pierce ? "·破甲" : "") + (sp.dodgeSelf ? " 闪避↑" : "");

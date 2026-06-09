@@ -697,3 +697,32 @@ html, body {
   min-height: 40px; padding: 8px 10px; background: rgba(0,0,0,0.2); border-radius: 8px;
 }
 .map-detail b { color: var(--ink); }
+
+/* ============================================================
+ * 功法配装界面
+ * ============================================================ */
+.tech-aux { font-size: 11px; color: var(--blue); border: 1px solid var(--blue); border-radius: 8px; padding: 0 6px; margin-left: 6px; }
+.tech-grade { font-size: 11px; color: var(--gold); margin-left: auto; }
+.tech-skills { font-size: 12px; color: var(--ink-dim); margin-top: 4px; }
+.tech-btns { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.btn-mini.ghost { background: transparent; border: 1px solid var(--border); }
+
+.skill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin: 8px 0; }
+.skill-chip {
+  background: rgba(0,0,0,0.22); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px; cursor: pointer; transition: transform .08s, border-color .12s, background .12s;
+}
+.skill-chip:hover { border-color: var(--jade); }
+.skill-chip:active { transform: scale(0.96); }
+.skill-chip.on { border-color: var(--gold); background: rgba(212,170,90,0.12); }
+.sk-top { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+.sk-aux { font-size: 10px; color: var(--blue); border: 1px solid var(--blue); border-radius: 6px; padding: 0 3px; }
+.sk-on { font-size: 10px; color: var(--gold); margin-left: auto; }
+.sk-meta { font-size: 11px; color: var(--ink-dim); margin-top: 4px; }
+
+/* 研习功法（闭关）按钮组 */
+.study-list { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.study-item { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.study-item .si-name { font-weight: 600; }
+.study-item .si-meta { font-size: 12px; color: var(--ink-dim); }
