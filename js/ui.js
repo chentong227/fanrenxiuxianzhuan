@@ -317,9 +317,22 @@ const UI = {
     box.scrollTop = box.scrollHeight;
 
     const choicesBox = this.el("choices");
-    choicesBox.innerHTML = (stage.choices || []).map((c, i) => {
+    // 战斗类抉择（resolve 进战斗）：在选项前显示「临战准备」一览，避免"没头没尾"
+    const isFight = (stage.choices || []).some(c => c.resolve);
+    let prepHtml = "";
+    if (isFight) {
+      const du = State.count("duyao_cao"), an = State.count("anqi");
+      const ready = (du >= 3 && an >= 3);
+      const warn = (du === 0 && an === 0);
+      prepHtml = `<div class="fight-prep ${ready ? 'ok' : warn ? 'bad' : 'mid'}">
+        <span class="fp-tag">临战准备</span>
+        <span class="fp-item">毒草 ×${du}</span><span class="fp-item">暗器 ×${an}</span>
+        <span class="fp-note">${ready ? '准备充分，可放手一搏' : warn ? '毫无底牌！硬拼九死一生，建议先去后山备足毒草暗器' : '底牌偏少，胜算有限，宜再备一些'}</span>
+      </div>`;
+    }
+    choicesBox.innerHTML = prepHtml + (stage.choices || []).map((c, i) => {
       const lack = c.requireItem && !State.count(c.requireItem);
-      return `<button class="choice" onclick="Engine.chooseStory(STORY[${State.data.storyStage}], ${i})">
+      return `<button class="choice${c.resolve ? ' choice-fight' : ''}" onclick="Engine.chooseStory(STORY[${State.data.storyStage}], ${i})">
         ${c.text}
         ${c.hint ? `<span class="c-hint">${c.hint}${lack ? '（尚缺）' : ''}</span>` : ""}
       </button>`;
