@@ -1055,10 +1055,15 @@ html, body {
   opacity: 0; transition: opacity .45s ease, filter .45s ease, transform .45s ease;
 }
 .story-portrait img { height: 100%; width: auto; object-fit: contain; display: block;
-  filter: drop-shadow(0 6px 24px rgba(0,0,0,.6)); }
+  filter: drop-shadow(0 6px 24px rgba(0,0,0,.6));
+  /* 羽化边缘：把方图边界溶进暗场景，营造抠图/景深的前景人物感 */
+  -webkit-mask-image: radial-gradient(120% 90% at 50% 42%, #000 58%, rgba(0,0,0,.55) 76%, transparent 92%);
+          mask-image: radial-gradient(120% 90% at 50% 42%, #000 58%, rgba(0,0,0,.55) 76%, transparent 92%);
+}
 .story-portrait.on { opacity: 1; }
-/* 暗淡：未说话的一方压暗、去饱和、轻微缩小后移 */
-.story-portrait.dim { opacity: .82; filter: brightness(.4) saturate(.6); }
+/* 暗淡：未说话的一方→退到背景层（景深虚化、压暗、去饱和、轻微后移）*/
+.story-portrait.dim { opacity: .9; }
+.story-portrait.dim img { filter: brightness(.42) saturate(.55) blur(2.5px) drop-shadow(0 4px 16px rgba(0,0,0,.5)); }
 .story-portrait.left  { left: 1%;  transform: scaleX(-1); }   /* 左侧人物镜像，面朝右（朝向主角）*/
 .story-portrait.right { right: 1%; }
 .story-portrait.left.dim  { transform: scaleX(-1) scale(.96); }
@@ -1205,4 +1210,46 @@ html, body {
 
 @media (max-width: 760px) {
   .scene-stage { height: 220px; }
+}
+
+/* ============================================================
+ * NPC 交互轮盘（立绘居中，左绿善意 / 右红敌对）
+ * ============================================================ */
+.modal.modal-wheel { width: 560px; max-width: 94vw; }
+.npc-wheel {
+  display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; align-items: center;
+  min-height: 300px;
+}
+.nw-side { display: flex; flex-direction: column; gap: 10px; }
+.nw-act {
+  display: flex; align-items: center; gap: 8px; cursor: pointer; font-family: inherit;
+  padding: 10px 12px; border-radius: 10px; font-size: 15px; letter-spacing: 1px;
+  border: 1px solid var(--border); background: var(--bg-panel-2); color: var(--ink);
+  transition: all .15s; animation: choiceIn .3s ease backwards;
+}
+.nw-act .nw-ic { font-size: 18px; }
+.nw-act.good { border-left: 3px solid var(--jade); }
+.nw-act.good:hover { background: rgba(95,184,154,.14); border-color: var(--jade); color: var(--jade-bright); }
+.nw-act.bad { border-left: 3px solid var(--red); flex-direction: row-reverse; text-align: right; }
+.nw-act.bad:hover { background: rgba(201,95,95,.14); border-color: var(--red); color: #f0a0a0; }
+.nw-center { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.nw-portrait {
+  width: 130px; height: 130px; border-radius: 50%; overflow: hidden;
+  border: 2px solid var(--gold); box-shadow: 0 0 22px rgba(212,176,106,.35);
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 35%, rgba(127,227,192,.15), #11171d 72%);
+}
+.nw-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
+.nw-portrait .nw-emoji { font-size: 56px; }
+.nw-name { font-size: 19px; color: var(--jade-bright); letter-spacing: 2px; margin-top: 4px; }
+.nw-role { font-size: 12px; color: var(--gold); }
+.nw-rel { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+.nw-rel.good { color: var(--jade-bright); }
+.nw-rel.bad { color: var(--red); }
+
+@media (max-width: 760px) {
+  .npc-wheel { grid-template-columns: 1fr 1fr; grid-auto-flow: row; min-height: 0; }
+  .nw-center { grid-column: 1 / -1; order: -1; margin-bottom: 6px; }
+  .nw-portrait { width: 96px; height: 96px; }
+  .nw-act.bad { flex-direction: row; text-align: left; }
 }

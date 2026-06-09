@@ -182,15 +182,129 @@ const UI = {
     }).join("");
   },
 
-  // 与在场人物交谈：活世界开启→实时对话；否则→静态主题
+  // 点在场人物：打开「交互轮盘」（立绘居中，左绿善意/右红敌对）
   talkLocal(npcId) {
     const s = State.data;
     const n = WORLD.npcById(npcId);
     if (!n) return;
     Engine.meetNpc(npcId);
     State.save();
-    if (typeof LLM !== "undefined" && LLM.enabled()) { this.openLiveTalk(npcId); return; }
-    // —— 降级：静态主题 ——
+    this.openNpcWheel(npcId);
+  },
+
+  // 交互轮盘
+  openNpcWheel(npcId) {
+    const s = State.data;
+    const n = WORLD.npcById(npcId);
+    if (!n) return;
+    const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
+    const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : "相识";
+    const heart = rel >= 8 ? "♥" : rel <= -8 ? "✖" : "·";
+    const url = (typeof Art !== "undefined") ? Art.url(npcId) : null;
+    const portrait = url ? `<img src="${url}" alt="${n.name}" />` : `<span class="nw-emoji">${(s.metNpcs||[]).includes(npcId) ? "🧑" : "❓"}</span>`;
+
+    // 善意侧（左，绿）
+    const good = [
+      { k: "talk",  label: "交谈", icon: "💬", on: true },
+      { k: "ask",   label: "请教", icon: "📖", on: true },
+      { k: "spar",  label: "切磋", icon: "⚔", on: true },
+      { k: "gift",  label: "赠礼", icon: "🎁", on: true },
+    ];
+    // 敌对侧（右，红）
+    const bad = [
+      { k: "probe",  label: "探查", icon: "🔍", on: true },
+      { k: "threat", label: "威胁", icon: "💢", on: true },
+    ];
+    const btn = (a, side) =>
+      `<button class="nw-act ${side}" onclick="UI.npcWheelAct('${npcId}','${a.k}')">
+        <span class="nw-ic">${a.icon}</span><span class="nw-lb">${a.label}</span>
+      </button>`;
+    this.openModal(`
+      <div class="npc-wheel">
+        <div class="nw-side left">${good.map(a=>btn(a,"good")).join("")}</div>
+        <div class="nw-center">
+          <div class="nw-portrait">${portrait}</div>
+          <div class="nw-name">${n.name}</div>
+          <div class="nw-role">${n.role}</div>
+          <div class="nw-rel ${rel>=8?'good':rel<=-8?'bad':''}">${heart} ${relTxt}</div>
+        </div>
+        <div class="nw-side right">${bad.map(a=>btn(a,"bad")).join("")}</div>
+      </div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
+    `, "wheel");
+  },
+
+  // 轮盘动作分发
+  npcWheelAct(npcId, kind) {
+    const s = State.data;
+    if (kind === "talk") {
+      if (typeof LLM !== "undefined" && LLM.enabled()) { this.openLiveTalk(npcId); return; }
+      this._openTopics(npcId); return;
+    }
+    if (kind === "ask") { this._openTopics(npcId); return; }
+    if (kind === "gift") { this._npcGift(npcId); return; }
+    if (kind === "spar") {
+      if (s.pendingEvent || s.combat) { this.toast("先处理眼前之事"); return; }
+      Engine.passTime(1);
+      if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, 4);
+      s.body += 1; s.mood = clamp(s.mood + 3, 0, s.moodMax);
+      const n = WORLD.npcById(npcId);
+      Engine.log(`你与「${n?n.name:''}」切磋了一场，点到即止，体魄+1，交情见长。`, "good");
+      this.closeModal(); Engine.checkLifespan(); State.save(); this.renderAll();
+      return;
+    }
+    if (kind === "probe") {
+      if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, -1);
+      const n = WORLD.npcById(npcId);
+      Engine.log(`你暗中打量「${n?n.name:''}」，揣摩其底细。${n?n.bio:''}`, "sys");
+      this.closeModal(); State.save(); this.renderAll();
+      return;
+    }
+    if (kind === "threat") {
+      if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, -8);
+      s.demon = clamp(s.demon + 3, 0, 100);
+      const n = WORLD.npcById(npcId);
+      Engine.log(`你出言恐吓「${n?n.name:''}」，对方面色一变，记恨在心。修仙人的恶名，就是这么攒下的。`, "bad");
+      this.closeModal(); State.save(); this.renderAll();
+      return;
+    }
+  },
+
+  // 赠礼：从背包挑一件相赠，换交情
+  _npcGift(npcId) {
+    const s = State.data;
+    const inv = Object.keys(s.inventory).filter(k => s.inventory[k] > 0);
+    if (!inv.length) { this.toast("储物袋空空，无礼可赠", true); return; }
+    const n = WORLD.npcById(npcId);
+    const rows = inv.map(k => {
+      const it = DATA.items[k];
+      return `<button class="choice" onclick="UI._giveGift('${npcId}','${k}')">${it?it.name:k} ×${s.inventory[k]}</button>`;
+    }).join("");
+    this.openModal(`
+      <h2>赠礼予${n?n.name:''}</h2>
+      <p style="color:var(--ink-dim);font-size:13px">投其所好，礼下于人——交情自然渐厚。</p>
+      <div class="choices" style="margin-top:12px">${rows}</div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.openNpcWheel('${npcId}')">返回</button></div>
+    `);
+  },
+  _giveGift(npcId, itemId) {
+    const s = State.data;
+    if (State.count(itemId) < 1) { this.toast("没有此物", true); return; }
+    State.take(itemId, 1);
+    const it = DATA.items[itemId];
+    // 稀有度越高交情越多
+    const gain = it && it.rarity === "epic" ? 14 : it && it.rarity === "rare" ? 9 : 5;
+    if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, gain);
+    const n = WORLD.npcById(npcId);
+    Engine.log(`你将「${it?it.name:itemId}」赠予${n?n.name:''}，对方欣然收下，交情+${gain}。`, "good");
+    this.closeModal(); State.save(); this.renderAll();
+  },
+
+  // 与在场人物交谈：静态对话主题（降级/请教路径）
+  _openTopics(npcId) {
+    const s = State.data;
+    const n = WORLD.npcById(npcId);
+    if (!n) return;
     const line = (n.lines && n.lines.length) ? n.lines[Math.floor(Math.random() * n.lines.length)] : "";
     const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
     const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : "相识";
@@ -208,7 +322,7 @@ const UI = {
       <div class="modal-actions">
         ${topicBtns}
         <button class="btn btn-secondary" onclick="UI.chatLocal('${npcId}')">攀谈叙旧（耗时）</button>
-        <button class="btn btn-ghost" onclick="UI.closeModal()">告辞</button>
+        <button class="btn btn-ghost" onclick="UI.openNpcWheel('${npcId}')">返回</button>
       </div>
     `);
     this.renderAll();
@@ -1530,8 +1644,10 @@ const UI = {
   },
 
   /* -------- 通用弹窗 / Toast -------- */
-  openModal(html) {
-    this.el("modal").innerHTML = html;
+  openModal(html, variant) {
+    const m = this.el("modal");
+    m.innerHTML = html;
+    m.className = "modal" + (variant ? " modal-" + variant : "");
     this.el("modal-overlay").hidden = false;
   },
   closeModal() { this.el("modal-overlay").hidden = true; },
