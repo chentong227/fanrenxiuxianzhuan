@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=10" />
+  <link rel="stylesheet" href="css/style.css?v=11" />
 </head>
 <body>
   <div id="app">
@@ -56,7 +56,7 @@
         <!-- 左栏：韩立角色卡 + 状态 + 储物袋 -->
         <aside class="panel side-rail">
           <div class="hero-card">
-            <div class="hero-portrait">🧙</div>
+            <div class="hero-portrait" id="hero-portrait">🧙</div>
             <div class="hero-meta">
               <div class="hero-name" id="hero-name">韩立</div>
               <div class="hero-realm"><span id="st-realm">练气一层</span> · <span id="st-root">四灵根</span></div>
@@ -110,6 +110,7 @@
         <!-- 右栏：所在 + 地图 + 剧情文字 -->
         <section class="panel stage-col">
           <div class="stage-place">
+            <div id="loc-scene" class="loc-scene"></div>
             <div class="place-head">
               <span class="loc-tag">所在</span>
               <span id="loc-name" class="loc-name">青牛镇</span>
@@ -202,6 +203,7 @@
   <script src="js/loadout.js"></script>
   <script src="js/dialogue.js"></script>
   <script src="js/llm.js"></script>
+  <script src="js/art.js"></script>
   <script src="js/fortunes.js"></script>  <script src="js/quests.js"></script>
   <script src="js/story.js"></script>
   <script src="js/engine.js"></script>

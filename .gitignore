@@ -2,3 +2,7 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# 生图/测试临时文件
+test/_*.json
+test/_*.tmp.js

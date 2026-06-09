@@ -79,8 +79,25 @@ const UI = {
     if (!loc) return;
     this.el("loc-name").textContent = loc.name;
     this.el("loc-desc").textContent = loc.desc;
+    this.renderLocScene(loc);
     this.renderLocals(loc);
     this.renderLocMap(loc);
+  },
+
+  // 场景配图：固定图直出；新场景若开生图则异步生成并缓存
+  renderLocScene(loc) {
+    const box = this.el("loc-scene");
+    if (!box) return;
+    if (loc.scene) { box.style.display = "none"; box.innerHTML = ""; return; }
+    const url = (typeof Art !== "undefined") ? Art.locUrl(loc) : null;
+    if (url) {
+      box.style.display = "";
+      box.innerHTML = `<img src="${url}" alt="${loc.name}" loading="lazy" />`;
+    } else {
+      box.style.display = "none";
+      box.innerHTML = "";
+      if (typeof Art !== "undefined" && Art.genEnabled()) Art.ensureLocation(loc);
+    }
   },
 
   // 内嵌大地图：所在面板里直接展示可去之处，点击图标即前往（取代「云游他处」弹窗）
@@ -177,8 +194,11 @@ const UI = {
     box.innerHTML = `<div class="locals-title">在场人物</div>` + locals.map(n => {
       const met = (s.metNpcs || []).includes(n.id);
       const line = (n.lines && n.lines.length) ? n.lines[0] : "";
+      const url = (typeof Art !== "undefined") ? Art.url(n.id) : null;
+      const av = url ? `<img src="${url}" alt="${n.name}" loading="lazy" />` : (met ? "🧑" : "❓");
+      if (!url && met && typeof Art !== "undefined" && Art.genEnabled()) Art.ensureNpc(n);
       return `<div class="local-npc" onclick="UI.talkLocal('${n.id}')">
-        <div class="local-avatar">${met ? "🧑" : "❓"}</div>
+        <div class="local-avatar">${av}</div>
         <div class="local-info">
           <div class="local-name">${n.name}<span class="lr">${n.role}</span></div>
           <div class="local-line">${line}</div>
@@ -300,7 +320,7 @@ const UI = {
       const self = h.who === "player";
       const a = self ? this._speakerAvatar(State.data.name) : av;
       return `<div class="dlg-row ${self ? "right" : "left"}">
-        <div class="dlg-portrait" style="--pc:${a.color}">${a.icon}</div>
+        <div class="dlg-portrait${a.img ? ' has-img' : ''}" style="--pc:${a.color}">${this._avatarInner(a)}</div>
         <div class="dlg-bubble"><div class="dlg-who"><span class="dlg-name" style="color:${a.color}">${self ? State.data.name : n.name}</span></div>
         <div class="dlg-text">${h.text}</div></div></div>`;
     }).join("");
@@ -379,6 +399,12 @@ const UI = {
     const hn = this.el("hero-name"); if (hn) hn.textContent = s.name;
     const ha = this.el("hero-age"); if (ha) ha.textContent = `${s.age} 岁`;
     const hl = this.el("hero-lifespan"); if (hl) hl.textContent = s.lifespan;
+    // 韩立立绘（仓库固定图）
+    const hp = this.el("hero-portrait");
+    if (hp && typeof Art !== "undefined") {
+      const url = Art.url("hanli");
+      if (url && !hp.dataset.img) { hp.innerHTML = `<img src="${url}" alt="${s.name}" />`; hp.dataset.img = "1"; }
+    }
   },
 
   renderStats() {
@@ -508,7 +534,7 @@ const UI = {
       const tone = seg.tone ? `<span class="dlg-tone">${seg.tone}</span>` : "";
       const hl = seg.hl ? " hl" : "";
       return `<div class="dlg-row ${side}${hl}">
-        <div class="dlg-portrait" style="--pc:${av.color}">${av.icon}</div>
+        <div class="dlg-portrait${av.img ? ' has-img' : ''}" style="--pc:${av.color}">${this._avatarInner(av)}</div>
         <div class="dlg-bubble">
           <div class="dlg-who"><span class="dlg-name" style="color:${av.color}">${who}</span>${tone}</div>
           <div class="dlg-text">${seg.text}</div>
@@ -522,6 +548,12 @@ const UI = {
   // 说话人 → 头像图标与配色（左右对话演出用）
   _speakerAvatar(who) {
     const self = (who === State.data.name || who === "韩立");
+    // 优先用立绘图片（仓库固定图或已缓存的实时生成图）
+    if (typeof Art !== "undefined") {
+      const id = self ? "hanli" : this._npcIdByName(who);
+      const url = id ? Art.url(id) : null;
+      if (url) return { img: url, color: self ? "var(--jade-bright)" : "var(--ink)" };
+    }
     if (self) return { icon: "🧙", color: "var(--jade-bright)" };
     const map = {
       "墨大夫": { icon: "🧓", color: "var(--purple)" },
@@ -533,6 +565,19 @@ const UI = {
       "金光上人": { icon: "🟡", color: "var(--gold-bright)" },
     };
     return map[who] || { icon: "🧑", color: "var(--ink)" };
+  },
+  // 说话人姓名 → NPC id（用于取立绘图）
+  _npcIdByName(name) {
+    if (!name) return null;
+    if (typeof WORLD !== "undefined" && WORLD.npcs) {
+      const n = WORLD.npcs.find(x => x.name === name);
+      if (n) return n.id;
+    }
+    return null;
+  },
+  // 头像格子内容：有图用 img，否则用 emoji
+  _avatarInner(av) {
+    return av.img ? `<img src="${av.img}" alt="" loading="lazy" />` : av.icon;
   },
   clearStory() { this.el("choices").innerHTML = ""; },
 
@@ -815,6 +860,8 @@ const UI = {
   openLLMSettings() {
     const c = (typeof LLM !== "undefined") ? LLM.config() : { key: "", model: "deepseek/deepseek-chat", on: false };
     const on = (typeof LLM !== "undefined") && LLM.enabled();
+    const ac = (typeof Art !== "undefined") ? Art.config() : { key: "", model: "google/gemini-2.5-flash-image", on: false };
+    const aon = (typeof Art !== "undefined") && Art.genEnabled();
     this.openModal(`
       <h2>活世界 · 叙述层</h2>
       <p style="color:var(--ink-dim);font-size:13px">接入大模型，让风云录、散修闲谈、奇遇、闭关见闻等"怎么说"的部分千变万化、有人情味。
@@ -829,6 +876,18 @@ const UI = {
         <input id="llm-model" type="text" value="${c.model || "deepseek/deepseek-v4-flash"}" style="width:100%;margin-top:6px" />
       </div>
       <p style="color:${on ? 'var(--jade-bright)' : 'var(--ink-dim)'};font-size:12px">当前状态：${on ? "已开启 ✦ 世界正在活起来" : "未开启"}</p>
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0" />
+      <h3 style="color:var(--gold);font-size:14px;margin:0 0 4px">实时配图（可选）</h3>
+      <p style="color:var(--ink-dim);font-size:12px">第一章核心人物/场景已内置立绘。开启后，新出场的人物与新场景会用生图模型按国风水墨画一次并永久缓存（独立密钥计费）。</p>
+      <div class="field" style="margin:8px 0">
+        <label style="font-size:13px;color:var(--gold)">生图 API Key（可与上面不同）</label>
+        <input id="art-key" type="password" placeholder="sk-or-v1-..." value="${ac.key || ""}" style="width:100%;margin-top:6px" />
+      </div>
+      <div class="field" style="margin:8px 0">
+        <label style="font-size:13px;color:var(--gold)">生图模型</label>
+        <input id="art-model" type="text" value="${ac.model || "google/gemini-2.5-flash-image"}" style="width:100%;margin-top:6px" />
+      </div>
+      <p style="color:${aon ? 'var(--jade-bright)' : 'var(--ink-dim)'};font-size:12px">配图状态：${aon ? "已开启 ✦ 新人物新场景将自动配图" : "未开启（仅用内置图）"}</p>
       <div class="modal-actions">
         <div class="modal-row">
           <button class="btn btn-primary" onclick="UI._llmSave(true)">保存并开启</button>
@@ -842,8 +901,15 @@ const UI = {
   },
   _llmSave(on) {
     LLM.configure({ key: this.el("llm-key").value, model: this.el("llm-model").value, on });
+    // 配图：填了密钥即开启，否则仅保存
+    if (typeof Art !== "undefined") {
+      const ak = this.el("art-key") ? this.el("art-key").value : "";
+      const am = this.el("art-model") ? this.el("art-model").value : "";
+      Art.configure({ key: ak, model: am, on: !!ak });
+    }
     this.toast(on ? "已开启活世界" : "已保存（未开启）");
     this.closeModal();
+    this.renderAll();
   },
   _llmTest() {
     LLM.configure({ key: this.el("llm-key").value, model: this.el("llm-model").value, on: true });

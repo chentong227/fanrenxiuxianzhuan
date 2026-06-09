@@ -46,7 +46,19 @@ const Main = {
         history.replaceState(null, "", location.pathname + location.search);
         setTimeout(() => UI.toast("已自动开启「活世界」叙述层"), 600);
       }
+      // 生图密钥：#imgkey=... 一键导入并开启（独立计费的 key2）
+      const mi = h.match(/imgkey=([^&]+)/);
+      if (mi && typeof Art !== "undefined") {
+        Art.configure({ key: decodeURIComponent(mi[1]), on: true });
+        history.replaceState(null, "", location.pathname + location.search);
+        setTimeout(() => UI.toast("已开启「实时配图」"), 900);
+      }
     } catch (e) {}
+
+    // 生成的图回来后，刷新界面让立绘/场景即时显现
+    if (typeof Art !== "undefined" && Art.onUpdate) {
+      Art.onUpdate(() => { try { UI.renderAll(); } catch (e) {} });
+    }
 
     // 有存档则提示
     if (!State.hasSave()) UI.el("btn-load").style.display = "none";

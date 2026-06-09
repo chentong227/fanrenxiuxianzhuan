@@ -982,3 +982,36 @@ html, body {
   font-family: inherit;
 }
 .obj-deliver:hover { filter: brightness(1.1); }
+
+/* ============================================================
+ * 配图层（art.js）：立绘 / 场景图样式
+ * ============================================================ */
+/* 韩立角色卡立绘 */
+.hero-portrait { overflow: hidden; }
+.hero-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* 在场人物头像 */
+.local-avatar { overflow: hidden; }
+.local-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* 对话肖像（有图时去掉文字底色，铺满圆形） */
+.dlg-portrait { overflow: hidden; }
+.dlg-portrait.has-img { background: none; }
+.dlg-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* 场景配图：所在地点头图 */
+.loc-scene {
+  width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 10px;
+  border: 1px solid var(--border); position: relative; line-height: 0;
+  animation: sceneFade .5s ease;
+}
+.loc-scene img {
+  width: 100%; max-height: 200px; object-fit: cover; display: block;
+  filter: saturate(.95);
+}
+.loc-scene::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(20,16,12,.45) 100%);
+  pointer-events: none;
+}
+@keyframes sceneFade { from { opacity: 0; } to { opacity: 1; } }
