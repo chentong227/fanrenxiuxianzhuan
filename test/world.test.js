@@ -14,7 +14,7 @@ const sandbox = {
 sandbox.window = sandbox; sandbox.globalThis = sandbox;
 sandbox.UI = new Proxy({}, { get() { return () => {}; } });
 const ctx = vm.createContext(sandbox);
-for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js", "js/world.js", "js/npcsim.js", "js/interactions.js", "js/combat.js", "js/explore.js", "js/loadout.js", "js/dialogue.js", "js/fortunes.js", "js/quests.js", "js/story.js", "js/engine.js"]) {
+for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js", "js/world.js", "js/npcsim.js", "js/interactions.js", "js/combat.js", "js/explore.js", "js/loadout.js", "js/fortunes.js", "js/quests.js", "js/story.js", "js/engine.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", f), "utf8"), ctx, { filename: f });
 }
 const { State, Engine, NPCSIM, INTERACTIONS, WORLD, STORY, Chapters, Balance, DATA } = sandbox;

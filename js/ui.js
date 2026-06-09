@@ -87,13 +87,6 @@ const UI = {
     const line = (n.lines && n.lines.length) ? n.lines[Math.floor(Math.random() * n.lines.length)] : "";
     const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
     const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : wasNew ? "萍水相逢" : "相识";
-    // 该人物的专属对话主题（忠于身份）
-    const topics = (typeof DIALOGUE !== "undefined") ? DIALOGUE.forNpc(npcId, s) : [];
-    const topicBtns = topics.map((t, i) => {
-      return `<button class="btn btn-secondary" style="text-align:left" onclick="Engine.dialogueTopic('${npcId}', ${i})">
-        ${t.label}${t.hint ? `<span style="display:block;color:var(--ink-dim);font-size:12px">${t.hint}</span>` : ""}
-      </button>`;
-    }).join("");
     this.openModal(`
       <div class="fortune-tag" style="border-color:var(--jade);color:var(--jade)">闲谈</div>
       <h2>${n.name}<span style="color:var(--gold);font-size:13px;margin-left:8px">${n.role}</span></h2>
@@ -101,7 +94,6 @@ const UI = {
       ${line ? `<div class="seg-dlg"><span class="dlg-name">${n.name}</span><span class="dlg-text">「${line}」</span></div>` : ""}
       <p style="color:var(--ink-dim);font-size:12px">关系：${relTxt}</p>
       <div class="modal-actions">
-        ${topicBtns}
         <button class="btn btn-secondary" onclick="UI.chatLocal('${npcId}')">攀谈叙旧（耗时）</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">告辞</button>
       </div>
