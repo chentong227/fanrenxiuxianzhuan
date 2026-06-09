@@ -135,12 +135,6 @@ WORLD.npcs = [
     where: ["yaolu"], cond: (s) => s.flags.met_modafu && !s.flags.modafu_dead,
   },
   {
-    id: "mocaihuan", name: "墨彩环", role: "墨大夫之女",
-    bio: "墨大夫最小的女儿，活泼促狭，被门人戏称小魔女。对寄住药庐的韩立时常捉弄。",
-    lines: ["喂，药童！我爹近来怪怪的，你瞧出来没？", "别成天闷头炼药啦，闷不闷呀你。"],
-    where: ["yaolu"],
-  },
-  {
     id: "xiaosuanpan", name: "小算盘", role: "门中管事弟子",
     bio: "管着门中杂务、消息灵通的精明弟子，一笔账算得门儿清，最爱打探与传播门派内外的风声。",
     lines: ["韩师兄消息可不灵通，门里这么大的事都不晓得？", "灵石灵石，没灵石什么都免谈。"],

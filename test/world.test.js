@@ -130,10 +130,11 @@ console.log("\n=== 据点在场人物 + 移动速度 ===");
   s.flags.met_modafu = true;
   const localsYaolu = WORLD.localsAt("yaolu", s).map(n => n.id);
   assert(localsYaolu.includes("modafu"), "药庐在场可见墨大夫（剧情条件满足后）");
-  assert(localsYaolu.includes("mocaihuan"), "药庐在场可见墨彩环");
   // 墨大夫死后不再在场
   s.flags.modafu_dead = true;
   assert(!WORLD.localsAt("yaolu", s).map(n => n.id).includes("modafu"), "墨大夫身死后不再在场（随剧情变化）");
+  // 墨彩环属于嘉源城线（七玄门篇之后），本篇不得出现
+  assert(!WORLD.npcById("mocaihuan"), "墨彩环不在七玄门篇名册（嘉源城线，剧情勘误）");
 }
 
 // 移动速度：飞行法宝大幅提速、缩短赶路
