@@ -77,96 +77,70 @@ const UI = {
   renderLocation() {
     const loc = State.location();
     if (!loc) return;
-    this.el("loc-name").textContent = loc.name;
-    this.el("loc-desc").textContent = loc.desc;
-    this.renderLocScene(loc);
+    const nm = this.el("loc-name"); if (nm) nm.textContent = loc.name;
+    const ds = this.el("loc-desc-inline"); if (ds) ds.textContent = loc.desc;
+    this.renderSceneStage(loc);
     this.renderLocals(loc);
-    this.renderLocMap(loc);
   },
 
-  // 场景配图：固定图直出；新场景若开生图则异步生成并缓存
-  renderLocScene(loc) {
-    const box = this.el("loc-scene");
-    if (!box) return;
-    if (loc.scene) { box.style.display = "none"; box.innerHTML = ""; return; }
-    const url = (typeof Art !== "undefined") ? Art.locUrl(loc) : null;
-    if (url) {
-      box.style.display = "";
-      box.innerHTML = `<img src="${url}" alt="${loc.name}" loading="lazy" />`;
-    } else {
-      box.style.display = "none";
-      box.innerHTML = "";
-      if (typeof Art !== "undefined" && Art.genEnabled()) Art.ensureLocation(loc);
-    }
-  },
-
-  // 内嵌大地图：所在面板里直接展示可去之处，点击图标即前往（取代「云游他处」弹窗）
-  renderLocMap(loc) {
-    const box = this.el("loc-map");
-    if (!box) return;
+  // 场景大图做底，可去之处=图上发光按钮（取代独立小地图）
+  renderSceneStage(loc) {
+    const bg = this.el("scene-bg");
+    const pinsBox = this.el("scene-pins");
+    const confirmBox = this.el("scene-confirm");
+    if (!bg || !pinsBox) return;
     const s = State.data;
-    const toggleBtn = this.el("btn-toggle-map");
-    // 过场地点 / 待决剧情 / 战斗中：不显示地图（不可乱走）
+
+    // 背景图
+    const url = (typeof Art !== "undefined") ? Art.locUrl(loc) : null;
+    bg.style.backgroundImage = url ? `url("${url}")` : "";
+    bg.classList.toggle("has-img", !!url);
+
+    // 过场地点 / 待决剧情 / 战斗：不显示前往按钮（不能乱走）
     if (loc.scene || s.pendingEvent || s.combat) {
-      box.innerHTML = ""; box.style.display = "none";
-      if (toggleBtn) toggleBtn.style.display = "none";
+      pinsBox.innerHTML = ""; if (confirmBox) confirmBox.innerHTML = "";
       return;
     }
+
     const arc = Chapters.active().id;
     const cur = s.location;
-    const locs = WORLD.locations.filter(l =>
-      !l.scene && l.map && (!l.arc || l.arc === arc) && (!l.unlock || l.unlock(s)));
-    if (locs.length <= 1) {
-      box.innerHTML = ""; box.style.display = "none";
-      if (toggleBtn) toggleBtn.style.display = "none";
-      return;
-    }
-    if (toggleBtn) toggleBtn.style.display = "none";   // 舆图常驻，不再用折叠按钮
-    box.style.display = "";
-
-    const curLoc = WORLD.locations.find(l => l.id === cur);
-    const lines = (curLoc && curLoc.map)
-      ? locs.filter(l => l.id !== cur).map(l =>
-          `<line x1="${curLoc.map.x}" y1="${curLoc.map.y}" x2="${l.map.x}" y2="${l.map.y}" class="map-line"/>`).join("")
-      : "";
+    const dests = WORLD.locations.filter(l =>
+      l.id !== cur && !l.scene && l.map && (!l.arc || l.arc === arc) && (!l.unlock || l.unlock(s)));
     const factor = Balance.travelTimeFactor(State.effectiveSpeed());
     const sel = this._mapSel;
-    const pins = locs.map(l => {
-      const here = l.id === cur;
+
+    // 可去之处 → 图上发光按钮（按 map 坐标定位，落在场景图上）
+    pinsBox.innerHTML = dests.map(l => {
       const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
-      const home = l.home ? " home" : "";
       const seld = (sel === l.id) ? " selected" : "";
-      return `<div class="map-pin${here ? ' here' : ''}${home}${seld}" style="left:${l.map.x}%;top:${l.map.y}%"
-        ${here ? '' : `onclick="UI.selectMapPin('${l.id}')"`} title="${l.desc}">
-        <span class="pin-dot"></span>
-        <span class="pin-label">${l.name}${here ? '' : `<span class="pin-cost">${cost}月</span>`}</span>
-      </div>`;
+      const home = l.home ? " home" : "";
+      return `<button class="scene-pin${seld}${home}" style="left:${l.map.x}%;top:${l.map.y}%"
+        onclick="UI.selectMapPin('${l.id}')" title="${l.desc}">
+        <span class="sp-dot"></span><span class="sp-name">${l.name}</span><span class="sp-cost">${cost}月</span>
+      </button>`;
     }).join("");
-    // 选中某地 → 显示确认前往条
-    let confirmBar = "";
-    if (sel && sel !== cur) {
-      const l = WORLD.locations.find(x => x.id === sel);
-      if (l) {
-        const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
-        confirmBar = `<div class="map-confirm">
-          <div class="mc-info"><b>${l.name}</b><span>${l.desc}</span></div>
-          <button class="btn btn-primary btn-mini" onclick="UI.confirmTravel()">前往（${cost} 月）</button>
-        </div>`;
-      }
+
+    // 确认前往条
+    if (confirmBox) {
+      if (sel && sel !== cur) {
+        const l = WORLD.locations.find(x => x.id === sel);
+        if (l) {
+          const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
+          confirmBox.innerHTML = `<div class="sc-info"><b>${l.name}</b><span>${l.desc}</span></div>
+            <button class="btn btn-primary btn-mini" onclick="UI.confirmTravel()">前往（${cost} 月）</button>
+            <button class="btn btn-ghost btn-mini" onclick="UI.selectMapPin('${l.id}')">取消</button>`;
+        } else confirmBox.innerHTML = "";
+      } else confirmBox.innerHTML = "";
     }
-    box.innerHTML = `
-      <div class="loc-map-head"><span class="map-speed">遁速 ${State.effectiveSpeed()}　点选地点 → 确认前往</span></div>
-      <div class="worldmap inline">
-        <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
-        ${pins}
-      </div>
-      ${confirmBar}`;
   },
-  // 点选地图图标：先选中（高亮 + 出确认条），不直接前往
+
+  // 兼容旧调用（已由 renderSceneStage 取代）
+  renderLocMap(loc) { this.renderSceneStage(loc); },
+  // 点选场景按钮：先选中（高亮 + 出确认条），不直接前往
   selectMapPin(locId) {
     this._mapSel = (this._mapSel === locId) ? null : locId;
     const loc = State.location();
-    if (loc) this.renderLocMap(loc);
+    if (loc) this.renderSceneStage(loc);
   },
   // 确认前往选中的地点
   confirmTravel() {
@@ -1034,6 +1008,7 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI._llmCopyLink()">生成并复制免输入链接</button>
       </div>
       <div id="llm-link-out" style="color:var(--ink-dim);font-size:11px;margin-top:6px;word-break:break-all"></div>
+      <div id="llm-test-out" style="font-size:13px;margin:10px 0 4px;min-height:18px;color:var(--ink-dim)">填好密钥后点「保存并开启」</div>
       <div class="modal-actions">
         <div class="modal-row">
           <button class="btn btn-primary" onclick="UI._llmSave(true)">保存并开启</button>
@@ -1042,7 +1017,6 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI._llmTest()">测试一句</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
       </div>
-      <div id="llm-test-out" style="color:var(--jade-bright);font-size:13px;margin-top:8px"></div>
     `);
   },
   // 生成"免输入链接"：把当前已保存的密钥拼进 URL hash（仅本机操作，不外发）
@@ -1062,6 +1036,8 @@ const UI = {
     } else { out.textContent = link; }
   },
   _llmSave(on) {
+  _llmSave(on) {
+   try {
     const field = (this.el("llm-key").value || "").trim();
     const saved = (LLM.config().key || "");
     // 字段留空但本机已存过 key → 沿用旧 key（不要把好 key 覆盖成空）
@@ -1071,20 +1047,19 @@ const UI = {
     // 立刻回读，眼见为实
     const cfg = LLM.config();
     const live = LLM.enabled();
-    if (ok === false) { this._llmStatus("✗ 保存失败：本机存储写不进（隐私模式或已满）", true); return; }
-    if (on && !live) { this._llmStatus("已写入但未开启，请检查密钥是否正确", true); return; }
+    if (ok === false) { this._llmStatus("✗ 保存失败：浏览器存储写不进（无痕模式/已满）", true); return; }
+    if (on && !live) { this._llmStatus("已写入但未开启——密钥似乎为空或无效", true); return; }
     this._llmStatus(live
-      ? `✦ 已开启：${cfg.model}（密钥末四位 …${(cfg.key||'').slice(-4)}）`
+      ? `✦ 已开启　模型 ${cfg.model}　密钥…${(cfg.key||'').slice(-4)}`
       : "已保存（未开启）", false);
-    // 同步更新"当前状态"那行与立即可用
-    const st = document.querySelector("#llm-state-line");
+    const st = this.el("llm-state-line");
     if (st) { st.textContent = "当前状态：" + (live ? "已开启 ✦ 世界正在活起来" : "未开启"); st.style.color = live ? "var(--jade-bright)" : "var(--ink-dim)"; }
     this.renderAll();
+   } catch (e) { this._llmStatus("✗ 出错：" + (e && e.message ? e.message : e), true); }
   },
   _llmStatus(msg, bad) {
     const out = this.el("llm-test-out");
     if (out) { out.textContent = msg; out.style.color = bad ? "var(--red)" : "var(--jade-bright)"; }
-    this.toast(msg, bad);
   },
   _llmTest() {
     LLM.configure({ key: this.el("llm-key").value, model: this.el("llm-model").value, on: true });
