@@ -258,7 +258,8 @@ const UI = {
     const relText = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂，颇有龃龉" : "萍水相识";
     const realm = State.realm ? State.realm().name : "";
     const loc = (State.location && State.location()) ? State.location().name : "";
-    return { relText, player: `${realm}，身处「${loc}」，第${s.year}年${s.month}月，年${s.age}` };
+    const intel = (typeof Engine !== "undefined" && Engine.knownLeadsFor) ? Engine.knownLeadsFor(this._talk.npcId) : [];
+    return { relText, player: `${realm}，身处「${loc}」，第${s.year}年${s.month}月，年${s.age}`, intel };
   },
   _talkRequest(chosenLine) {
     const t = this._talk; if (!t) return;

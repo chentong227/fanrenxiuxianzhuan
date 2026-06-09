@@ -148,29 +148,34 @@
     converse(npc, ctx, history, chosenLine) {
       if (!this.enabled()) return Promise.resolve(null);
       const histText = (history || []).map(h => `${h.who === "player" ? "韩立" : npc.name}：${h.text}`).join("\n") || "（尚未开口）";
+      // 引擎提供的"该 NPC 知道的线索"白名单（保证线索内容与指向地点一致）
+      const intel = (ctx.intel || []);
+      const intelBlock = intel.length
+        ? intel.map(x => `  · leadId=${x.id}：${x.title}（在「${x.whereName}」）`).join("\n")
+        : "  （此人无可透露的线索）";
       const sys = [
         this._systemPrompt(),
-        "现在进行一段【实时对话】。你要同时扮演两个职责：",
-        `(A) 揣摩此刻韩立可能想对「${npc.name}」说的话，给出 3~4 条候选（语气各异：寒暄/试探/求教/调侃/告辞等），贴合韩立处境、二人关系与当下世事；`,
-        chosenLine ? `(B) 以「${npc.name}」的口吻，回应韩立刚说的那句话（一句到两句，符合其身份性格），并评估这句交流对二人关系的影响（favor，整数 -3~+3）。` : "(B) 本轮韩立尚未开口，无需回应，reply 留空、favor 为 0。",
+        "这是一段【实时对话】。你要做两件事：",
+        `(A) 设身处地，给出 2~3 条「韩立此刻最想说的话」作为候选。每条都要极简短（不超过 14 字），像选项而非长句，语气各异（试探/求教/调侃/告辞等），贴合处境与关系。`,
+        chosenLine ? `(B) 以「${npc.name}」口吻回应韩立刚说的话——只一句，简短传神，并给 favor（整数 -3~+3）表示这句话对关系的影响。` : "(B) 本轮韩立尚未开口，reply 留空、favor 为 0。",
         "",
-        "【关键】对话不只是闲聊。当这一轮交流自然地导向某种结果时，在 effect 字段里提议一种方向（仅限以下白名单类型，且只提议方向，具体数值与能否兑现由游戏裁决，你不要编造数字/物品/地名）：",
-        `  - 当 NPC 透露了值得一探的消息/线索时：{"type":"intel","topic":"线索的一句话内容"}`,
-        `  - 当这番话真正宽慰了韩立、或反之话不投机令人郁结时：{"type":"mood","tone":"soothe"或"discord"}`,
-        `  - 当 NPC 开口请韩立帮个忙/办件事时：{"type":"quest","title":"短标题","ask":"请托内容一句话"}`,
-        `  - 多数普通寒暄没有结果：{"type":"none"}`,
-        "effect 一轮最多一个；拿不准就用 none。绝不要在 reply/options 里凭空许诺具体奖励、物品或数值。",
-        "严格只返回 JSON，不要任何额外文字，格式：",
-        `{"reply":"NPC的话(首轮为空字符串)","favor":0,"effect":{"type":"none"},"options":["韩立可说的话1","...2","...3"]}`,
-        "options 里的话是韩立第一人称要说出口的内容，简短自然，不要带括号动作旁白。",
+        "【线索机制】只有当对话自然聊到下面这些"该人确实知道的事"时，才在 effect 里点出对应 leadId（必须从下表精确选取，不得编造）：",
+        intelBlock,
+        `  - 透露其中一条：{"type":"intel","leadId":"上表中的某个id"}`,
+        `  - 这番话真正宽慰/或惹恼了韩立：{"type":"mood","tone":"soothe"或"discord"}`,
+        `  - 此人开口请韩立帮个忙：{"type":"quest"}`,
+        `  - 多数寒暄没有结果：{"type":"none"}`,
+        "规则：effect 一轮最多一个；只有 reply 的内容与某条线索吻合时才给该 leadId；拿不准就 none。绝不在 reply/options 里凭空许诺奖励或编造地名物名。",
+        "严格只返回 JSON：",
+        `{"reply":"","favor":0,"effect":{"type":"none"},"options":["短句1","短句2"]}`,
       ].join("\n");
       const user =
         `【对方】${npc.name}（${npc.role}）：${npc.bio}\n` +
         `【与韩立关系】${ctx.relText}\n【主角状态】${ctx.player}\n【近期要事】\n${this._memoryBlock()}\n\n` +
         `【已进行的对话】\n${histText}\n\n` +
-        (chosenLine ? `【韩立刚说】${chosenLine}\n\n请给出 ${npc.name} 的回应与新的候选。` : `请给出韩立此刻可说的候选。`);
+        (chosenLine ? `【韩立刚说】${chosenLine}\n\n请给出 ${npc.name} 的回应与新候选。` : `请给出韩立此刻可说的候选。`);
       return this._chat([{ role: "system", content: sys }, { role: "user", content: user }],
-        { maxTokens: 420, temperature: 0.95 })
+        { maxTokens: 300, temperature: 0.9 })
         .then(txt => this._parseJSON(txt))
         .catch(() => null);
     },
@@ -186,7 +191,7 @@
       try {
         const o = JSON.parse(s);
         if (!Array.isArray(o.options)) o.options = [];
-        o.options = o.options.filter(x => typeof x === "string" && x.trim()).slice(0, 4);
+        o.options = o.options.filter(x => typeof x === "string" && x.trim()).slice(0, 3);
         o.favor = Math.max(-3, Math.min(3, parseInt(o.favor, 10) || 0));
         o.reply = typeof o.reply === "string" ? o.reply.trim() : "";
         o.effect = this._sanitizeEffect(o.effect);
@@ -199,9 +204,9 @@
       if (!e || typeof e !== "object") return { type: "none" };
       const type = e.type;
       const clip = (x, n) => (typeof x === "string" ? x.trim().slice(0, n) : "");
-      if (type === "intel") return { type: "intel", topic: clip(e.topic, 60) };
+      if (type === "intel") return { type: "intel", leadId: clip(e.leadId, 40) };
       if (type === "mood") return { type: "mood", tone: e.tone === "discord" ? "discord" : "soothe" };
-      if (type === "quest") return { type: "quest", title: clip(e.title, 16), ask: clip(e.ask, 80) };
+      if (type === "quest") return { type: "quest" };
       return { type: "none" };
     },
 

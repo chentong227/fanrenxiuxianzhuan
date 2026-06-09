@@ -210,30 +210,39 @@ const Engine = {
     return null;
   },
 
-  // —— 情报：聊出线索 → 记入「际遇」，前往对应地点可兑现 ——
+  // 某 NPC「确实知道」的、且尚未被韩立听过的线索（供对谈白名单）
+  knownLeadsFor(npcId) {
+    if (typeof QUESTS === "undefined" || !QUESTS.leads) return [];
+    const s = State.data;
+    s.leads = s.leads || [];
+    s.heardLeads = s.heardLeads || [];
+    return QUESTS.leads.filter(L => {
+      if (!L.source.includes(npcId)) return false;
+      if (L.cond && !L.cond(s)) return false;
+      if (s.heardLeads.includes(L.id)) return false;       // 已听过/未兑现的不重复给
+      if (s.leads.some(x => x.id === L.id)) return false;
+      return true;
+    }).map(L => {
+      const loc = (typeof WORLD !== "undefined" ? WORLD.locations : []).find(l => l.id === L.where) || {};
+      return { id: L.id, title: L.title, whereName: loc.name || "别处" };
+    });
+  },
+
+  // —— 情报：从 NPC 知道的线索白名单里点亮一条（leadId 由引擎校验）——
   _talkIntel(s, npcId, fromName, rel, effect) {
     s.leads = s.leads || [];
-    if (s.leads.length >= 3) return { note: "（你心里记着的线索已经不少了，先去查证一二再说。）" };
-    // 线索导向一个"可前往"的地点（排除当前地）：引擎决定指向哪、给多少
-    const here = s.location;
-    const cands = (typeof WORLD !== "undefined" ? WORLD.locations : [])
-      .filter(l => l.id !== here && !l.scene && (!l.lockedUntil || true));
-    const where = cands.length ? cands[Math.floor(Math.random() * cands.length)].id : here;
-    const id = "lead_" + (this._leadSeq = (this._leadSeq || 0) + 1) + "_" + Date.now();
-    const topic = effect.topic || "一桩值得探查的隐秘";
-    const lead = {
-      id, npcId, fromName, where, topic,
-      title: topic.slice(0, 14),
-      dueAbs: State.absMonth() + 12,
-      // 兑现丰薄按关系：交情越深，给的"实信"越值钱
-      tier: rel >= 18 ? 2 : (rel >= 6 ? 1 : 0),
-    };
-    s.leads.push(lead);
-    const whereName = (cands.find(l => l.id === where) || {}).name || "别处";
-    this.log(`【线索】${fromName}向你透了个底：${topic}　——线索指向「${whereName}」，记入「际遇」。`, "event");
+    s.heardLeads = s.heardLeads || [];
+    const def = (typeof QUESTS !== "undefined" && QUESTS.leads) ? QUESTS.leads.find(L => L.id === effect.leadId) : null;
+    // 校验：leadId 必须存在、该 NPC 确实知道、未听过、满足条件
+    if (!def || !def.source.includes(npcId) || s.heardLeads.includes(def.id) || (def.cond && !def.cond(s))) return null;
+    if (s.leads.length >= 4) return { note: "（线索已不少，先去查证一二再说。）" };
+    const loc = (typeof WORLD !== "undefined" ? WORLD.locations : []).find(l => l.id === def.where) || {};
+    s.leads.push({ id: def.id, npcId, fromName, where: def.where, title: def.title, dueAbs: State.absMonth() + 18 });
+    s.heardLeads.push(def.id);
+    this.log(`【线索】${fromName}向你透了底：${def.title}　——指向「${loc.name || "别处"}」，记入「际遇」。`, "event");
     this.toast("听到一条线索");
     if (typeof UI !== "undefined") UI.renderObjective && UI.renderObjective();
-    return { note: `（你记下了这条线索，或许该去「${whereName}」探查。）` };
+    return { note: `（记下了，或许该去「${loc.name || "别处"}」探查。）` };
   },
 
   // 玩家抵达线索地点时兑现（在 travelTo 后调用）
@@ -244,15 +253,17 @@ const Engine = {
     if (!hit.length) return;
     s.leads = s.leads.filter(l => l.where !== locId);
     for (const l of hit) {
-      const roll = Math.random();
-      if (roll < 0.55 + l.tier * 0.12) {
-        // 实信：给点实利（按 tier 夹紧上限，绝不离谱）
-        if (l.tier >= 2) { State.give("lingshi", 1); State.give("lingcao", 2); var g = "灵石×1、灵草×2"; }
-        else if (l.tier >= 1) { State.give("lingcao", 2); g = "灵草×2"; }
-        else { State.give("lingcao", 1); g = "灵草×1"; }
-        this.log(`【线索兑现】循着${l.fromName}的指点，你在此处果然有所发现（${g}）。所谓"${l.topic}"，并非空穴来风。`, "good");
+      const def = (typeof QUESTS !== "undefined" && QUESTS.leads) ? QUESTS.leads.find(L => L.id === l.id) : null;
+      const p = def ? def.payoff : null;
+      // 该线索从"已听过"里移除，兑现后可再次被同人或他人提起（世界持续）
+      s.heardLeads = (s.heardLeads || []).filter(id => id !== l.id);
+      if (p && Math.random() < (p.chance != null ? p.chance : 0.7)) {
+        if (p.give) for (const k of Object.keys(p.give)) State.give(k, p.give[k]);
+        if (p.body) s.body += p.body;
+        if (p.demon) s.demon = clamp(s.demon + p.demon, 0, 100);
+        this.log(`【线索兑现】${p.log || "循着线索，你果然有所发现。"}`, p.demon ? "bad" : "good");
       } else {
-        this.log(`【线索成空】你按${l.fromName}所说在此探查一番，却一无所获。江湖传言，本就半真半假。`, "sys");
+        this.log(`【线索成空】你按${l.fromName}所说探查一番，却一无所获。江湖传言，本就半真半假。`, "sys");
       }
     }
     if (typeof UI !== "undefined") UI.renderObjective && UI.renderObjective();
@@ -287,8 +298,8 @@ const Engine = {
     const id = "dq_" + (this._dqSeq = (this._dqSeq || 0) + 1) + "_" + Date.now();
     const q = {
       id, npcId, fromName, kind: tpl.kind, need: tpl.need,
-      title: (effect.title || tpl.title).slice(0, 16),
-      desc: (effect.ask ? effect.ask + "（" + tpl.deliver + "）" : tpl.desc),
+      title: tpl.title,
+      desc: tpl.desc,
       reward: tpl.reward(rel),
       dueAbs: State.absMonth() + tpl.due,
     };
@@ -373,8 +384,11 @@ const Engine = {
       }
     }
     if (s.leads && s.leads.length) {
-      const live = s.leads.filter(l => now < l.dueAbs);
+      const now2 = State.absMonth();
+      const live = s.leads.filter(l => now2 < l.dueAbs);
       if (live.length !== s.leads.length) {
+        const expired = s.leads.filter(l => now2 >= l.dueAbs);
+        s.heardLeads = (s.heardLeads || []).filter(id => !expired.some(e => e.id === id));
         this.log(`【线索过时】有些早年听来的线索，已随时移境迁化作过眼云烟。`, "sys");
         s.leads = live;
       }

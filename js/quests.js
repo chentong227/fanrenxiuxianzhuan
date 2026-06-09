@@ -59,6 +59,59 @@ const QUESTS = {
       },
     },
   },
+
+  /* ---------- 对谈线索目录（规范化）----------
+   * 红线：线索内容、指向地点、兑现产出全部固定，与"谁会知道"一一对应。
+   * LLM 只能从某 NPC「确实知道」的线索里挑一条说出口（给 leadId），
+   * 绝不会出现"采药老农聊药草却指向密室"这类驴唇不对马嘴。
+   *
+   * 字段：
+   *   id        唯一标识
+   *   source    哪些 NPC 知道（npc id 数组）
+   *   where     线索指向的真实地点 id（玩家前往即兑现）
+   *   title     线索一句话（际遇栏与对谈里显示）
+   *   cond(s)   可选：满足才会进入该 NPC 的可透露池（如解锁条件）
+   *   payoff    兑现：{ chance, give:{item:n}, log }
+   */
+  leads: [
+    {
+      id: "houshan_herb",
+      source: ["nongfu"], where: "houshan",
+      title: "后山深处崖缝里藏着稀罕灵草",
+      payoff: { chance: 0.8, give: { lingcao: 2, duyao_cao: 1 }, log: "你循着老农的指点，在后山崖缝间果然寻见几株灵草。" },
+    },
+    {
+      id: "houshan_centipede",
+      source: ["nongfu", "sanxiu"], where: "houshan",
+      title: "后山西崖有铁背蜈蚣，蜈壳是上好药引",
+      payoff: { chance: 0.7, give: { duyao_cao: 2 }, log: "你在后山西崖寻得铁背蜈蚣的踪迹，取了壳作药引。" },
+    },
+    {
+      id: "town_blackmarket",
+      source: ["biaoshi", "sanxiu"], where: "town",
+      title: "集镇暗巷有黑市掮客，丹药器物皆可换",
+      payoff: { chance: 0.75, give: { lingshi: 1 }, log: "你按所闻寻到集镇暗巷的黑市，淘换得一枚灵石。" },
+    },
+    {
+      id: "town_cheap_herb",
+      source: ["langzhong"], where: "town",
+      title: "集镇药铺新到一批便宜药材",
+      payoff: { chance: 0.85, give: { lingcao: 2 }, log: "你赶到集镇药铺，趁着新货采买了两株灵草。" },
+    },
+    {
+      id: "wuting_skill",
+      source: ["lifeiyu", "xiaosuanpan"], where: "wuting",
+      title: "演武厅有同门愿指点身法拳脚",
+      payoff: { chance: 0.9, body: 1, log: "你到演武厅寻人切磋，几番拆招下来体魄略有精进（体魄+1）。" },
+    },
+    {
+      id: "miju_secret",
+      source: ["xiaosuanpan", "sanxiu"], where: "miju",
+      title: "墨大夫密室阴气森森，似藏隐秘",
+      cond: (s) => s.flags && s.flags.qi_layer_4,   // 修为起疑后这条才会被人提起
+      payoff: { chance: 1, demon: 4, log: "你借所闻潜近密室周遭探查，所见种种令你心头发寒（心魔+4）。" },
+    },
+  ],
 };
 
 window.QUESTS = QUESTS;
