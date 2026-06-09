@@ -59,6 +59,7 @@ const Main = {
     // 生成的图回来后，刷新界面让立绘/场景即时显现
     if (typeof Art !== "undefined" && Art.onUpdate) {
       Art.onUpdate(() => { try { UI.renderAll(); } catch (e) {} });
+      if (Art.initCache) Art.initCache();   // 启动即载入 IndexedDB 图缓存（迁移旧 localStorage 图）
     }
 
     // 有存档则提示

@@ -49,28 +49,58 @@
     genEnabled() { const c = this._loadCfg(); return !!(c.on && c.key); },
 
     // —— 运行时缓存（dataURL）——
-    _loadCache() {
-      if (this._cache) return this._cache;
+    // —— 运行时缓存（dataURL）——
+    // 图片体积大，放 IndexedDB（配额数百 MB），绝不与 localStorage 的存档/密钥抢空间。
+    // url() 需同步可用，故启动时把 IDB 内容载入内存 _cache；写入时内存+IDB 双写。
+    _db: null,
+    _ready: false,
+    initCache() {
+      if (this._cache) { this._loadFromIDB(); return; }
+      this._cache = {};
+      // 迁移：把旧的 localStorage 图缓存搬进内存并清掉（释放 localStorage）
       try {
         const raw = (typeof localStorage !== "undefined") ? localStorage.getItem(LS_KEY) : null;
-        this._cache = raw ? JSON.parse(raw) : {};
-      } catch (e) { this._cache = {}; }
-      return this._cache;
+        if (raw) { Object.assign(this._cache, JSON.parse(raw)); localStorage.removeItem(LS_KEY); }
+      } catch (e) {}
+      this._loadFromIDB();
     },
-    _saveCache() {
-      try { localStorage.setItem(LS_KEY, JSON.stringify(this._cache)); }
-      catch (e) { /* 配额满：丢弃最早的一半再存 */
-        try {
-          const keys = Object.keys(this._cache);
-          keys.slice(0, Math.ceil(keys.length / 2)).forEach(k => delete this._cache[k]);
-          localStorage.setItem(LS_KEY, JSON.stringify(this._cache));
-        } catch (e2) {}
-      }
+    _openDB() {
+      return new Promise((resolve, reject) => {
+        if (this._db) return resolve(this._db);
+        if (typeof indexedDB === "undefined") return reject(new Error("no idb"));
+        const req = indexedDB.open("frxxz_art", 1);
+        req.onupgradeneeded = () => { req.result.createObjectStore("img"); };
+        req.onsuccess = () => { this._db = req.result; resolve(this._db); };
+        req.onerror = () => reject(req.error);
+      });
     },
-    // 清空实时配图缓存（localStorage 紧张时让位给存档/密钥）
+    _loadFromIDB() {
+      this._openDB().then(db => {
+        const tx = db.transaction("img", "readonly").objectStore("img");
+        const keysReq = tx.getAllKeys(), valsReq = tx.getAll();
+        let keys = null, vals = null;
+        const done = () => {
+          if (!keys || !vals) return;
+          keys.forEach((k, i) => { if (!this._cache[k]) this._cache[k] = vals[i]; });
+          // 把迁移进来的旧图回写 IDB（首次迁移）
+          this._ready = true;
+          this._emit(null);
+        };
+        keysReq.onsuccess = () => { keys = keysReq.result; done(); };
+        valsReq.onsuccess = () => { vals = valsReq.result; done(); };
+      }).catch(() => { this._ready = true; });
+    },
+    _putIDB(id, dataUrl) {
+      this._openDB().then(db => {
+        db.transaction("img", "readwrite").objectStore("img").put(dataUrl, id);
+      }).catch(() => {});
+    },
+    _loadCache() { if (!this._cache) this.initCache(); return this._cache; },
+    // 清空实时配图缓存
     clearCache() {
       this._cache = {};
-      try { localStorage.removeItem(LS_KEY); } catch (e) {}
+      try { if (typeof localStorage !== "undefined") localStorage.removeItem(LS_KEY); } catch (e) {}
+      this._openDB().then(db => db.transaction("img", "readwrite").objectStore("img").clear()).catch(() => {});
     },
 
     onUpdate(fn) { this._listeners.push(fn); },
@@ -98,7 +128,7 @@
         delete this._inflight[id];
         if (dataUrl) {
           this._loadCache()[id] = dataUrl;
-          this._saveCache();
+          this._putIDB(id, dataUrl);
           this._emit(id);
         }
       }).catch(() => { delete this._inflight[id]; });
