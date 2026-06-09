@@ -37,6 +37,10 @@ const STORY = [
       "其中一个虎背熊腰、憨厚老实的少年叫张铁，与你一见投缘。一路上你俩互相照应，渐成好友。",
       "「听说七玄门收徒极严，十个里取不了一个。」张铁挠头，「不过……总得试试不是？」",
     ],
+    onArrive(s) {
+      s.location = "road";
+      Engine.meetNpc("zhangtie", "你与他一见投缘，结伴同行。");
+    },
     choices: [
       { text: "与张铁结伴，同赴选拔", hint: "继续", next: true },
     ],
@@ -73,7 +77,7 @@ const STORY = [
     onArrive(s) {
       State.setFlag("met_modafu");
       s.location = "yaolu";
-      State.meetNpc("modafu");
+      Engine.meetNpc("modafu", "门中以医毒闻名的怪人，收你为药童。");
       Engine.assignTask("modafu_deadline", 24);
       Engine.toast("你拜入墨大夫门下，习《长春功》");
     },
@@ -97,12 +101,15 @@ const STORY = [
       "张铁却没这般顺遂。他无论如何引气不入体，《长春功》死死卡在第一层。",
       { say: "墨大夫", tone: "摇头", text: "你这身子骨，不是修仙的料。改修武体吧，练练象甲功，强身健骨也好。" },
       "张铁憨憨地应了，没半分怨言。三人意气相投，结为好友——这七玄门的日子，总算有了些暖意。",
+      { scene: "药庐" },
+      "回到药庐，墨大夫那活泼促狭的小女儿墨彩环又来寻你打趣。",
+      { say: "墨彩环", tone: "歪着头", text: "喂，药童！我爹近来神神叨叨的，你这成天闷在药庐的，可瞧出什么名堂没？" },
+      { aside: "你含糊应付过去。这小魔女古灵精怪，可她话里那点不安……你竟也隐隐有同感。" },
     ],
     onArrive(s) {
       State.setFlag("met_friends");
-      State.meetNpc("lifeiyu");
-      State.meetNpc("zhangtie");
-      State.meetNpc("mocaihuan");
+      Engine.meetNpc("lifeiyu", "爽朗仗义的同门师兄，武学有成。");
+      Engine.meetNpc("mocaihuan", "墨大夫活泼促狭的小女儿。");
     },
     choices: [
       { text: "与好友同行历练", hint: "继续", next: true },
@@ -276,7 +283,7 @@ const STORY = [
       { aside: "起初不过是凡俗江湖的厮杀。可你嗅到一丝不安——贾天龙的野心，似乎不止于几座城镇。" },
       "山雨欲来，风满楼。气氛一日紧过一日。",
     ],
-    onArrive(s) { State.setFlag("gang_war"); State.meetNpc("xiaosuanpan"); State.meetNpc("jiatianlong"); },
+    onArrive(s) { State.setFlag("gang_war"); Engine.meetNpc("xiaosuanpan", "门中管事弟子，消息灵通。"); Engine.meetNpc("jiatianlong", "野狼帮帮主，野心勃勃。"); },
     choices: [
       { text: "暗中戒备，留意局势", hint: "继续", next: true },
     ],
@@ -298,6 +305,7 @@ const STORY = [
     ],
     onArrive(s) {
       State.setFlag("jinguang_appeared");
+      Engine.meetNpc("jinguang", "贾天龙重金请来的修仙杀手。");
       if (!s.spells.includes("zhayan_lian")) s.spells.push("zhayan_lian");
       if (!s.spells.includes("feizhen")) s.spells.push("feizhen");
       State.give("anqi", 4);

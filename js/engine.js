@@ -12,6 +12,18 @@ const Engine = {
   },
   toast(msg, bad = false) { UI.toast(msg, bad); },
 
+  // 结识 NPC：首次相遇给出明确反馈（toast + 叙事 + 录入图鉴）
+  meetNpc(id, line) {
+    const isNew = State.meetNpc(id);
+    if (!isNew) return false;
+    const npc = (typeof WORLD !== "undefined" && WORLD.npcById) ? WORLD.npcById(id) : null;
+    const name = npc ? npc.name : id;
+    const role = npc && npc.role ? `（${npc.role}）` : "";
+    this.log(`【结识】你结识了「${name}」${role}。${line || ""}　——已录入「人物图鉴」。`, "event");
+    this.toast(`结识新的人物：${name}`);
+    return true;
+  },
+
   /* -------- 时间流逝（以月为单位）-------- */
   passTime(months) {
     const s = State.data;
@@ -497,10 +509,9 @@ const Engine = {
       case "npc": {
         const npc = WORLD.randomNpc ? WORLD.randomNpc(loc.id, s) : null;
         if (npc) {
-          if (!s.metNpcs) s.metNpcs = [];
-          if (npc.id && !s.metNpcs.includes(npc.id)) s.metNpcs.push(npc.id);
+          const isNew = Engine.meetNpc(npc.id);
           const line = (npc.lines && npc.lines.length) ? npc.lines[Math.floor(Math.random() * npc.lines.length)] : (npc.line || "");
-          this.log(`你在${loc.name}遇见「${npc.name}」（${npc.role}）。${line ? npc.name + "道：「" + line + "」" : ""}`, "event");
+          if (!isNew) this.log(`你在${loc.name}又遇见「${npc.name}」（${npc.role}）。${line ? npc.name + "道：「" + line + "」" : ""}`, "event");
         } else this.log("路上人来人往，并无相熟之人。", "sys");
         break;
       }

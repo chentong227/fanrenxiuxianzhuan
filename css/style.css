@@ -633,3 +633,28 @@ html, body {
   .explore-minimap-wrap { flex: 1; }
   .explore-bag { flex: 1; }
 }
+
+/* ============================================================
+ * 点击反馈 + 图鉴/风云录优化
+ * ============================================================ */
+/* 通用按钮按下反馈 */
+.btn:active, .choice:active, .dpad-btn:active,
+.travel-item:active, .market-item .btn:active, .spell-btn:active,
+.inv-item:active, .codex-card.tappable:active, .combatant.target:active {
+  transform: scale(0.96);
+  filter: brightness(1.12);
+}
+.btn, .choice, .dpad-btn, .inv-item, .codex-card.tappable, .travel-item {
+  transition: transform .08s ease, filter .08s ease, background .12s ease;
+}
+.tappable { cursor: pointer; }
+
+.codex-count {
+  font-size: 13px; color: var(--gold); font-weight: 600;
+  border: 1px solid var(--gold); border-radius: 10px; padding: 1px 8px; margin-left: 6px;
+}
+.codex-rel.rel-deep { color: var(--gold-bright); }
+.codex-rel.rel-warm { color: var(--jade-bright); }
+.codex-rel.rel-cold { color: var(--red); }
+
+/* 结识提示飘条（沿用 toast，无需额外） */

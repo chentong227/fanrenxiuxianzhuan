@@ -17,7 +17,7 @@ const ctx = vm.createContext(sandbox);
 for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js", "js/world.js", "js/npcsim.js", "js/interactions.js", "js/combat.js", "js/fortunes.js", "js/quests.js", "js/story.js", "js/engine.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", f), "utf8"), ctx, { filename: f });
 }
-const { State, Engine, NPCSIM, INTERACTIONS, WORLD } = sandbox;
+const { State, Engine, NPCSIM, INTERACTIONS, WORLD, STORY, Chapters } = sandbox;
 
 let failures = 0;
 function assert(c, m) { if (c) console.log("  ✓ " + m); else { console.log("  ✗ 失败: " + m); failures++; } }
@@ -88,6 +88,39 @@ console.log("\n=== NPC 主动交互（参考鬼谷八荒）===");
   const storyNpcIds = WORLD.npcs.map(n => n.id);
   const overlap = simIds.filter(id => storyNpcIds.includes(id));
   assert(overlap.length === 0, "命途模拟名册与主线人物名册无重叠（主线人物不被模拟杀死）");
+}
+
+console.log("\n=== 人物结识：忠于剧情时机 + 渐进解锁 ===");
+{
+  // 全新一局，从头按剧情推进，校验结识时机
+  const store2 = {};
+  // 用同进程的 State/Engine 重新建号并手动走剧情
+  State.create("韩立", "si");
+  Engine.checkStory();                       // village
+  assert(!(State.data.metNpcs || []).includes("zhangtie"), "开局尚未结识张铁");
+  // 第一幕：village -> journey(结识张铁) -> exam -> intro(结识墨大夫)
+  let guard = 0;
+  while (State.data.storyStage < 4 && guard++ < 20) {
+    const stage = STORY[State.data.storyStage];
+    if (State.data.pendingEvent === stage.id) Engine.chooseStory(stage, 0);
+    else Engine.checkStory();
+  }
+  assert((State.data.metNpcs || []).includes("zhangtie"), "赴考途中即结识张铁（A1）");
+  assert((State.data.metNpcs || []).includes("modafu"), "拜师时结识墨大夫（A3）");
+  assert(!(State.data.metNpcs || []).includes("mocaihuan"), "此时尚未结识墨彩环（不再过早解锁）");
+  assert(!(State.data.metNpcs || []).includes("jinguang"), "此时尚未结识金光上人");
+}
+
+// 结识有反馈（meetNpc 返回首次=true，重复=false）
+{
+  State.create("韩立", "si");
+  assert(Engine.meetNpc("lifeiyu") === true, "首次结识返回 true（触发反馈）");
+  assert(Engine.meetNpc("lifeiyu") === false, "重复结识返回 false（不再重复提示）");
+}
+
+// 金光上人有图鉴词条（出场即可录入）
+{
+  assert(!!WORLD.npcById("jinguang"), "金光上人已纳入人物图鉴名册");
 }
 
 console.log(`\n========== 大世界系统：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);

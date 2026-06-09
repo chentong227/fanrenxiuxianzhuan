@@ -439,21 +439,36 @@ const UI = {
   openCodex() {
     const s = State.data;
     const met = s.metNpcs || [];
-    const cards = WORLD.npcs.map(n => {
-      const known = met.includes(n.id);
+    // 只展示本篇相关人物（按是否已结识排序：已识在前）
+    const arc = Chapters.active().id;
+    const pool = WORLD.npcs.filter(n => {
+      // 出现地点属于本篇，或为主线关键人物
+      if (!n.where || !n.where.length) return met.includes(n.id);
+      return true;
+    });
+    const known = pool.filter(n => met.includes(n.id));
+    const unknown = pool.filter(n => !met.includes(n.id));
+    const total = pool.length;
+
+    const cardOf = (n) => {
       const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, n.id) : 0;
-      if (!known) return `<div class="codex-card locked"><b>？？？</b><div class="codex-bio">尚未相识</div></div>`;
       const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : "相识";
-      return `<div class="codex-card">
+      const relCls = rel >= 20 ? "rel-deep" : rel >= 8 ? "rel-warm" : rel <= -8 ? "rel-cold" : "";
+      return `<div class="codex-card tappable">
         <div class="codex-head"><b>${n.name}</b><span class="codex-role">${n.role}</span></div>
         <div class="codex-bio">${n.bio}</div>
-        <div class="codex-rel">关系：${relTxt}</div>
+        <div class="codex-rel ${relCls}">关系：${relTxt}</div>
       </div>`;
-    }).join("");
+    };
+    const lockedCard = `<div class="codex-card locked"><b>？？？</b><div class="codex-bio">尚未相识——行走江湖，自有相逢时。</div></div>`;
+
     this.openModal(`
-      <h2>人物图鉴</h2>
-      <p style="color:var(--ink-dim);font-size:12px">行走江湖所遇之人。大道无情，有羁绊者，终有离散之时。</p>
-      <div class="codex">${cards}</div>
+      <h2>人物图鉴 <span class="codex-count">${known.length}/${total}</span></h2>
+      <p style="color:var(--ink-dim);font-size:12px">行走江湖所遇之人，结识后录入此册。大道无情，有羁绊者，终有离散之时。</p>
+      <div class="codex">
+        ${known.map(cardOf).join("")}
+        ${unknown.map(() => lockedCard).join("")}
+      </div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">合上</button></div>
     `);
   },

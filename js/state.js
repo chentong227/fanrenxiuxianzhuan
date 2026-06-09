@@ -127,10 +127,11 @@ const State = {
   flag(key) { return !!this.data.flags[key]; },
   setFlag(key, v = true) { this.data.flags[key] = v; },
 
-  // ---- 人物图鉴：记录已相识 NPC ----
+  // ---- 人物图鉴：记录已相识 NPC（返回是否首次结识）----
   meetNpc(id) {
     if (!this.data.metNpcs) this.data.metNpcs = [];
-    if (id && !this.data.metNpcs.includes(id)) this.data.metNpcs.push(id);
+    if (id && !this.data.metNpcs.includes(id)) { this.data.metNpcs.push(id); return true; }
+    return false;
   },
 };
 
