@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=12" />
+  <title>凡人修仙�?· 修仙模拟 MVP</title>
+  <link rel="stylesheet" href="css/style.css?v=13" />
 </head>
 <body>
   <div id="app">
-    <!-- 开始 / 角色创建界面 -->
+    <!-- 开�?/ 角色创建界面 -->
     <section id="screen-create" class="screen active">
       <div class="create-box">
-        <h1 class="game-title">凡人修仙传</h1>
-        <p class="subtitle">— 真实修仙模拟 · 七玄门篇 —</p>
+        <h1 class="game-title">凡人修仙�?/h1>
+        <p class="subtitle">�?真实修仙模拟 · 七玄门篇 �?/p>
 
         <div class="field">
           <label>道号</label>
@@ -24,43 +24,43 @@
             <span class="sr-label">灵根资质</span>
             <span id="sr-result" class="sr-result untested">未测</span>
           </div>
-          <div id="sr-desc" class="sr-desc">凡人之躯，尚不知有无仙缘。点击下方测试灵根。</div>
-          <button id="btn-test-root" class="btn btn-secondary">测 灵 根</button>
+          <div id="sr-desc" class="sr-desc">凡人之躯，尚不知有无仙缘。点击下方测试灵根�?/div>
+          <button id="btn-test-root" class="btn btn-secondary">�?�?�?/button>
         </div>
 
-        <p class="hint">提示：天地灵根稀有，绝大多数修士不过五灵根、伪灵根之流。资质平庸者，唯有以苦修与万全准备弥补天资。</p>
+        <p class="hint">提示：天地灵根稀有，绝大多数修士不过五灵根、伪灵根之流。资质平庸者，唯有以苦修与万全准备弥补天资�?/p>
 
-        <button id="btn-start" class="btn btn-primary" disabled>踏 入 仙 途</button>
+        <button id="btn-start" class="btn btn-primary" disabled>�?�?�?�?/button>
         <button id="btn-load" class="btn btn-ghost">读取存档</button>
       </div>
     </section>
 
-    <!-- 主游戏界面 -->
+    <!-- 主游戏界�?-->
     <section id="screen-game" class="screen">
       <header class="topbar">
         <div class="char-brief">
-          <span class="game-logo">凡人修仙传</span>
-          <span id="top-time" class="t-realm">第1年</span>
+          <span class="game-logo">凡人修仙�?/span>
+          <span id="top-time" class="t-realm">�?�?/span>
         </div>
         <div class="topbar-actions">
           <button id="btn-codex" class="btn btn-mini">人物</button>
-          <button id="btn-chronicle" class="btn btn-mini">风云录</button>
+          <button id="btn-chronicle" class="btn btn-mini">风云�?/button>
           <button id="btn-techniques" class="btn btn-mini">功法</button>
-          <button id="btn-llm" class="btn btn-mini">活世界</button>
+          <button id="btn-llm" class="btn btn-mini">活世�?/button>
           <button id="btn-save" class="btn btn-mini">存档</button>
-          <button id="btn-menu" class="btn btn-mini">主菜单</button>
+          <button id="btn-menu" class="btn btn-mini">主菜�?/button>
         </div>
       </header>
 
       <main class="layout">
-        <!-- 左栏：韩立角色卡 + 状态 + 储物袋 -->
+        <!-- 左栏：韩立角色卡 + 状�?+ 储物�?-->
         <aside class="panel side-rail">
           <div class="hero-card">
             <div class="hero-portrait" id="hero-portrait">🧙</div>
             <div class="hero-meta">
               <div class="hero-name" id="hero-name">韩立</div>
-              <div class="hero-realm"><span id="st-realm">练气一层</span> · <span id="st-root">四灵根</span></div>
-              <div class="hero-age"><span id="hero-age">13 岁</span> · 寿元 <span id="hero-lifespan">100</span></div>
+              <div class="hero-realm"><span id="st-realm">练气一�?/span> · <span id="st-root">四灵�?/span></div>
+              <div class="hero-age"><span id="hero-age">13 �?/span> · 寿元 <span id="hero-lifespan">100</span></div>
             </div>
           </div>
 
@@ -86,19 +86,19 @@
           </div>
 
           <div class="attr-grid">
-            <div class="attr-cell" data-tip="神识：比对手高时可看穿其出招意图，并提升命中与暴击；对元神之敌唯靠功力镇压。"><span>神识</span><b id="st-sense">0</b></div>
-            <div class="attr-cell" data-tip="遁速：决定战斗先手，并减少大世界赶路耗时（省光阴=省寿元）。"><span>遁速</span><b id="st-speed">0</b></div>
-            <div class="attr-cell" data-tip="悟性：突破时更快削减瓶颈心魔，并提升临场顿悟与习功法/炼丹效率。"><span>悟性</span><b id="st-insight">0</b></div>
-            <div class="attr-cell" data-tip="体魄：影响气血上限与抗打击。"><span>体魄</span><b id="st-body">0</b></div>
+            <div class="attr-cell" data-tip="神识：比对手高时可看穿其出招意图，并提升命中与暴击；对元神之敌唯靠功力镇压�?><span>神识</span><b id="st-sense">0</b></div>
+            <div class="attr-cell" data-tip="遁速：决定战斗先手，并减少大世界赶路耗时（省光阴=省寿元）�?><span>遁�?/span><b id="st-speed">0</b></div>
+            <div class="attr-cell" data-tip="悟性：突破时更快削减瓶颈心魔，并提升临场顿悟与习功�?炼丹效率�?><span>悟�?/span><b id="st-insight">0</b></div>
+            <div class="attr-cell" data-tip="体魄：影响气血上限与抗打击�?><span>体魄</span><b id="st-body">0</b></div>
             <div class="attr-cell"><span>灵石</span><b id="st-stones">0</b></div>
-            <div class="attr-cell"><span>岁月</span><b id="st-time">第1年</b></div>
+            <div class="attr-cell"><span>岁月</span><b id="st-time">�?�?/b></div>
           </div>
 
-          <h3 class="panel-title">储物袋</h3>
+          <h3 class="panel-title">储物�?/h3>
           <div id="inventory" class="inventory"></div>
         </aside>
 
-        <!-- 中栏：任务 + 在场人物 + 当前可做 -->
+        <!-- 中栏：任�?+ 在场人物 + 当前可做 -->
         <section class="panel mid-col">
           <div id="objective-bar" class="objective-bar"></div>
           <h3 class="panel-title">在场人物</h3>
@@ -107,13 +107,13 @@
           <div id="action-buttons" class="action-buttons"></div>
         </section>
 
-        <!-- 右栏：所在 + 地图 + 剧情文字 -->
+        <!-- 右栏：所�?+ 地图 + 剧情文字 -->
         <section class="panel stage-col">
           <div class="stage-place">
             <div id="loc-scene" class="loc-scene"></div>
             <div class="place-head">
-              <span class="loc-tag">所在</span>
-              <span id="loc-name" class="loc-name">青牛镇</span>
+              <span class="loc-tag">所�?/span>
+              <span id="loc-name" class="loc-name">青牛�?/span>
             </div>
             <div id="loc-desc" class="loc-desc"></div>
             <div id="loc-map" class="loc-map"></div>
@@ -135,22 +135,22 @@
     <div id="combat-overlay" class="combat-overlay" hidden>
       <div id="combat-banner" class="combat-banner" hidden></div>
       <div class="combat-box">
-        <div id="combat-title" class="combat-title">斗 法</div>
+        <div id="combat-title" class="combat-title">�?�?/div>
         <div class="combat-field">
           <div id="combat-enemies" class="combat-enemies"></div>
-          <div class="combat-vs">⚔</div>
+          <div class="combat-vs">�?/div>
           <div id="combat-player" class="combat-player"></div>
         </div>
         <div class="combat-qi" id="combat-qi"></div>
         <div class="combat-spells" id="combat-spells"></div>
         <div class="combat-log" id="combat-log"></div>
         <div class="combat-actions">
-          <button class="btn btn-primary" id="combat-endround">结束本回合</button>
+          <button class="btn btn-primary" id="combat-endround">结束本回�?/button>
         </div>
       </div>
     </div>
 
-    <!-- 箱庭探索界面（副本/秘境走格子）-->
+    <!-- 箱庭探索界面（副�?秘境走格子）-->
     <div id="explore-overlay" class="explore-overlay" hidden>
       <div class="explore-box">
         <div class="explore-head">
@@ -171,16 +171,30 @@
         <div class="explore-log" id="explore-log"></div>
         <div class="explore-dpad">
           <div></div>
-          <button class="dpad-btn" data-dir="up">↑</button>
+          <button class="dpad-btn" data-dir="up">�?/button>
           <div></div>
-          <button class="dpad-btn" data-dir="left">←</button>
+          <button class="dpad-btn" data-dir="left">�?/button>
           <button class="dpad-btn dpad-center" data-dir="">·</button>
-          <button class="dpad-btn" data-dir="right">→</button>
+          <button class="dpad-btn" data-dir="right">�?/button>
           <div></div>
-          <button class="dpad-btn" data-dir="down">↓</button>
+          <button class="dpad-btn" data-dir="down">�?/button>
           <div></div>
         </div>
       </div>
+    </div>
+
+    <!-- 剧情演出（视觉小说式：大立绘 + 逐句推进�?->
+    <div id="story-overlay" class="story-overlay" hidden>
+      <div id="story-bg" class="story-bg"></div>
+      <div class="story-scrim"></div>
+      <div id="story-portrait" class="story-portrait"></div>
+      <div class="story-stage-name" id="story-stage-name"></div>
+      <div class="story-dialog" id="story-dialog" onclick="UI.storyAdvance()">
+        <div class="story-speaker" id="story-speaker"></div>
+        <div class="story-text" id="story-text"></div>
+        <div class="story-cue" id="story-cue">�?轻触继续</div>
+      </div>
+      <div class="story-choices" id="story-choices"></div>
     </div>
 
     <!-- 弹窗容器 -->
@@ -191,24 +205,24 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=12"></script>
-  <script src="js/state.js?v=12"></script>
-  <script src="js/chapters.js?v=12"></script>
-  <script src="js/balance.js?v=12"></script>
-  <script src="js/world.js?v=12"></script>
-  <script src="js/npcsim.js?v=12"></script>
-  <script src="js/interactions.js?v=12"></script>
-  <script src="js/combat.js?v=12"></script>
-  <script src="js/explore.js?v=12"></script>
-  <script src="js/loadout.js?v=12"></script>
-  <script src="js/dialogue.js?v=12"></script>
-  <script src="js/llm.js?v=12"></script>
-  <script src="js/art.js?v=12"></script>
-  <script src="js/fortunes.js?v=12"></script>
-  <script src="js/quests.js?v=12"></script>
-  <script src="js/story.js?v=12"></script>
-  <script src="js/engine.js?v=12"></script>
-  <script src="js/ui.js?v=12"></script>
-  <script src="js/main.js?v=12"></script>
+  <script src="js/data.js?v=13"></script>
+  <script src="js/state.js?v=13"></script>
+  <script src="js/chapters.js?v=13"></script>
+  <script src="js/balance.js?v=13"></script>
+  <script src="js/world.js?v=13"></script>
+  <script src="js/npcsim.js?v=13"></script>
+  <script src="js/interactions.js?v=13"></script>
+  <script src="js/combat.js?v=13"></script>
+  <script src="js/explore.js?v=13"></script>
+  <script src="js/loadout.js?v=13"></script>
+  <script src="js/dialogue.js?v=13"></script>
+  <script src="js/llm.js?v=13"></script>
+  <script src="js/art.js?v=13"></script>
+  <script src="js/fortunes.js?v=13"></script>
+  <script src="js/quests.js?v=13"></script>
+  <script src="js/story.js?v=13"></script>
+  <script src="js/engine.js?v=13"></script>
+  <script src="js/ui.js?v=13"></script>
+  <script src="js/main.js?v=13"></script>
 </body>
 </html>

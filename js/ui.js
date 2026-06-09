@@ -487,19 +487,105 @@ const UI = {
     box.scrollTop = box.scrollHeight;
   },
 
-  /* -------- 剧情卡渲染（带选项）-------- */
+  /* -------- 剧情卡渲染（视觉小说式：大立绘 + 逐句推进）-------- */
   renderStory(stage) {
-    const box = this.el("narrative");
-    const bodyHtml = (stage.text || []).map(seg => this._renderSegment(seg)).join("");
-    box.innerHTML += `
-      <div class="entry story" id="story-card">
-        <div class="title">${stage.title}</div>
-        <div class="body">${bodyHtml}</div>
-      </div>`;
-    box.scrollTop = box.scrollHeight;
+    // 将 stage.text 的混合段落解析成统一的"演出节拍"序列
+    const beats = this._buildStoryBeats(stage);
+    this._story = { stage, beats, idx: -1 };
+    this.el("story-overlay").hidden = false;
+    document.body.classList.add("story-on");
+    // 场景背景：优先该阶段声明的 scene，否则用当前地点的场景图
+    this._storySetScene(stage);
+    this.storyAdvance();
+  },
 
-    const choicesBox = this.el("choices");
-    // 战斗类抉择（resolve 进战斗）：在选项前显示「临战准备」一览，避免"没头没尾"
+  // 把 text[]（字符串/对象混排）拍平成节拍：{ kind:'narr'|'say'|'scene', who, text, tone }
+  _buildStoryBeats(stage) {
+    const beats = [];
+    (stage.text || []).forEach(seg => {
+      if (typeof seg === "string") { beats.push({ kind: "narr", text: seg }); return; }
+      if (seg.scene) { beats.push({ kind: "scene", text: seg.scene }); return; }
+      if (seg.aside) { beats.push({ kind: "aside", who: State.data.name, text: seg.aside }); return; }
+      if (seg.beat) { beats.push({ kind: "narr", text: seg.beat || "……" }); return; }
+      if (seg.say) { beats.push({ kind: "say", who: seg.say, text: seg.text, tone: seg.tone }); return; }
+      if (seg.narr) { beats.push({ kind: "narr", text: seg.narr }); return; }
+    });
+    return beats;
+  },
+
+  // 设定剧情背景图：阶段 scene 关键字 → 地点图；否则当前地点
+  _storySetScene(stage) {
+    const bg = this.el("story-bg");
+    if (!bg || typeof Art === "undefined") return;
+    let url = null;
+    const loc = State.location();
+    if (loc) url = Art.locUrl(loc);
+    if (url) { bg.style.backgroundImage = `url("${url}")`; bg.classList.add("on"); }
+    else { bg.style.backgroundImage = ""; bg.classList.remove("on"); }
+  },
+
+  // 逐句推进：每次轻触显示下一节拍；到末尾则给出选项
+  storyAdvance() {
+    const st = this._story; if (!st) return;
+    // 已到结尾：不再推进（选项已显示）
+    if (st.done) return;
+    st.idx++;
+    if (st.idx >= st.beats.length) { this._storyShowChoices(); return; }
+    const b = st.beats[st.idx];
+    const stageName = this.el("story-stage-name");
+    if (stageName) stageName.textContent = st.stage.title || "";
+
+    const speakerEl = this.el("story-speaker");
+    const textEl = this.el("story-text");
+    const dialog = this.el("story-dialog");
+    const cue = this.el("story-cue");
+
+    // 场景过场：居中淡入一行
+    if (b.kind === "scene") {
+      dialog.classList.add("scene-beat");
+      speakerEl.innerHTML = "";
+      textEl.innerHTML = `<span class="scene-line">· ${b.text} ·</span>`;
+    } else {
+      dialog.classList.remove("scene-beat");
+      const who = b.who;
+      const isNarr = (b.kind === "narr");
+      const isAside = (b.kind === "aside");
+      speakerEl.innerHTML = isNarr ? "" :
+        `<span class="sp-name${isAside ? ' aside' : ''}">${who}${isAside ? "（心声）" : ""}</span>`;
+      textEl.innerHTML = `<span class="story-line${isNarr ? ' narr' : ''}${isAside ? ' aside' : ''}">${b.text}</span>`;
+      // 立绘：旁白用当前地点/无；对话/心声用说话人立绘
+      this._storySetPortrait(isNarr ? null : who);
+    }
+
+    const last = (st.idx === st.beats.length - 1);
+    if (cue) cue.textContent = last ? "▽ 轻触，到此抉择" : "▽ 轻触继续";
+    this.el("story-choices").innerHTML = "";
+  },
+
+  // 大立绘：左侧人物半身像（有图才显示）
+  _storySetPortrait(who) {
+    const box = this.el("story-portrait");
+    if (!box) return;
+    if (!who || typeof Art === "undefined") { box.classList.remove("on"); box.innerHTML = ""; return; }
+    const self = (who === State.data.name || who === "韩立");
+    const id = self ? "hanli" : this._npcIdByName(who);
+    const url = id ? Art.url(id) : null;
+    if (url) {
+      // 切换立绘时做一个轻微淡入
+      box.innerHTML = `<img src="${url}" alt="${who}" />`;
+      box.className = "story-portrait on " + (self ? "right" : "left");
+    } else {
+      box.classList.remove("on"); box.innerHTML = "";
+    }
+  },
+
+  _storyShowChoices() {
+    const st = this._story; if (!st) return;
+    st.done = true;
+    const stage = st.stage;
+    const cue = this.el("story-cue"); if (cue) cue.textContent = "";
+    const box = this.el("story-choices");
+    // 战斗类抉择前的「临战准备」一览
     const isFight = (stage.choices || []).some(c => c.resolve);
     let prepHtml = "";
     if (isFight) {
@@ -512,13 +598,32 @@ const UI = {
         <span class="fp-note">${ready ? '准备充分，可放手一搏' : warn ? '毫无底牌！硬拼九死一生，建议先去后山备足毒草暗器' : '底牌偏少，胜算有限，宜再备一些'}</span>
       </div>`;
     }
-    choicesBox.innerHTML = prepHtml + (stage.choices || []).map((c, i) => {
+    box.innerHTML = prepHtml + (stage.choices || []).map((c, i) => {
       const lack = c.requireItem && !State.count(c.requireItem);
-      return `<button class="choice${c.resolve ? ' choice-fight' : ''}" onclick="Engine.chooseStory(STORY[${State.data.storyStage}], ${i})">
-        ${c.text}
-        ${c.hint ? `<span class="c-hint">${c.hint}${lack ? '（尚缺）' : ''}</span>` : ""}
+      return `<button class="choice${c.resolve ? ' choice-fight' : ''}" onclick="UI.storyChoose(${i})">
+        ${c.text}${c.hint ? `<span class="c-hint">${c.hint}${lack ? '（尚缺）' : ''}</span>` : ""}
       </button>`;
     }).join("");
+  },
+
+  // 选项点击：先把这段剧情沉淀到叙事日志（留痕），再关闭演出、推进
+  storyChoose(i) {
+    const st = this._story; if (!st) return;
+    const stage = st.stage;
+    this._archiveStory(stage);
+    this.el("story-overlay").hidden = true;
+    document.body.classList.remove("story-on");
+    this._story = null;
+    Engine.chooseStory(STORY[State.data.storyStage], i);
+  },
+
+  // 把已演完的剧情正文沉淀进叙事日志（持久，可回看）
+  _archiveStory(stage) {
+    const s = State.data;
+    const bodyHtml = (stage.text || []).map(seg => this._renderSegment(seg)).join("");
+    const id = (Engine._logSeq = (Engine._logSeq || 0) + 1);
+    s.log.push({ id, t: `第${s.year}年${s.month}月`, kind: "story", body: `<div class="title">${stage.title}</div>${bodyHtml}` });
+    if (s.log.length > 60) s.log.shift();
   },
 
   // 剧情演出：解析一段叙事单元（字符串=旁白；对象=对话/心理/强调/场景）
