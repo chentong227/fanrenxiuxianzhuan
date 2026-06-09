@@ -756,6 +756,7 @@ html, body {
 .speed-key { color: var(--ink-dim); }
 .speed-val { color: var(--gold-bright); font-weight: 700; font-size: 16px; }
 .speed-mount { margin-left: auto; color: var(--blue); border: 1px solid var(--blue); border-radius: 10px; padding: 1px 10px; font-size: 12px; }
+.speed-breakdown { color: var(--ink-dim); font-size: 11px; }
 
 /* ============================================================
  * 据点 · 在场人物（让城内有人气，可交谈）

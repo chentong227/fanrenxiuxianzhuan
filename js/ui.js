@@ -640,6 +640,7 @@ const UI = {
       <div class="speed-bar">
         <span class="speed-key">移动速度</span>
         <span class="speed-val">${State.effectiveSpeed()}</span>
+        <span class="speed-breakdown">基础${State.data.speed}${State.realmSpeedBonus() ? `＋境界${State.realmSpeedBonus()}` : ''}${State.movementArtBonus() ? `＋身法${State.movementArtBonus()}` : ''}${State.flightTreasure().speedBonus ? `＋${State.flightTreasure().name}${State.flightTreasure().speedBonus}` : ''}</span>
         <span class="speed-mount">${State.flightTreasure().name}</span>
       </div>
       <div class="worldmap">

@@ -172,11 +172,43 @@ DATA.bigRealmRites = {
  *   speedBonus 直接叠加到遁速；arc 标注所属篇章；locked 表示当前篇章不可得。
  */
 DATA.flightTreasures = {
-  none: { name: "徒步赶路", speedBonus: 0, desc: "全凭两条腿与粗浅遁术，跋山涉水。", arc: null },
+  none: { name: "徒步赶路", speedBonus: 0, grade: "凡", arc: null,
+    desc: "全凭两条腿与粗浅遁术，跋山涉水。练气修士的常态。" },
+
+  // —— 黄枫谷起：低阶飞行法器（御物而行，提速有限）——
+  yu_feng_che: {
+    name: "御风车", speedBonus: 18, grade: "黄阶法器", arc: "huangfeng", locked: true,
+    desc: "可载人御风疾行的低阶法器，比徒步遁光快上数倍，是练气、筑基修士赶路的寻常脚力。",
+    origin: "黄枫谷篇及以后：坊市可购或机缘所得。",
+  },
+  // —— 中阶：渡海乘风雷舟（跨海远行）——
+  shen_feng_zhou: {
+    name: "神风舟", speedBonus: 36, grade: "玄阶法器", arc: "luanxinghai", locked: true,
+    desc: "御风疾驰的舟形法器，载重大、续航远，宜于跨海长途。乱星海一带行商、修士远渡常用。",
+    origin: "乱星海篇：海外坊市或机缘所得。",
+  },
+  du_hai_lei_zhou: {
+    name: "渡海乘风雷舟", speedBonus: 48, grade: "玄阶法器", arc: "luanxinghai", locked: true,
+    desc: "以风雷之力驱动的飞舟，破浪凌空，专为茫茫乱星海的远渡而设。",
+    origin: "乱星海篇：海外所得。",
+  },
+  // —— 顶级：风雷翅（本命/贴身飞遁，极速且灵活）——
   feng_lei_chi: {
-    name: "风雷翅", speedBonus: 60, grade: "epic", arc: "luanxinghai", locked: true,
-    desc: "乱星海所得的稀世飞行法宝，振翅风雷相生，遁速奇快。得之者纵横万里如履平地——韩立纵横乱星海的依仗之一。",
+    name: "风雷翅", speedBonus: 70, grade: "宝品·极速", arc: "luanxinghai", locked: true,
+    desc: "乱星海所得的稀世飞行法宝，振翅风雷相生，遁速奇快且贴身灵动，远胜寻常飞舟。韩立纵横乱星海、屡屡险中脱身的依仗之一。",
     origin: "乱星海篇：海外机缘所得。",
+  },
+};
+
+/* ---------- 遁术功法（功法本身亦可提升遁速，独立于飞行法宝）----------
+ * 忠于设定：修为/功法精进本就提升遁光之速；某些功法/秘术专擅速度。
+ * speedBonus 叠加到有效遁速（与飞行法宝叠加）；本篇长春功无额外加成。
+ */
+DATA.movementArts = {
+  // 通用：境界提升带来的遁光增益由 effectiveSpeed 的境界项体现，这里只放"专精速度"的功法/身法
+  zhayan_bushi: {
+    name: "眨眼身法", speedBonus: 4, arc: "qixuan", locked: false,
+    desc: "眨眼剑法附带的诡谲身法，临阵腾挪极快——略助遁速与战斗先手。",
   },
 };
 

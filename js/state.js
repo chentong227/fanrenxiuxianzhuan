@@ -114,14 +114,36 @@ const State = {
   location() { return WORLD.locations.find(l => l.id === this.data.location); },
   absMonth() { return this.data.year * 12 + this.data.month; },
 
-  // 有效遁速 = 基础遁速 + 飞行法宝加成（移动速度可视化的数值来源）
+  // 有效遁速 = 基础遁速 + 境界遁光增益 + 遁术功法 + 飞行法宝（移动速度可视化的数值来源）
   flightTreasure() {
     const id = this.data.flightId || "none";
     return (DATA.flightTreasures && DATA.flightTreasures[id]) || DATA.flightTreasures.none;
   },
+  // 修为/境界本身带来的遁光增益（境界越高，遁光越快）
+  realmSpeedBonus() {
+    const tier = (typeof Chapters !== "undefined") ? Chapters.realmTier() : 0;
+    return tier * 8;   // 练气0 / 筑基8 / 结丹16 ...
+  },
+  // 已习「遁术功法/身法」累计加成（与飞行法宝叠加）
+  movementArtBonus() {
+    if (typeof DATA.movementArts === "undefined") return 0;
+    const learned = this.data.learnedTechniques || [];
+    let bonus = 0;
+    for (const id of Object.keys(DATA.movementArts)) {
+      const m = DATA.movementArts[id];
+      // 已习得对应功法，或本篇默认可用（未锁）的随身身法
+      if (learned.includes(id) || (!m.locked && id === "zhayan_bushi" && (this.data.spells || []).includes("zhayan"))) {
+        bonus += m.speedBonus || 0;
+      }
+    }
+    return bonus;
+  },
   effectiveSpeed() {
     const ft = this.flightTreasure();
-    return (this.data.speed || 0) + (ft ? ft.speedBonus || 0 : 0);
+    return (this.data.speed || 0)
+      + this.realmSpeedBonus()
+      + this.movementArtBonus()
+      + (ft ? ft.speedBonus || 0 : 0);
   },
 
   // ---- 物品操作 ----

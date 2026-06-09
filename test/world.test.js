@@ -14,10 +14,10 @@ const sandbox = {
 sandbox.window = sandbox; sandbox.globalThis = sandbox;
 sandbox.UI = new Proxy({}, { get() { return () => {}; } });
 const ctx = vm.createContext(sandbox);
-for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js", "js/world.js", "js/npcsim.js", "js/interactions.js", "js/combat.js", "js/fortunes.js", "js/quests.js", "js/story.js", "js/engine.js"]) {
+for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js", "js/world.js", "js/npcsim.js", "js/interactions.js", "js/combat.js", "js/explore.js", "js/loadout.js", "js/fortunes.js", "js/quests.js", "js/story.js", "js/engine.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", f), "utf8"), ctx, { filename: f });
 }
-const { State, Engine, NPCSIM, INTERACTIONS, WORLD, STORY, Chapters, Balance } = sandbox;
+const { State, Engine, NPCSIM, INTERACTIONS, WORLD, STORY, Chapters, Balance, DATA } = sandbox;
 
 let failures = 0;
 function assert(c, m) { if (c) console.log("  ✓ " + m); else { console.log("  ✗ 失败: " + m); failures++; } }
@@ -137,16 +137,22 @@ console.log("\n=== 据点在场人物 + 移动速度 ===");
   assert(!WORLD.npcById("mocaihuan"), "墨彩环不在七玄门篇名册（嘉源城线，剧情勘误）");
 }
 
-// 移动速度：飞行法宝大幅提速、缩短赶路
+// 移动速度：多来源叠加（境界/身法/飞行法宝），飞行法宝大幅提速
 {
   State.create("韩立", "si");
   const base = State.effectiveSpeed();
-  assert(base === State.data.speed, "默认徒步，有效遁速=基础遁速");
+  assert(base >= State.data.speed, "有效遁速含基础遁速（可叠加身法/境界增益）");
+  // 眨眼身法：习眨眼剑法即有随身身法加成
+  assert(State.movementArtBonus() > 0, "眨眼身法提供遁速加成（功法影响移动）");
   // 装上风雷翅
   State.data.flightId = "feng_lei_chi";
   const flying = State.effectiveSpeed();
   assert(flying > base, `风雷翅大幅提速（${base} → ${flying}）`);
   assert(Balance.travelTimeFactor(flying) < Balance.travelTimeFactor(base), "遁速越高赶路耗时系数越小（移动速度可视化）");
+  // 飞行法宝分级：风雷翅快于御风车
+  assert(DATA.flightTreasures.feng_lei_chi.speedBonus > DATA.flightTreasures.yu_feng_che.speedBonus, "飞行法宝分级：风雷翅 > 御风车");
+  // 风雷翅只是其一：存在多种飞行法宝
+  assert(Object.keys(DATA.flightTreasures).length >= 4, "存在多种飞行法宝（风雷翅只是其一）");
 }
 
 console.log(`\n========== 大世界系统：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);
