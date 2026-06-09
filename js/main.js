@@ -17,6 +17,8 @@ const Main = {
     });
     UI.el("btn-menu").addEventListener("click", () => this.toCreate());
     UI.el("btn-techniques").addEventListener("click", () => UI.openTechniques());
+    const btnLlm = UI.el("btn-llm");
+    if (btnLlm) btnLlm.addEventListener("click", () => UI.openLLMSettings());
     UI.el("btn-chronicle").addEventListener("click", () => UI.openChronicle());
     UI.el("btn-codex").addEventListener("click", () => UI.openCodex());
 
@@ -34,6 +36,17 @@ const Main = {
     UI.el("modal-overlay").addEventListener("click", (e) => {
       if (e.target.id === "modal-overlay" && !Engine._pendingFortune) UI.closeModal();
     });
+
+    // —— 一键开启活世界：用 #llmkey=... 打开页面即自动导入密钥并开启（仅本机存储，随后清掉URL）——
+    try {
+      const h = location.hash || "";
+      const m = h.match(/llmkey=([^&]+)/);
+      if (m && typeof LLM !== "undefined") {
+        LLM.configure({ key: decodeURIComponent(m[1]), on: true });
+        history.replaceState(null, "", location.pathname + location.search);
+        setTimeout(() => UI.toast("已自动开启「活世界」叙述层"), 600);
+      }
+    } catch (e) {}
 
     // 有存档则提示
     if (!State.hasSave()) UI.el("btn-load").style.display = "none";

@@ -4,11 +4,18 @@
 
 const Engine = {
   /* -------- 叙事日志 -------- */
-  log(text, kind = "event") {
+  log(text, kind = "event", meta = null) {
     const s = State.data;
-    s.log.push({ t: `第${s.year}年${s.month}月`, body: text, kind });
+    const id = (this._logSeq = (this._logSeq || 0) + 1);
+    const entry = { id, t: `第${s.year}年${s.month}月`, body: text, kind };
+    s.log.push(entry);
     if (s.log.length > 60) s.log.shift();
     UI.renderNarrative();
+    // 叙述层（可选）：若启用 LLM，异步润色这条日志，回来后替换文字（失败则保留模板，玩家无感）
+    if (meta && typeof LLM !== "undefined" && LLM.enabled()) {
+      LLM.embellish(entry, meta, () => { UI.renderNarrative(); State.save(); });
+    }
+    return entry;
   },
   toast(msg, bad = false) { UI.toast(msg, bad); },
 
@@ -71,7 +78,8 @@ const Engine = {
     // 只把"身死/筑基"这类重大事件即时播报，避免刷屏
     const notable = news.filter(n => n.kind === "death" || n.kind === "ascend");
     notable.slice(0, 2).forEach(n => {
-      this.log("【风云录】" + n.text, n.kind === "ascend" ? "good" : "bad");
+      this.log("【风云录】" + n.text, n.kind === "ascend" ? "good" : "bad",
+        { label: "风云录传闻", prompt: "把这则世间修士的消息，写成一句更有沧桑感的江湖传闻（事实不变）：" + n.text, remember: true });
     });
     // 世事反哺：有散修筑基成功 → 成为一方人物，世道随之变化
     const ascended = news.filter(n => n.kind === "ascend");
@@ -427,7 +435,8 @@ const Engine = {
       const bonus = Math.round(gain * 0.4) + 5;
       s.cultivation += bonus;
       if (Math.random() < 0.4) s.insight += 1;
-      this.log("闭关插曲·顿悟：枯坐之中，你忽有所悟，《长春功》的运转豁然顺畅。修为额外+" + bonus + "，悟性或有精进。", "good");
+      this.log("闭关插曲·顿悟：枯坐之中，你忽有所悟，《长春功》的运转豁然顺畅。修为额外+" + bonus + "，悟性或有精进。", "good",
+        { label: "闭关顿悟", prompt: "描写主角闭关枯坐中忽然顿悟、《长春功》运转豁然顺畅的一瞬（一两句，不提具体数值）。" });
     } else if (roll < 0.58) {
       // 走火入魔
       const dmg = Math.round(s.hpMax * (0.15 + months * 0.01));
@@ -551,7 +560,8 @@ const Engine = {
         this.log("集镇商贩向你兜售丹药材料，你可在此采买。", "sys");
         break;
       case "rumor":
-        this.log(this._randomRumor(), "sys");
+        this.log(this._randomRumor(), "sys",
+          { label: "市井传闻", prompt: "在「" + (State.location() ? State.location().name : "此地") + "」听到一句市井传闻，写一句即可，要符合当下世道：" });
         break;
       case "npc": {
         const npc = WORLD.randomNpc ? WORLD.randomNpc(loc.id, s) : null;

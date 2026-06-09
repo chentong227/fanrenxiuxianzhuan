@@ -200,7 +200,17 @@ const UI = {
     if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, 3);
     s.mood = clamp(s.mood + 3, 0, s.moodMax);
     const n = WORLD.npcById(npcId);
-    Engine.log(`你与「${n ? n.name : npcId}」攀谈了一番，叙了些闲话，交情更近了几分。`, "event");
+    const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
+    const entry = Engine.log(`你与「${n ? n.name : npcId}」攀谈了一番，叙了些闲话，交情更近了几分。`, "event");
+    // 活世界：让该 NPC 即兴说一句符合其身份/交情/世道的话（异步追加，失败无感）
+    if (n && typeof LLM !== "undefined" && LLM.enabled()) {
+      const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : "点头之交";
+      LLM.generate(`你现在扮演「${n.name}」（${n.role}）。其为人：${n.bio}。与韩立${relTxt}。` +
+        `请以${n.name}的口吻，对韩立说一句此刻的闲谈（一句即可，符合其身份与当下世道，不要旁白）。`, { maxTokens: 200 })
+        .then(t => {
+          if (t) { entry.body = `你与「${n.name}」攀谈。${n.name}道：「${t}」`; LLM.remember(`${n.name}对韩立说：${t}`); UI.renderNarrative(); State.save(); }
+        }).catch(() => {});
+    }
     this.closeModal();
     Engine.checkLifespan();
     State.save();
@@ -676,6 +686,49 @@ const UI = {
       <p>${built.text}</p>
       <div class="choices" style="margin-top:14px">${choices}</div>
     `);
+  },
+
+  /* -------- 活世界（LLM 叙述层）设置 -------- */
+  openLLMSettings() {
+    const c = (typeof LLM !== "undefined") ? LLM.config() : { key: "", model: "deepseek/deepseek-chat", on: false };
+    const on = (typeof LLM !== "undefined") && LLM.enabled();
+    this.openModal(`
+      <h2>活世界 · 叙述层</h2>
+      <p style="color:var(--ink-dim);font-size:13px">接入大模型，让风云录、散修闲谈、奇遇、闭关见闻等"怎么说"的部分千变万化、有人情味。
+      <b style="color:var(--gold)">数值、战斗、主线剧情不受影响</b>，断网或失败自动回退模板文字。</p>
+      <p style="color:var(--ink-dim);font-size:12px">密钥只存本机浏览器，不上传、不入代码。推荐 deepseek/deepseek-v4-flash（便宜·中文好·人设稳）。</p>
+      <div class="field" style="margin:10px 0">
+        <label style="font-size:13px;color:var(--gold)">OpenRouter API Key</label>
+        <input id="llm-key" type="password" placeholder="sk-or-v1-..." value="${c.key || ""}" style="width:100%;margin-top:6px" />
+      </div>
+      <div class="field" style="margin:10px 0">
+        <label style="font-size:13px;color:var(--gold)">模型</label>
+        <input id="llm-model" type="text" value="${c.model || "deepseek/deepseek-v4-flash"}" style="width:100%;margin-top:6px" />
+      </div>
+      <p style="color:${on ? 'var(--jade-bright)' : 'var(--ink-dim)'};font-size:12px">当前状态：${on ? "已开启 ✦ 世界正在活起来" : "未开启"}</p>
+      <div class="modal-actions">
+        <div class="modal-row">
+          <button class="btn btn-primary" onclick="UI._llmSave(true)">保存并开启</button>
+          <button class="btn btn-secondary" onclick="UI._llmSave(false)">仅保存(关闭)</button>
+        </div>
+        <button class="btn btn-secondary" onclick="UI._llmTest()">测试一句</button>
+        <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
+      </div>
+      <div id="llm-test-out" style="color:var(--jade-bright);font-size:13px;margin-top:8px"></div>
+    `);
+  },
+  _llmSave(on) {
+    LLM.configure({ key: this.el("llm-key").value, model: this.el("llm-model").value, on });
+    this.toast(on ? "已开启活世界" : "已保存（未开启）");
+    this.closeModal();
+  },
+  _llmTest() {
+    LLM.configure({ key: this.el("llm-key").value, model: this.el("llm-model").value, on: true });
+    const out = this.el("llm-test-out");
+    out.textContent = "正在请求……";
+    LLM.generate("用一句话写一句此刻这世道的市井传闻。", { maxTokens: 200 })
+      .then(t => { out.textContent = t ? ("✦ " + t) : "未能获取（请检查密钥/网络）"; })
+      .catch(() => { out.textContent = "请求失败（请检查密钥/网络）"; });
   },
 
   /* -------- 风云录（世间修士命途）-------- */
