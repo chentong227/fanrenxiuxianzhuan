@@ -1055,11 +1055,7 @@ html, body {
   opacity: 0; transition: opacity .45s ease, filter .45s ease, transform .45s ease;
 }
 .story-portrait img { height: 100%; width: auto; object-fit: contain; display: block;
-  filter: drop-shadow(0 6px 24px rgba(0,0,0,.6));
-  /* 羽化边缘：把方图边界溶进暗场景，营造抠图/景深的前景人物感 */
-  -webkit-mask-image: radial-gradient(120% 90% at 50% 42%, #000 58%, rgba(0,0,0,.55) 76%, transparent 92%);
-          mask-image: radial-gradient(120% 90% at 50% 42%, #000 58%, rgba(0,0,0,.55) 76%, transparent 92%);
-}
+  filter: drop-shadow(0 6px 24px rgba(0,0,0,.6)); }
 .story-portrait.on { opacity: 1; }
 /* 暗淡：未说话的一方→退到背景层（景深虚化、压暗、去饱和、轻微后移）*/
 .story-portrait.dim { opacity: .9; }

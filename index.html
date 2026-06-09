@@ -3,11 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="build" content="26" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
+  <script>
+  /* 自动更新：服务器 ver.txt 为最新版本号；若本页过旧，自动跳到带新版本号的地址(强制取新HTML)，无需手动刷新 */
+  (function () {
+    try {
+      var meta = document.querySelector('meta[name="build"]');
+      var cur = parseInt((meta && meta.content) || "0", 10);
+      fetch("ver.txt?t=" + Date.now(), { cache: "no-store" })
+        .then(function (r) { return r.text(); })
+        .then(function (t) {
+          var latest = parseInt(String(t).trim(), 10);
+          if (latest && latest > cur) {
+            location.replace(location.pathname + "?b=" + latest);
+          }
+        }).catch(function () {});
+    } catch (e) {}
+  })();
+  </script>
   <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=25" />
+  <link rel="stylesheet" href="css/style.css?v=26" />
 </head>
 <body>
   <div id="app">
@@ -35,7 +53,7 @@
 
         <button id="btn-start" class="btn btn-primary" disabled>踏 入 仙 途</button>
         <button id="btn-load" class="btn btn-ghost">读取存档</button>
-        <div style="margin-top:10px;color:var(--ink-dim);font-size:11px;letter-spacing:1px">build v25</div>
+        <div style="margin-top:10px;color:var(--ink-dim);font-size:11px;letter-spacing:1px">build v26</div>
       </div>
     </section>
 
@@ -212,24 +230,24 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=25"></script>
-  <script src="js/state.js?v=25"></script>
-  <script src="js/chapters.js?v=25"></script>
-  <script src="js/balance.js?v=25"></script>
-  <script src="js/world.js?v=25"></script>
-  <script src="js/npcsim.js?v=25"></script>
-  <script src="js/interactions.js?v=25"></script>
-  <script src="js/combat.js?v=25"></script>
-  <script src="js/explore.js?v=25"></script>
-  <script src="js/loadout.js?v=25"></script>
-  <script src="js/dialogue.js?v=25"></script>
-  <script src="js/llm.js?v=25"></script>
-  <script src="js/art.js?v=25"></script>
-  <script src="js/fortunes.js?v=25"></script>
-  <script src="js/quests.js?v=25"></script>
-  <script src="js/story.js?v=25"></script>
-  <script src="js/engine.js?v=25"></script>
-  <script src="js/ui.js?v=25"></script>
-  <script src="js/main.js?v=25"></script>
+  <script src="js/data.js?v=26"></script>
+  <script src="js/state.js?v=26"></script>
+  <script src="js/chapters.js?v=26"></script>
+  <script src="js/balance.js?v=26"></script>
+  <script src="js/world.js?v=26"></script>
+  <script src="js/npcsim.js?v=26"></script>
+  <script src="js/interactions.js?v=26"></script>
+  <script src="js/combat.js?v=26"></script>
+  <script src="js/explore.js?v=26"></script>
+  <script src="js/loadout.js?v=26"></script>
+  <script src="js/dialogue.js?v=26"></script>
+  <script src="js/llm.js?v=26"></script>
+  <script src="js/art.js?v=26"></script>
+  <script src="js/fortunes.js?v=26"></script>
+  <script src="js/quests.js?v=26"></script>
+  <script src="js/story.js?v=26"></script>
+  <script src="js/engine.js?v=26"></script>
+  <script src="js/ui.js?v=26"></script>
+  <script src="js/main.js?v=26"></script>
 </body>
 </html>
