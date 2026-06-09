@@ -814,6 +814,26 @@ const UI = {
     this._combatTarget = combat.enemies.findIndex(e => e.alive);
     this._combatLogLen = 0;
     this.renderCombat(combat, meta);
+    this._flashCombatBanner(meta, combat);
+  },
+  // 开战时的醒目横幅（让"遭遇/决战/渡劫"有明确的起始感）
+  _flashCombatBanner(meta, combat) {
+    const el = this.el("combat-banner");
+    if (!el) return;
+    const enemyName = (combat.enemies[0] && combat.enemies[0].name) || "强敌";
+    const banners = {
+      encounter: { t: "遭 遇 敌 袭", s: enemyName + " 拦路，斗法一触即发", cls: "b-red" },
+      showdown:  { t: "夺 舍 之 夜", s: "成败生死，皆在今夜", cls: "b-purple" },
+      jinguang:  { t: "暗 算 金 光 上 人", s: "硬拼必败，唯毒与暗器可破", cls: "b-gold" },
+      breakthrough: { t: meta.big ? "渡 劫 · 心 魔 劫" : "突 破 · 心 战", s: meta.big ? "脱胎换骨，九死一生" : "降伏心魔，方能更进一层", cls: "b-jade" },
+    };
+    const b = banners[meta.type] || banners.encounter;
+    el.className = "combat-banner " + b.cls;
+    el.innerHTML = `<div class="cb-title">${b.t}</div><div class="cb-sub">${b.s}</div>`;
+    el.hidden = false;
+    el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+    clearTimeout(this._bannerTimer);
+    this._bannerTimer = setTimeout(() => { el.hidden = true; }, 1600);
   },
   closeCombat() { this.el("combat-overlay").hidden = true; },
 
