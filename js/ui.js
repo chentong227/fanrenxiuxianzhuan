@@ -851,6 +851,17 @@ const UI = {
     else if (dy === -1) Engine.exploreMove("up");
   },
 
+  // 采集时让该格闪一下（视觉反馈）
+  flashExploreCell(x, y) {
+    const grid = this.el("explore-grid");
+    if (!grid) return;
+    const st = State.data.explore;
+    if (!st) return;
+    const idx = y * st.w + x;
+    const cell = grid.children[idx];
+    if (cell) { cell.classList.remove("collected"); void cell.offsetWidth; cell.classList.add("collected"); }
+  },
+
   // 生成小地图格子 HTML（已探明区域 + 你的红点 + 出口/资源等）
   _minimapCells(state) {
     const TE = Explore.TERRAIN, CO = Explore.CONTENT;

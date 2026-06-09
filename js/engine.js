@@ -283,6 +283,7 @@ const Engine = {
     for (const ev of r.events) {
       if (ev.type === "collect") {
         this.toast(`采得 ${ev.name}`);
+        if (UI.flashExploreCell) UI.flashExploreCell(s.explore.player.x, s.explore.player.y);
       } else if (ev.type === "rival_take") {
         this.toast(`${ev.companion.name} 抢走了 ${ev.name}`, true);
       } else if (ev.type === "conflict") {
