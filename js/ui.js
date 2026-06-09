@@ -489,14 +489,36 @@ const UI = {
 
   /* -------- 剧情卡渲染（视觉小说式：大立绘 + 逐句推进）-------- */
   renderStory(stage) {
+    const overlay = this.el("story-overlay");
+    // 兜底：若剧情舞台 DOM 缺失，退回把整段剧情写入叙事日志并直接出选项，绝不卡住
+    if (!overlay) { this._renderStoryFallback(stage); return; }
     // 将 stage.text 的混合段落解析成统一的"演出节拍"序列
     const beats = this._buildStoryBeats(stage);
     this._story = { stage, beats, idx: -1 };
-    this.el("story-overlay").hidden = false;
+    overlay.hidden = false;
     document.body.classList.add("story-on");
     // 场景背景：优先该阶段声明的 scene，否则用当前地点的场景图
     this._storySetScene(stage);
     this.storyAdvance();
+  },
+
+  // 降级渲染（无 overlay 时）：把剧情写进右侧叙事区并在下方出选项
+  _renderStoryFallback(stage) {
+    const box = this.el("narrative");
+    if (box) {
+      const bodyHtml = (stage.text || []).map(seg => this._renderSegment(seg)).join("");
+      box.innerHTML += `<div class="entry story"><div class="title">${stage.title}</div><div class="body">${bodyHtml}</div></div>`;
+      box.scrollTop = box.scrollHeight;
+    }
+    const choicesBox = this.el("choices");
+    if (choicesBox) {
+      choicesBox.innerHTML = (stage.choices || []).map((c, i) => {
+        const lack = c.requireItem && !State.count(c.requireItem);
+        return `<button class="choice${c.resolve ? ' choice-fight' : ''}" onclick="Engine.chooseStory(STORY[${State.data.storyStage}], ${i})">
+          ${c.text}${c.hint ? `<span class="c-hint">${c.hint}${lack ? '（尚缺）' : ''}</span>` : ""}
+        </button>`;
+      }).join("");
+    }
   },
 
   // 把 text[]（字符串/对象混排）拍平成节拍：{ kind:'narr'|'say'|'scene', who, text, tone }

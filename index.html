@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=15" />
+  <link rel="stylesheet" href="css/style.css?v=16" />
 </head>
 <body>
   <div id="app">
@@ -183,6 +183,20 @@
       </div>
     </div>
 
+    <!-- 剧情演出（视觉小说式：大立绘 + 逐句推进）-->
+    <div id="story-overlay" class="story-overlay" hidden>
+      <div id="story-bg" class="story-bg"></div>
+      <div class="story-scrim"></div>
+      <div id="story-portrait" class="story-portrait"></div>
+      <div class="story-stage-name" id="story-stage-name"></div>
+      <div class="story-dialog" id="story-dialog" onclick="UI.storyAdvance()">
+        <div class="story-speaker" id="story-speaker"></div>
+        <div class="story-text" id="story-text"></div>
+        <div class="story-cue" id="story-cue">▽ 轻触继续</div>
+      </div>
+      <div class="story-choices" id="story-choices"></div>
+    </div>
+
     <!-- 弹窗容器 -->
     <div id="modal-overlay" class="modal-overlay" hidden>
       <div id="modal" class="modal"></div>
@@ -191,24 +205,24 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=15"></script>
-  <script src="js/state.js?v=15"></script>
-  <script src="js/chapters.js?v=15"></script>
-  <script src="js/balance.js?v=15"></script>
-  <script src="js/world.js?v=15"></script>
-  <script src="js/npcsim.js?v=15"></script>
-  <script src="js/interactions.js?v=15"></script>
-  <script src="js/combat.js?v=15"></script>
-  <script src="js/explore.js?v=15"></script>
-  <script src="js/loadout.js?v=15"></script>
-  <script src="js/dialogue.js?v=15"></script>
-  <script src="js/llm.js?v=15"></script>
-  <script src="js/art.js?v=15"></script>
-  <script src="js/fortunes.js?v=15"></script>
-  <script src="js/quests.js?v=15"></script>
-  <script src="js/story.js?v=15"></script>
-  <script src="js/engine.js?v=15"></script>
-  <script src="js/ui.js?v=15"></script>
-  <script src="js/main.js?v=15"></script>
+  <script src="js/data.js?v=16"></script>
+  <script src="js/state.js?v=16"></script>
+  <script src="js/chapters.js?v=16"></script>
+  <script src="js/balance.js?v=16"></script>
+  <script src="js/world.js?v=16"></script>
+  <script src="js/npcsim.js?v=16"></script>
+  <script src="js/interactions.js?v=16"></script>
+  <script src="js/combat.js?v=16"></script>
+  <script src="js/explore.js?v=16"></script>
+  <script src="js/loadout.js?v=16"></script>
+  <script src="js/dialogue.js?v=16"></script>
+  <script src="js/llm.js?v=16"></script>
+  <script src="js/art.js?v=16"></script>
+  <script src="js/fortunes.js?v=16"></script>
+  <script src="js/quests.js?v=16"></script>
+  <script src="js/story.js?v=16"></script>
+  <script src="js/engine.js?v=16"></script>
+  <script src="js/ui.js?v=16"></script>
+  <script src="js/main.js?v=16"></script>
 </body>
 </html>
