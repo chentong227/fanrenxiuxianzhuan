@@ -6,6 +6,13 @@ const Main = {
   testedRoot: null,
 
   init() {
+    // —— 一次性清理：旧版把实时配图(base64)塞进 localStorage，约 5MB 占满配额，
+    //    导致密钥/存档存不进去。现已改为预生成固定图，这里把遗留的图缓存彻底清掉。——
+    try {
+      localStorage.removeItem("frxxz_art_cache_v1");
+      localStorage.removeItem("frxxz_art_cfg_v1");
+    } catch (e) {}
+
     // —— 角色创建：测灵根 ——
     UI.el("btn-test-root").addEventListener("click", () => this.testRoot());
     UI.el("btn-start").addEventListener("click", () => this.startGame());

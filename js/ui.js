@@ -497,6 +497,10 @@ const UI = {
     this._story = { stage, beats, idx: -1 };
     overlay.hidden = false;
     document.body.classList.add("story-on");
+    // 重置双人立绘
+    const lb = this.el("story-portrait-left"), rb = this.el("story-portrait-right");
+    if (lb) { lb.innerHTML = ""; lb.className = "story-portrait left"; }
+    if (rb) { rb.innerHTML = ""; rb.className = "story-portrait right"; rb.dataset.set = ""; }
     // 场景背景：优先该阶段声明的 scene，否则用当前地点的场景图
     this._storySetScene(stage);
     this.storyAdvance();
@@ -584,21 +588,42 @@ const UI = {
     this.el("story-choices").innerHTML = "";
   },
 
-  // 大立绘：左侧人物半身像（有图才显示）
+  // 双人相对立绘：韩立固定在右，对话 NPC 在左；说话者高亮，另一人暗淡
   _storySetPortrait(who) {
-    const box = this.el("story-portrait");
-    if (!box) return;
-    if (!who || typeof Art === "undefined") { box.classList.remove("on"); box.innerHTML = ""; return; }
-    const self = (who === State.data.name || who === "韩立");
-    const id = self ? "hanli" : this._npcIdByName(who);
-    const url = id ? Art.url(id) : null;
-    if (url) {
-      // 切换立绘时做一个轻微淡入
-      box.innerHTML = `<img src="${url}" alt="${who}" />`;
-      box.className = "story-portrait on " + (self ? "right" : "left");
-    } else {
-      box.classList.remove("on"); box.innerHTML = "";
+    const st = this._story;
+    const lbox = this.el("story-portrait-left");
+    const rbox = this.el("story-portrait-right");
+    if (!lbox || !rbox) return;
+
+    // 右侧固定为韩立立绘
+    if (!rbox.dataset.set) {
+      const hurl = (typeof Art !== "undefined") ? Art.url("hanli") : null;
+      rbox.innerHTML = hurl ? `<img src="${hurl}" alt="韩立" />` : "";
+      rbox.dataset.set = hurl ? "1" : "";
     }
+
+    const self = who && (who === State.data.name || who === "韩立");
+
+    // 出场的对话 NPC（非旁白、非主角）→ 放左侧并记住
+    if (who && !self) {
+      const id = this._npcIdByName(who);
+      const url = id && typeof Art !== "undefined" ? Art.url(id) : null;
+      if (url && st && st.leftNpc !== who) {
+        lbox.innerHTML = `<img src="${url}" alt="${who}" />`;
+        if (st) st.leftNpc = who;
+      }
+    }
+
+    const hasLeft = !!lbox.querySelector("img");
+    const hasRight = !!rbox.querySelector("img");
+    rbox.classList.toggle("on", hasRight);
+    lbox.classList.toggle("on", hasLeft);
+
+    // 高亮谁：旁白时两边都暗；主角说话右亮左暗；NPC 说话左亮右暗
+    const speakRight = self;
+    const speakLeft = who && !self;
+    rbox.classList.toggle("dim", hasRight && !speakRight);
+    lbox.classList.toggle("dim", hasLeft && !speakLeft);
   },
 
   _storyShowChoices() {
