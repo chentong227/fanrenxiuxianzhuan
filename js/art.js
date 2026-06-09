@@ -71,11 +71,12 @@
     onUpdate(fn) { this._listeners.push(fn); },
     _emit(id) { this._listeners.forEach(fn => { try { fn(id); } catch (e) {} }); },
 
-    // —— 取图 URL（同步，立即可用）——
-    // 返回：固定图本地路径 / 缓存 dataURL / null（无图，调用方回退占位）
+    // 仓库内已固定生成的图（id → assets 文件名）。这些直接走本地路径。
+    // ASSET_VER：仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
+    ASSET_VER: 2,
     url(id) {
       if (!id) return null;
-      if (FIXED[id]) return "assets/" + id + ".png";
+      if (FIXED[id]) return "assets/" + id + ".png?v=" + this.ASSET_VER;
       const c = this._loadCache();
       return c[id] || null;
     },
