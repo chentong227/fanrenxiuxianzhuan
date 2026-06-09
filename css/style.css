@@ -152,7 +152,7 @@ html, body {
 
 /* ===== 叙事区 ===== */
 .panel-narrative { display: flex; flex-direction: column; }
-.narrative { flex: 1; overflow-y: auto; padding-right: 8px; }
+.narrative { flex: 1; min-height: 120px; overflow-y: auto; padding-right: 8px; }
 .narrative .entry { margin-bottom: 14px; animation: fadein 0.4s ease; }
 .narrative .entry .time-stamp { color: var(--gold); font-size: 12px; letter-spacing: 1px; opacity: 0.7; }
 .narrative .entry .body { color: var(--ink); margin-top: 2px; }
@@ -176,6 +176,10 @@ html, body {
 .choices .choice .c-hint { display: block; color: var(--ink-dim); font-size: 12px; margin-top: 4px; }
 
 /* ===== 行动面板 ===== */
+.act-zone { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.act-zone.story-pending { opacity: .4; pointer-events: none; }
+.loc-tag { display: inline-block; font-size: 11px; letter-spacing: 2px; color: var(--ink-dim); background: var(--bg); padding: 1px 8px; border-radius: 10px; margin-bottom: 6px; }
+.act-hint { color: var(--ink-dim); font-size: 13px; text-align: center; padding: 10px; font-style: italic; }
 .action-buttons { display: flex; flex-direction: column; gap: 8px; }
 .btn-action { width: 100%; text-align: center; }
 .btn-action[data-action="breakthrough"] { color: var(--gold); border-color: rgba(212,176,106,0.5); }

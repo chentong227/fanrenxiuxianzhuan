@@ -31,6 +31,7 @@ const STORY = [
   {
     id: "journey",
     title: "赴 考",
+    onArrive(s) { s.location = "road"; },
     text: [
       "出了青牛镇，山路迢迢。同行的还有几个各乡来应试的少年。",
       "其中一个虎背熊腰、憨厚老实的少年叫张铁，与你一见投缘。一路上你俩互相照应，渐成好友。",
@@ -45,12 +46,12 @@ const STORY = [
   {
     id: "exam",
     title: "七玄门 · 入门选拔",
+    onArrive(s) { s.location = "shanmen"; State.setFlag("joined_sect"); },
     text: [
       "七玄门依山而建，气派非凡。选拔场上人头攒动，你和张铁夹在其中，显得格外不起眼。",
       "测筋骨、考悟性、试胆识……你二人资质平平，初试竟未能入选。",
       "眼看就要被刷下，你不肯认命，硬着头皮求得一个补考的机会。半年后再试，凭着一股韧劲，你和张铁终于挤进了记名弟子的名册。",
     ],
-    onArrive(s) { State.setFlag("joined_sect"); },
     choices: [
       { text: "入门记名，正式踏入七玄门", hint: "继续", next: true },
     ],

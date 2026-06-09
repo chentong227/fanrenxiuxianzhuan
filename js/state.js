@@ -36,7 +36,7 @@ const State = {
       stones: 0,              // 灵石
       silver: 20,             // 纹银（七玄门篇凡俗通货，墨大夫按层赏银）
 
-      location: "yaolu",      // 当前所在地点
+      location: "qingniu",    // 当前所在地点（开局在青牛镇）
 
       inventory: {},          // { itemId: count }
       spells: ["tuna", "huti", "ningshen", "zhayan", "weidu"], // 长春功一系 + 眨眼剑法 + 喂毒（七玄门篇真实手段）

@@ -15,6 +15,22 @@
 const WORLD = {};
 
 WORLD.locations = [
+  // —— 剧情过场地点（scene:true，不出现在云游列表，仅随剧情切换）——
+  {
+    id: "qingniu", arc: "qixuan", scene: true,
+    name: "青牛镇", desc: "你的家乡，一个贫苦的小山村。",
+    travelCost: 1, actions: [], encounters: [],
+  },
+  {
+    id: "road", arc: "qixuan", scene: true,
+    name: "赴考山路", desc: "通往七玄门的迢迢山路。",
+    travelCost: 1, actions: [], encounters: [],
+  },
+  {
+    id: "shanmen", arc: "qixuan", scene: true,
+    name: "七玄门 · 山门", desc: "气派非凡的仙门，你将在此参加入门选拔。",
+    travelCost: 1, actions: [], encounters: [],
+  },
   {
     id: "yaolu",
     arc: "qixuan",

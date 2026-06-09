@@ -51,21 +51,28 @@ const UI = {
   renderActions() {
     const loc = State.location();
     const box = this.el("action-buttons");
+    const zone = document.querySelector(".act-zone");
     if (!loc) { box.innerHTML = ""; return; }
+
+    // 有待决剧情时，日常行动暂时灰掉（引导玩家先做剧情选择）
+    const storyPending = !!State.data.pendingEvent;
+    if (zone) zone.classList.toggle("story-pending", storyPending);
+
     const labels = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
     };
-    // 全局始终可用：调息、突破。小瓶解锁后在药庐可打理。
-    let acts = loc.actions.slice();
-    if (!acts.includes("rest")) acts.push("rest");
-    if (!acts.includes("breakthrough")) acts.push("breakthrough");
-    // 小瓶未解锁则隐藏
-    acts = acts.filter(a => a !== "bottle" || State.data.bottle.unlocked);
+    // 剧情过场地点（scene）：无日常行动，只随剧情推进
+    let acts = (loc.scene ? [] : loc.actions.slice());
+    if (!loc.scene) {
+      if (!acts.includes("rest")) acts.push("rest");
+      if (!acts.includes("breakthrough")) acts.push("breakthrough");
+      acts = acts.filter(a => a !== "bottle" || State.data.bottle.unlocked);
+    }
 
-    box.innerHTML = acts.map(a =>
-      `<button class="btn btn-action" data-action="${a}">${labels[a] || a}</button>`
-    ).join("");
+    box.innerHTML = acts.length
+      ? acts.map(a => `<button class="btn btn-action" data-action="${a}">${labels[a] || a}</button>`).join("")
+      : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>` : "");
     box.querySelectorAll("[data-action]").forEach(btn => {
       btn.addEventListener("click", () => Engine.doAction(btn.dataset.action));
     });

@@ -927,10 +927,10 @@ const Engine = {
     s.pendingEvent = null;
     s.storyStage += 1;
     if (choice.next === "end") { this.endArc(); return; }
-    this.checkStory();   // 链式触发下一段（若条件已满足）
+    UI.clearStory();     // 先清掉旧选项，再触发下一段（否则会把新选项一起清掉）
     State.save();
     UI.renderAll();
-    UI.clearStory();
+    this.checkStory();   // 链式触发下一段（若条件已满足，会渲染新剧情卡+选项）
   },
 
   /* -------- 决战墨大夫：已改为真实三阶段战斗（见 startShowdownFight / _finishCombat）-------- */

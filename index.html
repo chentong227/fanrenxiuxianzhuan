@@ -100,25 +100,26 @@
           </div>
         </aside>
 
-        <!-- 中间：叙事 / 事件区 -->
+        <!-- 中间：叙事 + 选项 + 行动（统一为一条阅读→行动的流）-->
         <section class="panel panel-narrative">
           <div id="objective-bar" class="objective-bar"></div>
           <div id="narrative" class="narrative"></div>
+          <!-- 剧情选项（有待决剧情时显示，醒目）-->
           <div id="choices" class="choices"></div>
+          <!-- 所在地 + 当前可做的行动（紧跟其后，不再分散到别处）-->
+          <div class="act-zone">
+            <div class="loc-box">
+              <span class="loc-tag">所在</span>
+              <div id="loc-name" class="loc-name">青牛镇</div>
+              <div id="loc-desc" class="loc-desc"></div>
+              <button class="btn btn-action btn-travel" data-action="travel">云游他处</button>
+            </div>
+            <div id="action-buttons" class="action-buttons"></div>
+          </div>
         </section>
 
-        <!-- 右侧：所在地 + 行动 + 背包 -->
+        <!-- 右侧：储物袋 -->
         <aside class="panel panel-actions">
-          <h3 class="panel-title">所 在</h3>
-          <div class="loc-box">
-            <div id="loc-name" class="loc-name">墨大夫药庐</div>
-            <div id="loc-desc" class="loc-desc"></div>
-            <button class="btn btn-action btn-travel" data-action="travel">云游他处</button>
-          </div>
-
-          <h3 class="panel-title">行 动</h3>
-          <div id="action-buttons" class="action-buttons"></div>
-
           <h3 class="panel-title">储 物 袋</h3>
           <div id="inventory" class="inventory"></div>
         </aside>

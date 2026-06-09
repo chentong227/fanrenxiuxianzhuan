@@ -15,7 +15,7 @@ const Chapters = {
       locked: false,
       realmTier: 0,             // 练气
       realmCapIndex: 6,         // 练气七层（DATA.realms 索引）
-      startLocation: "yaolu",
+      startLocation: "qingniu",
       startStage: "village",
       completeFlag: "arc1_complete",
       nextChapter: "huangfeng",
