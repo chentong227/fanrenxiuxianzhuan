@@ -169,6 +169,8 @@ const Engine = {
         if (def && def.onFire) def.onFire(s);
       }
     }
+    // 3) 动态请托/线索：到期清理
+    this._checkDynamics();
     this._inSchedule = false;
   },
 
@@ -185,6 +187,198 @@ const Engine = {
         left: Math.max(0, left),
       };
     });
+  },
+
+  /* ===========================================================
+   *  对谈的机制结果（TASK 10）
+   *  红线：LLM 只提议"方向"（白名单 type），具体能否兑现、给多少、
+   *        门槛与上限，全部由引擎在此裁决。越权一律驳回/夹紧。
+   * =========================================================== */
+  // 入口：由 UI 在每轮对谈拿到 LLM 的 effect 后调用
+  // 返回 { note } 供对谈窗口内即时反馈（可为 null）
+  resolveTalkEffect(npcId, effect) {
+    if (!effect || effect.type === "none") return null;
+    const s = State.data;
+    const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
+    const npc = (typeof WORLD !== "undefined" && WORLD.npcById) ? WORLD.npcById(npcId) : null;
+    const fromName = npc ? npc.name : "对方";
+    try {
+      if (effect.type === "intel") return this._talkIntel(s, npcId, fromName, rel, effect);
+      if (effect.type === "mood") return this._talkMood(s, npcId, fromName, rel, effect);
+      if (effect.type === "quest") return this._talkQuest(s, npcId, fromName, rel, effect);
+    } catch (e) { /* 裁决出错则当作无结果，绝不崩游戏 */ }
+    return null;
+  },
+
+  // —— 情报：聊出线索 → 记入「际遇」，前往对应地点可兑现 ——
+  _talkIntel(s, npcId, fromName, rel, effect) {
+    s.leads = s.leads || [];
+    if (s.leads.length >= 3) return { note: "（你心里记着的线索已经不少了，先去查证一二再说。）" };
+    // 线索导向一个"可前往"的地点（排除当前地）：引擎决定指向哪、给多少
+    const here = s.location;
+    const cands = (typeof WORLD !== "undefined" ? WORLD.locations : [])
+      .filter(l => l.id !== here && !l.scene && (!l.lockedUntil || true));
+    const where = cands.length ? cands[Math.floor(Math.random() * cands.length)].id : here;
+    const id = "lead_" + (this._leadSeq = (this._leadSeq || 0) + 1) + "_" + Date.now();
+    const topic = effect.topic || "一桩值得探查的隐秘";
+    const lead = {
+      id, npcId, fromName, where, topic,
+      title: topic.slice(0, 14),
+      dueAbs: State.absMonth() + 12,
+      // 兑现丰薄按关系：交情越深，给的"实信"越值钱
+      tier: rel >= 18 ? 2 : (rel >= 6 ? 1 : 0),
+    };
+    s.leads.push(lead);
+    const whereName = (cands.find(l => l.id === where) || {}).name || "别处";
+    this.log(`【线索】${fromName}向你透了个底：${topic}　——线索指向「${whereName}」，记入「际遇」。`, "event");
+    this.toast("听到一条线索");
+    if (typeof UI !== "undefined") UI.renderObjective && UI.renderObjective();
+    return { note: `（你记下了这条线索，或许该去「${whereName}」探查。）` };
+  },
+
+  // 玩家抵达线索地点时兑现（在 travelTo 后调用）
+  _resolveLeadsAt(locId) {
+    const s = State.data;
+    if (!s.leads || !s.leads.length) return;
+    const hit = s.leads.filter(l => l.where === locId);
+    if (!hit.length) return;
+    s.leads = s.leads.filter(l => l.where !== locId);
+    for (const l of hit) {
+      const roll = Math.random();
+      if (roll < 0.55 + l.tier * 0.12) {
+        // 实信：给点实利（按 tier 夹紧上限，绝不离谱）
+        if (l.tier >= 2) { State.give("lingshi", 1); State.give("lingcao", 2); var g = "灵石×1、灵草×2"; }
+        else if (l.tier >= 1) { State.give("lingcao", 2); g = "灵草×2"; }
+        else { State.give("lingcao", 1); g = "灵草×1"; }
+        this.log(`【线索兑现】循着${l.fromName}的指点，你在此处果然有所发现（${g}）。所谓"${l.topic}"，并非空穴来风。`, "good");
+      } else {
+        this.log(`【线索成空】你按${l.fromName}所说在此探查一番，却一无所获。江湖传言，本就半真半假。`, "sys");
+      }
+    }
+    if (typeof UI !== "undefined") UI.renderObjective && UI.renderObjective();
+  },
+
+  // —— 心境：走心交谈真回心境/压心魔；话不投机则郁结 ——
+  _talkMood(s, npcId, fromName, rel, effect) {
+    if (effect.tone === "discord") {
+      // 话不投机：心境略损、心魔微涨（不因闲聊就重罚）
+      s.mood = clamp(s.mood - 4, 0, s.moodMax);
+      s.demon = clamp(s.demon + 2, 0, 100);
+      this.log(`你与${fromName}话不投机，几句下来心头横生郁结。（心境-4，心魔微长）`, "bad");
+      return { note: "（这番话不欢而散，你胸中隐隐有些堵。）" };
+    }
+    // 走心宽慰：关系越好，开解越见效（引擎按关系给量）
+    const amt = rel >= 18 ? 10 : (rel >= 6 ? 7 : 4);
+    const dd = rel >= 18 ? 4 : 2;
+    s.mood = clamp(s.mood + amt, 0, s.moodMax);
+    s.demon = clamp(s.demon - dd, 0, 100);
+    this.log(`一番推心置腹，${fromName}的话宽解了你不少。（心境+${amt}，心魔-${dd}）`, "good");
+    return { note: `（这番交谈让你心境舒展了些。）` };
+  },
+
+  // —— 请托：NPC 委托办事 → 生成真任务（引擎从安全池选可兑现的差事）——
+  _talkQuest(s, npcId, fromName, rel, effect) {
+    s.dynQuests = s.dynQuests || [];
+    if (s.dynQuests.length >= 2) return { note: "（你手上的托付还没办完，不好再应承。）" };
+    if (s.dynQuests.some(q => q.npcId === npcId)) return { note: "（你已应下他一桩事，先办妥再说。）" };
+    // 引擎从"可兑现差事"白名单里挑一个（LLM 的 ask 只作叙述包装）
+    const tpl = this._pickQuestTemplate(s);
+    if (!tpl) return { note: "（这忙眼下你帮不上，只得婉言。）" };
+    const id = "dq_" + (this._dqSeq = (this._dqSeq || 0) + 1) + "_" + Date.now();
+    const q = {
+      id, npcId, fromName, kind: tpl.kind, need: tpl.need,
+      title: (effect.title || tpl.title).slice(0, 16),
+      desc: (effect.ask ? effect.ask + "（" + tpl.deliver + "）" : tpl.desc),
+      reward: tpl.reward(rel),
+      dueAbs: State.absMonth() + tpl.due,
+    };
+    s.dynQuests.push(q);
+    this.log(`【请托·${q.title}】${fromName}托你办一件事：${q.desc}（期限 ${tpl.due} 月）`, "event");
+    this.toast(`接下请托：${q.title}`);
+    if (typeof UI !== "undefined") UI.renderObjective && UI.renderObjective();
+    return { note: `（你应下了${fromName}的请托，记在「际遇」里了。）` };
+  },
+
+  // 可兑现差事白名单：每项都对应玩家在现有系统里真能完成的目标
+  _pickQuestTemplate(s) {
+    const pool = [
+      {
+        kind: "deliver_lingcao", title: "代采灵草", deliver: "凑齐灵草×3交付",
+        desc: "替他采足三株灵草", need: 3, due: 8,
+        cond: (st) => State.count("lingcao") >= 3,
+        reward: (rel) => ({ silver: 8, favor: 8, take: { lingcao: 3 } }),
+      },
+      {
+        kind: "deliver_pill", title: "求一炉丹", deliver: "炼一枚养元丹交付",
+        desc: "替他炼一枚养元丹应急", need: 1, due: 10,
+        cond: (st) => State.count("qingyuan_dan") >= 1,
+        reward: (rel) => ({ silver: 6, favor: 10, lingshi: 1, take: { qingyuan_dan: 1 } }),
+      },
+      {
+        kind: "deliver_duyao", title: "寻味毒草", deliver: "采毒草×2交付",
+        desc: "替他寻两株趁手的毒草", need: 2, due: 8,
+        cond: (st) => State.count("duyao_cao") >= 2,
+        reward: (rel) => ({ silver: 5, favor: 7, take: { duyao_cao: 2 } }),
+      },
+    ];
+    return pool[Math.floor(Math.random() * pool.length)];
+  },
+
+  // 玩家主动交付动态请托（UI 在「际遇」里点"交付"时调用）
+  deliverDynQuest(id) {
+    const s = State.data;
+    const q = (s.dynQuests || []).find(x => x.id === id);
+    if (!q) return;
+    const tpl = (this._questTemplates || (this._questTemplates = {}));
+    // 校验持有量
+    const need = q.reward && q.reward.take ? q.reward.take : null;
+    if (need) {
+      for (const k of Object.keys(need)) {
+        if (State.count(k) < need[k]) { this.toast("交付之物尚未备齐", true); return; }
+      }
+      for (const k of Object.keys(need)) State.take(k, need[k]);
+    }
+    if (q.reward.silver) s.silver += q.reward.silver;
+    if (q.reward.lingshi) State.give("lingshi", q.reward.lingshi);
+    if (q.reward.favor && typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, q.npcId, q.reward.favor);
+    s.dynQuests = s.dynQuests.filter(x => x.id !== id);
+    const r = [];
+    if (q.reward.silver) r.push(`纹银${q.reward.silver}两`);
+    if (q.reward.lingshi) r.push(`灵石${q.reward.lingshi}`);
+    r.push(`${q.fromName}的交情`);
+    this.log(`【请托达成·${q.title}】你向${q.fromName}交付了所托之物，得${r.join("、")}。有来有往，情谊渐笃。`, "good");
+    this.toast(`请托达成：${q.title}`);
+    if (typeof UI !== "undefined") { UI.renderObjective && UI.renderObjective(); UI.renderAll && UI.renderAll(); }
+    State.save();
+  },
+
+  // 动态请托是否可交付（持有量达标）
+  dynQuestReady(q) {
+    const need = q.reward && q.reward.take ? q.reward.take : null;
+    if (!need) return true;
+    return Object.keys(need).every(k => State.count(k) >= need[k]);
+  },
+
+  // 动态请托/线索的到期清理（在 _checkSchedule 里调用）
+  _checkDynamics() {
+    const s = State.data;
+    const now = State.absMonth();
+    if (s.dynQuests && s.dynQuests.length) {
+      for (const q of s.dynQuests.slice()) {
+        if (now >= q.dueAbs) {
+          s.dynQuests = s.dynQuests.filter(x => x !== q);
+          if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, q.npcId, -5);
+          this.log(`【请托逾期·${q.title}】你终究没能如期为${q.fromName}办妥此事，对方颇为失望。`, "bad");
+        }
+      }
+    }
+    if (s.leads && s.leads.length) {
+      const live = s.leads.filter(l => now < l.dueAbs);
+      if (live.length !== s.leads.length) {
+        this.log(`【线索过时】有些早年听来的线索，已随时移境迁化作过眼云烟。`, "sys");
+        s.leads = live;
+      }
+    }
   },
 
   /* -------- 行动入口 -------- */
@@ -225,6 +419,7 @@ const Engine = {
     this.passTime(cost);
     s.location = locId;
     this.log(`你动身前往「${loc.name}」，行程耗时 ${cost} 月。${loc.desc}`, "event");
+    this._resolveLeadsAt(locId);
     this.checkLifespan();
     this.checkStory();
     State.save();

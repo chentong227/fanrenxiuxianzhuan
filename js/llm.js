@@ -153,8 +153,15 @@
         "现在进行一段【实时对话】。你要同时扮演两个职责：",
         `(A) 揣摩此刻韩立可能想对「${npc.name}」说的话，给出 3~4 条候选（语气各异：寒暄/试探/求教/调侃/告辞等），贴合韩立处境、二人关系与当下世事；`,
         chosenLine ? `(B) 以「${npc.name}」的口吻，回应韩立刚说的那句话（一句到两句，符合其身份性格），并评估这句交流对二人关系的影响（favor，整数 -3~+3）。` : "(B) 本轮韩立尚未开口，无需回应，reply 留空、favor 为 0。",
+        "",
+        "【关键】对话不只是闲聊。当这一轮交流自然地导向某种结果时，在 effect 字段里提议一种方向（仅限以下白名单类型，且只提议方向，具体数值与能否兑现由游戏裁决，你不要编造数字/物品/地名）：",
+        `  - 当 NPC 透露了值得一探的消息/线索时：{"type":"intel","topic":"线索的一句话内容"}`,
+        `  - 当这番话真正宽慰了韩立、或反之话不投机令人郁结时：{"type":"mood","tone":"soothe"或"discord"}`,
+        `  - 当 NPC 开口请韩立帮个忙/办件事时：{"type":"quest","title":"短标题","ask":"请托内容一句话"}`,
+        `  - 多数普通寒暄没有结果：{"type":"none"}`,
+        "effect 一轮最多一个；拿不准就用 none。绝不要在 reply/options 里凭空许诺具体奖励、物品或数值。",
         "严格只返回 JSON，不要任何额外文字，格式：",
-        `{"reply":"NPC的话(首轮为空字符串)","favor":0,"options":["韩立可说的话1","...2","...3"]}`,
+        `{"reply":"NPC的话(首轮为空字符串)","favor":0,"effect":{"type":"none"},"options":["韩立可说的话1","...2","...3"]}`,
         "options 里的话是韩立第一人称要说出口的内容，简短自然，不要带括号动作旁白。",
       ].join("\n");
       const user =
@@ -182,8 +189,20 @@
         o.options = o.options.filter(x => typeof x === "string" && x.trim()).slice(0, 4);
         o.favor = Math.max(-3, Math.min(3, parseInt(o.favor, 10) || 0));
         o.reply = typeof o.reply === "string" ? o.reply.trim() : "";
+        o.effect = this._sanitizeEffect(o.effect);
         return o;
       } catch (e) { return null; }
+    },
+
+    // 只接受白名单字段，丢弃模型可能编造的数值/物品。具体兑现交给引擎。
+    _sanitizeEffect(e) {
+      if (!e || typeof e !== "object") return { type: "none" };
+      const type = e.type;
+      const clip = (x, n) => (typeof x === "string" ? x.trim().slice(0, n) : "");
+      if (type === "intel") return { type: "intel", topic: clip(e.topic, 60) };
+      if (type === "mood") return { type: "mood", tone: e.tone === "discord" ? "discord" : "soothe" };
+      if (type === "quest") return { type: "quest", title: clip(e.title, 16), ask: clip(e.ask, 80) };
+      return { type: "none" };
     },
 
     // —— 限流队列 ——

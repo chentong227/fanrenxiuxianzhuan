@@ -45,6 +45,31 @@ const UI = {
         </div>`;
       }).join("");
     }
+    // 动态请托（对谈接下的差事）
+    const dq = (State.data && State.data.dynQuests) || [];
+    if (dq.length) {
+      html += dq.map(q => {
+        const left = Math.max(0, q.dueAbs - State.absMonth());
+        const ready = Engine.dynQuestReady ? Engine.dynQuestReady(q) : false;
+        return `<div class="obj-task ${left <= 2 ? 'urgent' : ''}">
+          <span class="obj-key" style="background:var(--gold);color:#1a1208">请托</span><b>${q.title}</b>
+          <span class="obj-prog">${q.fromName}所托</span>
+          <span class="obj-left">限 ${left} 月</span>
+          ${ready ? `<button class="obj-deliver" onclick="Engine.deliverDynQuest('${q.id}')">交付</button>` : ""}
+        </div>`;
+      }).join("");
+    }
+    // 线索（对谈听来的消息）
+    const leads = (State.data && State.data.leads) || [];
+    if (leads.length) {
+      html += leads.map(l => {
+        const wn = (WORLD.locations.find(x => x.id === l.where) || {}).name || "别处";
+        return `<div class="obj-task">
+          <span class="obj-key" style="background:var(--jade);color:#08140f">线索</span><b>${l.title}</b>
+          <span class="obj-prog">指向「${wn}」</span>
+        </div>`;
+      }).join("");
+    }
     box.innerHTML = html;
     box.style.display = html ? "" : "none";
   },
@@ -203,6 +228,7 @@ const UI = {
     const n = WORLD.npcById(npcId);
     if (!n) return;
     this._talk = { npcId, history: [], options: [], busy: true };
+    this._talkNote = null;
     this._renderLiveTalk(true);
     this._talkRequest(null);   // 首轮：只要 options
   },
@@ -231,9 +257,16 @@ const UI = {
         // 关系按语气流动
         if (res.favor && typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(State.data, t.npcId, res.favor);
         LLM.remember(`与${n.name}交谈：${chosenLine}→${res.reply}`);
+        // 机制结果：LLM 只提议方向，引擎裁决兑现
+        if (res.effect && res.effect.type && res.effect.type !== "none" && typeof Engine !== "undefined") {
+          const out = Engine.resolveTalkEffect(t.npcId, res.effect);
+          if (out && out.note) t._effectNote = out.note;
+        }
       }
       t.options = res.options || [];
+      this._talkNote = t._effectNote || null;
       this._renderLiveTalk();
+      t._effectNote = null;
       State.save();
     }).catch(() => { t.busy = false; this._renderLiveTalk(false, "（交谈不畅。）"); });
   },
@@ -242,6 +275,7 @@ const UI = {
     const line = t.options[idx]; if (!line) return;
     t.history.push({ who: "player", text: line });
     t.options = [];
+    this._talkNote = null;
     this._renderLiveTalk();
     this._talkRequest(line);
   },
@@ -284,6 +318,7 @@ const UI = {
       <div class="fortune-tag" style="border-color:var(--jade);color:var(--jade)">对谈 · ${relTxt}</div>
       <h2>${n.name}<span style="color:var(--gold);font-size:13px;margin-left:8px">${n.role}</span></h2>
       <div class="talk-convo" id="talk-convo">${convo || `<p style="color:var(--ink-dim);font-size:13px">${n.bio}</p>`}</div>
+      ${this._talkNote ? `<div class="talk-effect">${this._talkNote}</div>` : ""}
       <div class="talk-options">${optionsHtml}</div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.endLiveTalk()">告辞</button></div>
     `);

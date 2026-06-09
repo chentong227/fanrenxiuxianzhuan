@@ -50,6 +50,8 @@ const State = {
       flags: {},              // 剧情标志位
       firedFortunes: [],      // 已触发的一次性奇遇 id
       tasks: [],              // 限期任务 [{ id, dueAbs }]
+      dynQuests: [],          // 对谈中接下的动态请托 [{ id, title, desc, kind, target, reward, dueAbs, npcId, fromName }]
+      leads: [],              // 对谈中听到的线索 [{ id, title, hint, npcId, fromName, where, dueAbs }]
       timeline: [],           // 预定事件 [{ id, fireAbs }]
       storyStage: 0,          // 主线阶段推进指针
 
@@ -94,6 +96,8 @@ const State = {
     if (!d.activeChapter) d.activeChapter = "qixuan";
     if (!d.unlockedChapters) d.unlockedChapters = ["qixuan"];
     if (!d.tasks) d.tasks = [];
+    if (!d.dynQuests) d.dynQuests = [];
+    if (!d.leads) d.leads = [];
     if (!d.timeline) d.timeline = [];
     if (!d.firedFortunes) d.firedFortunes = [];
     if (d.speed == null) d.speed = 10;
