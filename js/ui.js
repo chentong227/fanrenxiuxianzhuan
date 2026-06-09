@@ -163,15 +163,18 @@ const UI = {
     }).join("");
   },
 
-  // 与在场人物交谈：结识 / 听其一言 / 增进交情
+  // 与在场人物交谈：活世界开启→实时对话；否则→静态主题
   talkLocal(npcId) {
     const s = State.data;
     const n = WORLD.npcById(npcId);
     if (!n) return;
-    const wasNew = Engine.meetNpc(npcId);
+    Engine.meetNpc(npcId);
+    State.save();
+    if (typeof LLM !== "undefined" && LLM.enabled()) { this.openLiveTalk(npcId); return; }
+    // —— 降级：静态主题 ——
     const line = (n.lines && n.lines.length) ? n.lines[Math.floor(Math.random() * n.lines.length)] : "";
     const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
-    const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : wasNew ? "萍水相逢" : "相识";
+    const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : "相识";
     const topics = (typeof DIALOGUE !== "undefined") ? DIALOGUE.forNpc(npcId, s) : [];
     const topicBtns = topics.map((t, i) =>
       `<button class="btn btn-secondary" style="text-align:left" onclick="Engine.dialogueTopic('${npcId}', ${i})">
@@ -189,10 +192,105 @@ const UI = {
         <button class="btn btn-ghost" onclick="UI.closeModal()">告辞</button>
       </div>
     `);
-    if (wasNew) { State.save(); this.renderAll(); }
+    this.renderAll();
   },
 
-  // 攀谈：花点时间增进交情（轻量正反馈，主线人物也能慢慢拉近）
+  /* ===========================================================
+   *  实时对话（活世界）：可说的话 + NPC 回应 全部实时生成
+   * =========================================================== */
+  _talk: null,   // { npcId, history:[{who,text}], options:[], busy }
+  openLiveTalk(npcId) {
+    const n = WORLD.npcById(npcId);
+    if (!n) return;
+    this._talk = { npcId, history: [], options: [], busy: true };
+    this._renderLiveTalk(true);
+    this._talkRequest(null);   // 首轮：只要 options
+  },
+  _talkCtx() {
+    const s = State.data;
+    const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, this._talk.npcId) : 0;
+    const relText = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂，颇有龃龉" : "萍水相识";
+    const realm = State.realm ? State.realm().name : "";
+    const loc = (State.location && State.location()) ? State.location().name : "";
+    return { relText, player: `${realm}，身处「${loc}」，第${s.year}年${s.month}月，年${s.age}` };
+  },
+  _talkRequest(chosenLine) {
+    const t = this._talk; if (!t) return;
+    const n = WORLD.npcById(t.npcId);
+    t.busy = true; this._renderLiveTalk();
+    LLM.converse(n, this._talkCtx(), t.history, chosenLine).then(res => {
+      if (!this._talk || this._talk.npcId !== t.npcId) return;
+      t.busy = false;
+      if (!res) {
+        t.options = [];
+        this._renderLiveTalk(false, "（一时无言以对……稍后再谈。）");
+        return;
+      }
+      if (chosenLine && res.reply) {
+        t.history.push({ who: "npc", text: res.reply });
+        // 关系按语气流动
+        if (res.favor && typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(State.data, t.npcId, res.favor);
+        LLM.remember(`与${n.name}交谈：${chosenLine}→${res.reply}`);
+      }
+      t.options = res.options || [];
+      this._renderLiveTalk();
+      State.save();
+    }).catch(() => { t.busy = false; this._renderLiveTalk(false, "（交谈不畅。）"); });
+  },
+  pickTalkOption(idx) {
+    const t = this._talk; if (!t || t.busy) return;
+    const line = t.options[idx]; if (!line) return;
+    t.history.push({ who: "player", text: line });
+    t.options = [];
+    this._renderLiveTalk();
+    this._talkRequest(line);
+  },
+  endLiveTalk() {
+    const t = this._talk; this._talk = null;
+    this.closeModal();
+    if (t && t.history.length) {
+      const n = WORLD.npcById(t.npcId);
+      Engine.passTime(1);  // 一番交谈耗些光阴
+      Engine.log(`你与「${n ? n.name : ""}」攀谈了一番。`, "event");
+      Engine.checkLifespan();
+    }
+    State.save(); this.renderAll();
+  },
+  _renderLiveTalk(first, note) {
+    const t = this._talk; if (!t) return;
+    const n = WORLD.npcById(t.npcId);
+    const av = this._speakerAvatar(n.name);
+    const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(State.data, t.npcId) : 0;
+    const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : "相识";
+    const convo = t.history.map(h => {
+      const self = h.who === "player";
+      const a = self ? this._speakerAvatar(State.data.name) : av;
+      return `<div class="dlg-row ${self ? "right" : "left"}">
+        <div class="dlg-portrait" style="--pc:${a.color}">${a.icon}</div>
+        <div class="dlg-bubble"><div class="dlg-who"><span class="dlg-name" style="color:${a.color}">${self ? State.data.name : n.name}</span></div>
+        <div class="dlg-text">${h.text}</div></div></div>`;
+    }).join("");
+    let optionsHtml;
+    if (t.busy) {
+      optionsHtml = `<div class="talk-thinking">……${t.history.length && t.history[t.history.length-1].who==="player" ? n.name+"正在思量" : "正在斟酌可说的话"}……</div>`;
+    } else if (note) {
+      optionsHtml = `<div class="talk-thinking">${note}</div>`;
+    } else {
+      optionsHtml = (t.options || []).map((o, i) =>
+        `<button class="choice" onclick="UI.pickTalkOption(${i})">${o}</button>`).join("")
+        || `<div class="talk-thinking">（似乎没什么好说的了）</div>`;
+    }
+    this.openModal(`
+      <div class="fortune-tag" style="border-color:var(--jade);color:var(--jade)">对谈 · ${relTxt}</div>
+      <h2>${n.name}<span style="color:var(--gold);font-size:13px;margin-left:8px">${n.role}</span></h2>
+      <div class="talk-convo" id="talk-convo">${convo || `<p style="color:var(--ink-dim);font-size:13px">${n.bio}</p>`}</div>
+      <div class="talk-options">${optionsHtml}</div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.endLiveTalk()">告辞</button></div>
+    `);
+    const box = this.el("talk-convo"); if (box) box.scrollTop = box.scrollHeight;
+  },
+
+  // 攀谈（降级路径用）：花点时间增进交情
   chatLocal(npcId) {
     const s = State.data;
     if (s.pendingEvent || s.combat) { this.closeModal(); return; }
@@ -200,17 +298,7 @@ const UI = {
     if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, 3);
     s.mood = clamp(s.mood + 3, 0, s.moodMax);
     const n = WORLD.npcById(npcId);
-    const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
-    const entry = Engine.log(`你与「${n ? n.name : npcId}」攀谈了一番，叙了些闲话，交情更近了几分。`, "event");
-    // 活世界：让该 NPC 即兴说一句符合其身份/交情/世道的话（异步追加，失败无感）
-    if (n && typeof LLM !== "undefined" && LLM.enabled()) {
-      const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : "点头之交";
-      LLM.generate(`你现在扮演「${n.name}」（${n.role}）。其为人：${n.bio}。与韩立${relTxt}。` +
-        `请以${n.name}的口吻，对韩立说一句此刻的闲谈（一句即可，符合其身份与当下世道，不要旁白）。`, { maxTokens: 200 })
-        .then(t => {
-          if (t) { entry.body = `你与「${n.name}」攀谈。${n.name}道：「${t}」`; LLM.remember(`${n.name}对韩立说：${t}`); UI.renderNarrative(); State.save(); }
-        }).catch(() => {});
-    }
+    Engine.log(`你与「${n ? n.name : npcId}」攀谈了一番，叙了些闲话，交情更近了几分。`, "event");
     this.closeModal();
     Engine.checkLifespan();
     State.save();

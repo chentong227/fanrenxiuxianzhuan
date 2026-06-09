@@ -951,3 +951,19 @@ html, body {
   78% { opacity: 1; }
   100% { opacity: 0; transform: translate(-50%, -56%) scale(.98); }
 }
+
+/* ============================================================
+ * 实时对话（活世界）
+ * ============================================================ */
+.talk-convo {
+  max-height: 42vh; overflow-y: auto; margin: 10px 0; padding: 4px 2px;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.talk-convo .dlg-row { margin: 8px 0; }
+.talk-options { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.talk-options .choice { animation: choiceIn .25s ease backwards; }
+.talk-thinking {
+  color: var(--ink-dim); font-size: 13px; text-align: center; padding: 12px;
+  letter-spacing: 2px; animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }

@@ -142,6 +142,50 @@
       return this._chat(messages, opts).catch(() => null);
     },
 
+    // —— 实时对话：根据上下文生成「韩立可说的话」+「NPC的回应」——
+    // 返回 Promise<{ reply?, favor?, options: string[] }>
+    // 首轮 chosenLine 为空，只产出 options；之后每轮产出 NPC 回应 + 关系变化 + 新 options。
+    converse(npc, ctx, history, chosenLine) {
+      if (!this.enabled()) return Promise.resolve(null);
+      const histText = (history || []).map(h => `${h.who === "player" ? "韩立" : npc.name}：${h.text}`).join("\n") || "（尚未开口）";
+      const sys = [
+        this._systemPrompt(),
+        "现在进行一段【实时对话】。你要同时扮演两个职责：",
+        `(A) 揣摩此刻韩立可能想对「${npc.name}」说的话，给出 3~4 条候选（语气各异：寒暄/试探/求教/调侃/告辞等），贴合韩立处境、二人关系与当下世事；`,
+        chosenLine ? `(B) 以「${npc.name}」的口吻，回应韩立刚说的那句话（一句到两句，符合其身份性格），并评估这句交流对二人关系的影响（favor，整数 -3~+3）。` : "(B) 本轮韩立尚未开口，无需回应，reply 留空、favor 为 0。",
+        "严格只返回 JSON，不要任何额外文字，格式：",
+        `{"reply":"NPC的话(首轮为空字符串)","favor":0,"options":["韩立可说的话1","...2","...3"]}`,
+        "options 里的话是韩立第一人称要说出口的内容，简短自然，不要带括号动作旁白。",
+      ].join("\n");
+      const user =
+        `【对方】${npc.name}（${npc.role}）：${npc.bio}\n` +
+        `【与韩立关系】${ctx.relText}\n【主角状态】${ctx.player}\n【近期要事】\n${this._memoryBlock()}\n\n` +
+        `【已进行的对话】\n${histText}\n\n` +
+        (chosenLine ? `【韩立刚说】${chosenLine}\n\n请给出 ${npc.name} 的回应与新的候选。` : `请给出韩立此刻可说的候选。`);
+      return this._chat([{ role: "system", content: sys }, { role: "user", content: user }],
+        { maxTokens: 420, temperature: 0.95 })
+        .then(txt => this._parseJSON(txt))
+        .catch(() => null);
+    },
+
+    // 从模型输出里稳健地抽出 JSON
+    _parseJSON(txt) {
+      if (!txt) return null;
+      let s = String(txt).trim();
+      // 去掉 ```json ``` 包裹
+      s = s.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+      const a = s.indexOf("{"), b = s.lastIndexOf("}");
+      if (a >= 0 && b > a) s = s.slice(a, b + 1);
+      try {
+        const o = JSON.parse(s);
+        if (!Array.isArray(o.options)) o.options = [];
+        o.options = o.options.filter(x => typeof x === "string" && x.trim()).slice(0, 4);
+        o.favor = Math.max(-3, Math.min(3, parseInt(o.favor, 10) || 0));
+        o.reply = typeof o.reply === "string" ? o.reply.trim() : "";
+        return o;
+      } catch (e) { return null; }
+    },
+
     // —— 限流队列 ——
     _enqueue(taskFn) {
       this._queue.push(taskFn);
