@@ -1026,7 +1026,7 @@ const UI = {
         <label style="font-size:13px;color:var(--gold)">模型</label>
         <input id="llm-model" type="text" value="${c.model || "deepseek/deepseek-v4-flash"}" style="width:100%;margin-top:6px" />
       </div>
-      <p style="color:${on ? 'var(--jade-bright)' : 'var(--ink-dim)'};font-size:12px">当前状态：${on ? "已开启 ✦ 世界正在活起来" : "未开启"}</p>
+      <p id="llm-state-line" style="color:${on ? 'var(--jade-bright)' : 'var(--ink-dim)'};font-size:12px">当前状态：${on ? "已开启 ✦ 世界正在活起来" : "未开启"}</p>
       <hr style="border:none;border-top:1px solid var(--line);margin:14px 0" />
       <h3 style="color:var(--gold);font-size:14px;margin:0 0 4px">免输入·跨设备</h3>
       <p style="color:var(--ink-dim);font-size:12px">填好密钥并保存后，点下面生成一条「免输入链接」。在手机/电脑上各打开一次（或加到书签/桌面），以后开这条链接就自动导入并开启，<b style="color:var(--gold)">再也不用手填</b>。链接里的密钥只在你的浏览器地址里，不会上传、不入仓库。</p>
@@ -1062,15 +1062,29 @@ const UI = {
     } else { out.textContent = link; }
   },
   _llmSave(on) {
-    const keyVal = (this.el("llm-key").value || "").trim();
-    if (on && !keyVal) { this.toast("请先填入 OpenRouter Key", true); return; }
+    const field = (this.el("llm-key").value || "").trim();
+    const saved = (LLM.config().key || "");
+    // 字段留空但本机已存过 key → 沿用旧 key（不要把好 key 覆盖成空）
+    const keyVal = field || saved;
+    if (on && !keyVal) { this._llmStatus("请先填入 OpenRouter Key（粘贴后再点开启）", true); return; }
     const ok = LLM.configure({ key: keyVal, model: this.el("llm-model").value, on });
-    if (ok === false) { this.toast("保存失败：本机存储已满，请清缓存后重试", true); return; }
-    // 用真实状态反馈，避免"以为开了其实没开"
+    // 立刻回读，眼见为实
+    const cfg = LLM.config();
     const live = LLM.enabled();
-    this.toast(live ? "✦ 活世界已开启" : (on ? "已保存，但未能开启（检查密钥）" : "已保存（未开启）"), !live && on);
-    this.closeModal();
+    if (ok === false) { this._llmStatus("✗ 保存失败：本机存储写不进（隐私模式或已满）", true); return; }
+    if (on && !live) { this._llmStatus("已写入但未开启，请检查密钥是否正确", true); return; }
+    this._llmStatus(live
+      ? `✦ 已开启：${cfg.model}（密钥末四位 …${(cfg.key||'').slice(-4)}）`
+      : "已保存（未开启）", false);
+    // 同步更新"当前状态"那行与立即可用
+    const st = document.querySelector("#llm-state-line");
+    if (st) { st.textContent = "当前状态：" + (live ? "已开启 ✦ 世界正在活起来" : "未开启"); st.style.color = live ? "var(--jade-bright)" : "var(--ink-dim)"; }
     this.renderAll();
+  },
+  _llmStatus(msg, bad) {
+    const out = this.el("llm-test-out");
+    if (out) { out.textContent = msg; out.style.color = bad ? "var(--red)" : "var(--jade-bright)"; }
+    this.toast(msg, bad);
   },
   _llmTest() {
     LLM.configure({ key: this.el("llm-key").value, model: this.el("llm-model").value, on: true });
