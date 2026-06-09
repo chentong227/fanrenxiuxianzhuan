@@ -192,7 +192,7 @@ const Engine = {
     const loc = WORLD.locations.find(l => l.id === locId);
     if (!loc) return;
     if (loc.id === s.location) { this.toast("你已在此处"); return; }
-    const factor = Balance.travelTimeFactor(s.speed);
+    const factor = Balance.travelTimeFactor(State.effectiveSpeed());
     const cost = Math.max(1, Math.round((loc.travelCost || 2) * factor));
     this.passTime(cost);
     s.location = locId;
@@ -783,10 +783,10 @@ const Engine = {
       name: s.name,
       hp: s.hp,
       sense: s.sense,
-      speed: s.speed,
+      speed: State.effectiveSpeed(),
       insight: s.insight,
       gongli: gongli,
-      agility: Math.round(s.speed * 0.6),   // 遁速提供基础闪避
+      agility: Math.round(State.effectiveSpeed() * 0.6),   // 遁速提供基础闪避
       profile: "hanli_si",       // 四灵根·缺土
       spells: s.spells.slice(),
       auxSkills: (typeof Loadout !== "undefined") ? Loadout.auxSkillSet(s) : [],

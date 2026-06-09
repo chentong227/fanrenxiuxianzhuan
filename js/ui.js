@@ -45,6 +45,75 @@ const UI = {
     if (!loc) return;
     this.el("loc-name").textContent = loc.name;
     this.el("loc-desc").textContent = loc.desc;
+    this.renderLocals(loc);
+  },
+
+  // 据点在场人物（城内有人气，可交谈）
+  renderLocals(loc) {
+    let box = this.el("locals");
+    if (!box) {
+      const locBox = document.querySelector(".loc-box");
+      if (!locBox) return;
+      box = document.createElement("div");
+      box.id = "locals";
+      box.className = "locals";
+      locBox.appendChild(box);
+    }
+    const s = State.data;
+    // 过场地点 / 待决剧情时不显示
+    const locals = (loc.scene || s.pendingEvent) ? [] : (WORLD.localsAt ? WORLD.localsAt(loc.id, s) : []);
+    if (!locals.length) { box.innerHTML = ""; box.style.display = "none"; return; }
+    box.style.display = "";
+    box.innerHTML = `<div class="locals-title">在场人物</div>` + locals.map(n => {
+      const met = (s.metNpcs || []).includes(n.id);
+      const line = (n.lines && n.lines.length) ? n.lines[0] : "";
+      return `<div class="local-npc" onclick="UI.talkLocal('${n.id}')">
+        <div class="local-avatar">${met ? "🧑" : "❓"}</div>
+        <div class="local-info">
+          <div class="local-name">${n.name}<span class="lr">${n.role}</span></div>
+          <div class="local-line">${line}</div>
+        </div>
+        <div class="local-talk">💬</div>
+      </div>`;
+    }).join("");
+  },
+
+  // 与在场人物交谈：结识 / 听其一言 / 增进交情
+  talkLocal(npcId) {
+    const s = State.data;
+    const n = WORLD.npcById(npcId);
+    if (!n) return;
+    const wasNew = Engine.meetNpc(npcId);
+    const line = (n.lines && n.lines.length) ? n.lines[Math.floor(Math.random() * n.lines.length)] : "";
+    const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
+    const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : wasNew ? "萍水相逢" : "相识";
+    this.openModal(`
+      <div class="fortune-tag" style="border-color:var(--jade);color:var(--jade)">闲谈</div>
+      <h2>${n.name}<span style="color:var(--gold);font-size:13px;margin-left:8px">${n.role}</span></h2>
+      <p style="color:var(--ink-dim);font-size:13px">${n.bio}</p>
+      ${line ? `<div class="seg-dlg"><span class="dlg-name">${n.name}</span><span class="dlg-text">「${line}」</span></div>` : ""}
+      <p style="color:var(--ink-dim);font-size:12px">关系：${relTxt}</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="UI.chatLocal('${npcId}')">攀谈叙旧（耗时）</button>
+        <button class="btn btn-ghost" onclick="UI.closeModal()">告辞</button>
+      </div>
+    `);
+    if (wasNew) { State.save(); this.renderAll(); }
+  },
+
+  // 攀谈：花点时间增进交情（轻量正反馈，主线人物也能慢慢拉近）
+  chatLocal(npcId) {
+    const s = State.data;
+    if (s.pendingEvent || s.combat) { this.closeModal(); return; }
+    Engine.passTime(1);
+    if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, 3);
+    s.mood = clamp(s.mood + 3, 0, s.moodMax);
+    const n = WORLD.npcById(npcId);
+    Engine.log(`你与「${n ? n.name : npcId}」攀谈了一番，叙了些闲话，交情更近了几分。`, "event");
+    this.closeModal();
+    Engine.checkLifespan();
+    State.save();
+    this.renderAll();
   },
 
   // 根据当前地点动态生成可用行动按钮
@@ -556,7 +625,7 @@ const UI = {
 
     const pins = locs.map(l => {
       const here = l.id === cur;
-      const factor = Balance.travelTimeFactor(State.data.speed);
+      const factor = Balance.travelTimeFactor(State.effectiveSpeed());
       const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
       return `<div class="map-pin ${here ? 'here' : ''}" style="left:${l.map.x}%;top:${l.map.y}%"
         ${here ? '' : `onclick="UI._travelPick('${l.id}')"`} title="${l.desc}">
@@ -568,6 +637,11 @@ const UI = {
     this.openModal(`
       <h2>云游何处</h2>
       <p style="color:var(--ink-dim);font-size:12px">七玄门内外，点击地图上的地点即可前往。遁速越高，赶路越省光阴。</p>
+      <div class="speed-bar">
+        <span class="speed-key">移动速度</span>
+        <span class="speed-val">${State.effectiveSpeed()}</span>
+        <span class="speed-mount">${State.flightTreasure().name}</span>
+      </div>
       <div class="worldmap">
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
         ${pins}
@@ -579,7 +653,7 @@ const UI = {
   _travelPick(locId) {
     const l = WORLD.locations.find(x => x.id === locId);
     if (!l) return;
-    const factor = Balance.travelTimeFactor(State.data.speed);
+    const factor = Balance.travelTimeFactor(State.effectiveSpeed());
     const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
     this.el("map-detail").innerHTML = `<b>${l.name}</b>　${l.desc}
       <div style="margin-top:8px"><button class="btn btn-primary btn-mini" onclick="UI.closeModal(); Engine.travelTo('${l.id}')">前往（${cost} 月）</button></div>`;

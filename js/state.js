@@ -37,6 +37,7 @@ const State = {
       silver: 20,             // 纹银（七玄门篇凡俗通货，墨大夫按层赏银）
 
       location: "qingniu",    // 当前所在地点（开局在青牛镇）
+      flightId: "none",       // 飞行法宝（影响移动速度），默认徒步
 
       inventory: {},          // { itemId: count }
       spells: ["tuna", "huti", "ningshen", "zhayan", "weidu"], // 长春功一系 + 眨眼剑法 + 喂毒（七玄门篇真实手段）
@@ -102,6 +103,7 @@ const State = {
     if (!d.metNpcs) d.metNpcs = [];
     if (!d.npcFates || !d.npcFates.length) { if (typeof NPCSIM !== "undefined") NPCSIM.init(d); }
     if (d.explore === undefined) d.explore = null;
+    if (!d.flightId) d.flightId = "none";
     if (typeof Loadout !== "undefined") Loadout.migrate(d);
   },
   hasSave() { return !!localStorage.getItem(SAVE_KEY); },
@@ -111,6 +113,16 @@ const State = {
   root() { return DATA.spiritRoots.find(r => r.id === this.data.rootId); },
   location() { return WORLD.locations.find(l => l.id === this.data.location); },
   absMonth() { return this.data.year * 12 + this.data.month; },
+
+  // 有效遁速 = 基础遁速 + 飞行法宝加成（移动速度可视化的数值来源）
+  flightTreasure() {
+    const id = this.data.flightId || "none";
+    return (DATA.flightTreasures && DATA.flightTreasures[id]) || DATA.flightTreasures.none;
+  },
+  effectiveSpeed() {
+    const ft = this.flightTreasure();
+    return (this.data.speed || 0) + (ft ? ft.speedBonus || 0 : 0);
+  },
 
   // ---- 物品操作 ----
   give(itemId, n = 1) {

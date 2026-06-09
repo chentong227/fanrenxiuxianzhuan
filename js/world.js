@@ -171,6 +171,11 @@ WORLD.npcs = [
 
 WORLD.npcById = function (id) { return WORLD.npcs.find(n => n.id === id) || null; };
 
+// 某地点当前在场的人物（据点临场感：忠于剧情阶段与出现条件）
+WORLD.localsAt = function (locId, s) {
+  return WORLD.npcs.filter(n => n.where && n.where.includes(locId) && (!n.cond || n.cond(s)));
+};
+
 WORLD.randomNpc = function (locId, s) {
   const pool = WORLD.npcs.filter(n => (!n.where || n.where.includes(locId)) && (!n.cond || n.cond(s)));
   if (!pool.length) return null;

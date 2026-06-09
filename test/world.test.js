@@ -17,7 +17,7 @@ const ctx = vm.createContext(sandbox);
 for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js", "js/world.js", "js/npcsim.js", "js/interactions.js", "js/combat.js", "js/fortunes.js", "js/quests.js", "js/story.js", "js/engine.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", f), "utf8"), ctx, { filename: f });
 }
-const { State, Engine, NPCSIM, INTERACTIONS, WORLD, STORY, Chapters } = sandbox;
+const { State, Engine, NPCSIM, INTERACTIONS, WORLD, STORY, Chapters, Balance } = sandbox;
 
 let failures = 0;
 function assert(c, m) { if (c) console.log("  ✓ " + m); else { console.log("  ✗ 失败: " + m); failures++; } }
@@ -121,6 +121,31 @@ console.log("\n=== 人物结识：忠于剧情时机 + 渐进解锁 ===");
 // 金光上人有图鉴词条（出场即可录入）
 {
   assert(!!WORLD.npcById("jinguang"), "金光上人已纳入人物图鉴名册");
+}
+
+console.log("\n=== 据点在场人物 + 移动速度 ===");
+{
+  State.create("韩立", "si");
+  const s = State.data;
+  s.flags.met_modafu = true;
+  const localsYaolu = WORLD.localsAt("yaolu", s).map(n => n.id);
+  assert(localsYaolu.includes("modafu"), "药庐在场可见墨大夫（剧情条件满足后）");
+  assert(localsYaolu.includes("mocaihuan"), "药庐在场可见墨彩环");
+  // 墨大夫死后不再在场
+  s.flags.modafu_dead = true;
+  assert(!WORLD.localsAt("yaolu", s).map(n => n.id).includes("modafu"), "墨大夫身死后不再在场（随剧情变化）");
+}
+
+// 移动速度：飞行法宝大幅提速、缩短赶路
+{
+  State.create("韩立", "si");
+  const base = State.effectiveSpeed();
+  assert(base === State.data.speed, "默认徒步，有效遁速=基础遁速");
+  // 装上风雷翅
+  State.data.flightId = "feng_lei_chi";
+  const flying = State.effectiveSpeed();
+  assert(flying > base, `风雷翅大幅提速（${base} → ${flying}）`);
+  assert(Balance.travelTimeFactor(flying) < Balance.travelTimeFactor(base), "遁速越高赶路耗时系数越小（移动速度可视化）");
 }
 
 console.log(`\n========== 大世界系统：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);
