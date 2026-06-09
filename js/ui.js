@@ -1036,7 +1036,6 @@ const UI = {
     } else { out.textContent = link; }
   },
   _llmSave(on) {
-  _llmSave(on) {
    try {
     const field = (this.el("llm-key").value || "").trim();
     const saved = (LLM.config().key || "");
