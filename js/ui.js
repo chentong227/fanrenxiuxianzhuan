@@ -61,6 +61,7 @@ const UI = {
     const labels = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
+      explore: "深入探索",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     let acts = (loc.scene ? [] : loc.actions.slice());
@@ -646,6 +647,117 @@ const UI = {
       return `<div class="${cls}">${l}</div>`;
     }).join("");
     this.el("combat-log").scrollTop = this.el("combat-log").scrollHeight;
+  },
+
+  /* ===========================================================
+   *  箱庭探索界面（走格子副本/秘境）
+   * =========================================================== */
+  openExplore(state) {
+    if (!state) return;
+    this.el("explore-overlay").hidden = false;
+    this.el("explore-title").textContent = state.siteName;
+    // 绑定方向键
+    this.el("explore-overlay").querySelectorAll(".dpad-btn[data-dir]").forEach(btn => {
+      btn.onclick = () => { const d = btn.dataset.dir; if (d) Engine.exploreMove(d); };
+    });
+    this.el("explore-leave").onclick = () => Engine.finishExplore(false);
+    // 键盘支持（桌面）
+    this._exploreKeyHandler = (e) => {
+      const map = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+        w: "up", s: "down", a: "left", d: "right" };
+      if (map[e.key]) { e.preventDefault(); Engine.exploreMove(map[e.key]); }
+    };
+    document.addEventListener("keydown", this._exploreKeyHandler);
+    this.renderExplore(state);
+  },
+  closeExplore() {
+    this.el("explore-overlay").hidden = true;
+    if (this._exploreKeyHandler) { document.removeEventListener("keydown", this._exploreKeyHandler); this._exploreKeyHandler = null; }
+  },
+
+  renderExplore(state) {
+    if (!state) return;
+    const CO = Explore.CONTENT, TE = Explore.TERRAIN;
+    const px = state.player.x, py = state.player.y;
+
+    // 主网格
+    const grid = this.el("explore-grid");
+    grid.style.gridTemplateColumns = `repeat(${state.w}, 1fr)`;
+    let cellsHtml = "";
+    for (let y = 0; y < state.h; y++) {
+      for (let x = 0; x < state.w; x++) {
+        const c = Explore.cellAt(state, x, y);
+        const isPlayer = x === px && y === py;
+        const comp = state.companions.find(cp => cp.alive && cp.x === x && cp.y === y);
+        let cls = "ex-cell " + (c.discovered ? "seen " : "fog ") + (TE[c.terrain].blocked ? "blocked " : "");
+        let inner = "";
+        if (c.discovered) {
+          if (c.content && CO[c.content]) inner = `<span class="ex-icon">${CO[c.content].icon}</span>`;
+          if (TE[c.terrain].blocked) inner = `<span class="ex-icon dim">${c.terrain === "water" ? "💧" : "⛰"}</span>`;
+        }
+        if (comp) inner = `<span class="ex-icon comp">🧍</span>`;
+        if (isPlayer) { inner = `<span class="ex-icon you">🧙</span>`; cls += "player "; }
+        // 相邻可走格高亮（可点击移动）
+        const adj = (Math.abs(x - px) + Math.abs(y - py)) === 1;
+        if (adj && Explore.canMove(state, x, y)) cls += "reach ";
+        const clickAttr = (adj && Explore.canMove(state, x, y))
+          ? `onclick="UI._exploreClickMove(${x},${y})"` : "";
+        cellsHtml += `<div class="${cls}" ${clickAttr}>${inner}</div>`;
+      }
+    }
+    grid.innerHTML = cellsHtml;
+
+    // 小地图（缩略：仅显示已探明/玩家/出口）
+    const mini = this.el("explore-minimap");
+    mini.style.gridTemplateColumns = `repeat(${state.w}, 1fr)`;
+    let miniHtml = "";
+    for (let y = 0; y < state.h; y++) {
+      for (let x = 0; x < state.w; x++) {
+        const c = Explore.cellAt(state, x, y);
+        let cls = "mini-cell ";
+        if (!c.discovered) cls += "m-fog";
+        else if (x === px && y === py) cls += "m-you";
+        else if (c.content === "exit") cls += "m-exit";
+        else if (c.content === "entry") cls += "m-entry";
+        else if (c.content && Explore.CONTENT[c.content] && Explore.CONTENT[c.content].loot) cls += "m-res";
+        else if (c.content === "beast") cls += "m-beast";
+        else if (TE[c.terrain].blocked) cls += "m-block";
+        else cls += "m-floor";
+        miniHtml += `<div class="${cls}"></div>`;
+      }
+    }
+    mini.innerHTML = miniHtml;
+
+    // 信息条
+    const months = Explore.timeCostMonths(state);
+    const remain = Explore.remainingResources(state);
+    this.el("explore-info").innerHTML =
+      `步数 ${state.steps}　耗时约 ${months} 月　余 ${remain} 处资源`;
+
+    // 本次背包
+    const bag = state.bag;
+    const keys = Object.keys(bag).filter(k => bag[k] > 0);
+    this.el("explore-bag").innerHTML =
+      `<div class="exbag-title">采集所得</div>` +
+      (keys.length
+        ? keys.map(k => `<div class="exbag-item"><span>${DATA.items[k] ? DATA.items[k].name : k}</span><b>×${bag[k]}</b></div>`).join("")
+        : `<div class="exbag-empty">尚无所获</div>`);
+
+    // 日志
+    const log = this.el("explore-log");
+    log.innerHTML = state.log.slice(-5).map(l => `<div>${l}</div>`).join("");
+    log.scrollTop = log.scrollHeight;
+  },
+
+  // 点击相邻格移动（换算成方向）
+  _exploreClickMove(x, y) {
+    const st = State.data.explore;
+    if (!st) return;
+    const dx = x - st.player.x, dy = y - st.player.y;
+    if (dx === 1) Engine.exploreMove("right");
+    else if (dx === -1) Engine.exploreMove("left");
+    else if (dy === 1) Engine.exploreMove("down");
+    else if (dy === -1) Engine.exploreMove("up");
   },
 
   /* -------- 通用弹窗 / Toast -------- */

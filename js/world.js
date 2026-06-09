@@ -46,7 +46,7 @@ WORLD.locations = [
     name: "七玄门后山",
     desc: "门派后山，灵草丛生，亦有野兽与低阶修士出没。采药、历练的好去处。",
     travelCost: 2,
-    actions: ["gather", "adventure"],
+    actions: ["gather", "explore", "adventure"],
     encounters: [
       { id: "herb", weight: 38, kind: "gather" },
       { id: "duherb", weight: 16, kind: "gather_du" },

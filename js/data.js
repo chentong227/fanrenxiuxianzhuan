@@ -179,4 +179,30 @@ DATA.bottle = {
   },
 };
 
+/* ---------- 探索点 / 副本（箱庭式网格探索，见 js/explore.js）----------
+ * 后山为七玄门篇可探索的箱庭点；虚天殿/坠魔谷为后续篇章副本预留。
+ * density：各类内容投放量；companions：可同行 NPC（greed 贪婪度，relation 初始交情）。
+ */
+DATA.exploreSites = {
+  houshan_explore: {
+    id: "houshan_explore", name: "七玄门后山 · 深处",
+    w: 9, h: 9, stepCost: 0.34, sightRadius: 1,
+    density: { herb: 6, duherb: 4, ore: 2, chest: 1, beast: 4 },
+    beastEnemy: "wild_wolf",
+    companions: [],   // 七玄门篇暂独行；可由剧情/交互加入同伴
+    arc: "qixuan",
+  },
+  // —— 后续篇章副本（占位，待对应篇章开放）——
+  xutian_dian: {
+    id: "xutian_dian", name: "虚天殿", w: 11, h: 11, stepCost: 0.4, sightRadius: 1,
+    density: { herb: 4, duherb: 2, ore: 5, chest: 5, beast: 8 },
+    beastEnemy: "rogue_cultivator", arc: "huangfeng", locked: true,
+  },
+  zhuimo_gu: {
+    id: "zhuimo_gu", name: "坠魔谷", w: 11, h: 11, stepCost: 0.45, sightRadius: 1,
+    density: { herb: 3, duherb: 5, ore: 4, chest: 4, beast: 10 },
+    beastEnemy: "rogue_cultivator", arc: "huangfeng", locked: true,
+  },
+};
+
 window.DATA = DATA;

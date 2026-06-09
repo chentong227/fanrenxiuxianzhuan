@@ -163,6 +163,7 @@ const Engine = {
     else if (action === "market") { UI.openMarket(); return; }
     else if (action === "alchemy") this.alchemy();
     else if (action === "investigate") this.investigate();
+    else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
     else if (action === "travel") { UI.openTravel(); return; }
 
     this.checkLifespan();
@@ -243,6 +244,94 @@ const Engine = {
     s.demon = clamp(s.demon + 5, 0, 100);
     this.log("你借着夜色潜入密室周遭探查，所见种种，令你愈发心惊。", "bad");
   },
+
+  /* ===========================================================
+   *  箱庭式网格探索（副本/秘境）—— 见 js/explore.js
+   * =========================================================== */
+  // 进入探索点：生成网格并打开探索界面
+  enterExplore(siteId) {
+    const s = State.data;
+    if (s.combat) { this.toast("酣战之中，无暇他顾"); return; }
+    const cfg = DATA.exploreSites[siteId];
+    if (typeof Explore === "undefined" || !cfg) { this.toast("此地暂不可探"); return; }
+    s.explore = Explore.generate(cfg, Math.random);
+    UI.openExplore(s.explore);
+    State.save();
+  },
+
+  // 玩家在探索网格中移动
+  exploreMove(dir) {
+    const s = State.data;
+    if (!s.explore || s.explore.finished) return;
+    const r = Explore.move(s.explore, dir, Math.random);
+    if (!r.ok) { this.toast(r.reason); return; }
+
+    // 处理移动产生的事件
+    let pendingBeast = null;
+    for (const ev of r.events) {
+      if (ev.type === "collect") {
+        this.toast(`采得 ${ev.name}`);
+      } else if (ev.type === "rival_take") {
+        this.toast(`${ev.companion.name} 抢走了 ${ev.name}`, true);
+      } else if (ev.type === "conflict") {
+        pendingBeast = { kind: "conflict", companion: ev.companion };
+      } else if (ev.type === "beast") {
+        pendingBeast = { kind: "beast", enemy: ev.enemy };
+      } else if (ev.type === "exit") {
+        UI.renderExplore(s.explore);
+        this.finishExplore(true);
+        return;
+      }
+    }
+
+    UI.renderExplore(s.explore);
+
+    // 触发战斗（凶兽 / 同伴反目）——离开探索界面打一场，胜后回到原格继续
+    if (pendingBeast) {
+      if (pendingBeast.kind === "beast") {
+        this._exploreFightReturn = true;
+        UI.closeExplore();
+        this.startEncounterFight(pendingBeast.enemy);
+      } else if (pendingBeast.kind === "conflict") {
+        const cp = pendingBeast.companion;
+        this.log(`【副本·内讧】${cp.name} 为争夺机缘与你反目，拔刀相向！`, "bad");
+        this._exploreFightReturn = true;
+        UI.closeExplore();
+        this.startEncounterFight("rogue_cultivator");
+      }
+    }
+    State.save();
+  },
+
+  // 结束探索：把本次采集并入主背包，统一结算耗时
+  finishExplore(reachedExit) {
+    const s = State.data;
+    const st = s.explore;
+    if (!st || st.finished) return;
+    st.finished = true;
+    const months = Explore.timeCostMonths(st);
+
+    // 采集并入主背包
+    const gained = [];
+    Object.entries(st.bag).forEach(([item, n]) => {
+      if (n > 0) { State.give(item, n); gained.push(`${DATA.items[item] ? DATA.items[item].name : item}×${n}`); }
+    });
+    UI.closeExplore();
+    this.passTime(months);
+    s.flags.adventured = true;
+    s.flags.adv_count = (s.flags.adv_count || 0) + 1;
+
+    const summary = gained.length ? `满载而归：${gained.join("、")}。` : "空手而归，未有所获。";
+    this.log(`你${reachedExit ? "寻到出口，离开了" : "退出了"}「${st.siteName}」，探索耗时约 ${months} 月。${summary}`, gained.length ? "good" : "sys");
+    s.explore = null;
+
+    this.checkLifespan();
+    this.checkStory();
+    if (!s.pendingEvent && !s.combat && !this._pendingFortune) this._maybeInteraction();
+    State.save();
+    UI.renderAll();
+  },
+
 
   /* -------- 闭关修炼：修为主要来源。months=闭关时长（月）-------- */
   cultivate(months) {
@@ -856,6 +945,14 @@ const Engine = {
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
         s.demon = clamp(s.demon + 8, 0, 100);
         this.log(`你不敌「${meta.enemyName}」，负伤遁走（气血-${dmg}）。`, "bad");
+      }
+      // 探索途中触发的战斗：打完回到探索网格继续
+      if (this._exploreFightReturn) {
+        this._exploreFightReturn = false;
+        this._combat = null; this._combatMeta = null;
+        this.checkLifespan();
+        State.save();
+        if (s.explore && !s.explore.finished && s.hp > 0) { UI.openExplore(s.explore); return; }
       }
     } else if (meta.type === "showdown") {
       if (win) {

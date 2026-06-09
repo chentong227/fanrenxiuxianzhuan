@@ -531,3 +531,84 @@ html, body {
 @media (hover: none) {
   .stat-row[data-tip]:hover::after { display: none; }
 }
+
+/* ============================================================
+ * 箱庭探索界面（走格子副本/秘境）
+ * ============================================================ */
+.explore-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(8, 12, 16, 0.92);
+  display: flex; align-items: center; justify-content: center;
+}
+.explore-box {
+  width: min(880px, 96vw); max-height: 96vh; overflow: auto;
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; box-shadow: var(--shadow);
+}
+.explore-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.explore-title { font-size: 18px; font-weight: 700; color: var(--gold); }
+.explore-info { font-size: 12px; color: var(--ink-dim); flex: 1; }
+.explore-main { display: flex; gap: 12px; align-items: flex-start; }
+.explore-grid {
+  display: grid; gap: 2px; flex: 1;
+  background: rgba(0,0,0,0.25); padding: 4px; border-radius: 8px;
+  aspect-ratio: 1 / 1; min-width: 0;
+}
+.ex-cell {
+  display: flex; align-items: center; justify-content: center;
+  background: #11171d; border-radius: 4px; aspect-ratio: 1 / 1;
+  font-size: clamp(12px, 2.4vw, 20px); user-select: none; position: relative;
+  transition: background .12s;
+}
+.ex-cell.fog { background: #0a0d10; }
+.ex-cell.seen { background: #18222b; }
+.ex-cell.blocked { background: #0e1418; }
+.ex-cell.reach { cursor: pointer; box-shadow: inset 0 0 0 2px var(--jade); }
+.ex-cell.reach:hover { background: #20303a; }
+.ex-cell.player { box-shadow: inset 0 0 0 2px var(--gold); }
+.ex-icon.you { filter: drop-shadow(0 0 4px var(--gold)); }
+.ex-icon.comp { filter: drop-shadow(0 0 3px var(--blue)); }
+.ex-icon.dim { opacity: 0.5; }
+
+.explore-side { width: 180px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+.minimap-label { font-size: 11px; color: var(--ink-dim); margin-bottom: 4px; }
+.explore-minimap { display: grid; gap: 1px; background: rgba(0,0,0,0.3); padding: 3px; border-radius: 6px; }
+.mini-cell { aspect-ratio: 1/1; border-radius: 1px; background: #11171d; }
+.mini-cell.m-fog { background: #0a0d10; }
+.mini-cell.m-floor { background: #1c2730; }
+.mini-cell.m-block { background: #0e1418; }
+.mini-cell.m-res { background: var(--jade); }
+.mini-cell.m-beast { background: var(--red); }
+.mini-cell.m-exit { background: var(--gold); }
+.mini-cell.m-entry { background: var(--purple); }
+.mini-cell.m-you { background: #fff; box-shadow: 0 0 4px #fff; }
+
+.explore-bag { background: rgba(0,0,0,0.2); border-radius: 6px; padding: 8px; }
+.exbag-title { font-size: 11px; color: var(--ink-dim); margin-bottom: 6px; }
+.exbag-item { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; }
+.exbag-item b { color: var(--jade-bright); }
+.exbag-empty { font-size: 12px; color: var(--ink-dim); }
+
+.explore-log {
+  margin-top: 10px; background: rgba(0,0,0,0.25); border-radius: 6px;
+  padding: 8px 10px; font-size: 12px; color: var(--ink-dim);
+  max-height: 90px; overflow-y: auto; line-height: 1.6;
+}
+.explore-dpad {
+  margin: 12px auto 0; display: grid; grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(3, 52px); gap: 6px; justify-content: center;
+}
+.dpad-btn {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--ink); font-size: 20px; cursor: pointer;
+}
+.dpad-btn:hover { background: #20303a; border-color: var(--jade); }
+.dpad-center { color: var(--ink-dim); font-size: 14px; cursor: default; }
+.explore-dpad > div { width: 52px; height: 52px; }
+
+@media (max-width: 560px) {
+  .explore-main { flex-direction: column; }
+  .explore-side { width: 100%; flex-direction: row; }
+  .explore-minimap-wrap { flex: 1; }
+  .explore-bag { flex: 1; }
+}

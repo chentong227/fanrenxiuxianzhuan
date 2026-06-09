@@ -60,6 +60,7 @@ const State = {
       relations: {},          // 与各 NPC 的关系值（好感/仇怨）
       metNpcs: [],            // 已相识 NPC 的 id（人物图鉴）
       pendingEvent: null,     // 当前待处理的选择事件 id
+      explore: null,          // 箱庭探索会话（进入副本时生成）
     };
     this.give("qingyuan_dan", 2);
     if (typeof NPCSIM !== "undefined") NPCSIM.init(this.data);
@@ -97,6 +98,7 @@ const State = {
     if (!d.relations) d.relations = {};
     if (!d.metNpcs) d.metNpcs = [];
     if (!d.npcFates || !d.npcFates.length) { if (typeof NPCSIM !== "undefined") NPCSIM.init(d); }
+    if (d.explore === undefined) d.explore = null;
   },
   hasSave() { return !!localStorage.getItem(SAVE_KEY); },
 

@@ -144,11 +144,43 @@
       </div>
     </div>
 
+    <!-- 箱庭探索界面（副本/秘境走格子）-->
+    <div id="explore-overlay" class="explore-overlay" hidden>
+      <div class="explore-box">
+        <div class="explore-head">
+          <span id="explore-title" class="explore-title">秘境</span>
+          <span id="explore-info" class="explore-info"></span>
+          <button id="explore-leave" class="btn btn-mini">离开</button>
+        </div>
+        <div class="explore-main">
+          <div id="explore-grid" class="explore-grid"></div>
+          <div class="explore-side">
+            <div class="explore-minimap-wrap">
+              <div class="minimap-label">小地图</div>
+              <div id="explore-minimap" class="explore-minimap"></div>
+            </div>
+            <div id="explore-bag" class="explore-bag"></div>
+          </div>
+        </div>
+        <div class="explore-log" id="explore-log"></div>
+        <div class="explore-dpad">
+          <div></div>
+          <button class="dpad-btn" data-dir="up">↑</button>
+          <div></div>
+          <button class="dpad-btn" data-dir="left">←</button>
+          <button class="dpad-btn dpad-center" data-dir="">·</button>
+          <button class="dpad-btn" data-dir="right">→</button>
+          <div></div>
+          <button class="dpad-btn" data-dir="down">↓</button>
+          <div></div>
+        </div>
+      </div>
+    </div>
+
     <!-- 弹窗容器 -->
     <div id="modal-overlay" class="modal-overlay" hidden>
       <div id="modal" class="modal"></div>
     </div>
-
     <!-- 浮动提示 -->
     <div id="toast" class="toast" hidden></div>
   </div>
@@ -161,8 +193,8 @@
   <script src="js/npcsim.js"></script>
   <script src="js/interactions.js"></script>
   <script src="js/combat.js"></script>
-  <script src="js/fortunes.js"></script>
-  <script src="js/quests.js"></script>
+  <script src="js/explore.js"></script>
+  <script src="js/fortunes.js"></script>  <script src="js/quests.js"></script>
   <script src="js/story.js"></script>
   <script src="js/engine.js"></script>
   <script src="js/ui.js"></script>
