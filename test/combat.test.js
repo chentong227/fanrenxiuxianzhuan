@@ -53,11 +53,13 @@ console.log("\n=== 1.5 灵气不可无限囤积（结转有上限，随境界放
   assert(peak <= 10 + cap0 + 2, `灵气不会无限累积（峰值 ${peak} ≤ 单回合产出+结转上限 ${10 + cap0}(+顿悟2)）`);
   assert(Balance.qiCarryCap(3) > cap0, `高阶修士结转上限更高（练气${cap0} < 结丹${Balance.qiCarryCap(3)}）`);
 
-  // 凝神蓄气也受同一上限约束，不能靠反复蓄力无限聚气
+  // 凝神蓄气：每回合限一次，且受上限约束，不能靠反复蓄力无限聚气
   const p2 = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, realmTier: 0, spells: ["ningshen"] });
   const c2 = new Combat({ player: p2, enemies: [{ name: "木桩", hp: 999 }], rng: seqRng([0.99]) });
   c2.startRound();
-  for (let i = 0; i < 10; i++) { if (c2.canAfford("ningshen")) c2.cast("ningshen"); }
+  let okCasts = 0;
+  for (let i = 0; i < 10; i++) { if (c2.cast("ningshen").ok) okCasts++; }
+  assert(okCasts === 1, `凝神静气每回合限用一次（实际成功 ${okCasts} 次）`);
   assert(p2.nextQiBonus <= cap0, `凝神蓄气受上限约束（蓄 ${p2.nextQiBonus} ≤ ${cap0}）`);
 }
 

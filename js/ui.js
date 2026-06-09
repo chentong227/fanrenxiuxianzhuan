@@ -707,26 +707,11 @@ const UI = {
     }
     grid.innerHTML = cellsHtml;
 
-    // 小地图（缩略：仅显示已探明/玩家/出口）
+    // 小地图缩略（点击展开完整地图）
     const mini = this.el("explore-minimap");
     mini.style.gridTemplateColumns = `repeat(${state.w}, 1fr)`;
-    let miniHtml = "";
-    for (let y = 0; y < state.h; y++) {
-      for (let x = 0; x < state.w; x++) {
-        const c = Explore.cellAt(state, x, y);
-        let cls = "mini-cell ";
-        if (!c.discovered) cls += "m-fog";
-        else if (x === px && y === py) cls += "m-you";
-        else if (c.content === "exit") cls += "m-exit";
-        else if (c.content === "entry") cls += "m-entry";
-        else if (c.content && Explore.CONTENT[c.content] && Explore.CONTENT[c.content].loot) cls += "m-res";
-        else if (c.content === "beast") cls += "m-beast";
-        else if (TE[c.terrain].blocked) cls += "m-block";
-        else cls += "m-floor";
-        miniHtml += `<div class="${cls}"></div>`;
-      }
-    }
-    mini.innerHTML = miniHtml;
+    mini.innerHTML = this._minimapCells(state);
+    mini.onclick = () => this.openExploreMap(state);
 
     // 信息条
     const months = Explore.timeCostMonths(state);
@@ -758,6 +743,55 @@ const UI = {
     else if (dx === -1) Engine.exploreMove("left");
     else if (dy === 1) Engine.exploreMove("down");
     else if (dy === -1) Engine.exploreMove("up");
+  },
+
+  // 生成小地图格子 HTML（已探明区域 + 你的红点 + 出口/资源等）
+  _minimapCells(state) {
+    const TE = Explore.TERRAIN, CO = Explore.CONTENT;
+    const px = state.player.x, py = state.player.y;
+    let html = "";
+    for (let y = 0; y < state.h; y++) {
+      for (let x = 0; x < state.w; x++) {
+        const c = Explore.cellAt(state, x, y);
+        const comp = state.companions.find(cp => cp.alive && cp.x === x && cp.y === y);
+        let cls = "mini-cell ";
+        if (x === px && y === py) cls += "m-you";
+        else if (!c.discovered) cls += "m-fog";
+        else if (comp) cls += "m-comp";
+        else if (c.content === "exit") cls += "m-exit";
+        else if (c.content === "entry") cls += "m-entry";
+        else if (c.content && CO[c.content] && CO[c.content].loot) cls += "m-res";
+        else if (c.content === "beast") cls += "m-beast";
+        else if (TE[c.terrain].blocked) cls += "m-block";
+        else cls += "m-floor";
+        html += `<div class="${cls}"></div>`;
+      }
+    }
+    return html;
+  },
+
+  // 点开完整地图：展示全部已探索区域、你的红点、同伴、出口与图例
+  openExploreMap(state) {
+    state = state || State.data.explore;
+    if (!state) return;
+    const remain = Explore.remainingResources(state);
+    const discovered = state.cells.filter(c => c.discovered).length;
+    const pct = Math.round(discovered / (state.w * state.h) * 100);
+    this.openModal(`
+      <h2>${state.siteName} · 全图</h2>
+      <p style="color:var(--ink-dim);font-size:12px">已探明 ${pct}%　·　余 ${remain} 处资源未取　·　步数 ${state.steps}</p>
+      <div class="fullmap" style="grid-template-columns:repeat(${state.w},1fr)">${this._minimapCells(state)}</div>
+      <div class="map-legend">
+        <span><i class="lg m-you"></i>你</span>
+        <span><i class="lg m-comp"></i>同伴</span>
+        <span><i class="lg m-res"></i>资源</span>
+        <span><i class="lg m-beast"></i>凶兽</span>
+        <span><i class="lg m-exit"></i>出口</span>
+        <span><i class="lg m-entry"></i>入口</span>
+        <span><i class="lg m-fog"></i>未探</span>
+      </div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">收起</button></div>
+    `);
   },
 
   /* -------- 通用弹窗 / Toast -------- */

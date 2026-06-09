@@ -572,16 +572,37 @@ html, body {
 
 .explore-side { width: 180px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
 .minimap-label { font-size: 11px; color: var(--ink-dim); margin-bottom: 4px; }
-.explore-minimap { display: grid; gap: 1px; background: rgba(0,0,0,0.3); padding: 3px; border-radius: 6px; }
+.explore-minimap { display: grid; gap: 1px; background: rgba(0,0,0,0.3); padding: 3px; border-radius: 6px; cursor: pointer; }
+.explore-minimap:hover { outline: 1px solid var(--jade); }
 .mini-cell { aspect-ratio: 1/1; border-radius: 1px; background: #11171d; }
 .mini-cell.m-fog { background: #0a0d10; }
 .mini-cell.m-floor { background: #1c2730; }
 .mini-cell.m-block { background: #0e1418; }
 .mini-cell.m-res { background: var(--jade); }
 .mini-cell.m-beast { background: var(--red); }
+.mini-cell.m-comp { background: var(--blue); }
 .mini-cell.m-exit { background: var(--gold); }
 .mini-cell.m-entry { background: var(--purple); }
-.mini-cell.m-you { background: #fff; box-shadow: 0 0 4px #fff; }
+.mini-cell.m-you { background: #ff3b3b; box-shadow: 0 0 5px #ff3b3b; border-radius: 50%; }
+
+/* 全图弹窗 */
+.fullmap {
+  display: grid; gap: 2px; background: rgba(0,0,0,0.3);
+  padding: 6px; border-radius: 8px; margin: 10px 0;
+  width: min(70vh, 100%); aspect-ratio: 1/1; margin-inline: auto;
+}
+.fullmap .mini-cell { border-radius: 2px; }
+.fullmap .mini-cell.m-you { border-radius: 50%; }
+.map-legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; font-size: 12px; color: var(--ink-dim); }
+.map-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.map-legend .lg { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+.map-legend .lg.m-you { border-radius: 50%; background: #ff3b3b; }
+.map-legend .lg.m-comp { background: var(--blue); }
+.map-legend .lg.m-res { background: var(--jade); }
+.map-legend .lg.m-beast { background: var(--red); }
+.map-legend .lg.m-exit { background: var(--gold); }
+.map-legend .lg.m-entry { background: var(--purple); }
+.map-legend .lg.m-fog { background: #0a0d10; border: 1px solid var(--border); }
 
 .explore-bag { background: rgba(0,0,0,0.2); border-radius: 6px; padding: 8px; }
 .exbag-title { font-size: 11px; color: var(--ink-dim); margin-bottom: 6px; }

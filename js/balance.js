@@ -80,6 +80,22 @@
     /* ---- 小境界突破：心魔低于此阈值则可水到渠成；高于则须先闯「心战」 ---- */
     demonTrialThreshold() { return 35; },
 
+    /* ---- 功法/技能 槽位（随境界增长，越高阶越能自由组合）----
+     * 主修恒为 1 个；辅修槽与技能(法术)槽随大境界序放宽。
+     */
+    secondaryTechniqueSlots(realmTier) {
+      return ({ 0: 1, 1: 2, 2: 3, 3: 4, 4: 5 })[realmTier] != null
+        ? ({ 0: 1, 1: 2, 2: 3, 3: 4, 4: 5 })[realmTier]
+        : 1 + (realmTier || 0);
+    },
+    skillSlots(realmTier) {
+      return ({ 0: 8, 1: 10, 2: 12, 3: 14, 4: 16 })[realmTier] != null
+        ? ({ 0: 8, 1: 10, 2: 12, 3: 14, 4: 16 })[realmTier]
+        : 8 + (realmTier || 0) * 2;
+    },
+    // 辅修功法所授技能的强度折扣（主修全效，辅修打折）
+    auxiliaryMul() { return 0.7; },
+
     /* ---- 招式有效强度：来源(武学/法术) × 功法品阶 × 境界 ---- */
     // source: "martial"|"art"；grade: 主修功法品阶(1黄~4天)；realmTier: 大境界序(0练气,1筑基,...)
     sourceMul(source) { return source === "martial" ? 0.8 : 1.0; },

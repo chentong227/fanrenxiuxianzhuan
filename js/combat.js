@@ -31,8 +31,8 @@
                 desc: "运转《长春功》吐纳调息，固本回元。修长春功者，回元更多。" },
     huti:     { name: "长春护体", cost: { mu: 3 },          type: "def", shield: 14, school: "mu", source: "art",
                 desc: "以木灵之力护住周身。修长春功者，护体更坚。" },
-    ningshen: { name: "凝神静气", cost: { mu: 1 },          type: "buff", nextQiBonus: 3, source: "art",
-                desc: "凝神定志，蓄养下回合灵气。" },
+    ningshen: { name: "凝神静气", cost: { mu: 1 },          type: "buff", nextQiBonus: 3, source: "art", oncePerRound: true,
+                desc: "凝神定志，蓄养下回合灵气。每回合只可凝神一次。" },
 
     // 眨眼剑法：凡人武学，快、诡、廉价；施放积累「剑势」
     zhayan:   { name: "眨眼剑法", cost: { jin: 2 },         type: "atk", dmg: 8, dodgeSelf: 0.15, buildMomentum: 1, source: "martial",
@@ -196,6 +196,7 @@
       // 叠加结转灵气
       ELEMENTS.forEach(e => { this.qi[e] += (carried[e] || 0); });
       this.player.dodgeBuff = 0;
+      this._usedOnce = {};
       this._rollEnemyIntents();
       this._log(`【第${this.round}回合】灵气：` + this._qiText()
         + (this._epiphany ? "（顿悟！灵气+2）" : "")
@@ -210,6 +211,8 @@
     canAfford(spellId) {
       const sp = SPELLS[spellId];
       if (!sp) return false;
+      // 每回合限用一次的法术（如凝神静气）：本回合用过即不可再用
+      if (sp.oncePerRound && this._usedOnce && this._usedOnce[spellId]) return false;
       const qiOk = Object.entries(sp.cost).every(([e, n]) => this.qi[e] >= n);
       const consumeOk = !sp.consume || this.player.hasConsumable(sp.consume);
       return qiOk && consumeOk;
@@ -225,9 +228,11 @@
       if (!this.player.spells.includes(spellId)) return { ok: false, reason: "未习得此法术" };
       const sp = SPELLS[spellId];
       if (sp.consume && !this.player.hasConsumable(sp.consume)) return { ok: false, reason: "底牌已用尽" };
+      if (sp.oncePerRound && this._usedOnce && this._usedOnce[spellId]) return { ok: false, reason: "本回合已凝神，不可再用" };
       if (!this.canAfford(spellId)) return { ok: false, reason: "灵气不足" };
       Object.entries(sp.cost).forEach(([e, n]) => { this.qi[e] -= n; });
       if (sp.consume) this.player.pouch[sp.consume]--;
+      if (sp.oncePerRound) { (this._usedOnce || (this._usedOnce = {}))[spellId] = true; }
 
       const target = this.enemies[targetIndex];
       this._applySpell(this.player, sp, target);
