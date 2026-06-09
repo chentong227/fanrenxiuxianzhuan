@@ -211,7 +211,7 @@ const UI = {
   renderActions() {
     const loc = State.location();
     const box = this.el("action-buttons");
-    const zone = document.querySelector(".stage-place");
+    const zone = document.querySelector(".mid-col");
     if (!loc) { box.innerHTML = ""; return; }
 
     // 有待决剧情时，日常行动暂时灰掉（引导玩家先做剧情选择）

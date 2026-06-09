@@ -122,11 +122,13 @@ html, body {
 .topbar-actions .btn-mini { padding: 8px 14px; font-size: 14px; letter-spacing: 1px; }
 .topbar-actions .btn-mini:hover { background: rgba(95,184,154,.12); border-color: var(--jade); color: var(--jade-bright); }
 
-/* ===== 布局：左栏(角色/储物) + 右栏(界面/对话) ===== */
+/* ===== 布局：左(韩立) + 中(任务/人物/行动) + 右(所在/地图/剧情) ===== */
 .layout {
-  flex: 1; display: grid; grid-template-columns: 240px 1fr;
-  gap: 14px; padding: 14px; min-height: 0; overflow: hidden;
+  flex: 1; display: grid; grid-template-columns: 230px 250px 1fr;
+  gap: 12px; padding: 12px; min-height: 0; overflow: hidden;
 }
+.mid-col { display: flex; flex-direction: column; }
+.stage-col { display: flex; flex-direction: column; min-height: 0; }
 .panel {
   background: linear-gradient(180deg, var(--bg-panel), #13171e);
   border: 1px solid var(--border);
@@ -198,7 +200,10 @@ html, body {
 .btn-action { width: 100%; text-align: center; padding: 16px 14px; font-size: 16px; letter-spacing: 2px; }
 
 /* 界面区里的叙事区：占满剩余高度、独立滚动 */
-.main-stage .narrative { flex: 1; min-height: 80px; overflow-y: auto; padding-right: 6px; }
+.stage-col .narrative { flex: 1; min-height: 80px; overflow-y: auto; padding-right: 6px; }
+/* 中栏行动按钮：竖向大按钮，易点 */
+.mid-col .action-buttons { display: flex; flex-direction: column; gap: 10px; }
+.mid-col .locals { margin-bottom: 4px; }
 
 /* ===== 叙事区 ===== */
 .narrative .entry { margin-bottom: 14px; }
@@ -238,9 +243,8 @@ html, body {
 .choices .choice .c-hint { display: block; color: var(--ink-dim); font-size: 12px; margin-top: 4px; }
 
 /* ===== 行动面板 ===== */
-.stage-place.story-pending .action-buttons,
-.stage-place.story-pending .loc-map,
-.stage-place.story-pending .locals { opacity: .4; pointer-events: none; }
+.mid-col.story-pending .action-buttons,
+.mid-col.story-pending .locals { opacity: .4; pointer-events: none; }
 .loc-tag { display: inline-block; font-size: 11px; letter-spacing: 2px; color: var(--ink-dim); background: var(--bg); padding: 1px 8px; border-radius: 10px; }
 .act-hint { color: var(--ink-dim); font-size: 13px; text-align: center; padding: 10px; font-style: italic; }
 .action-buttons { display: flex; flex-direction: column; gap: 8px; }
@@ -596,13 +600,17 @@ html, body {
     display: block; height: auto; gap: 0; padding: 10px 10px 72px; overflow: visible;
   }
   .panel { overflow: visible; margin-bottom: 0; }
-  /* 默认显示「界面」栏 */
-  .layout .side-rail { display: none; }
-  .layout .main-stage { display: flex; }
+  /* 默认显示「剧情」栏 */
+  .layout .side-rail, .layout .mid-col { display: none; }
+  .layout .stage-col { display: flex; }
   .layout[data-mtab="hero"] .side-rail { display: block; }
-  .layout[data-mtab="hero"] .main-stage { display: none; }
+  .layout[data-mtab="hero"] .mid-col,
+  .layout[data-mtab="hero"] .stage-col { display: none; }
+  .layout[data-mtab="mid"] .mid-col { display: flex; }
+  .layout[data-mtab="mid"] .side-rail,
+  .layout[data-mtab="mid"] .stage-col { display: none; }
 
-  .main-stage .narrative { max-height: none; flex: none; }
+  .stage-col .narrative { max-height: none; flex: none; }
 
   /* 底部 Tab 栏 */
   .mobile-tabs {
