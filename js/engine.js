@@ -24,6 +24,25 @@ const Engine = {
     return true;
   },
 
+  // 据点在场人物的专属对话主题
+  dialogueTopic(npcId, idx) {
+    const s = State.data;
+    if (s.pendingEvent || s.combat) { this.toast("先处理眼前之事"); return; }
+    if (typeof DIALOGUE === "undefined") return;
+    const topics = DIALOGUE.forNpc(npcId, s);
+    const t = topics[idx];
+    if (!t) return;
+    if (t.cond && !t.cond(s)) { this.toast("此时无法如此"); return; }
+    const r = t.effect ? t.effect(s) : { text: "", kind: "event" };
+    const n = WORLD.npcById(npcId);
+    this.log(`【${n ? n.name : npcId}】${r.text}`, r.kind || "event");
+    UI.closeModal();
+    this.checkLifespan();
+    this.checkStory();
+    State.save();
+    UI.renderAll();
+  },
+
   /* -------- 时间流逝（以月为单位）-------- */
   passTime(months) {
     const s = State.data;
