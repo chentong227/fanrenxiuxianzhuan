@@ -32,7 +32,7 @@ html, body {
 #app { height: 100vh; overflow: hidden; }
 
 .screen { display: none; height: 100vh; }
-.screen.active { display: flex; }
+.screen.active { display: flex; flex-direction: column; }
 
 /* ===== 角色创建 ===== */
 #screen-create {
@@ -886,18 +886,19 @@ html, body {
 /* ============================================================
  * 内嵌大地图（所在面板）
  * ============================================================ */
-.loc-map { margin-top: 12px; }
+.loc-map { margin-top: 10px; }
 .loc-map-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .map-tag { font-size: 11px; letter-spacing: 2px; color: var(--gold); background: var(--bg); padding: 1px 8px; border-radius: 10px; }
 .map-speed { font-size: 11px; color: var(--ink-dim); }
 .worldmap.inline {
-  position: relative; width: 100%; aspect-ratio: 16 / 10;
+  position: relative; width: 100%; aspect-ratio: 5 / 2; max-height: 190px;
   background:
     radial-gradient(circle at 70% 25%, rgba(106,160,212,0.10), transparent 42%),
     radial-gradient(circle at 28% 78%, rgba(154,127,212,0.10), transparent 40%),
     linear-gradient(160deg, #141d24, #0e151a);
   border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
 }
+.worldmap.inline .pin-label { font-size: 10px; }
 .worldmap.inline .map-pin .pin-dot { width: 13px; height: 13px; }
 .worldmap.inline .map-pin.home .pin-dot { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
 .worldmap.inline .map-pin.here .pin-dot { background: #ff3b3b; box-shadow: 0 0 8px #ff3b3b; }

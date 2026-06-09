@@ -24,15 +24,6 @@ const UI = {
       t.classList.toggle("active", t.dataset.tab === tab));
   },
 
-  // 舆图折叠（默认收起，避免占满屏幕；点「舆图」展开）
-  toggleMap() {
-    this._mapOpen = !this._mapOpen;
-    const loc = State.location();
-    if (loc) this.renderLocMap(loc);
-    const btn = this.el("btn-toggle-map");
-    if (btn) btn.classList.toggle("on", this._mapOpen);
-  },
-
   // 当前际遇指引 + 进行中任务（开放世界的"目标"提示）
   renderObjective() {
     const box = this.el("objective-bar");
@@ -88,9 +79,7 @@ const UI = {
       if (toggleBtn) toggleBtn.style.display = "none";
       return;
     }
-    if (toggleBtn) toggleBtn.style.display = "";
-    // 舆图默认收起，避免占满屏幕；点「舆图」展开
-    if (!this._mapOpen) { box.innerHTML = ""; box.style.display = "none"; return; }
+    if (toggleBtn) toggleBtn.style.display = "none";   // 舆图常驻，不再用折叠按钮
     box.style.display = "";
 
     const curLoc = WORLD.locations.find(l => l.id === cur);
