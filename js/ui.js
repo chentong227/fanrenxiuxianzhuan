@@ -15,13 +15,22 @@ const UI = {
     this.renderObjective();
   },
 
-  // 手机分页：切换显示哪一栏（narrative=修行 / stats=状态 / actions=储物）
+  // 手机分页：切换显示哪一栏（stage=界面 / hero=韩立+储物）
   switchMobileTab(tab) {
     const layout = document.querySelector(".layout");
     if (!layout) return;
     layout.setAttribute("data-mtab", tab);
     document.querySelectorAll(".mtab").forEach(t =>
       t.classList.toggle("active", t.dataset.tab === tab));
+  },
+
+  // 舆图折叠（默认收起，避免占满屏幕；点「舆图」展开）
+  toggleMap() {
+    this._mapOpen = !this._mapOpen;
+    const loc = State.location();
+    if (loc) this.renderLocMap(loc);
+    const btn = this.el("btn-toggle-map");
+    if (btn) btn.classList.toggle("on", this._mapOpen);
   },
 
   // 当前际遇指引 + 进行中任务（开放世界的"目标"提示）
@@ -63,13 +72,25 @@ const UI = {
     const box = this.el("loc-map");
     if (!box) return;
     const s = State.data;
+    const toggleBtn = this.el("btn-toggle-map");
     // 过场地点 / 待决剧情 / 战斗中：不显示地图（不可乱走）
-    if (loc.scene || s.pendingEvent || s.combat) { box.innerHTML = ""; box.style.display = "none"; return; }
+    if (loc.scene || s.pendingEvent || s.combat) {
+      box.innerHTML = ""; box.style.display = "none";
+      if (toggleBtn) toggleBtn.style.display = "none";
+      return;
+    }
     const arc = Chapters.active().id;
     const cur = s.location;
     const locs = WORLD.locations.filter(l =>
       !l.scene && l.map && (!l.arc || l.arc === arc) && (!l.unlock || l.unlock(s)));
-    if (locs.length <= 1) { box.innerHTML = ""; box.style.display = "none"; return; }
+    if (locs.length <= 1) {
+      box.innerHTML = ""; box.style.display = "none";
+      if (toggleBtn) toggleBtn.style.display = "none";
+      return;
+    }
+    if (toggleBtn) toggleBtn.style.display = "";
+    // 舆图默认收起，避免占满屏幕；点「舆图」展开
+    if (!this._mapOpen) { box.innerHTML = ""; box.style.display = "none"; return; }
     box.style.display = "";
 
     const curLoc = WORLD.locations.find(l => l.id === cur);
@@ -103,8 +124,7 @@ const UI = {
       }
     }
     box.innerHTML = `
-      <div class="loc-map-head"><span class="map-tag">舆图</span>
-        <span class="map-speed">遁速 ${State.effectiveSpeed()}　点选地点 → 确认前往</span></div>
+      <div class="loc-map-head"><span class="map-speed">遁速 ${State.effectiveSpeed()}　点选地点 → 确认前往</span></div>
       <div class="worldmap inline">
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
         ${pins}
@@ -202,7 +222,7 @@ const UI = {
   renderActions() {
     const loc = State.location();
     const box = this.el("action-buttons");
-    const zone = document.querySelector(".act-zone");
+    const zone = document.querySelector(".stage-place");
     if (!loc) { box.innerHTML = ""; return; }
 
     // 有待决剧情时，日常行动暂时灰掉（引导玩家先做剧情选择）
@@ -231,10 +251,12 @@ const UI = {
 
   renderTopbar() {
     const s = State.data;
-    this.el("top-name").textContent = s.name;
-    this.el("top-realm").textContent = State.realm().name;
-    this.el("top-age").textContent = `${s.age} 岁`;
-    this.el("top-lifespan").textContent = `寿元 ${s.lifespan}`;
+    const t = this.el("top-time");
+    if (t) t.textContent = `第${s.year}年${s.month}月`;
+    // 角色卡
+    const hn = this.el("hero-name"); if (hn) hn.textContent = s.name;
+    const ha = this.el("hero-age"); if (ha) ha.textContent = `${s.age} 岁`;
+    const hl = this.el("hero-lifespan"); if (hl) hl.textContent = s.lifespan;
   },
 
   renderStats() {
@@ -249,7 +271,7 @@ const UI = {
     this.el("st-insight").textContent = s.insight;
     this.el("st-body").textContent = s.body;
     this.el("st-stones").textContent = s.stones;
-    this.el("st-time").textContent = `第 ${s.year} 年 ${s.month} 月`;
+    this.el("st-time").textContent = `${s.year}年${s.month}月`;
 
     this.setBar("cul", s.cultivation, realm.culMax);
     this.setBar("sp", s.spirit, realm.spMax);

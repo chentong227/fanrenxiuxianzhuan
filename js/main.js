@@ -30,6 +30,10 @@ const Main = {
       tab.addEventListener("click", () => UI.switchMobileTab(tab.dataset.tab));
     });
 
+    // —— 舆图折叠开关 ——
+    const mapToggle = UI.el("btn-toggle-map");
+    if (mapToggle) mapToggle.addEventListener("click", () => UI.toggleMap());
+
     // 点击遮罩空白关闭弹窗（奇遇/剧情等必须选择的弹窗除外）
     UI.el("modal-overlay").addEventListener("click", (e) => {
       if (e.target.id === "modal-overlay" && !Engine._pendingFortune) UI.closeModal();
@@ -100,7 +104,7 @@ const Main = {
     UI.el("screen-create").classList.remove("active");
     UI.el("screen-game").classList.add("active");
     const layout = document.querySelector(".layout");
-    if (layout && !layout.getAttribute("data-mtab")) layout.setAttribute("data-mtab", "narrative");
+    if (layout && !layout.getAttribute("data-mtab")) layout.setAttribute("data-mtab", "stage");
     UI.renderNarrative();
     UI.renderAll();
     if (State.data.bottle.unlocked) UI.showBottleButton();

@@ -39,13 +39,8 @@
     <section id="screen-game" class="screen">
       <header class="topbar">
         <div class="char-brief">
-          <span id="top-name" class="t-name">韩立</span>
-          <span id="top-realm" class="t-realm">练气一层</span>
-        </div>
-        <div class="time-brief">
-          <span id="top-age">13 岁</span>
-          <span class="dot">·</span>
-          <span id="top-lifespan">寿元 100</span>
+          <span class="game-logo">凡人修仙传</span>
+          <span id="top-time" class="t-realm">第1年</span>
         </div>
         <div class="topbar-actions">
           <button id="btn-codex" class="btn btn-mini">人物</button>
@@ -57,12 +52,15 @@
       </header>
 
       <main class="layout">
-        <!-- 左侧：属性面板 -->
-        <aside class="panel panel-stats">
-          <h3 class="panel-title">修士状态</h3>
-          <div class="stat-block">
-            <div class="stat-row"><span>灵根</span><b id="st-root">—</b></div>
-            <div class="stat-row"><span>境界</span><b id="st-realm">—</b></div>
+        <!-- 左栏：韩立角色卡 + 状态 + 储物袋 -->
+        <aside class="panel side-rail">
+          <div class="hero-card">
+            <div class="hero-portrait">🧙</div>
+            <div class="hero-meta">
+              <div class="hero-name" id="hero-name">韩立</div>
+              <div class="hero-realm"><span id="st-realm">练气一层</span> · <span id="st-root">四灵根</span></div>
+              <div class="hero-age"><span id="hero-age">13 岁</span> · 寿元 <span id="hero-lifespan">100</span></div>
+            </div>
           </div>
 
           <div class="bar-group">
@@ -73,14 +71,6 @@
             <div class="bar-label"><span>灵力</span><span id="sp-text">0 / 100</span></div>
             <div class="bar"><div id="sp-bar" class="bar-fill sp"></div></div>
           </div>
-
-          <div class="stat-block">
-            <div class="stat-row" data-tip="神识：比对手高时可看穿其出招意图，并提升命中与暴击；对元神之敌唯靠功力镇压。"><span>神识</span><b id="st-sense">0</b></div>
-            <div class="stat-row" data-tip="遁速：决定战斗先手，并减少大世界赶路耗时（省光阴=省寿元）。"><span>遁速</span><b id="st-speed">0</b></div>
-            <div class="stat-row" data-tip="悟性：突破时更快削减瓶颈心魔，并提升临场顿悟（额外灵气）与习功法/炼丹效率。"><span>悟性</span><b id="st-insight">0</b></div>
-            <div class="stat-row" data-tip="体魄：影响气血上限与抗打击。"><span>体魄</span><b id="st-body">0</b></div>
-          </div>
-
           <div class="bar-group">
             <div class="bar-label"><span>气血</span><span id="hp-text">100</span></div>
             <div class="bar"><div id="hp-bar" class="bar-fill hp"></div></div>
@@ -94,43 +84,46 @@
             <div class="bar"><div id="demon-bar" class="bar-fill demon"></div></div>
           </div>
 
-          <div class="stat-block resources">
-            <div class="stat-row"><span>灵石</span><b id="st-stones">0</b></div>
-            <div class="stat-row"><span>岁月</span><b id="st-time">第 1 年</b></div>
+          <div class="attr-grid">
+            <div class="attr-cell" data-tip="神识：比对手高时可看穿其出招意图，并提升命中与暴击；对元神之敌唯靠功力镇压。"><span>神识</span><b id="st-sense">0</b></div>
+            <div class="attr-cell" data-tip="遁速：决定战斗先手，并减少大世界赶路耗时（省光阴=省寿元）。"><span>遁速</span><b id="st-speed">0</b></div>
+            <div class="attr-cell" data-tip="悟性：突破时更快削减瓶颈心魔，并提升临场顿悟与习功法/炼丹效率。"><span>悟性</span><b id="st-insight">0</b></div>
+            <div class="attr-cell" data-tip="体魄：影响气血上限与抗打击。"><span>体魄</span><b id="st-body">0</b></div>
+            <div class="attr-cell"><span>灵石</span><b id="st-stones">0</b></div>
+            <div class="attr-cell"><span>岁月</span><b id="st-time">第1年</b></div>
           </div>
-        </aside>
 
-        <!-- 中间：叙事 + 选项 + 行动（统一为一条阅读→行动的流）-->
-        <section class="panel panel-narrative">
-          <div id="objective-bar" class="objective-bar"></div>
-          <div id="narrative" class="narrative"></div>
-          <!-- 剧情选项（有待决剧情时显示，醒目）-->
-          <div id="choices" class="choices"></div>
-          <!-- 所在地 + 当前可做的行动（紧跟其后，不再分散到别处）-->
-          <div class="act-zone">
-            <div class="loc-box">
-              <span class="loc-tag">所在</span>
-              <div id="loc-name" class="loc-name">青牛镇</div>
-              <div id="loc-desc" class="loc-desc"></div>
-              <!-- 内嵌大地图：点击图标即可前往 -->
-              <div id="loc-map" class="loc-map"></div>
-            </div>
-            <div id="action-buttons" class="action-buttons"></div>
-          </div>
-        </section>
-
-        <!-- 右侧：储物袋 -->
-        <aside class="panel panel-actions">
-          <h3 class="panel-title">储 物 袋</h3>
+          <h3 class="panel-title">储物袋</h3>
           <div id="inventory" class="inventory"></div>
         </aside>
+
+        <!-- 右栏：界面（所在+地图+人物+行动）+ 对话 -->
+        <section class="panel main-stage">
+          <div id="objective-bar" class="objective-bar"></div>
+
+          <!-- 所在 + 地图 + 在场人物 + 行动（界面区）-->
+          <div class="stage-place">
+            <div class="place-head">
+              <span class="loc-tag">所在</span>
+              <span id="loc-name" class="loc-name">青牛镇</span>
+              <button id="btn-toggle-map" class="btn btn-mini map-toggle">舆图</button>
+            </div>
+            <div id="loc-desc" class="loc-desc"></div>
+            <div id="loc-map" class="loc-map"></div>
+            <div id="locals" class="locals"></div>
+            <div id="action-buttons" class="action-buttons"></div>
+          </div>
+
+          <!-- 叙事 / 对话 -->
+          <div id="narrative" class="narrative"></div>
+          <div id="choices" class="choices"></div>
+        </section>
       </main>
 
       <!-- 手机底部分页栏（窄屏显示，桌面隐藏）-->
       <nav class="mobile-tabs" id="mobile-tabs">
-        <button class="mtab active" data-tab="narrative">修行</button>
-        <button class="mtab" data-tab="stats">状态</button>
-        <button class="mtab" data-tab="actions">储物</button>
+        <button class="mtab active" data-tab="stage">界面</button>
+        <button class="mtab" data-tab="hero">韩立</button>
       </nav>
     </section>
 
