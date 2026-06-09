@@ -986,10 +986,8 @@ const UI = {
 
   /* -------- 活世界（LLM 叙述层）设置 -------- */
   openLLMSettings() {
-    const c = (typeof LLM !== "undefined") ? LLM.config() : { key: "", model: "deepseek/deepseek-chat", on: false };
+    const c = (typeof LLM !== "undefined") ? LLM.config() : { key: "", model: "deepseek/deepseek-v4-flash", on: false };
     const on = (typeof LLM !== "undefined") && LLM.enabled();
-    const ac = (typeof Art !== "undefined") ? Art.config() : { key: "", model: "google/gemini-2.5-flash-image", on: false };
-    const aon = (typeof Art !== "undefined") && Art.genEnabled();
     this.openModal(`
       <h2>活世界 · 叙述层</h2>
       <p style="color:var(--ink-dim);font-size:13px">接入大模型，让风云录、散修闲谈、奇遇、闭关见闻等"怎么说"的部分千变万化、有人情味。
@@ -1004,18 +1002,6 @@ const UI = {
         <input id="llm-model" type="text" value="${c.model || "deepseek/deepseek-v4-flash"}" style="width:100%;margin-top:6px" />
       </div>
       <p style="color:${on ? 'var(--jade-bright)' : 'var(--ink-dim)'};font-size:12px">当前状态：${on ? "已开启 ✦ 世界正在活起来" : "未开启"}</p>
-      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0" />
-      <h3 style="color:var(--gold);font-size:14px;margin:0 0 4px">实时配图（可选）</h3>
-      <p style="color:var(--ink-dim);font-size:12px">第一章核心人物/场景已内置立绘。开启后，新出场的人物与新场景会用生图模型按国风水墨画一次并永久缓存（独立密钥计费）。</p>
-      <div class="field" style="margin:8px 0">
-        <label style="font-size:13px;color:var(--gold)">生图 API Key（可与上面不同）</label>
-        <input id="art-key" type="password" placeholder="sk-or-v1-..." value="${ac.key || ""}" style="width:100%;margin-top:6px" />
-      </div>
-      <div class="field" style="margin:8px 0">
-        <label style="font-size:13px;color:var(--gold)">生图模型</label>
-        <input id="art-model" type="text" value="${ac.model || "google/gemini-2.5-flash-image"}" style="width:100%;margin-top:6px" />
-      </div>
-      <p style="color:${aon ? 'var(--jade-bright)' : 'var(--ink-dim)'};font-size:12px">配图状态：${aon ? "已开启 ✦ 新人物新场景将自动配图" : "未开启（仅用内置图）"}</p>
       <hr style="border:none;border-top:1px solid var(--line);margin:14px 0" />
       <h3 style="color:var(--gold);font-size:14px;margin:0 0 4px">免输入·跨设备</h3>
       <p style="color:var(--ink-dim);font-size:12px">填好密钥并保存后，点下面生成一条「免输入链接」。在手机/电脑上各打开一次（或加到书签/桌面），以后开这条链接就自动导入并开启，<b style="color:var(--gold)">再也不用手填</b>。链接里的密钥只在你的浏览器地址里，不会上传、不入仓库。</p>
@@ -1038,18 +1024,12 @@ const UI = {
   _llmCopyLink() {
     const out = this.el("llm-link-out");
     const lc = (typeof LLM !== "undefined") ? LLM.config() : { key: "", model: "" };
-    const ac = (typeof Art !== "undefined") ? Art.config() : { key: "", model: "" };
     const lk = (this.el("llm-key") && this.el("llm-key").value) || lc.key || "";
-    const ik = (this.el("art-key") && this.el("art-key").value) || ac.key || "";
-    if (!lk && !ik) { out.textContent = "请先填入至少一个密钥再生成链接。"; return; }
+    if (!lk) { out.textContent = "请先填入密钥再生成链接。"; return; }
     const base = location.origin + location.pathname;
-    const parts = [];
-    if (lk) parts.push("k=" + encodeURIComponent(lk));
-    if (ik) parts.push("i=" + encodeURIComponent(ik));
+    const parts = ["k=" + encodeURIComponent(lk)];
     const lm = (this.el("llm-model") && this.el("llm-model").value) || lc.model;
-    const im = (this.el("art-model") && this.el("art-model").value) || ac.model;
     if (lm) parts.push("m=" + encodeURIComponent(lm));
-    if (im) parts.push("im=" + encodeURIComponent(im));
     const link = base + "#" + parts.join("&");
     const done = () => { out.innerHTML = `<span style="color:var(--jade-bright)">已复制！</span> 在另一台设备打开/收藏这条链接即可：<br>${link}`; };
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1060,12 +1040,6 @@ const UI = {
     const keyVal = (this.el("llm-key").value || "").trim();
     if (on && !keyVal) { this.toast("请先填入 OpenRouter Key", true); return; }
     const ok = LLM.configure({ key: keyVal, model: this.el("llm-model").value, on });
-    // 配图：填了密钥即开启，否则仅保存
-    if (typeof Art !== "undefined") {
-      const ak = this.el("art-key") ? this.el("art-key").value : "";
-      const am = this.el("art-model") ? this.el("art-model").value : "";
-      Art.configure({ key: ak, model: am, on: !!ak });
-    }
     if (ok === false) { this.toast("保存失败：本机存储已满，请清缓存后重试", true); return; }
     // 用真实状态反馈，避免"以为开了其实没开"
     const live = LLM.enabled();

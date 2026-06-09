@@ -41,11 +41,7 @@
     },
     _save() {
       try { localStorage.setItem(LS_KEY, JSON.stringify(this._cfg)); return true; }
-      catch (e) {
-        // localStorage 满（多半被实时配图缓存占满）→ 清掉图缓存再重试，保证 key 一定存得下
-        try { if (typeof Art !== "undefined" && Art.clearCache) Art.clearCache(); } catch (e2) {}
-        try { localStorage.setItem(LS_KEY, JSON.stringify(this._cfg)); return true; } catch (e3) { return false; }
-      }
+      catch (e) { return false; }
     },
     configure({ key, model, on }) {
       const c = this._load();

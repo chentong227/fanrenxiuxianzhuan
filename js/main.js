@@ -44,23 +44,13 @@ const Main = {
       const h = decodeURIComponent(location.hash || "");
       const pick = (re) => { const m = h.match(re); return m ? m[1].trim() : null; };
       const lk = pick(/[#&](?:k|llmkey)=([^&]+)/);
-      const ik = pick(/[#&](?:i|imgkey)=([^&]+)/);
       const lm = pick(/[#&]m=([^&]+)/);
-      const im = pick(/[#&]im=([^&]+)/);
       let imported = false;
       if (lk && typeof LLM !== "undefined") { LLM.configure({ key: lk, model: lm || undefined, on: true }); imported = true; }
       else if (lm && typeof LLM !== "undefined") { LLM.configure({ model: lm }); }
-      if (ik && typeof Art !== "undefined") { Art.configure({ key: ik, model: im || undefined, on: true }); imported = true; }
-      else if (im && typeof Art !== "undefined") { Art.configure({ model: im }); }
-      if (lk || ik || lm || im) history.replaceState(null, "", location.pathname + location.search);
-      if (imported) setTimeout(() => UI.toast("已导入密钥：活世界" + (ik ? " + 实时配图" : "") + " 已开启"), 600);
+      if (lk || lm) history.replaceState(null, "", location.pathname + location.search);
+      if (imported) setTimeout(() => UI.toast("已导入密钥：活世界已开启"), 600);
     } catch (e) {}
-
-    // 生成的图回来后，刷新界面让立绘/场景即时显现
-    if (typeof Art !== "undefined" && Art.onUpdate) {
-      Art.onUpdate(() => { try { UI.renderAll(); } catch (e) {} });
-      if (Art.initCache) Art.initCache();   // 启动即载入 IndexedDB 图缓存（迁移旧 localStorage 图）
-    }
 
     // 有存档则提示
     if (!State.hasSave()) UI.el("btn-load").style.display = "none";
