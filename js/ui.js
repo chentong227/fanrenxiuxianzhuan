@@ -1057,14 +1057,19 @@ const UI = {
     } else { out.textContent = link; }
   },
   _llmSave(on) {
-    LLM.configure({ key: this.el("llm-key").value, model: this.el("llm-model").value, on });
+    const keyVal = (this.el("llm-key").value || "").trim();
+    if (on && !keyVal) { this.toast("请先填入 OpenRouter Key", true); return; }
+    const ok = LLM.configure({ key: keyVal, model: this.el("llm-model").value, on });
     // 配图：填了密钥即开启，否则仅保存
     if (typeof Art !== "undefined") {
       const ak = this.el("art-key") ? this.el("art-key").value : "";
       const am = this.el("art-model") ? this.el("art-model").value : "";
       Art.configure({ key: ak, model: am, on: !!ak });
     }
-    this.toast(on ? "已开启活世界" : "已保存（未开启）");
+    if (ok === false) { this.toast("保存失败：本机存储已满，请清缓存后重试", true); return; }
+    // 用真实状态反馈，避免"以为开了其实没开"
+    const live = LLM.enabled();
+    this.toast(live ? "✦ 活世界已开启" : (on ? "已保存，但未能开启（检查密钥）" : "已保存（未开启）"), !live && on);
     this.closeModal();
     this.renderAll();
   },

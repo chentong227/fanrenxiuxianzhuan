@@ -67,6 +67,11 @@
         } catch (e2) {}
       }
     },
+    // 清空实时配图缓存（localStorage 紧张时让位给存档/密钥）
+    clearCache() {
+      this._cache = {};
+      try { localStorage.removeItem(LS_KEY); } catch (e) {}
+    },
 
     onUpdate(fn) { this._listeners.push(fn); },
     _emit(id) { this._listeners.forEach(fn => { try { fn(id); } catch (e) {} }); },
