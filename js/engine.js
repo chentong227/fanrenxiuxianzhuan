@@ -63,11 +63,42 @@ const Engine = {
     this._checkSchedule();
   },
 
+  // 世间百态：随时间流动的氛围事件（野狼帮/门派/市井三条线，只造氛围不改数值）
+  _AMBIENT_EVENTS: [
+    { cond: (s) => !s.flags.jinguang_dead, text: "听闻野狼帮又吞了一家镖局，山下商旅背地里骂声载道。" },
+    { cond: (s) => !s.flags.jinguang_dead, text: "集镇酒肆里有人压低声音说，野狼帮在招揽亡命之徒，开的价钱不低。" },
+    { cond: (s) => s.flags.gang_war, text: "七玄门与野狼帮的梁子越结越深，山下行人入夜便不敢出门。" },
+    { cond: () => true, text: "门中贴出告示：后山深处近来有凶兽伤人，弟子结伴方可入山。" },
+    { cond: () => true, text: "几名外门弟子因私斗被罚去担水三月，门规面前没人讲情面。" },
+    { cond: () => true, text: "市集上新到了一批南边的药材，价钱压得很低，药铺掌柜们脸色难看。" },
+    { cond: () => true, text: "听说邻县遭了蝗灾，逃难的人拖家带口往这边来，镇口多了不少生面孔。" },
+    { cond: () => true, text: "山道上的老茶棚换了新主人，旧主人据说进山采药，再没回来。" },
+    { cond: (s) => s.bottle && s.bottle.unlocked, text: "坊间又在传某位散修捡了天大机缘、一步登天的故事。你听着，只是笑笑。" },
+    { cond: () => true, text: "夜里落了头场霜，门中老人说，今年的冬天会比往年冷。" },
+  ],
+  _tickAmbient(months) {
+    const s = State.data;
+    if (!s.worldNews) s.worldNews = [];
+    const chance = clamp(0.06 * months, 0, 0.5);
+    if (Math.random() > chance) return;
+    const pool = this._AMBIENT_EVENTS.filter(e => !e.cond || e.cond(s));
+    if (!pool.length) return;
+    const ev = pool[Math.floor(Math.random() * pool.length)];
+    // 同文不连发
+    if (s._lastAmbient === ev.text) return;
+    s._lastAmbient = ev.text;
+    s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "world", text: ev.text });
+    if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    // 三成概率浮到叙事日志（避免刷屏）
+    if (Math.random() < 0.3) this.log("【世间】" + ev.text, "sys");
+  },
+
   // NPC 命途模拟：推进、收集风云录、偶尔向玩家播报重大事件
   _tickWorld(months) {
     const s = State.data;
     if (typeof NPCSIM === "undefined") return;
     if (!s.worldNews) s.worldNews = [];
+    this._tickAmbient(months);
     const news = NPCSIM.tick(s, months, Math.random);
     if (!news.length) return;
     // 全部存入风云录（最多留近 40 条）
@@ -639,20 +670,23 @@ const Engine = {
     if (Math.random() > chance) return;
 
     const roll = Math.random();
-    if (roll < 0.30) {
+    if (roll < 0.26) {
       // 顿悟
       const bonus = Math.round(gain * 0.4) + 5;
       s.cultivation += bonus;
       if (Math.random() < 0.4) s.insight += 1;
       this.log("闭关插曲·顿悟：枯坐之中，你忽有所悟，《长春功》的运转豁然顺畅。修为额外+" + bonus + "，悟性或有精进。", "good",
         { label: "闭关顿悟", prompt: "描写主角闭关枯坐中忽然顿悟、《长春功》运转豁然顺畅的一瞬（一两句，不提具体数值）。" });
-    } else if (roll < 0.58) {
+    } else if (roll < 0.50) {
       // 走火入魔
       const dmg = Math.round(s.hpMax * (0.15 + months * 0.01));
       s.hp = clamp(s.hp - dmg, 1, s.hpMax);
       s.demon = clamp(s.demon + 10 + Math.floor(months / 3), 0, 100);
       this.log(`闭关插曲·走火入魔：苦修过深，灵力一时逆冲经脉！你气血翻涌(气血-${dmg})，心魔大涨。修仙岂能急于求成。`, "bad");
-    } else if (roll < 0.80) {
+    } else if (roll < 0.66) {
+      // 心魔幻象：故人入梦（按经历演变，孤独苦修的代价）
+      this._demonDream(months);
+    } else if (roll < 0.84) {
       // 外界变故（被打断）
       s.mood = clamp(s.mood - 8, 0, s.moodMax);
       this.log("闭关插曲·外扰：静室之外似有动静，你不得不分神戒备，这一程闭关被搅得难以尽兴。", "sys");
@@ -661,6 +695,34 @@ const Engine = {
       const loss = Math.round(gain * 0.2);
       s.cultivation = Math.max(0, s.cultivation - loss);
       this.log(`闭关插曲·枯滞：这段时日心绪不宁，进境远不如预期(修为-${loss})。修仙之路，本就时进时滞。`, "bad");
+    }
+  },
+
+  // 心魔幻象：长夜枯坐，故人入梦。梦随经历变化，勘破与否看悟性与心境。
+  _demonDream(months) {
+    const s = State.data;
+    // 按剧情进度挑一段最切身的梦境
+    let dream;
+    if (s.flags.jinguang_dead) {
+      dream = "梦里金光上人立在你榻前，半边脸还淌着血，咧嘴一笑：「以毒杀人者，他日必死于暗算。」";
+    } else if (s.flags.modafu_dead || s.flags.is_modafu) {
+      dream = "梦里墨大夫坐在药庐的老位置上煎药，头也不抬：「你我之间，差的不过是一次机会。你比我心狠，很好。」";
+    } else if (s.flags.zhangtie_fated || s.flags.zhangtie_dead) {
+      dream = "梦里张铁还是入门那天的样子，挠着头冲你笑：「韩立，等你出息了，可别忘了俺。」你想喊他，喉咙却发不出声。";
+    } else {
+      dream = "梦里你回到青牛镇的土屋，娘在灯下缝衣，爹蹲在门槛上抽旱烟。没人看见你——你已经不属于那里了。";
+    }
+    const seeThrough = Math.random() < 0.30 + s.insight * 0.03 + (s.mood / s.moodMax) * 0.15;
+    if (seeThrough) {
+      s.demon = clamp(s.demon - 6, 0, 100);
+      s.insight += 1;
+      this.log(`闭关插曲·心魔幻象：${dream}　你于梦中霍然睁眼，看破这是心魔作祟——执念既见，便不再是暗处的刺。心魔-6，悟性+1。`, "good",
+        { label: "勘破心魔", prompt: "主角在长期闭关中梦见故人、识破心魔幻象后心境澄明。用一两句沉静苍凉的笔触描写醒来的瞬间，不提数值。" });
+    } else {
+      s.demon = clamp(s.demon + 8, 0, 100);
+      s.mood = clamp(s.mood - 6, 0, s.moodMax);
+      this.log(`闭关插曲·心魔幻象：${dream}　你惊醒时一身冷汗，静室里只有自己的呼吸声。修仙是条孤路，越往前走，梦越缠人。心魔+8。`, "bad",
+        { label: "心魔入梦", prompt: "主角闭关中被故人梦境所扰、惊醒后枯坐到天明。用一两句孤寂的笔触描写，不提数值。" });
     }
   },
 
@@ -842,6 +904,14 @@ const Engine = {
     this._pendingFortune = null;
     this.log(`【奇遇·${f.title}】${result.text}`, result.kind || "event");
     UI.closeModal();
+    // 奇遇选项可声明引发战斗（如硬闯野狼帮关卡）
+    if (this._fortuneFight) {
+      const enemy = this._fortuneFight;
+      this._fortuneFight = null;
+      State.save();
+      this.startEncounterFight(enemy);
+      return;
+    }
     this.checkLifespan();
     this.checkStory();
     State.save();
@@ -977,6 +1047,7 @@ const Engine = {
       s.hpMax += wasBig ? 40 : 15; s.hp = s.hpMax;
       if (nr.lifespan) s.lifespan += nr.lifespan;
       s.demon = clamp(s.demon - (wasBig ? 12 : 5), 0, 100);
+      if (typeof Sfx !== "undefined") Sfx.play("bell");
       if (wasBig) {
         this.log(`心魔劫已渡！你脱胎换骨，正式跻身「${nr.name}」——这一步，多少修士求而不得。`, "good");
       } else {
@@ -1178,7 +1249,7 @@ const Engine = {
     const r = this._combat.cast(spellId, targetIndex);
     if (!r.ok) { this.toast(r.reason); return; }
     if (typeof UI !== "undefined" && UI.flushCombatFx) UI.flushCombatFx(this._combat);
-    if (typeof UI !== "undefined" && UI.flashCombat) UI.flashCombat();
+    if (typeof UI !== "undefined" && UI.flashCombat) UI.flashCombat(spellId);
     if (this._combat.status !== "ongoing") this._finishCombat();
     else UI.renderCombat(this._combat, this._combatMeta);
   },

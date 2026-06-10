@@ -26,7 +26,8 @@ if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
 // 统一画风：忠于《凡人修仙传》动画剧版——3D 渲染电影质感、写实国风仙侠、
 // 柔和暖调布光、半身像、神情含蓄克制。所有人物共享同一画风，保证整体协调、特征鲜明。
 const STYLE_PORTRAIT = "《凡人修仙传》动画剧版同款画风，3D渲染电影级质感，写实国风仙侠人物半身像，精细面部与发丝，柔和影棚布光，气质沉静克制，竖构图，单人，纯白色背景#ffffff、人物与背景边界清晰分明、背景不含任何道具或纹理，无文字无水印无logo";
-const STYLE_SCENE = "《凡人修仙传》动画剧版同款画风，3D渲染电影级场景，写实国风仙侠，光影氛围考究，意境悠远，横构图，无人物特写无文字无水印";
+const STYLE_SCENE = "《凡人修仙传》动画剧版同款画风，3D渲染电影级场景，写实国风仙侠，光影氛围考究，意境悠远，横构图，画面铺满整个画幅、无黑边无边框无留白，无人物特写无文字无水印";
+const STYLE_CG = "《凡人修仙传》动画剧版同款画风，3D渲染电影级剧情画面，写实国风仙侠，戏剧张力与光影氛围拉满，电影宽幅构图，画面铺满整个画幅、无黑边无边框无留白，无文字无水印无logo";
 
 const DEFS = {
   // —— 主要人物立绘（剧版特征锚定，确保识别度）——
@@ -43,20 +44,28 @@ const DEFS = {
   langzhong:   { kind: "portrait", prompt: "走方郎中，一位精瘦的中年凡俗大夫，留短须，戴方巾，身着洗旧的灰蓝长衫，背着药箱，神情精明世故" },
   biaoshi:     { kind: "portrait", prompt: "镖局趟子手，一个结实剽悍的江湖汉子，短打劲装，腰挎单刀，面有风霜与刀疤，眼神警惕" },
   langhao:     { kind: "portrait", prompt: "野狼帮喽啰，一个凶相的壮年打手，乱发、横眉，身着杂乱的深色短打，手持狼牙棒，一脸蛮横" },
+  // —— 新增立绘（剧情补全）——
+  sanshu:   { kind: "portrait", prompt: "韩立的三叔，四十多岁的精明中年人，在仙门做杂事管事多年，圆脸微胖，蓄短须，笑容世故而不失亲切，身着体面的褐色绸面短褂，头戴方巾" },
+  tienu:    { kind: "portrait", prompt: "被炼成傀儡的少年尸傀「铁奴」，肤色铁青毫无血色，双目空洞泛着浊白，乌黑短发散乱，左脸颊有一道浅疤，身着破败的灰色粗布短打，体格结实但姿态僵直，周身缠绕淡淡阴气，诡异悲凉" },
   // —— 场景 ——
   yaolu:    { kind: "scene", prompt: "古朴清幽的中药药庐内景，木质药柜林立、抽屉密布，铜药碾与丹炉，窗棂透入暖光，药香氤氲" },
   houshan:  { kind: "scene", prompt: "云雾缭绕的仙门后山，奇峰幽谷，灵草丛生，古木森森，溪涧幽深，深处隐有凶险气息" },
-  town:     { kind: "scene", prompt: "山脚下的凡俗古镇街景，青瓦土墙，市井街巷，行人商贩，远处仙山隐现于云雾" },
+  town:     { kind: "scene", prompt: "山脚下被帮派阴影笼罩的凡俗古镇街景，青瓦土墙，市井街巷烟火气中透着压抑，街口立着插威风旗幡的帮派分舵，几条挎刀的彪悍汉子倚墙而立监视往来行人，商贩低头疾走，远处仙山隐现于云雾" },
   wuting:   { kind: "scene", prompt: "仙门演武厅内景，宽阔的木地演武场，两侧兵器架林立，梁柱庄严肃穆，天光斜入" },
   // —— 过场场景（开场剧情用）——
   qingniu:  { kind: "scene", prompt: "贫苦的北方小山村农家，低矮的土坯茅屋，柴门篱笆，几亩薄田，黄昏炊烟，清贫萧瑟" },
   road:     { kind: "scene", prompt: "通往仙门的迢迢山路，蜿蜒石径穿行于崇山峻岭，云雾缭绕，远处隐见巍峨仙山轮廓" },
   shanmen:  { kind: "scene", prompt: "气派非凡的仙门山门，巍峨的石牌坊与殿宇依山而建，云海环绕，飞檐斗拱，庄严恢弘" },
   miju:     { kind: "scene", prompt: "墨大夫秘不示人的密室内景，幽暗压抑，石壁森森，案上摆着诡异的丹炉与瓶罐，阴气弥漫，烛光摇曳" },
+  // —— 关键剧情 CG（assets/cg_<id>.png）——
+  cg_bottle:    { kind: "cg", file: "cg_bottle", prompt: "一只古朴的暗绿色小瓶静静悬在少年掌心上方，瓶身流转着神秘的幽绿灵光，映亮少年清秀而震惊的脸，背景是昏暗的陋室，深夜烛光，神秘机缘降临的瞬间" },
+  cg_duoshe:    { kind: "cg", file: "cg_duoshe", prompt: "深夜药庐中的生死对决：清瘦少年持短刃隐于阴影蓄势待发，对面银发老者周身泛着阴冷光芒、面容狰狞似被夺舍，烛火摇曳将两道身影拉长，药柜林立的房间里杀机四伏，决战一触即发" },
+  cg_jinguang:  { kind: "cg", file: "cg_jinguang", prompt: "山林夜战：一个矮胖和尚周身金光大盛如金钟罩体，怒目狰狞，无数细小的暗器飞针破空袭来钉向金光，少年的身影半隐于林间黑暗中，以暗算破金刚，紧张凌厉的战斗瞬间" },
+  cg_departure: { kind: "cg", file: "cg_departure", prompt: "清晨薄雾中，一个背着行囊的少年道袍身影独自走在下山的古道上，回望一眼巍峨仙门，前方群山苍茫云海翻涌，离别与新程交织的苍凉意境，大远景构图" },
 };
 
 function genOne(id, def) {
-  const style = def.kind === "portrait" ? STYLE_PORTRAIT : STYLE_SCENE;
+  const style = def.kind === "portrait" ? STYLE_PORTRAIT : def.kind === "cg" ? STYLE_CG : STYLE_SCENE;
   const body = JSON.stringify({
     model: MODEL,
     modalities: ["image", "text"],
@@ -80,8 +89,21 @@ function genOne(id, def) {
   const url = m && m.images && m.images[0] && m.images[0].image_url && m.images[0].image_url.url;
   if (!url) throw new Error("无图片返回: " + JSON.stringify(j).slice(0, 200));
   const b64 = url.split(",")[1];
-  fs.writeFileSync(path.join(OUT, id + ".png"), Buffer.from(b64, "base64"));
+  const outFile = path.join(OUT, (def.file || id) + ".png");
+  fs.writeFileSync(outFile, Buffer.from(b64, "base64"));
   try { fs.unlinkSync(bodyFile); fs.unlinkSync(respFile); } catch (e) {}
+  return outFile;
+}
+
+// 生成后自动后处理：立绘抠透明底；场景/CG 裁影院黑边
+function postProcess(file, def) {
+  try {
+    if (def.kind === "portrait") {
+      execFileSync("node", [path.join(__dirname, "cutout.js"), file, file], { stdio: "inherit" });
+    } else {
+      execFileSync("node", [path.join(__dirname, "cropbars.js"), file], { stdio: "inherit" });
+    }
+  } catch (e) { console.log("  后处理失败（图已保存，可手动处理）:", e.message); }
 }
 
 (async () => {
@@ -89,7 +111,7 @@ function genOne(id, def) {
   for (const id of ids) {
     if (!DEFS[id]) { console.log("跳过未知 id:", id); continue; }
     process.stdout.write(`生成 ${id} ... `);
-    try { genOne(id, DEFS[id]); console.log("✓"); }
+    try { const f = genOne(id, DEFS[id]); console.log("✓"); postProcess(f, DEFS[id]); }
     catch (e) { console.log("✗", e.message); }
   }
   console.log("完成。");

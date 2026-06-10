@@ -29,6 +29,23 @@ const Main = {
     UI.el("btn-chronicle").addEventListener("click", () => UI.openChronicle());
     UI.el("btn-codex").addEventListener("click", () => UI.openCodex());
 
+    // —— 系统菜单（手机端 ☰）——
+    const btnMore = UI.el("btn-more");
+    if (btnMore) btnMore.addEventListener("click", () => UI.openSystemMenu());
+
+    // —— 音效开关 ——
+    const btnSound = UI.el("btn-sound");
+    if (btnSound && typeof Sfx !== "undefined") {
+      const paint = () => {
+        const on = Sfx.enabled();
+        btnSound.textContent = on ? "音" : "静";
+        btnSound.style.opacity = on ? "" : ".55";
+        btnSound.title = on ? "音效已开（点击关闭）" : "音效已关（点击开启）";
+      };
+      paint();
+      btnSound.addEventListener("click", () => { Sfx.toggle(); paint(); UI.toast(Sfx.enabled() ? "音效已开" : "音效已关"); });
+    }
+
     // —— 行动按钮：由 UI.renderActions 动态生成并绑定 ——
     // 大地图已内嵌在「所在」面板（renderLocMap），点图标即前往，无需独立云游按钮
     const travelBtn = document.querySelector('[data-action="travel"]');
@@ -42,6 +59,13 @@ const Main = {
     // 点击遮罩空白关闭弹窗（奇遇/剧情等必须选择的弹窗除外）
     UI.el("modal-overlay").addEventListener("click", (e) => {
       if (e.target.id === "modal-overlay" && !Engine._pendingFortune) UI.closeModal();
+    });
+
+    // 键盘推进剧情（桌面：空格/回车 = 轻触继续）
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== " " && e.key !== "Enter") return;
+      const ov = UI.el("story-overlay");
+      if (ov && !ov.hidden) { e.preventDefault(); UI.storyAdvance(); }
     });
 
     // —— 一键导入密钥（免输入）——

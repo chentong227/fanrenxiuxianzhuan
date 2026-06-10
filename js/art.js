@@ -18,14 +18,18 @@
     hanli: 1, modafu: 1, lifeiyu: 1, zhangtie: 1,
     xiaosuanpan: 1, jiatianlong: 1, jinguang: 1,
     nongfu: 1, sanxiu: 1, langzhong: 1, biaoshi: 1, langhao: 1,
+    sanshu: 1, tienu: 1,
     // 场景（含过场地点）
     yaolu: 1, houshan: 1, town: 1, wuting: 1,
     qingniu: 1, road: 1, shanmen: 1, miju: 1,
   };
 
+  // 关键剧情 CG 大图（assets/cg_<id>.png）：生成入库后在此登记
+  const CG = { bottle: 1, duoshe: 1, jinguang: 1, departure: 1 };
+
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 4,
+    ASSET_VER: 6,
 
     // id → 仓库图路径（无图返回 null，调用方回退 emoji 占位）
     url(id) {
@@ -36,6 +40,12 @@
 
     // 地点配图：直接按地点 id 取图
     locUrl(loc) { return loc ? this.url(loc.id) : null; },
+
+    // 关键剧情 CG：未入库时返回 null（演出回退到地点场景图）
+    cgUrl(id) {
+      if (id && CG[id]) return "assets/cg_" + id + ".png?v=" + this.ASSET_VER;
+      return null;
+    },
 
     // —— 以下为兼容旧调用的空操作（已无实时生成）——
     genEnabled() { return false; },

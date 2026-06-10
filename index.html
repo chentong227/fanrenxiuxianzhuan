@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="build" content="26" />
+  <meta name="build" content="27" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -25,16 +25,20 @@
   })();
   </script>
   <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=26" />
+  <link rel="stylesheet" href="css/style.css?v=27" />
 </head>
 <body>
   <div id="app">
-    <!-- 开始 / 角色创建界面 -->
+    <!-- 开始 / 角色创建界面：山门为底，竖排题字 -->
     <section id="screen-create" class="screen active">
+      <div class="create-bg"></div>
+      <div class="create-veil"></div>
+      <div class="create-title-block">
+        <h1 class="game-title vertical">凡人修仙传</h1>
+        <span class="title-seal">七玄门篇</span>
+        <p class="subtitle">凡人之躯 · 逆天改命</p>
+      </div>
       <div class="create-box">
-        <h1 class="game-title">凡人修仙传</h1>
-        <p class="subtitle">— 真实修仙模拟 · 七玄门篇 —</p>
-
         <div class="field">
           <label>道号</label>
           <input id="input-name" type="text" maxlength="6" value="韩立" />
@@ -49,33 +53,51 @@
           <button id="btn-test-root" class="btn btn-secondary">测 灵 根</button>
         </div>
 
-        <p class="hint">提示：天地灵根稀有，绝大多数修士不过五灵根、伪灵根之流。资质平庸者，唯有以苦修与万全准备弥补天资。</p>
+        <p class="hint">天地灵根稀有，绝大多数修士不过五灵根、伪灵根之流。资质平庸者，唯有以苦修与万全准备弥补天资。</p>
 
         <button id="btn-start" class="btn btn-primary" disabled>踏 入 仙 途</button>
         <button id="btn-load" class="btn btn-ghost">读取存档</button>
-        <div style="margin-top:10px;color:var(--ink-dim);font-size:11px;letter-spacing:1px">build v26</div>
+        <div class="build-tag">build v27</div>
       </div>
     </section>
 
-    <!-- 主游戏界面 -->
+    <!-- 主游戏界面：场景大图铺满全屏做底，HUD 浮于其上 -->
     <section id="screen-game" class="screen">
+      <!-- 场景层（全屏底）-->
+      <div id="scene-stage" class="scene-stage">
+        <div id="scene-bg" class="scene-bg"></div>
+        <div class="scene-veil"></div>
+        <div class="scene-head">
+          <span class="loc-tag">所在</span>
+          <span id="loc-name" class="loc-name">青牛镇</span>
+          <span id="loc-desc" class="loc-desc-inline"></span>
+        </div>
+        <div id="scene-pins" class="scene-pins"></div>
+        <!-- 在场人物：立绘"站"在场景下沿 -->
+        <div id="locals" class="locals"></div>
+        <div id="scene-confirm" class="scene-confirm"></div>
+      </div>
+
       <header class="topbar">
         <div class="char-brief">
           <span class="game-logo">凡人修仙传</span>
           <span id="top-time" class="t-realm">第1年</span>
         </div>
         <div class="topbar-actions">
-          <button id="btn-codex" class="btn btn-mini">人物</button>
-          <button id="btn-chronicle" class="btn btn-mini">风云录</button>
-          <button id="btn-techniques" class="btn btn-mini">功法</button>
-          <button id="btn-llm" class="btn btn-mini">活世界</button>
-          <button id="btn-save" class="btn btn-mini">存档</button>
-          <button id="btn-menu" class="btn btn-mini">主菜单</button>
+          <button id="btn-codex" class="btn btn-mini tb-full">人物</button>
+          <button id="btn-chronicle" class="btn btn-mini tb-full">风云录</button>
+          <button id="btn-techniques" class="btn btn-mini tb-full">功法</button>
+          <button id="btn-llm" class="btn btn-mini tb-full">活世界</button>
+          <button id="btn-sound" class="btn btn-mini tb-full" title="音效开关">音</button>
+          <button id="btn-save" class="btn btn-mini tb-full">存档</button>
+          <button id="btn-menu" class="btn btn-mini tb-full">主菜单</button>
+          <button id="btn-more" class="btn btn-mini btn-more" title="系统">☰</button>
         </div>
       </header>
 
+      <!-- HUD 层 -->
       <main class="layout">
-        <!-- 左栏：韩立角色卡 + 状态 + 储物袋 -->
+        <!-- 左：韩立卷轴（角色卡 + 状态 + 储物袋）-->
         <aside class="panel side-rail">
           <div class="hero-card">
             <div class="hero-portrait" id="hero-portrait">🧙</div>
@@ -120,28 +142,15 @@
           <div id="inventory" class="inventory"></div>
         </aside>
 
-        <!-- 中栏：任务 + 在场人物 + 当前可做 -->
+        <!-- 中下：行动栏（际遇 + 当前可做）-->
         <section class="panel mid-col">
           <div id="objective-bar" class="objective-bar"></div>
-          <h3 class="panel-title">在场人物</h3>
-          <div id="locals" class="locals"></div>
-          <h3 class="panel-title">当前可做</h3>
           <div id="action-buttons" class="action-buttons"></div>
         </section>
 
-        <!-- 右栏：所在场景大图（可去之处=图上按钮）+ 剧情文字 -->
+        <!-- 右：叙事卷轴（日志 + 抉择）-->
         <section class="panel stage-col">
-          <div id="scene-stage" class="scene-stage">
-            <div id="scene-bg" class="scene-bg"></div>
-            <div class="scene-veil"></div>
-            <div class="scene-head">
-              <span class="loc-tag">所在</span>
-              <span id="loc-name" class="loc-name">青牛镇</span>
-              <span id="loc-desc" class="loc-desc-inline"></span>
-            </div>
-            <div id="scene-pins" class="scene-pins"></div>
-            <div id="scene-confirm" class="scene-confirm"></div>
-          </div>
+          <h3 class="panel-title">见闻</h3>
           <div id="narrative" class="narrative"></div>
           <div id="choices" class="choices"></div>
         </section>
@@ -149,27 +158,32 @@
 
       <!-- 手机底部分页栏（窄屏显示，桌面隐藏）-->
       <nav class="mobile-tabs" id="mobile-tabs">
-        <button class="mtab active" data-tab="stage">剧情</button>
+        <button class="mtab active" data-tab="stage">见闻</button>
         <button class="mtab" data-tab="mid">行动</button>
         <button class="mtab" data-tab="hero">韩立</button>
       </nav>
     </section>
 
-    <!-- 战斗界面 -->
+    <!-- 战斗界面：场景做底，敌我立绘对峙，下方五行灵气珠池+招式 -->
     <div id="combat-overlay" class="combat-overlay" hidden>
       <div id="combat-banner" class="combat-banner" hidden></div>
+      <div id="combat-bg" class="combat-bg"></div>
+      <div class="combat-veil"></div>
+      <div id="combat-cast" class="combat-cast" hidden></div>
       <div class="combat-box">
         <div id="combat-title" class="combat-title">斗 法</div>
         <div class="combat-field">
           <div id="combat-enemies" class="combat-enemies"></div>
-          <div class="combat-vs">⚔</div>
+          <div class="combat-vs">对</div>
           <div id="combat-player" class="combat-player"></div>
         </div>
-        <div class="combat-qi" id="combat-qi"></div>
-        <div class="combat-spells" id="combat-spells"></div>
-        <div class="combat-log" id="combat-log"></div>
-        <div class="combat-actions">
-          <button class="btn btn-primary" id="combat-endround">结束本回合</button>
+        <div class="combat-console">
+          <div class="combat-qi" id="combat-qi"></div>
+          <div class="combat-spells" id="combat-spells"></div>
+          <div class="combat-log" id="combat-log"></div>
+          <div class="combat-actions">
+            <button class="btn btn-primary" id="combat-endround">结束本回合</button>
+          </div>
         </div>
       </div>
     </div>
@@ -230,24 +244,25 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=26"></script>
-  <script src="js/state.js?v=26"></script>
-  <script src="js/chapters.js?v=26"></script>
-  <script src="js/balance.js?v=26"></script>
-  <script src="js/world.js?v=26"></script>
-  <script src="js/npcsim.js?v=26"></script>
-  <script src="js/interactions.js?v=26"></script>
-  <script src="js/combat.js?v=26"></script>
-  <script src="js/explore.js?v=26"></script>
-  <script src="js/loadout.js?v=26"></script>
-  <script src="js/dialogue.js?v=26"></script>
-  <script src="js/llm.js?v=26"></script>
-  <script src="js/art.js?v=26"></script>
-  <script src="js/fortunes.js?v=26"></script>
-  <script src="js/quests.js?v=26"></script>
-  <script src="js/story.js?v=26"></script>
-  <script src="js/engine.js?v=26"></script>
-  <script src="js/ui.js?v=26"></script>
-  <script src="js/main.js?v=26"></script>
+  <script src="js/data.js?v=27"></script>
+  <script src="js/state.js?v=27"></script>
+  <script src="js/chapters.js?v=27"></script>
+  <script src="js/balance.js?v=27"></script>
+  <script src="js/world.js?v=27"></script>
+  <script src="js/npcsim.js?v=27"></script>
+  <script src="js/interactions.js?v=27"></script>
+  <script src="js/combat.js?v=27"></script>
+  <script src="js/explore.js?v=27"></script>
+  <script src="js/loadout.js?v=27"></script>
+  <script src="js/dialogue.js?v=27"></script>
+  <script src="js/llm.js?v=27"></script>
+  <script src="js/audio.js?v=27"></script>
+  <script src="js/art.js?v=27"></script>
+  <script src="js/fortunes.js?v=27"></script>
+  <script src="js/quests.js?v=27"></script>
+  <script src="js/story.js?v=27"></script>
+  <script src="js/engine.js?v=27"></script>
+  <script src="js/ui.js?v=27"></script>
+  <script src="js/main.js?v=27"></script>
 </body>
 </html>

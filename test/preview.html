@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>战斗/演出 预览（开发用）</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .preview-bar { position: fixed; top: 4px; left: 4px; z-index: 999; display: flex; gap: 6px; flex-wrap: wrap; }
+    .preview-bar button { font-size: 12px; padding: 4px 8px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="preview-bar">
+      <button onclick="PV.encounter()">遭遇战</button>
+      <button onclick="PV.showdown()">夺舍之夜</button>
+      <button onclick="PV.jinguang()">金光上人</button>
+      <button onclick="PV.bt()">心魔战</button>
+      <button onclick="PV.story()">剧情演出</button>
+    </div>
+
+    <!-- 战斗界面 -->
+    <div id="combat-overlay" class="combat-overlay" hidden>
+      <div id="combat-banner" class="combat-banner" hidden></div>
+      <div id="combat-bg" class="combat-bg"></div>
+      <div class="combat-veil"></div>
+      <div id="combat-cast" class="combat-cast" hidden></div>
+      <div class="combat-box">
+        <div id="combat-title" class="combat-title">斗 法</div>
+        <div class="combat-field">
+          <div id="combat-enemies" class="combat-enemies"></div>
+          <div class="combat-vs">对</div>
+          <div id="combat-player" class="combat-player"></div>
+        </div>
+        <div class="combat-console">
+          <div class="combat-qi" id="combat-qi"></div>
+          <div class="combat-spells" id="combat-spells"></div>
+          <div class="combat-log" id="combat-log"></div>
+          <div class="combat-actions">
+            <button class="btn btn-primary" id="combat-endround">结束本回合</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 剧情演出 -->
+    <div id="story-overlay" class="story-overlay" hidden>
+      <div id="story-bg" class="story-bg"></div>
+      <div class="story-scrim"></div>
+      <div id="story-portrait-left" class="story-portrait left"></div>
+      <div id="story-portrait-right" class="story-portrait right"></div>
+      <div class="story-stage-name" id="story-stage-name"></div>
+      <div class="story-dialog" id="story-dialog" onclick="UI.storyAdvance()">
+        <div class="story-speaker" id="story-speaker"></div>
+        <div class="story-text" id="story-text"></div>
+        <div class="story-cue" id="story-cue">▽ 轻触继续</div>
+      </div>
+      <div class="story-choices" id="story-choices"></div>
+    </div>
+
+    <div id="modal-overlay" class="modal-overlay" hidden><div id="modal" class="modal"></div></div>
+    <div id="toast" class="toast" hidden></div>
+    <!-- 渲染兜底用的隐藏桩 -->
+    <div style="display:none">
+      <div id="narrative"></div><div id="choices"></div><div id="objective-bar"></div>
+      <div id="action-buttons"></div><div id="inventory"></div><div id="locals"></div>
+    </div>
+  </div>
+
+  <script>
+    // 资源路径在 test/ 下需要指向上级
+    window.__PREVIEW__ = true;
+  </script>
+  <script src="../js/data.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/chapters.js"></script>
+  <script src="../js/balance.js"></script>
+  <script src="../js/world.js"></script>
+  <script src="../js/npcsim.js"></script>
+  <script src="../js/interactions.js"></script>
+  <script src="../js/combat.js"></script>
+  <script src="../js/explore.js"></script>
+  <script src="../js/loadout.js"></script>
+  <script src="../js/dialogue.js"></script>
+  <script src="../js/llm.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/art.js"></script>
+  <script src="../js/fortunes.js"></script>
+  <script src="../js/quests.js"></script>
+  <script src="../js/story.js"></script>
+  <script src="../js/engine.js"></script>
+  <script src="../js/ui.js"></script>
+  <script>
+    // 修正 Art 路径（预览页位于 test/ 子目录）
+    const _artUrl = Art.url.bind(Art);
+    Art.url = (id) => { const u = _artUrl(id); return u ? "../" + u : null; };
+    const _cgUrl = Art.cgUrl.bind(Art);
+    Art.cgUrl = (id) => { const u = _cgUrl(id); return u ? "../" + u : null; };
+
+    State.create("韩立", "si");
+    State.data.location = "yaolu";
+    State.data.realmIndex = 3;
+    State.data.inventory.duyao_cao = 5;
+    State.data.inventory.anqi = 5;
+    State.save = () => true;   // 预览不落盘
+
+    const PV = {
+      encounter() { Engine.startEncounterFight("wolf_gang_thug"); },
+      showdown()  { State.data.location = "yaolu"; Engine.startShowdownFight(); },
+      jinguang()  { State.data.location = "shanmen"; Engine.startJinguangFight ? Engine.startJinguangFight() : PV.encounter(); },
+      bt()        { State.data.demon = 60; Engine.startBreakthroughFight({ big: false }); },
+      story()     { State.data.location = "qingniu"; UI.renderStory(STORY[0]); },
+    };
+    window.PV = PV;
+  </script>
+</body>
+</html>

@@ -165,19 +165,17 @@ const UI = {
     const locals = (loc.scene || s.pendingEvent) ? [] : (WORLD.localsAt ? WORLD.localsAt(loc.id, s) : []);
     if (!locals.length) { box.innerHTML = ""; box.style.display = "none"; return; }
     box.style.display = "";
-    box.innerHTML = `<div class="locals-title">在场人物</div>` + locals.map(n => {
+    // 透明底立绘直接"站"在场景里；未结识者呈剪影
+    box.innerHTML = locals.map(n => {
       const met = (s.metNpcs || []).includes(n.id);
       const line = (n.lines && n.lines.length) ? n.lines[0] : "";
       const url = (typeof Art !== "undefined") ? Art.url(n.id) : null;
-      const av = url ? `<img src="${url}" alt="${n.name}" loading="lazy" />` : (met ? "🧑" : "❓");
-      if (!url && met && typeof Art !== "undefined" && Art.genEnabled()) Art.ensureNpc(n);
-      return `<div class="local-npc" onclick="UI.talkLocal('${n.id}')">
-        <div class="local-avatar">${av}</div>
-        <div class="local-info">
-          <div class="local-name">${n.name}<span class="lr">${n.role}</span></div>
-          <div class="local-line">${line}</div>
-        </div>
-        <div class="local-talk">💬</div>
+      const fig = url
+        ? `<span class="ln-figure"><img src="${url}" alt="${n.name}" loading="lazy" /></span>`
+        : `<span class="ln-figure no-img">${met ? "🧑" : "❓"}</span>`;
+      return `<div class="local-npc${met ? "" : " unmet"}" onclick="UI.talkLocal('${n.id}')" title="${line}">
+        ${fig}
+        <span class="ln-plate">${met ? n.name : "陌生人"}<span class="lr">${n.role}</span></span>
       </div>`;
     }).join("");
   },
@@ -531,7 +529,9 @@ const UI = {
     if (!keys.length) { box.innerHTML = `<div class="inv-empty">储物袋空空如也</div>`; return; }
     box.innerHTML = keys.map(k => {
       const item = DATA.items[k];
+      const sl = itemSeal(item);
       return `<div class="inv-item" onclick="UI.showItem('${k}')">
+        <span class="seal sm wx-${sl.wx}">${sl.ch}</span>
         <span class="iname ${item.rarity === 'rare' ? 'rare' : item.rarity === 'epic' ? 'epic' : ''}">${item.name}</span>
         <span class="icount">×${inv[k]}</span>
       </div>`;
@@ -564,6 +564,7 @@ const UI = {
   /* -------- 叙事区 -------- */
   renderNarrative() {
     const box = this.el("narrative");
+    if (!box) return;
     const s = State.data;
     const icons = { good: "✦", bad: "⚠", event: "·", sys: "…" };
     const last = s.log.length - 1;
@@ -589,9 +590,36 @@ const UI = {
     const lb = this.el("story-portrait-left"), rb = this.el("story-portrait-right");
     if (lb) { lb.innerHTML = ""; lb.className = "story-portrait left"; }
     if (rb) { rb.innerHTML = ""; rb.className = "story-portrait right"; rb.dataset.set = ""; }
-    // 场景背景：优先该阶段声明的 scene，否则用当前地点的场景图
+    // 场景背景：优先该阶段声明的 CG，否则用当前地点的场景图
     this._storySetScene(stage);
-    this.storyAdvance();
+    // 转场题字卡（番剧分集感）：黑场亮出章节题字，轻触或稍候自动入戏
+    this._storyTitleCard(stage);
+  },
+
+  // 黑场题字卡：显示阶段标题，1.4s 后（或轻触）开始演出
+  _storyTitleCard(stage) {
+    const overlay = this.el("story-overlay");
+    let card = this.el("story-titlecard");
+    if (!card) {
+      card = document.createElement("div");
+      card.id = "story-titlecard";
+      card.className = "story-titlecard";
+      overlay.appendChild(card);
+    }
+    const st = this._story;
+    if (!stage.title) { this.storyAdvance(); return; }
+    st.titling = true;
+    card.innerHTML = `<div class="tc-frame"><div class="tc-title">${stage.title}</div><div class="tc-seal">凡人</div></div>`;
+    card.classList.add("show");
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
+    const begin = () => {
+      if (!st.titling) return;
+      st.titling = false;
+      card.classList.remove("show");
+      this.storyAdvance();
+    };
+    card.onclick = (e) => { e.stopPropagation(); begin(); };
+    this._titleTimer = setTimeout(begin, 1500);
   },
 
   // 降级渲染（无 overlay 时）：把剧情写进右侧叙事区并在下方出选项
@@ -613,7 +641,7 @@ const UI = {
     }
   },
 
-  // 把 text[]（字符串/对象混排）拍平成节拍：{ kind:'narr'|'say'|'scene', who, text, tone }
+  // 把 text[]（字符串/对象混排）拍平成节拍：{ kind:'narr'|'say'|'scene', who, text, tone, showWho }
   _buildStoryBeats(stage) {
     const beats = [];
     (stage.text || []).forEach(seg => {
@@ -621,26 +649,71 @@ const UI = {
       if (seg.scene) { beats.push({ kind: "scene", text: seg.scene }); return; }
       if (seg.aside) { beats.push({ kind: "aside", who: State.data.name, text: seg.aside }); return; }
       if (seg.beat) { beats.push({ kind: "narr", text: seg.beat || "……" }); return; }
+      if (seg.show) { beats.push({ kind: "narr", text: seg.text || "", showWho: seg.show }); return; }   // 立绘亮相（无对白）
       if (seg.say) { beats.push({ kind: "say", who: seg.say, text: seg.text, tone: seg.tone }); return; }
       if (seg.narr) { beats.push({ kind: "narr", text: seg.narr }); return; }
     });
     return beats;
   },
 
-  // 设定剧情背景图：阶段 scene 关键字 → 地点图；否则当前地点
+  // 设定剧情背景图：阶段 CG（关键剧情大图）优先，其次当前地点场景
   _storySetScene(stage) {
     const bg = this.el("story-bg");
     if (!bg || typeof Art === "undefined") return;
     let url = null;
-    const loc = State.location();
-    if (loc) url = Art.locUrl(loc);
+    if (stage && stage.cg && Art.cgUrl) url = Art.cgUrl(stage.cg);
+    if (!url) {
+      const loc = State.location();
+      if (loc) url = Art.locUrl(loc);
+    }
     if (url) { bg.style.backgroundImage = `url("${url}")`; bg.classList.add("on"); }
     else { bg.style.backgroundImage = ""; bg.classList.remove("on"); }
   },
 
-  // 逐句推进：每次轻触显示下一节拍；到末尾则给出选项
+  // 打字机逐字显示；点击时若在打字 → 立即完成本句
+  _typeText(el, html, instant) {
+    const st = this._story;
+    if (this._typeTimer) { clearInterval(this._typeTimer); this._typeTimer = null; }
+    // 用一个临时节点取纯文本逐字打；保留外层 span 的样式类
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    const span = tmp.firstChild;
+    const full = span ? span.textContent : "";
+    if (instant || !full || full.length <= 2) { el.innerHTML = html; if (st) st.typing = false; return; }
+    span.textContent = "";
+    el.innerHTML = "";
+    el.appendChild(span);
+    if (st) st.typing = true;
+    let i = 0;
+    this._typeTimer = setInterval(() => {
+      i += 1;
+      span.textContent = full.slice(0, i);
+      if (i >= full.length) {
+        clearInterval(this._typeTimer); this._typeTimer = null;
+        if (st) st.typing = false;
+      }
+    }, 26);
+  },
+  // 立即完成当前打字
+  _typeFinish() {
+    const st = this._story;
+    if (this._typeTimer) { clearInterval(this._typeTimer); this._typeTimer = null; }
+    if (st && st.typing && st.idx >= 0 && st.idx < st.beats.length) {
+      const b = st.beats[st.idx];
+      const textEl = this.el("story-text");
+      if (textEl && b) {
+        if (b.kind === "scene") textEl.innerHTML = `<span class="scene-line">· ${b.text} ·</span>`;
+        else textEl.innerHTML = `<span class="story-line${b.kind === "narr" ? ' narr' : ''}${b.kind === "aside" ? ' aside' : ''}">${b.text}</span>`;
+      }
+      st.typing = false;
+    }
+  },
+
+  // 逐句推进：每次轻触显示下一节拍；打字中则先补完；到末尾给出选项
   storyAdvance() {
     const st = this._story; if (!st) return;
+    if (st.titling) return;           // 题字卡期间由卡自己处理
+    if (st.typing) { this._typeFinish(); return; }
     // 已到结尾：不再推进（选项已显示）
     if (st.done) return;
     st.idx++;
@@ -648,6 +721,7 @@ const UI = {
     const b = st.beats[st.idx];
     const stageName = this.el("story-stage-name");
     if (stageName) stageName.textContent = st.stage.title || "";
+    if (typeof Sfx !== "undefined") Sfx.play("page");
 
     const speakerEl = this.el("story-speaker");
     const textEl = this.el("story-text");
@@ -658,7 +732,7 @@ const UI = {
     if (b.kind === "scene") {
       dialog.classList.add("scene-beat");
       speakerEl.innerHTML = "";
-      textEl.innerHTML = `<span class="scene-line">· ${b.text} ·</span>`;
+      this._typeText(textEl, `<span class="scene-line">· ${b.text} ·</span>`, true);
     } else {
       dialog.classList.remove("scene-beat");
       const who = b.who;
@@ -666,9 +740,9 @@ const UI = {
       const isAside = (b.kind === "aside");
       speakerEl.innerHTML = isNarr ? "" :
         `<span class="sp-name${isAside ? ' aside' : ''}">${who}${isAside ? "（心声）" : ""}</span>`;
-      textEl.innerHTML = `<span class="story-line${isNarr ? ' narr' : ''}${isAside ? ' aside' : ''}">${b.text}</span>`;
-      // 立绘：旁白用当前地点/无；对话/心声用说话人立绘
-      this._storySetPortrait(isNarr ? null : who);
+      this._typeText(textEl, `<span class="story-line${isNarr ? ' narr' : ''}${isAside ? ' aside' : ''}">${b.text}</span>`);
+      // 立绘：旁白用当前地点/无；对话/心声用说话人立绘；showWho=立绘亮相（无对白）
+      this._storySetPortrait(b.showWho || (isNarr ? null : who));
     }
 
     const last = (st.idx === st.beats.length - 1);
@@ -745,6 +819,8 @@ const UI = {
   storyChoose(i) {
     const st = this._story; if (!st) return;
     const stage = st.stage;
+    if (this._titleTimer) { clearTimeout(this._titleTimer); this._titleTimer = null; }
+    if (this._typeTimer) { clearInterval(this._typeTimer); this._typeTimer = null; }
     this._archiveStory(stage);
     this.el("story-overlay").hidden = true;
     document.body.classList.remove("story-on");
@@ -810,6 +886,9 @@ const UI = {
   // 说话人姓名 → NPC id（用于取立绘图）
   _npcIdByName(name) {
     if (!name) return null;
+    // 剧情专属人物（不在大世界 NPC 名册中）
+    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu" };
+    if (extra[name]) return extra[name];
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
       const n = WORLD.npcs.find(x => x.name === name);
       if (n) return n.id;
@@ -843,7 +922,7 @@ const UI = {
       if (!isMain && !isAux) btns += `<button class="btn btn-mini" onclick="UI._loadoutAddAux('${id}')">设为辅修</button>`;
       if (isAux) btns += `<button class="btn btn-mini ghost" onclick="UI._loadoutRemoveAux('${id}')">取消辅修</button>`;
       return `<div class="tech-item ${isMain ? 'current' : ''}">
-        <div class="tech-head"><b>${t.name}</b>${tag}<span class="tech-grade">${gradeLabel(t.grade)}</span></div>
+        <div class="tech-head"><span class="seal wx-${t.attr || 'mu'}">${sealChar(t.name)}</span><b>${t.name}</b>${tag}<span class="tech-grade">${gradeLabel(t.grade)}</span></div>
         <div class="tech-desc">${t.desc}</div>
         <div class="tech-skills">授技：${(t.grantSpells || []).map(sk => SP[sk] ? SP[sk].name : sk).join("、") || "—"}</div>
         <div class="tech-btns">${btns}</div>
@@ -864,9 +943,10 @@ const UI = {
       const sp = SP[sk]; if (!sp) return "";
       const equipped = L.isEquipped(s, sk);
       const aux = L.isAuxSkill(s, sk);
+      const wx = Object.keys(sp.cost || {})[0] || "jin";
       const cost = Object.entries(sp.cost).map(([e, n]) => `${CombatAPI.ELEM_NAME[e]}${n}`).join(" ") || "无耗";
       return `<div class="skill-chip ${equipped ? 'on' : ''}" onclick="UI._loadoutToggleSkill('${sk}')">
-        <div class="sk-top"><b>${sp.name}</b>${aux ? '<span class="sk-aux">辅</span>' : ''}${equipped ? '<span class="sk-on">✓出战</span>' : ''}</div>
+        <div class="sk-top"><span class="seal sm wx-${wx}">${sealChar(sp.name)}</span><b>${sp.name}</b>${aux ? '<span class="sk-aux">辅</span>' : ''}${equipped ? '<span class="sk-on">✓出战</span>' : ''}</div>
         <div class="sk-meta"><span class="qcost">${cost}</span> ${spellEffectText(sp)}</div>
       </div>`;
     };
@@ -1063,6 +1143,7 @@ const UI = {
 
   /* -------- 奇遇弹窗 -------- */
   openFortune(f) {
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
     const s = State.data;
     const choices = f.choices.map((c, i) => {
       const disabled = c.cond && !c.cond(s);
@@ -1327,12 +1408,43 @@ const UI = {
     this.el("combat-overlay").hidden = false;
     const titles = { encounter: "斗 法", showdown: "夺舍之夜 · 决战", breakthrough: "突破 · 心战", jinguang: "暗算金光上人" };
     this.el("combat-title").textContent = titles[meta.type] || "斗 法";
+    // 战斗背景：心战用墨黑，其余用当前地点场景图（压暗虚化）
+    const bg = this.el("combat-bg");
+    if (bg) {
+      const loc = State.location();
+      const url = (meta.type !== "breakthrough" && loc && typeof Art !== "undefined") ? Art.locUrl(loc) : null;
+      bg.style.backgroundImage = url ? `url("${url}")` : "";
+      bg.classList.toggle("on", !!url);
+      this.el("combat-overlay").classList.toggle("mind", meta.type === "breakthrough");
+    }
     const endBtn = this.el("combat-endround");
     endBtn.onclick = () => Engine.combatEndRound();
     this._combatTarget = combat.enemies.findIndex(e => e.alive);
     this._combatLogLen = 0;
+    if (typeof Sfx !== "undefined") Sfx.play("danger");
     this.renderCombat(combat, meta);
     this._flashCombatBanner(meta, combat);
+  },
+
+  // 敌人名 → 立绘（剧情人物用其立绘；心魔用韩立暗影；无图回退字符玉牌）
+  _artIdByName(name) {
+    if (!name || typeof Art === "undefined") return null;
+    if (/心魔|劫/.test(name)) return "hanli";
+    if (/铁奴/.test(name)) return Art.has("tienu") ? "tienu" : "zhangtie";
+    if (/张铁/.test(name)) return "zhangtie";
+    const all = (typeof WORLD !== "undefined" && WORLD.npcs) ? WORLD.npcs : [];
+    for (const n of all) { if (name.indexOf(n.name) >= 0 && Art.has(n.id)) return n.id; }
+    if (/散修/.test(name) && Art.has("sanxiu")) return "sanxiu";
+    if (/喽啰|野狼帮/.test(name) && Art.has("langhao")) return "langhao";
+    return null;
+  },
+  // 无立绘敌人的字符玉牌
+  _enemyGlyph(name) {
+    if (/狼/.test(name)) return "狼";
+    if (/贼/.test(name)) return "贼";
+    if (/弟子/.test(name)) return "武";
+    if (/蜈|虫/.test(name)) return "虫";
+    return "敌";
   },
   // 开战时的醒目横幅（让"遭遇/决战/渡劫"有明确的起始感）
   _flashCombatBanner(meta, combat) {
@@ -1355,12 +1467,27 @@ const UI = {
   },
   closeCombat() { this.el("combat-overlay").hidden = true; },
 
-  // 施法时的轻微震动反馈
-  flashCombat() {
+  // 施法反馈：目标震动 + 招式名横幅一闪
+  flashCombat(spellId) {
     const box = this.el("combat-enemies");
-    if (!box) return;
-    const t = box.querySelector(".combatant.target") || box.querySelector(".combatant");
-    if (t) { t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); }
+    if (box) {
+      const t = box.querySelector(".combatant.target") || box.querySelector(".combatant");
+      if (t) { t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); }
+    }
+    // 招式名大字横幅
+    if (spellId && typeof CombatAPI !== "undefined") {
+      const sp = CombatAPI.SPELLS[spellId];
+      const el = this.el("combat-cast");
+      if (sp && el) {
+        const wx = Object.keys(sp.cost || {})[0] || "jin";
+        el.innerHTML = `<span class="cc-name wx-${wx}">${sp.name}</span>`;
+        el.hidden = false;
+        el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+        clearTimeout(this._castTimer);
+        this._castTimer = setTimeout(() => { el.hidden = true; }, 700);
+      }
+      if (typeof Sfx !== "undefined") Sfx.play(sp && sp.type === "heal" ? "heal" : sp && sp.type === "def" ? "shield" : "sword");
+    }
   },
 
   // 弹出战斗飘字（消费引擎的 fx 队列）
@@ -1419,62 +1546,81 @@ const UI = {
     const target = this.curTarget(c);
     const adv = target >= 0 ? c.senseVs(c.enemies[target]) : { seeIntent: false };
     const multi = c.enemies.length > 1;
+    const isBT = meta.type === 'breakthrough';
 
+    // 敌方：立绘对峙 + 血条 + 意图
     this.el("combat-enemies").innerHTML = c.enemies.map((e, i) => {
       const tags = [];
       if (e.immunePoison) tags.push("百毒不侵");
       if (e.soulOnly) tags.push("神魂之体");
-      const statusTxt = e.status.poison ? `<span class="cstatus">中毒 ${e.status.poison.dmg}/回合·余${e.status.poison.turns}</span>` : "";
+      const statusTxt = e.status.poison ? `<span class="cstatus">☠ 中毒 ${e.status.poison.dmg}/回合·余${e.status.poison.turns}</span>` : "";
       const intentTxt = (i === target && adv.seeIntent && e.intent && e.alive)
         ? `<div class="cintent">⚡ 神识料敌：${this._intentHint(e.intent)}</div>` : "";
       const hpPct = Math.max(0, e.hp / e.hpMax * 100);
       const shieldPct = e.shield ? Math.min(100, e.shield / e.hpMax * 100) : 0;
+      // 立绘 / 字符玉牌
+      const aid = this._artIdByName(e.name);
+      const demonized = isBT || /心魔/.test(e.name);
+      const fig = aid
+        ? `<div class="cfigure${demonized ? " demonized" : ""}"><img src="${Art.url(aid)}" alt="" /></div>`
+        : `<div class="cfigure glyph"><span>${this._enemyGlyph(e.name)}</span></div>`;
       return `<div class="combatant enemy ${e.alive ? '' : 'dead'} ${i === target ? 'target' : ''}" ${e.alive && multi ? `onclick="UI.pickTarget(${i})"` : ''}>
-        <div class="cname"><b>${e.name}</b><span class="ctag">${tags.join(' ')}</span></div>
-        <div class="cbar">
-          <div class="cbar-fill" style="width:${hpPct}%"></div>
-          ${shieldPct ? `<div class="cbar-fill shield" style="width:${shieldPct}%"></div>` : ''}
+        ${fig}
+        <div class="cinfo">
+          <div class="cname"><b>${e.name}</b><span class="ctag">${tags.join(' ')}</span></div>
+          <div class="cbar">
+            <div class="cbar-fill" style="width:${hpPct}%"></div>
+            ${shieldPct ? `<div class="cbar-fill shield" style="width:${shieldPct}%"></div>` : ''}
+          </div>
+          <div class="cbar-num">气血 ${Math.max(0, Math.round(e.hp))}/${e.hpMax}${e.shield ? `　<span style="color:var(--blue)">护体${e.shield}</span>` : ''}</div>
+          ${statusTxt}
         </div>
-        <div class="cbar-num">气血 ${Math.max(0, Math.round(e.hp))}/${e.hpMax}${e.shield ? `　<span style="color:var(--blue)">护体${e.shield}</span>` : ''}</div>
-        ${statusTxt}
         ${intentTxt}
         ${i === target && e.alive ? '<div class="target-tag">◈ 锁定</div>' : ''}
       </div>`;
     }).join("");
 
-    // 玩家
+    // 我方：韩立立绘 + 道心/气血
     const p = c.player;
-    const isBT = meta.type === 'breakthrough';
     const hpPct = Math.max(0, p.hp / p.hpMax * 100);
     const shieldPct = p.shield ? Math.min(100, p.shield / p.hpMax * 100) : 0;
+    const hurl = (typeof Art !== "undefined") ? Art.url("hanli") : null;
     this.el("combat-player").innerHTML = `<div class="combatant self">
-      <div class="cname"><b>${p.name}</b><span class="ctag">${isBT ? '道心' : `神识${p.sense}·遁速${p.speed}`}</span></div>
-      <div class="cbar">
-        <div class="cbar-fill self" style="width:${hpPct}%"></div>
-        ${shieldPct ? `<div class="cbar-fill shield" style="width:${shieldPct}%"></div>` : ''}
+      ${hurl ? `<div class="cfigure"><img src="${hurl}" alt="" /></div>` : ""}
+      <div class="cinfo">
+        <div class="cname"><b>${p.name}</b><span class="ctag">${isBT ? '道心之战' : `神识${p.sense}·遁速${p.speed}`}</span></div>
+        <div class="cbar">
+          <div class="cbar-fill self" style="width:${hpPct}%"></div>
+          ${shieldPct ? `<div class="cbar-fill shield" style="width:${shieldPct}%"></div>` : ''}
+        </div>
+        <div class="cbar-num">${isBT ? '道心' : '气血'} ${Math.max(0, Math.round(p.hp))}/${p.hpMax}${p.shield ? `　<span style="color:var(--blue)">护体${p.shield}</span>` : ''}</div>
+        ${p.status.poison ? `<span class="cstatus">☠ 中毒 ${p.status.poison.dmg}/回合</span>` : ''}
       </div>
-      <div class="cbar-num">${isBT ? '道心' : '气血'} ${Math.max(0, Math.round(p.hp))}/${p.hpMax}${p.shield ? `　<span style="color:var(--blue)">护体${p.shield}</span>` : ''}</div>
-      ${p.status.poison ? `<span class="cstatus">中毒 ${p.status.poison.dmg}/回合</span>` : ''}
     </div>`;
 
-    // 灵气池
+    // 五行灵气珠池：五色玉珠，充盈发光、空则黯淡
     this.el("combat-qi").innerHTML =
-      `<span class="qi-label">五行灵气</span>` +
       CombatAPI.ELEMENTS.map(e =>
-        `<div class="qi-chip ${e} ${c.qi[e] > 0 ? '' : 'zero'}">${EL[e]}<b>${c.qi[e]}</b></div>`
+        `<div class="qi-orb ${e} ${c.qi[e] > 0 ? 'lit' : 'zero'}" title="${EL[e]}行灵气">
+          <span class="qo-char">${EL[e]}</span><b class="qo-n">${c.qi[e]}</b>
+        </div>`
       ).join("") +
-      (p.momentum ? `<div class="qi-chip momentum">剑势<b>${p.momentum}</b></div>` : "");
+      (p.momentum ? `<div class="qi-orb momentum lit" title="剑势：连击可引爆"><span class="qo-char">势</span><b class="qo-n">${p.momentum}</b></div>` : "");
 
-    // 法术 / 招式
+    // 法术 / 招式：印章图标 + 五行点数
     this.el("combat-spells").innerHTML = p.spells.map(id => {
       const sp = SP[id];
-      const cost = Object.entries(sp.cost).map(([e, n]) => `${EL[e]}${n}`).join(" ") || "无耗";
+      const wx = Object.keys(sp.cost || {})[0] || "jin";
+      const costDots = Object.entries(sp.cost).map(([e, n]) => `<span class="cost-dot wx-${e}" title="${EL[e]}行">${EL[e]}${n}</span>`).join("") || `<span class="cost-dot free">无耗</span>`;
       const afford = c.canAfford(id);
       const noPouch = sp.consume && !(p.pouch[sp.consume] > 0);
       const pouchTxt = sp.consume ? `<span class="spouch ${noPouch ? 'empty' : ''}">底牌×${p.pouch[sp.consume] || 0}</span>` : "";
       return `<button class="spell-btn ${afford ? '' : 'off'}" ${afford ? '' : 'disabled'} onclick="Engine.combatCast('${id}', ${target})" title="${sp.desc || ''}">
-        <span class="sname">${sp.name}</span>
-        <span class="scost"><span class="qcost">${cost}</span> ${spellEffectText(sp)}${pouchTxt}</span>
+        <span class="seal wx-${wx}">${sealChar(sp.name)}</span>
+        <span class="sp-body">
+          <span class="sname">${sp.name}</span>
+          <span class="scost">${costDots} ${spellEffectText(sp)}${pouchTxt}</span>
+        </span>
       </button>`;
     }).join("");
 
@@ -1643,6 +1789,24 @@ const UI = {
     `);
   },
 
+  /* -------- 系统菜单（手机端 ☰ 收纳全部系统入口）-------- */
+  openSystemMenu() {
+    const soundOn = (typeof Sfx !== "undefined") && Sfx.enabled();
+    this.openModal(`
+      <h2>系统</h2>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openCodex()">人物图鉴</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openChronicle()">风云录</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTechniques()">功法 · 配装</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openLLMSettings()">活世界（实时对谈）</button>
+        <button class="btn btn-secondary" onclick="if(typeof Sfx!=='undefined'){Sfx.toggle();} UI.openSystemMenu();">音效：${soundOn ? "开" : "关"}（点击切换）</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); State.save() ? UI.toast('已存档') : UI.toast('存档失败', true)">存档</button>
+        <button class="btn btn-ghost" onclick="UI.closeModal(); Main.toCreate()">回主菜单</button>
+        <button class="btn btn-ghost" onclick="UI.closeModal()">返回</button>
+      </div>
+    `);
+  },
+
   /* -------- 通用弹窗 / Toast -------- */
   openModal(html, variant) {
     const m = this.el("modal");
@@ -1665,6 +1829,22 @@ const UI = {
 function rarityLabel(r) { return { common: "凡品", rare: "灵品", epic: "宝品" }[r] || "凡品"; }
 function gradeLabel(g) { return { 1: "黄阶", 2: "玄阶", 3: "地阶", 4: "天阶" }[g] || "黄阶"; }
 function typeLabel(t) { return { pill: "丹药", material: "材料", currency: "通货", skill: "功法" }[t] || "杂物"; }
+// 印章字：法术/功法/物品名 → 单字方章（图标语言：道藏印章，详见 art-direction.md）
+const SEAL_CHARS = {
+  "长春吐纳": "吐", "长春护体": "护", "凝神静气": "凝", "眨眼剑法": "剑", "眨眼连击": "连",
+  "喂毒一击": "毒", "暗器飞针": "针", "运功镇魂": "魂",
+  "长春功": "春", "青元剑诀": "青", "大衍诀": "衍", "眨眼身法": "身",
+};
+function sealChar(name) {
+  if (SEAL_CHARS[name]) return SEAL_CHARS[name];
+  return (name || "?").replace(/[（(].*$/, "").slice(0, 1);
+}
+// 物品类型 → 印章字与五行色键
+function itemSeal(it) {
+  const map = { pill: ["丹", "huo"], material: ["草", "mu"], currency: ["石", "tu"], skill: ["籍", "shui"], consumable: ["器", "jin"], key: ["令", "jin"], treasure: ["宝", "jin"] };
+  const m = map[it && it.type] || ["物", "tu"];
+  return { ch: m[0], wx: m[1] };
+}
 function spellEffectText(sp) {
   if (sp.type === "atk") return "伤" + sp.dmg + (sp.pierce ? "·破甲" : "") + (sp.dodgeSelf ? " 闪避↑" : "");
   if (sp.type === "soul") return "镇魂(按功力·仅元神)";
