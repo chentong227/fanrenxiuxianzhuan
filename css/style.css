@@ -1408,16 +1408,16 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 /* 暗淡：未说话的一方→压暗去饱和退后（不虚化——立绘必须清晰）*/
 .story-portrait.dim { opacity: .96; }
 .story-portrait.dim img { filter: brightness(.55) saturate(.65) drop-shadow(0 4px 16px rgba(0,0,0,.5)); }
-.story-portrait.left  { left: 1%;  transform: scaleX(-1); }   /* 左侧人物镜像，面朝右（朝向主角）*/
-.story-portrait.right { right: 1%; }
+.story-portrait.left  { left: -7%;  transform: scaleX(-1); }   /* 左侧人物镜像，面朝右（朝向主角）；负值抵销抠图透明边 */
+.story-portrait.right { right: -7%; }
 .story-portrait.left.dim  { transform: scaleX(-1) scale(.97); }
 .story-portrait.right.dim { transform: scale(.97); }
 
 /* 对话框：底部一条，轻触推进 */
 .story-dialog {
   position: relative; z-index: 4; margin: 0 auto; width: min(860px, 94%);
-  background: rgba(16,13,10,.9); border: 1px solid rgba(212,176,106,.35);
-  border-radius: 14px 14px 0 0; border-bottom: none;
+  background: rgba(14, 11, 9, .96); border: 1px solid rgba(212,176,106,.35);
+  border-radius: 6px 6px 0 0; border-bottom: none;
   padding: 20px 26px 30px; cursor: pointer;
   box-shadow: 0 -8px 40px rgba(0,0,0,.55); backdrop-filter: blur(4px);
 }
@@ -1460,11 +1460,13 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
     justify-content: flex-end; overflow-y: auto;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  /* 手机：立绘清晰立于两缘，从对话框后探出 */
-  .story-portrait { height: 40%; max-height: 40vh; }
-  .story-portrait.left { left: -13%; }
-  .story-portrait.right { right: -13%; }
-  .story-portrait.dim img { filter: brightness(.5) saturate(.6); }
+  /* 手机：只显示当前说话者一人（居中、大而清晰）；旁白时无立绘，对话干净 */
+  .story-portrait { display: none; }
+  .story-portrait.on:not(.dim) {
+    display: block; height: 46vh; max-height: 46vh;
+    left: 50%; right: auto; transform: translateX(-50%);
+  }
+  .story-portrait.left.on:not(.dim) { transform: translateX(-50%) scaleX(-1); }
   .story-text { font-size: 16px; line-height: 1.85; min-height: 36px; }
   .story-dialog {
     padding: 14px 16px 16px; max-height: 42vh; overflow-y: auto; cursor: pointer;

@@ -175,28 +175,29 @@ DATA.flightTreasures = {
   none: { name: "徒步赶路", speedBonus: 0, grade: "凡", arc: null,
     desc: "全凭两条腿与粗浅遁术，跋山涉水。练气修士的常态。" },
 
-  // —— 黄枫谷起：低阶飞行法器（御物而行，提速有限）——
-  yu_feng_che: {
-    name: "御风车", speedBonus: 18, grade: "黄阶法器", arc: "huangfeng", locked: true,
-    desc: "可载人御风疾行的低阶法器，比徒步遁光快上数倍，是练气、筑基修士赶路的寻常脚力。",
-    origin: "黄枫谷篇及以后：坊市可购或机缘所得。",
-  },
-  // —— 中阶：渡海乘风雷舟（跨海远行）——
+  // —— 黄枫谷篇起：神风舟（筑基修士的寻常脚力，韩立筑基后长期使用）——
   shen_feng_zhou: {
-    name: "神风舟", speedBonus: 36, grade: "玄阶法器", arc: "luanxinghai", locked: true,
-    desc: "御风疾驰的舟形法器，载重大、续航远，宜于跨海长途。乱星海一带行商、修士远渡常用。",
-    origin: "乱星海篇：海外坊市或机缘所得。",
+    name: "神风舟", speedBonus: 30, grade: "黄阶法器", arc: "huangfeng", locked: true,
+    desc: "御风疾驰的小舟形法器，比徒步遁光快上数倍，是筑基修士赶路的寻常脚力。韩立筑基后购得，天南赶路全靠它。",
+    origin: "黄枫谷篇（筑基后）：坊市购得。",
   },
+  // —— 乱星海篇：渡海乘风雷舟（跨海远行）——
   du_hai_lei_zhou: {
     name: "渡海乘风雷舟", speedBonus: 48, grade: "玄阶法器", arc: "luanxinghai", locked: true,
     desc: "以风雷之力驱动的飞舟，破浪凌空，专为茫茫乱星海的远渡而设。",
-    origin: "乱星海篇：海外所得。",
+    origin: "乱星海篇：跨海所用。",
   },
-  // —— 顶级：风雷翅（本命/贴身飞遁，极速且灵活）——
+  // —— 乱星海篇：风雷翅（贴身飞遁，极速且灵活）——
   feng_lei_chi: {
     name: "风雷翅", speedBonus: 70, grade: "宝品·极速", arc: "luanxinghai", locked: true,
-    desc: "乱星海所得的稀世飞行法宝，振翅风雷相生，遁速奇快且贴身灵动，远胜寻常飞舟。韩立纵横乱星海、屡屡险中脱身的依仗之一。",
-    origin: "乱星海篇：海外机缘所得。",
+    desc: "以金雷竹等天材炼成的稀世飞遁至宝，振翅风雷相生，遁速奇快且贴身灵动。韩立纵横乱星海、屡屡险中脱身的依仗之一。",
+    origin: "乱星海篇：金雷竹机缘炼成。",
+  },
+  // —— 重返天南篇：御风车（元婴期大战穆兰后所得的飞遁至宝）——
+  yu_feng_che: {
+    name: "御风车", speedBonus: 95, grade: "古宝·极速", arc: "tiannan_return", locked: true,
+    desc: "上古飞遁至宝，驾之如雷云逐电，神速冠绝天南。寻常修士终其一生未必得见。",
+    origin: "重返天南篇：元婴期大战穆兰神师后所得——与七玄门/黄枫谷/乱星海皆无关，须严守获取时序。",
   },
 };
 
