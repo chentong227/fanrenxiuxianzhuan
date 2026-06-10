@@ -444,6 +444,7 @@ const Engine = {
     else if (action === "investigate") this.investigate();
     else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
     else if (action === "travel") { UI.openTravel(); return; }
+    else if (action === "wujian") { this.doWujian(); return; }
 
     this.checkLifespan();
     this.checkStory();
@@ -488,7 +489,45 @@ const Engine = {
     s.body += 1;
     s.flags.adventured = true;
     s.mood = clamp(s.mood + 5, 0, s.moodMax);
-    this.log("你与同门切磋武艺，身法体魄略有精进。厉飞雨笑你进境神速，直呼天才。", "good");
+    // 剑意修行链：与人对剑是练剑的正途
+    let swordNote = "";
+    if (!s.swordMastery) {
+      s.swordIntent = clamp((s.swordIntent || 0) + 3, 0, 100);
+      swordNote = s.swordIntent >= 100 ? "你隐隐觉得剑上的火候到了（剑意圆满，可回药庐悟剑）。" : `切磋间你的剑越发纯熟（剑意+3）。`;
+      if (s.swordIntent === 100 && !s.flags.sword_intent_full) { State.setFlag("sword_intent_full"); this.toast("剑意圆满！可回药庐悟剑"); }
+    }
+    this.log("你与同门切磋武艺，身法体魄略有精进。厉飞雨笑你进境神速，直呼天才。" + swordNote, "good");
+  },
+
+  /* -------- 道途年表：质变/大件/勋章的永久记录 -------- */
+  addMilestone(title, kind) {
+    const s = State.data;
+    if (!s.milestones) s.milestones = [];
+    s.milestones.push({ t: `第${s.year}年${s.month}月 · ${s.age}岁`, title, kind: kind || "deed" });
+    this.toast("道途留痕：" + title);
+  },
+
+  /* -------- 悟剑（剑意圆满后，于洞府闭关参悟眨眼剑法至大成）-------- */
+  doWujian() {
+    const s = State.data;
+    if (s.swordMastery) { this.toast("剑法已然大成"); return; }
+    if ((s.swordIntent || 0) < 100) { this.toast("剑意未满，尚需实战磨剑", true); return; }
+    this.passTime(3);
+    s.spirit = clamp(s.spirit - 20, 0, State.realm().spMax);
+    const rate = clamp(0.45 + s.insight * 0.03 + (s.mood / s.moodMax) * 0.2 - (s.demon / 100) * 0.2, 0.15, 0.95);
+    if (Math.random() < rate) {
+      s.swordMastery = true;
+      if (!s.knownSkills.includes("lianhuan")) s.knownSkills.push("lianhuan");
+      if (typeof Loadout !== "undefined") { const r = Loadout.equipSkill(s, "lianhuan"); if (!r.ok && !s.spells.includes("lianhuan")) {/* 槽满则留在技能池 */} }
+      this.log("【剑法大成】三月闭关，你将千百次出剑的体悟尽数咀嚼——某夜剑光一闪，你忽然懂了：剑快不在手，在心。眨眼剑法，至此大成！习得「连环眨眼」，剑势上限+2。", "good");
+      this.addMilestone("《眨眼剑法》大成，习得连环眨眼", "bigitem");
+      if (typeof Sfx !== "undefined") Sfx.play("bell");
+    } else {
+      s.swordIntent = 88;
+      s.mood = clamp(s.mood - 8, 0, s.moodMax);
+      this.log("【悟剑未成】三月枯坐，那层窗户纸偏偏差一指之力。所幸剑意未散——再经几场实战打磨，下次定能捅破。", "bad");
+    }
+    this.checkLifespan(); State.save(); UI.renderAll();
   },
 
   /* -------- 采买（集镇）-------- */
@@ -1053,6 +1092,7 @@ const Engine = {
       } else {
         this.log(`灵力冲关，经脉拓宽——你顺势突破至「${nr.name}」！`, "good");
       }
+      this.addMilestone(`突破「${nr.name}」`, "breakthrough");
       this.toast(`突破成功：${nr.name}`);
       this.checkStory();
     } else {
@@ -1103,6 +1143,7 @@ const Engine = {
       technique: s.technique,     // 主修功法（影响同系招式）
       grade: (DATA.techniques[s.technique] || {}).grade || 1,  // 主修功法品阶
       realmTier: Chapters.realmTier(),   // 本章大境界序（影响法术成长）
+      momentumCap: s.swordMastery ? 7 : 5,   // 眨眼剑法大成：剑势上限+2
       // 底牌：平时准备的毒草、暗器带进战斗（准备内化进战斗）
       pouch: { duyao_cao: State.count("duyao_cao"), anqi: State.count("anqi") },
     });
@@ -1250,6 +1291,16 @@ const Engine = {
     if (!r.ok) { this.toast(r.reason); return; }
     if (typeof UI !== "undefined" && UI.flushCombatFx) UI.flushCombatFx(this._combat);
     if (typeof UI !== "undefined" && UI.flashCombat) UI.flashCombat(spellId);
+    // 剑意修行链：实战用剑积累剑意（大成前）
+    const s = State.data;
+    if (!s.swordMastery && (spellId === "zhayan" || spellId === "zhayan_lian")) {
+      s.swordIntent = clamp((s.swordIntent || 0) + 2, 0, 100);
+      if (s.swordIntent === 100 && !s.flags.sword_intent_full) {
+        State.setFlag("sword_intent_full");
+        this.log("【剑意】出剑的刹那，你忽觉指间与剑意隐隐相通——眨眼剑法的火候到了。回药庐闭关「悟剑」，或可更进一步！", "good");
+        this.toast("剑意圆满！可回药庐悟剑");
+      }
+    }
     if (this._combat.status !== "ongoing") this._finishCombat();
     else UI.renderCombat(this._combat, this._combatMeta);
   },
@@ -1282,6 +1333,12 @@ const Engine = {
 
     UI.closeCombat();
 
+    // 战后复盘一句话：归因本战最大输出手段（操作价值被看见）
+    if (win && c.stats && Object.keys(c.stats).length) {
+      const top = Object.entries(c.stats).sort((a, b) => b[1] - a[1])[0];
+      if (top && top[1] > 0) this.log(`【复盘】本战关键手：「${top[0]}」共建功 ${top[1]} 伤——你的打法立住了。`, "sys");
+    }
+
     if (meta.type === "encounter") {
       if (win) {
         if (meta.reward) {
@@ -1308,6 +1365,7 @@ const Engine = {
       if (win) {
         State.setFlag("modafu_dead");
         this.log("墨大夫毒发倒地，铁奴被你击碎，余子童的元神也被你以功力生生镇灭！你赢了——靠的是准备、算计与一刻不敢松懈的苦修。", "good");
+        this.addMilestone("夺舍之夜：反杀墨大夫（余子童）", "showdown");
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         s.storyStage += 1;
         this.checkStory();
@@ -1325,6 +1383,7 @@ const Engine = {
         State.give("jinfu", 1);
         State.give("jinzhong_zhao", 1);
         this.log("金光上人金钟罩虽固，终究敌不过你的毒与暗器。这矮胖和尚至死不信，自己竟栽在一个门派药师手里！七玄门之危，就此解去。", "good");
+        this.addMilestone("以下克上：暗算金光上人", "showdown");
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         s.storyStage += 1;
         this.checkStory();

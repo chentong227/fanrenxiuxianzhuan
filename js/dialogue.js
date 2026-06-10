@@ -27,7 +27,30 @@
             s.body += 1;
             s.mood = Math.min(s.moodMax, s.mood + 4);
             INTERACTIONS && INTERACTIONS.favor(s, "lifeiyu", 4);
-            return { text: "你与厉飞雨拆了几招。他越打越起劲，直夸你身手长进飞快。体魄+1，交情更近。", kind: "good" };
+            // 剑意修行链：与赠剑之人对剑，磨剑最快
+            let sword = "";
+            if (!s.swordMastery) {
+              s.swordIntent = Math.min(100, (s.swordIntent || 0) + 4);
+              sword = s.swordIntent >= 100 ? "（剑意圆满！可回药庐悟剑）" : "（剑意+4）";
+            }
+            return { text: "你与厉飞雨拆了几招。他越打越起劲，直夸你身手长进飞快。体魄+1，交情更近。" + sword, kind: "good" };
+          },
+        },
+        {
+          id: "sword_hint", label: "请教眨眼剑法的火候", hint: "剑是他赠的，路得自己走", once: true,
+          cond: (s) => !s.swordMastery && (s.knownSkills || []).includes("zhayan"),
+          effect(s) {
+            INTERACTIONS && INTERACTIONS.favor(s, "lifeiyu", 2);
+            s.swordIntent = Math.min(100, (s.swordIntent || 0) + 5);
+            return { text: "厉飞雨掂着你的剑笑道：「招你都会了，差的是出剑的次数。我厉家这门剑法，练到后头快的不是手，是心——多上手，多见血光，火候到了自然懂。」（剑意修行开启：实战与切磋皆可磨剑）", kind: "event" };
+          },
+        },
+        {
+          id: "sword_awe", label: "「你这剑……」", hint: "他看出你的剑变了", once: true,
+          cond: (s) => s.swordMastery,
+          effect(s) {
+            INTERACTIONS && INTERACTIONS.favor(s, "lifeiyu", 6);
+            return { text: "你随手演了半式。厉飞雨怔了半晌，忽然大笑：「好你个韩立！这剑法到你手里，竟比我厉家人还快——我服了，往后这眨眼剑法，你才是正主！」", kind: "good" };
           },
         },
         {

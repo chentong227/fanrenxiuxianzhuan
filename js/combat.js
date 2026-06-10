@@ -39,6 +39,9 @@
                 desc: "凡人剑术，身形快如眨眼，欺身一剑。每施一剑积累「剑势」。" },
     zhayan_lian:{ name: "眨眼连击", cost: { jin: 5 },       type: "atk", dmg: 13, dodgeSelf: 0.1, spendMomentum: true, momentumDmg: 5, source: "martial",
                 desc: "凡人剑术，倾尽剑势连环爆发。每点「剑势」额外+5伤害，施后剑势清零。" },
+    // 眨眼剑法大成的兑现招（剑意修行链）。数值待战斗平衡周期统一校准。
+    lianhuan: { name: "连环眨眼", cost: { jin: 3 },        type: "atk", dmg: 12, dodgeSelf: 0.2, spendMomentum: true, momentumDmg: 6, source: "martial",
+                desc: "眨眼剑法大成之技：身剑合一连环递进，每点「剑势」额外+6伤害且身形更显鬼魅。施后剑势清零。" },
 
     // 喂毒：凡人手段（淬毒），消耗毒草，叠加中毒
     weidu:    { name: "喂毒一击", cost: { jin: 1 },         type: "debuff", poison: { dmg: 7, turns: 4 }, source: "martial",
@@ -86,6 +89,7 @@
       this.dodgeBuff = 0;
       this.nextQiBonus = 0;
       this.momentum = 0;                 // 剑势（眨眼剑法积累，眨眼连击消耗）
+      this.momentumCap = cfg.momentumCap || 5;   // 剑势上限（眨眼剑法大成 +2）
       this.technique = cfg.technique || null;  // 主修功法 id（影响同系招式）
       this.grade = cfg.grade || 1;       // 主修功法品阶（1黄~4天）
       this.auxSkills = cfg.auxSkills || [];   // 来自辅修功法的技能 id（伤害/效果打折）
@@ -117,6 +121,8 @@
       this.enemies = (cfg.enemies || []).map(e => e instanceof Fighter ? e : new Fighter(e));
       this.maxRounds = cfg.maxRounds || 30;
       this.round = 0;
+      this.stats = {};               // 玩家各手段累计输出（战后复盘归因用）
+      this._stat = (key, n) => { if (n > 0) this.stats[key] = (this.stats[key] || 0) + n; };
       this.qi = { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 };
       this.status = "ongoing";
       this.log = [];
@@ -274,18 +280,20 @@
           let dmg = baseDmg, crit = false;
           if (this.rng() < clampNum(0.05 + adv.critBonus, 0, 0.4)) { dmg = Math.round(dmg * 1.6); crit = true; this._log(`（神识料敌于先，一击中的！）`); }
           const r = target.takeDamage(dmg, { pierce: sp.pierce });
+          if (caster === this.player) this._stat(sp.name, r.dealt);
           this._log(`${caster.name} 施「${sp.name}」，对 ${target.name} 造成 ${r.dealt} 伤害` + (target.shield > 0 ? `（余护体${target.shield}）` : ""));
           this._emitFx(tref, crit ? "crit" : (sp.pierce ? "pierce" : "dmg"), (crit ? "暴击 " : sp.pierce ? "破甲 " : "") + r.dealt);
         }
         if (sp.dodgeSelf) caster.dodgeBuff = (caster.dodgeBuff || 0) + sp.dodgeSelf;
         // 剑势结算：积累 / 消耗
-        if (sp.buildMomentum) { caster.momentum = Math.min(5, (caster.momentum || 0) + sp.buildMomentum); }
+        if (sp.buildMomentum) { caster.momentum = Math.min(caster.momentumCap || 5, (caster.momentum || 0) + sp.buildMomentum); }
         if (sp.spendMomentum) { caster.momentum = 0; }
 
       } else if (sp.type === "soul" && target) {
         if (!target.soulOnly) { this._log(`${caster.name} 运功镇魂，但 ${target.name} 乃血肉之躯，此法无用！`); this._emitFx(tref, "miss", "无效"); return; }
         const dmg = Balance.soulSuppressDamage(caster.gongli, target.gongli || 20);
         const r = target.takeDamage(dmg, { soul: true });
+        if (caster === this.player) this._stat(sp.name, r.dealt);
         this._log(`${caster.name} 运功镇魂，以功力冲击 ${target.name} 的神魂，造成 ${r.dealt} 伤害（${Math.max(0, Math.round(target.hp))}/${target.hpMax}）`);
         this._emitFx(tref, "soul", "镇魂 " + r.dealt);
 
@@ -353,6 +361,7 @@
         const dmg = f.status.poison.dmg;
         f.hp = clampNum(f.hp - dmg, 0, f.hpMax);
         f.status.poison.turns--;
+        if (f !== this.player) this._stat("淬毒", dmg);
         this._log(`${f.name} 毒发，气血-${dmg}（${Math.max(0, Math.round(f.hp))}/${f.hpMax}）`);
         const ref = f === this.player ? "player" : `enemy:${this.enemies.indexOf(f)}`;
         this._emitFx(ref, "poison", "毒 " + dmg);

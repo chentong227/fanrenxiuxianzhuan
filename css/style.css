@@ -529,7 +529,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   height: clamp(120px, 23vh, 220px); line-height: 0;
   filter: drop-shadow(0 12px 20px rgba(0,0,0,.6));
 }
-.combatant .cfigure img { height: 100%; width: auto; animation: portraitIn .4s ease both; }
+.combatant .cfigure img { height: 100%; width: auto; animation: portraitIn .4s ease; }
 .combat-enemies .cfigure img { transform: scaleX(-1); }   /* 敌人面朝右（朝向韩立）*/
 .cfigure.glyph {
   height: auto; width: clamp(76px, 12vh, 110px); aspect-ratio: 1;
@@ -1398,9 +1398,11 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   height: 78%; max-height: 620px; pointer-events: none;
   opacity: 0; transition: opacity .45s ease, filter .45s ease, transform .45s ease;
 }
+/* 注意：动画不用 both/backwards 填充——若动画因时序未启动，元素须回落到自然可见态
+   （修复"第二次进入剧情/战斗立绘不显示"：卡在 from 的 opacity:0） */
 .story-portrait img { height: 100%; width: auto; object-fit: contain; display: block;
   filter: drop-shadow(0 6px 24px rgba(0,0,0,.6));
-  animation: portraitIn .5s cubic-bezier(.22,1,.36,1) both; }
+  animation: portraitIn .5s cubic-bezier(.22,1,.36,1); }
 .story-portrait.left img { animation-name: portraitInL; }
 @keyframes portraitIn  { from { opacity: 0; transform: translateX(26px) translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes portraitInL { from { opacity: 0; transform: translateX(-26px) translateY(8px); } to { opacity: 1; transform: none; } }

@@ -22,6 +22,9 @@ const UI = {
     layout.setAttribute("data-mtab", tab);
     document.querySelectorAll(".mtab").forEach(t =>
       t.classList.toggle("active", t.dataset.tab === tab));
+    // 切到见闻页时定位到最新一条
+    if (tab === "stage") this._scrollNarrativeBottom();
+    else layout.scrollTop = 0;
   },
 
   // 当前际遇指引 + 进行中任务（开放世界的"目标"提示）
@@ -69,6 +72,17 @@ const UI = {
           <span class="obj-prog">指向「${wn}」</span>
         </div>`;
       }).join("");
+    }
+    // 剑意修行链：实战用剑积累，圆满可悟剑（大件范式：明牌进度=惦记）
+    const sd = State.data;
+    if (sd && !sd.swordMastery && (sd.swordIntent || 0) > 0) {
+      const full = sd.swordIntent >= 100;
+      html += `<div class="obj-task${full ? "" : ""}">
+        <span class="obj-key" style="background:var(--wx-jin);color:#1a1208">修行</span>
+        <b>眨眼剑法 · 剑意</b>
+        <span class="obj-prog">${sd.swordIntent}/100</span>
+        <span class="obj-hint">${full ? "圆满！回药庐闭关「悟剑」" : "切磋、实战出剑可磨剑意"}</span>
+      </div>`;
     }
     box.innerHTML = html;
     box.style.display = html ? "" : "none";
@@ -190,6 +204,17 @@ const UI = {
     this.openNpcWheel(npcId);
   },
 
+  // NPC 对你的称呼：随境界/身份变化（世界认出你的成长；藏拙系统上线后改读"显露境界"）
+  honorific() {
+    const s = State.data;
+    if (s.flags.is_modafu) return "墨大夫";
+    const r = s.realmIndex || 0;
+    if (r >= 6) return "韩高人";
+    if (r >= 4) return "韩师傅";
+    if (r >= 2) return "韩兄弟";
+    return "韩家小子";
+  },
+
   // 交互轮盘
   openNpcWheel(npcId) {
     const s = State.data;
@@ -225,6 +250,7 @@ const UI = {
           <div class="nw-name">${n.name}</div>
           <div class="nw-role">${n.role}</div>
           <div class="nw-rel ${rel>=8?'good':rel<=-8?'bad':''}">${heart} ${relTxt}</div>
+          <div class="nw-rel" style="color:var(--gold)">称你：${this.honorific()}</div>
         </div>
         <div class="nw-side right">${bad.map(a=>btn(a,"bad")).join("")}</div>
       </div>
@@ -345,7 +371,7 @@ const UI = {
     const realm = State.realm ? State.realm().name : "";
     const loc = (State.location && State.location()) ? State.location().name : "";
     const intel = (typeof Engine !== "undefined" && Engine.knownLeadsFor) ? Engine.knownLeadsFor(this._talk.npcId) : [];
-    return { relText, player: `${realm}，身处「${loc}」，第${s.year}年${s.month}月，年${s.age}`, intel };
+    return { relText, player: `${realm}，身处「${loc}」，第${s.year}年${s.month}月，年${s.age}。对方惯常称呼主角为「${this.honorific()}」`, intel };
   },
   _talkRequest(chosenLine) {
     const t = this._talk; if (!t) return;
@@ -461,13 +487,15 @@ const UI = {
     const labels = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
-      explore: "深入探索",
+      explore: "深入探索", wujian: "闭关悟剑 ⚔",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {
       acts = acts.filter(a => a !== "bottle" || State.data.bottle.unlocked);
+      // 剑意圆满：洞府出现「悟剑」（大件链攻坚入口）
+      if (loc.home && (State.data.swordIntent || 0) >= 100 && !State.data.swordMastery) acts.unshift("wujian");
     }
 
     box.innerHTML = acts.length
@@ -573,7 +601,17 @@ const UI = {
         <div class="time-stamp"><span class="ek-icon">${icons[e.kind] || "·"}</span>${e.t}</div>
         <div class="body">${e.body}</div>
       </div>`).join("");
-    box.scrollTop = box.scrollHeight;
+    this._scrollNarrativeBottom();
+  },
+  // 滚到最新见闻：桌面滚 .narrative 自身；手机上滚动容器是 .layout（修复"回到最上面"）
+  _scrollNarrativeBottom() {
+    const box = this.el("narrative");
+    if (!box) return;
+    requestAnimationFrame(() => {
+      if (box.scrollHeight > box.clientHeight + 4) { box.scrollTop = box.scrollHeight; return; }
+      const layout = document.querySelector(".layout");
+      if (layout && layout.scrollHeight > layout.clientHeight + 4) layout.scrollTop = layout.scrollHeight;
+    });
   },
 
   /* -------- 剧情卡渲染（视觉小说式：大立绘 + 逐句推进）-------- */
@@ -1278,10 +1316,35 @@ const UI = {
         : `${NPCSIM.realmName(f.realm)} · ${Math.floor(f.age)}岁`;
       return `<div class="roster-row ${f.status === 'dead' ? 'dead' : ''}"><b>${f.name}</b><span>${st}</span></div>`;
     }).join("");
+    // 道途年表：你亲手挣来的每一步（投入有形化）
+    const KIND_ICON = { breakthrough: "▲", bigitem: "◆", showdown: "⚔", medal: "★", deed: "·" };
+    const ms = (s.milestones || []).slice().reverse();
+    const msHtml = ms.length
+      ? ms.map(m => `<div class="chron-item breakthrough"><span class="chron-t">${m.t}</span><b>${KIND_ICON[m.kind] || "·"} ${m.title}</b></div>`).join("")
+      : `<div class="inv-empty">道途尚浅，来日方长。</div>`;
+    // 前路：已知的未来=明牌的惦记（动漫党的欲望地图，只示意不剧透）
+    const AHEAD = [
+      { title: "眨眼剑法 · 大成", done: () => s.swordMastery },
+      { title: "练气七层 · 本篇圆满", done: () => s.realmIndex >= 6 },
+      { title: "升仙令 · 离门赴黄枫谷", done: () => s.flags.arc1_complete },
+      { title: "黄枫谷 · 筑基之路", done: () => false, far: true },
+      { title: "？？？ · 灵宠之缘", done: () => false, far: true },
+      { title: "乱星海 · 金雷竹", done: () => false, far: true },
+    ];
+    const aheadHtml = AHEAD.map(a => {
+      const ok = a.done();
+      return `<div class="chron-item ${ok ? 'breakthrough' : ''}" style="${ok ? '' : 'opacity:.55'}">
+        ${ok ? "✦ " : "○ "}<b>${a.title}</b>${ok ? '<span style="color:var(--jade-bright);font-size:11px;margin-left:6px">已达成</span>' : (a.far ? '<span style="color:var(--ink-faint);font-size:11px;margin-left:6px">前路遥遥</span>' : '')}
+      </div>`;
+    }).join("");
     this.openModal(`
-      <h2>风云录</h2>
-      <p style="color:var(--ink-dim);font-size:12px">你离开了，世界并不会停。世间修士各有命数——或精进，或求丹闯秘境，或寿尽身死。</p>
-      <h3 class="panel-title" style="margin-top:8px">世间众生</h3>
+      <h2>风云录 · 道途</h2>
+      <h3 class="panel-title" style="margin-top:8px">道途年表（你挣来的每一步）</h3>
+      <div class="chronicle">${msHtml}</div>
+      <h3 class="panel-title">前路（已知的远方）</h3>
+      <div class="chronicle">${aheadHtml}</div>
+      <p style="color:var(--ink-dim);font-size:12px;margin-top:10px">你离开了，世界并不会停。世间修士各有命数——或精进，或求丹闯秘境，或寿尽身死。</p>
+      <h3 class="panel-title">世间众生</h3>
       <div class="roster">${roster || '<div class="inv-empty">—</div>'}</div>
       <h3 class="panel-title">近来传闻</h3>
       <div class="chronicle">${newsHtml}</div>

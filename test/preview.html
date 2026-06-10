@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>战斗/演出 预览（开发用）</title>
-  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/style.css?pv=4" />
   <style>
     .preview-bar { position: fixed; top: 4px; left: 4px; z-index: 999; display: flex; gap: 6px; flex-wrap: wrap; }
     .preview-bar button { font-size: 12px; padding: 4px 8px; }
@@ -18,7 +18,9 @@
       <button onclick="PV.jinguang()">金光上人</button>
       <button onclick="PV.bt()">心魔战</button>
       <button onclick="PV.story()">剧情演出</button>
+      <button onclick="PV.debug()">探针</button>
     </div>
+    <pre id="pv-debug" style="position:fixed;top:34px;left:4px;z-index:999;color:#7fe3c0;font-size:10px;background:rgba(0,0,0,.8);padding:4px;max-width:96vw;white-space:pre-wrap"></pre>
 
     <!-- 战斗界面 -->
     <div id="combat-overlay" class="combat-overlay" hidden>
@@ -61,10 +63,19 @@
 
     <div id="modal-overlay" class="modal-overlay" hidden><div id="modal" class="modal"></div></div>
     <div id="toast" class="toast" hidden></div>
-    <!-- 渲染兜底用的隐藏桩 -->
+    <!-- 渲染兜底用的隐藏桩（覆盖 renderAll 全链路所需 id）-->
     <div style="display:none">
       <div id="narrative"></div><div id="choices"></div><div id="objective-bar"></div>
       <div id="action-buttons"></div><div id="inventory"></div><div id="locals"></div>
+      <div id="st-root"></div><div id="st-realm"></div><div id="st-sense"></div>
+      <div id="st-speed"></div><div id="st-insight"></div><div id="st-body"></div>
+      <div id="st-stones"></div><div id="st-time"></div>
+      <div id="cul-text"></div><div id="cul-bar"></div><div id="sp-text"></div><div id="sp-bar"></div>
+      <div id="hp-text"></div><div id="hp-bar"></div><div id="mood-text"></div><div id="mood-bar"></div>
+      <div id="demon-text"></div><div id="demon-bar"></div>
+      <div id="hero-portrait"></div><div id="hero-name"></div><div id="hero-age"></div><div id="hero-lifespan"></div>
+      <div id="top-time"></div><div id="loc-name"></div><div id="loc-desc-inline"></div>
+      <div id="scene-bg"></div><div id="scene-pins"></div><div id="scene-confirm"></div>
     </div>
   </div>
 
@@ -111,6 +122,23 @@
       jinguang()  { State.data.location = "shanmen"; Engine.startJinguangFight ? Engine.startJinguangFight() : PV.encounter(); },
       bt()        { State.data.demon = 60; Engine.startBreakthroughFight({ big: false }); },
       story()     { State.data.location = "qingniu"; UI.renderStory(STORY[0]); },
+      debug() {
+        const box = document.getElementById("combat-enemies");
+        const img = box ? box.querySelector(".cfigure img") : null;
+        const fig = box ? box.querySelector(".cfigure") : null;
+        const lines = [
+          "enemies.innerHTML len=" + (box ? box.innerHTML.length : -1),
+          "has .cfigure=" + !!fig + "  has img=" + !!img,
+        ];
+        if (img) {
+          const cs = getComputedStyle(img);
+          lines.push("img.src=" + img.getAttribute("src"));
+          lines.push("complete=" + img.complete + " naturalW=" + img.naturalWidth);
+          lines.push("opacity=" + cs.opacity + " display=" + cs.display + " h=" + cs.height + " animName=" + cs.animationName + " playState=" + cs.animationPlayState);
+        }
+        if (fig) { const fs = getComputedStyle(fig); lines.push("fig h=" + fs.height + " overflow=" + fs.overflow); }
+        document.getElementById("pv-debug").textContent = lines.join("\n");
+      },
     };
     window.PV = PV;
   </script>
