@@ -1460,13 +1460,16 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
     justify-content: flex-end; overflow-y: auto;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  /* 手机：只显示当前说话者一人（居中、大而清晰）；旁白时无立绘，对话干净 */
+  /* 手机：只显示当前说话者一人，站位在对话框左上（探出大半身，不再"拦腰斩断"）；
+     旁白时无立绘，对话干净 */
   .story-portrait { display: none; }
   .story-portrait.on:not(.dim) {
-    display: block; height: 46vh; max-height: 46vh;
-    left: 50%; right: auto; transform: translateX(-50%);
+    display: block; height: 36vh; max-height: 320px;
+    left: -2%; right: auto; transform: none;
+    bottom: max(16vh, 132px);   /* 抬到对话框上沿附近，整个人大半可见 */
+    z-index: 3;
   }
-  .story-portrait.left.on:not(.dim) { transform: translateX(-50%) scaleX(-1); }
+  .story-portrait.left.on:not(.dim) { transform: scaleX(-1); }
   .story-text { font-size: 16px; line-height: 1.85; min-height: 36px; }
   .story-dialog {
     padding: 14px 16px 16px; max-height: 42vh; overflow-y: auto; cursor: pointer;
