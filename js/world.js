@@ -203,25 +203,6 @@ WORLD.enemies = {
       { name: "横扫蓄力", dmg: 23, kind: "charge", weight: 6 },
     ],
   },
-  /* 独霸山庄庄主（离门远行·嘉元城）：岚州三霸之一，凡俗武人巅峰、粗通吐纳。
-   * 考据：墨居仁死后欺上墨府，被韩立铲除（动漫7~8集）。 */
-  ouyang_feitian: {
-    name: "欧阳飞天", hp: 150, sense: 8, speed: 11, agility: 7, tactics: "cunning", qiLayer: 1,
-    introNote: "独霸山庄庄主——凡俗武人巅峰，一身横练外功还粗通吐纳。仗着人多势众而来，先剪除庄丁，再与他正面见真章。",
-    attacks: [
-      { name: "裂石崩拳", dmg: 20, kind: "normal", weight: 12 },
-      { name: "鹰爪锁喉", dmg: 16, kind: "pierce", weight: 7 },
-      { name: "气贯丹田", dmg: 26, kind: "charge", weight: 5 },
-    ],
-    reward: { silver: 30 },
-  },
-  zhuangding: {
-    name: "独霸山庄庄丁", hp: 70, sense: 4, speed: 8, agility: 3, tactics: "feral", reward: { silver: 4 },
-    attacks: [
-      { name: "朴刀劈砍", dmg: 13, kind: "normal", weight: 14 },
-      { name: "围殴", dmg: 17, kind: "charge", weight: 5 },
-    ],
-  },
 
   /* —— 异闻妖王（听闻其名 → 深入后山 → 真实可战）：威名先至，名实一致。
    * 妖兽吐纳天地灵气，妖气亦有行属（elem）——传闻里就写明行属，做功课备克制符是正解。 —— */

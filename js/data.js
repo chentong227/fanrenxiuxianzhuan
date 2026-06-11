@@ -103,18 +103,29 @@ DATA.actions = {
  * arc: 所属篇章。七玄门篇仅开放「长春功」；青元剑诀/大衍诀为后续篇章功法，本篇锁定。
  * locked: true 表示当前篇章不可得（仅作埋线展示，不可学）。
  */
+/* 主修功法演进线（考据核定 2026-06-11）：
+ * 长春功＝木属性纯练气功法，共十三层对应练气十三层，筑基后彻底失效；
+ * 韩立修至十一层服筑基丹筑基 → 主修换青元剑诀（亦木属性——道基行属不变）。
+ * 火弹术/御风诀/天眼术等小法术皆是长春功高层所授（太南小会购得后篇方可修）。 */
 DATA.techniques = {
   changchun: {
     name: "长春功", arc: "qixuan", attr: "mu", locked: false, grade: 1,
     grantSpells: ["tuna", "huti", "ningshen", "zhayan"],
-    desc: "墨大夫所授的木属性练气功法（黄阶下品）。资质要求低，正合你这四伪灵根；练至五层有过目不忘之效。",
-    origin: "墨大夫早年机缘所得，授予韩立。",
+    desc: "墨大夫所授的木属性练气功法（前篇，止于七层）。资质要求低，正合你这四伪灵根；练至五层有过目不忘之效。此功唯能修到练气圆满——筑基之后，便是它功成身退之日。",
+    origin: "墨大夫早年机缘所得（夺自余子童），授予韩立。",
+  },
+  changchun_full: {
+    name: "长春功 · 后篇", arc: "huangfeng", attr: "mu", locked: true, grade: 1,
+    grantSpells: ["tuna", "huti", "ningshen", "zhayan", "huodan"],
+    desc: "长春功八至十三层全本，并载火弹术、御风诀、天眼术等诸般小法术——凡人眼中已是仙法，修仙界里不过入门。修至十一层，便可服丹冲击筑基。",
+    origin: "太南小会上以丹药换得的全本（卖家：「你给多了，我们不占便宜。」）。",
+    acquireArc: "离门远行（太南小会）",
   },
   qingyuan_sword: {
-    name: "青元剑诀", arc: "huangfeng", attr: "jin", locked: true, grade: 3,
-    desc: "精元剑修之法（地阶），以反复散功重修、提纯灵力为门径，故同阶可越级斗法。",
-    origin: "黄枫谷篇：与董萱儿赴燕家堡前，师父李化元许给韩立；最终结合在血色禁地击杀封岳所得的书页而成。",
-    acquireArc: "黄枫谷篇（燕家堡 / 血色禁地）",
+    name: "青元剑诀", arc: "huangfeng", attr: "mu", locked: true, grade: 3,
+    desc: "青元子所创的木属性剑修功法。黄枫谷流传的只有九层（弟子多止步三层作辅修），韩立筑基后以此为主修——三层可发青元剑芒，五层护体剑盾，七层剑影分光。传闻完整剑诀共十三层，可修至化神。",
+    origin: "黄枫谷篇：筑基后李化元所赠；金色书页中藏着完整十三层法诀与青竹蜂云剑炼制之法。",
+    acquireArc: "黄枫谷篇（筑基之后）",
   },
   great_development: {
     name: "大衍诀", arc: "huangfeng", attr: "sense", locked: true, grade: 4,

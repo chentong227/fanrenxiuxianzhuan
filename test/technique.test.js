@@ -41,7 +41,9 @@ assert(!/great_development|大衍诀/.test(storySrc), "剧情脚本未在本篇�
 for (const [k, t] of Object.entries(DATA.techniques)) {
   assert(!!t.origin && !!t.name, `《${t.name}》标注了来历`);
 }
-assert(/血色禁地|封岳|燕家堡|董萱/.test(DATA.techniques.qingyuan_sword.origin), "青元剑诀来历含血色禁地/封岳/燕家堡（忠于动漫）");
+// v44 考据修正：青元剑诀=筑基后李化元所赠（九层版），金色书页藏完整十三层——
+// 此前"血色禁地杀封岳得书页"为误传，已勘正（lore: combat-arsenal-design §1.1）
+assert(/李化元|金色书页|筑基/.test(DATA.techniques.qingyuan_sword.origin), "青元剑诀来历含李化元/金色书页/筑基（忠于考据勘正）");
 assert(/千竹教|大衍|卧底|雷万鹤/.test(DATA.techniques.great_development.origin), "大衍诀来历含千竹教卧底/雷万鹤（忠于动漫）");
 
 // 品阶分级

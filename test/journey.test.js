@@ -124,28 +124,19 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
   assert(s.flags.mo_met, "投信完成（mo_met）");
   assert(s.metNpcs.includes("mocaihuan"), "墨彩环录入图鉴");
-  // 客居一月 → 独霸山庄上门
+  // 客居一月 → 宵小夜探（考据修正：动漫线无欧阳飞天战——墨府之危是氛围与远线，五色门在京城篇兑现）
   Engine.passTime(1);
   Engine.checkStory();
-  assert(s.pendingEvent === "mo_crisis", `客居月余，山庄欺门（${s.pendingEvent}）`);
-  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);   // 应战
-  assert(s.combat && Engine._combat, "欧阳飞天之战开打");
-  // 速胜两波（庄丁→欧阳）
-  let g2 = 0;
-  while (s.combat && Engine._combat && g2++ < 10) {
-    Engine._combat.enemies.forEach(e => { e.hp = 0; });
-    Engine._combat._checkEnd();
-    if (Engine._combat.status !== "ongoing") Engine._finishCombat();
-    else Engine._combat.endRound();
-  }
-  assert(s.flags.ouyang_dead, "欧阳飞天伏诛");
-  // 宝玉解毒 + 曲魂抉择（选留墨府）
+  assert(s.pendingEvent === "mo_crisis", `客居月余，宵小夜探（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.mo_warned, "墨府之危已现（mo_warned）");
+  // 宝玉解毒 + 曲魂留府（固定剧情：动漫线，铺曲魂夺舍/奇虫榜远线）
   Engine.checkStory();
   assert(s.pendingEvent === "mo_resolve", `暖阳宝玉一幕触发（${s.pendingEvent}）`);
   Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
   assert(s.flags.han_du_cured, "寒毒得解");
   assert(State.count("nuanyang_yu") === 1, "暖阳宝玉入袋");
-  assert(!s.sideUnit, "曲魂留墨府（侧位单位移交）");
+  assert(!s.sideUnit, "曲魂留墨府（固定剧情，侧位移交）");
   assert(s.ledger && s.ledger.quhun_left_mo, "因果账本记下曲魂之托");
 }
 

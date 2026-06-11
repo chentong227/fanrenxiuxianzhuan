@@ -1308,16 +1308,8 @@ const Engine = {
       (full ? "丹田之内灵力已近圆满，似可尝试突破。" : ""), lowMood ? "bad" : (full ? "good" : "event"));
     if (lowMood) Engine.toast("心境告急！闭关效率骤降，宜先打坐调息", true);
 
-    // 残页自悟·火弹术（考据：韩立在神手谷凭口诀自修火弹术等小法术）
-    // 练气四层+悟性达标后，闭关中可能参透墨大夫遗册夹页里的火行口诀——玩家侧第一个火技（克金的本命答案）
-    if (typeof Loadout !== "undefined" && !Loadout.knownPool(s).includes("huodan") && s.realmIndex >= 3 && s.flags.modafu_dead
-        && Math.random() < 0.18 + months * 0.02) {
-      Loadout.addKnownSkill(s, "huodan");
-      this.log("整理墨大夫遗册时，一页夹着的残笺飘落——竟是一篇「火弹术」口诀！你依诀试演，指尖火光一闪而逝。苦修月余，终于小成。（习得火弹术：火气灼金，金行强敌的本命答案——记得在「功法」中装备）", "good");
-      this.toast("残页自悟：火弹术");
-      this.addMilestone("残页自悟「火弹术」", "deed");
-      if (typeof Sfx !== "undefined") Sfx.play("success");
-    }
+    // （考据修正 2026-06-11：火弹术等小法术皆出自《长春功》后篇——
+    //   太南小会购得 changchun_full 研习后自然入池，不再有"残页自悟"径。）
 
     // 闭关插曲：时长越久，越可能在静室中生变（顿悟 / 走火入魔 / 外界变故 / 灵感枯滞）
     this._seclusionInterlude(months, gain);
@@ -1979,28 +1971,6 @@ const Engine = {
     return { name: null, taunt: null };
   },
 
-  // 墨府之危：独霸山庄欺门（离门远行·嘉元城）——庄丁开路，欧阳飞天压阵
-  startOuyangFight() {
-    const s = State.data;
-    this._nextFightType = "ouyang";
-    const player = this.playerFighter();
-    player.hp = s.hpMax; player.hpMax = s.hpMax;
-    const zd = Object.assign({}, WORLD.enemies.zhuangding);
-    const oy = this._applyDossier(Object.assign({}, WORLD.enemies.ouyang_feitian));
-    this._combat = new CombatAPI.Combat({
-      player,
-      enemies: [zd, Object.assign({}, zd)],
-      waves: [[oy]],
-      maxRounds: 18,
-      side: this.sideUnitFor("encounter"),
-    });
-    this._combatMeta = { type: "ouyang" };
-    s.combat = true;
-    this._combat.startRound();
-    this.log("独霸山庄欺上门来！庄丁仗着人多一拥而上——先清杂鱼，欧阳飞天还在后头压阵。", "bad");
-    UI.openCombat(this._combat, this._combatMeta);
-  },
-
   // 突破战：与瓶颈心魔对战（复用战斗引擎）
   startBreakthroughFight(opts = {}) {
     const s = State.data;
@@ -2241,24 +2211,6 @@ const Engine = {
         s.pendingEvent = "jinguang_fight";
         this._retryAfterLoss = "jinguang_fight";
       }
-    } else if (meta.type === "ouyang") {
-      if (win) {
-        State.setFlag("ouyang_dead");
-        this.log("欧阳飞天横尸当场，余众抱头鼠窜！独霸山庄百年威风，今日折在墨府门前——嘉元城里，再没人敢打墨家的主意。", "good");
-        this.addMilestone("嘉元城：铲除独霸山庄欧阳飞天", "showdown");
-        this.addFame(12, "墨府门前，独霸山庄庄主毙命");
-        s.mood = clamp(s.mood + 8, 0, s.moodMax);
-        s.storyStage += 1;   // mo_crisis → mo_resolve
-        this.checkStory();
-      } else {
-        const dmg = Math.round(s.hpMax * 0.4);
-        s.hp = clamp(s.hp - dmg, 1, s.hpMax);
-        s.flags.losses_ouyang = (s.flags.losses_ouyang || 0) + 1;
-        const bonus = Math.min(3, s.flags.losses_ouyang) * 8;
-        this.log(`欧阳飞天老辣狠戾，你失手负伤退入内院（气血-${dmg}）。墨府众人拼死掩护，对方暂且退去——但他们还会再来。你记下了他的招路（再战伤害+${bonus}%）。`, "bad");
-        s.pendingEvent = "mo_crisis";
-        this._retryAfterLoss = "mo_crisis";
-      }
     } else if (meta.type === "breakthrough") {
       this._resolveBreakthroughResult(win);
     }
@@ -2416,12 +2368,6 @@ const Engine = {
     if (choice.resolve === "jinguang_win") {
       s.pendingEvent = null;
       this.startJinguangFight();
-      return;
-    }
-    // 墨府之危：战独霸山庄（庄丁开路，欧阳飞天压阵）
-    if (choice.resolve === "ouyang_fight") {
-      s.pendingEvent = null;
-      this.startOuyangFight();
       return;
     }
 

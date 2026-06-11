@@ -1020,7 +1020,7 @@ const UI = {
   _npcIdByName(name) {
     if (!name) return null;
     // 剧情专属人物（不在大世界 NPC 名册中）
-    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "欧阳飞天": "ouyangfeitian" };
+    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan" };
     if (extra[name]) return extra[name];
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
       const n = WORLD.npcs.find(x => x.name === name);
