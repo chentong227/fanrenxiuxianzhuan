@@ -101,6 +101,7 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   s.storyStage = sandbox.STORY.findIndex(st => st.id === "mo_arrive");   // 直接对位嘉元城章节
   s.flags.arc1_complete = true;
   s.flags.han_du = true;
+  State.give("shengxian_ling", 1);   // 七玄门篇通关所得（测试跳过 arc_end，手动补发）
   s.realmIndex = 5; s.hp = 120; s.hpMax = 120; s.silver = 40;
   s.sideUnit = { id: "zhangtie_corpse", name: "铁奴·张铁", hp: 70, hpMax: 70, atk: 12,
                  atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
@@ -180,6 +181,68 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   assert(sandbox.Loadout.knownPool(s).includes("huodan"), "火弹术随后篇入池（考据：小法术尽出于此）");
   const after = Engine.canBreakthrough();
   assert(after.ok, "习得后篇：八层之路开启");
+
+  // —— 站四：升仙大会收官（同道首战→日历锚→落选→复仇→入谷）——
+  s.activeChapter = "qixuan";   // 回到离门远行流程
+  // 同道首战：万小山搭伴探山（会期前1月窗口开）
+  while (State.absMonth() < (s.flags.xianhui_due || 0) - 1) Engine.passTime(1);
+  Engine.checkStory();
+  assert(s.pendingEvent === "wan_hunt", `搭伴探山触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.combat && Engine._combat && Engine._combat.side && Engine._combat.side.kind === "ally",
+    "同道参战：万小山在侧（ally 架构）");
+  // 验证同道自动出手
+  const wolfHp0 = Engine._combat.enemies[0].hp;
+  Engine._combat.endRound();
+  // 速胜
+  let g4 = 0;
+  while (s.combat && Engine._combat && g4++ < 10) {
+    Engine._combat.enemies.forEach(e => { e.hp = 0; });
+    Engine._combat._checkEnd();
+    if (Engine._combat.status !== "ongoing") Engine._finishCombat();
+    else Engine._combat.endRound();
+  }
+  assert(s.flags.wan_hunt_done && s.ledger.wan_hunt_together, "并肩之战入账本");
+  // 日历锚：等到会期
+  while (State.absMonth() < s.flags.xianhui_due) Engine.passTime(1);
+  Engine.checkStory();
+  assert(s.pendingEvent === "xianhui_open", `会期已至，升仙大会触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.xianhui_done, "测灵璧落选（伪灵根）");
+  // 万小山之死 → 复仇战
+  Engine.checkStory();
+  assert(s.pendingEvent === "wan_death", `林间血案触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.combat && Engine._combat && Engine._combat.enemies.length === 2, "复仇战开打（二人当面，一人遁走）");
+  assert(s.ledger.sanxiu_escaped, "遁走者入账（远雷）");
+  let g5 = 0;
+  while (s.combat && Engine._combat && g5++ < 10) {
+    Engine._combat.enemies.forEach(e => { e.hp = 0; });
+    Engine._combat._checkEnd();
+    if (Engine._combat.status !== "ongoing") Engine._finishCombat();
+    else Engine._combat.endRound();
+  }
+  assert(s.flags.wan_avenged, "血债已收（wan_avenged）");
+  // 入谷收官
+  Engine.checkStory();
+  assert(s.pendingEvent === "xianhui_end", `升仙令入谷触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.departure_complete, "离门远行 · 完");
+  // 启程黄枫谷 → 篇章切换
+  Engine.startJourney("huangfeng");
+  let g6 = 0;
+  while ((s.journey || Engine._pendingFortune) && g6++ < 40) {
+    if (Engine._pendingFortune) { Engine.chooseFortune(0); continue; }
+    if (s.combat && Engine._combat) {
+      Engine._combat.enemies.forEach(e => { e.hp = 0; });
+      Engine._combat._checkEnd();
+      Engine._finishCombat();
+      continue;
+    }
+    break;
+  }
+  assert(s.location === "huangfeng_gate", `抵达黄枫谷外门（${s.location}）`);
+  assert(s.flags.huangfeng_entered && s.activeChapter === "huangfeng", "黄枫谷篇 · 启（章节切换）");
 }
 
 console.log("\n=== 6. 拜别版回乡（离门远行）===");

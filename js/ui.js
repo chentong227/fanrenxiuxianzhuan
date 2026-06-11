@@ -1921,12 +1921,15 @@ const UI = {
     const hpPct = Math.max(0, p.hp / p.hpMax * 100);
     const shieldPct = p.shield ? Math.min(100, p.shield / p.hpMax * 100) : 0;
     const hurl = (typeof Art !== "undefined") ? Art.url("hanli") : null;
-    // 侧位单位（尸傀/灵宠）：主人身侧的窄卡
+    // 侧位单位（尸傀/灵宠/同道）：主人身侧的窄卡
+    const isAlly = c.side && c.side.kind === "ally";
     const sideHtml = c.side ? `<div class="combatant side-unit ${c.side.hp > 0 ? '' : 'dead'}">
+      ${isAlly && c.side.art && typeof Art !== "undefined" && Art.url(c.side.art)
+        ? `<div class="cfigure side-fig"><img src="${Art.url(c.side.art)}" alt="" /></div>` : ""}
       <div class="cinfo">
-        <div class="cname"><b>${c.side.name}</b><span class="ctag">${c.side.hp > 0 ? '随行' : '倒地'}</span></div>
+        <div class="cname"><b>${c.side.name}</b><span class="ctag">${c.side.hp > 0 ? (isAlly ? '同道' : '随行') : (isAlly ? '重伤退场' : '倒地')}</span></div>
         <div class="cbar"><div class="cbar-fill side" style="width:${Math.max(0, c.side.hp / c.side.hpMax * 100)}%"></div></div>
-        <div class="cbar-num">躯体 ${Math.max(0, Math.round(c.side.hp))}/${c.side.hpMax}</div>
+        <div class="cbar-num">${isAlly ? '气血' : '躯体'} ${Math.max(0, Math.round(c.side.hp))}/${c.side.hpMax}</div>
       </div>
     </div>` : "";
     this.el("combat-player").innerHTML = `<div class="combatant self">

@@ -182,21 +182,37 @@
       this._rollEnemyIntents();
     }
 
-    /* ----- 侧位单位行动（玩家回合结束后自动出手）----- */
+    /* ----- 侧位单位行动（玩家回合结束后自动出手）-----
+     * kind: corpse尸傀/pet灵宠/puppet傀儡（轴4）| ally同道（伙伴参战——人类同行者，
+     * 万小山/南宫婉等。同一架构换皮：行动有人味文案，倒下是重伤退场不是损毁）。 */
     _sideAct() {
       const s = this.side;
       if (!s || s.hp <= 0) return;
       const ti = this._firstAliveEnemy();
       if (ti < 0) return;
       const target = this.enemies[ti];
-      let dmg = s.atk || 8;
-      const eMul = elemMul(s.elem, target.elem);
+      // 同道有多招：按权重轮换（带文案的简化技能表 moves: [{name, dmg, weight, line?}]）
+      let mv = null;
+      if (s.moves && s.moves.length) {
+        const sum = s.moves.reduce((a, m) => a + (m.weight || 10), 0);
+        let r = this.rng() * sum;
+        mv = s.moves[0];
+        for (const m of s.moves) { r -= (m.weight || 10); if (r <= 0) { mv = m; break; } }
+      }
+      let dmg = mv ? mv.dmg : (s.atk || 8);
+      const elem = mv && mv.elem !== undefined ? mv.elem : s.elem;
+      const eMul = elemMul(elem, target.elem);
       const sMul = (s.slays && target.nature && s.slays[target.nature]) || 1;
       dmg = Math.round(dmg * eMul * sMul);
-      if (target.soulOnly && !s.soulTouch) { this._log(`${s.name} 扑向 ${target.name}，却穿身而过——元神无形，蛮力无用。`); return; }
-      const r = target.takeDamage(dmg, { soul: !!s.soulTouch });
+      if (target.soulOnly && !s.soulTouch) { this._log(`${s.name} 攻向 ${target.name}，却如击虚空——元神无形，此路不通。`); return; }
+      const r = target.takeDamage(dmg, { soul: !!s.soulTouch, pierce: mv && mv.pierce });
       this._stat(s.name, r.dealt);
-      this._log(`${s.name} 使「${s.atkName || "扑击"}」，对 ${target.name} 造成 ${r.dealt} 伤害` + (eMul > 1 ? "（克制）" : ""));
+      const moveName = mv ? mv.name : (s.atkName || "扑击");
+      if (s.kind === "ally") {
+        this._log(`${s.name} ${mv && mv.line ? mv.line : `祭出「${moveName}」`}，对 ${target.name} 造成 ${r.dealt} 伤害！` + (eMul > 1 ? "（克制）" : ""));
+      } else {
+        this._log(`${s.name} 使「${moveName}」，对 ${target.name} 造成 ${r.dealt} 伤害` + (eMul > 1 ? "（克制）" : ""));
+      }
       this._emitFx(`enemy:${ti}`, "dmg", r.dealt);
       this._checkEnd();
     }
@@ -589,14 +605,16 @@
         return;
       }
       if (a.kind === "release") e._charging = null; // 释放完毕
-      // 侧位单位挡刀：尸傀/灵宠扑上去替主人挨这一下（嘲讽率掷骰）
+      // 侧位单位挡刀：尸傀/灵宠扑上去替主人挨这一下（嘲讽率掷骰）；同道则是为你分担
       if (this.side && this.side.hp > 0 && this.rng() < (this.side.guard || 0)) {
         let sdmg = a.dmg || 8;
         if (a.elem && this.side.elem) sdmg = Math.round(sdmg * elemMul(a.elem, this.side.elem));
         this.side.hp = clampNum(this.side.hp - sdmg, 0, this.side.hpMax);
-        this._log(`${this.side.name} 横身挡下「${a.name}」，代受 ${sdmg} 伤（${Math.max(0, this.side.hp)}/${this.side.hpMax}）`);
+        this._log(`${this.side.name} ${this.side.kind === "ally" ? "侧身替你接下" : "横身挡下"}「${a.name}」，代受 ${sdmg} 伤（${Math.max(0, this.side.hp)}/${this.side.hpMax}）`);
         this._emitFx("side", "hurt", sdmg);
-        if (this.side.hp <= 0) this._log(`${this.side.name} 轰然倒地，再难动弹——战后须得修缮。`);
+        if (this.side.hp <= 0) this._log(this.side.kind === "ally"
+          ? `${this.side.name} 身负重伤，踉跄退出了战圈——「韩兄……剩下的，看你的了！」`
+          : `${this.side.name} 轰然倒地，再难动弹——战后须得修缮。`);
         return;
       }
       let dodge = (this.player.dodgeBuff || 0) + (this.player.agility || 0) / 100;

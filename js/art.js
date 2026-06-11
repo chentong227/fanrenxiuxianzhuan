@@ -24,8 +24,8 @@
     qingniu: 1, road: 1, shanmen: 1, miju: 1,
     // 大陆层舆图（地理考据：镜州西北/建州太岳山脉/岚州南部/东临海）
     tiannan_map: 1,
-    // 离门远行章
-    jiayuan_city: 1, tainan_fair: 1,
+    // 离门远行章 + 黄枫谷
+    jiayuan_city: 1, tainan_fair: 1, huangfeng_gate: 1,
   };
 
   // 关键剧情 CG 大图（assets/cg_<id>.png）：生成入库后在此登记

@@ -583,6 +583,9 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .combatant.side-unit .cname b { font-size: 12.5px; color: #cfc2a8; }
 .combatant.side-unit .cname .ctag { color: var(--ink-dim); }
 .combatant.side-unit.dead { opacity: .45; filter: grayscale(.8); }
+.combatant.side-unit .cfigure.side-fig { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; flex: none; border: 1px solid rgba(140,120,90,.4); }
+.combatant.side-unit .cfigure.side-fig img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.combatant.side-unit { display: flex; gap: 8px; align-items: center; }
 .cbar-fill.side { background: linear-gradient(90deg,#4a4338,#8a7c62); }
 
 /* 侧位随行条（行动页）：尸傀状态一目了然 */

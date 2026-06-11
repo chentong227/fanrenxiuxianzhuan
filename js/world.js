@@ -125,7 +125,20 @@ WORLD.locations = [
     desc: "太南山深谷中的修仙者集市。摊位上灵光隐现，往来者皆遮掩行藏——凡人勿近之地，你头一回置身真正的修仙人之间。",
     travelCost: 1,
     map: { x: 50, y: 60 },
-    actions: ["fair", "rest"],
+    actions: ["fair", "rest", "cultivate"],
+    encounters: [],
+  },
+
+  /* —— 黄枫谷 · 外门居所（驻地章入口——百药园三年的主场，主体下版本铺开）—— */
+  {
+    id: "huangfeng_gate",
+    arc: "huangfeng",
+    name: "黄枫谷 · 外门居所",
+    desc: "太岳山脉深处的仙家洞天。你领了外门弟子的居所与一身青衫——百药园的差事、筑基丹的恩怨，都在前头等着。",
+    travelCost: 1,
+    map: { x: 50, y: 40 },
+    home: true,
+    actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
     encounters: [],
   },
 ];
@@ -148,9 +161,11 @@ WORLD.continent = {
       desc: "镜州第二大山，原名落凤山——传说古时一头五色彩凤落于此地，化作此山。七玄门据此百年，是你修仙路的起点。" },
     { id: "qingniu",  name: "青牛镇",  pos: { x: 26, y: 31 }, locs: [],
       desc: "七玄门治下的小镇，你的家乡就在镇郊五里沟。爹娘的白发，几亩薄田。", months: 1, danger: "低", visit: "home" },
-    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: [],
+    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate"],
       desc: "越国七大仙门之一，居建州太岳山脉深处——此山脉连绵数千里，北接元武国。升仙令在手，此处便是你的去处。", months: 3, danger: "高",
-      gate: (s) => State.count("shengxian_ling") > 0 ? (s.flags.arc1_complete ? null : "七玄门之事未了") : "无升仙令者，仙门不纳" },
+      gate: (s) => State.count("shengxian_ling") > 0
+        ? (s.flags.departure_complete ? null : (s.flags.arc1_complete ? "升仙大会未了（太南谷）——仙门入谷自有章程" : "七玄门之事未了"))
+        : "无升仙令者，仙门不纳" },
     { id: "yuejing",  name: "越京",    pos: { x: 34, y: 50 }, locs: [],
       desc: "越国京城，凡俗繁华之极。郊外白菊山是赏景名胜。", months: 2, danger: "低",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },

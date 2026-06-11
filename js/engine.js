@@ -1128,6 +1128,14 @@ const Engine = {
     // 有地区层的节点：落脚其首地点
     if (node && node.locs && node.locs.length) {
       s.location = node.locs[0];
+      // 黄枫谷：入谷即开新篇（驻地章——百药园三年的主场）
+      if (node.id === "huangfeng" && !s.flags.huangfeng_entered) {
+        State.setFlag("huangfeng_entered");
+        if (typeof Chapters !== "undefined") { Chapters.unlock("huangfeng"); s.activeChapter = "huangfeng"; }
+        this.log("【黄枫谷篇 · 启】青石阶尽头，仙鹤掠过山门。接引修士领你登记名册、发放青衫与居所腰牌——「外门弟子韩立，先去百药园报到吧。」（本篇主线：百药园三年/筑基丹恩怨/血色禁地——后续版本陆续开放。当下练气八层之路已开，洞府诸事可自由经营。）", "event");
+        this.addMilestone("入黄枫谷：外门弟子", "breakthrough");
+        this.toast("黄枫谷篇 · 启（练气上限已放开至十三层）");
+      }
       State.save(); UI.renderAll();
       return;
     }
@@ -2082,6 +2090,59 @@ const Engine = {
     return { name: null, taunt: null };
   },
 
+  // 复仇战（升仙大会后）：杀害万小山的散修——同阶之争，你无敌（爽文公理：
+  // 韩立的"险"永远来自高阶场合；回到同阶视角，他就是碾压）
+  startRevengeFight() {
+    const s = State.data;
+    this._nextFightType = "revenge";
+    const player = this.playerFighter();
+    const mk = (name, hp, atk) => ({
+      name, hp, sense: 5, speed: 9, agility: 4, qiLayer: 3, elem: "tu", tactics: "cunning",
+      attacks: [
+        { name: "法器斩", dmg: atk, kind: "normal", weight: 12, elem: "tu" },
+        { name: "土遁刺", dmg: atk - 3, kind: "pierce", weight: 6, elem: "tu" },
+      ],
+    });
+    this._combat = new CombatAPI.Combat({
+      player,
+      enemies: [mk("刀疤散修", 95, 16), mk("瘦高散修", 85, 14)],
+      maxRounds: 16,
+    });
+    this._combatMeta = { type: "revenge" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("三人中最年轻的那个看清你的眼神，掉头就跑——剩下两人狞笑着围了上来。");
+    this.log("【复仇】杀万小山者，二人当面，一人遁走。先收眼前的账。", "bad");
+    this.writeLedger("sanxiu_escaped", "杀万小山的第三名散修当场遁走");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
+  startWanHunt() {
+    const s = State.data;
+    if (s.flags.wan_hunt_done) return;
+    State.setFlag("wan_hunt_done");
+    const player = this.playerFighter();
+    const wolf = Object.assign({}, WORLD.enemies.wild_wolf, { hp: 75 });
+    this._combat = new CombatAPI.Combat({
+      player,
+      enemies: [wolf, Object.assign({}, WORLD.enemies.wild_wolf)],
+      maxRounds: 14,
+      side: { id: "wanxiaoshan", name: "万小山", kind: "ally", art: "wanxiaoshan",
+              hp: 60, hpMax: 60, guard: 0.15, elem: "huo",
+              moves: [
+                { name: "火球术", dmg: 11, weight: 12, elem: "huo", line: "搓出一颗火球砸去" },
+                { name: "符纸·小火蛇", dmg: 15, weight: 5, elem: "huo", line: "肉痛地拍出一张符纸——「这张可值钱了！」" },
+              ] },
+    });
+    this._combatMeta = { type: "wanhunt" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("万小山把行囊往树上一挂：「韩兄站我右边！我家传的火球术，照妖兽脸上招呼！」");
+    this.log("等会期的日子里，万小山拉你搭伴进山采药——撞上了狼群。头一回，有人和你并肩而战。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 突破战：与瓶颈心魔对战（复用战斗引擎）
   startBreakthroughFight(opts = {}) {
     const s = State.data;
@@ -2322,6 +2383,40 @@ const Engine = {
         s.pendingEvent = "jinguang_fight";
         this._retryAfterLoss = "jinguang_fight";
       }
+    } else if (meta.type === "wanhunt") {
+      if (win) {
+        State.give("lingcao", 3);
+        this.log("狼群伏诛。万小山一屁股坐在地上直喘，又突然跳起来翻检狼尸：「狼皮！狼皮也值钱！」——说好的五五分账，他硬把六成塞给了你（灵草+3）。", "good");
+        this.writeLedger("wan_hunt_together", "与万小山并肩战过一场（山道狼群）");
+        this.addMilestone("搭伴探山：头一回有人与你并肩", "deed");
+      } else {
+        s.hp = clamp(Math.max(1, s.hp), 1, s.hpMax);
+        this.log("狼群势凶，万小山拽着你且战且退，总算脱身——他还在自责火球术练得不精。改日再来。", "bad");
+        s.flags.wan_hunt_done = false;   // 可再来（轻战斗不设惩罚）
+        s.pendingEvent = null;
+        s.storyStage = Math.max(0, s.storyStage);   // 停留本节点重试
+        this._retryAfterLoss = "wan_hunt";
+      }
+      if (win) { s.storyStage += 1; this.checkStory(); }
+    } else if (meta.type === "revenge") {
+      if (win) {
+        State.setFlag("wan_avenged");
+        this.log("两名散修毙命当场。你从他们身上搜出万小山的灵石，一块不少地放回他的行囊——他攥着的那半张符纸，你轻轻取了下来。", "event");
+        this.addMilestone("林间血债：为万小山复仇（一人遁走）", "showdown");
+        if (this.readLedger("wan_friend")) {
+          this.settleLedger("wan_friend", "他曾在集市上把第一张符纸让给你——今日你以两条人命，还了这份热乎气");
+        }
+        s.mood = clamp(s.mood - 6, 0, s.moodMax);   // 复仇不痛快——故人已逝
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        const dmg = Math.round(s.hpMax * 0.35);
+        s.hp = clamp(s.hp - dmg, 1, s.hpMax);
+        s.flags.losses_revenge = (s.flags.losses_revenge || 0) + 1;
+        this.log(`你怒火攻心、出手失了章法，反被二人合击所伤（气血-${dmg}）。冷静……万小山等得起你调息再来。`, "bad");
+        s.pendingEvent = "wan_death";
+        this._retryAfterLoss = "wan_death";
+      }
     } else if (meta.type === "breakthrough") {
       this._resolveBreakthroughResult(win);
     }
@@ -2443,13 +2538,19 @@ const Engine = {
     if (!next) return { title: "逍遥自在", hint: "本篇主线已了，你可继续自由修行。" };
     const condOk = !next.cond || next.cond(s);
     const locName = next.where ? (WORLD.locations.find(l => l.id === next.where) || {}).name : null;
+    // 日历锚倒计时：天命有日子的，把日子亮出来（锚-帆模型：必须做的事永远可见）
+    let hint = typeof next.objHint === "function" ? next.objHint(s) : next.objHint;
+    if (next.id === "xianhui_open" && s.flags.xianhui_due) {
+      const left = s.flags.xianhui_due - State.absMonth();
+      if (left > 0) hint = `升仙大会还有 ${left} 月开——在太南谷等到会期（修炼/赶集度月皆可）。`;
+    }
     if (!condOk) {
-      return { title: next.objTitle || "静待时机", hint: next.objHint || "继续修炼、历练，时机未到。" };
+      return { title: next.objTitle || "静待时机", hint: hint || "继续修炼、历练，时机未到。" };
     }
     if (next.where && next.where !== s.location) {
       return { title: next.objTitle || "前往", hint: `时机已至——前往「${locName}」即有际遇。` };
     }
-    return { title: next.objTitle || "际遇将至", hint: "条件已足，留意眼前之事。" };
+    return { title: next.objTitle || "际遇将至", hint: hint || "条件已足，留意眼前之事。" };
   },
   playStage(stage) {
     const s = State.data;
@@ -2486,6 +2587,19 @@ const Engine = {
     if (choice.effect) {
       const r = choice.effect(s) || {};
       if (r.text) this.log(r.text, r.kind || "event");
+    }
+
+    // 复仇战：万小山之仇（三散修——同阶之争你无敌；第三人遁走是远雷）
+    if (choice.resolve === "revenge_fight") {
+      s.pendingEvent = null;
+      this.startRevengeFight();
+      return;
+    }
+    // 搭伴探山：同道系统首战（万小山并肩）
+    if (choice.resolve === "wan_hunt_fight") {
+      s.pendingEvent = null;
+      this.startWanHunt();
+      return;
     }
 
     // 普通推进
