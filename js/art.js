@@ -20,6 +20,7 @@
     xiaosuanpan: 1, jiatianlong: 1, jinguang: 1,
     nongfu: 1, sanxiu: 1, langzhong: 1, biaoshi: 1, langhao: 1,
     sanshu: 1, tienu: 1, mocaihuan: 1, wanxiaoshan: 1,
+    wushishu: 1, luyunfeng: 1, yeshishu: 1, mashibo: 1,
   };
   // 已生成的表情变体：{ 人物id: { 表情名: 1 } }
   const EMOS = {
@@ -35,6 +36,7 @@
     yaolu: { p: 1 }, houshan: { p: 1 }, town: { p: 1 }, wuting: { p: 1 },
     qingniu: { p: 1 }, road: { p: 1 }, shanmen: { p: 1 }, miju: { p: 1 },
     jiayuan_city: { p: 1 }, tainan_fair: { p: 1 }, huangfeng_gate: { p: 1 },
+    baiyao_yuan: {},
   };
 
   // 剧情 CG（p:1 = 竖版已生成）

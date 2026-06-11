@@ -243,6 +243,31 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   }
   assert(s.location === "huangfeng_gate", `抵达黄枫谷外门（${s.location}）`);
   assert(s.flags.huangfeng_entered && s.activeChapter === "huangfeng", "黄枫谷篇 · 启（章节切换）");
+
+  // —— 黄枫谷 · 入谷四连（吴师叔→夺丹→掌门→百药园）——
+  Engine.checkStory();
+  assert(s.pendingEvent === "hf_arrive", `吴师叔领入谷触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.hf_arrived && s.metNpcs.includes("wushishu") && s.ledger.wu_kindness, "吴师叔提点之恩入册");
+  Engine.checkStory();
+  assert(s.pendingEvent === "hf_duodan", `夺丹一幕触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.zhuji_dan_stolen && s.ledger.zhuji_dan_grudge, "筑基丹得而复失（恨点入账）");
+  assert(s.metNpcs.includes("luyunfeng") && s.metNpcs.includes("yeshishu"), "陆云风/叶师叔入图鉴");
+  Engine.checkStory();
+  assert(s.pendingEvent === "hf_zhangmen", `掌门殿一幕触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.zhangmen_seen && s.ledger.zhangmen_no_justice, "掌门无公道入账");
+  Engine.checkStory();
+  assert(s.pendingEvent === "hf_yaoyuan", `百药园一幕触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.yaoyuan_started && s.ledger.ma_approval, "百药园差事开启+马师伯认可");
+  // 药园差事一轮（本分打理）
+  const alchBefore = (s.skills && s.skills.alchemy) || 0;
+  Engine.yaoyuanWork();
+  assert(!!Engine._pendingFortune, "差事抉择弹出");
+  Engine.chooseFortune(0);
+  assert(((s.skills && s.skills.alchemy) || 0) === alchBefore + 1, "本分打理：药理+1（嗑瓜子产出）");
 }
 
 console.log("\n=== 6. 拜别版回乡（离门远行）===");

@@ -129,16 +129,27 @@ WORLD.locations = [
     encounters: [],
   },
 
-  /* —— 黄枫谷 · 外门居所（驻地章入口——百药园三年的主场，主体下版本铺开）—— */
+  /* —— 黄枫谷（驻地章主场）：外门居所（修行）+ 百药园（差事/大帆主轴）—— */
   {
     id: "huangfeng_gate",
     arc: "huangfeng",
     name: "黄枫谷 · 外门居所",
     desc: "太岳山脉深处的仙家洞天。你领了外门弟子的居所与一身青衫——百药园的差事、筑基丹的恩怨，都在前头等着。",
     travelCost: 1,
-    map: { x: 50, y: 40 },
+    map: { x: 38, y: 36 },
     home: true,
     actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
+    encounters: [],
+  },
+  {
+    id: "baiyao_yuan",
+    arc: "huangfeng",
+    name: "黄枫谷 · 百药园",
+    desc: "谷东南向阳坡上的灵田药园，一畦畦灵草顺山势铺开。你的差事、你的私种、园角那间无人过问的旧丹房——三年家底，都从这里长出来。",
+    travelCost: 1,
+    map: { x: 64, y: 58 },
+    unlock: (s) => s.flags.yaoyuan_started,
+    actions: ["yaoyuan", "gather", "rest"],
     encounters: [],
   },
 ];
@@ -161,7 +172,7 @@ WORLD.continent = {
       desc: "镜州第二大山，原名落凤山——传说古时一头五色彩凤落于此地，化作此山。七玄门据此百年，是你修仙路的起点。" },
     { id: "qingniu",  name: "青牛镇",  pos: { x: 26, y: 31 }, locs: [],
       desc: "七玄门治下的小镇，你的家乡就在镇郊五里沟。爹娘的白发，几亩薄田。", months: 1, danger: "低", visit: "home" },
-    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate"],
+    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate", "baiyao_yuan"],
       desc: "越国七大仙门之一，居建州太岳山脉深处——此山脉连绵数千里，北接元武国。升仙令在手，此处便是你的去处。", months: 3, danger: "高",
       gate: (s) => State.count("shengxian_ling") > 0
         ? (s.flags.departure_complete ? null : (s.flags.arc1_complete ? "升仙大会未了（太南谷）——仙门入谷自有章程" : "七玄门之事未了"))
@@ -360,6 +371,30 @@ WORLD.npcs = [
     bio: "修仙世家出身的年轻散修，心善热忱，不谙世事。太南小会上主动为你这个「雏儿」讲解修仙界的门道——他是你在修仙界遇到的第一个好人。",
     lines: ["韩兄，这摊上的符纸是真货，那摊的「灵丹」可千万别碰！", "我家祖上也阔过，传到我这辈就剩这点家底啦，哈哈。", "修仙人多凉薄，韩兄是个例外。"],
     where: ["tainan_fair"], cond: (s) => s.flags.wan_met,
+  },
+  {
+    id: "wushishu", name: "吴师叔", role: "黄枫谷 · 引路前辈",
+    bio: "领新弟子入谷的温和前辈，筑基初期。不嫌你伪灵根，处处提点——夺丹之日，满殿只有他为你出过头。谷中第一个对你好的人。",
+    lines: ["本分修行，谁也难为不了你。", "丹田里的气走岔了就来寻我，别硬挺。", "叶师叔那边……你少去招惹，听我的。"],
+    where: ["huangfeng_gate"], cond: (s) => s.flags.hf_arrived,
+  },
+  {
+    id: "luyunfeng", name: "陆云风", role: "黄枫谷 · 内门弟子",
+    bio: "锦袍倨傲的内门弟子。太南小会上被你抢先换走法宝残片，怀恨至今；执事殿发难欲夺你的筑基丹未遂。睚眦必报之人——这道梁子，结得不浅。",
+    lines: ["（他斜睨你一眼，嗤笑着别过头去）", "四灵根的杂役，也配走在这条道上？"],
+    where: ["huangfeng_gate"], cond: (s) => s.flags.zhuji_dan_stolen && !s.flags.luyunfeng_dead,
+  },
+  {
+    id: "yeshishu", name: "叶师叔", role: "黄枫谷 · 长老",
+    bio: "鹰目薄唇的青袍老者，筑基中期。借「调解」之名换走你的筑基丹，满殿无人敢言。深谋老辣，在谷中树大根深——你直觉此人藏着更深的东西。",
+    lines: ["（他从廊下踱过，目光在你身上停了一瞬，意味难明）"],
+    where: ["huangfeng_gate"], cond: (s) => s.flags.zhuji_dan_stolen && !s.flags.yeshishu_dead,
+  },
+  {
+    id: "mashibo", name: "马师伯", role: "百药园 · 管园",
+    bio: "黑瘦干瘪的看园老者，刀子嘴豆腐心。你初到便凭药理让他另眼相看，把心尖子的青元参苗交了给你。对药草是真心，对人——大概也是。",
+    lines: ["参苗盖草帘了没有？没盖就滚去盖。", "你这手辨药的功夫，跟哪个学的……还行。", "例钱在房梁上，自己取，少一个子儿算老夫的。"],
+    where: ["baiyao_yuan"], cond: (s) => s.flags.yaoyuan_started,
   },
   { id: "langzhong", name: "走方郎中", role: "凡俗医者", bio: "走街串巷的凡俗大夫，医术平平却见多识广。", lines: ["客官面色不佳，可要抓副药？"], where: ["town"] },
   { id: "biaoshi", name: "镖局趟子手", role: "押镖汉子", bio: "替商队押镖的江湖汉子，刀口舔血讨生活。", lines: ["这年头跑镖，最怕撞上野狼帮的人。"], where: ["town"] },

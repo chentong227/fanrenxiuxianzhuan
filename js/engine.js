@@ -537,6 +537,7 @@ const Engine = {
     else if (action === "spar") this.spar();
     else if (action === "market") { UI.openMarket(); return; }
     else if (action === "fair") { UI.openFair(); return; }
+    else if (action === "yaoyuan") { this.yaoyuanWork(); return; }
     else if (action === "alchemy") this.alchemy();
     else if (action === "investigate") this.investigate();
     else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
@@ -650,6 +651,64 @@ const Engine = {
     State.save();
     UI.renderAll();
     UI.openMarket();
+  },
+
+  /* -------- 百药园差事（黄枫谷大帆主轴）：月月有产出的嗑瓜子循环 --------
+   * 产出：例钱灵石+药草+药理熟练度+马师伯人情（暗涨）；
+   * 「夹带私种」：以谷田种自己的草——高产但有巡查风险（账本计次，过线有事端）。 */
+  _YAOYUAN_FLAVOR: [
+    "晨雾未散，你赤脚踩进灵田引泉。水声潺潺里，新芽顶开了腐叶。",
+    "捉了一上午的青叶虫，指尖染了一层药香，洗都洗不掉。",
+    "马师伯背着手巡园，在你那畦参苗前站了半晌，什么也没说——这就是夸了。",
+    "午后骤雨，你抢在雨前给娇贵的灵苗盖上草帘，淋了个透湿。",
+    "你按《百草谱》试着给一畦老株换土，竟真救活了——有些门道，书上写的是真有用。",
+    "邻畦的师兄又把灵泉引漏了，你顺手替他堵上。他塞给你两个灵果，咧嘴一笑。",
+    "夜里巡园，月光落在药田上，满园灵草微微泛光——这景象，凡人一辈子也见不着。",
+  ],
+  yaoyuanWork() {
+    const s = State.data;
+    if (!s.flags.yaoyuan_started) { this.toast("尚未领百药园差事"); return; }
+    const self = this;
+    this._pendingFortune = {
+      title: "百药园 · 当月差事",
+      text: "一畦畦灵田铺到坡顶，露水压着药香。这个月，怎么干？",
+      choices: [
+        {
+          text: "本分打理（例钱+药草+药理）",
+          effect(sd) {
+            self.passTime(1);
+            sd.silver += 2;
+            if (Math.random() < 0.5) State.give("lingshi", 1);
+            State.give("lingcao", 1 + (Math.random() < 0.4 ? 1 : 0));
+            sd.skills = sd.skills || {}; sd.skills.alchemy = (sd.skills.alchemy || 0) + 1;
+            const flavor = self._YAOYUAN_FLAVOR[Math.floor(Math.random() * self._YAOYUAN_FLAVOR.length)];
+            return { text: `${flavor}\n\n月底结算：例钱纹银+2${State.count("lingshi") ? "、灵石碎些许" : ""}、灵草入袋，药理+1。马师伯的脸色，又松快了一分。`, kind: "good" };
+          },
+        },
+        {
+          text: "夹带私种（高产，有巡查风险）",
+          hint: "以谷田之利种自己的草——账，是会记下的",
+          effect(sd) {
+            self.passTime(1);
+            sd.silver += 2;
+            State.give("lingcao", 3);
+            if (Math.random() < 0.35) State.give("duyao_cao", 1);
+            sd.skills = sd.skills || {}; sd.skills.alchemy = (sd.skills.alchemy || 0) + 1;
+            sd.flags.yaoyuan_private = (sd.flags.yaoyuan_private || 0) + 1;
+            const n = sd.flags.yaoyuan_private;
+            if (n === 3) Engine.writeLedger("yaoyuan_overharvest", "在百药园多次夹带私种（谷规不容）");
+            const risk = n >= 3 && Math.random() < 0.3;
+            if (risk) {
+              return { text: "你在园角自留地里又埋下一批种子——直起腰时，马师伯就站在田埂上。\n\n他盯着你看了很久，最后只说了一句：「苗，别种到老夫的参畦边上。」转身走了。\n\n（他知道了。他没报上去——这份人情，比例钱重得多。）", kind: "bad" };
+            }
+            return { text: "你借着引泉的便利，把自家的种子混进了边角田。谷里的灵泉灵土不要钱似的滋养着它们——长势比小绿瓶催的也不差多少。\n\n（灵草+3，药理+1。账本上，这是第" + n + "笔私账。）", kind: "event" };
+          },
+        },
+      ],
+    };
+    State.save();
+    UI.renderAll();
+    UI.openFortune(this._pendingFortune);
   },
 
   /* -------- 太南小会（离门远行）：修仙者集市——正反馈密集地 -------- */

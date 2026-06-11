@@ -563,7 +563,7 @@ const UI = {
     const labels = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
-      explore: "深入探索", wujian: "闭关悟剑 ⚔",
+      explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
@@ -1065,7 +1065,8 @@ const UI = {
   _npcIdByName(name) {
     if (!name) return null;
     // 剧情专属人物（不在大世界 NPC 名册中）
-    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan" };
+    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan",
+      "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo" };
     if (extra[name]) return extra[name];
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
       const n = WORLD.npcs.find(x => x.name === name);
