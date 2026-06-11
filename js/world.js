@@ -103,6 +103,39 @@ WORLD.locations = [
   },
 ];
 
+/* ---------- 大陆层（world-architecture L0）：天南 · 越国一带 ----------
+ * 铁律：全图早见（远方=惦记），限制可达的不是迷雾是旅途成本。
+ * 节点的 locs 指向地区层 locations 组；gate 为道途门槛（未达则只可远望）。
+ * 旅途卷轴实装前，未解锁节点点击仅展示"道途未通"与门槛说明。 */
+WORLD.continent = {
+  name: "天南 · 越国",
+  nodes: [
+    { id: "caixia",   name: "彩霞山",  pos: { x: 62, y: 64 }, locs: ["yaolu", "houshan", "wuting", "town", "miju"],
+      desc: "七玄门所在。你修仙路的起点——药庐的灯火，后山的兽吼。" },
+    { id: "qingniu",  name: "青牛镇",  pos: { x: 44, y: 78 }, locs: ["qingniu"],
+      desc: "你的家乡。爹娘的白发，小妹的笑闹，几亩薄田。", months: 1, danger: "低" },
+    { id: "jiayuan",  name: "嘉元城",  pos: { x: 38, y: 48 }, locs: [],
+      desc: "越国大城，鱼龙混杂。传闻城中有修仙者出没。", months: 2, danger: "中",
+      gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
+    { id: "tainangu", name: "太南谷",  pos: { x: 24, y: 34 }, locs: [],
+      desc: "修仙者的集市每隔数年在此举办——太南小会，凡人勿近。", months: 3, danger: "中",
+      gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
+    { id: "huangfeng", name: "黄枫谷", pos: { x: 70, y: 22 }, locs: [],
+      desc: "越国七大仙门之一。升仙令在手，此处便是你的去处。", months: 4, danger: "高",
+      gate: (s) => State.count("shengxian_ling") > 0 ? (s.flags.arc1_complete ? null : "七玄门之事未了") : "无升仙令者，仙门不纳" },
+    { id: "farsea",   name: "乱星海（极远）", pos: { x: 92, y: 40 }, locs: [], silhouette: true,
+      desc: "传说中天南之外的无尽海域，星罗万岛，妖修横行。路远得连地图都画不全。" },
+  ],
+  routes: [
+    { from: "caixia", to: "qingniu" },
+    { from: "caixia", to: "jiayuan" },
+    { from: "qingniu", to: "jiayuan" },
+    { from: "jiayuan", to: "tainangu" },
+    { from: "tainangu", to: "huangfeng" },
+    { from: "caixia", to: "huangfeng" },
+  ],
+};
+
 /* ---------- 历练遭遇用的敌人模板（战斗 Fighter 配置，数据驱动攻击）----------
  * AI v1：每个敌人 2~3 种攻击意图 + tactics 战斗天赋（feral兽性/cunning算计/guarded守御），
  * 让每个敌人都是一道"解谜题"——读招应招，而非无脑互殴。weight 为选招权重。

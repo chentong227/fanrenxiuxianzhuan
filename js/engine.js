@@ -930,6 +930,31 @@ const Engine = {
     });
   },
   /* ===========================================================
+   *  因果账本（world-architecture §3）：插曲种因，主线读账
+   *  设计三律：变数必有近响+远雷；改参数不改骨架；负因也是内容。
+   * =========================================================== */
+  writeLedger(id, label) {
+    const s = State.data;
+    s.ledger = s.ledger || {};
+    if (s.ledger[id]) return false;   // 一因一记
+    s.ledger[id] = { t: `第${s.year}年${s.month}月`, label };
+    this.log(`【因果】${label}——此事已了，但未必就此了结。`, "sys");
+    return true;
+  },
+  readLedger(id) {
+    const s = State.data;
+    return !!(s.ledger && s.ledger[id]);
+  },
+  // 远雷兑现：主线节点结算账本时调用——必须点名出处（投入有形化）
+  settleLedger(id, echoText) {
+    if (!this.readLedger(id)) return false;
+    const entry = State.data.ledger[id];
+    this.log(`【因果有报】${echoText}（因起于${entry.t}：${entry.label}）`, "good");
+    this.addMilestone(`因果：${entry.label} → 今日有报`, "deed");
+    return true;
+  },
+
+  /* ===========================================================
    *  名声与风云榜：事迹换名次——"别人眼里的你"
    * =========================================================== */
   addFame(n, why) {

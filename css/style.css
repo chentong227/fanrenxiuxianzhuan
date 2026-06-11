@@ -793,8 +793,19 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 /* 双击缩放锁死修复：游戏型 UI 禁用双击缩放手势 */
 html, body { touch-action: manipulation; }
 
-/* ===== 际遇 / 任务指引条 ===== */
-.objective-bar { margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
+/* ===== 际遇 / 任务指引条（天命=必须做的 / 机缘=可以做的）===== */
+.objective-bar { margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+.obj-sect { display: flex; flex-direction: column; gap: 6px; }
+.obj-sect.fate { padding-left: 0; }
+.obj-sect.luck {
+  position: relative; padding: 8px 0 0;
+  border-top: 1px dashed rgba(140,120,90,.28);
+}
+.obj-sect-tag {
+  position: absolute; top: -8px; left: 8px; padding: 0 8px;
+  font-size: 10.5px; letter-spacing: 2px; color: var(--ink-faint);
+  background: var(--bg);
+}
 .obj-main, .obj-task {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   padding: 7px 10px; border-radius: 6px; font-size: 13px;
@@ -1288,6 +1299,23 @@ html, body { touch-action: manipulation; }
   min-height: 40px; padding: 8px 10px; background: rgba(0,0,0,0.2); border-radius: 8px;
 }
 .map-detail b { color: var(--ink); }
+
+/* 大陆层（天南大图）：全图早见——远方是惦记，不是迷雾 */
+.worldmap.continent {
+  background:
+    radial-gradient(circle at 88% 38%, rgba(106,160,212,0.16), transparent 30%),
+    radial-gradient(circle at 30% 30%, rgba(127,227,192,0.07), transparent 45%),
+    radial-gradient(circle at 55% 80%, rgba(212,180,131,0.06), transparent 40%),
+    linear-gradient(150deg, #11181f, #0c1217);
+}
+.map-pin.cont.gated .pin-dot { background: #4a5560; box-shadow: 0 0 4px rgba(70,85,95,.6); }
+.map-pin.cont.gated .pin-label { color: var(--ink-faint); }
+.map-pin.cont.silhouette .pin-dot {
+  background: transparent; border: 2px dashed rgba(106,160,212,.5); box-shadow: none;
+  animation: farPulse 3.2s ease-in-out infinite;
+}
+.map-pin.cont.silhouette .pin-label { color: rgba(106,160,212,.65); font-style: italic; }
+.cont-gate { margin-top: 8px; font-size: 12px; color: var(--ink-faint); }
 
 /* ============================================================
  * 功法配装界面

@@ -61,22 +61,24 @@ const UI = {
     else layout.scrollTop = 0;
   },
 
-  // 当前际遇指引 + 进行中任务（开放世界的"目标"提示）
+  // 际遇栏 · 天命/机缘分区（world-architecture §2：锚与帆）——
+  // 玩家永远知道"必须做的"（天命=主线锚/限时任务）和"可以做的"（机缘=风声/异闻/修行）各是什么
   renderObjective() {
     const box = this.el("objective-bar");
     if (!box) return;
     const obj = Engine.currentObjective ? Engine.currentObjective() : null;
     const tasks = Engine.activeTasks ? Engine.activeTasks() : [];
-    let html = "";
+    let fate = "";   // 天命：主线锚、限时剧情任务
+    let luck = "";   // 机缘：请托/线索/异闻/修行/涟漪窗口
     if (obj) {
-      html += `<div class="obj-main"><span class="obj-key">际遇</span>
+      fate += `<div class="obj-main"><span class="obj-key">天命</span>
         <b>${obj.title}</b><span class="obj-hint">${obj.hint}</span></div>`;
     }
     if (tasks.length) {
-      html += tasks.map(t => {
+      fate += tasks.map(t => {
         const urgent = t.left <= 2;
         return `<div class="obj-task ${urgent ? 'urgent' : ''}">
-          <span class="obj-key">任务</span><b>${t.title}</b>
+          <span class="obj-key">限时</span><b>${t.title}</b>
           <span class="obj-prog">${t.progress}</span>
           <span class="obj-left">限 ${t.left} 月</span>
         </div>`;
@@ -85,7 +87,7 @@ const UI = {
     // 动态请托（对谈接下的差事）
     const dq = (State.data && State.data.dynQuests) || [];
     if (dq.length) {
-      html += dq.map(q => {
+      luck += dq.map(q => {
         const left = Math.max(0, q.dueAbs - State.absMonth());
         const ready = Engine.dynQuestReady ? Engine.dynQuestReady(q) : false;
         return `<div class="obj-task ${left <= 2 ? 'urgent' : ''}">
@@ -99,7 +101,7 @@ const UI = {
     // 线索（对谈听来的消息）
     const leads = (State.data && State.data.leads) || [];
     if (leads.length) {
-      html += leads.map(l => {
+      luck += leads.map(l => {
         const wn = (WORLD.locations.find(x => x.id === l.where) || {}).name || "别处";
         return `<div class="obj-task">
           <span class="obj-key" style="background:var(--jade);color:#08140f">线索</span><b>${l.title}</b>
@@ -110,7 +112,7 @@ const UI = {
     // 异闻妖王：听闻在前，深处可猎（一致感微缩循环）
     const sb = State.data;
     if (sb && sb.beastRumor && typeof WORLD !== "undefined" && WORLD.enemies[sb.beastRumor]) {
-      html += `<div class="obj-task urgent" style="border-left-color:var(--cinnabar)">
+      luck += `<div class="obj-task urgent" style="border-left-color:var(--cinnabar)">
         <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">异闻</span>
         <b>${WORLD.enemies[sb.beastRumor].name}</b>
         <span class="obj-hint">盘踞后山深处——深入探索可猎，伏诛有厚报</span>
@@ -120,7 +122,7 @@ const UI = {
     const sd = State.data;
     if (sd && !sd.swordMastery && (sd.swordIntent || 0) > 0) {
       const full = sd.swordIntent >= 100;
-      html += `<div class="obj-task${full ? "" : ""}">
+      luck += `<div class="obj-task">
         <span class="obj-key" style="background:var(--wx-jin);color:#1a1208">修行</span>
         <b>眨眼剑法 · 剑意</b>
         <span class="obj-prog">${sd.swordIntent}/100</span>
@@ -132,13 +134,16 @@ const UI = {
       const rw = sd.rippleWindow;
       const left = Math.max(0, rw.dueAbs - State.absMonth());
       const whereTxt = rw.id === "herb_garden" ? "后山" : rw.id === "wolf_bounty" ? "集镇" : rw.id === "cheap_pills" ? "集镇采买" : "";
-      html += `<div class="obj-task ${left <= 1 ? 'urgent' : ''}">
+      luck += `<div class="obj-task ${left <= 1 ? 'urgent' : ''}">
         <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">风声</span>
         <b>${rw.note || "限时机会"}</b>
         ${whereTxt ? `<span class="obj-prog">去「${whereTxt}」</span>` : ""}
         <span class="obj-left">余 ${left} 月</span>
       </div>`;
     }
+    let html = "";
+    if (fate) html += `<div class="obj-sect fate">${fate}</div>`;
+    if (luck) html += `<div class="obj-sect luck"><div class="obj-sect-tag">机缘</div>${luck}</div>`;
     box.innerHTML = html;
     box.style.display = html ? "" : "none";
   },
@@ -1583,7 +1588,10 @@ const UI = {
         ${pins}
       </div>
       <div id="map-detail" class="map-detail">${curLoc ? `<b>${curLoc.name}</b>　${curLoc.desc}` : ''}</div>
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">不去了</button></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="UI.openContinent()">远眺天下 ▲</button>
+        <button class="btn btn-ghost" onclick="UI.closeModal()">不去了</button>
+      </div>
     `);
   },
   _travelPick(locId) {
@@ -1593,6 +1601,56 @@ const UI = {
     const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
     this.el("map-detail").innerHTML = `<b>${l.name}</b>　${l.desc}
       <div style="margin-top:8px"><button class="btn btn-primary btn-mini" onclick="UI.closeModal(); Engine.travelTo('${l.id}')">前往（${cost} 月）</button></div>`;
+  },
+
+  /* -------- 大陆层：天南大图（world-architecture L0）——全图早见，远方=惦记 -------- */
+  openContinent() {
+    const C = WORLD.continent;
+    if (!C) return;
+    const s = State.data;
+    // 当前所在大陆节点（按地区层归属反查）
+    const curNode = C.nodes.find(n => (n.locs || []).includes(s.location)) || C.nodes[0];
+    const lines = C.routes.map(r => {
+      const a = C.nodes.find(n => n.id === r.from), b = C.nodes.find(n => n.id === r.to);
+      if (!a || !b) return "";
+      return `<line x1="${a.pos.x}" y1="${a.pos.y}" x2="${b.pos.x}" y2="${b.pos.y}" class="map-line"/>`;
+    }).join("");
+    const pins = C.nodes.map(n => {
+      const here = n.id === curNode.id;
+      const gateMsg = n.gate ? n.gate(s) : null;
+      const cls = n.silhouette ? "silhouette" : gateMsg ? "gated" : "";
+      return `<div class="map-pin cont ${here ? 'here' : ''} ${cls}" style="left:${n.pos.x}%;top:${n.pos.y}%"
+        onclick="UI._contPick('${n.id}')">
+        <span class="pin-dot"></span>
+        <span class="pin-label">${n.name}${here ? ' ·在此' : ''}</span>
+      </div>`;
+    }).join("");
+    this.openModal(`
+      <h2>天下 · ${C.name}</h2>
+      <p style="color:var(--ink-dim);font-size:12px">天地之大，远超彩霞山一隅。看得见的远方，未必是去得了的远方——道阻且长，修为、盘缠、机缘，缺一不可。</p>
+      <div class="worldmap continent">
+        <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
+        ${pins}
+      </div>
+      <div id="cont-detail" class="map-detail"><b>${curNode.name}</b>　${curNode.desc}</div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="UI.openTravel()">回到近处</button>
+        <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
+      </div>
+    `);
+  },
+  _contPick(nodeId) {
+    const C = WORLD.continent;
+    const n = C.nodes.find(x => x.id === nodeId);
+    if (!n) return;
+    const s = State.data;
+    const gateMsg = n.gate ? n.gate(s) : null;
+    let action = "";
+    if (n.silhouette) action = `<div class="cont-gate">传说之地——此生若能至，方不负修行。</div>`;
+    else if (gateMsg) action = `<div class="cont-gate">道途未通：${gateMsg}</div>`;
+    else if ((n.locs || []).includes(s.location)) action = `<div class="cont-gate" style="color:var(--jade-bright)">你正在此地。</div>`;
+    else if (n.months) action = `<div class="cont-gate">旅途约 ${n.months} 月 · 险度${n.danger || "未知"}——远行之法，待出山之日。</div>`;
+    this.el("cont-detail").innerHTML = `<b>${n.name}</b>　${n.desc}${action}`;
   },
 
   /* -------- 集镇采买 -------- */
