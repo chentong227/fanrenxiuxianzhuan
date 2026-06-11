@@ -26,13 +26,13 @@ const Chapters = {
       name: "黄枫谷篇",
       order: 2,
       locked: true,             // 由七玄门篇收尾解锁
-      realmTier: 1,             // 筑基
-      realmCapIndex: 6,         // 暂沿用（待该篇 data.realms 扩展后再上调）
-      startLocation: null,      // 待该篇开发
+      realmTier: 0,             // 主体仍练气（篇末筑基质变才入 tier 1）
+      realmCapIndex: 13,        // 练气十三层 + 筑基初期（DATA.realms 已扩）
+      startLocation: null,      // 入谷剧情设定（升仙大会后）
       completeFlag: "arc2_complete",
       nextChapter: null,
       currencyName: "灵石",
-      stub: true,               // 尚未开发，仅占位（用于展示"前路"）
+      stub: true,               // 主线尚未完工（离门远行章先行实装中）
     },
   ],
 

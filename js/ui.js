@@ -1020,7 +1020,7 @@ const UI = {
   _npcIdByName(name) {
     if (!name) return null;
     // 剧情专属人物（不在大世界 NPC 名册中）
-    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan" };
+    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan" };
     if (extra[name]) return extra[name];
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
       const n = WORLD.npcs.find(x => x.name === name);
@@ -1688,6 +1688,38 @@ const UI = {
       <p style="color:var(--ink-dim)">纹银：${State.data.silver} 两</p>
       ${blackMarket ? '<p style="color:var(--gold);font-size:12px">巷尾的药贩子朝你挤眼——丹房失窃的那批养元丹，正在黑市贱卖。过了这村没这店。</p>' : ''}
       ${html}
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
+    `);
+  },
+
+  /* -------- 太南小会（修仙者的集市）-------- */
+  openFair() {
+    const s = State.data;
+    const goods = Engine.FAIR_GOODS.map(g => {
+      const item = DATA.items[g.id];
+      const owned = g.once && State.count(g.id) > 0;
+      return `<div class="market-item">
+        <span><span class="iname ${item.rarity === 'rare' ? 'rare' : item.rarity === 'epic' ? 'epic' : ''}">${item.name}</span>${g.n > 1 ? `×${g.n}` : ""}
+          <span style="color:var(--gold);font-size:11px">　${g.note || ""}</span>
+          <span style="color:var(--ink-dim);font-size:12px">　${item.desc}</span></span>
+        ${owned ? `<span style="color:var(--ink-faint);font-size:12px">已购得</span>`
+                : `<button class="btn btn-mini" onclick="Engine.fairBuy('${g.id}')"><span class="mprice">灵石${g.price}</span></button>`}
+      </div>`;
+    }).join("");
+    const sells = [
+      { id: "qingyuan_dan", label: "养元丹 ×1 → 灵石×1", has: State.count("qingyuan_dan") >= 1 },
+      { id: "duyao_cao", label: "毒草 ×2 → 灵石×1", has: State.count("duyao_cao") >= 2 },
+    ].map(x => `<div class="market-item">
+      <span style="color:var(--ink-dim);font-size:13px">${x.label}</span>
+      ${x.has ? `<button class="btn btn-mini" onclick="Engine.fairSell('${x.id}')">售出</button>`
+              : `<span style="color:var(--ink-faint);font-size:12px">不足</span>`}
+    </div>`).join("");
+    this.openModal(`
+      <h2>太南小会 · 赶集</h2>
+      <p style="color:var(--ink-dim)">灵石：${State.count("lingshi")} 枚　纹银在这里没人收——修仙人只认灵石。</p>
+      ${goods}
+      <h3 class="panel-title" style="margin-top:10px">以物易石（摊主收购）</h3>
+      ${sells}
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
     `);
   },

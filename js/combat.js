@@ -477,13 +477,13 @@
           }
         }
       } else if (sp.type === "heal") {
-        // 主修长春功者，木系吐纳回元更多；并随功法品阶/境界成长
-        const boost = (caster.technique === "changchun" && sp.school === "mu") ? 1.4 : 1;
+        // 主修长春功者（前篇/后篇同源），木系吐纳回元更多；并随功法品阶/境界成长
+        const boost = ((caster.technique === "changchun" || caster.technique === "changchun_full") && sp.school === "mu") ? 1.4 : 1;
         const heal = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.heal * boost), sp.source, caster.grade, caster.realmTier) * auxMul));
         caster.hp = clampNum(caster.hp + heal, 0, caster.hpMax);
         this._log(`${caster.name} 施「${sp.name}」，回气血 ${heal}（${Math.round(caster.hp)}/${caster.hpMax}）`);
       } else if (sp.type === "def") {
-        const boost = (caster.technique === "changchun" && sp.school === "mu") ? 1.4 : 1;
+        const boost = ((caster.technique === "changchun" || caster.technique === "changchun_full") && sp.school === "mu") ? 1.4 : 1;
         const shield = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.shield * boost), sp.source, caster.grade, caster.realmTier) * auxMul));
         const cap = caster._shieldCap || 0;
         if (cap > 0 && caster.shield >= cap) {

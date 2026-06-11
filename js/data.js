@@ -37,8 +37,16 @@ DATA.realms = [
   { tier: "qi", layer: 5,  name: "练气五层",  culMax: 470,  spMax: 320,  lifespan: 5 },
   { tier: "qi", layer: 6,  name: "练气六层",  culMax: 640,  spMax: 400,  lifespan: 0 },
   { tier: "qi", layer: 7,  name: "练气七层",  culMax: 860,  spMax: 500,  lifespan: 10 },
-  // —— 以下为后续章节（黄枫谷篇）预留，本篇锁定，不可在七玄门突破 ——
-  { tier: "qi", layer: 8,  name: "练气八层",  culMax: 1140, spMax: 620,  lifespan: 0, locked: true },
+  // —— 练气八层以上：须习得《长春功·后篇》方可冲击（考据：长春功十三层对应练气十三层，
+  //    韩立修至十一层服筑基丹）。黄枫谷篇主场，七玄门篇锁定。 ——
+  { tier: "qi", layer: 8,  name: "练气八层",  culMax: 1140, spMax: 620,  lifespan: 0 },
+  { tier: "qi", layer: 9,  name: "练气九层",  culMax: 1500, spMax: 760,  lifespan: 5 },
+  { tier: "qi", layer: 10, name: "练气十层",  culMax: 1950, spMax: 920,  lifespan: 0 },
+  { tier: "qi", layer: 11, name: "练气十一层", culMax: 2500, spMax: 1100, lifespan: 5 },
+  { tier: "qi", layer: 12, name: "练气十二层", culMax: 3200, spMax: 1300, lifespan: 0 },
+  { tier: "qi", layer: 13, name: "练气十三层", culMax: 4000, spMax: 1550, lifespan: 10 },
+  // —— 筑基期（大境界：服筑基丹+秘仪冲关，见 DATA.bigRealmRites.foundation）——
+  { tier: "foundation", layer: 1, name: "筑基初期", culMax: 6000, spMax: 2400, lifespan: 80, big: true },
 ];
 
 // 本篇可突破到的最高境界索引（练气七层之后即进入主线收尾，封锁筑基）
@@ -88,6 +96,16 @@ DATA.items = {
     desc: "金光砖中蕴存的灵力充能。战斗中每催动一次金光砖，耗去一道。" },
   nuanyang_yu: { name: "暖阳宝玉", rarity: "epic", type: "treasure",
     desc: "墨家祖传的护身宝玉，温润如春。它是墨彩环的嫁妆——「我不成亲，便不需要嫁妆了呀。」寒毒既解，玉犹有余温。" },
+
+  /* —— 太南小会（离门远行）：修仙集市的家底 —— */
+  changchun_houpian: { name: "《长春功》后篇全本", rarity: "epic", type: "book",
+    desc: "长春功八至十三层全本，并载火弹术、御风诀、天眼术诸般小法术。卖家收钱时塞回来一块灵石：「你给多了，我们不占便宜。」（闭关时可研习）" },
+  zhifu_bi: { name: "制符笔", rarity: "rare", type: "treasure",
+    desc: "笔锋以灵兽尾毫所制，隐有灵光——摊主说原主是位姓菡的御灵宗女修。有此笔，他日学得制符之术，便可自画符箓（黄枫谷篇解锁）。" },
+  fu_zhi: { name: "下阶符纸", rarity: "common", type: "material",
+    desc: "以灵竹浆制成的空白符纸，制符的根基材料。眼下还用不上——但修仙人的家底，从来都是提前备下的。" },
+  zheling_canbao: { name: "遮灵残宝", rarity: "rare", type: "treasure",
+    desc: "一面残缺的青铜小镜，能遮掩周身灵气波动。配合那只神秘小瓶使用，足以瞒过大多数修士的耳目——藏拙者的至宝。" },
 };
 
 /* ---------- 行动配置 ----------
@@ -115,7 +133,8 @@ DATA.techniques = {
     origin: "墨大夫早年机缘所得（夺自余子童），授予韩立。",
   },
   changchun_full: {
-    name: "长春功 · 后篇", arc: "huangfeng", attr: "mu", locked: true, grade: 1,
+    name: "长春功 · 后篇", arc: "huangfeng", attr: "mu", grade: 1,
+    book: "changchun_houpian",
     grantSpells: ["tuna", "huti", "ningshen", "zhayan", "huodan"],
     desc: "长春功八至十三层全本，并载火弹术、御风诀、天眼术等诸般小法术——凡人眼中已是仙法，修仙界里不过入门。修至十一层，便可服丹冲击筑基。",
     origin: "太南小会上以丹药换得的全本（卖家：「你给多了，我们不占便宜。」）。",

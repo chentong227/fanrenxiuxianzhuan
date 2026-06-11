@@ -536,6 +536,7 @@ const Engine = {
     else if (action === "gather") this.gather();
     else if (action === "spar") this.spar();
     else if (action === "market") { UI.openMarket(); return; }
+    else if (action === "fair") { UI.openFair(); return; }
     else if (action === "alchemy") this.alchemy();
     else if (action === "investigate") this.investigate();
     else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
@@ -649,6 +650,62 @@ const Engine = {
     State.save();
     UI.renderAll();
     UI.openMarket();
+  },
+
+  /* -------- 太南小会（离门远行）：修仙者集市——正反馈密集地 -------- */
+  FAIR_GOODS: [
+    { id: "changchun_houpian", price: 5, once: true, note: "镇摊之宝", rebate: 1,
+      rebateText: "卖书的老者把一块灵石塞了回来：「你给多了，我们不占便宜。」" },
+    { id: "zhifu_bi", price: 2, once: true, note: "御灵宗女修的旧物" },
+    { id: "fu_zhi", price: 1, n: 5, note: "制符根基，提前囤些" },
+    { id: "zheling_canbao", price: 3, once: true, note: "藏拙者的至宝" },
+    { id: "huoshe_fu", price: 2, note: "比凡俗集镇地道得多" },
+    { id: "hanbing_fu", price: 2, note: "同上" },
+  ],
+  fairBuy(itemId) {
+    const s = State.data;
+    const g = this.FAIR_GOODS.find(x => x.id === itemId);
+    if (!g) return;
+    if (g.once && State.count(itemId) > 0) { this.toast("此物已购得"); return; }
+    if (State.count("lingshi") < g.price) { this.toast(`需要灵石 ×${g.price}`, true); return; }
+    State.take("lingshi", g.price);
+    State.give(itemId, g.n || 1);
+    s.flags.fair_bought = (s.flags.fair_bought || 0) + 1;
+    const item = DATA.items[itemId];
+    this.log(`【小会】你以灵石×${g.price}购得「${item.name}」${g.n > 1 ? `×${g.n}` : ""}。`, "good");
+    if (g.rebate) {
+      State.give("lingshi", g.rebate);
+      this.log(`【小会】${g.rebateText}（灵石+${g.rebate}）`, "event");
+    }
+    if (itemId === "changchun_houpian") {
+      this.toast("《长春功·后篇》到手！回洞府闭关研习，八层之路自此开启");
+      this.addMilestone("太南小会：购得《长春功》后篇全本", "bigitem");
+    } else {
+      this.toast(`${item.name} 到手`);
+    }
+    this.checkStory();
+    State.save();
+    UI.renderAll();
+    UI.openFair();
+  },
+  fairSell(itemId) {
+    const s = State.data;
+    const PRICES = { qingyuan_dan: 1, duyao_cao: 1 };   // 毒草按两株一枚灵石（取整由调用保证）
+    if (itemId === "qingyuan_dan") {
+      if (!State.take("qingyuan_dan", 1)) { this.toast("没有养元丹了", true); return; }
+      State.give("lingshi", 1);
+      this.log("【小会】你售出「养元丹」×1，换得灵石×1——凡俗丹药在修仙集市上竟也有人收。", "event");
+    } else if (itemId === "duyao_cao") {
+      if (State.count("duyao_cao") < 2) { this.toast("毒草不足两株", true); return; }
+      State.take("duyao_cao", 2);
+      State.give("lingshi", 1);
+      this.log("【小会】你售出「毒草」×2，换得灵石×1。收草的摊主与你心照不宣地对视了一眼。", "event");
+    } else return;
+    s.flags.fair_bought = (s.flags.fair_bought || 0) + 1;
+    this.checkStory();
+    State.save();
+    UI.renderAll();
+    UI.openFair();
   },
 
   /* -------- 金光砖回充（灵石×1 = 充能×1）：符宝吃资源——强力手段都有运营成本 -------- */
@@ -1079,10 +1136,12 @@ const Engine = {
     State.save(); UI.renderAll();
   },
 
-  // 探家（青牛镇 v1）：仙凡有别的最初一课——你在山上修行，他们在山下老去
+  // 探家（青牛镇）：仙凡有别的最初一课——你在山上修行，他们在山下老去
   _homeVisit() {
     const s = State.data;
     const yrs = Math.max(1, s.age - 10);   // 十岁离家
+    // 离门远行 · 拜别版：此去修仙路远，归期无定（动漫第8集：远行前回家做最后的告别）
+    if (s.flags.arc1_complete && !s.flags.home_farewell) { this._homeFarewell(yrs); return; }
     this._pendingFortune = {
       title: "韩家小院",
       text: `柴门虚掩，院里的老槐树又粗了一圈。娘正在灶间忙活，听见脚步声回头——愣了半晌，手里的瓢"哐当"落了地："二……二郎？！"\n\n爹闻声从田里赶回来，烟杆在手里直抖。你离家已${yrs}年，爹娘鬓边的白发，比记忆里多了太多。`,
@@ -1113,6 +1172,48 @@ const Engine = {
     UI.renderAll();
     UI.openFortune(this._pendingFortune);
     // 探家结束后：归程提示由 chooseFortune 钩子接管（_afterHomeVisit）
+    this._afterFortuneHook = "homeReturn";
+  },
+
+  // 拜别（离门远行版回乡）：此去山高水长——小妹的亲事、爹娘的白发、压在枕下的银子
+  _homeFarewell(yrs) {
+    const s = State.data;
+    this._pendingFortune = {
+      title: "韩家小院 · 拜别",
+      text: `院里晒着新收的豆子，娘的背比上次又驼了些。这次回来，你带的是一个谁也不能说的消息——你要去很远的地方，去过一种他们无法想象的日子。\n\n饭桌上，娘絮絮说着小妹的亲事：邻村的后生，老实，家里有几亩水田，开春就办喜事。爹闷头喝酒，半晌冒出一句："山上的差事……还顺当吗？"\n\n你说顺当。你说要随门派远行，三年五载回不来。灯花噼啪响了一声，谁都没再说话。`,
+      choices: [
+        {
+          text: "住到小妹出嫁，再启程（+2月）",
+          effect(sd) {
+            Engine.passTime(2);
+            sd.mood = Math.min(sd.moodMax, sd.mood + 12);
+            sd.demon = Math.max(0, sd.demon - 10);
+            sd.silver = Math.max(0, sd.silver - 10);
+            Engine.writeLedger("home_farewell_wedding", "留到小妹出嫁才远行");
+            Engine.addMilestone("拜别：小妹出嫁，你在席上", "deed");
+            State.setFlag("home_farewell");
+            State.setFlag("demon_seed_sister");   // 心魔种子：花轿远去的背影（突破心魔战素材）
+            return { text: "喜宴那日你坐在末席，看小妹蒙着红盖头给爹娘磕头。花轿抬出村口时，她忽然掀帘回头，朝你这边望了一眼。\n\n你在心里说：二哥对不住你，往后不能护着你了。\n\n临行前夜，你把三十两银子缝进娘的旧棉袄，又在房梁上压了张字条——若有急难，去彩霞山下托人带话。（心境+12，心魔-10，纹银-10）\n\n走出村口那一步，你没有回头。", kind: "good" };
+          },
+        },
+        {
+          text: "盘桓三日，放下银两便走（道途催人）",
+          effect(sd) {
+            sd.silver = Math.max(0, sd.silver - 15);
+            sd.mood = Math.min(sd.moodMax, sd.mood + 4);
+            sd.demon = Math.min(100, sd.demon + 4);
+            Engine.writeLedger("home_farewell_haste", "未等小妹出嫁便匆匆远行");
+            Engine.addMilestone("拜别：来去匆匆", "deed");
+            State.setFlag("home_farewell");
+            State.setFlag("demon_seed_sister");
+            return { text: "第三日鸡鸣，你留下十五两银子和一句『山上事忙』，踏霜出门。\n\n走到村口老槐树下，身后传来小妹的喊声：「二哥！我成亲你回来不？」\n\n你挥了挥手，没有应声——修仙人最怕许诺。（心境+4，心魔+4，纹银-15）\n\n这一眼回望，往后许多年里，会在你闭关入定时一遍遍回来找你。", kind: "sys" };
+          },
+        },
+      ],
+    };
+    State.save();
+    UI.renderAll();
+    UI.openFortune(this._pendingFortune);
     this._afterFortuneHook = "homeReturn";
   },
 
@@ -1644,6 +1745,11 @@ const Engine = {
     const s = State.data;
     const realm = State.realm();
     if (this.atRealmCap()) return { ok: false, reason: "本篇封顶练气期。筑基乃后话，需「筑基丹」与机缘，黄枫谷篇再续。" };
+    // 长春功前篇止于七层：冲八层须《长春功·后篇》（太南小会丹药换购——大件 gating）
+    if (s.realmIndex >= 6 && DATA.realms[s.realmIndex + 1] && DATA.realms[s.realmIndex + 1].tier === "qi"
+        && !(typeof Loadout !== "undefined" && Loadout.isLearned(s, "changchun_full"))) {
+      return { ok: false, reason: "《长春功》前篇止于七层，再往上无诀可依。须得后篇全本（听闻太南小会上偶有流出），方能冲击八层。" };
+    }
     if (s.cultivation < realm.culMax * 0.6) return { ok: false, reason: "修为尚浅，强行突破必败。再多苦修些时日。" };
     // 大境界：须备齐秘仪
     if (this.isBigRealmBreakthrough()) {
@@ -1960,6 +2066,11 @@ const Engine = {
   // 心魔具象（multiply-design 乘法E）：心魔由剧情记忆生成——你最重的业障，就是它的脸
   _demonFace() {
     const s = State.data;
+    // 最近的业障最重：拜别小妹（花轿那一眼）> 杀师 > 故友之死
+    if (s.flags.demon_seed_sister && s.flags.home_farewell && Math.random() < 0.4) return {
+      name: "心魔 · 韩家小妹",
+      taunt: "幻象里是村口的老槐树。小妹掀开花轿的帘子回头望你：「二哥，我成亲你回来不？」——你当时没有应声。如今它要你应一万遍。",
+    };
     if (s.flags.modafu_dead) return {
       name: "心魔 · 墨大夫",
       taunt: "幻象中那张枯槁的脸缓缓抬起，正是墨大夫：「用我的毒，驱我炼的尸，夺我的药庐……韩立，你我究竟有何分别？」",

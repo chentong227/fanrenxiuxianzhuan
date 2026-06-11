@@ -138,6 +138,73 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   assert(State.count("nuanyang_yu") === 1, "暖阳宝玉入袋");
   assert(!s.sideUnit, "曲魂留墨府（固定剧情，侧位移交）");
   assert(s.ledger && s.ledger.quhun_left_mo, "因果账本记下曲魂之托");
+
+  // —— 站三：太南小会（万小山/赶集/长春后篇/青纹阴谋）——
+  State.give("lingshi", 12);
+  s.journey = null;
+  Engine.startJourney("tainangu");
+  let g3 = 0;
+  while ((s.journey || Engine._pendingFortune) && g3++ < 40) {
+    if (Engine._pendingFortune) { Engine.chooseFortune(0); continue; }
+    if (s.combat && Engine._combat) {
+      Engine._combat.enemies.forEach(e => { e.hp = 0; });
+      Engine._combat._checkEnd();
+      Engine._finishCombat();
+      continue;
+    }
+    break;
+  }
+  assert(s.location === "tainan_fair", `到达太南小会（实际 ${s.location}）`);
+  Engine.checkStory();
+  assert(s.pendingEvent === "wan_meet", `万小山相迎触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.wan_met && s.metNpcs.includes("wanxiaoshan"), "万小山结识入图鉴+账本");
+  // 赶集：买长春功后篇（彩蛋返灵石）
+  const stoneBefore = State.count("lingshi");
+  Engine.fairBuy("changchun_houpian");
+  assert(State.count("changchun_houpian") === 1, "《长春功·后篇》购得");
+  assert(State.count("lingshi") === stoneBefore - 5 + 1, "「不占便宜」彩蛋返灵石×1");
+  // 买动一次后青纹阴谋触发
+  Engine.checkStory();
+  assert(s.pendingEvent === "qingwen_plot", `青纹阴谋触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.ledger.qingwen_grudge, "青纹梁子记入账本（黑煞教伏笔）");
+  // 后篇研习 → 突破8层 gating 解除（黄枫谷篇 cap 已放开至练气十三层）
+  s.activeChapter = "huangfeng";
+  s.unlockedChapters = ["qixuan", "huangfeng"];
+  s.realmIndex = 6; s.cultivation = 999999;
+  const before = Engine.canBreakthrough();
+  assert(!before.ok && /后篇/.test(before.reason), "未习后篇：冲八层被拦（大件 gating）");
+  const lr = sandbox.Loadout.learnTechnique(s, "changchun_full");
+  assert(lr.ok, "研习《长春功·后篇》成功");
+  assert(sandbox.Loadout.knownPool(s).includes("huodan"), "火弹术随后篇入池（考据：小法术尽出于此）");
+  const after = Engine.canBreakthrough();
+  assert(after.ok, "习得后篇：八层之路开启");
+}
+
+console.log("\n=== 6. 拜别版回乡（离门远行）===");
+{
+  State.create({ name: "韩立", rootId: "si_ling" });
+  const s = State.data;
+  s.location = "yaolu";
+  s.pendingEvent = null;
+  s.flags.arc1_complete = true;
+  s.silver = 60; s.age = 19;
+  Engine.startJourney("qingniu");
+  let guard = 0;
+  while ((s.journey || Engine._pendingFortune || Engine._afterFortuneHook) && guard++ < 40) {
+    if (Engine._pendingFortune) { Engine.chooseFortune(0); continue; }
+    if (s.combat && Engine._combat) {
+      Engine._combat.enemies.forEach(e => { e.hp = 0; });
+      Engine._combat._checkEnd();
+      Engine._finishCombat();
+      continue;
+    }
+    break;
+  }
+  assert(s.flags.home_farewell, "拜别完成（home_farewell）");
+  assert(s.flags.demon_seed_sister, "心魔种子：花轿那一眼（demon_seed_sister）");
+  assert(s.ledger.home_farewell_wedding || s.ledger.home_farewell_haste, "拜别方式入账本");
 }
 
 console.log(`\n========== 大陆旅途：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);

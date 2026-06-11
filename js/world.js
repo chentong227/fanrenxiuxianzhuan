@@ -115,6 +115,19 @@ WORLD.locations = [
     actions: ["rest", "market", "cultivate"],
     encounters: [],
   },
+
+  /* —— 离门远行章 · 太南小会（修仙者的集市）——
+   * 考据：岚州最南太南山中，万小山在此为韩立讲修仙常识；丹药换长春功后篇全本。 */
+  {
+    id: "tainan_fair",
+    arc: "huangfeng",
+    name: "太南谷 · 小会",
+    desc: "太南山深谷中的修仙者集市。摊位上灵光隐现，往来者皆遮掩行藏——凡人勿近之地，你头一回置身真正的修仙人之间。",
+    travelCost: 1,
+    map: { x: 50, y: 60 },
+    actions: ["fair", "rest"],
+    encounters: [],
+  },
 ];
 
 /* ---------- 大陆层（world-architecture L0）：天南 · 越国一带 ----------
@@ -144,7 +157,7 @@ WORLD.continent = {
     { id: "jiayuan",  name: "嘉元城",  pos: { x: 44, y: 60 }, locs: ["jiayuan_city"],
       desc: "岚州第一大城。岚州居越国之南，沃野产粮，富庶仅次京畿——城中鱼龙混杂，传闻有修仙者出没。", months: 3, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
-    { id: "tainangu", name: "太南谷",  pos: { x: 28, y: 80 }, locs: [],
+    { id: "tainangu", name: "太南谷",  pos: { x: 28, y: 80 }, locs: ["tainan_fair"],
       desc: "岚州最南端，广贵城西四十里的太南山中。修仙者的集市「太南小会」每隔数年在此举办，凡人勿近。", months: 4, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
     { id: "farsea",   name: "乱星海（极远）", pos: { x: 86, y: 42 }, locs: [], silhouette: true,
@@ -326,6 +339,12 @@ WORLD.npcs = [
     bio: "墨大夫（墨居仁）之女，嘉元城墨府的小姐。古灵精怪，娇憨狡黠，初见便骗走了你的萦香丸。她问过你一个你答不上来的问题：凡人，就真的不能修仙吗？",
     lines: ["黑小子，今天的药膳你又没喝完！", "爹的信里写了你好多坏话哦——骗你的啦。", "等你走了，这院子又要冷清下来了……"],
     where: ["jiayuan_city"], cond: (s) => s.flags.mo_met,
+  },
+  {
+    id: "wanxiaoshan", name: "万小山", role: "散修 · 修仙世家子弟",
+    bio: "修仙世家出身的年轻散修，心善热忱，不谙世事。太南小会上主动为你这个「雏儿」讲解修仙界的门道——他是你在修仙界遇到的第一个好人。",
+    lines: ["韩兄，这摊上的符纸是真货，那摊的「灵丹」可千万别碰！", "我家祖上也阔过，传到我这辈就剩这点家底啦，哈哈。", "修仙人多凉薄，韩兄是个例外。"],
+    where: ["tainan_fair"], cond: (s) => s.flags.wan_met,
   },
   { id: "langzhong", name: "走方郎中", role: "凡俗医者", bio: "走街串巷的凡俗大夫，医术平平却见多识广。", lines: ["客官面色不佳，可要抓副药？"], where: ["town"] },
   { id: "biaoshi", name: "镖局趟子手", role: "押镖汉子", bio: "替商队押镖的江湖汉子，刀口舔血讨生活。", lines: ["这年头跑镖，最怕撞上野狼帮的人。"], where: ["town"] },
