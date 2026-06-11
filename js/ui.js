@@ -148,6 +148,17 @@ const UI = {
     box.style.display = html ? "" : "none";
   },
 
+  // 地点 → BGM 轨（场景换乐：每处地方有自己的声音）
+  _bgmForLocation(loc) {
+    const s = State.data;
+    if (s && s.journey) return "journey";
+    if (!loc) return "daily";
+    if (loc.id === "town" || loc.id === "jiayuan_city") return "town";
+    if (loc.id === "tainan_fair") return "fair";
+    if (loc.id === "miju") return "tense";
+    return "daily";   // 药庐/洞府/演武厅/后山等
+  },
+
   renderLocation() {
     const loc = State.location();
     if (!loc) return;
@@ -155,6 +166,11 @@ const UI = {
     const ds = this.el("loc-desc-inline"); if (ds) ds.textContent = loc.desc;
     this.renderSceneStage(loc);
     this.renderLocals(loc);
+    // 战斗/剧情演出中不抢轨（由各自的演出管理）
+    const inStory = !!(this._story && !this.el("story-overlay").hidden);
+    if (typeof Sfx !== "undefined" && Sfx.bgm && !State.data.combat && !inStory) {
+      Sfx.bgm(this._bgmForLocation(loc));
+    }
   },
 
   // 场景大图做底，可去之处=图上发光按钮（取代独立小地图）
@@ -707,6 +723,8 @@ const UI = {
     this._story = { stage, beats, idx: -1 };
     overlay.hidden = false;
     document.body.classList.add("story-on");
+    // 剧情配乐：节点可指定 bgm 轨（sorrow 离殇/tense 阴谋/triumph 扬眉……）
+    if (stage.bgm && typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(stage.bgm);
     // 重置双人立绘
     const lb = this.el("story-portrait-left"), rb = this.el("story-portrait-right");
     if (lb) { lb.innerHTML = ""; lb.className = "story-portrait left"; }
@@ -1774,8 +1792,12 @@ const UI = {
     this._combatLogLen = 0;
     if (typeof Sfx !== "undefined") {
       Sfx.play("danger");
-      // BGM 换轨：心魔/决战=紧张轨，其余=战斗轨
-      if (Sfx.bgm) Sfx.bgm(meta.type === "breakthrough" || meta.type === "showdown" || meta.type === "jinguang" ? "tense" : "combat");
+      // BGM 换轨：决战/妖王=boss 压迫轨；心魔=阴冷轨；其余=战斗轨
+      if (Sfx.bgm) {
+        const bossFight = meta.type === "showdown" || meta.type === "jinguang"
+          || (typeof Engine !== "undefined" && Engine._combatMeta && Engine._combatMeta.namedBeast);
+        Sfx.bgm(bossFight ? "boss" : meta.type === "breakthrough" ? "tense" : "combat");
+      }
     }
     this.renderCombat(combat, meta);
     this._flashCombatBanner(meta, combat);
@@ -1826,7 +1848,8 @@ const UI = {
   },
   closeCombat() {
     this.el("combat-overlay").hidden = true;
-    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm("daily");   // 战罢归于日常轨
+    // 战罢归于地点轨（在哪打完，回哪的声音）
+    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(this._bgmForLocation(State.location()));
   },
 
   // 施法反馈：目标震动 + 招式名横幅一闪
@@ -2194,6 +2217,8 @@ const UI = {
       ov.className = "ceremony-overlay";
       document.body.appendChild(ov);
     }
+    // 破关凯旋：钟磬贺礼（单次播放，奏毕自动归位地点轨）
+    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm("triumph");
     const s = State.data;
     const hidden = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
     ov.innerHTML = `

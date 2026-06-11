@@ -151,6 +151,15 @@
     resume() { const t = this.track; this.track = null; if (t) this.start(t); },
   };
 
+  /* ============ BGM 文件轨（Lyria 生成，assets/audio/bgm_<track>.mp3）============
+   * 九轨（参考动画配乐气质）：daily 药庐古琴 / town 市井琵琶 / journey 行旅笛弦 /
+   * fair 集市筝铃 / combat 战鼓急弦 / boss 太鼓号角 / tense 阴冷悬疑 /
+   * sorrow 二胡离殇 / triumph 钟磬凯旋（单次不循环）。
+   * 文件缺失/加载失败 → 回退合成轨（FALLBACK 映射）。 */
+  const BGM_FILES = ["daily", "town", "journey", "fair", "combat", "boss", "tense", "sorrow", "triumph"];
+  const FALLBACK = { town: "daily", journey: "daily", fair: "daily", boss: "combat", sorrow: "tense", triumph: null };
+  let curTrack = null;
+
   const Sfx = {
     enabled() { return !muted; },
     toggle() {
@@ -159,7 +168,7 @@
       if (muted && bgmEl) { bgmEl.pause(); }
       if (!muted && bgmEl) { bgmEl.play().catch(() => {}); }
       if (muted) { const t = BGM.track; BGM.stop(); BGM.track = t; }   // 记轨停声
-      else BGM.resume();
+      else if (bgmEl == null) BGM.resume();
       return !muted;
     },
     play(name) {
@@ -169,10 +178,33 @@
       lastPlay[name] = now;
       try { const c = ac(); if (c) RECIPES[name](c); } catch (e) {}
     },
-    // 合成 BGM：bgm("daily"|"combat"|"tense") / bgmStop()
-    bgm(track) { try { BGM.start(track); } catch (e) {} },
-    bgmStop() { try { BGM.stop(); } catch (e) {} },
-    // BGM 接口：资源后补；文件缺失静默
+    // 主入口：换 BGM 轨（文件优先，合成兜底；同轨幂等）
+    bgm(track, opts = {}) {
+      if (curTrack === track && !opts.force) return;
+      curTrack = track;
+      if (BGM_FILES.includes(track)) {
+        const url = `assets/audio/bgm_${track}.mp3`;
+        try {
+          this.stopBgm();
+          BGM.stop();   // 合成轨让位
+          const el = new window.Audio(url);
+          el._src = url; el.loop = track !== "triumph"; el.volume = opts.vol != null ? opts.vol : 0.3;
+          el.onerror = () => {   // 文件缺失：回退合成
+            if (bgmEl === el) bgmEl = null;
+            const fb = FALLBACK[track] !== undefined ? FALLBACK[track] : track;
+            if (fb) try { BGM.start(fb); } catch (e) {}
+          };
+          if (track === "triumph") el.onended = () => { if (bgmEl === el) { bgmEl = null; curTrack = null; } };
+          bgmEl = el;
+          if (!muted) el.play().catch(() => {});
+          return;
+        } catch (e) {}
+      }
+      // 非文件轨：直接合成
+      try { BGM.start(track); } catch (e) {}
+    },
+    bgmStop() { this.stopBgm(); try { BGM.stop(); } catch (e) {} curTrack = null; },
+    // 旧接口（资源后补；文件缺失静默）
     playBgm(url, vol = 0.25) {
       try {
         if (bgmEl && bgmEl._src === url) return;
