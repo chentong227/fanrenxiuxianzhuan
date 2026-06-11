@@ -84,6 +84,8 @@ const State = {
       doneRipples: [],        // 已走完的涟漪链
       fame: 0,                // 名声（事迹累积，风云榜位次依据）
       medals: {},             // 漂亮的赢勋章 { id: count }
+      sideUnit: null,         // 侧位单位（尸傀/灵宠/傀儡）{ id,name,hp,hpMax,atk,...,status,carry }
+      intelElems: {},         // 已揭示的敌方道基行属 { 敌名: elem }（打了才知道）
     };
     this.give("qingyuan_dan", 2);
     if (typeof NPCSIM !== "undefined") NPCSIM.init(this.data);
@@ -141,6 +143,19 @@ const State = {
     if (d.rippleWindow === undefined) d.rippleWindow = null;
     if (!d.doneRipples) d.doneRipples = [];
     if (d.fame == null) d.fame = 0;
+    if (d.sideUnit === undefined) d.sideUnit = null;
+    if (!d.intelElems) d.intelElems = {};
+    // 老档补发：已反杀墨大夫者，曲魂幡尸傀随行
+    if (d.flags && d.flags.modafu_dead && !d.sideUnit) {
+      d.sideUnit = { id: "zhangtie_corpse", name: "铁奴·张铁", hp: 70, hpMax: 70, atk: 12,
+                     atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
+    }
+    // 老档补发：已杀金光上人者，金光砖入袋
+    if (d.flags && d.flags.jinguang_dead && !(d.inventory && d.inventory.jinguang_zhuan)) {
+      d.inventory = d.inventory || {};
+      d.inventory.jinguang_zhuan = 1;
+      d.inventory.jinguang_zhuan_charge = (d.inventory.jinguang_zhuan_charge || 0) + 3;
+    }
     // 旧档修正：剑法大成者，连环眨眼【替换】眨眼连击（v30 曾并列，致"没有提升感"）
     if (d.swordMastery) {
       d.knownSkills = (d.knownSkills || []).filter(id => id !== "zhayan_lian");

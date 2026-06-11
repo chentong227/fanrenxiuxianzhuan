@@ -25,8 +25,11 @@
   const Loadout = {
     // 凡人武学（与功法无关，习得后恒在技能池中）
     INNATE_MARTIAL: ["zhayan", "zhayan_lian", "weidu", "feizhen"],
-    // 底牌（消耗性手段）：独立体系，不占技能槽（后续武器/防具系统的前身）
-    TRUMPS: ["weidu", "feizhen"],
+    // 底牌（消耗性手段）：独立体系，不占技能槽。
+    // 符箓/符宝也是底牌（combat-arsenal-design.md 轴3）：有实物即可用，无需研习。
+    TRUMPS: ["weidu", "feizhen", "huoshe_fu", "hanbing_fu", "jinguang_zhuan"],
+    // 符箓类底牌：背包里有符即自动入战（买来就能用——符是修仙界的通货）
+    TALISMANS: { huoshe_fu: "huoshe_fu", hanbing_fu: "hanbing_fu", jinguang_zhuan: "jinguang_zhuan_charge" },
 
     isTrump(skillId) { return this.TRUMPS.includes(skillId); },
 

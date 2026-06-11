@@ -231,6 +231,80 @@ console.log("\n=== 8.5 战斗深化：剑势连携 + 长春功增益 ===");
   assert(p2.hp === 50 + Math.round(6 * 1.4), `长春功者吐纳回元更多（回${Math.round(6 * 1.4)}，基础6×长春1.4）`);
 }
 
+console.log("\n=== 8.5 克制系统：灵技×道基 / 特攻 / 符箓 / 侧位单位 ===");
+{
+  // 火弹术(火) 克 金行道基 ×1.25；被克 ×0.8
+  const mkP = (spells, pouch) => new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, qiLayer: 9, elem: "mu", spells, pouch: pouch || {} });
+  const hitOnce = (defElem, spellId, pouch) => {
+    const p = mkP([spellId], pouch);
+    const e = new Fighter({ name: "试敌", hp: 500, elem: defElem, agility: 0 });
+    const c = new Combat({ player: p, enemies: [e], rng: seqRng([0.99, 0.6, 0.8, 0.7, 0.5]) });
+    c.startRound();
+    // 保证灵气足够（直接注入）
+    c.qi = { jin: 9, mu: 9, shui: 9, huo: 9, tu: 9 };
+    const before = e.hp;
+    const r = c.cast(spellId, 0);
+    return r.ok ? before - e.hp : -1;
+  };
+  const vsJin = hitOnce("jin", "huodan");     // 火克金
+  const vsNone = hitOnce(null, "huodan");     // 无道基（凡人）
+  const vsShui = hitOnce("shui", "huodan");   // 水克火（被克）
+  assert(vsJin > vsNone && vsNone > vsShui, `火弹术：克金${vsJin} > 无属${vsNone} > 被水克${vsShui}`);
+  assert(vsJin === Math.round(vsNone * 1.25) || Math.abs(vsJin - vsNone * 1.25) <= 1, `克制约+25%（${vsNone}→${vsJin}）`);
+
+  // 武学无行属：眨眼剑法对金行敌不吃克制（用户裁决：凡人武学不入轴）
+  const swordVsJin = hitOnce("jin", "zhayan");
+  const swordVsNone = hitOnce(null, "zhayan");
+  assert(swordVsJin === swordVsNone, `武学不参与五行克制（${swordVsJin}=${swordVsNone}）`);
+
+  // 符箓：any 灵气即可点燃，消耗实物
+  const p2 = mkP(["huoshe_fu"], { huoshe_fu: 1 });
+  const e2 = new Fighter({ name: "金行妖", hp: 500, elem: "jin", agility: 0 });
+  const c2 = new Combat({ player: p2, enemies: [e2], rng: seqRng([0.99, 0.6, 0.8]) });
+  c2.startRound();
+  assert(c2.canAfford("huoshe_fu"), "火蛇符：一点任意灵气即可点燃");
+  c2.cast("huoshe_fu", 0);
+  assert(p2.pouch.huoshe_fu === 0, "火蛇符消耗实物（用一张少一张）");
+  assert(!c2.canAfford("huoshe_fu"), "符尽则不可再施");
+
+  // 特攻：镇魂 slays ghost ×1.5（辟邪神雷克鬼魔的同一张表）
+  const pG = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, qiLayer: 9, gongli: 40, spells: ["zhenhun"] });
+  const ghost = new Fighter({ name: "怨魂", hp: 200, nature: "ghost", gongli: 20, agility: 0 });
+  const cG = new Combat({ player: pG, enemies: [ghost], rng: seqRng([0.99, 0.6]) });
+  cG.startRound(); cG.qi = { jin: 9, mu: 9, shui: 9, huo: 9, tu: 9 };
+  const bG = ghost.hp; cG.cast("zhenhun", 0);
+  const pH = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, qiLayer: 9, gongli: 40, spells: ["zhenhun"] });
+  const soul2 = new Fighter({ name: "残魂", hp: 200, soulOnly: true, gongli: 20, agility: 0 });   // 旧字段：无 nature
+  const cH = new Combat({ player: pH, enemies: [soul2], rng: seqRng([0.99, 0.6]) });
+  cH.startRound(); cH.qi = { jin: 9, mu: 9, shui: 9, huo: 9, tu: 9 };
+  const bH = soul2.hp; cH.cast("zhenhun", 0);
+  assert((bG - ghost.hp) > (bH - soul2.hp), `镇魂对 ghost 特攻×1.5（${bG - ghost.hp} > ${bH - soul2.hp}）`);
+
+  // nature=corpse：毒免疫（尸无血脉——一致感）
+  const pC = mkP(["weidu"], { duyao_cao: 2 });
+  const corpse = new Fighter({ name: "尸傀", hp: 200, nature: "corpse", agility: 0 });
+  const cC = new Combat({ player: pC, enemies: [corpse], rng: seqRng([0.99, 0.6]) });
+  cC.startRound(); cC.qi = { jin: 9, mu: 9, shui: 9, huo: 9, tu: 9 };
+  cC.cast("weidu", 0);
+  assert(!corpse.status.poison, "尸傀百毒不侵（nature=corpse 自动毒免疫）");
+
+  // 侧位单位：自动出击 + 挡刀 + 倒地不判负
+  const pS = mkP(["zhayan"]);
+  const eS = new Fighter({ name: "悍匪", hp: 60, agility: 0, atkName: "刀劈", atk: 10 });
+  const cS = new Combat({ player: pS, enemies: [eS], rng: seqRng([0.99, 0.6, 0.8, 0.7]),
+    side: { id: "zt", name: "铁奴·张铁", hp: 70, hpMax: 70, atk: 12, atkName: "尸傀挥击", nature: "corpse", guard: 1 } });
+  cS.startRound();
+  const beforeS = eS.hp;
+  cS.endRound();   // 侧位自动出手 + guard=1 必挡刀
+  assert(eS.hp < beforeS, `侧位单位自动出击（敌血 ${beforeS}→${eS.hp}）`);
+  assert(cS.player.hp === 100, `侧位单位必挡刀时主人无损（hp=${cS.player.hp}）`);
+  assert(cS.side.hp < 70, `挡刀伤在侧位身上（${cS.side.hp}/70）`);
+  // 侧位倒地：不判负、战斗继续
+  cS.side.hp = 0;
+  cS.endRound();
+  assert(cS.status === "ongoing" || cS.status === "win", `侧位倒地不判负（${cS.status}）`);
+}
+
 console.log("\n=== 9. 突破=复用战斗：充分准备成功；准备不足失败 ===");
 {
   const p1 = new Fighter({ name: "道心", hp: 80, profile: "hanli_si", insight: 10, gongli: 40, spells: FULL_KIT, pouch: { duyao_cao: 2, anqi: 2 } });

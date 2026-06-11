@@ -121,7 +121,17 @@
     const PV = {
       encounter() { Engine.startEncounterFight("wolf_gang_thug"); },
       showdown()  { State.data.location = "yaolu"; Engine.startShowdownFight(); },
-      jinguang()  { State.data.location = "shanmen"; Engine.startJinguangFight ? Engine.startJinguangFight() : PV.encounter(); },
+      jinguang()  {
+        // 全套备置演示：符箓×2、金光砖充能、尸傀随行、L2 底细（行徽直接可见）
+        const s = State.data;
+        s.location = "shanmen";
+        State.give("huoshe_fu", 2); State.give("hanbing_fu", 1);
+        State.give("jinguang_zhuan", 1); State.give("jinguang_zhuan_charge", 2);
+        s.sideUnit = { id: "zhangtie_corpse", name: "铁奴·张铁", hp: 70, hpMax: 70, atk: 12,
+                       atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
+        s.intel = s.intel || {}; s.intel.jinguang = 2;
+        Engine.startJinguangFight ? Engine.startJinguangFight() : PV.encounter();
+      },
       bt()        { State.data.demon = 60; Engine.startBreakthroughFight({ big: false }); },
       story()     { State.data.location = "qingniu"; UI.renderStory(STORY[0]); },
       chron() {

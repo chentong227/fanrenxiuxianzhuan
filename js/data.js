@@ -75,6 +75,17 @@ DATA.items = {
     desc: "金光上人遗物，金光灿灿的符箓，威力不俗。（后续章节可用）" },
   jinzhong_zhao:{ name: "金钟罩",   rarity: "epic", type: "treasure",
     desc: "金光上人的护身法宝，可结成金色钟罩护体。（后续章节可用）" },
+
+  /* —— 符箓底牌（修仙界通货：一点灵气点燃符中封存的法术）——
+   * 穷靠本命，富靠符箓：灵根缺什么行，花钱买什么符（克制轴的经济入口）。 */
+  huoshe_fu:    { name: "火蛇符",   rarity: "rare", type: "consumable",
+    desc: "符上封存火蛇之术，一点灵气即可激发。火克金——金行强敌（金钟罩、金行妖王）的破局之物。战斗底牌，用一张少一张。" },
+  hanbing_fu:   { name: "寒冰符",   rarity: "rare", type: "consumable",
+    desc: "符上封存寒冰锥击。水克火——火行凶兽的对策。战斗底牌，用一张少一张。" },
+  jinguang_zhuan: { name: "符宝·金光砖", rarity: "epic", type: "treasure",
+    desc: "金光上人赖以成名的符宝，韩立的第一件符宝。金光化砖凌空砸落，势大力沉且破甲。以充能催动，灵石可回充。" },
+  jinguang_zhuan_charge: { name: "金光砖·充能", rarity: "rare", type: "consumable",
+    desc: "金光砖中蕴存的灵力充能。战斗中每催动一次金光砖，耗去一道。" },
 };
 
 /* ---------- 行动配置 ----------

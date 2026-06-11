@@ -631,7 +631,9 @@ const Engine = {
   /* -------- 采买（集镇）-------- */
   buy(itemId) {
     const s = State.data;
-    const shop = { lingcao: 3, duyao_cao: 6, qingyuan_dan: 8, huixue_dan: 6, ningshen_dan: 14 };
+    // 符箓是修仙界稀货：凡人集镇偶有流出，价不菲（穷靠本命，富靠符箓）
+    const shop = { lingcao: 3, duyao_cao: 6, qingyuan_dan: 8, huixue_dan: 6, ningshen_dan: 14,
+                   huoshe_fu: 20, hanbing_fu: 20 };
     let price = shop[itemId];
     if (!price) return;
     // 黑市窗口（涟漪链）：赃丹贱卖
@@ -643,6 +645,47 @@ const Engine = {
     State.save();
     UI.renderAll();
     UI.openMarket();
+  },
+
+  /* -------- 金光砖回充（灵石×1 = 充能×1）：符宝吃资源——强力手段都有运营成本 -------- */
+  rechargeZhuan() {
+    const s = State.data;
+    if (!State.count("jinguang_zhuan")) { this.toast("尚无金光砖"); return; }
+    if (State.count("lingshi") < 1) { this.toast("需要灵石 ×1", true); return; }
+    State.take("lingshi", 1);
+    State.give("jinguang_zhuan_charge", 1);
+    this.log(`你以灵石灵气温养金光砖，砖身金光复盛（充能+1，现 ${State.count("jinguang_zhuan_charge")} 道）。`, "good");
+    this.toast(`金光砖充能 ×${State.count("jinguang_zhuan_charge")}`);
+    State.save();
+    UI.renderAll();
+  },
+
+  /* -------- 尸傀修缮（药庐）：毒物阴材温养——墨大夫的法子，如今你来用 -------- */
+  repairSide() {
+    const s = State.data;
+    const u = s.sideUnit;
+    if (!u) return;
+    if (u.status !== "broken" && u.hp >= u.hpMax) { this.toast("尸傀完好，无须修缮"); return; }
+    if (State.count("duyao_cao") < 2) { this.toast("需要毒草 ×2（阴毒之物养尸）", true); return; }
+    State.take("duyao_cao", 2);
+    this.passTime(1);
+    u.hp = u.hpMax;
+    u.status = "ok";
+    this.log(`你依墨大夫遗册所载，以毒草阴气温养尸傀月余——「${u.name}」躯体复原，重新立于幡下待命。`, "good");
+    this.toast(`${u.name}：修缮完毕`);
+    this.checkLifespan();
+    State.save();
+    UI.renderAll();
+  },
+
+  /* -------- 尸傀随行开关 -------- */
+  toggleSide() {
+    const s = State.data;
+    if (!s.sideUnit) return;
+    s.sideUnit.carry = s.sideUnit.carry === false ? true : false;
+    this.toast(s.sideUnit.carry ? `${s.sideUnit.name}：随行出战` : `${s.sideUnit.name}：留守药庐`);
+    State.save();
+    UI.renderAll();
   },
 
   /* -------- 炼药（药庐）：药理熟练度——炼得越多手越稳，偶得双丹 -------- */
@@ -1008,6 +1051,17 @@ const Engine = {
       (lowMood ? "心绪不宁，杂念丛生，进境大打折扣——该去打坐调息了。" : "") +
       (full ? "丹田之内灵力已近圆满，似可尝试突破。" : ""), lowMood ? "bad" : (full ? "good" : "event"));
     if (lowMood) Engine.toast("心境告急！闭关效率骤降，宜先打坐调息", true);
+
+    // 残页自悟·火弹术（考据：韩立在神手谷凭口诀自修火弹术等小法术）
+    // 练气四层+悟性达标后，闭关中可能参透墨大夫遗册夹页里的火行口诀——玩家侧第一个火技（克金的本命答案）
+    if (typeof Loadout !== "undefined" && !Loadout.knownPool(s).includes("huodan") && s.realmIndex >= 3 && s.flags.modafu_dead
+        && Math.random() < 0.18 + months * 0.02) {
+      Loadout.addKnownSkill(s, "huodan");
+      this.log("整理墨大夫遗册时，一页夹着的残笺飘落——竟是一篇「火弹术」口诀！你依诀试演，指尖火光一闪而逝。苦修月余，终于小成。（习得火弹术：火气灼金，金行强敌的本命答案——记得在「功法」中装备）", "good");
+      this.toast("残页自悟：火弹术");
+      this.addMilestone("残页自悟「火弹术」", "deed");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    }
 
     // 闭关插曲：时长越久，越可能在静室中生变（顿悟 / 走火入魔 / 外界变故 / 灵感枯滞）
     this._seclusionInterlude(months, gain);
@@ -1466,6 +1520,13 @@ const Engine = {
     const realm = State.realm();
     const culRatio = clamp(s.cultivation / realm.culMax, 0, 1.2);
     const gongli = Balance.gongli({ tier: realm.tier, layer: realm.layer, culRatio, sense: s.sense, body: s.body });
+    // 符箓底牌：背包里有符即自动入战（符是买来就能用的通货，不占技能槽）
+    const spells = s.spells.slice();
+    const TALIS = (typeof Loadout !== "undefined" && Loadout.TALISMANS)
+      || { huoshe_fu: "huoshe_fu", hanbing_fu: "hanbing_fu", jinguang_zhuan: "jinguang_zhuan_charge" };
+    Object.entries(TALIS).forEach(([spellId, itemId]) => {
+      if (State.count(itemId) > 0 && !spells.includes(spellId)) spells.push(spellId);
+    });
     return new CombatAPI.Fighter({
       name: s.name,
       hp: s.hp,
@@ -1475,7 +1536,8 @@ const Engine = {
       gongli: gongli,
       agility: Math.round(State.effectiveSpeed() * 0.6),   // 遁速提供基础闪避
       profile: "hanli_si",       // 四灵根·缺土
-      spells: s.spells.slice(),
+      elem: (DATA.techniques[s.technique] || {}).attr || null,   // 道基=主修功法行属（克制语言）
+      spells,
       auxSkills: (typeof Loadout !== "undefined") ? Loadout.auxSkillSet(s) : [],
       technique: s.technique,     // 主修功法（影响同系招式）
       grade: (DATA.techniques[s.technique] || {}).grade || 1,  // 主修功法品阶
@@ -1486,9 +1548,31 @@ const Engine = {
       // fail-forward：决战每败一次=看破对方几分路数，再战伤害+8%（至多+24%）——
       // 韩立吃的每次亏都是学费（爽文契约：失败向前走）
       dmgBonus: 1 + Math.min(3, (s.flags[`losses_${this._nextFightType || ""}`] || 0)) * 0.08,
-      // 底牌：平时准备的毒草、暗器带进战斗（准备内化进战斗）
-      pouch: { duyao_cao: State.count("duyao_cao"), anqi: State.count("anqi") },
+      // 底牌：平时准备的毒草、暗器、符箓带进战斗（准备内化进战斗）
+      pouch: { duyao_cao: State.count("duyao_cao"), anqi: State.count("anqi"),
+               huoshe_fu: State.count("huoshe_fu"), hanbing_fu: State.count("hanbing_fu"),
+               jinguang_zhuan_charge: State.count("jinguang_zhuan_charge") },
     });
+  },
+
+  // 侧位单位（尸傀/灵宠/傀儡）：随行出战的第二单位（combat-arsenal-design.md 轴4）
+  sideUnitFor(fightType) {
+    const s = State.data;
+    const u = s.sideUnit;
+    if (!u || u.status === "broken" || u.carry === false) return null;
+    if (fightType === "breakthrough") return null;   // 心魔是自己的战斗，外物难援
+    return { id: u.id, name: u.name, hp: u.hp, hpMax: u.hpMax, atk: u.atk, atkName: u.atkName,
+             elem: u.elem || null, nature: u.nature || null, guard: u.guard || 0.3 };
+  },
+  // 战后把侧位单位的损耗写回（hp 归零=破损，须修缮，不会永失——尸傀不死，只是坏了）
+  _syncSideBack() {
+    const c = this._combat, s = State.data;
+    if (!c || !c.side || !s.sideUnit) return;
+    s.sideUnit.hp = clamp(Math.round(c.side.hp), 0, s.sideUnit.hpMax);
+    if (s.sideUnit.hp <= 0 && s.sideUnit.status !== "broken") {
+      s.sideUnit.status = "broken";
+      this.log(`「${s.sideUnit.name}」在战斗中损毁严重，再难驱使——回药庐以毒物阴材温养修缮，方可复原。`, "bad");
+    }
   },
 
   // 战斗结束后，把战中消耗的底牌写回主背包
@@ -1496,7 +1580,7 @@ const Engine = {
     const c = this._combat;
     if (!c) return;
     const p = c.player.pouch || {};
-    ["duyao_cao", "anqi"].forEach(id => {
+    ["duyao_cao", "anqi", "huoshe_fu", "hanbing_fu", "jinguang_zhuan_charge"].forEach(id => {
       const left = p[id] || 0;
       const had = State.count(id);
       if (left < had) State.take(id, had - left);
@@ -1512,6 +1596,7 @@ const Engine = {
       player: this.playerFighter(),
       enemies: [enemy],
       maxRounds: 20,
+      side: this.sideUnitFor("encounter"),
     });
     this._combatMeta = { type: "encounter", reward: tmpl.reward, enemyName: tmpl.name,
       namedBeast: enemyId.indexOf("beast_") === 0 ? enemyId : null, namedLoot: tmpl.namedLoot || null };
@@ -1528,13 +1613,13 @@ const Engine = {
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax; // 决战前默认满血上场
 
-    const modafu = { name: "墨大夫", hp: 52, profile: "modafu", sense: 6, speed: 9, agility: 4, tactics: "cunning", qiLayer: 4,
+    const modafu = { name: "墨大夫", hp: 52, profile: "modafu", sense: 6, speed: 9, agility: 4, tactics: "cunning", qiLayer: 4, elem: "mu",
       attacks: [{ name: "毒掌", dmg: 12, kind: "normal", weight: 12 }, { name: "腐骨毒针", dmg: 14, pierce: true, kind: "pierce", weight: 8 }] };
-    const tienu  = { name: "铁奴（张铁尸傀）", hp: 70, immunePoison: true, sense: 3, speed: 6, agility: 4, tactics: "feral",
-      introNote: "铁奴乃尸傀死物——百毒不侵！毒计无用，须以剑与暗器正面强攻。",
+    const tienu  = { name: "铁奴（张铁尸傀）", hp: 70, nature: "corpse", sense: 3, speed: 6, agility: 4, tactics: "feral",
+      introNote: "铁奴乃尸傀死物——尸无血脉，百毒不侵！毒计无用，须以剑与暗器正面强攻。",
       attacks: [{ name: "尸傀挥击", dmg: 14, kind: "normal", weight: 14 }, { name: "崩山重捶", dmg: 19, kind: "charge", weight: 6 }] };
-    const yuhun  = { name: "余子童元神", hp: 40, soulOnly: true, sense: 18, speed: 14, agility: 8, gongli: 22, qiLayer: 6,
-      introNote: "元神无形无质——剑、毒、暗器皆穿身而过！唯「运功镇魂」能伤其分毫（需木2水2）。留住灵气，稳住心神！",
+    const yuhun  = { name: "余子童元神", hp: 40, nature: "ghost", sense: 18, speed: 14, agility: 8, gongli: 22, qiLayer: 6,
+      introNote: "元神无形无质——剑、毒、暗器皆穿身而过！唯「运功镇魂」能伤其分毫（需木1水1），神魂镇压正是鬼魅克星。留住灵气，稳住心神！",
       atkName: "夺舍侵神", atk: 11 };   // 失了傀儡与皮囊的虚弱残魂（被秒式难度违背爽文契约）
 
     this._combat = new CombatAPI.Combat({
@@ -1572,22 +1657,23 @@ const Engine = {
     player.hp = s.hpMax; player.hpMax = s.hpMax;
 
     // 金光上人：修仙者（练气七层）——有灵气、有战斗AI（守御型：血危先固金钟罩）。
-    // 怕毒（持续伤害绕过金钟罩续航）；这是"修仙者敌人=会用灵气出招"的首个范本。
+    // 金行道基天克长春功（动漫一致感：正面斗法=找死，毒/暗器/火符才是胜机）。
     const jinguang = {
       name: "金光上人", hp: 120, profile: "common", sense: 14, speed: 13, agility: 10,
-      tactics: "guarded", qiLayer: 7,
+      tactics: "guarded", qiLayer: 7, elem: "jin",
       guardMove: { name: "金钟罩·重聚", shield: 16 },
-      introNote: "金光上人乃修仙杀手，金钟罩固若金汤且会重聚——硬拼必败！以毒续伤、以暗器破甲，方有胜机。",
+      introNote: "金光上人乃修仙杀手，一身金系符术天克你的木行道基，金钟罩固若金汤且会重聚——硬拼必败！以毒续伤、以暗器破甲、以火符灼金，方有胜机。",
       attacks: [
-        { name: "金符破空", dmg: 18, kind: "normal", weight: 12 },
-        { name: "剑符斩", dmg: 22, pierce: true, kind: "pierce", weight: 7 },
-        { name: "金刚伏魔", dmg: 24, kind: "charge", weight: 5 },
+        { name: "金符破空", dmg: 15, kind: "normal", weight: 12, elem: "jin" },
+        { name: "剑符斩", dmg: 18, pierce: true, kind: "pierce", weight: 7, elem: "jin" },
+        { name: "金刚伏魔", dmg: 20, kind: "charge", weight: 5, elem: "jin" },
       ],
     };
     this._combat = new CombatAPI.Combat({
       player,
       enemies: [this._applyDossier(jinguang)],
       maxRounds: 18,
+      side: this.sideUnitFor("jinguang"),   // 动漫考据：伏杀金光上人，韩立放出了张铁尸傀
     });
     // 金钟罩护体：开局即有厚护盾，暗器(破甲)与毒(持续)是破局关键；金钟罩为法宝护体，不随回合消退
     this._combat.enemies[0].shield = 40;
@@ -1688,11 +1774,14 @@ const Engine = {
     s.combat = false;
     // 交手自动补全：见过的招永久入册（情报面纱 L1）
     this._recordIntelFromCombat(c);
+    // 克制揭示写回：打过才知道的道基行属，永久记入（图鉴/再战行徽）
+    (c._reveals || []).forEach(r => { s.intelElems = s.intelElems || {}; s.intelElems[r.name] = r.elem; });
     // 漂亮的赢：赢的方式也值得记住
     if (win) this._checkMedals(c);
 
-    // 同步战中消耗的底牌（毒、暗器）回主背包
+    // 同步战中消耗的底牌（毒、暗器、符箓）回主背包；侧位单位损耗回写
     this._syncPouchBack();
+    this._syncSideBack();
 
     // 同步玩家气血回主状态（突破是"道心"，不回写气血）
     if (meta.type !== "breakthrough") {
@@ -1777,6 +1866,14 @@ const Engine = {
         this.addMilestone("夺舍之夜：反杀墨大夫（余子童）", "showdown");
         this.addFame(15, "药庐那位韩师傅，深藏不露");
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
+        // 曲魂幡到手：张铁尸傀自此随你驱使（侧位单位 v0——挚友之尸，为你而战）
+        if (!s.sideUnit) {
+          s.sideUnit = { id: "zhangtie_corpse", name: "铁奴·张铁", hp: 70, hpMax: 70, atk: 12,
+                         atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
+          this.log("你拾起墨大夫遗落的「曲魂幡」。幡下尸傀缓缓转向你，躬身待命——那身形，依稀还是当年演武厅里和你过招的少年。自此，张铁的遗蜕将随你出战（历练与遭遇战自动随行）。", "event");
+          this.addMilestone("曲魂幡御尸：铁奴随行", "bigitem");
+          this.toast("侧位随行：铁奴·张铁");
+        }
         s.storyStage += 1;
         this.checkStory();
       } else {
@@ -1797,6 +1894,12 @@ const Engine = {
         this.log("金光上人金钟罩虽固，终究敌不过你的毒与暗器。这矮胖和尚至死不信，自己竟栽在一个门派药师手里！七玄门之危，就此解去。", "good");
         this.addMilestone("以下克上：暗算金光上人", "showdown");
         this.addFame(25, "修仙杀手金光上人死于彩霞山");
+        // 符宝·金光砖：杀手的凶器成为你的底牌（韩立的第一件符宝，动漫考据）
+        State.give("jinguang_zhuan", 1);
+        State.give("jinguang_zhuan_charge", 3);
+        this.log("你从他怀中搜出一块巴掌大的金砖，灵光内蕴——正是他赖以成名的符宝「金光砖」！尚余三道充能（灵石可回充）。杀手的凶器，自此是你的底牌。", "good");
+        this.addMilestone("夺得符宝「金光砖」", "bigitem");
+        this.toast("符宝到手：金光砖（充能×3）");
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         s.storyStage += 1;
         this.checkStory();

@@ -21,14 +21,32 @@ const UI = {
     const box = this.el("recent-log");
     if (!box) return;
     const log = (State.data && State.data.log) || [];
-    if (!log.length) { box.innerHTML = ""; box.style.display = "none"; return; }
-    const last = log[log.length - 1];
-    const tmp = document.createElement("div");
-    tmp.innerHTML = last.body || "";
-    let txt = (tmp.textContent || "").trim().replace(/\s+/g, " ");
-    if (txt.length > 64) txt = txt.slice(0, 64) + "…";
+    const side = this._sideStrip();
+    if (!log.length && !side) { box.innerHTML = ""; box.style.display = "none"; return; }
+    let html = side;
+    if (log.length) {
+      const last = log[log.length - 1];
+      const tmp = document.createElement("div");
+      tmp.innerHTML = last.body || "";
+      let txt = (tmp.textContent || "").trim().replace(/\s+/g, " ");
+      if (txt.length > 64) txt = txt.slice(0, 64) + "…";
+      html += `<span class="rl-tag">${last.t}</span><span class="rl-txt entry-${last.kind || 'event'}">${txt}</span><span class="rl-more">见闻 ›</span>`;
+    }
     box.style.display = "";
-    box.innerHTML = `<span class="rl-tag">${last.t}</span><span class="rl-txt entry-${last.kind || 'event'}">${txt}</span><span class="rl-more">见闻 ›</span>`;
+    box.innerHTML = html;
+  },
+
+  // 侧位随行条：尸傀状态+随行开关+修缮（曲魂幡御尸——挚友之尸，为你而战）
+  _sideStrip() {
+    const u = State.data && State.data.sideUnit;
+    if (!u) return "";
+    const broken = u.status === "broken";
+    const st = broken ? `<span style="color:var(--red)">损毁</span>`
+      : `${u.hp}/${u.hpMax}${u.carry === false ? "（留守）" : "（随行）"}`;
+    const btn = broken || u.hp < u.hpMax
+      ? `<button class="btn btn-mini" onclick="event.stopPropagation();Engine.repairSide()">修缮（毒草×2·1月）</button>`
+      : `<button class="btn btn-mini" onclick="event.stopPropagation();Engine.toggleSide()">${u.carry === false ? "携行" : "留守"}</button>`;
+    return `<div class="side-strip"><span class="ss-name">⚰ ${u.name}</span><span class="ss-st">${st}</span>${btn}</div>`;
   },
 
   // 手机分页：切换显示哪一栏（stage=界面 / hero=韩立+储物）
@@ -629,6 +647,10 @@ const UI = {
     if (isPill) actions += `<button class="btn btn-primary" onclick="Engine.useItem('${itemId}'); UI.closeModal();">服用</button>`;
     if (State.data.bottle.unlocked && DATA.bottle.crops[itemId]) {
       actions += `<button class="btn btn-secondary" onclick="UI.closeModal(); UI.openBottle();">投入小绿瓶</button>`;
+    }
+    // 符宝金光砖：灵石回充（符宝吃资源——强力手段都有运营成本）
+    if (itemId === "jinguang_zhuan") {
+      actions += `<button class="btn btn-secondary" onclick="Engine.rechargeZhuan(); UI.closeModal();">灵石回充（灵石×1 → 充能×1）</button>`;
     }
     this.openModal(`
       <h2>${item.name}</h2>
@@ -1487,8 +1509,17 @@ const UI = {
         Object.entries(s.intelMoves || {}).forEach(([ename, arr]) => { if (ename.indexOf(n.name) >= 0) arr.forEach(m => seen.add(m)); });
         const movesHtml = (info.moves || []).map(m =>
           seen.has(m) ? `<span class="iv-move known">${m}</span>` : `<span class="iv-move">？？</span>`).join("");
+        // 道基行属：交手中克制触发（打了就懂）或 L2 底细可见
+        const GLYPH = { jin: "金", mu: "木", shui: "水", huo: "火", tu: "土" };
+        let elemKnown = null;
+        Object.entries(s.intelElems || {}).forEach(([ename, el]) => { if (ename.indexOf(n.name) >= 0) elemKnown = el; });
+        if (!elemKnown && lv >= 2 && info.elem) elemKnown = info.elem;
+        const elemHtml = elemKnown
+          ? `<span class="elem-badge elem-${elemKnown}">${GLYPH[elemKnown]}</span> ${GLYPH[elemKnown]}行道基`
+          : `<span style="color:var(--ink-faint)">？？（交手便知）</span>`;
         intelHtml = `<div class="codex-intel">
           <div class="iv-row"><span class="iv-tag">传闻</span>${info.l0}</div>
+          <div class="iv-row"><span class="iv-tag">道基</span>${elemHtml}</div>
           <div class="iv-row"><span class="iv-tag">招路</span>${movesHtml || "—"}</div>
           <div class="iv-row"><span class="iv-tag">底细</span>${lv >= 2 ? `<span style="color:var(--gold-bright)">${info.l2}</span>` : `<span style="color:var(--ink-faint)">？？？（小算盘或有门路）</span>`}</div>
         </div>`;
@@ -1571,6 +1602,7 @@ const UI = {
     const shop = [
       { id: "lingcao", price: 3 }, { id: "duyao_cao", price: 6 },
       { id: "qingyuan_dan", price: blackMarket ? 3 : 8, sale: blackMarket }, { id: "huixue_dan", price: 6 }, { id: "ningshen_dan", price: 14 },
+      { id: "huoshe_fu", price: 20 }, { id: "hanbing_fu", price: 20 },
     ];
     const html = shop.map(it => {
       const item = DATA.items[it.id];
@@ -1689,6 +1721,8 @@ const UI = {
     for (const f of fx) {
       const anchor = f.ref === "player"
         ? this.el("combat-player")
+        : f.ref === "side"
+        ? (this.el("combat-player").querySelector(".side-unit") || this.el("combat-player"))
         : (this.el("combat-enemies").children[parseInt(f.ref.split(":")[1], 10)] || this.el("combat-enemies"));
       if (!anchor) continue;
       setTimeout(() => this._popFloat(anchor, f.kind, f.text), delay);
@@ -1739,8 +1773,14 @@ const UI = {
     const isBT = meta.type === 'breakthrough';
 
     // 敌方：立绘对峙 + 血条 + 意图
+    const ELEM_GLYPH = { jin: "金", mu: "木", shui: "水", huo: "火", tu: "土" };
+    const knownElems = (typeof State !== "undefined" && State.data.intelElems) || {};
     this.el("combat-enemies").innerHTML = c.enemies.map((e, i) => {
       const tags = [];
+      // 道基行徽：情报门控——打过（揭示）或买过底细（L2）才看得见对方的根脚
+      if (e.elem && (knownElems[e.name] || e._dossier)) {
+        tags.push(`<span class="elem-badge elem-${e.elem}">${ELEM_GLYPH[e.elem]}</span>`);
+      }
       if (e.immunePoison) tags.push("百毒不侵");
       if (e.soulOnly) tags.push("神魂之体");
       const statusTxt = e.status.poison ? `<span class="cstatus">☠ 中毒 ${e.status.poison.dmg}/回合·余${e.status.poison.turns}</span>` : "";
@@ -1775,6 +1815,14 @@ const UI = {
     const hpPct = Math.max(0, p.hp / p.hpMax * 100);
     const shieldPct = p.shield ? Math.min(100, p.shield / p.hpMax * 100) : 0;
     const hurl = (typeof Art !== "undefined") ? Art.url("hanli") : null;
+    // 侧位单位（尸傀/灵宠）：主人身侧的窄卡
+    const sideHtml = c.side ? `<div class="combatant side-unit ${c.side.hp > 0 ? '' : 'dead'}">
+      <div class="cinfo">
+        <div class="cname"><b>${c.side.name}</b><span class="ctag">${c.side.hp > 0 ? '随行' : '倒地'}</span></div>
+        <div class="cbar"><div class="cbar-fill side" style="width:${Math.max(0, c.side.hp / c.side.hpMax * 100)}%"></div></div>
+        <div class="cbar-num">躯体 ${Math.max(0, Math.round(c.side.hp))}/${c.side.hpMax}</div>
+      </div>
+    </div>` : "";
     this.el("combat-player").innerHTML = `<div class="combatant self">
       ${hurl ? `<div class="cfigure"><img src="${hurl}" alt="" /></div>` : ""}
       <div class="cinfo">
@@ -1786,7 +1834,7 @@ const UI = {
         <div class="cbar-num">${isBT ? '道心' : '气血'} ${Math.max(0, Math.round(p.hp))}/${p.hpMax}${p.shield ? `　<span style="color:var(--blue)">护体${p.shield}</span>` : ''}</div>
         ${p.status.poison ? `<span class="cstatus">☠ 中毒 ${p.status.poison.dmg}/回合</span>` : ''}
       </div>
-    </div>`;
+    </div>` + sideHtml;
 
     // 五行灵气珠池：五色玉珠，充盈发光、空则黯淡
     this.el("combat-qi").innerHTML =
@@ -1800,8 +1848,11 @@ const UI = {
     // 法术/招式 与 底牌 分区渲染（底牌=消耗性手段，独立体系，不与灵技混排）
     const spellBtn = (id, extraCls) => {
       const sp = SP[id];
-      const wx = Object.keys(sp.cost || {})[0] || "jin";
-      const costDots = Object.entries(sp.cost).map(([e, n]) => `<span class="cost-dot wx-${e}" title="${EL[e]}行">${EL[e]}${n}</span>`).join("") || `<span class="cost-dot free">无耗</span>`;
+      const wx = sp.elem || Object.keys(sp.cost || {})[0] || "jin";
+      const costDots = Object.entries(sp.cost).map(([e, n]) =>
+        e === "any"
+          ? `<span class="cost-dot free" title="任意一系灵气">任${n}</span>`
+          : `<span class="cost-dot wx-${e}" title="${EL[e]}行">${EL[e]}${n}</span>`).join("") || `<span class="cost-dot free">无耗</span>`;
       const afford = c.canAfford(id);
       const noPouch = sp.consume && !(p.pouch[sp.consume] > 0);
       const pouchTxt = sp.consume ? `<span class="spouch ${noPouch ? 'empty' : ''}">余 ×${p.pouch[sp.consume] || 0}</span>` : "";

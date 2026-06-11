@@ -562,6 +562,38 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .cbar-num { font-size: 12px; color: #cfc6b4; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 .cstatus { font-size: 11px; color: #93d67f; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 
+/* 道基行徽（情报门控：打过/买过底细才显示对方根脚）——五行字徽 */
+.elem-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700;
+  border: 1px solid currentColor; margin-right: 4px; vertical-align: -3px;
+  text-shadow: none; box-shadow: 0 0 6px rgba(0,0,0,.5) inset;
+}
+.elem-badge.elem-jin  { color: #e8c66a; background: rgba(120,95,30,.35); }
+.elem-badge.elem-mu   { color: #8fd67f; background: rgba(40,90,40,.35); }
+.elem-badge.elem-shui { color: #7fb8e8; background: rgba(30,70,110,.35); }
+.elem-badge.elem-huo  { color: #e88a6a; background: rgba(120,45,25,.35); }
+.elem-badge.elem-tu   { color: #cfa97a; background: rgba(95,70,35,.35); }
+
+/* 侧位单位（尸傀/灵宠/傀儡）：主人身侧的窄卡 */
+.combatant.side-unit {
+  margin-top: 6px; padding: 6px 9px; max-width: 210px;
+  background: rgba(14,12,9,.55); border: 1px solid rgba(120,100,70,.35); border-radius: 8px;
+}
+.combatant.side-unit .cname b { font-size: 12.5px; color: #cfc2a8; }
+.combatant.side-unit .cname .ctag { color: var(--ink-dim); }
+.combatant.side-unit.dead { opacity: .45; filter: grayscale(.8); }
+.cbar-fill.side { background: linear-gradient(90deg,#4a4338,#8a7c62); }
+
+/* 侧位随行条（行动页）：尸傀状态一目了然 */
+.side-strip {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 4px 0 6px; margin-bottom: 4px; border-bottom: 1px dashed rgba(120,100,70,.25);
+  font-size: 12px;
+}
+.side-strip .ss-name { color: #b8a98c; font-weight: 600; }
+.side-strip .ss-st { color: var(--ink-dim); flex: 1; }
+
 .cintent {
   font-size: 11.5px; color: var(--gold-bright); margin-top: 5px; padding: 5px 8px; max-width: 250px;
   background: rgba(14,11,8,.82); border: 1px solid rgba(201,169,106,.4); border-radius: var(--radius);

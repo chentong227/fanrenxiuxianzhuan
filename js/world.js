@@ -131,9 +131,9 @@ WORLD.enemies = {
     ],
   },
   rogue_cultivator: {
-    name: "散修", hp: 120, sense: 9, speed: 11, agility: 8, tactics: "cunning", qiLayer: 3, reward: { lingshi: 1 },
+    name: "散修", hp: 130, sense: 9, speed: 11, agility: 8, tactics: "cunning", qiLayer: 3, elem: "tu", reward: { lingshi: 1 },
     attacks: [
-      { name: "法器袭", dmg: 26, kind: "normal", weight: 12 },
+      { name: "土遁石击", dmg: 26, kind: "normal", weight: 12, elem: "tu" },
       { name: "法器贯刺", dmg: 20, kind: "pierce", weight: 8 },
       { name: "聚灵蓄势", dmg: 30, kind: "charge", weight: 5 },
     ],
@@ -146,20 +146,21 @@ WORLD.enemies = {
     ],
   },
 
-  /* —— 异闻妖王（听闻其名 → 深入后山 → 真实可战）：威名先至，名实一致 —— */
+  /* —— 异闻妖王（听闻其名 → 深入后山 → 真实可战）：威名先至，名实一致。
+   * 妖兽吐纳天地灵气，妖气亦有行属（elem）——传闻里就写明行属，做功课备克制符是正解。 —— */
   beast_baihu: {
-    name: "白额吊睛虎", hp: 200, sense: 7, speed: 14, agility: 12, tactics: "feral",
-    introNote: "正是异闻中那头噬人虎王！爪疾力沉，血怒时必拼命扑杀——稳住护体，别贪刀。",
+    name: "白额吊睛虎", hp: 200, sense: 7, speed: 14, agility: 12, tactics: "feral", elem: "jin", nature: "beast",
+    introNote: "正是异闻中那头噬人虎王！金风裂爪天克你的木行道基——爪疾力沉，血怒时必拼命扑杀。火符能灼其金煞，稳住护体，别贪刀。",
     attacks: [
-      { name: "裂风虎爪", dmg: 26, kind: "normal", weight: 12 },
+      { name: "裂风虎爪", dmg: 24, kind: "normal", weight: 12, elem: "jin" },
       { name: "虎啸震林", dmg: 22, kind: "pierce", weight: 6 },
       { name: "血怒扑杀", dmg: 32, kind: "charge", weight: 7 },
     ],
-    reward: { silver: 12 }, namedLoot: { huixue_dan: 2, lingcao: 2 },
+    reward: { silver: 12 }, namedLoot: { huixue_dan: 2, lingcao: 2, huoshe_fu: 1 },
   },
   beast_wugong: {
-    name: "铁背蜈蚣王", hp: 185, immunePoison: true, sense: 6, speed: 8, agility: 7, tactics: "cunning",
-    introNote: "铁背蜈蚣王——甲壳如铁、自身百毒不侵！你的毒计无用，唯暗器与剑能破其节甲。",
+    name: "铁背蜈蚣王", hp: 185, immunePoison: true, sense: 6, speed: 8, agility: 7, tactics: "cunning", elem: "tu", nature: "beast",
+    introNote: "铁背蜈蚣王——土行厚甲、自身百毒不侵！你的毒计无用，但木气克土：长春功门下的法术正中其门，再以暗器破其节甲。",
     attacks: [
       { name: "百足绞缠", dmg: 22, kind: "normal", weight: 12 },
       { name: "毒牙噬咬", dmg: 26, kind: "pierce", weight: 8 },
@@ -167,14 +168,14 @@ WORLD.enemies = {
     reward: { lingshi: 1 }, namedLoot: { duyao_cao: 4, anqi: 2 },
   },
   beast_chimu: {
-    name: "赤目狼王", hp: 185, sense: 9, speed: 15, agility: 16, tactics: "feral",
-    introNote: "赤目狼王——身法鬼魅难以捉摸！它越是受伤越疯，蓄力扑杀一击足以重创，看准蓄力回合全力压制。",
+    name: "赤目狼王", hp: 185, sense: 9, speed: 15, agility: 16, tactics: "feral", elem: "huo", nature: "beast",
+    introNote: "赤目狼王——一身火煞，身法鬼魅难以捉摸！水克火，寒冰符是它的克星。它越是受伤越疯，看准蓄力回合全力压制。",
     attacks: [
       { name: "撕咬", dmg: 22, kind: "normal", weight: 12 },
-      { name: "影袭", dmg: 18, kind: "pierce", weight: 7 },
+      { name: "炎爪影袭", dmg: 18, kind: "pierce", weight: 7, elem: "huo" },
       { name: "狂性大发", dmg: 29, kind: "charge", weight: 8 },
     ],
-    reward: { silver: 10 }, namedLoot: { lingshi: 2, huixue_dan: 1 },
+    reward: { silver: 10 }, namedLoot: { lingshi: 2, huixue_dan: 1, hanbing_fu: 1 },
   },
 };
 
@@ -185,8 +186,9 @@ WORLD.enemies = {
 WORLD.intel = {
   jinguang: {
     l0: "修仙杀手，练气七层。受雇杀人，金光铸罩，凶名在外。",
+    elem: "jin",
     moves: ["金符破空", "剑符斩", "金刚伏魔", "金钟罩·重聚"],
-    l2: "弱点：金钟罩固而不化——挡得住刀剑，挡不住入体之毒；其人贪功冒进，蓄力时门户大开。",
+    l2: "弱点：金行道基天克木行功法，正面斗法万不可取。金钟罩固而不化——挡得住刀剑，挡不住入体之毒；火符可灼其金光；其人贪功冒进，蓄力时门户大开。",
   },
   jiatianlong: {
     l0: "野狼帮帮主，凡俗武人巅峰。野心勃勃，正图谋吞并七玄门。",
@@ -195,32 +197,22 @@ WORLD.intel = {
   },
   modafu: {
     l0: "门中医师，性情古怪。医毒双绝，深居简出。",
+    elem: "mu",
     moves: ["毒掌", "腐骨毒针"],
-    l2: "底细：他收徒的真意恐怕不在传艺——药庐密室常年阴气不散，夜里偶有尸臭。早做防备。",
+    l2: "底细：他收徒的真意恐怕不在传艺——药庐密室常年阴气不散，夜里偶有尸臭。其功法与你同出一门（木行长春功），斗法无相克之利，胜负全看准备。早做防备。",
   },
 };
 
-/* ---------- 风云榜：彩霞山一带的人物座次（玩家以事迹动态入榜） ----------
- * 榜是"别人眼里的世界"——名次由名声定，名声由做过的事定。
- * 王门主是背景型强者：榜上有名、世人皆知，但你在本篇见不到他出全力。
- */
-WORLD.fameBoard = [
-  { id: "wang_menzhu", name: "王门主", title: "七玄门之主", fame: 90, note: "深不可测，常年闭关。野狼帮再猖狂，也不敢真攻上山门。" },
-  { id: "jinguang", name: "金光上人", title: "修仙杀手", fame: 78, note: "受雇于人，金光铸罩。凡俗武人见之如见鬼神。" },
-  { id: "modafu", name: "墨大夫", title: "门中圣手", fame: 58, note: "医毒双绝。江湖人说：得罪谁也别得罪给你抓药的。" },
-  { id: "jiatianlong", name: "贾天龙", title: "野狼帮主", fame: 52, note: "野心勃勃，正在吞并彩霞山周遭的地盘。" },
-  { id: "lifeiyu", name: "厉飞雨", title: "七玄门俊杰", fame: 30, note: "门中年轻一辈第一人，刀法天成。" },
-  { id: "yuelu", name: "岳鹿道人", title: "云游散修", fame: 22, note: "来历不明的散修，在彩霞山一带出没。" },
-];
-
 /* 风云榜：彩霞山一带的江湖座次（石碑）。名实一致：榜上人物的强弱与游戏内数值一致。
- * 玩家凭 s.fame 攀榜——藏拙者榜上无名，正合其意；扬名者步步登高。 */
+ * 玩家凭 s.fame 攀榜——藏拙者榜上无名，正合其意；扬名者步步登高。
+ * 王门主是背景型强者雏形：榜上有名、世人皆知，但你在本篇见不到他出全力。 */
 WORLD.fameBoard = [
-  { id: "jinguang",    name: "金光上人", title: "修仙杀手 · 金钟罩", fame: 120, note: "传闻刀枪不入，杀人越货。" },
+  { id: "jinguang",    name: "金光上人", title: "修仙杀手 · 金钟罩", fame: 120, note: "传闻刀枪不入，杀人越货。凡俗武人见之如见鬼神。" },
+  { id: "menzhu",      name: "王门主",   title: "七玄门之主",        fame: 90,  note: "深不可测，常年闭关。野狼帮再猖狂，也不敢真攻上山门。" },
   { id: "modafu",      name: "墨大夫",   title: "七玄门 · 医毒双绝", fame: 85,  note: "门中老人讳莫如深。" },
-  { id: "menzhu",      name: "七玄门门主", title: "彩霞山之主",       fame: 80,  note: "凡俗武林一方之雄。" },
   { id: "jiatianlong", name: "贾天龙",   title: "野狼帮帮主",        fame: 66,  note: "野心勃勃，广纳亡命。" },
   { id: "lifeiyu",     name: "厉飞雨",   title: "七玄门 · 后起之秀",  fame: 38,  note: "门派大比锋芒初露。" },
+  { id: "yuelu",       name: "岳鹿道人", title: "云游散修",          fame: 22,  note: "来历不明的散修，在彩霞山一带出没。" },
 ];
 
 /* 异闻池：投放到风云录/际遇的"有名有姓的猎物"——听闻在前，相遇在后 */

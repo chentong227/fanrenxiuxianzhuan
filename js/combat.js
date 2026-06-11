@@ -58,8 +58,24 @@
                 desc: "凡人暗器，激射飞针，例不虚发，破甲。消耗一支暗器。" },
 
     // 运功镇魂：功法法术，对元神之敌，伤害由「功力」换算（决战第三波必须打得出）
-    zhenhun:  { name: "运功镇魂", cost: { mu: 1, shui: 1 }, type: "soul", source: "art",
-                desc: "凝聚周身功力镇压神魂。唯对元神之敌有效，伤害取决于你的功力。" },
+    zhenhun:  { name: "运功镇魂", cost: { mu: 1, shui: 1 }, type: "soul", source: "art", elem: "shui",
+                slays: { ghost: 1.5 },
+                desc: "凝聚周身功力镇压神魂。唯对元神之敌有效，伤害取决于你的功力。神魂镇压本是鬼魅克星。" },
+
+    // 火弹术：练气期小法术（残页自悟）——韩立四灵根火气薄，此术贵在克金，不在频率
+    huodan:   { name: "火弹术", cost: { huo: 2 },          type: "atk", dmg: 12, school: "huo", source: "art", elem: "huo",
+                desc: "凝火灵之气为弹，激射而出。火气灼金——对金行道基的修士妖兽事半功倍。" },
+
+    /* —— 符箓底牌（修仙界通货：一点灵气点燃符上封存的法术）——
+     * 穷靠本命，富靠符箓：灵根缺什么行，花钱买什么符。消耗实物，与毒/暗器同区。 */
+    huoshe_fu: { name: "火蛇符", cost: { any: 1 },          type: "atk", dmg: 22, source: "art", elem: "huo", consume: "huoshe_fu",
+                desc: "符上封存火蛇之术，一点灵气即可激发。火克金——金行强敌的破局之物。消耗一张符。" },
+    hanbing_fu:{ name: "寒冰符", cost: { any: 1 },          type: "atk", dmg: 22, source: "art", elem: "shui", consume: "hanbing_fu",
+                desc: "符上封存寒冰锥击。水克火——火行凶兽的对策。消耗一张符。" },
+
+    // 符宝·金光砖：杀金光上人的战利遗赠——韩立的第一件符宝（充能式大杀器）
+    jinguang_zhuan: { name: "金光砖", cost: { any: 1 },     type: "atk", dmg: 34, pierce: true, source: "art", elem: "jin", consume: "jinguang_zhuan_charge",
+                desc: "金光上人的符宝遗赠：金光化砖凌空砸落，势大力沉且破甲。每次催动耗一道充能（灵石可回充）——杀手的凶器，如今是你的底牌。" },
   };
 
   /* ---------- 灵气产出档案 ----------
@@ -74,6 +90,18 @@
   };
 
   function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  /* ---------- 克制：灵技 × 道基（element-design.md）----------
+   * 修仙逻辑：护体灵力是主修功法所化——你打的不是肉身，是道基。
+   * 五行环：金克木 → 木克土 → 土克水 → 水克火 → 火克金。
+   * 凡人无道基、武学无行属：任一方无行属则不参与（修行者之间的语言）。 */
+  const KE = { jin: "mu", mu: "tu", tu: "shui", shui: "huo", huo: "jin" };
+  function elemMul(atkElem, defElem) {
+    if (!atkElem || !defElem) return 1;
+    if (KE[atkElem] === defElem) return 1.25;   // 克之
+    if (KE[defElem] === atkElem) return 0.8;    // 被克
+    return 1;
+  }
 
   /* ---------- 战斗者 ---------- */
   class Fighter {
@@ -91,8 +119,12 @@
       this.spells = cfg.spells || [];
       this.pouch = cfg.pouch || {};      // 底牌 { duyao_cao, anqi }
       this.status = {};
-      this.immunePoison = cfg.immunePoison || false;
-      this.soulOnly = cfg.soulOnly || false;
+      // 道基与物性（克制语言）：elem=主修功法/妖气行属；nature=ghost鬼魂|corpse尸傀|beast妖兽
+      this.elem = cfg.elem || null;
+      this.nature = cfg.nature || null;
+      this.slays = cfg.slays || null;           // 特攻表 { nature: 倍率 }（辟邪神雷克鬼魔的布线）
+      this.immunePoison = cfg.immunePoison || cfg.nature === "corpse" || false;  // 尸无血脉，毒理不通
+      this.soulOnly = cfg.soulOnly || cfg.nature === "ghost" || false;           // 魂无肉身，唯神可伤
       this.dodgeBuff = 0;
       this.nextQiBonus = 0;
       this.momentum = 0;                 // 剑势（眨眼剑法积累，眨眼连击消耗）
@@ -144,7 +176,29 @@
       this.rng = cfg.rng || Math.random;
       this.mode = cfg.mode || "battle";
       this._pendingEnemyWaves = cfg.waves || null;
+      // 侧位单位（combat-arsenal-design.md 轴4）：尸傀→灵宠→傀儡共用此架构。
+      // { id,name,hp,hpMax,atk,atkName,elem,nature,slays,guard } —— 每回合自动行动+概率挡刀
+      this.side = cfg.side ? Object.assign({}, cfg.side) : null;
       this._rollEnemyIntents();
+    }
+
+    /* ----- 侧位单位行动（玩家回合结束后自动出手）----- */
+    _sideAct() {
+      const s = this.side;
+      if (!s || s.hp <= 0) return;
+      const ti = this._firstAliveEnemy();
+      if (ti < 0) return;
+      const target = this.enemies[ti];
+      let dmg = s.atk || 8;
+      const eMul = elemMul(s.elem, target.elem);
+      const sMul = (s.slays && target.nature && s.slays[target.nature]) || 1;
+      dmg = Math.round(dmg * eMul * sMul);
+      if (target.soulOnly && !s.soulTouch) { this._log(`${s.name} 扑向 ${target.name}，却穿身而过——元神无形，蛮力无用。`); return; }
+      const r = target.takeDamage(dmg, { soul: !!s.soulTouch });
+      this._stat(s.name, r.dealt);
+      this._log(`${s.name} 使「${s.atkName || "扑击"}」，对 ${target.name} 造成 ${r.dealt} 伤害` + (eMul > 1 ? "（克制）" : ""));
+      this._emitFx(`enemy:${ti}`, "dmg", r.dealt);
+      this._checkEnd();
     }
 
     _log(msg) { this.log.push(msg); }
@@ -274,9 +328,22 @@
       if (!sp) return false;
       // 每回合限用一次的法术（如凝神静气）：本回合用过即不可再用
       if (sp.oncePerRound && this._usedOnce && this._usedOnce[spellId]) return false;
-      const qiOk = Object.entries(sp.cost).every(([e, n]) => this.qi[e] >= n);
+      // any：任意系灵气凑数（符箓：一点灵气即可点燃）
+      const qiOk = Object.entries(sp.cost).every(([e, n]) =>
+        e === "any" ? ELEMENTS.reduce((a, k) => a + this.qi[k], 0) >= n : this.qi[e] >= n);
       const consumeOk = !sp.consume || this.player.hasConsumable(sp.consume);
       return qiOk && consumeOk;
+    }
+
+    _payCost(cost) {
+      Object.entries(cost).forEach(([e, n]) => {
+        if (e !== "any") { this.qi[e] -= n; return; }
+        // any：从存量最多的系扣（不动玩家的主力系抉择，扣冗余）
+        for (let i = 0; i < n; i++) {
+          const top = ELEMENTS.slice().sort((a, b) => this.qi[b] - this.qi[a])[0];
+          if (this.qi[top] > 0) this.qi[top]--;
+        }
+      });
     }
 
     affordableSpells() {
@@ -291,7 +358,7 @@
       if (sp.consume && !this.player.hasConsumable(sp.consume)) return { ok: false, reason: "底牌已用尽" };
       if (sp.oncePerRound && this._usedOnce && this._usedOnce[spellId]) return { ok: false, reason: "本回合已凝神，不可再用" };
       if (!this.canAfford(spellId)) return { ok: false, reason: "灵气不足" };
-      Object.entries(sp.cost).forEach(([e, n]) => { this.qi[e] -= n; });
+      this._payCost(sp.cost);
       if (sp.consume) this.player.pouch[sp.consume]--;
       if (sp.oncePerRound) { (this._usedOnce || (this._usedOnce = {}))[spellId] = true; }
 
@@ -304,6 +371,27 @@
     _emitFx(targetRef, kind, text) {
       // 记录一次战斗特效（供 UI 弹飘字）。targetRef: "enemy:i" | "player"
       (this._fx || (this._fx = [])).push({ ref: targetRef, kind, text });
+    }
+
+    /* ----- 克制触发：飘字 + 首次确认直觉 + 揭示道基（打了就懂=情报的自然组成）----- */
+    _noteElem(caster, target, sp, eMul, sMul, tref) {
+      if (sMul > 1) {
+        this._emitFx(tref, "crit", "克星！");
+        this._log(`（${sp.name}正是${target.name}这等${target.nature === "ghost" ? "鬼魅之物" : "邪物"}的克星——威力大涨！）`);
+      }
+      if (eMul > 1) {
+        this._emitFx(tref, "crit", "克制！");
+        if (caster === this.player && target.elem) {
+          (this._reveals || (this._reveals = [])).push({ name: target.name, elem: target.elem });
+          if (!this._elemNoted) { this._elemNoted = true; this._log(`（${ELEM_NAME[sp.elem]}气压过${ELEM_NAME[target.elem]}行道基——${target.name}的护体灵光黯了一分！伤害+25%）`); }
+        }
+      } else if (eMul < 1) {
+        this._emitFx(tref, "miss", "相抵");
+        if (caster === this.player && target.elem) {
+          (this._reveals || (this._reveals = [])).push({ name: target.name, elem: target.elem });
+          if (!this._elemNoted2) { this._elemNoted2 = true; this._log(`（对方${ELEM_NAME[target.elem]}行道基天克你的${ELEM_NAME[sp.elem]}气——这一手威力打了折扣）`); }
+        }
+      }
     }
 
     _applySpell(caster, sp, target, spellId) {
@@ -326,6 +414,14 @@
         // 来源(武学/法术) × 功法品阶 × 境界 的强度换算 × fail-forward 看破加成
         baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier);
         baseDmg = Math.max(1, Math.round(baseDmg * auxMul * (caster.dmgBonus || 1)));
+        // 克制：灵技行属 × 对方道基（×1.25/×0.8）——打的不是肉身，是道基
+        const eMul = elemMul(sp.elem, target.elem);
+        // 特攻：物性克星（镇魂克鬼、辟邪神雷克鬼魔的同一张表）
+        const sMul = (sp.slays && target.nature && sp.slays[target.nature]) || 1;
+        if (eMul !== 1 || sMul !== 1) {
+          baseDmg = Math.round(baseDmg * eMul * sMul);
+          this._noteElem(caster, target, sp, eMul, sMul, tref);
+        }
         // 趁虚而入：敌方蓄力中旧力已尽、新力未生——此刻出手伤害+30%（读招的显式奖励）
         let exploitCharge = false;
         if (target._charging && caster === this.player) { baseDmg = Math.round(baseDmg * 1.3); exploitCharge = true; }
@@ -359,7 +455,10 @@
 
       } else if (sp.type === "soul" && target) {
         if (!target.soulOnly) { this._log(`${caster.name} 运功镇魂，但 ${target.name} 乃血肉之躯，此法无用！`); this._emitFx(tref, "miss", "无效"); return; }
-        const dmg = Balance.soulSuppressDamage(caster.gongli, target.gongli || 20);
+        let dmg = Balance.soulSuppressDamage(caster.gongli, target.gongli || 20);
+        // 特攻：神魂镇压正是鬼魅克星（slays 表——辟邪神雷克鬼魔的同一语言）
+        const sMul = (sp.slays && target.nature && sp.slays[target.nature]) || 1;
+        if (sMul > 1) { dmg = Math.round(dmg * sMul); this._emitFx(tref, "crit", "克星！"); }
         const r = target.takeDamage(dmg, { soul: true });
         if (caster === this.player) this._stat(sp.name, r.dealt);
         this._log(`${caster.name} 运功镇魂，以功力冲击 ${target.name} 的神魂，造成 ${r.dealt} 伤害（${Math.max(0, Math.round(target.hp))}/${target.hpMax}）`);
@@ -430,6 +529,8 @@
     endRound() {
       if (this.status !== "ongoing") return;
       this._tickStatus(this.player);
+      this._sideAct();   // 侧位单位（尸傀/灵宠）在玩家收手后自动出击
+      if (this.status !== "ongoing") return;
 
       this.enemies.forEach(e => {
         if (!e.alive) return;
@@ -488,11 +589,28 @@
         return;
       }
       if (a.kind === "release") e._charging = null; // 释放完毕
+      // 侧位单位挡刀：尸傀/灵宠扑上去替主人挨这一下（嘲讽率掷骰）
+      if (this.side && this.side.hp > 0 && this.rng() < (this.side.guard || 0)) {
+        let sdmg = a.dmg || 8;
+        if (a.elem && this.side.elem) sdmg = Math.round(sdmg * elemMul(a.elem, this.side.elem));
+        this.side.hp = clampNum(this.side.hp - sdmg, 0, this.side.hpMax);
+        this._log(`${this.side.name} 横身挡下「${a.name}」，代受 ${sdmg} 伤（${Math.max(0, this.side.hp)}/${this.side.hpMax}）`);
+        this._emitFx("side", "hurt", sdmg);
+        if (this.side.hp <= 0) this._log(`${this.side.name} 轰然倒地，再难动弹——战后须得修缮。`);
+        return;
+      }
       let dodge = (this.player.dodgeBuff || 0) + (this.player.agility || 0) / 100;
       const enemyAdv = Balance.senseAdvantage(e.sense || 5, this.player.sense);
       dodge = clampNum(dodge - enemyAdv.hitBonus, 0, 0.6);
       if (this.rng() < dodge) { this._log(`${e.name} 使「${a.name}」，被 ${this.player.name} 闪避！`); this._emitFx("player", "miss", "闪避"); return; }
-      const r = this.player.takeDamage(a.dmg || 8, { soul: a.soul, pierce: a.pierce });
+      // 对称克制：敌方灵技同样克你的道基（金光上人金技 × 长春功=被天克——动漫一致感）
+      let edmg = a.dmg || 8;
+      if (a.elem && this.player.elem) {
+        const m = elemMul(a.elem, this.player.elem);
+        if (m > 1 && !this._eNoted) { this._eNoted = true; this._log(`（${e.name}的${ELEM_NAME[a.elem]}系法术天克你的道基——护体灵力被压着打！）`); }
+        edmg = Math.round(edmg * m);
+      }
+      const r = this.player.takeDamage(edmg, { soul: a.soul, pierce: a.pierce });
       if (r.blocked) { this._log(`${e.name} 的「${a.name}」对你无效`); this._emitFx("player", "miss", "无效"); }
       else {
         if (this.player.hp <= 0) this.deathCause = { by: e.name, move: a.name };   // 败因记录（复盘归因）
