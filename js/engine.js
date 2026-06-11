@@ -898,6 +898,19 @@ const Engine = {
     if (id && (s.intel || {})[id] >= 2) enemy._dossier = true;
     return enemy;
   },
+
+  // 情报是双向的：你查人，人也查你（multiply-design 乘法B）。
+  // 名声大噪且不藏拙的修士，对手早有耳闻——开局便凝护体严阵以待。
+  // 藏拙者无此忧（轻敌→开局剑势），扬名者得风云榜与人情、失战场先手：真实的战略抉择。
+  _applyFameWariness(enemy) {
+    const s = State.data;
+    if (!enemy || !(enemy.qiLayer > 0)) return enemy;        // 凡人不通修仙界消息网
+    const reveal = s.revealedRealm != null ? s.revealedRealm : s.realmIndex;
+    if ((s.fame || 0) >= 40 && reveal >= s.realmIndex) {
+      enemy._wary = true;
+    }
+    return enemy;
+  },
   // 交手自动补全：见过的招，永久记住（无论胜败）
   _recordIntelFromCombat(c) {
     const s = State.data;
@@ -1548,10 +1561,16 @@ const Engine = {
       // fail-forward：决战每败一次=看破对方几分路数，再战伤害+8%（至多+24%）——
       // 韩立吃的每次亏都是学费（爽文契约：失败向前走）
       dmgBonus: 1 + Math.min(3, (s.flags[`losses_${this._nextFightType || ""}`] || 0)) * 0.08,
-      // 底牌：平时准备的毒草、暗器、符箓带进战斗（准备内化进战斗）
-      pouch: { duyao_cao: State.count("duyao_cao"), anqi: State.count("anqi"),
-               huoshe_fu: State.count("huoshe_fu"), hanbing_fu: State.count("hanbing_fu"),
-               jinguang_zhuan_charge: State.count("jinguang_zhuan_charge") },
+      // 底牌：平时准备的毒草、暗器、符箓带进战斗（准备内化进战斗）。
+      // 探索中：临时袋里刚采的毒草/暗器当场可用（multiply-design 乘法D——采集即底牌）
+      pouch: (() => {
+        const bag = (s.explore && !s.explore.finished) ? (s.explore.bag || {}) : {};
+        const p = {};
+        ["duyao_cao", "anqi", "huoshe_fu", "hanbing_fu", "jinguang_zhuan_charge"].forEach(id => {
+          p[id] = State.count(id) + (bag[id] || 0);
+        });
+        return p;
+      })(),
     });
   },
 
@@ -1575,15 +1594,25 @@ const Engine = {
     }
   },
 
-  // 战斗结束后，把战中消耗的底牌写回主背包
+  // 战斗结束后，把战中消耗的底牌写回（探索临时袋优先消耗，再扣主背包）
   _syncPouchBack() {
     const c = this._combat;
     if (!c) return;
+    const s = State.data;
     const p = c.player.pouch || {};
+    const bag = (s.explore && !s.explore.finished) ? (s.explore.bag || {}) : null;
     ["duyao_cao", "anqi", "huoshe_fu", "hanbing_fu", "jinguang_zhuan_charge"].forEach(id => {
       const left = p[id] || 0;
-      const had = State.count(id);
-      if (left < had) State.take(id, had - left);
+      const had = State.count(id) + (bag ? (bag[id] || 0) : 0);
+      let used = had - left;
+      if (used <= 0) return;
+      if (bag && bag[id]) {
+        const fromBag = Math.min(bag[id], used);
+        bag[id] -= fromBag;
+        if (!bag[id]) delete bag[id];
+        used -= fromBag;
+      }
+      if (used > 0) State.take(id, used);
     });
   },
 
@@ -1591,13 +1620,17 @@ const Engine = {
   startEncounterFight(enemyId) {
     const tmpl = WORLD.enemies[enemyId];
     if (!tmpl) { this.log("虚惊一场，并无敌踪。", "sys"); return; }
-    const enemy = this._applyDossier(Object.assign({}, tmpl));
+    const enemy = this._applyFameWariness(this._applyDossier(Object.assign({}, tmpl)));
     this._combat = new CombatAPI.Combat({
       player: this.playerFighter(),
       enemies: [enemy],
       maxRounds: 20,
       side: this.sideUnitFor("encounter"),
     });
+    if (enemy._wary) {
+      this._combat.enemies[0].shield = 12;
+      this.log(`「${tmpl.name}」眯起眼："彩霞山那位……久闻大名。"——你的名声在外，对方早有防备（开局护体12）。`, "sys");
+    }
     this._combatMeta = { type: "encounter", reward: tmpl.reward, enemyName: tmpl.name,
       namedBeast: enemyId.indexOf("beast_") === 0 ? enemyId : null, namedLoot: tmpl.namedLoot || null };
     State.data.combat = true;
@@ -1687,6 +1720,20 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // 心魔具象（multiply-design 乘法E）：心魔由剧情记忆生成——你最重的业障，就是它的脸
+  _demonFace() {
+    const s = State.data;
+    if (s.flags.modafu_dead) return {
+      name: "心魔 · 墨大夫",
+      taunt: "幻象中那张枯槁的脸缓缓抬起，正是墨大夫：「用我的毒，驱我炼的尸，夺我的药庐……韩立，你我究竟有何分别？」",
+    };
+    if (s.flags.zhangtie_dead) return {
+      name: "心魔 · 张铁",
+      taunt: "雾里走出一个憨厚的身影，是张铁：「韩立，咱俩说好从青牛镇一块儿出来、互相照应的……你如今走的这条路，还回得了头吗？」",
+    };
+    return { name: null, taunt: null };
+  },
+
   // 突破战：与瓶颈心魔对战（复用战斗引擎）
   startBreakthroughFight(opts = {}) {
     const s = State.data;
@@ -1700,19 +1747,22 @@ const Engine = {
     const daoxin = Math.round(40 + (s.mood / s.moodMax) * 40 - (s.demon / 100) * 25);
     const rounds = 6 + Math.floor((s.spirit / realm.spMax) * 4) - Math.floor(s.demon / 25);
 
+    // 心魔具象：你最重的业障，就是它的脸（剧情记忆 × 战斗引擎）
+    const face = this._demonFace();
+
     let bottleneckHp, maxRounds, demonName, demonAtk, intro;
     if (isBig) {
       // 大境界·心魔劫：以秘仪配置为基准，远比小境界凶险
       const rite = opts.rite || this._bigRealmRite() || {};
       bottleneckHp = Math.round((rite.trialHp || 90) - culRatio * 20);
       maxRounds = Math.max(6, (rite.trialRounds || 10) + Math.floor((s.spirit / realm.spMax) * 4) - Math.floor(s.demon / 25));
-      demonName = `${rite.name || (nextRealm ? nextRealm.name : "瓶颈")}·心魔劫`;
+      demonName = face.name ? `心魔劫 · ${face.name.replace("心魔 · ", "")}` : `${rite.name || (nextRealm ? nextRealm.name : "瓶颈")}·心魔劫`;
       demonAtk = 14;
       intro = `你按秘仪引动天地之力冲击「${nextRealm ? nextRealm.name : "大境界"}」之关，生平执念尽数化作心魔劫扑面而来——成败、生死，皆在此一战！`;
     } else {
       bottleneckHp = Math.round(40 + s.realmIndex * 14 - culRatio * 22);
       maxRounds = Math.max(4, rounds);
-      demonName = `${nextRealm ? nextRealm.name : "瓶颈"}·心魔`;
+      demonName = face.name || `${nextRealm ? nextRealm.name : "瓶颈"}·心魔`;
       demonAtk = 9;
       intro = `心魔过盛，冲关之际它趁虚而起——你须先在心战中降伏它，方能突破至「${nextRealm ? nextRealm.name : "下一层"}」！`;
     }
@@ -1723,7 +1773,8 @@ const Engine = {
     this._combat = new CombatAPI.Combat({
       player,
       enemies: [{ name: demonName, hp: Math.max(20, bottleneckHp),
-                  sense: 5, agility: 0, atkName: "心魔反噬", atk: demonAtk }],
+                  sense: 5, agility: 0, atkName: "心魔反噬", atk: demonAtk,
+                  introNote: face.taunt || null }],
       maxRounds,
       mode: "breakthrough",
     });
@@ -1731,6 +1782,7 @@ const Engine = {
     s.combat = true;
     this._combat.startRound();
     this.log(intro, "event");
+    if (face.taunt) this._combat._log(face.taunt);
     UI.openCombat(this._combat, this._combatMeta);
   },
 

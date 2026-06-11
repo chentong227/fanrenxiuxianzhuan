@@ -1648,10 +1648,14 @@ const UI = {
     this._flashCombatBanner(meta, combat);
   },
 
-  // 敌人名 → 立绘（剧情人物用其立绘；心魔用韩立暗影；无图回退字符玉牌）
+  // 敌人名 → 立绘（剧情人物用其立绘；心魔用业障之人的脸，无业障用韩立暗影）
   _artIdByName(name) {
     if (!name || typeof Art === "undefined") return null;
-    if (/心魔|劫/.test(name)) return "hanli";
+    if (/心魔|劫/.test(name)) {
+      if (/墨大夫/.test(name)) return "modafu";
+      if (/张铁/.test(name)) return "zhangtie";
+      return "hanli";
+    }
     if (/铁奴/.test(name)) return Art.has("tienu") ? "tienu" : "zhangtie";
     if (/张铁/.test(name)) return "zhangtie";
     const all = (typeof WORLD !== "undefined" && WORLD.npcs) ? WORLD.npcs : [];
@@ -1928,6 +1932,9 @@ const UI = {
           // 隐秘暗室未被神识察觉时不显形
           if (c.content && CO[c.content] && !c.hidden) inner = `<span class="ex-icon${CO[c.content].boss ? ' boss' : ''}">${CO[c.content].icon}</span>`;
           if (TE[c.terrain].blocked) inner = `<span class="ex-icon dim">${c.terrain === "water" ? "💧" : "⛰"}</span>`;
+        } else if (state.farMark && state.farMark.x === x && state.farMark.y === y && c.content === "boss") {
+          // 远惦记剪影：迷雾深处隐约可见兽踪（入图便有"去不去"的惦记）
+          inner = `<span class="ex-icon far-mark">👹</span>`;
         }
         if (comp) inner = `<span class="ex-icon comp">🧍</span>`;
         if (isPlayer) { inner = `<span class="ex-icon you">🧙</span>`; cls += "player "; }

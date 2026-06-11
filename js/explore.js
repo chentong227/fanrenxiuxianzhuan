@@ -115,6 +115,22 @@
       // 异状格 ×2：踩上才知吉凶
       place("mystery", 2, deep.length >= 2 ? deep : shallow);
 
+      // —— 节拍器（multiply-design 律三：无聊之前必有收获）——
+      // 空域回填：任何 3×3 邻域不得全空——走三步必有一物（嗑瓜子的硬保障）
+      for (let cy = 1; cy < h - 1; cy += 2) {
+        for (let cx = 1; cx < w - 1; cx += 2) {
+          let any = false;
+          for (let dy = -1; dy <= 1 && !any; dy++) for (let dx = -1; dx <= 1 && !any; dx++) {
+            const c = cells[idx(cx + dx, cy + dy)];
+            if (c && (c.content || TERRAIN[c.terrain].blocked)) any = true;
+          }
+          if (!any) {
+            const c = cells[idx(cx, cy)];
+            fill(c, rng() < 0.6 ? "herb" : "mystery");
+          }
+        }
+      }
+
       // 同伴落在入口附近
       const companions = (cfg.companions || []).map((cp, i) => ({
         id: cp.id, name: cp.name,
@@ -137,9 +153,12 @@
         finished: false,
         sightRadius: cfg.sightRadius || 1,
         senseVal: cfg.senseVal || 5,   // 神识：决定能否察觉隐秘暗室
+        // 远惦记（律三）：入图即可望见深处的兽踪——塞尔达"登高望见"的网格版
+        farMark: bossPt ? { x: bossPt.x, y: bossPt.y } : null,
       };
       this._reveal(state, state.player.x, state.player.y);
       this._log(state, `你踏入「${state.siteName}」。脚下是一片未知之地，且行且探——深处愈险，亦愈富。`);
+      if (state.farMark) this._log(state, "极深处隐有兽吼传来，地面微颤——这片地界的主人就盘踞在那里。");
       return state;
     },
 

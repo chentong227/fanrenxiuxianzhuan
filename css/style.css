@@ -594,6 +594,13 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .side-strip .ss-name { color: #b8a98c; font-weight: 600; }
 .side-strip .ss-st { color: var(--ink-dim); flex: 1; }
 
+/* 远惦记剪影：迷雾深处的兽踪（看得见、到不了——惦记本体） */
+.ex-cell.fog .ex-icon.far-mark {
+  opacity: .35; filter: grayscale(.7) blur(.5px);
+  animation: farPulse 2.8s ease-in-out infinite;
+}
+@keyframes farPulse { 0%,100% { opacity: .22; } 50% { opacity: .45; } }
+
 .cintent {
   font-size: 11.5px; color: var(--gold-bright); margin-top: 5px; padding: 5px 8px; max-width: 250px;
   background: rgba(14,11,8,.82); border: 1px solid rgba(201,169,106,.4); border-radius: var(--radius);
