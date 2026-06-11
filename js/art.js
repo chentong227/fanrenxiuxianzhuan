@@ -22,6 +22,8 @@
     // 场景（含过场地点）
     yaolu: 1, houshan: 1, town: 1, wuting: 1,
     qingniu: 1, road: 1, shanmen: 1, miju: 1,
+    // 大陆层舆图（地理考据：镜州西北/建州太岳山脉/岚州南部/东临海）
+    tiannan_map: 1,
   };
 
   // 关键剧情 CG 大图（assets/cg_<id>.png）：生成入库后在此登记
@@ -29,7 +31,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 7,
+    ASSET_VER: 8,
 
     // id → 仓库图路径（无图返回 null，调用方回退 emoji 占位）
     url(id) {

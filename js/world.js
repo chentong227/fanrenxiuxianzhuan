@@ -107,32 +107,43 @@ WORLD.locations = [
  * 铁律：全图早见（远方=惦记），限制可达的不是迷雾是旅途成本。
  * 节点的 locs 指向地区层 locations 组；gate 为道途门槛（未达则只可远望）。
  * 旅途卷轴实装前，未解锁节点点击仅展示"道途未通"与门槛说明。 */
+/* 地理考据（凡人手册/原文，2026-06-11 核定）：
+ * 镜州=越国西北部（贫困）；彩霞山=镜州第二大山，原名落凤山（五色彩凤化山传说）；
+ * 建州=北部第二大州（多山丘陵人口稀少，北接元武国），西部太岳山脉连绵数千里，黄枫谷在焉，
+ * 血色禁地在建州北部；岚州=南部产粮大州（第二富足），嘉元城=岚州第一城（岚州中部），
+ * 广贵城=岚州最南（三面环山一面靠湖），太南山在广贵城西四十里；越京=越国京城（郊外白菊山）。
+ * 节点 pos 与 assets/tiannan_map.png 地貌对位（西北五色峰=彩霞山）。 */
 WORLD.continent = {
   name: "天南 · 越国",
+  map: "tiannan_map",
   nodes: [
-    { id: "caixia",   name: "彩霞山",  pos: { x: 62, y: 64 }, locs: ["yaolu", "houshan", "wuting", "town", "miju"],
-      desc: "七玄门所在。你修仙路的起点——药庐的灯火，后山的兽吼。" },
-    { id: "qingniu",  name: "青牛镇",  pos: { x: 44, y: 78 }, locs: [],
-      desc: "你的家乡。爹娘的白发，小妹的笑闹，几亩薄田。", months: 1, danger: "低", visit: "home" },
-    { id: "jiayuan",  name: "嘉元城",  pos: { x: 38, y: 48 }, locs: [],
-      desc: "越国大城，鱼龙混杂。传闻城中有修仙者出没。", months: 2, danger: "中",
-      gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
-    { id: "tainangu", name: "太南谷",  pos: { x: 24, y: 34 }, locs: [],
-      desc: "修仙者的集市每隔数年在此举办——太南小会，凡人勿近。", months: 3, danger: "中",
-      gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
-    { id: "huangfeng", name: "黄枫谷", pos: { x: 70, y: 22 }, locs: [],
-      desc: "越国七大仙门之一。升仙令在手，此处便是你的去处。", months: 4, danger: "高",
+    { id: "caixia",   name: "彩霞山",  pos: { x: 17, y: 19 }, locs: ["yaolu", "houshan", "wuting", "town", "miju"],
+      desc: "镜州第二大山，原名落凤山——传说古时一头五色彩凤落于此地，化作此山。七玄门据此百年，是你修仙路的起点。" },
+    { id: "qingniu",  name: "青牛镇",  pos: { x: 26, y: 31 }, locs: [],
+      desc: "七玄门治下的小镇，你的家乡就在镇郊五里沟。爹娘的白发，几亩薄田。", months: 1, danger: "低", visit: "home" },
+    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: [],
+      desc: "越国七大仙门之一，居建州太岳山脉深处——此山脉连绵数千里，北接元武国。升仙令在手，此处便是你的去处。", months: 3, danger: "高",
       gate: (s) => State.count("shengxian_ling") > 0 ? (s.flags.arc1_complete ? null : "七玄门之事未了") : "无升仙令者，仙门不纳" },
-    { id: "farsea",   name: "乱星海（极远）", pos: { x: 92, y: 40 }, locs: [], silhouette: true,
-      desc: "传说中天南之外的无尽海域，星罗万岛，妖修横行。路远得连地图都画不全。" },
+    { id: "yuejing",  name: "越京",    pos: { x: 34, y: 50 }, locs: [],
+      desc: "越国京城，凡俗繁华之极。郊外白菊山是赏景名胜。", months: 2, danger: "低",
+      gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
+    { id: "jiayuan",  name: "嘉元城",  pos: { x: 44, y: 60 }, locs: [],
+      desc: "岚州第一大城。岚州居越国之南，沃野产粮，富庶仅次京畿——城中鱼龙混杂，传闻有修仙者出没。", months: 3, danger: "中",
+      gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
+    { id: "tainangu", name: "太南谷",  pos: { x: 28, y: 80 }, locs: [],
+      desc: "岚州最南端，广贵城西四十里的太南山中。修仙者的集市「太南小会」每隔数年在此举办，凡人勿近。", months: 4, danger: "中",
+      gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
+    { id: "farsea",   name: "乱星海（极远）", pos: { x: 86, y: 42 }, locs: [], silhouette: true,
+      desc: "天南以东的无尽海域，星罗万岛，妖修横行。路远得连舆图都画不全。" },
   ],
   routes: [
     { from: "caixia", to: "qingniu" },
-    { from: "caixia", to: "jiayuan" },
-    { from: "qingniu", to: "jiayuan" },
-    { from: "jiayuan", to: "tainangu" },
-    { from: "tainangu", to: "huangfeng" },
     { from: "caixia", to: "huangfeng" },
+    { from: "qingniu", to: "yuejing" },
+    { from: "yuejing", to: "jiayuan" },
+    { from: "yuejing", to: "huangfeng" },
+    { from: "jiayuan", to: "tainangu" },
+    { from: "caixia", to: "yuejing" },
   ],
 };
 
@@ -185,7 +196,7 @@ WORLD.enemies = {
     name: "白额吊睛虎", hp: 200, sense: 7, speed: 14, agility: 12, tactics: "feral", elem: "jin", nature: "beast",
     introNote: "正是异闻中那头噬人虎王！金风裂爪天克你的木行道基——爪疾力沉，血怒时必拼命扑杀。火符能灼其金煞，稳住护体，别贪刀。",
     attacks: [
-      { name: "裂风虎爪", dmg: 24, kind: "normal", weight: 12, elem: "jin" },
+      { name: "裂风虎爪", dmg: 26, kind: "normal", weight: 12, elem: "jin" },
       { name: "虎啸震林", dmg: 22, kind: "pierce", weight: 6 },
       { name: "血怒扑杀", dmg: 32, kind: "charge", weight: 7 },
     ],

@@ -1603,17 +1603,20 @@ const UI = {
       <div style="margin-top:8px"><button class="btn btn-primary btn-mini" onclick="UI.closeModal(); Engine.travelTo('${l.id}')">前往（${cost} 月）</button></div>`;
   },
 
-  /* -------- 大陆层：天南大图（world-architecture L0）——全图早见，远方=惦记 -------- */
+  /* -------- 大陆层：天南舆图（world-architecture L0）——全图早见，远方=惦记 -------- */
   openContinent() {
     const C = WORLD.continent;
     if (!C) return;
     const s = State.data;
     // 当前所在大陆节点（按地区层归属反查）
     const curNode = C.nodes.find(n => (n.locs || []).includes(s.location)) || C.nodes[0];
+    const visited = s.visitedNodes || ["caixia"];
+    // 路线：两端皆到过=墨痕实线（走过的路，地图记得）；否则虚线
     const lines = C.routes.map(r => {
       const a = C.nodes.find(n => n.id === r.from), b = C.nodes.find(n => n.id === r.to);
       if (!a || !b) return "";
-      return `<line x1="${a.pos.x}" y1="${a.pos.y}" x2="${b.pos.x}" y2="${b.pos.y}" class="map-line"/>`;
+      const trod = visited.includes(a.id) && visited.includes(b.id);
+      return `<line x1="${a.pos.x}" y1="${a.pos.y}" x2="${b.pos.x}" y2="${b.pos.y}" class="map-line${trod ? ' trod' : ''}"/>`;
     }).join("");
     const pins = C.nodes.map(n => {
       const here = n.id === curNode.id;
@@ -1625,10 +1628,13 @@ const UI = {
         <span class="pin-label">${n.name}${here ? ' ·在此' : ''}</span>
       </div>`;
     }).join("");
+    const mapUrl = (typeof Art !== "undefined" && C.map) ? Art.url(C.map) : null;
     this.openModal(`
       <h2>天下 · ${C.name}</h2>
       <p style="color:var(--ink-dim);font-size:12px">天地之大，远超彩霞山一隅。看得见的远方，未必是去得了的远方——道阻且长，修为、盘缠、机缘，缺一不可。</p>
-      <div class="worldmap continent">
+      <div class="worldmap continent${mapUrl ? ' inked' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
+        <div class="map-mist"></div>
+        <div class="map-mist far"></div>
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
         ${pins}
       </div>
@@ -1637,7 +1643,7 @@ const UI = {
         <button class="btn btn-ghost" onclick="UI.openTravel()">回到近处</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
       </div>
-    `);
+    `, "wide");
   },
   _contPick(nodeId) {
     const C = WORLD.continent;

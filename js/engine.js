@@ -1059,6 +1059,9 @@ const Engine = {
     s.journey = null;
     const C = WORLD.continent;
     const node = C.nodes.find(n => n.id === j.to);
+    // 舆图墨痕：走过的路，地图记得
+    s.visitedNodes = s.visitedNodes || ["caixia"];
+    if (node && !s.visitedNodes.includes(node.id)) s.visitedNodes.push(node.id);
     this.log(`风尘仆仆，你终于抵达「${j.toName}」。`, "good");
     if (typeof Sfx !== "undefined") Sfx.play("chime");
     // 有地区层的节点：落脚其首地点

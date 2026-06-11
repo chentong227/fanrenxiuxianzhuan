@@ -1300,7 +1300,7 @@ html, body { touch-action: manipulation; }
 }
 .map-detail b { color: var(--ink); }
 
-/* 大陆层（天南大图）：全图早见——远方是惦记，不是迷雾 */
+/* 大陆层（天南舆图）：全图早见——远方是惦记，不是迷雾 */
 .worldmap.continent {
   background:
     radial-gradient(circle at 88% 38%, rgba(106,160,212,0.16), transparent 30%),
@@ -1308,14 +1308,66 @@ html, body { touch-action: manipulation; }
     radial-gradient(circle at 55% 80%, rgba(212,180,131,0.06), transparent 40%),
     linear-gradient(150deg, #11181f, #0c1217);
 }
-.map-pin.cont.gated .pin-dot { background: #4a5560; box-shadow: 0 0 4px rgba(70,85,95,.6); }
+/* 水墨舆图模式：宣纸底图 + 云雾视差 + 墨痕 */
+.worldmap.continent.inked {
+  background-size: cover; background-position: center;
+  aspect-ratio: 1 / 1;
+  box-shadow: inset 0 0 60px rgba(60,42,20,.35), 0 2px 14px rgba(0,0,0,.5);
+  border-color: rgba(120,95,60,.55);
+}
+.map-mist { display: none; }
+.worldmap.continent.inked .map-mist {
+  display: block; position: absolute; inset: -20%; pointer-events: none; z-index: 1;
+  background:
+    radial-gradient(ellipse 38% 16% at 24% 26%, rgba(255,255,255,.34), transparent 70%),
+    radial-gradient(ellipse 46% 14% at 72% 16%, rgba(255,255,255,.26), transparent 70%),
+    radial-gradient(ellipse 40% 15% at 55% 64%, rgba(255,255,255,.18), transparent 70%);
+  animation: mistDrift 46s linear infinite alternate;
+  filter: blur(6px);
+}
+.worldmap.continent.inked .map-mist.far {
+  background:
+    radial-gradient(ellipse 50% 18% at 80% 48%, rgba(255,255,255,.22), transparent 70%),
+    radial-gradient(ellipse 36% 12% at 12% 60%, rgba(255,255,255,.20), transparent 70%);
+  animation-duration: 64s; animation-direction: alternate-reverse;
+}
+@keyframes mistDrift {
+  from { transform: translate(-3%, -1.5%); }
+  to   { transform: translate(3%, 1.5%); }
+}
+/* 浅宣纸底上的线与钉：墨色系 */
+.worldmap.continent.inked .map-line { stroke: rgba(70,55,35,.38); stroke-width: 0.5; stroke-dasharray: 1.6 1.8; }
+.worldmap.continent.inked .map-line.trod {
+  stroke: rgba(46,32,18,.72); stroke-width: 0.8; stroke-dasharray: none;
+}
+.worldmap.continent.inked .map-pin { z-index: 2; }
+.worldmap.continent.inked .pin-dot {
+  background: radial-gradient(circle at 35% 35%, #6e5232, #2e2012);
+  border-color: rgba(244,232,208,.85);
+  box-shadow: 0 0 7px rgba(46,32,18,.55);
+  animation: pinBreath 3.4s ease-in-out infinite;
+}
+.worldmap.continent.inked .map-pin.here .pin-dot {
+  background: radial-gradient(circle at 35% 35%, var(--gold-bright, #e8c66a), #7a5b1e);
+  box-shadow: 0 0 12px rgba(212,170,80,.9);
+}
+@keyframes pinBreath { 0%,100% { box-shadow: 0 0 5px rgba(46,32,18,.4); } 50% { box-shadow: 0 0 11px rgba(46,32,18,.75); } }
+.map-pin.cont.gated .pin-dot { background: #4a5560; box-shadow: 0 0 4px rgba(70,85,95,.6); animation: none; }
 .map-pin.cont.gated .pin-label { color: var(--ink-faint); }
+.worldmap.continent.inked .map-pin.cont.gated .pin-dot {
+  background: radial-gradient(circle at 35% 35%, #9a8e7c, #5e564a); opacity: .75;
+}
 .map-pin.cont.silhouette .pin-dot {
   background: transparent; border: 2px dashed rgba(106,160,212,.5); box-shadow: none;
   animation: farPulse 3.2s ease-in-out infinite;
 }
 .map-pin.cont.silhouette .pin-label { color: rgba(106,160,212,.65); font-style: italic; }
+.worldmap.continent.inked .map-pin.cont.silhouette .pin-dot { border-color: rgba(70,90,120,.55); background: transparent; }
+.worldmap.continent.inked .map-pin.cont.silhouette .pin-label { color: rgba(70,90,120,.8); }
 .cont-gate { margin-top: 8px; font-size: 12px; color: var(--ink-faint); }
+
+/* 宽幅弹窗（舆图）*/
+.modal.modal-wide { max-width: 720px; width: 94vw; }
 
 /* ============================================================
  * 功法配装界面
