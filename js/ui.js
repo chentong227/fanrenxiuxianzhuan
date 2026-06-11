@@ -229,11 +229,11 @@ const UI = {
     this.openNpcWheel(npcId);
   },
 
-  // NPC 对你的称呼：随境界/身份变化（世界认出你的成长；藏拙系统上线后改读"显露境界"）
+  // NPC 对你的称呼：随【示人境界】变化（藏拙：世界只认它看见的你）
   honorific() {
     const s = State.data;
     if (s.flags.is_modafu) return "墨大夫";
-    const r = s.realmIndex || 0;
+    const r = (s.revealedRealm != null ? s.revealedRealm : s.realmIndex) || 0;
     if (r >= 6) return "韩高人";
     if (r >= 4) return "韩师傅";
     if (r >= 2) return "韩兄弟";
@@ -553,12 +553,18 @@ const UI = {
     const root = State.root();
     this.el("st-root").textContent = root.name;
     this.el("st-root").style.color = root.color;
-    this.el("st-realm").textContent = realm.name;
+    // 藏拙：真实境界 +（示人境界）
+    const hid = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
+    this.el("st-realm").textContent = hid > 0
+      ? `${realm.name}（示人：${DATA.realms[s.revealedRealm].name}）`
+      : realm.name;
     this.el("st-sense").textContent = s.sense;
     this.el("st-speed").textContent = s.speed;
     this.el("st-insight").textContent = s.insight;
     this.el("st-body").textContent = s.body;
     this.el("st-stones").textContent = s.stones;
+    const alch = this.el("st-alch"); if (alch) alch.textContent = (s.skills && s.skills.alchemy) || 0;
+    const scout = this.el("st-scout"); if (scout) scout.textContent = (s.skills && s.skills.scouting) || 0;
     this.el("st-time").textContent = `${s.year}年${s.month}月`;
 
     this.setBar("cul", s.cultivation, realm.culMax);
@@ -1166,13 +1172,20 @@ const UI = {
     const cls = rate >= 0.7 ? "high" : rate >= 0.4 ? "mid" : "low";
     const demonHigh = s.demon > Balance.demonTrialThreshold();
 
-    // 准备清单（体现"靠万全准备突破"）
-    const prep = [
-      { label: "修为圆满", ok: s.cultivation >= realm.culMax * 0.9 },
-      { label: "灵力充盈", ok: s.spirit >= realm.spMax * 0.8 },
-      { label: "心境平和", ok: s.mood >= s.moodMax * 0.6 },
-      { label: `心魔可控（≤${Balance.demonTrialThreshold()}）`, ok: !demonHigh },
-    ];
+    // 成功率构成明细：准备的每一项都看得见（准备难=可经营的难）
+    const parts = Engine.breakthroughRateParts ? Engine.breakthroughRateParts() : [];
+    const partsHtml = parts.map(p => {
+      const v = Math.round(p.v * 100);
+      const col = v > 0 ? "var(--jade-bright)" : v < 0 ? "var(--red)" : "var(--ink-dim)";
+      return `<div class="prep-row"><span>${p.label}</span><span style="color:${col}">${v > 0 ? "+" : ""}${v}%</span></div>`;
+    }).join("");
+
+    // 备丹冲关：突破前服丹调整状态（准备的最后一手）
+    const PILLS = ["ningshen_dan", "qingyuan_dan", "lingyao_dan"];
+    const pillBtns = PILLS.filter(id => State.count(id) > 0).map(id => {
+      const it = DATA.items[id];
+      return `<button class="btn btn-mini" onclick="Engine.useItem('${id}'); UI.openBreakthrough();">服「${it.name}」×${State.count(id)}　<span style="color:var(--ink-dim);font-size:11px">${effectText(it.effect || {})}</span></button>`;
+    }).join("");
     const trialNote = demonHigh
       ? `<p style="color:var(--gold);font-size:12px;margin-top:6px">⚠ 心魔过盛（${Math.round(s.demon)}）：冲关须先闯一场「心战」降伏心魔，否则功亏一篑。</p>`
       : `<p style="color:var(--jade-bright);font-size:12px;margin-top:6px">心魔已伏，可顺势冲关，水到渠成。</p>`;
@@ -1180,11 +1193,10 @@ const UI = {
     this.openModal(`
       <h2>突破 · ${nextRealm.name}</h2>
       <p style="color:var(--ink-dim)">同一大境界内的层次进阶——准备愈充分，胜算愈大；强行冲关，反受其害。</p>
-      <div class="prep-list">
-        ${prep.map(p => `<div class="prep-row"><span>${p.label}</span><span class="${p.ok ? 'ok' : 'no'}">${p.ok ? '✓ 就绪' : '✗ 不足'}</span></div>`).join("")}
-      </div>
+      <div class="prep-list">${partsHtml}</div>
       <div class="rate-display ${cls}">${pct}%</div>
       <div class="rate-label">${demonHigh ? '心战前·基准成功率' : '顺势冲关成功率'}</div>
+      ${pillBtns ? `<div class="prep-list" style="margin-top:8px"><div class="prep-row" style="color:var(--gold);font-size:12px"><span>备丹冲关（服丹立时起效）</span></div><div class="modal-actions" style="margin-top:6px">${pillBtns}</div></div>` : ""}
       ${trialNote}
       <div class="modal-actions">
         <div class="modal-row">
@@ -1911,6 +1923,49 @@ const UI = {
       </div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">收起</button></div>
     `);
+  },
+
+  /* -------- 突破大典：黑场二字题 + 收益清单 + 藏拙抉择（"丹成"模板）-------- */
+  breakthroughCeremony(realm, gains, wasBig) {
+    let ov = this.el("ceremony-overlay");
+    if (!ov) {
+      ov = document.createElement("div");
+      ov.id = "ceremony-overlay";
+      ov.className = "ceremony-overlay";
+      document.body.appendChild(ov);
+    }
+    const s = State.data;
+    const hidden = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
+    ov.innerHTML = `
+      <div class="cer-inner">
+        <div class="cer-title">${wasBig ? "破 境" : "突 破"}</div>
+        <div class="cer-realm">${realm.name}</div>
+        <div class="cer-text">${wasBig
+          ? "天地灵气如百川归海，灌入四肢百骸——旧日瓶颈訇然中开，你已非昨日之你。"
+          : "灵力冲开窍穴，经脉间一阵久违的通透。你缓缓吐出一口浊气，眼底神光更盛。"}</div>
+        <div class="cer-gains">${gains.map(g => `<div class="cer-gain">· ${g}</div>`).join("")}</div>
+        <div class="cer-actions">
+          <button class="btn btn-secondary" onclick="UI._ceremonyEnd(false)">不动声色（深藏不露）</button>
+          <button class="btn btn-ghost" onclick="UI._ceremonyEnd(true)">渐露锋芒（示人以真）</button>
+        </div>
+        ${hidden > 0 || true ? `<div class="cer-note">藏拙：示人境界不变，他人小觑于你——关键一战亮出真修为，方有雷霆之势。</div>` : ""}
+      </div>`;
+    ov.classList.add("show");
+  },
+  _ceremonyEnd(reveal) {
+    const s = State.data;
+    if (reveal) {
+      s.revealedRealm = s.realmIndex;
+      this.toast(`你不再遮掩修为——如今示人：${State.realm().name}`);
+    } else {
+      if (s.revealedRealm == null) s.revealedRealm = Math.max(0, s.realmIndex - 1);
+      const hid = s.realmIndex - s.revealedRealm;
+      this.toast(`真人不露相（已深藏 ${hid} 层修为）`);
+    }
+    const ov = this.el("ceremony-overlay");
+    if (ov) ov.classList.remove("show");
+    State.save();
+    this.renderAll();
   },
 
   /* -------- 系统菜单（手机端 ☰ 收纳全部系统入口）-------- */

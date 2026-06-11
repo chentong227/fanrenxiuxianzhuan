@@ -472,14 +472,17 @@ const Engine = {
     UI.renderAll();
   },
 
-  /* -------- 采药（后山）-------- */
+  /* -------- 采药（后山）：药理熟练度——干什么都有正反馈 -------- */
   gather() {
     const s = State.data;
     this.passTime(WORLD.activities.gather.timeCost);
-    const n = 1 + Math.floor(Math.random() * 3);
+    if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
+    const bonus = Math.floor((s.skills.alchemy || 0) / 8);   // 药理每8级多识得一株
+    const n = 1 + Math.floor(Math.random() * 3) + bonus;
     State.give("lingcao", n);
-    if (Math.random() < 0.4) State.give("duyao_cao", 1);
-    this.log(`你在灵草丛中采得灵草 ×${n}` + (s.inventory.duyao_cao ? "，还顺手挖到一株毒草。" : "。"), "good");
+    if (Math.random() < 0.4 + (s.skills.alchemy || 0) * 0.01) State.give("duyao_cao", 1);
+    s.skills.alchemy += 1;
+    this.log(`你在灵草丛中采得灵草 ×${n}` + (s.inventory.duyao_cao ? "，还顺手挖到一株毒草" : "") + `。（药理+1，现 ${s.skills.alchemy}）`, "good");
   },
 
   /* -------- 切磋（演武厅，可能引出厉飞雨剧情提示）-------- */
@@ -548,14 +551,20 @@ const Engine = {
     UI.openMarket();
   },
 
-  /* -------- 炼药（药庐，从简）-------- */
+  /* -------- 炼药（药庐）：药理熟练度——炼得越多手越稳，偶得双丹 -------- */
   alchemy() {
     const s = State.data;
     if (State.count("lingcao") < 2) { this.toast("缺少灵草（需2）", true); return; }
     this.passTime(WORLD.activities.alchemy.timeCost);
     State.take("lingcao", 2);
-    State.give("qingyuan_dan", 1);
-    this.log("你依墨大夫所授丹方，以灵草炼出一枚养元丹。", "good");
+    if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
+    const doubleChance = Math.min(0.35, (s.skills.alchemy || 0) * 0.015 + (s.insight || 0) * 0.01);
+    const dbl = Math.random() < doubleChance;
+    State.give("qingyuan_dan", dbl ? 2 : 1);
+    s.skills.alchemy += 2;
+    this.log(dbl
+      ? `炉火纯青——这一炉竟得养元丹 ×2！（药理+2，现 ${s.skills.alchemy}）`
+      : `你依墨大夫所授丹方，以灵草炼出一枚养元丹。（药理+2，现 ${s.skills.alchemy}）`, "good");
   },
 
   /* -------- 探查（密室，推进张铁/夺舍线索）-------- */
@@ -577,7 +586,12 @@ const Engine = {
     const cfg = DATA.exploreSites[siteId];
     if (typeof Explore === "undefined" || !cfg) { this.toast("此地暂不可探"); return; }
     // 异闻链：身负异闻时，深处的"妖兽王"即异闻中的那一头（听闻在前，名实一致）
-    const xcfg = Object.assign({}, cfg, { senseVal: s.sense });
+    // 探知熟练度：走得多了，眼睛和神识都更尖（暗室更易察觉，老手视野更阔）
+    if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
+    const xcfg = Object.assign({}, cfg, {
+      senseVal: s.sense + Math.floor((s.skills.scouting || 0) / 8),
+      sightRadius: (cfg.sightRadius || 1) + ((s.skills.scouting || 0) >= 16 ? 1 : 0),
+    });
     if (s.beastRumor && WORLD.enemies[s.beastRumor]) xcfg.bossEnemy = s.beastRumor;
     s.explore = Explore.generate(xcfg, Math.random);
     if (s.beastRumor && WORLD.enemies[s.beastRumor]) {
@@ -712,6 +726,8 @@ const Engine = {
     this.passTime(months);
     s.flags.adventured = true;
     s.flags.adv_count = (s.flags.adv_count || 0) + 1;
+    if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
+    s.skills.scouting += 2;   // 探知：每趟探索都让你更熟悉山林（嗑瓜子轴）
 
     const summary = gained.length ? `满载而归：${gained.join("、")}。` : "空手而归，未有所获。";
     this.log(`你${reachedExit ? "寻到出口，离开了" : "退出了"}「${st.siteName}」，探索耗时约 ${months} 月。${summary}`, gained.length ? "good" : "sys");
@@ -1162,19 +1178,44 @@ const Engine = {
     this.startBreakthroughFight({ big: false });
   },
 
+  // 突破成功率构成明细（"准备"的每一项都看得见、可优化）
+  breakthroughRateParts() {
+    const s = State.data;
+    const realm = State.realm();
+    const root = State.root();
+    const culRatio = clamp(s.cultivation / realm.culMax, 0, 1.2);
+    return [
+      { label: "冲关底数", v: 0.15 },
+      { label: `修为火候（${Math.round(culRatio * 100)}%）`, v: culRatio * 0.55 },
+      { label: `灵根资质（${root.name}）`, v: root.breakBonus || 0 },
+      { label: `心境（${s.mood}/${s.moodMax}）`, v: (s.mood / s.moodMax) * 0.15 },
+      { label: `心魔拖累（${Math.round(s.demon)}）`, v: -(s.demon / 100) * 0.25 },
+      { label: s.spirit < realm.spMax * 0.5 ? "灵力不济（<50%）" : "灵力充盈", v: s.spirit < realm.spMax * 0.5 ? -0.1 : 0 },
+    ];
+  },
+
   // 突破战结果结算
   _resolveBreakthroughResult(win) {
     const s = State.data;
     const wasBig = this._btWasBig;
     if (win) {
+      const gains = [];
       s.realmIndex += 1;
       const nr = State.realm();
       s.cultivation = 0;
+      const spGain = nr.spMax - (DATA.realms[s.realmIndex - 1] || nr).spMax;
       s.spirit = nr.spMax;
       s.sense += wasBig ? 8 : 3; s.body += wasBig ? 5 : 2;
       s.hpMax += wasBig ? 40 : 15; s.hp = s.hpMax;
       if (nr.lifespan) s.lifespan += nr.lifespan;
       s.demon = clamp(s.demon - (wasBig ? 12 : 5), 0, 100);
+      gains.push(`灵气底蕴 +1（战斗每回合灵气增长）`);
+      gains.push(`灵力上限 +${spGain}（至 ${nr.spMax}）`);
+      gains.push(`神识 +${wasBig ? 8 : 3}　体魄 +${wasBig ? 5 : 2}`);
+      gains.push(`气血上限 +${wasBig ? 40 : 15}（伤势尽复）`);
+      if (nr.lifespan) gains.push(`寿元 +${nr.lifespan} 载`);
+      gains.push(`心魔 -${wasBig ? 12 : 5}（道心愈坚）`);
+      if (typeof UI !== "undefined" && UI.breakthroughCeremony) UI.breakthroughCeremony(nr, gains, wasBig);
       if (typeof Sfx !== "undefined") Sfx.play("bell");
       if (wasBig) {
         this.log(`心魔劫已渡！你脱胎换骨，正式跻身「${nr.name}」——这一步，多少修士求而不得。`, "good");
@@ -1301,6 +1342,18 @@ const Engine = {
     this._combat.startRound();
     const duCount = State.count("duyao_cao"), anCount = State.count("anqi");
     this.log(`夺舍之夜，决战开始！你怀揣 毒草×${duCount}、暗器×${anCount} 作底牌——能否反杀，全看准备。`, "event");
+    // 扮猪吃虎的兑现时刻：深藏的修为在此一刻尽数亮出（藏得越深，雷霆越烈）
+    const hidden = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
+    if (hidden >= 1) {
+      const realRealm = State.realm().name;
+      this._combat.player.momentum = Math.min(this._combat.player.momentumCap, hidden * 2);
+      this._combat.enemies.forEach(e => { e.dodgeBuff = (e.dodgeBuff || 0) - 0.1; });
+      this._combat._log(`墨大夫瞳孔骤缩，声音都变了调："什么？！你……你竟然已是${realRealm}——这不可能！！"`);
+      this._combat._log(`【扮猪吃虎】深藏 ${hidden} 层修为今夜尽数亮出——你开局即蓄剑势 ${this._combat.player.momentum}，敌方心神大乱（首回合更易命中）！`);
+      this.log(`你周身气机轰然炸开——深藏 ${hidden} 层的修为，今夜终于不必再藏！`, "good");
+      this.addMilestone(`扮猪吃虎：夺舍之夜亮出${realRealm}`, "medal");
+      if (typeof Sfx !== "undefined") Sfx.play("danger");
+    }
     UI.openCombat(this._combat, this._combatMeta);
   },
 

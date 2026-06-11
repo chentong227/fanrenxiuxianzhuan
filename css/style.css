@@ -700,6 +700,34 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 .modal .choices .choice:disabled { opacity: .4; cursor: not-allowed; }
 
+/* ===== 突破大典：黑场二字题 + 收益清单（"丹成"模板）===== */
+.ceremony-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 50% 38%, rgba(64, 52, 28, .5), #060504 70%);
+  opacity: 0; pointer-events: none; transition: opacity .6s ease;
+}
+.ceremony-overlay.show { opacity: 1; pointer-events: auto; }
+.cer-inner { width: min(560px, 92vw); text-align: center; padding: 20px; }
+.cer-title {
+  font-size: clamp(44px, 11vw, 72px); font-weight: 800; letter-spacing: 22px;
+  color: #f3e8cd; text-shadow: 0 0 40px rgba(236, 217, 168, .45), 0 4px 30px rgba(0,0,0,.8);
+  animation: tcIn 1.2s cubic-bezier(.2,.8,.2,1) both;
+}
+.cer-realm {
+  margin-top: 8px; font-size: 19px; letter-spacing: 8px; color: var(--gold-bright);
+  animation: fadein 1s ease .4s both;
+}
+.cer-text {
+  margin: 18px auto 14px; max-width: 420px; color: var(--ink); font-size: 14px; line-height: 1.9;
+  animation: fadein 1s ease .7s both;
+}
+.cer-gains { display: flex; flex-direction: column; gap: 4px; align-items: center; animation: fadein 1s ease 1s both; }
+.cer-gain { color: var(--jade-bright); font-size: 13.5px; letter-spacing: 1px; }
+.cer-actions { display: flex; gap: 10px; justify-content: center; margin-top: 22px; animation: fadein 1s ease 1.4s both; }
+.cer-actions .btn { width: auto; margin: 0; }
+.cer-note { margin-top: 12px; color: var(--ink-faint); font-size: 11.5px; animation: fadein 1s ease 1.6s both; }
+
 /* ===== 弹窗内状态摘要条（闭关/服药数值可见）===== */
 .status-strip {
   display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline;
