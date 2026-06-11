@@ -86,6 +86,8 @@ DATA.items = {
     desc: "金光上人赖以成名的符宝，韩立的第一件符宝。金光化砖凌空砸落，势大力沉且破甲。以充能催动，灵石可回充。" },
   jinguang_zhuan_charge: { name: "金光砖·充能", rarity: "rare", type: "consumable",
     desc: "金光砖中蕴存的灵力充能。战斗中每催动一次金光砖，耗去一道。" },
+  nuanyang_yu: { name: "暖阳宝玉", rarity: "epic", type: "treasure",
+    desc: "墨家祖传的护身宝玉，温润如春。它是墨彩环的嫁妆——「我不成亲，便不需要嫁妆了呀。」寒毒既解，玉犹有余温。" },
 };
 
 /* ---------- 行动配置 ----------

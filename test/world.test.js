@@ -133,8 +133,11 @@ console.log("\n=== 据点在场人物 + 移动速度 ===");
   // 墨大夫死后不再在场
   s.flags.modafu_dead = true;
   assert(!WORLD.localsAt("yaolu", s).map(n => n.id).includes("modafu"), "墨大夫身死后不再在场（随剧情变化）");
-  // 墨彩环属于嘉源城线（七玄门篇之后），本篇不得出现
-  assert(!WORLD.npcById("mocaihuan"), "墨彩环不在七玄门篇名册（嘉源城线，剧情勘误）");
+  // 墨彩环属嘉元城线（离门远行章实装，v43）：在册，但未投信前不得在场
+  const mch = WORLD.npcById("mocaihuan");
+  assert(!!mch, "墨彩环已入名册（离门远行章·嘉元城）");
+  assert(mch.cond && !mch.cond({ flags: {} }), "未投墨府前，墨彩环不可见（cond 门禁）");
+  assert(mch.cond({ flags: { mo_met: true } }), "投信之后，墨彩环在嘉元城在场");
 }
 
 // 移动速度：多来源叠加（境界/身法/飞行法宝），飞行法宝大幅提速

@@ -101,6 +101,20 @@ WORLD.locations = [
     unlock: (s) => s.flags.qi_layer_4,   // 修到练气四层、起疑后才会去探
     encounters: [],
   },
+
+  /* —— 离门远行章 · 嘉元城（岚州第一城）——
+   * 制作度：活感优先——一个落脚地点+采买+休整即可，繁华由文本与风闻撑起。 */
+  {
+    id: "jiayuan_city",
+    arc: "huangfeng",
+    name: "嘉元城 · 墨府",
+    desc: "岚州第一大城，街市喧腾，车马如流。你暂居墨府客房——这座朱门宅院近来门庭冷落，暗流涌动。",
+    travelCost: 1,
+    map: { x: 50, y: 60 },
+    home: true,   // 旅居：可调息休整（墨府客房）
+    actions: ["rest", "market", "cultivate"],
+    encounters: [],
+  },
 ];
 
 /* ---------- 大陆层（world-architecture L0）：天南 · 越国一带 ----------
@@ -127,7 +141,7 @@ WORLD.continent = {
     { id: "yuejing",  name: "越京",    pos: { x: 34, y: 50 }, locs: [],
       desc: "越国京城，凡俗繁华之极。郊外白菊山是赏景名胜。", months: 2, danger: "低",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
-    { id: "jiayuan",  name: "嘉元城",  pos: { x: 44, y: 60 }, locs: [],
+    { id: "jiayuan",  name: "嘉元城",  pos: { x: 44, y: 60 }, locs: ["jiayuan_city"],
       desc: "岚州第一大城。岚州居越国之南，沃野产粮，富庶仅次京畿——城中鱼龙混杂，传闻有修仙者出没。", months: 3, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
     { id: "tainangu", name: "太南谷",  pos: { x: 28, y: 80 }, locs: [],
@@ -187,6 +201,25 @@ WORLD.enemies = {
     attacks: [
       { name: "狼牙棒", dmg: 17, kind: "normal", weight: 14 },
       { name: "横扫蓄力", dmg: 23, kind: "charge", weight: 6 },
+    ],
+  },
+  /* 独霸山庄庄主（离门远行·嘉元城）：岚州三霸之一，凡俗武人巅峰、粗通吐纳。
+   * 考据：墨居仁死后欺上墨府，被韩立铲除（动漫7~8集）。 */
+  ouyang_feitian: {
+    name: "欧阳飞天", hp: 150, sense: 8, speed: 11, agility: 7, tactics: "cunning", qiLayer: 1,
+    introNote: "独霸山庄庄主——凡俗武人巅峰，一身横练外功还粗通吐纳。仗着人多势众而来，先剪除庄丁，再与他正面见真章。",
+    attacks: [
+      { name: "裂石崩拳", dmg: 20, kind: "normal", weight: 12 },
+      { name: "鹰爪锁喉", dmg: 16, kind: "pierce", weight: 7 },
+      { name: "气贯丹田", dmg: 26, kind: "charge", weight: 5 },
+    ],
+    reward: { silver: 30 },
+  },
+  zhuangding: {
+    name: "独霸山庄庄丁", hp: 70, sense: 4, speed: 8, agility: 3, tactics: "feral", reward: { silver: 4 },
+    attacks: [
+      { name: "朴刀劈砍", dmg: 13, kind: "normal", weight: 14 },
+      { name: "围殴", dmg: 17, kind: "charge", weight: 5 },
     ],
   },
 
@@ -306,6 +339,12 @@ WORLD.npcs = [
     bio: "野狼帮中横行乡里的凡俗打手，仗着帮派势大，时常滋扰集镇商旅。",
     lines: ["这条道是我们野狼帮的，留下买路钱！", "七玄门？哼，迟早是我们帮主的囊中之物。"],
     where: ["town", "houshan"], cond: (s) => s.flags.gang_war,
+  },
+  {
+    id: "mocaihuan", name: "墨彩环", role: "墨府小姐 · 故人之女",
+    bio: "墨大夫（墨居仁）之女，嘉元城墨府的小姐。古灵精怪，娇憨狡黠，初见便骗走了你的萦香丸。她问过你一个你答不上来的问题：凡人，就真的不能修仙吗？",
+    lines: ["黑小子，今天的药膳你又没喝完！", "爹的信里写了你好多坏话哦——骗你的啦。", "等你走了，这院子又要冷清下来了……"],
+    where: ["jiayuan_city"], cond: (s) => s.flags.mo_met,
   },
   { id: "langzhong", name: "走方郎中", role: "凡俗医者", bio: "走街串巷的凡俗大夫，医术平平却见多识广。", lines: ["客官面色不佳，可要抓副药？"], where: ["town"] },
   { id: "biaoshi", name: "镖局趟子手", role: "押镖汉子", bio: "替商队押镖的江湖汉子，刀口舔血讨生活。", lines: ["这年头跑镖，最怕撞上野狼帮的人。"], where: ["town"] },

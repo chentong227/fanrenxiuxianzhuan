@@ -92,6 +92,63 @@ console.log("\n=== 4. 存档兼容：旅途中断字段无损 ===");
   assert(State.data.journey && State.data.journey.to === "qingniu", "journey 字段存档往返无损");
 }
 
+console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
+{
+  State.create({ name: "韩立", rootId: "si_ling" });
+  const s = State.data;
+  s.location = "yaolu";
+  s.pendingEvent = null;
+  s.storyStage = sandbox.STORY.findIndex(st => st.id === "mo_arrive");   // 直接对位嘉元城章节
+  s.flags.arc1_complete = true;
+  s.flags.han_du = true;
+  s.realmIndex = 5; s.hp = 120; s.hpMax = 120; s.silver = 40;
+  s.sideUnit = { id: "zhangtie_corpse", name: "铁奴·张铁", hp: 70, hpMax: 70, atk: 12,
+                 atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
+  // 启程嘉元城（旅途中事件全选第一项，战斗速胜）
+  Engine.startJourney("jiayuan");
+  let guard = 0;
+  while ((s.journey || Engine._pendingFortune) && guard++ < 40) {
+    if (Engine._pendingFortune) { Engine.chooseFortune(0); continue; }
+    if (s.combat && Engine._combat) {
+      Engine._combat.enemies.forEach(e => { e.hp = 0; });
+      Engine._combat._checkEnd();
+      Engine._finishCombat();
+      continue;
+    }
+    break;
+  }
+  assert(s.location === "jiayuan_city", `到达嘉元城（实际 ${s.location}）`);
+  // 到达即触发投信剧情（checkStory 在 passTime/行动后调度——手动触发对齐）
+  Engine.checkStory();
+  assert(s.pendingEvent === "mo_arrive", `投信剧情触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.mo_met, "投信完成（mo_met）");
+  assert(s.metNpcs.includes("mocaihuan"), "墨彩环录入图鉴");
+  // 客居一月 → 独霸山庄上门
+  Engine.passTime(1);
+  Engine.checkStory();
+  assert(s.pendingEvent === "mo_crisis", `客居月余，山庄欺门（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);   // 应战
+  assert(s.combat && Engine._combat, "欧阳飞天之战开打");
+  // 速胜两波（庄丁→欧阳）
+  let g2 = 0;
+  while (s.combat && Engine._combat && g2++ < 10) {
+    Engine._combat.enemies.forEach(e => { e.hp = 0; });
+    Engine._combat._checkEnd();
+    if (Engine._combat.status !== "ongoing") Engine._finishCombat();
+    else Engine._combat.endRound();
+  }
+  assert(s.flags.ouyang_dead, "欧阳飞天伏诛");
+  // 宝玉解毒 + 曲魂抉择（选留墨府）
+  Engine.checkStory();
+  assert(s.pendingEvent === "mo_resolve", `暖阳宝玉一幕触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.flags.han_du_cured, "寒毒得解");
+  assert(State.count("nuanyang_yu") === 1, "暖阳宝玉入袋");
+  assert(!s.sideUnit, "曲魂留墨府（侧位单位移交）");
+  assert(s.ledger && s.ledger.quhun_left_mo, "因果账本记下曲魂之托");
+}
+
 console.log(`\n========== 大陆旅途：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);
 sandbox.process = undefined;
 process.exit(failures === 0 ? 0 : 1);

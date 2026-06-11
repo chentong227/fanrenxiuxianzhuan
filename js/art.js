@@ -18,12 +18,14 @@
     hanli: 1, modafu: 1, lifeiyu: 1, zhangtie: 1,
     xiaosuanpan: 1, jiatianlong: 1, jinguang: 1,
     nongfu: 1, sanxiu: 1, langzhong: 1, biaoshi: 1, langhao: 1,
-    sanshu: 1, tienu: 1,
+    sanshu: 1, tienu: 1, mocaihuan: 1, ouyangfeitian: 1,
     // 场景（含过场地点）
     yaolu: 1, houshan: 1, town: 1, wuting: 1,
     qingniu: 1, road: 1, shanmen: 1, miju: 1,
     // 大陆层舆图（地理考据：镜州西北/建州太岳山脉/岚州南部/东临海）
     tiannan_map: 1,
+    // 离门远行章
+    jiayuan_city: 1,
   };
 
   // 关键剧情 CG 大图（assets/cg_<id>.png）：生成入库后在此登记

@@ -57,6 +57,10 @@ const Engine = {
     s.month += months;
     while (s.month > 12) { s.month -= 12; s.year += 1; s.age += 1; }
     s.mood = clamp(s.mood + 1, 0, s.moodMax);
+    // 墨府客居计时：住下些时日，独霸山庄才会找上门（离门远行·嘉元城）
+    if (s.location === "jiayuan_city" && s.flags.mo_met && !s.flags.ouyang_dead) {
+      s.flags.mo_months = (s.flags.mo_months || 0) + months;
+    }
     // 世界不会因你停步：推进世间修士的命途
     this._tickWorld(months);
     // 时间推进后检查到期的任务与预定事件
@@ -1975,6 +1979,28 @@ const Engine = {
     return { name: null, taunt: null };
   },
 
+  // 墨府之危：独霸山庄欺门（离门远行·嘉元城）——庄丁开路，欧阳飞天压阵
+  startOuyangFight() {
+    const s = State.data;
+    this._nextFightType = "ouyang";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    const zd = Object.assign({}, WORLD.enemies.zhuangding);
+    const oy = this._applyDossier(Object.assign({}, WORLD.enemies.ouyang_feitian));
+    this._combat = new CombatAPI.Combat({
+      player,
+      enemies: [zd, Object.assign({}, zd)],
+      waves: [[oy]],
+      maxRounds: 18,
+      side: this.sideUnitFor("encounter"),
+    });
+    this._combatMeta = { type: "ouyang" };
+    s.combat = true;
+    this._combat.startRound();
+    this.log("独霸山庄欺上门来！庄丁仗着人多一拥而上——先清杂鱼，欧阳飞天还在后头压阵。", "bad");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 突破战：与瓶颈心魔对战（复用战斗引擎）
   startBreakthroughFight(opts = {}) {
     const s = State.data;
@@ -2215,6 +2241,24 @@ const Engine = {
         s.pendingEvent = "jinguang_fight";
         this._retryAfterLoss = "jinguang_fight";
       }
+    } else if (meta.type === "ouyang") {
+      if (win) {
+        State.setFlag("ouyang_dead");
+        this.log("欧阳飞天横尸当场，余众抱头鼠窜！独霸山庄百年威风，今日折在墨府门前——嘉元城里，再没人敢打墨家的主意。", "good");
+        this.addMilestone("嘉元城：铲除独霸山庄欧阳飞天", "showdown");
+        this.addFame(12, "墨府门前，独霸山庄庄主毙命");
+        s.mood = clamp(s.mood + 8, 0, s.moodMax);
+        s.storyStage += 1;   // mo_crisis → mo_resolve
+        this.checkStory();
+      } else {
+        const dmg = Math.round(s.hpMax * 0.4);
+        s.hp = clamp(s.hp - dmg, 1, s.hpMax);
+        s.flags.losses_ouyang = (s.flags.losses_ouyang || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_ouyang) * 8;
+        this.log(`欧阳飞天老辣狠戾，你失手负伤退入内院（气血-${dmg}）。墨府众人拼死掩护，对方暂且退去——但他们还会再来。你记下了他的招路（再战伤害+${bonus}%）。`, "bad");
+        s.pendingEvent = "mo_crisis";
+        this._retryAfterLoss = "mo_crisis";
+      }
     } else if (meta.type === "breakthrough") {
       this._resolveBreakthroughResult(win);
     }
@@ -2374,6 +2418,18 @@ const Engine = {
       this.startJinguangFight();
       return;
     }
+    // 墨府之危：战独霸山庄（庄丁开路，欧阳飞天压阵）
+    if (choice.resolve === "ouyang_fight") {
+      s.pendingEvent = null;
+      this.startOuyangFight();
+      return;
+    }
+
+    // 选项副作用（账本/状态变化等，fortune 式 effect——返回 {text,kind} 则记入见闻）
+    if (choice.effect) {
+      const r = choice.effect(s) || {};
+      if (r.text) this.log(r.text, r.kind || "event");
+    }
 
     // 普通推进
     s.pendingEvent = null;
@@ -2394,11 +2450,12 @@ const Engine = {
     UI.clearStory();
     UI.openModal(`
       <h2>七玄门篇 · 通关</h2>
-      <p>韩立以四灵根之资，靠苦修、算计与小绿瓶，斩杀墨大夫，带着曲魂离开七玄门。</p>
+      <p>韩立以四灵根之资，靠苦修、算计与小绿瓶，反杀墨大夫、暗算金光上人，夺升仙令离开七玄门。</p>
       <p>这正是《凡人修仙传》的底色——凡人无天资，唯以谨慎与万全准备，步步为营，逆天改命。</p>
-      <p style="color:var(--ink-dim);font-size:13px">后续章节（黄枫谷篇 · 筑基之路）将在此基础上继续开发。你的存档已保留，可继续自由修炼。</p>
+      <p style="color:var(--gold)">离门远行 · 启——寒毒在身，先南下嘉元城墨府（云游 → 远眺天下 → 启程）。</p>
+      <p style="color:var(--ink-dim);font-size:13px">行装清点：升仙令、灵石十块、墨大夫的遗信。江湖路远，备好毒草暗器再上路。</p>
       <div class="modal-actions">
-        <button class="btn btn-primary" onclick="UI.closeModal()">继续游玩</button>
+        <button class="btn btn-primary" onclick="UI.closeModal()">上路</button>
       </div>
     `);
   },

@@ -148,23 +148,27 @@ function crop(img, c) {
   return { w: nw, h: nh, rgb: out };
 }
 
-function processFile(fp) {
+function processFile(fp, force) {
   const img = readPNG(fs.readFileSync(fp));
   const c = detect(img);
   const total = c.top + c.bottom + c.left + c.right;
   if (total < 8) { console.log(`${path.basename(fp)}  无黑边，跳过`); return; }
   const nh = img.h - c.top - c.bottom, nw = img.w - c.left - c.right;
-  if (nh < img.h * 0.5 || nw < img.w * 0.5) { console.log(`${path.basename(fp)}  检测异常(裁剩过小)，跳过`); return; }
+  // 宽黑边保护：默认裁剩 <50% 视为误检；--force 放行（影院式宽黑条确实存在，裁剩 ≥35% 即可）
+  const floor = force ? 0.35 : 0.5;
+  if (nh < img.h * floor || nw < img.w * floor) { console.log(`${path.basename(fp)}  检测异常(裁剩过小)，跳过${force ? "" : "（可用 --force 强裁）"}`); return; }
   const out = crop(img, c);
   fs.writeFileSync(fp, writePNG_RGB(out.w, out.h, out.rgb));
   console.log(`${path.basename(fp)}  裁切 上${c.top} 下${c.bottom} 左${c.left} 右${c.right} → ${out.w}x${out.h}`);
 }
 
-const args = process.argv.slice(2);
-if (!args.length) { console.error("用法: node scripts/cropbars.js <png...> | --scenes"); process.exit(1); }
+let args = process.argv.slice(2);
+const FORCE = args.includes("--force");
+args = args.filter(a => a !== "--force");
+if (!args.length) { console.error("用法: node scripts/cropbars.js [--force] <png...> | --scenes"); process.exit(1); }
 const files = args[0] === "--scenes"
   ? SCENES.map((id) => path.join(__dirname, "..", "assets", id + ".png")).filter((f) => fs.existsSync(f))
   : args;
 for (const f of files) {
-  try { processFile(f); } catch (e) { console.log(`${path.basename(f)}  失败: ${e.message}`); }
+  try { processFile(f, FORCE); } catch (e) { console.log(`${path.basename(f)}  失败: ${e.message}`); }
 }

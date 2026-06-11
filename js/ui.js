@@ -1020,7 +1020,7 @@ const UI = {
   _npcIdByName(name) {
     if (!name) return null;
     // 剧情专属人物（不在大世界 NPC 名册中）
-    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu" };
+    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "欧阳飞天": "ouyangfeitian" };
     if (extra[name]) return extra[name];
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
       const n = WORLD.npcs.find(x => x.name === name);
@@ -1549,12 +1549,17 @@ const UI = {
     `);
   },
 
-  /* -------- 云游（可视化大地图，点击图标前往）-------- */
+  /* -------- 云游（可视化大地图，点击图标前往）——只列当前大陆节点内的去处 -------- */
   openTravel() {
     const cur = State.data.location;
     const arc = Chapters.active().id;
+    // 大陆层过滤：地区层云游只显示当前大陆节点的 locs（跨节点须走「远眺天下」旅途）。
+    // 地理优先：身在该节点，节点内地点不受篇章 arc 过滤（人到了，地方就在那里）。
+    const C = WORLD.continent;
+    const curNode = C ? C.nodes.find(n => (n.locs || []).includes(cur)) : null;
+    const inNode = (l) => !curNode || (curNode.locs || []).includes(l.id);
     const locs = WORLD.locations.filter(l =>
-      !l.scene && l.map && (!l.arc || l.arc === arc) && (!l.unlock || l.unlock(State.data)));
+      !l.scene && l.map && inNode(l) && (curNode || !l.arc || l.arc === arc) && (!l.unlock || l.unlock(State.data)));
 
     // 连线（从当前所在地到各可去之处）便于看出空间关系
     const curLoc = WORLD.locations.find(l => l.id === cur);
