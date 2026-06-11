@@ -28,6 +28,9 @@ if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
 const STYLE_PORTRAIT = "《凡人修仙传》动画剧版同款画风，3D渲染电影级质感，写实国风仙侠人物半身像，精细面部与发丝，柔和影棚布光，气质沉静克制，竖构图，单人，纯白色背景#ffffff、人物与背景边界清晰分明、背景不含任何道具或纹理，无文字无水印无logo";
 const STYLE_SCENE = "《凡人修仙传》动画剧版同款画风，3D渲染电影级场景，写实国风仙侠，光影氛围考究，意境悠远，横构图，画面铺满整个画幅、无黑边无边框无留白，无人物特写无文字无水印";
 const STYLE_CG = "《凡人修仙传》动画剧版同款画风，3D渲染电影级剧情画面，写实国风仙侠，戏剧张力与光影氛围拉满，电影宽幅构图，画面铺满整个画幅、无黑边无边框无留白，无文字无水印无logo";
+// 竖版（手机竖屏专用资产，文件名 <id>_p.png）：纵向构图顶天立地，杜绝竖屏 cover 放大糊化
+const STYLE_SCENE_P = "《凡人修仙传》动画剧版同款画风，3D渲染电影级场景，写实国风仙侠，光影氛围考究，意境悠远，竖构图9:16纵向画幅、上下顶天立地铺满全图、无黑边无边框无留白，无人物特写无文字无水印";
+const STYLE_CG_P = "《凡人修仙传》动画剧版同款画风，3D渲染电影级剧情画面，写实国风仙侠，戏剧张力与光影氛围拉满，竖构图9:16纵向画幅、主体居中、上下顶天立地铺满全图、无黑边无边框无留白，无文字无水印无logo";
 
 const DEFS = {
   // —— 主要人物立绘（剧版特征锚定，确保识别度）——
@@ -78,11 +81,67 @@ const DEFS = {
   // 传说五色彩凤化山）；建州在北部（第二大州，多山丘陵，西部太岳山脉连绵数千里，黄枫谷在焉，
   // 北接元武国）；岚州在南部（第二富足产粮大州，嘉元城为岚州第一城，最南广贵城三面环山一面靠湖，
   // 西四十里太南山）；越京居中为京城；东侧临海（乱星海远在海外）。
-  tiannan_map: { kind: "scene", file: "tiannan_map", prompt: "中国古代水墨舆图风格的越国全境鸟瞰地图，宣纸米黄底色，写意山水画法：西北角群山连绵（其中一峰隐隐透出五色霞光），正北横亘一条雄浑绵长的大山脉（山势嵯峨连绵数千里），中部平原点缀城郭与阡陌，南部沃野千里河渠纵横（产粮富庶之地），最南端有湖泊与环山小城，东侧为蜿蜒海岸线与浩渺远海（海上墨色留白），山用披麻皴、水用留白法、城郭用简笔界画，淡彩晕染，古意盎然，俯瞰视角，绝对不含任何文字、地名、标记、印章、图例、罗盘", },
+  tiannan_map: { kind: "map", file: "tiannan_map", prompt: "中国古代水墨舆图风格的越国全境鸟瞰地图，宣纸米黄底色，写意山水画法：西北角群山连绵（其中一峰隐隐透出五色霞光），正北横亘一条雄浑绵长的大山脉（山势嵯峨连绵数千里），中部平原点缀城郭与阡陌，南部沃野千里河渠纵横（产粮富庶之地），最南端有湖泊与环山小城，东侧为蜿蜒海岸线与浩渺远海（海上墨色留白），山用披麻皴、水用留白法、城郭用简笔界画，淡彩晕染，古意盎然，俯瞰视角，绝对不含任何文字、地名、标记、印章、图例、罗盘", },
+};
+
+/* ============ 竖版场景/CG（手机竖屏专用，文件 <id>_p.png）============
+ * 同一地点的纵向重构图：竖屏 cover 不再放大糊化。 */
+const P_SCENES = {
+  yaolu:    "古朴清幽的中药药庐内景，纵深视角望向窗棂，木质药柜高耸密布直抵屋顶，铜药碾与丹炉错落，暖光自高窗斜入，药香氤氲",
+  houshan:  "云雾缭绕的仙门后山，纵向幽谷，奇峰自下而上层叠入云，灵草丛生，古木参天，溪涧自深谷垂落",
+  town:     "山脚下凡俗古镇的纵深街景，青瓦土墙窄巷向远处延伸，帮派旗幡高挂，挎刀汉子倚墙，远处仙山高耸入云",
+  wuting:   "仙门演武厅纵深内景，高大梁柱向上延伸，兵器架立于两侧，天光自高窗倾泻而下照亮演武场",
+  qingniu:  "贫苦北方小山村，纵向构图：脚下土路通向低矮土坯茅屋，柴门篱笆，远处薄田与黄昏炊烟升上高空",
+  road:     "通往仙门的迢迢山路，纵向构图：石径自脚下蜿蜒而上穿过崇山，云雾缭绕，山巅隐见仙山轮廓高悬",
+  shanmen:  "凡俗武林大派山门，纵向构图：宽阔石阶自下而上通往厚重石砌寨门与木牌楼，刀枪旗帜林立，远山如黛",
+  miju:     "幽暗密室纵深内景，石壁高耸压抑，烛光自案上丹炉摇曳而上，阴气如雾升腾",
+  jiayuan_city: "古代南方大城纵深街景，青石长街向远处城楼延伸，商铺旗幡层层叠叠，街尽头一座朱门大宅，黄昏暖光，市井烟火",
+  tainan_fair:  "深山幽谷修仙集市纵向构图，摊位布幡沿谷底向远处延伸，御剑修士自头顶谷隙掠过，两侧谷壁苍翠高耸入云，灵光点点",
+  huangfeng_gate: "巍峨仙门黄枫谷山门纵向构图：盘山石阶自脚下直上云端，高耸青石牌坊矗立，两侧枫林如火，仙鹤掠过头顶云海，殿宇悬于高处",
+};
+const P_CGS = {
+  bottle:    "一只古朴的暗绿色小瓶静静悬在少年掌心上方，瓶身流转神秘幽绿灵光，映亮少年清秀震惊的脸，竖构图自上而下：瓶、手、少年面庞，背景昏暗陋室烛光",
+  duoshe:    "深夜药庐生死对决竖构图：上方银发老者周身阴冷光芒面容狰狞，下方清瘦少年持短刃隐于阴影蓄势待发，烛火摇曳，药柜高耸，杀机四伏",
+  jinguang:  "山林夜战竖构图：上方矮胖和尚金光大盛如金钟罩体怒目狰狞，无数暗器飞针自下方破空而上钉向金光，少年身影半隐于下方林间黑暗",
+  departure: "清晨薄雾竖构图：背行囊的少年道袍身影立于下方古道，仰望上方巍峨仙门与翻涌云海，群山苍茫纵向延伸，离别与新程交织",
+};
+Object.entries(P_SCENES).forEach(([id, prompt]) => {
+  DEFS[id + "_p"] = { kind: "scene_p", file: id + "_p", prompt };
+});
+Object.entries(P_CGS).forEach(([id, prompt]) => {
+  DEFS["cg_" + id + "_p"] = { kind: "cg_p", file: "cg_" + id + "_p", prompt };
+});
+
+/* ============ 人物表情集（同一人物特征锚定+表情替换）============ */
+const EMO_DEFS = {
+  hanli_cold:   "少年韩立，约十五岁，乌黑长发束成半扎发髻、余发垂肩，眉目清秀，身着橄榄黄绿色交领道袍肩部菱格暗纹——眼神冰冷如霜，杀意内敛，嘴角紧抿，侧目而视的冷峻神情",
+  hanli_smile:  "少年韩立，约十五岁，乌黑长发束成半扎发髻、余发垂肩，眉目清秀，身着橄榄黄绿色交领道袍肩部菱格暗纹——难得露出一点真心的浅笑，眉目舒展，温和少年气",
+  mocaihuan_sad:    "少女墨彩环，约十五六岁，乌黑双髻缀红色发绳，杏眼圆亮，鹅黄色绣花襦裙外罩浅碧色比甲——眼眶通红噙着泪水，瘪着嘴强忍不哭，委屈巴巴的神情",
+  mocaihuan_scheme: "少女墨彩环，约十五六岁，乌黑双髻缀红色发绳，杏眼圆亮，鹅黄色绣花襦裙外罩浅碧色比甲——眯眼坏笑，一手叉腰一手指着前方，狡黠得逞的得意神情",
+  lifeiyu_laugh: "少年厉飞雨，约十六岁，乌黑长发高束顶髻余发垂肩，剑眉星目面容俊朗，青灰色交领道袍——仰头爽朗大笑，意气风发，豪迈洒脱",
+  modafu_sinister: "墨大夫，清癯矍铄的银发老者，银白长发梳向脑后，花白山羊胡，深褐色带金线团纹医者长袍，手腕佛珠——面容阴沉狞笑，浑浊眼中精光毕露，藏不住的森然恶意",
+  wanxiaoshan_panic: "年轻散修万小山，二十出头圆脸，乌发简单道髻，半旧靛青色道袍背着鼓囊行囊——满脸惊慌失措，冷汗涔涔，张嘴欲喊的紧张神情",
+};
+Object.entries(EMO_DEFS).forEach(([id, prompt]) => {
+  DEFS[id] = { kind: "portrait", file: id, prompt };
+});
+
+const STYLES = {
+  portrait: STYLE_PORTRAIT,
+  scene: STYLE_SCENE, scene_p: STYLE_SCENE_P,
+  cg: STYLE_CG, cg_p: STYLE_CG_P,
+  map: STYLE_SCENE,
+};
+// kind → 输出子目录（assets 分类重构 2026-06-11）
+const SUBDIR = {
+  portrait: "portraits",
+  scene: "scenes", scene_p: "scenes",
+  cg: "cg", cg_p: "cg",
+  map: "maps",
 };
 
 function genOne(id, def) {
-  const style = def.kind === "portrait" ? STYLE_PORTRAIT : def.kind === "cg" ? STYLE_CG : STYLE_SCENE;
+  const style = STYLES[def.kind] || STYLE_SCENE;
   const body = JSON.stringify({
     model: MODEL,
     modalities: ["image", "text"],
@@ -106,19 +165,21 @@ function genOne(id, def) {
   const url = m && m.images && m.images[0] && m.images[0].image_url && m.images[0].image_url.url;
   if (!url) throw new Error("无图片返回: " + JSON.stringify(j).slice(0, 200));
   const b64 = url.split(",")[1];
-  const outFile = path.join(OUT, (def.file || id) + ".png");
+  const dir = path.join(OUT, SUBDIR[def.kind] || "");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const outFile = path.join(dir, (def.file || id) + ".png");
   fs.writeFileSync(outFile, Buffer.from(b64, "base64"));
   try { fs.unlinkSync(bodyFile); fs.unlinkSync(respFile); } catch (e) {}
   return outFile;
 }
 
-// 生成后自动后处理：立绘抠透明底；场景/CG 裁影院黑边
+// 生成后自动后处理：立绘抠透明底；场景/CG 裁影院黑边（竖版同样强裁左右黑条）
 function postProcess(file, def) {
   try {
     if (def.kind === "portrait") {
       execFileSync("node", [path.join(__dirname, "cutout.js"), file, file], { stdio: "inherit" });
-    } else {
-      execFileSync("node", [path.join(__dirname, "cropbars.js"), file], { stdio: "inherit" });
+    } else if (def.kind !== "map") {
+      execFileSync("node", [path.join(__dirname, "cropbars.js"), "--force", file], { stdio: "inherit" });
     }
   } catch (e) { console.log("  后处理失败（图已保存，可手动处理）:", e.message); }
 }

@@ -79,10 +79,77 @@
     fail(c) { tone(c, { freq: 220, slideTo: 104, dur: 0.5, gain: 0.06 }); },
     // 采得/拾取
     pick(c) { tone(c, { freq: 1175, dur: 0.1, gain: 0.035 }); tone(c, { freq: 1568, dur: 0.12, gain: 0.025, delay: 0.06 }); },
+    // 打字机轻嗒（对话逐字，极轻——气口不是轰炸）
+    type(c) { noise(c, { dur: 0.025, gain: 0.012, band: 2600 }); },
   };
 
   let lastPlay = {};
   let bgmEl = null;
+
+  /* ============ 合成 BGM 引擎 v1（零资源，程序化生成）============
+   * 气质：苍凉、孤寂、克制（夜读残卷）。三轨：
+   *   daily  日常——宫调五声慢琶音 + 极低音持续（古琴独坐感）
+   *   combat 战斗——低鼓律动 + 五声短音急奏
+   *   tense  紧张——低频 drone + 半音摩擦长音（决战/心魔）
+   * 实现：节拍调度器（lookahead 250ms），音量极低，可随 Sfx 总开关静音。 */
+  const PENTA = [261.63, 293.66, 329.63, 392.0, 440.0];   // C宫五声：宫商角徵羽
+  const BGM = {
+    track: null, _timer: null, _master: null,
+    _gain(c) {
+      if (!this._master) { this._master = c.createGain(); this._master.gain.value = 1; this._master.connect(c.destination); }
+      return this._master;
+    },
+    _note(c, freq, dur, gain, type = "sine", delay = 0) {
+      const o = c.createOscillator(), g = c.createGain();
+      const t0 = c.currentTime + delay;
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(gain, t0 + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(this._gain(c));
+      o.start(t0); o.stop(t0 + dur + 0.05);
+    },
+    start(track) {
+      if (this.track === track) return;
+      this.stop();
+      this.track = track;
+      if (muted) return;   // 静音时只记轨名，解除静音后恢复
+      const c = ac(); if (!c) return;
+      let beat = 0;
+      const step = () => {
+        if (muted || this.track !== track) return;
+        const cc = ac(); if (!cc) return;
+        if (track === "daily") {
+          // 极低音持续（每8拍一沉）+ 五声慢琶音（散拍，似有似无）
+          if (beat % 8 === 0) this._note(cc, 65.41, 3.2, 0.018, "triangle");
+          if (Math.random() < 0.55) {
+            const f = PENTA[Math.floor(Math.random() * PENTA.length)];
+            this._note(cc, f, 1.9, 0.013, "sine", Math.random() * 0.4);
+            if (Math.random() < 0.3) this._note(cc, f * 2, 1.2, 0.005, "sine", 0.12); // 泛音
+          }
+        } else if (track === "combat") {
+          if (beat % 2 === 0) this._note(cc, 58, 0.22, 0.05, "sine");           // 鼓
+          if (beat % 8 === 6) this._note(cc, 49, 0.3, 0.04, "sine");            // 重拍
+          if (Math.random() < 0.5) {
+            const f = PENTA[Math.floor(Math.random() * PENTA.length)] * (Math.random() < 0.3 ? 2 : 1);
+            this._note(cc, f, 0.16, 0.012, "triangle");
+          }
+        } else if (track === "tense") {
+          if (beat % 8 === 0) this._note(cc, 55, 4.2, 0.022, "sawtooth");
+          if (beat % 8 === 4) this._note(cc, 58.27, 3.6, 0.014, "sawtooth");    // 半音摩擦
+          if (beat % 16 === 12) this._note(cc, 220, 1.8, 0.008, "sine");
+        }
+        beat++;
+      };
+      step();
+      this._timer = setInterval(step, track === "combat" ? 250 : 480);
+    },
+    stop() {
+      if (this._timer) { clearInterval(this._timer); this._timer = null; }
+      this.track = null;
+    },
+    resume() { const t = this.track; this.track = null; if (t) this.start(t); },
+  };
 
   const Sfx = {
     enabled() { return !muted; },
@@ -91,6 +158,8 @@
       try { localStorage.setItem(KEY, muted ? "off" : "on"); } catch (e) {}
       if (muted && bgmEl) { bgmEl.pause(); }
       if (!muted && bgmEl) { bgmEl.play().catch(() => {}); }
+      if (muted) { const t = BGM.track; BGM.stop(); BGM.track = t; }   // 记轨停声
+      else BGM.resume();
       return !muted;
     },
     play(name) {
@@ -100,6 +169,9 @@
       lastPlay[name] = now;
       try { const c = ac(); if (c) RECIPES[name](c); } catch (e) {}
     },
+    // 合成 BGM：bgm("daily"|"combat"|"tense") / bgmStop()
+    bgm(track) { try { BGM.start(track); } catch (e) {} },
+    bgmStop() { try { BGM.stop(); } catch (e) {} },
     // BGM 接口：资源后补；文件缺失静默
     playBgm(url, vol = 0.25) {
       try {

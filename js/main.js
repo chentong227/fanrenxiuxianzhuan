@@ -167,6 +167,8 @@ const Main = {
     if (State.data.bottle.unlocked) UI.showBottleButton();
     // 中途存档退出的大陆旅途：自动续走
     if (Engine.resumeJourney) setTimeout(() => Engine.resumeJourney(), 400);
+    // 入世即起乐（日常轨：宫调五声，似有似无）
+    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm("daily");
   },
 
   toCreate() {

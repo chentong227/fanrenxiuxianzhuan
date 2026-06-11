@@ -783,7 +783,7 @@ const UI = {
       if (seg.aside) { beats.push({ kind: "aside", who: State.data.name, text: seg.aside }); return; }
       if (seg.beat) { beats.push({ kind: "narr", text: seg.beat || "……" }); return; }
       if (seg.show) { beats.push({ kind: "narr", text: seg.text || "", showWho: seg.show }); return; }   // 立绘亮相（无对白）
-      if (seg.say) { beats.push({ kind: "say", who: seg.say, text: seg.text, tone: seg.tone }); return; }
+      if (seg.say) { beats.push({ kind: "say", who: seg.say, text: seg.text, tone: seg.tone, emo: seg.emo }); return; }
       if (seg.narr) { beats.push({ kind: "narr", text: seg.narr }); return; }
     });
     return beats;
@@ -821,6 +821,8 @@ const UI = {
     this._typeTimer = setInterval(() => {
       i += 1;
       span.textContent = full.slice(0, i);
+      // 打字机轻嗒：每3字一声，标点不响（气口）
+      if (typeof Sfx !== "undefined" && i % 3 === 0 && !/[，。！？…—、；：]/.test(full[i - 1] || "")) Sfx.play("type");
       if (i >= full.length) {
         clearInterval(this._typeTimer); this._typeTimer = null;
         if (st) st.typing = false;
@@ -875,7 +877,8 @@ const UI = {
         `<span class="sp-name${isAside ? ' aside' : ''}">${who}${isAside ? "（心声）" : ""}</span>`;
       this._typeText(textEl, `<span class="story-line${isNarr ? ' narr' : ''}${isAside ? ' aside' : ''}">${b.text}</span>`);
       // 立绘：旁白用当前地点/无；对话/心声用说话人立绘；showWho=立绘亮相（无对白）
-      this._storySetPortrait(b.showWho || (isNarr ? null : who));
+      // emo=表情变体；tone 含怒/喝/厉 → 立绘震动（对话演出：形象会动，代入感所在）
+      this._storySetPortrait(b.showWho || (isNarr ? null : who), b.emo, b.tone);
     }
 
     const last = (st.idx === st.beats.length - 1);
@@ -883,29 +886,37 @@ const UI = {
     this.el("story-choices").innerHTML = "";
   },
 
-  // 双人相对立绘：韩立固定在右，对话 NPC 在左；说话者高亮，另一人暗淡
-  _storySetPortrait(who) {
+  // 双人相对立绘：韩立固定在右，对话 NPC 在左；说话者高亮，另一人暗淡。
+  // emo=表情变体（有图换图，无图回退基础版）；tone 驱动震动（怒/喝/厉/吼=重击感）
+  _storySetPortrait(who, emo, tone) {
     const st = this._story;
     const lbox = this.el("story-portrait-left");
     const rbox = this.el("story-portrait-right");
     if (!lbox || !rbox) return;
 
-    // 右侧固定为韩立立绘
-    if (!rbox.dataset.set) {
-      const hurl = (typeof Art !== "undefined") ? Art.url("hanli") : null;
-      rbox.innerHTML = hurl ? `<img src="${hurl}" alt="韩立" />` : "";
-      rbox.dataset.set = hurl ? "1" : "";
-    }
-
     const self = who && (who === State.data.name || who === "韩立");
 
-    // 出场的对话 NPC（非旁白、非主角）→ 放左侧并记住
+    // 右侧固定为韩立立绘（表情可随 emo 切换）
+    const hanliEmo = self ? emo : null;
+    const hKey = "hanli" + (hanliEmo || "");
+    if (rbox.dataset.set !== hKey) {
+      const hurl = (typeof Art !== "undefined") ? Art.url("hanli", hanliEmo) : null;
+      if (hurl) {
+        rbox.innerHTML = `<img src="${hurl}" alt="韩立" />`;
+        rbox.dataset.set = hKey;
+        if (hanliEmo) this._portraitPop(rbox);   // 换表情：小弹跳（看见变化）
+      }
+    }
+
+    // 出场的对话 NPC（非旁白、非主角）→ 放左侧并记住（表情同理）
     if (who && !self) {
       const id = this._npcIdByName(who);
-      const url = id && typeof Art !== "undefined" ? Art.url(id) : null;
-      if (url && st && st.leftNpc !== who) {
+      const url = id && typeof Art !== "undefined" ? Art.url(id, emo) : null;
+      const lKey = (who || "") + (emo || "");
+      if (url && st && st.leftKey !== lKey) {
         lbox.innerHTML = `<img src="${url}" alt="${who}" />`;
-        if (st) st.leftNpc = who;
+        if (st) { st.leftNpc = who; st.leftKey = lKey; }
+        if (emo) this._portraitPop(lbox);
       }
     }
 
@@ -919,6 +930,22 @@ const UI = {
     const speakLeft = who && !self;
     rbox.classList.toggle("dim", hasRight && !speakRight);
     lbox.classList.toggle("dim", hasLeft && !speakLeft);
+
+    // 语气演出：怒喝类 → 说话者立绘震动 + 重音效（形象会动，话才有分量）
+    const angry = tone && /怒|喝|厉|吼|狠|杀/.test(tone);
+    const speaker = speakRight ? rbox : speakLeft ? lbox : null;
+    if (speaker && angry) {
+      speaker.classList.remove("quake"); void speaker.offsetWidth; speaker.classList.add("quake");
+      if (typeof Sfx !== "undefined") Sfx.play("danger");
+    } else if (speaker && who) {
+      // 普通发言：极轻的呼吸顶起（说话者在"动"）
+      speaker.classList.remove("speak-bump"); void speaker.offsetWidth; speaker.classList.add("speak-bump");
+    }
+  },
+
+  // 换表情的小弹跳
+  _portraitPop(box) {
+    box.classList.remove("emo-pop"); void box.offsetWidth; box.classList.add("emo-pop");
   },
 
   _storyShowChoices() {
@@ -1745,7 +1772,11 @@ const UI = {
     endBtn.onclick = () => Engine.combatEndRound();
     this._combatTarget = combat.enemies.findIndex(e => e.alive);
     this._combatLogLen = 0;
-    if (typeof Sfx !== "undefined") Sfx.play("danger");
+    if (typeof Sfx !== "undefined") {
+      Sfx.play("danger");
+      // BGM 换轨：心魔/决战=紧张轨，其余=战斗轨
+      if (Sfx.bgm) Sfx.bgm(meta.type === "breakthrough" || meta.type === "showdown" || meta.type === "jinguang" ? "tense" : "combat");
+    }
     this.renderCombat(combat, meta);
     this._flashCombatBanner(meta, combat);
   },
@@ -1793,7 +1824,10 @@ const UI = {
     clearTimeout(this._bannerTimer);
     this._bannerTimer = setTimeout(() => { el.hidden = true; }, 1600);
   },
-  closeCombat() { this.el("combat-overlay").hidden = true; },
+  closeCombat() {
+    this.el("combat-overlay").hidden = true;
+    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm("daily");   // 战罢归于日常轨
+  },
 
   // 施法反馈：目标震动 + 招式名横幅一闪
   flashCombat(spellId) {

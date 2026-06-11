@@ -78,7 +78,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 #screen-create.active { display: flex; flex-direction: row; }
 .create-bg {
   position: absolute; inset: -2%;
-  background: url("../assets/shanmen.png?v=5") center 30% / cover no-repeat;
+  background: url("../assets/scenes/shanmen.png?v=9") center 30% / cover no-repeat;
   filter: brightness(.5) saturate(.82);
   animation: sceneDrift 50s ease-in-out infinite alternate;
 }
@@ -596,6 +596,28 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 .side-strip .ss-name { color: #b8a98c; font-weight: 600; }
 .side-strip .ss-st { color: var(--ink-dim); flex: 1; }
+
+/* ===== 对话演出：立绘的"活"（震动/弹跳/呼吸顶起）===== */
+.story-portrait.quake { animation: portraitQuake .42s cubic-bezier(.36,.07,.19,.97); }
+@keyframes portraitQuake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-7px) rotate(-0.6deg); }
+  30% { transform: translateX(6px) rotate(0.5deg); }
+  45% { transform: translateX(-5px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+.story-portrait.speak-bump { animation: speakBump .34s ease-out; }
+@keyframes speakBump {
+  0% { transform: translateY(0); }
+  35% { transform: translateY(-5px); }
+  100% { transform: translateY(0); }
+}
+.story-portrait.emo-pop img { animation: emoPop .4s cubic-bezier(.34,1.56,.64,1); }
+@keyframes emoPop {
+  0% { transform: scale(.96); filter: brightness(1.25); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
 
 /* 远惦记剪影：迷雾深处的兽踪（看得见、到不了——惦记本体） */
 .ex-cell.fog .ex-icon.far-mark {
@@ -1595,11 +1617,13 @@ html, body { touch-action: manipulation; }
 /* 场景背景（虚化压暗，做氛围）*/
 .story-bg {
   position: absolute; inset: 0; background-size: cover; background-position: center;
-  opacity: 0; transform: scale(1.06); transition: opacity .8s ease;
+  opacity: 0; transition: opacity .8s ease;
   filter: saturate(.9) brightness(.62);
+  will-change: transform; backface-visibility: hidden;
 }
-.story-bg.on { opacity: 1; animation: kenBurns 18s ease-out forwards; }
-@keyframes kenBurns { from { transform: scale(1.12); } to { transform: scale(1.0); } }
+/* kenBurns 收敛到 1.04→1.0：保留推镜电影感，终态回到原始分辨率（不糊） */
+.story-bg.on { opacity: 1; animation: kenBurns 14s ease-out forwards; }
+@keyframes kenBurns { from { transform: scale(1.04); } to { transform: scale(1.0); } }
 .story-scrim {
   position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(12,10,8,.55) 0%, rgba(12,10,8,.1) 35%, rgba(12,10,8,.4) 70%, rgba(12,10,8,.92) 100%);
@@ -1748,11 +1772,13 @@ html, body { touch-action: manipulation; }
   position: absolute; inset: -2.5%; background-size: cover; background-position: center 38%;
   transition: opacity .8s ease; opacity: 0;
   filter: saturate(.92) brightness(.94);
+  will-change: transform; backface-visibility: hidden;
 }
+/* 漂移只平移不缩放：transform scale 会直接放大位图导致发糊（手机竖屏尤甚） */
 .scene-bg.has-img { opacity: 1; animation: sceneDrift 46s ease-in-out infinite alternate; }
 @keyframes sceneDrift {
-  from { transform: scale(1.02) translateY(0); }
-  to   { transform: scale(1.07) translateY(-0.8%); }
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-0.6%, -0.8%, 0); }
 }
 /* 上下压暗 + 四角暗角，文字清晰、画面聚焦 */
 .scene-veil {
