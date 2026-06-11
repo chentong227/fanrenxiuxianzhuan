@@ -1649,7 +1649,8 @@ const UI = {
     if (n.silhouette) action = `<div class="cont-gate">传说之地——此生若能至，方不负修行。</div>`;
     else if (gateMsg) action = `<div class="cont-gate">道途未通：${gateMsg}</div>`;
     else if ((n.locs || []).includes(s.location)) action = `<div class="cont-gate" style="color:var(--jade-bright)">你正在此地。</div>`;
-    else if (n.months) action = `<div class="cont-gate">旅途约 ${n.months} 月 · 险度${n.danger || "未知"}——远行之法，待出山之日。</div>`;
+    else action = `<div class="cont-gate">旅途约 ${n.months || 2} 月 · 险度${n.danger || "未知"}　
+      <button class="btn btn-primary btn-mini" onclick="Engine.startJourney('${n.id}')">启程</button></div>`;
     this.el("cont-detail").innerHTML = `<b>${n.name}</b>　${n.desc}${action}`;
   },
 

@@ -930,6 +930,217 @@ const Engine = {
     });
   },
   /* ===========================================================
+   *  大陆旅途（world-architecture §1.3）：旅途即内容，不是读条
+   *  逐月走段：平安段只记一笔见闻；事件段弹出抉择（复用奇遇管线）；
+   *  到达即结算。中途存档退出，重开自动续走（resumeJourney）。
+   * =========================================================== */
+  _JOURNEY_EVENTS: [
+    {
+      id: "jr_rumor", weight: 22, title: "茶棚风闻",
+      text: "官道旁的茶棚里，几个行脚商人正压着嗓子说话——彩霞山的局势、修仙人的传说，真假掺半。",
+      choices: [
+        { text: "凑近听一耳朵", effect(s) {
+          if (typeof Engine !== "undefined") Engine._tickAmbient && Engine._tickAmbient(1);
+          return { text: "你装作歇脚，把几桩传闻听了个全。江湖事，多知道一分是一分。（见闻+）", kind: "event" };
+        } },
+        { text: "赶路要紧", effect() { return { text: "你灌下一碗粗茶便起身赶路。日头还高，再赶三十里。", kind: "sys" }; } },
+      ],
+    },
+    {
+      id: "jr_temple", weight: 16, title: "破庙夜宿",
+      text: "天色已晚，前不着村后不着店。道旁一座破败山神庙，檐角的铃铛在风里哑哑作响。",
+      choices: [
+        { text: "进庙过夜", effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 4);
+          return { text: "你拢了堆火，靠着神像打坐到天明。庙里无鬼，心里无事——难得一夜安眠。（心境+4）", kind: "good" };
+        } },
+        { text: "夜行赶路", effect(s) {
+          s.hp = Math.max(1, s.hp - 5);
+          return { text: "你摸黑赶了一夜山路，脚底磨出血泡（气血-5），却也多赶出半日路程。", kind: "sys" };
+        } },
+      ],
+    },
+    {
+      id: "jr_merchant", weight: 14, title: "受伤的行商",
+      text: "道边躺着个捂腹呻吟的行商，货担翻在一旁——像是遭了劫，伤得不轻。",
+      choices: [
+        { text: "出手救治（药理）", effect(s) {
+          s.skills = s.skills || {}; s.skills.alchemy = (s.skills.alchemy || 0) + 1;
+          s.silver += 6;
+          if (typeof Engine !== "undefined" && Engine.writeLedger) Engine.writeLedger("saved_merchant_road", "官道上救了一名遭劫的行商");
+          return { text: "你以药理止血敷创，救回他一命。行商千恩万谢，硬塞来六两碎银（药理+1，纹银+6）——出门在外，谁还没个难处。", kind: "good" };
+        } },
+        { text: "多一事不如少一事", effect() {
+          return { text: "你压低斗笠绕道而行。修仙路上，心硬是本分——只是那呻吟声跟了你一路。", kind: "sys" };
+        } },
+      ],
+    },
+    {
+      id: "jr_bandit", weight: 16, title: "剪径的毛贼",
+      text: "三五个拿刀的汉子从林子里钻出来拦住去路：「此山是我开！留下买路财！」",
+      choices: [
+        { text: "报上名号", cond: (s) => (s.fame || 0) >= 30, effect(s) {
+          return { text: `你眯眼报出名号。为首的汉子脸色一变："彩霞山的……韩爷？！"——一伙人连滚带爬钻回了林子。（名声的旅途红利）`, kind: "good" };
+        } },
+        { text: "拔剑", effect() {
+          if (typeof Engine !== "undefined") Engine._fortuneFight = "bandit";
+          return { text: "废话少说——你撂下行囊，剑已出鞘！", kind: "bad" };
+        } },
+        { text: "破财消灾（纹银5两）", cond: (s) => s.silver >= 5, effect(s) {
+          s.silver -= 5;
+          return { text: "你丢出一锭碎银。汉子们一哄而散——钱能解决的事，犯不上见血。（纹银-5）", kind: "sys" };
+        } },
+      ],
+    },
+    {
+      id: "jr_herbs", weight: 12, title: "山坡野生灵草",
+      text: "翻过一道山梁，向阳的坡上竟生着几株野灵草——叶尖泛着微光，是入药的好东西。",
+      choices: [
+        { text: "采了带走", effect(s) {
+          State.give("lingcao", 2);
+          return { text: "你手脚麻利地采下灵草（灵草+2）。识货的眼睛，走到哪都饿不着。", kind: "good" };
+        } },
+      ],
+    },
+  ],
+
+  startJourney(nodeId) {
+    const s = State.data;
+    if (s.combat || s.journey) return;
+    const C = WORLD.continent;
+    const node = C.nodes.find(n => n.id === nodeId);
+    if (!node || node.silhouette) return;
+    const gateMsg = node.gate ? node.gate(s) : null;
+    if (gateMsg) { this.toast(`道途未通：${gateMsg}`, true); return; }
+    const months = Math.max(1, node.months || 2);
+    s.journey = { to: nodeId, toName: node.name, leg: 0, total: months };
+    this.log(`你收拾行囊，踏上去「${node.name}」的路——约${months}月行程。江湖路远，晓行夜宿。`, "event");
+    this.toast(`启程：${node.name}`);
+    UI.closeModal();
+    State.save();
+    this._journeyLeg();
+  },
+
+  // 走一段（1月）。平安则续走；遇事则停下弹抉择（选完自动续走）；走完即到达。
+  _journeyLeg() {
+    const s = State.data;
+    const j = s.journey;
+    if (!j) return;
+    if (j.leg >= j.total) { this._journeyArrive(); return; }
+    j.leg += 1;
+    this.passTime(1);
+    if (s.combat || s.pendingEvent) { State.save(); UI.renderAll(); return; }   // 旅途被世界打断（剧情/战斗）：事毕由钩子续走
+    // 40% 遇事，60% 平安
+    if (Math.random() < 0.4) {
+      const pool = this._JOURNEY_EVENTS.filter(e => !e.cond || e.cond(s));
+      const sum = pool.reduce((a, e) => a + (e.weight || 10), 0);
+      let r = Math.random() * sum, pick = pool[0];
+      for (const e of pool) { r -= (e.weight || 10); if (r <= 0) { pick = e; break; } }
+      this._pendingFortune = {
+        title: `旅途 · ${pick.title}`, text: pick.text,
+        choices: pick.choices.filter(c => !c.cond || c.cond(s)).map(c => ({ text: c.text, effect: c.effect })),
+      };
+      this.log(`【旅途】第${j.leg}月：${pick.title}。`, "sys");
+      State.save();
+      UI.renderAll();
+      UI.openFortune(this._pendingFortune);
+      return;   // 等玩家抉择，chooseFortune 钩子续走
+    }
+    this.log(`【旅途】第${j.leg}月：晓行夜宿，一路无话。${j.toName}又近了些。`, "sys");
+    State.save();
+    UI.renderAll();
+    this._journeyLeg();
+  },
+
+  _journeyArrive() {
+    const s = State.data;
+    const j = s.journey;
+    if (!j) return;
+    s.journey = null;
+    const C = WORLD.continent;
+    const node = C.nodes.find(n => n.id === j.to);
+    this.log(`风尘仆仆，你终于抵达「${j.toName}」。`, "good");
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
+    // 有地区层的节点：落脚其首地点
+    if (node && node.locs && node.locs.length) {
+      s.location = node.locs[0];
+      State.save(); UI.renderAll();
+      return;
+    }
+    // 事件型节点（v1：青牛镇探家）
+    if (node && node.visit === "home") { this._homeVisit(); return; }
+    State.save(); UI.renderAll();
+  },
+
+  // 探家（青牛镇 v1）：仙凡有别的最初一课——你在山上修行，他们在山下老去
+  _homeVisit() {
+    const s = State.data;
+    const yrs = Math.max(1, s.age - 10);   // 十岁离家
+    this._pendingFortune = {
+      title: "韩家小院",
+      text: `柴门虚掩，院里的老槐树又粗了一圈。娘正在灶间忙活，听见脚步声回头——愣了半晌，手里的瓢"哐当"落了地："二……二郎？！"\n\n爹闻声从田里赶回来，烟杆在手里直抖。你离家已${yrs}年，爹娘鬓边的白发，比记忆里多了太多。`,
+      choices: [
+        {
+          text: "住上几日，陪爹娘说说话（+1月）",
+          effect(sd) {
+            Engine.passTime(1);
+            sd.mood = Math.min(sd.moodMax, sd.mood + 10);
+            sd.demon = Math.max(0, sd.demon - 8);
+            sd.silver = Math.max(0, sd.silver - 4);
+            Engine.writeLedger("home_visited_qixuan", "七玄门学艺期间回乡探望过爹娘");
+            Engine.addMilestone("回乡探亲：韩家小院的灯火", "deed");
+            return { text: "你陪爹下了几日田，帮娘添了新棉被，又留下几两银子（纹银-4）。临走那晚，娘做了一桌子菜，爹破例多喝了两碗酒，红着眼说不出话。\n\n（心境+10，心魔-8）——山上的日子再苦，想起这盏灯火，便有了来处。", kind: "good" };
+          },
+        },
+        {
+          text: "放下银两，当夜便走（修行要紧）",
+          effect(sd) {
+            sd.silver = Math.max(0, sd.silver - 8);
+            sd.mood = Math.min(sd.moodMax, sd.mood + 3);
+            return { text: "你把八两银子压在枕下，天不亮就启程了。娘追出门塞给你一包干粮，站在村口望了很久。\n\n（纹银-8，心境+3）——你不敢回头。修仙人最怕的不是妖兽，是这一眼。", kind: "event" };
+          },
+        },
+      ],
+    };
+    State.save();
+    UI.renderAll();
+    UI.openFortune(this._pendingFortune);
+    // 探家结束后：归程提示由 chooseFortune 钩子接管（_afterHomeVisit）
+    this._afterFortuneHook = "homeReturn";
+  },
+
+  // 旅途续走钩子：奇遇抉择/战斗结束后调用
+  _resumeJourneyIfAny() {
+    const s = State.data;
+    // 探家归程：提供返程旅途
+    if (this._afterFortuneHook === "homeReturn") {
+      this._afterFortuneHook = null;
+      const back = WORLD.continent.nodes.find(n => (n.locs || []).includes("yaolu"));
+      if (back) {
+        s.journey = { to: back.id, toName: back.name, leg: 0, total: back.months || 1, back: true };
+        this.log(`乡情已了，你辞别爹娘，踏上归山之路。`, "sys");
+        State.save();
+        this._journeyLeg();
+      }
+      return true;
+    }
+    if (s.journey && !s.combat && !s.pendingEvent && !this._pendingFortune) {
+      this._journeyLeg();
+      return true;
+    }
+    return false;
+  },
+
+  // 启动恢复：中途存档退出的旅途，重开自动续走
+  resumeJourney() {
+    const s = State.data;
+    if (s.journey && !s.combat && !s.pendingEvent) {
+      this.log(`（你仍在去「${s.journey.toName}」的路上——继续赶路。）`, "sys");
+      this._journeyLeg();
+    }
+  },
+
+  /* ===========================================================
    *  因果账本（world-architecture §3）：插曲种因，主线读账
    *  设计三律：变数必有近响+远雷；改参数不改骨架；负因也是内容。
    * =========================================================== */
@@ -1355,6 +1566,8 @@ const Engine = {
       this.startEncounterFight(enemy);
       return;
     }
+    // 旅途中的抉择已了：继续赶路（旅途即内容）
+    if (this._resumeJourneyIfAny()) return;
     this.checkLifespan();
     this.checkStory();
     State.save();
@@ -1935,6 +2148,15 @@ const Engine = {
         this.checkLifespan();
         State.save();
         if (s.explore && !s.explore.finished && s.hp > 0) { UI.openExplore(s.explore); return; }
+      }
+      // 旅途中遭遇战打完：继续赶路（胜负皆然——劫道的打跑了，路还是要走）
+      if (s.journey && s.hp > 0) {
+        this._combat = null; this._combatMeta = null;
+        this.checkLifespan();
+        State.save();
+        UI.renderAll();
+        this._resumeJourneyIfAny();
+        return;
       }
     } else if (meta.type === "showdown") {
       if (win) {

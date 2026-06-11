@@ -112,8 +112,8 @@ WORLD.continent = {
   nodes: [
     { id: "caixia",   name: "彩霞山",  pos: { x: 62, y: 64 }, locs: ["yaolu", "houshan", "wuting", "town", "miju"],
       desc: "七玄门所在。你修仙路的起点——药庐的灯火，后山的兽吼。" },
-    { id: "qingniu",  name: "青牛镇",  pos: { x: 44, y: 78 }, locs: ["qingniu"],
-      desc: "你的家乡。爹娘的白发，小妹的笑闹，几亩薄田。", months: 1, danger: "低" },
+    { id: "qingniu",  name: "青牛镇",  pos: { x: 44, y: 78 }, locs: [],
+      desc: "你的家乡。爹娘的白发，小妹的笑闹，几亩薄田。", months: 1, danger: "低", visit: "home" },
     { id: "jiayuan",  name: "嘉元城",  pos: { x: 38, y: 48 }, locs: [],
       desc: "越国大城，鱼龙混杂。传闻城中有修仙者出没。", months: 2, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },

@@ -165,6 +165,8 @@ const Main = {
     UI.renderNarrative();
     UI.renderAll();
     if (State.data.bottle.unlocked) UI.showBottleButton();
+    // 中途存档退出的大陆旅途：自动续走
+    if (Engine.resumeJourney) setTimeout(() => Engine.resumeJourney(), 400);
   },
 
   toCreate() {

@@ -87,6 +87,7 @@ const State = {
       sideUnit: null,         // 侧位单位（尸傀/灵宠/傀儡）{ id,name,hp,hpMax,atk,...,status,carry }
       intelElems: {},         // 已揭示的敌方道基行属 { 敌名: elem }（打了才知道）
       ledger: {},             // 因果账本：{ id: {t,label} }——插曲种因，主线节点读账结果（world-architecture §3）
+      journey: null,          // 大陆旅途 { to, toName, leg, total, back }（旅途即内容：world-architecture §1.3）
     };
     this.give("qingyuan_dan", 2);
     if (typeof NPCSIM !== "undefined") NPCSIM.init(this.data);
@@ -147,6 +148,7 @@ const State = {
     if (d.sideUnit === undefined) d.sideUnit = null;
     if (!d.intelElems) d.intelElems = {};
     if (!d.ledger) d.ledger = {};
+    if (d.journey === undefined) d.journey = null;
     // 老档补发：已反杀墨大夫者，曲魂幡尸傀随行
     if (d.flags && d.flags.modafu_dead && !d.sideUnit) {
       d.sideUnit = { id: "zhangtie_corpse", name: "铁奴·张铁", hp: 70, hpMax: 70, atk: 12,
