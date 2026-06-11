@@ -109,69 +109,70 @@ WORLD.locations = [
  */
 WORLD.enemies = {
   wild_wolf: {
-    name: "灵狼", hp: 38, sense: 3, speed: 12, agility: 6, tactics: "feral", reward: { lingcao: 1 },
+    name: "灵狼", hp: 55, sense: 3, speed: 12, agility: 6, tactics: "feral", reward: { lingcao: 1 },
     attacks: [
-      { name: "扑咬", dmg: 8, kind: "normal", weight: 14 },
-      { name: "弓背低嚎", dmg: 11, kind: "charge", weight: 6 },
+      { name: "扑咬", dmg: 14, kind: "normal", weight: 14 },
+      { name: "撕喉", dmg: 11, kind: "pierce", weight: 5 },
+      { name: "弓背低嚎", dmg: 18, kind: "charge", weight: 6 },
     ],
   },
   outer_disciple: {
-    name: "外门弟子", hp: 60, sense: 6, speed: 10, agility: 5, reward: { silver: 4 },
+    name: "外门弟子", hp: 85, sense: 6, speed: 10, agility: 5, reward: { silver: 4 },
     attacks: [
-      { name: "拳脚", dmg: 11, kind: "normal", weight: 14 },
-      { name: "锁喉擒拿", dmg: 8, kind: "pierce", weight: 6 },
+      { name: "拳脚", dmg: 15, kind: "normal", weight: 14 },
+      { name: "锁喉擒拿", dmg: 11, kind: "pierce", weight: 6 },
     ],
   },
   bandit: {
-    name: "山贼", hp: 50, sense: 4, speed: 8, agility: 3, tactics: "feral", reward: { silver: 3 },
+    name: "山贼", hp: 75, sense: 4, speed: 8, agility: 3, tactics: "feral", reward: { silver: 3 },
     attacks: [
-      { name: "刀劈", dmg: 10, kind: "normal", weight: 14 },
-      { name: "狠命抡刀", dmg: 15, kind: "charge", weight: 6 },
+      { name: "刀劈", dmg: 14, kind: "normal", weight: 14 },
+      { name: "狠命抡刀", dmg: 20, kind: "charge", weight: 6 },
     ],
   },
   rogue_cultivator: {
-    name: "散修", hp: 88, sense: 9, speed: 11, agility: 8, tactics: "cunning", qiLayer: 3, reward: { lingshi: 1 },
+    name: "散修", hp: 120, sense: 9, speed: 11, agility: 8, tactics: "cunning", qiLayer: 3, reward: { lingshi: 1 },
     attacks: [
-      { name: "法器袭", dmg: 16, kind: "normal", weight: 12 },
-      { name: "法器贯刺", dmg: 12, kind: "pierce", weight: 8 },
-      { name: "聚灵蓄势", dmg: 18, kind: "charge", weight: 5 },
+      { name: "法器袭", dmg: 26, kind: "normal", weight: 12 },
+      { name: "法器贯刺", dmg: 20, kind: "pierce", weight: 8 },
+      { name: "聚灵蓄势", dmg: 30, kind: "charge", weight: 5 },
     ],
   },
   wolf_gang_thug: {
-    name: "野狼帮喽啰", hp: 65, sense: 5, speed: 9, agility: 4, reward: { silver: 6 },
+    name: "野狼帮喽啰", hp: 95, sense: 5, speed: 9, agility: 4, reward: { silver: 6 },
     attacks: [
-      { name: "狼牙棒", dmg: 13, kind: "normal", weight: 14 },
-      { name: "横扫蓄力", dmg: 17, kind: "charge", weight: 6 },
+      { name: "狼牙棒", dmg: 17, kind: "normal", weight: 14 },
+      { name: "横扫蓄力", dmg: 23, kind: "charge", weight: 6 },
     ],
   },
 
   /* —— 异闻妖王（听闻其名 → 深入后山 → 真实可战）：威名先至，名实一致 —— */
   beast_baihu: {
-    name: "白额吊睛虎", hp: 140, sense: 7, speed: 14, agility: 12, tactics: "feral",
+    name: "白额吊睛虎", hp: 200, sense: 7, speed: 14, agility: 12, tactics: "feral",
     introNote: "正是异闻中那头噬人虎王！爪疾力沉，血怒时必拼命扑杀——稳住护体，别贪刀。",
     attacks: [
-      { name: "裂风虎爪", dmg: 18, kind: "normal", weight: 12 },
-      { name: "虎啸震林", dmg: 15, kind: "pierce", weight: 6 },
-      { name: "血怒扑杀", dmg: 22, kind: "charge", weight: 7 },
+      { name: "裂风虎爪", dmg: 26, kind: "normal", weight: 12 },
+      { name: "虎啸震林", dmg: 22, kind: "pierce", weight: 6 },
+      { name: "血怒扑杀", dmg: 32, kind: "charge", weight: 7 },
     ],
     reward: { silver: 12 }, namedLoot: { huixue_dan: 2, lingcao: 2 },
   },
   beast_wugong: {
-    name: "铁背蜈蚣王", hp: 140, immunePoison: true, sense: 6, speed: 8, agility: 7, tactics: "cunning",
+    name: "铁背蜈蚣王", hp: 185, immunePoison: true, sense: 6, speed: 8, agility: 7, tactics: "cunning",
     introNote: "铁背蜈蚣王——甲壳如铁、自身百毒不侵！你的毒计无用，唯暗器与剑能破其节甲。",
     attacks: [
-      { name: "百足绞缠", dmg: 17, kind: "normal", weight: 12 },
-      { name: "毒牙噬咬", dmg: 20, kind: "pierce", weight: 8 },
+      { name: "百足绞缠", dmg: 22, kind: "normal", weight: 12 },
+      { name: "毒牙噬咬", dmg: 26, kind: "pierce", weight: 8 },
     ],
     reward: { lingshi: 1 }, namedLoot: { duyao_cao: 4, anqi: 2 },
   },
   beast_chimu: {
-    name: "赤目狼王", hp: 140, sense: 9, speed: 15, agility: 16, tactics: "feral",
+    name: "赤目狼王", hp: 185, sense: 9, speed: 15, agility: 16, tactics: "feral",
     introNote: "赤目狼王——身法鬼魅难以捉摸！它越是受伤越疯，蓄力扑杀一击足以重创，看准蓄力回合全力压制。",
     attacks: [
-      { name: "撕咬", dmg: 17, kind: "normal", weight: 12 },
-      { name: "影袭", dmg: 14, kind: "pierce", weight: 7 },
-      { name: "狂性大发", dmg: 23, kind: "charge", weight: 8 },
+      { name: "撕咬", dmg: 22, kind: "normal", weight: 12 },
+      { name: "影袭", dmg: 18, kind: "pierce", weight: 7 },
+      { name: "狂性大发", dmg: 29, kind: "charge", weight: 8 },
     ],
     reward: { silver: 10 }, namedLoot: { lingshi: 2, huixue_dan: 1 },
   },

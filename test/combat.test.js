@@ -217,8 +217,8 @@ console.log("\n=== 8.5 战斗深化：剑势连携 + 长春功增益 ===");
   const hpBefore = e.hp;
   c.cast("zhayan_lian", 0);
   const dealt = hpBefore - e.hp;
-  // 武学：基础(13+势2×5=23) × 武学系数0.8 = 18
-  const expect = Math.round((13 + 2 * 5) * 0.8);
+  // 武学：基础(11+势2×5=21) × 武学系数0.8 ≈ 17（成本重定价后连击 11 基伤）
+  const expect = Math.round((11 + 2 * 5) * 0.8);
   assert(dealt === expect, `眨眼连击随剑势增伤、按武学系数结算（期望${expect}，实际${dealt}）`);
   assert(p.momentum === 0, "眨眼连击后剑势清零");
 
@@ -228,7 +228,7 @@ console.log("\n=== 8.5 战斗深化：剑势连携 + 长春功增益 ===");
   const c2 = new Combat({ player: p2, enemies: [new Fighter({ name: "x", hp: 50 })], rng: seqRng([0.99]) });
   c2.startRound(); c2.qi.mu += 5;
   c2.cast("tuna", 0);
-  assert(p2.hp === 50 + Math.round(9 * 1.4), `长春功者吐纳回元更多（回${Math.round(9 * 1.4)}）`);
+  assert(p2.hp === 50 + Math.round(6 * 1.4), `长春功者吐纳回元更多（回${Math.round(6 * 1.4)}，基础6×长春1.4）`);
 }
 
 console.log("\n=== 9. 突破=复用战斗：充分准备成功；准备不足失败 ===");

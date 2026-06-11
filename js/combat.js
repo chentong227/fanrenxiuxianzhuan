@@ -25,22 +25,25 @@
    *
    * consume：施放需消耗一份底牌(平时准备的毒、暗器)。准备越足，能打出的底牌越多。
    */
+  /* 成本定价原则（与"灵气总量=底蕴4+层数"配套，详见 combat-balance-design.md）：
+   *  基础招 1~2 灵气（练气一层每回合也打得出 1~2 招——永远有战斗手段）；
+   *  进阶/爆发招 3+（看积累与蓄势）；底牌 1（廉价但消耗实物）。 */
   const SPELLS = {
     // 《长春功》一系（功法法术·木属性，受主修长春功品阶增益）
-    tuna:     { name: "长春吐纳", cost: { mu: 3 },          type: "heal", heal: 9, school: "mu", source: "art",
-                desc: "运转《长春功》吐纳调息，固本回元。修长春功者，回元更多。" },
-    huti:     { name: "长春护体", cost: { mu: 3 },          type: "def", shield: 14, school: "mu", source: "art",
+    tuna:     { name: "长春吐纳", cost: { mu: 2 },          type: "heal", heal: 6, school: "mu", source: "art",
+                desc: "运转《长春功》吐纳调息，固本回元。修长春功者，回元更多。战中调息终是杯水车薪——胜负在攻。" },
+    huti:     { name: "长春护体", cost: { mu: 2 },          type: "def", shield: 10, school: "mu", source: "art",
                 desc: "以木灵之力护住周身。修长春功者，护体更坚。" },
-    ningshen: { name: "凝神静气", cost: { mu: 1 },          type: "buff", stash: true, source: "art", oncePerRound: true,
-                desc: "凝神定志：本回合结束时，将剩余灵气结转至下回合（至多按境界蓄势上限）。不凝神则余气散尽。" },
+    // 凝神静气：五行调度器——以木易气（等价换币，赌缺什么来什么），且兼具蓄势。不产气。
+    ningshen: { name: "凝神静气", cost: { mu: 1 },          type: "buff", convert: 1, stash: true, source: "art", oncePerRound: true,
+                desc: "凝神匀息：以 1 木灵换 1 点灵气（按灵根随机所属——缺金时的赌注），且本回合余气将结转至下回合（至多按境界蓄势上限）。每回合限一次。" },
 
     // 眨眼剑法：凡人武学，快、诡、廉价；施放积累「剑势」
-    zhayan:   { name: "眨眼剑法", cost: { jin: 2 },         type: "atk", dmg: 8, dodgeSelf: 0.15, buildMomentum: 1, source: "martial",
+    zhayan:   { name: "眨眼剑法", cost: { jin: 1 },         type: "atk", dmg: 7, dodgeSelf: 0.15, buildMomentum: 1, source: "martial",
                 desc: "凡人剑术，身形快如眨眼，欺身一剑。每施一剑积累「剑势」。" },
-    zhayan_lian:{ name: "眨眼连击", cost: { jin: 5 },       type: "atk", dmg: 13, dodgeSelf: 0.1, spendMomentum: true, momentumDmg: 5, source: "martial",
+    zhayan_lian:{ name: "眨眼连击", cost: { jin: 3 },       type: "atk", dmg: 11, dodgeSelf: 0.1, spendMomentum: true, momentumDmg: 5, source: "martial",
                 desc: "凡人剑术，倾尽剑势连环爆发。每点「剑势」额外+5伤害，施后剑势清零。" },
     // 眨眼剑法大成的兑现招（剑意修行链）：一剑化数剑的多段连击（行动经济质变）。
-    // 大成后【替换】眨眼连击。数值待战斗平衡周期统一校准。
     lianhuan: { name: "连环眨眼", cost: { jin: 3 },        type: "atk", dmg: 9, multiSeg: true, segPer: 2, dodgeSelf: 0.2, spendMomentum: true, source: "martial",
                 desc: "眨眼剑法大成之技：身剑合一，剑势所至一剑化作数剑（每2点剑势多斩一剑），剑剑独立结算。施后剑势清零。" },
 
@@ -54,8 +57,8 @@
                 consume: "anqi",
                 desc: "凡人暗器，激射飞针，例不虚发，破甲。消耗一支暗器。" },
 
-    // 运功镇魂：功法法术，对元神之敌，伤害由「功力」换算
-    zhenhun:  { name: "运功镇魂", cost: { mu: 2, shui: 2 }, type: "soul", source: "art",
+    // 运功镇魂：功法法术，对元神之敌，伤害由「功力」换算（决战第三波必须打得出）
+    zhenhun:  { name: "运功镇魂", cost: { mu: 1, shui: 1 }, type: "soul", source: "art",
                 desc: "凝聚周身功力镇压神魂。唯对元神之敌有效，伤害取决于你的功力。" },
   };
 
@@ -386,15 +389,33 @@
           this._log(`${caster.name} 施「${sp.name}」，护体 +${shield}（共${caster.shield}${cap ? `/${cap}` : ''}）`);
         }
       } else if (sp.type === "buff") {
+        const notes = [];
+        // 凝神匀息：即刻引动灵气（按灵根权重随机所属）——五行调度器，缺什么赌什么
+        if (sp.convert && caster === this.player) {
+          const prof = PROFILES[caster.profile] || PROFILES.common;
+          const pool = ELEMENTS.filter(e => (prof.weights[e] || 0) > 0);
+          const got = {};
+          for (let i = 0; i < sp.convert; i++) {
+            // 按权重抽取
+            const wsum = pool.reduce((a, e) => a + prof.weights[e], 0);
+            let r = this.rng() * wsum, pick = pool[0];
+            for (const e of pool) { r -= prof.weights[e]; if (r <= 0) { pick = e; break; } }
+            this.qi[pick] = (this.qi[pick] || 0) + 1;
+            got[pick] = (got[pick] || 0) + 1;
+          }
+          notes.push("引气 " + Object.entries(got).map(([e, n]) => `${ELEM_NAME[e]}+${n}`).join(" "));
+        }
         if (sp.stash) {
-          // 凝神蓄势：标记本回合结束时结转剩余灵气（量在 startRound 按 carryCap 结算）
+          // 蓄势：标记本回合结束时结转剩余灵气（量在 startRound 按 carryCap 结算）
           caster._stashNext = true;
-          this._log(`${caster.name} 施「${sp.name}」，凝神定志——本回合余下的灵气将蓄入下一回合（至多${Balance.qiCarryCap(caster.realmTier)}）。`);
-        } else if (sp.nextQiBonus) {
+          notes.push(`余气将结转（至多${Balance.qiCarryCap(caster.realmTier)}）`);
+        }
+        if (sp.nextQiBonus) {
           const cap = Balance.qiCarryCap(caster.realmTier);
           caster.nextQiBonus = Math.min(cap, (caster.nextQiBonus || 0) + sp.nextQiBonus);
-          this._log(`${caster.name} 施「${sp.name}」，凝神蓄力（下回合灵气+${caster.nextQiBonus}）`);
+          notes.push(`下回合灵气+${caster.nextQiBonus}`);
         }
+        this._log(`${caster.name} 施「${sp.name}」——${notes.join("；")}。`);
       }
     }
 
@@ -415,6 +436,14 @@
 
       this._checkEnd();
       if (this.status === "ongoing") {
+        // 护体随回合消散一半（盾是"应招"不是"存款"——读招举盾才是正途；
+        // 法宝护体 _fixedShield 例外，如金光上人的金钟罩）
+        [this.player, ...this.enemies].forEach(f => {
+          if (f.shield > 0 && !f._fixedShield) {
+            const lost = Math.ceil(f.shield * 0.5);
+            f.shield -= lost;
+          }
+        });
         this._maybeSpawnWave();
         if (this.round >= this.maxRounds) { this.status = "lose"; this._log(`回合耗尽，未能取胜。`); }
       }
