@@ -73,6 +73,8 @@ const State = {
       swordIntent: 0,         // 剑意（眨眼剑法修行链：实战用剑积累，满则可悟剑）
       swordMastery: false,    // 眨眼剑法大成（解锁连环眨眼）
       milestones: [],         // 道途年表 [{ t, title, kind }]（质变/大件/勋章永久记录）
+      beastRumor: null,       // 活跃的异闻妖王 id（听闻在前，深入后山可遇）
+      slainBeasts: [],        // 已伏诛的异闻妖王（不再重复出没）
     };
     this.give("qingyuan_dan", 2);
     if (typeof NPCSIM !== "undefined") NPCSIM.init(this.data);
@@ -119,6 +121,8 @@ const State = {
     if (d.swordIntent == null) d.swordIntent = 0;
     if (d.swordMastery == null) d.swordMastery = false;
     if (!d.milestones) d.milestones = [];
+    if (d.beastRumor === undefined) d.beastRumor = null;
+    if (!d.slainBeasts) d.slainBeasts = [];
     // 旧档修正：剑法大成者，连环眨眼【替换】眨眼连击（v30 曾并列，致"没有提升感"）
     if (d.swordMastery) {
       d.knownSkills = (d.knownSkills || []).filter(id => id !== "zhayan_lian");

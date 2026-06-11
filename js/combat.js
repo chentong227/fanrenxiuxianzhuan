@@ -318,6 +318,9 @@
         // 来源(武学/法术) × 功法品阶 × 境界 的强度换算 × fail-forward 看破加成
         baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier);
         baseDmg = Math.max(1, Math.round(baseDmg * auxMul * (caster.dmgBonus || 1)));
+        // 趁虚而入：敌方蓄力中旧力已尽、新力未生——此刻出手伤害+30%（读招的显式奖励）
+        let exploitCharge = false;
+        if (target._charging && caster === this.player) { baseDmg = Math.round(baseDmg * 1.3); exploitCharge = true; }
         if (this.rng() < dodge) {
           this._log(`${caster.name} 施「${sp.name}」，被 ${target.name} 闪避！`);
           this._emitFx(tref, "miss", "闪避");
@@ -333,6 +336,7 @@
           }
           if (caster === this.player) this._stat(sp.name, totalDealt);
           if (anyCrit) this._log(`（神识料敌于先，一击中的！）`);
+          if (exploitCharge) this._log(`（趁其蓄力、旧力已尽新力未生——这一手打在了节骨眼上！伤害+30%）`);
           this._log(segs > 1
             ? `${caster.name} 施「${sp.name}」——剑光连闪，${segs} 剑连环，共造成 ${totalDealt} 伤害！` + (target.shield > 0 ? `（余护体${target.shield}）` : "")
             : `${caster.name} 施「${sp.name}」，对 ${target.name} 造成 ${totalDealt} 伤害` + (target.shield > 0 ? `（余护体${target.shield}）` : ""));

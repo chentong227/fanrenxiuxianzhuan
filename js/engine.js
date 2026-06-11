@@ -576,7 +576,13 @@ const Engine = {
     if (s.combat) { this.toast("酣战之中，无暇他顾"); return; }
     const cfg = DATA.exploreSites[siteId];
     if (typeof Explore === "undefined" || !cfg) { this.toast("此地暂不可探"); return; }
-    s.explore = Explore.generate(Object.assign({}, cfg, { senseVal: s.sense }), Math.random);
+    // 异闻链：身负异闻时，深处的"妖兽王"即异闻中的那一头（听闻在前，名实一致）
+    const xcfg = Object.assign({}, cfg, { senseVal: s.sense });
+    if (s.beastRumor && WORLD.enemies[s.beastRumor]) xcfg.bossEnemy = s.beastRumor;
+    s.explore = Explore.generate(xcfg, Math.random);
+    if (s.beastRumor && WORLD.enemies[s.beastRumor]) {
+      Explore._log(s.explore, `异闻在耳——「${WORLD.enemies[s.beastRumor].name}」就盘踞在此地深处。猎，或不猎？`);
+    }
     UI.openExplore(s.explore);
     State.save();
   },
@@ -711,11 +717,28 @@ const Engine = {
     this.log(`你${reachedExit ? "寻到出口，离开了" : "退出了"}「${st.siteName}」，探索耗时约 ${months} 月。${summary}`, gained.length ? "good" : "sys");
     s.explore = null;
 
+    // 异闻投放：山里走动，总会听到些风声（无活跃异闻且尚有未伏诛的妖王时）
+    this._maybeBeastRumor(0.3);
+
     this.checkLifespan();
     this.checkStory();
     if (!s.pendingEvent && !s.combat && !this._pendingFortune) this._maybeInteraction();
     State.save();
     UI.renderAll();
+  },
+
+  // 异闻妖王：听闻其名（投放）——威名先至，相遇在后
+  _maybeBeastRumor(chance) {
+    const s = State.data;
+    if (s.beastRumor) return;
+    if (typeof WORLD === "undefined" || !WORLD.beastRumors) return;
+    const pool = WORLD.beastRumors.filter(r => !(s.slainBeasts || []).includes(r.id));
+    if (!pool.length || Math.random() > chance) return;
+    const r = pool[Math.floor(Math.random() * pool.length)];
+    s.beastRumor = r.id;
+    this.log(`【异闻】${r.rumor}　——若再入后山深处，或可遇上这桩"机缘"。`, "event");
+    this.toast("听到一桩异闻（见际遇栏）");
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
   },
 
 
@@ -1242,7 +1265,8 @@ const Engine = {
       enemies: [enemy],
       maxRounds: 20,
     });
-    this._combatMeta = { type: "encounter", reward: tmpl.reward, enemyName: tmpl.name };
+    this._combatMeta = { type: "encounter", reward: tmpl.reward, enemyName: tmpl.name,
+      namedBeast: enemyId.indexOf("beast_") === 0 ? enemyId : null, namedLoot: tmpl.namedLoot || null };
     State.data.combat = true;
     this._combat.startRound();
     this.log(`你在${State.location().name}遭遇「${tmpl.name}」，斗法一触即发！`, "bad");
@@ -1429,6 +1453,21 @@ const Engine = {
             else { State.give(k, v); this.log(`战胜「${meta.enemyName}」，获「${DATA.items[k] ? DATA.items[k].name : k}」×${v}。`, "good"); }
           });
         } else this.log(`你击退了「${meta.enemyName}」。`, "good");
+        // 异闻妖王伏诛：专属战利 + 年表勋章 + 名声入风云录（扬名雏形）
+        if (meta.namedBeast) {
+          if (meta.namedLoot) {
+            const names = [];
+            Object.entries(meta.namedLoot).forEach(([k, v]) => { State.give(k, v); names.push(`${DATA.items[k] ? DATA.items[k].name : k}×${v}`); });
+            this.log(`【伏诛】异闻中的「${meta.enemyName}」死于你手！剥取战利：${names.join("、")}。`, "good");
+          }
+          this.addMilestone(`伏诛异闻妖王「${meta.enemyName}」`, "medal");
+          s.slainBeasts = s.slainBeasts || [];
+          if (!s.slainBeasts.includes(meta.namedBeast)) s.slainBeasts.push(meta.namedBeast);
+          if (s.beastRumor === meta.namedBeast) s.beastRumor = null;
+          s.worldNews = s.worldNews || [];
+          s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "fortune", text: `传言后山那头「${meta.enemyName}」已被门中一位弟子毙杀，山民拍手称快——据说是药庐那位韩师傅。` });
+          if (typeof Sfx !== "undefined") Sfx.play("success");
+        }
       } else {
         const dmg = Math.round(s.hpMax * 0.2);
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);

@@ -89,6 +89,15 @@ const UI = {
         </div>`;
       }).join("");
     }
+    // 异闻妖王：听闻在前，深处可猎（一致感微缩循环）
+    const sb = State.data;
+    if (sb && sb.beastRumor && typeof WORLD !== "undefined" && WORLD.enemies[sb.beastRumor]) {
+      html += `<div class="obj-task urgent" style="border-left-color:var(--cinnabar)">
+        <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">异闻</span>
+        <b>${WORLD.enemies[sb.beastRumor].name}</b>
+        <span class="obj-hint">盘踞后山深处——深入探索可猎，伏诛有厚报</span>
+      </div>`;
+    }
     // 剑意修行链：实战用剑积累，圆满可悟剑（大件范式：明牌进度=惦记）
     const sd = State.data;
     if (sd && !sd.swordMastery && (sd.swordIntent || 0) > 0) {

@@ -109,10 +109,10 @@ WORLD.locations = [
  */
 WORLD.enemies = {
   wild_wolf: {
-    name: "灵狼", hp: 45, sense: 3, speed: 12, agility: 8, tactics: "feral", reward: { lingcao: 1 },
+    name: "灵狼", hp: 38, sense: 3, speed: 12, agility: 6, tactics: "feral", reward: { lingcao: 1 },
     attacks: [
-      { name: "扑咬", dmg: 9, kind: "normal", weight: 14 },
-      { name: "弓背低嚎", dmg: 13, kind: "charge", weight: 6 },
+      { name: "扑咬", dmg: 8, kind: "normal", weight: 14 },
+      { name: "弓背低嚎", dmg: 11, kind: "charge", weight: 6 },
     ],
   },
   outer_disciple: {
@@ -130,11 +130,11 @@ WORLD.enemies = {
     ],
   },
   rogue_cultivator: {
-    name: "散修", hp: 70, sense: 8, speed: 11, agility: 6, tactics: "cunning", qiLayer: 3, reward: { lingshi: 1 },
+    name: "散修", hp: 88, sense: 9, speed: 11, agility: 8, tactics: "cunning", qiLayer: 3, reward: { lingshi: 1 },
     attacks: [
-      { name: "法器袭", dmg: 14, kind: "normal", weight: 12 },
-      { name: "法器贯刺", dmg: 10, kind: "pierce", weight: 8 },
-      { name: "聚灵蓄势", dmg: 16, kind: "charge", weight: 5 },
+      { name: "法器袭", dmg: 16, kind: "normal", weight: 12 },
+      { name: "法器贯刺", dmg: 12, kind: "pierce", weight: 8 },
+      { name: "聚灵蓄势", dmg: 18, kind: "charge", weight: 5 },
     ],
   },
   wolf_gang_thug: {
@@ -144,7 +144,45 @@ WORLD.enemies = {
       { name: "横扫蓄力", dmg: 17, kind: "charge", weight: 6 },
     ],
   },
+
+  /* —— 异闻妖王（听闻其名 → 深入后山 → 真实可战）：威名先至，名实一致 —— */
+  beast_baihu: {
+    name: "白额吊睛虎", hp: 140, sense: 7, speed: 14, agility: 12, tactics: "feral",
+    introNote: "正是异闻中那头噬人虎王！爪疾力沉，血怒时必拼命扑杀——稳住护体，别贪刀。",
+    attacks: [
+      { name: "裂风虎爪", dmg: 18, kind: "normal", weight: 12 },
+      { name: "虎啸震林", dmg: 15, kind: "pierce", weight: 6 },
+      { name: "血怒扑杀", dmg: 22, kind: "charge", weight: 7 },
+    ],
+    reward: { silver: 12 }, namedLoot: { huixue_dan: 2, lingcao: 2 },
+  },
+  beast_wugong: {
+    name: "铁背蜈蚣王", hp: 140, immunePoison: true, sense: 6, speed: 8, agility: 7, tactics: "cunning",
+    introNote: "铁背蜈蚣王——甲壳如铁、自身百毒不侵！你的毒计无用，唯暗器与剑能破其节甲。",
+    attacks: [
+      { name: "百足绞缠", dmg: 17, kind: "normal", weight: 12 },
+      { name: "毒牙噬咬", dmg: 20, kind: "pierce", weight: 8 },
+    ],
+    reward: { lingshi: 1 }, namedLoot: { duyao_cao: 4, anqi: 2 },
+  },
+  beast_chimu: {
+    name: "赤目狼王", hp: 140, sense: 9, speed: 15, agility: 16, tactics: "feral",
+    introNote: "赤目狼王——身法鬼魅难以捉摸！它越是受伤越疯，蓄力扑杀一击足以重创，看准蓄力回合全力压制。",
+    attacks: [
+      { name: "撕咬", dmg: 17, kind: "normal", weight: 12 },
+      { name: "影袭", dmg: 14, kind: "pierce", weight: 7 },
+      { name: "狂性大发", dmg: 23, kind: "charge", weight: 8 },
+    ],
+    reward: { silver: 10 }, namedLoot: { lingshi: 2, huixue_dan: 1 },
+  },
 };
+
+/* 异闻池：投放到风云录/际遇的"有名有姓的猎物"——听闻在前，相遇在后 */
+WORLD.beastRumors = [
+  { id: "beast_baihu",  title: "白额虎王噬人", rumor: "集镇炸了锅：又一个采药人没回来。有人在后山深处见过一头白额吊睛猛虎，大如牛犊，眼有灵光。" },
+  { id: "beast_wugong", title: "铁背蜈蚣成王", rumor: "猎户说后山岩缝里的铁背蜈蚣成了气候，甲壳泛着铁光，寻常刀剑斩上去只留一道白印。" },
+  { id: "beast_chimu",  title: "赤目狼王啸月", rumor: "近来夜半常闻狼啸，凄厉非常。老人们说狼群有了新王，双目赤红，疾如鬼魅。" },
+];
 
 /* ---------- 人物名册（忠于动漫的过场/关键人物）----------
  * 不影响主线，纯增世界氛围与代入感；遇见后录入"人物图鉴"。
