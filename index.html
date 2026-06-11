@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="build" content="30" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="build" content="31" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -25,7 +25,7 @@
   })();
   </script>
   <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=30" />
+  <link rel="stylesheet" href="css/style.css?v=31" />
 </head>
 <body>
   <div id="app">
@@ -57,7 +57,7 @@
 
         <button id="btn-start" class="btn btn-primary" disabled>踏 入 仙 途</button>
         <button id="btn-load" class="btn btn-ghost">读取存档</button>
-        <div class="build-tag">build v30</div>
+        <div class="build-tag">build v31</div>
       </div>
     </section>
 
@@ -142,9 +142,10 @@
           <div id="inventory" class="inventory"></div>
         </aside>
 
-        <!-- 中下：行动栏（际遇 + 当前可做）-->
+        <!-- 中下：行动栏（际遇 + 刚刚发生 + 当前可做）-->
         <section class="panel mid-col">
           <div id="objective-bar" class="objective-bar"></div>
+          <div id="recent-log" class="recent-log" onclick="UI.switchMobileTab('stage')" title="查看完整见闻"></div>
           <div id="action-buttons" class="action-buttons"></div>
         </section>
 
@@ -244,25 +245,25 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=30"></script>
-  <script src="js/state.js?v=30"></script>
-  <script src="js/chapters.js?v=30"></script>
-  <script src="js/balance.js?v=30"></script>
-  <script src="js/world.js?v=30"></script>
-  <script src="js/npcsim.js?v=30"></script>
-  <script src="js/interactions.js?v=30"></script>
-  <script src="js/combat.js?v=30"></script>
-  <script src="js/explore.js?v=30"></script>
-  <script src="js/loadout.js?v=30"></script>
-  <script src="js/dialogue.js?v=30"></script>
-  <script src="js/llm.js?v=30"></script>
-  <script src="js/audio.js?v=30"></script>
-  <script src="js/art.js?v=30"></script>
-  <script src="js/fortunes.js?v=30"></script>
-  <script src="js/quests.js?v=30"></script>
-  <script src="js/story.js?v=30"></script>
-  <script src="js/engine.js?v=30"></script>
-  <script src="js/ui.js?v=30"></script>
-  <script src="js/main.js?v=30"></script>
+  <script src="js/data.js?v=31"></script>
+  <script src="js/state.js?v=31"></script>
+  <script src="js/chapters.js?v=31"></script>
+  <script src="js/balance.js?v=31"></script>
+  <script src="js/world.js?v=31"></script>
+  <script src="js/npcsim.js?v=31"></script>
+  <script src="js/interactions.js?v=31"></script>
+  <script src="js/combat.js?v=31"></script>
+  <script src="js/explore.js?v=31"></script>
+  <script src="js/loadout.js?v=31"></script>
+  <script src="js/dialogue.js?v=31"></script>
+  <script src="js/llm.js?v=31"></script>
+  <script src="js/audio.js?v=31"></script>
+  <script src="js/art.js?v=31"></script>
+  <script src="js/fortunes.js?v=31"></script>
+  <script src="js/quests.js?v=31"></script>
+  <script src="js/story.js?v=31"></script>
+  <script src="js/engine.js?v=31"></script>
+  <script src="js/ui.js?v=31"></script>
+  <script src="js/main.js?v=31"></script>
 </body>
 </html>

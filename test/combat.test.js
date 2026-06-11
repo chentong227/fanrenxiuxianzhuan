@@ -22,14 +22,23 @@ console.log("\n=== 0. 法术库严格限于七玄门篇真实手段 ===");
   assert(!!SPELLS.zhayan && !!SPELLS.weidu && !!SPELLS.zhenhun && !!SPELLS.tuna, "保留：眨眼剑法/喂毒/运功镇魂/长春吐纳");
 }
 
-console.log("\n=== 1. 五行灵气生成（韩立四灵根：缺土、木旺、总量10）===");
+console.log("\n=== 1. 五行灵气生成（韩立四灵根：缺土、木旺、底蕴随境界成长）===");
 {
-  const player = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, spells: ["zhayan", "tuna"] });
-  const enemy = new Fighter({ name: "木桩", hp: 50 });
-  const c = new Combat({ player, enemies: [enemy], rng: seqRng([0.99, 0.5, 0.9, 0.3, 0.7]) });
+  // 灵气总量 = 灵根底蕴(4) + 练气层数（境界即底蕴：一层5 → 六层10）
+  const mk = (layer) => {
+    const player = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, qiLayer: layer, spells: ["zhayan", "tuna"] });
+    const enemy = new Fighter({ name: "木桩", hp: 50 });
+    const c = new Combat({ player, enemies: [enemy], rng: seqRng([0.99, 0.5, 0.9, 0.3, 0.7]) });
+    c.startRound();
+    return Object.values(c.qi).reduce((a, b) => a + b, 0);
+  };
+  const t1 = mk(1), t6 = mk(6);
+  assert(t1 === 5, `练气一层灵气总量为5（实际 ${t1}）`);
+  assert(t6 === 10, `练气六层灵气总量为10（实际 ${t6}）——底蕴随境界成长`);
+  assert(t6 > t1, `灵气底蕴随层数增长（${t1} → ${t6}）`);
+  const player = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, qiLayer: 6, spells: ["zhayan", "tuna"] });
+  const c = new Combat({ player, enemies: [new Fighter({ name: "木桩", hp: 50 })], rng: seqRng([0.99, 0.5, 0.9, 0.3, 0.7]) });
   c.startRound();
-  const total = Object.values(c.qi).reduce((a, b) => a + b, 0);
-  assert(total === 10, `灵气总量为10（实际 ${total}）`);
   assert(c.qi.tu === 0, `「土」灵气为0（四灵根缺土）`);
   assert(c.qi.mu >= c.qi.huo, `「木」不少于「火」（木属性最旺）`);
 }
@@ -92,7 +101,7 @@ console.log("\n=== 1.6 护体不可逐回合无限囤积（杜绝龟缩无敌）
 
 console.log("\n=== 2. 连招：一回合内连续施法直到灵气耗尽 ===");
 {
-  const player = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, spells: ["zhayan", "tuna", "ningshen"] });
+  const player = new Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0, qiLayer: 4, spells: ["zhayan", "tuna", "ningshen"] });
   const enemy = new Fighter({ name: "敌修", hp: 60, agility: 0 });
   const c = new Combat({ player, enemies: [enemy], rng: seqRng([0.99]) });
   c.startRound();
@@ -177,7 +186,8 @@ console.log("\n=== 7. 遁速 → 大世界赶路耗时；先手 ===");
 console.log("\n=== 8. 决战墨大夫：三阶段波次通关 ===");
 {
   function makeShowdown() {
-    const player = new Fighter({ name: "韩立", hp: 130, sense: 12, speed: 12, insight: 8, gongli: 45,
+    // 决战人设：暗修至练气六层（灵气底蕴10，对应旧版平衡基准）
+    const player = new Fighter({ name: "韩立", hp: 130, sense: 12, speed: 12, insight: 8, gongli: 45, qiLayer: 6,
       profile: "hanli_si", technique: "changchun", grade: 1, realmTier: 0, spells: FULL_KIT, pouch: { duyao_cao: 3, anqi: 4 } });
     return new Combat({
       player,

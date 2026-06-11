@@ -149,8 +149,10 @@ console.log("\n=== 据点在场人物 + 移动速度 ===");
   const flying = State.effectiveSpeed();
   assert(flying > base, `风雷翅大幅提速（${base} → ${flying}）`);
   assert(Balance.travelTimeFactor(flying) < Balance.travelTimeFactor(base), "遁速越高赶路耗时系数越小（移动速度可视化）");
-  // 飞行法宝分级：风雷翅快于御风车
-  assert(DATA.flightTreasures.feng_lei_chi.speedBonus > DATA.flightTreasures.yu_feng_che.speedBonus, "飞行法宝分级：风雷翅 > 御风车");
+  // 飞行法宝分级（动漫考据修正）：御风车乃元婴期重返天南至宝 > 风雷翅（乱星海）> 神风舟（筑基脚力）
+  assert(DATA.flightTreasures.yu_feng_che.speedBonus > DATA.flightTreasures.feng_lei_chi.speedBonus, "飞行法宝分级：御风车(元婴至宝) > 风雷翅");
+  assert(DATA.flightTreasures.feng_lei_chi.speedBonus > DATA.flightTreasures.shen_feng_zhou.speedBonus, "飞行法宝分级：风雷翅 > 神风舟");
+  assert(DATA.flightTreasures.yu_feng_che.arc === "tiannan_return", "御风车归属重返天南篇（获取时序考据）");
   // 风雷翅只是其一：存在多种飞行法宝
   assert(Object.keys(DATA.flightTreasures).length >= 4, "存在多种飞行法宝（风雷翅只是其一）");
 }

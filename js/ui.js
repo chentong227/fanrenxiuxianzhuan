@@ -13,6 +13,22 @@ const UI = {
     this.renderLocation();
     this.renderActions();
     this.renderObjective();
+    this.renderRecentLog();
+  },
+
+  // 行动页"刚刚发生"反馈条：最新一条见闻的摘要（修复行动/见闻分屏割裂）
+  renderRecentLog() {
+    const box = this.el("recent-log");
+    if (!box) return;
+    const log = (State.data && State.data.log) || [];
+    if (!log.length) { box.innerHTML = ""; box.style.display = "none"; return; }
+    const last = log[log.length - 1];
+    const tmp = document.createElement("div");
+    tmp.innerHTML = last.body || "";
+    let txt = (tmp.textContent || "").trim().replace(/\s+/g, " ");
+    if (txt.length > 64) txt = txt.slice(0, 64) + "…";
+    box.style.display = "";
+    box.innerHTML = `<span class="rl-tag">${last.t}</span><span class="rl-txt entry-${last.kind || 'event'}">${txt}</span><span class="rl-more">见闻 ›</span>`;
   },
 
   // 手机分页：切换显示哪一栏（stage=界面 / hero=韩立+储物）
@@ -630,6 +646,18 @@ const UI = {
     if (rb) { rb.innerHTML = ""; rb.className = "story-portrait right"; rb.dataset.set = ""; }
     // 场景背景：优先该阶段声明的 CG，否则用当前地点的场景图
     this._storySetScene(stage);
+    // 败北重试：剧情已看过，跳过题字与正文直达抉择（免重复演出之扰）
+    if (typeof Engine !== "undefined" && Engine._retryStage) {
+      Engine._retryStage = false;
+      this._story.idx = beats.length;
+      const stageName = this.el("story-stage-name");
+      if (stageName) stageName.textContent = stage.title || "";
+      const sp = this.el("story-speaker"), tx = this.el("story-text");
+      if (sp) sp.innerHTML = "";
+      if (tx) tx.innerHTML = `<span class="story-line narr">（你重整旗鼓，伤势已敷、底牌再备——这一次，结局会不同。）</span>`;
+      this._storyShowChoices();
+      return;
+    }
     // 转场题字卡（番剧分集感）：黑场亮出章节题字，轻触或稍候自动入戏
     this._storyTitleCard(stage);
   },
@@ -974,8 +1002,8 @@ const UI = {
         <div class="tech-origin">来历：${t.origin}</div>
       </div>`).join("");
 
-    // 技能槽
-    const cap = L.skillCap(s), now = (s.spells || []).length;
+    // 技能槽（底牌不占槽）
+    const cap = L.skillCap(s), now = L.equippedCount ? L.equippedCount(s) : (s.spells || []).length;
     const pool = L.knownPool(s);
     const skillChip = (sk) => {
       const sp = SP[sk]; if (!sp) return "";
@@ -1670,22 +1698,27 @@ const UI = {
       ).join("") +
       (p.momentum ? `<div class="qi-orb momentum lit" title="剑势：连击可引爆"><span class="qo-char">势</span><b class="qo-n">${p.momentum}</b></div>` : "");
 
-    // 法术 / 招式：印章图标 + 五行点数
-    this.el("combat-spells").innerHTML = p.spells.map(id => {
+    // 法术/招式 与 底牌 分区渲染（底牌=消耗性手段，独立体系，不与灵技混排）
+    const spellBtn = (id, extraCls) => {
       const sp = SP[id];
       const wx = Object.keys(sp.cost || {})[0] || "jin";
       const costDots = Object.entries(sp.cost).map(([e, n]) => `<span class="cost-dot wx-${e}" title="${EL[e]}行">${EL[e]}${n}</span>`).join("") || `<span class="cost-dot free">无耗</span>`;
       const afford = c.canAfford(id);
       const noPouch = sp.consume && !(p.pouch[sp.consume] > 0);
-      const pouchTxt = sp.consume ? `<span class="spouch ${noPouch ? 'empty' : ''}">底牌×${p.pouch[sp.consume] || 0}</span>` : "";
-      return `<button class="spell-btn ${afford ? '' : 'off'}" ${afford ? '' : 'disabled'} onclick="Engine.combatCast('${id}', ${target})" title="${sp.desc || ''}">
-        <span class="seal wx-${wx}">${sealChar(sp.name)}</span>
+      const pouchTxt = sp.consume ? `<span class="spouch ${noPouch ? 'empty' : ''}">余 ×${p.pouch[sp.consume] || 0}</span>` : "";
+      return `<button class="spell-btn ${extraCls || ''} ${afford ? '' : 'off'}" ${afford ? '' : 'disabled'} onclick="Engine.combatCast('${id}', ${target})" title="${sp.desc || ''}">
+        <span class="seal ${sp.consume ? 'cinnabar' : 'wx-' + wx}">${sealChar(sp.name)}</span>
         <span class="sp-body">
           <span class="sname">${sp.name}</span>
           <span class="scost">${costDots} ${spellEffectText(sp)}${pouchTxt}</span>
         </span>
       </button>`;
-    }).join("");
+    };
+    const mains = p.spells.filter(id => SP[id] && !SP[id].consume);
+    const trumps = p.spells.filter(id => SP[id] && SP[id].consume);
+    this.el("combat-spells").innerHTML =
+      mains.map(id => spellBtn(id)).join("") +
+      (trumps.length ? `<div class="trump-row"><span class="trump-tag">底牌</span>${trumps.map(id => spellBtn(id, "trump")).join("")}</div>` : "");
 
     // 战斗日志
     const logs = c.log.slice(-9);

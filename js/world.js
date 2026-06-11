@@ -103,13 +103,47 @@ WORLD.locations = [
   },
 ];
 
-/* ---------- 历练遭遇用的敌人模板（战斗 Fighter 配置，数据驱动攻击）---------- */
+/* ---------- 历练遭遇用的敌人模板（战斗 Fighter 配置，数据驱动攻击）----------
+ * AI v1：每个敌人 2~3 种攻击意图 + tactics 战斗天赋（feral兽性/cunning算计/guarded守御），
+ * 让每个敌人都是一道"解谜题"——读招应招，而非无脑互殴。weight 为选招权重。
+ */
 WORLD.enemies = {
-  wild_wolf:       { name: "灵狼", hp: 45, sense: 3, speed: 12, agility: 8, atkName: "扑咬", atk: 9, reward: { lingcao: 1 } },
-  outer_disciple:  { name: "外门弟子", hp: 60, sense: 6, speed: 10, agility: 5, atkName: "拳脚", atk: 11, reward: { silver: 4 } },
-  bandit:          { name: "山贼", hp: 50, sense: 4, speed: 8, agility: 3, atkName: "刀劈", atk: 10, reward: { silver: 3 } },
-  rogue_cultivator:{ name: "散修", hp: 70, sense: 8, speed: 11, agility: 6, atkName: "法器袭", atk: 14, reward: { lingshi: 1 } },
-  wolf_gang_thug:  { name: "野狼帮喽啰", hp: 65, sense: 5, speed: 9, agility: 4, atkName: "狼牙棒", atk: 13, reward: { silver: 6 } },
+  wild_wolf: {
+    name: "灵狼", hp: 45, sense: 3, speed: 12, agility: 8, tactics: "feral", reward: { lingcao: 1 },
+    attacks: [
+      { name: "扑咬", dmg: 9, kind: "normal", weight: 14 },
+      { name: "弓背低嚎", dmg: 13, kind: "charge", weight: 6 },
+    ],
+  },
+  outer_disciple: {
+    name: "外门弟子", hp: 60, sense: 6, speed: 10, agility: 5, reward: { silver: 4 },
+    attacks: [
+      { name: "拳脚", dmg: 11, kind: "normal", weight: 14 },
+      { name: "锁喉擒拿", dmg: 8, kind: "pierce", weight: 6 },
+    ],
+  },
+  bandit: {
+    name: "山贼", hp: 50, sense: 4, speed: 8, agility: 3, tactics: "feral", reward: { silver: 3 },
+    attacks: [
+      { name: "刀劈", dmg: 10, kind: "normal", weight: 14 },
+      { name: "狠命抡刀", dmg: 15, kind: "charge", weight: 6 },
+    ],
+  },
+  rogue_cultivator: {
+    name: "散修", hp: 70, sense: 8, speed: 11, agility: 6, tactics: "cunning", qiLayer: 3, reward: { lingshi: 1 },
+    attacks: [
+      { name: "法器袭", dmg: 14, kind: "normal", weight: 12 },
+      { name: "法器贯刺", dmg: 10, kind: "pierce", weight: 8 },
+      { name: "聚灵蓄势", dmg: 16, kind: "charge", weight: 5 },
+    ],
+  },
+  wolf_gang_thug: {
+    name: "野狼帮喽啰", hp: 65, sense: 5, speed: 9, agility: 4, reward: { silver: 6 },
+    attacks: [
+      { name: "狼牙棒", dmg: 13, kind: "normal", weight: 14 },
+      { name: "横扫蓄力", dmg: 17, kind: "charge", weight: 6 },
+    ],
+  },
 };
 
 /* ---------- 人物名册（忠于动漫的过场/关键人物）----------

@@ -25,11 +25,19 @@
   const Loadout = {
     // 凡人武学（与功法无关，习得后恒在技能池中）
     INNATE_MARTIAL: ["zhayan", "zhayan_lian", "weidu", "feizhen"],
+    // 底牌（消耗性手段）：独立体系，不占技能槽（后续武器/防具系统的前身）
+    TRUMPS: ["weidu", "feizhen"],
+
+    isTrump(skillId) { return this.TRUMPS.includes(skillId); },
 
     // —— 槽位上限（随境界） ——
     skillCap(s) {
       const tier = (typeof Chapters !== "undefined") ? Chapters.realmTier() : (s._realmTier || 0);
       return Balance.skillSlots(tier);
+    },
+    // 占槽的出战技能数（底牌不计）
+    equippedCount(s) {
+      return (s.spells || []).filter(id => !this.isTrump(id)).length;
     },
     auxCap(s) {
       const tier = (typeof Chapters !== "undefined") ? Chapters.realmTier() : (s._realmTier || 0);
@@ -130,7 +138,8 @@
     equipSkill(s, skillId) {
       if (!this.knownPool(s).includes(skillId)) return { ok: false, reason: "尚未掌握此技能" };
       if (this.isEquipped(s, skillId)) return { ok: false, reason: "已装备" };
-      if ((s.spells || []).length >= this.skillCap(s)) return { ok: false, reason: "技能槽已满（随境界增多）" };
+      // 底牌不占技能槽（独立体系）
+      if (!this.isTrump(skillId) && this.equippedCount(s) >= this.skillCap(s)) return { ok: false, reason: "技能槽已满（随境界增多）" };
       if (!s.spells) s.spells = [];
       s.spells.push(skillId);
       return { ok: true };

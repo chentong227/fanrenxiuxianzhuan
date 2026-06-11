@@ -50,7 +50,8 @@ function autopilot(c) {
 // 用一个"功法攻击"招式做对照：注入临时法术
 SPELLS._gptest = { name: "测试法术", cost: { mu: 2 }, type: "atk", dmg: 12, source: "art" };
 function buildVs(grade) {
-  const p = new Fighter({ name: "修士", hp: 110, profile: "common", grade, realmTier: 0, spells: ["_gptest", "tuna"] });
+  // qiLayer 6：以"练气六层灵气底蕴"为蒙特卡洛基准（灵气总量随境界成长后的对照点）
+  const p = new Fighter({ name: "修士", hp: 110, profile: "common", grade, realmTier: 0, qiLayer: 6, spells: ["_gptest", "tuna"] });
   // profile common 五行均衡，保证 mu 足够
   const e = { name: "陪练", hp: 110, sense: 5, agility: 4, atkName: "击", atk: 12 };
   return new Combat({ player: p, enemies: [e], maxRounds: 14 });

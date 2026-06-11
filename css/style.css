@@ -630,6 +630,19 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .spell-btn .spouch { color: var(--jade-bright); }
 .spell-btn .spouch.empty { color: var(--red); }
 
+/* 底牌行：消耗性手段独立分区（毒/暗器——与灵技体系分离） */
+.trump-row {
+  grid-column: 1 / -1; display: flex; align-items: stretch; gap: 8px;
+  padding-top: 8px; border-top: 1px dashed rgba(181, 72, 61, .4);
+}
+.trump-tag {
+  writing-mode: vertical-rl; text-orientation: upright; flex-shrink: 0;
+  font-size: 11px; letter-spacing: 2px; color: var(--cinnabar);
+  display: flex; align-items: center; padding: 0 1px;
+}
+.spell-btn.trump { flex: 1; border-color: rgba(181, 72, 61, .35); background: rgba(181, 72, 61, .05); }
+.spell-btn.trump:hover:not(:disabled) { border-color: var(--cinnabar); background: rgba(181,72,61,.12); }
+
 .combat-log {
   height: 108px; overflow-y: auto; background: rgba(8,6,4,.5); border: 1px solid var(--border-soft);
   border-radius: var(--radius); padding: 9px 11px; font-size: 13px; color: var(--ink-dim); line-height: 1.6; margin-bottom: 12px;
@@ -686,6 +699,22 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   color: var(--purple); font-size: 12px; letter-spacing: 4px;
 }
 .modal .choices .choice:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ===== 行动页"刚刚发生"反馈条（桌面隐藏：右栏见闻常驻可见）===== */
+.recent-log {
+  display: none; align-items: baseline; gap: 7px; cursor: pointer;
+  padding: 8px 10px; margin-bottom: 8px; border-radius: var(--radius);
+  background: rgba(255, 250, 240, 0.03); border: 1px solid var(--border-soft);
+  border-left: 2px solid var(--gold); font-size: 12.5px; line-height: 1.5;
+}
+.recent-log .rl-tag { color: var(--gold); font-size: 11px; flex-shrink: 0; }
+.recent-log .rl-txt { color: var(--ink); flex: 1; min-width: 0; }
+.recent-log .rl-txt.entry-good { color: var(--jade-bright); }
+.recent-log .rl-txt.entry-bad { color: var(--red); }
+.recent-log .rl-more { color: var(--ink-faint); font-size: 11px; flex-shrink: 0; }
+
+/* 双击缩放锁死修复：游戏型 UI 禁用双击缩放手势 */
+html, body { touch-action: manipulation; }
 
 /* ===== 际遇 / 任务指引条 ===== */
 .objective-bar { margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -869,6 +898,8 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   /* 行动按钮在手机上竖排大按钮 */
   .mid-col .action-buttons { flex-direction: column; }
   .mid-col .btn-action { width: 100%; padding: 14px 16px; }
+  /* 手机上显示"刚刚发生"反馈条（治行动/见闻割裂） */
+  .recent-log { display: flex; }
 
   /* 底部 Tab 栏 */
   .mobile-tabs {

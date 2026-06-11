@@ -39,9 +39,10 @@
                 desc: "凡人剑术，身形快如眨眼，欺身一剑。每施一剑积累「剑势」。" },
     zhayan_lian:{ name: "眨眼连击", cost: { jin: 5 },       type: "atk", dmg: 13, dodgeSelf: 0.1, spendMomentum: true, momentumDmg: 5, source: "martial",
                 desc: "凡人剑术，倾尽剑势连环爆发。每点「剑势」额外+5伤害，施后剑势清零。" },
-    // 眨眼剑法大成的兑现招（剑意修行链）。数值待战斗平衡周期统一校准。
-    lianhuan: { name: "连环眨眼", cost: { jin: 3 },        type: "atk", dmg: 12, dodgeSelf: 0.2, spendMomentum: true, momentumDmg: 6, source: "martial",
-                desc: "眨眼剑法大成之技：身剑合一连环递进，每点「剑势」额外+6伤害且身形更显鬼魅。施后剑势清零。" },
+    // 眨眼剑法大成的兑现招（剑意修行链）：一剑化数剑的多段连击（行动经济质变）。
+    // 大成后【替换】眨眼连击。数值待战斗平衡周期统一校准。
+    lianhuan: { name: "连环眨眼", cost: { jin: 3 },        type: "atk", dmg: 9, multiSeg: true, segPer: 2, dodgeSelf: 0.2, spendMomentum: true, source: "martial",
+                desc: "眨眼剑法大成之技：身剑合一，剑势所至一剑化作数剑（每2点剑势多斩一剑），剑剑独立结算。施后剑势清零。" },
 
     // 喂毒：凡人手段（淬毒），消耗毒草，叠加中毒
     weidu:    { name: "喂毒一击", cost: { jin: 1 },         type: "debuff", poison: { dmg: 7, turns: 4 }, source: "martial",
@@ -58,12 +59,15 @@
                 desc: "凝聚周身功力镇压神魂。唯对元神之敌有效，伤害取决于你的功力。" },
   };
 
-  /* ---------- 灵气产出档案 ---------- */
+  /* ---------- 灵气产出档案 ----------
+   * 灵气总量 = base（灵根底蕴） + 练气层数（境界乘区：底蕴随修为增长）。
+   * 韩立练气一层≈5，四层≈8，七层≈11——原著式"灵气底蕴"成长（险胜温天仁的资本）。
+   */
   const PROFILES = {
-    // 韩立四灵根：缺「土」，木最旺（《长春功》木属性），总量偏低
-    hanli_si: { total: 10, weights: { jin: 3, mu: 4, shui: 2, huo: 1, tu: 0 } },
-    common:   { total: 10, weights: { jin: 2, mu: 2, shui: 2, huo: 2, tu: 2 } },
-    modafu:   { total: 11, weights: { jin: 1, mu: 3, shui: 3, huo: 2, tu: 2 } },
+    // 韩立四灵根：缺「土」，木最旺（《长春功》木属性），底蕴偏薄
+    hanli_si: { base: 4, weights: { jin: 3, mu: 4, shui: 2, huo: 1, tu: 0 } },
+    common:   { base: 4, weights: { jin: 2, mu: 2, shui: 2, huo: 2, tu: 2 } },
+    modafu:   { base: 5, weights: { jin: 1, mu: 3, shui: 3, huo: 2, tu: 2 } },
   };
 
   function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -90,6 +94,11 @@
       this.nextQiBonus = 0;
       this.momentum = 0;                 // 剑势（眨眼剑法积累，眨眼连击消耗）
       this.momentumCap = cfg.momentumCap || 5;   // 剑势上限（眨眼剑法大成 +2）
+      this.qiLayer = cfg.qiLayer || 1;   // 练气层数：灵气底蕴随境界成长
+      this.dmgBonus = cfg.dmgBonus || 1; // 伤害系数（fail-forward：败北看破对方招式后小幅提升）
+      this.tactics = cfg.tactics || null;       // 敌人战斗天赋（AI 风格）：feral/cunning/guarded
+      this.guardMove = cfg.guardMove || null;   // 防御型敌人的护体招（AI 条件触发）
+      this.introNote = cfg.introNote || null;   // 波次入场敌情提示（点明打法）
       this.technique = cfg.technique || null;  // 主修功法 id（影响同系招式）
       this.grade = cfg.grade || 1;       // 主修功法品阶（1黄~4天）
       this.auxSkills = cfg.auxSkills || [];   // 来自辅修功法的技能 id（伤害/效果打折）
@@ -141,9 +150,15 @@
     }
 
     /* ----- 敌人意图：决定本回合敌人会用哪招（供神识看穿）-----
-     * 意图带 kind：normal(普通,护体可挡) / pierce(破甲,须闪避) / charge(蓄力,本回合不攻击，下回合重创) */
+     * 意图带 kind：normal(普通,护体可挡) / pierce(破甲,须闪避) / charge(蓄力,下回合重创)
+     *            / guard(凝罩护体,本回合不攻击)
+     * AI v1（战斗天赋=强度的一部分）：tactics 决定选招风格——
+     *   feral   兽性：血低必拼命蓄力
+     *   cunning 算计：你有护体偏好破甲，伺机蓄力
+     *   guarded 守御：血低先固护体（金钟罩流），稳住再打 */
     _rollEnemyIntents() {
       this.enemies.forEach(e => {
+        if (!e.alive) { e.intent = null; return; }
         // 蓄力中的敌人：本回合意图固定为"释放蓄力一击"
         if (e._charging) {
           e.intent = { name: e._charging.name + "·爆发", dmg: e._charging.dmg, kind: "release", pierce: e._charging.pierce };
@@ -151,7 +166,28 @@
         }
         const attacks = e.attacks && e.attacks.length ? e.attacks
           : [{ name: e.atkName || "攻击", dmg: e.atk || 8, soul: e.soulAtk, pierce: e.pierceAtk, kind: e.pierceAtk ? "pierce" : "normal" }];
-        const pick = attacks[Math.floor(this.rng() * attacks.length)];
+        // —— 守御型：气血告急且护体薄弱 → 先凝罩 ——
+        if (e.tactics === "guarded" && e.guardMove && e.hp < e.hpMax * 0.55 && (e.shield || 0) < (e.guardMove.shield || 12) * 0.5) {
+          e.intent = { name: e.guardMove.name, kind: "guard", shield: e.guardMove.shield };
+          return;
+        }
+        // —— 按天赋调权重选招 ——
+        const weighted = [];
+        attacks.forEach(a => {
+          let w = a.weight || 10;
+          if (e.tactics === "cunning") {
+            if (a.kind === "pierce" && (this.player.shield || 0) > 0) w *= 3;   // 看你龟缩就破甲
+            if (a.kind === "charge" && this.player.hp < this.player.hpMax * 0.5) w *= 2; // 你虚了就蓄力打死
+          }
+          if (e.tactics === "feral") {
+            if (a.kind === "charge" && e.hp < e.hpMax * 0.35) w *= 6;   // 兽急拼命
+          }
+          weighted.push([a, w]);
+        });
+        const sum = weighted.reduce((t, x) => t + x[1], 0) || 1;
+        let r = this.rng() * sum;
+        let pick = weighted[0][0];
+        for (const [a, w] of weighted) { r -= w; if (r <= 0) { pick = a; break; } }
         if (!pick.kind) pick.kind = pick.pierce ? "pierce" : "normal";
         e.intent = pick;
       });
@@ -162,7 +198,8 @@
       if (this.status !== "ongoing") return;
       this.round++;
       const prof = PROFILES[this.player.profile] || PROFILES.common;
-      let total = prof.total + (this.player.nextQiBonus || 0);
+      // 灵气总量 = 灵根底蕴 + 练气层数（境界即底蕴）+ 凝神蓄气
+      let total = (prof.base != null ? prof.base + (this.player.qiLayer || 1) : prof.total) + (this.player.nextQiBonus || 0);
       this.player.nextQiBonus = 0;
       if (this.player.status.fengling > 0) total = Math.floor(total * 0.7);
 
@@ -267,22 +304,33 @@
         let dodge = (target.dodgeBuff || 0) + (target.agility || 0) / 100;
         if (sp.pierce) dodge *= 0.3;
         dodge = clampNum(dodge - adv.hitBonus, 0, 0.45);
-        // 剑势：基础伤害 + 消耗剑势的额外伤害
+        const spentMomentum = sp.spendMomentum ? (caster.momentum || 0) : 0;
+        // 多段连击（连环眨眼）：段数随剑势增长——一剑化数剑（行动经济的质变）
+        const segs = sp.multiSeg ? 1 + Math.floor(spentMomentum / (sp.segPer || 2)) : 1;
+        // 剑势：基础伤害 + 消耗剑势的额外伤害（多段技不再叠平伤，伤在段数上）
         let baseDmg = sp.dmg;
-        if (sp.spendMomentum) { baseDmg += (caster.momentum || 0) * (sp.momentumDmg || 0); }
-        // 来源(武学/法术) × 功法品阶 × 境界 的强度换算
+        if (sp.spendMomentum && !sp.multiSeg) { baseDmg += spentMomentum * (sp.momentumDmg || 0); }
+        // 来源(武学/法术) × 功法品阶 × 境界 的强度换算 × fail-forward 看破加成
         baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier);
-        baseDmg = Math.max(1, Math.round(baseDmg * auxMul));
+        baseDmg = Math.max(1, Math.round(baseDmg * auxMul * (caster.dmgBonus || 1)));
         if (this.rng() < dodge) {
           this._log(`${caster.name} 施「${sp.name}」，被 ${target.name} 闪避！`);
           this._emitFx(tref, "miss", "闪避");
         } else {
-          let dmg = baseDmg, crit = false;
-          if (this.rng() < clampNum(0.05 + adv.critBonus, 0, 0.4)) { dmg = Math.round(dmg * 1.6); crit = true; this._log(`（神识料敌于先，一击中的！）`); }
-          const r = target.takeDamage(dmg, { pierce: sp.pierce });
-          if (caster === this.player) this._stat(sp.name, r.dealt);
-          this._log(`${caster.name} 施「${sp.name}」，对 ${target.name} 造成 ${r.dealt} 伤害` + (target.shield > 0 ? `（余护体${target.shield}）` : ""));
-          this._emitFx(tref, crit ? "crit" : (sp.pierce ? "pierce" : "dmg"), (crit ? "暴击 " : sp.pierce ? "破甲 " : "") + r.dealt);
+          let totalDealt = 0, anyCrit = false;
+          for (let i = 0; i < segs && target.alive; i++) {
+            let dmg = baseDmg, crit = false;
+            if (this.rng() < clampNum(0.05 + adv.critBonus, 0, 0.4)) { dmg = Math.round(dmg * 1.6); crit = true; anyCrit = true; }
+            const r = target.takeDamage(dmg, { pierce: sp.pierce });
+            totalDealt += r.dealt;
+            this._emitFx(tref, crit ? "crit" : (sp.pierce ? "pierce" : "dmg"), (crit ? "暴击 " : sp.pierce ? "破甲 " : "") + r.dealt);
+            if (target.hp <= 0) break;   // 敌已倒，余剑不再追击（存亡由 _checkEnd 统一裁定）
+          }
+          if (caster === this.player) this._stat(sp.name, totalDealt);
+          if (anyCrit) this._log(`（神识料敌于先，一击中的！）`);
+          this._log(segs > 1
+            ? `${caster.name} 施「${sp.name}」——剑光连闪，${segs} 剑连环，共造成 ${totalDealt} 伤害！` + (target.shield > 0 ? `（余护体${target.shield}）` : "")
+            : `${caster.name} 施「${sp.name}」，对 ${target.name} 造成 ${totalDealt} 伤害` + (target.shield > 0 ? `（余护体${target.shield}）` : ""));
         }
         if (sp.dodgeSelf) caster.dodgeBuff = (caster.dodgeBuff || 0) + sp.dodgeSelf;
         // 剑势结算：积累 / 消耗
@@ -299,7 +347,8 @@
 
       } else if (sp.type === "debuff" && target) {
         if (sp.poison) {
-          if (target.immunePoison) { this._log(`${caster.name} 对 ${target.name} 用毒，但对方百毒不侵（死物）！`); this._emitFx(tref, "miss", "百毒不侵"); }
+          if (target.soulOnly) { this._log(`${caster.name} 对 ${target.name} 用毒——可元神无形无质，毒物根本无处着力！`); this._emitFx(tref, "miss", "元神无形"); }
+          else if (target.immunePoison) { this._log(`${caster.name} 对 ${target.name} 用毒，但对方百毒不侵（死物）！`); this._emitFx(tref, "miss", "百毒不侵"); }
           else {
             const p = target.status.poison;
             if (p) { p.dmg += sp.poison.dmg; p.turns = Math.max(p.turns, sp.poison.turns); }
@@ -358,10 +407,12 @@
 
     _tickStatus(f) {
       if (f.status.poison && f.status.poison.turns > 0) {
+        if (f.soulOnly) { delete f.status.poison; return; }   // 元神无形，毒不附体（防旧状态残留）
         const dmg = f.status.poison.dmg;
         f.hp = clampNum(f.hp - dmg, 0, f.hpMax);
         f.status.poison.turns--;
         if (f !== this.player) this._stat("淬毒", dmg);
+        else if (f.hp <= 0) this.deathCause = { by: "淬毒", move: "毒发攻心" };
         this._log(`${f.name} 毒发，气血-${dmg}（${Math.max(0, Math.round(f.hp))}/${f.hpMax}）`);
         const ref = f === this.player ? "player" : `enemy:${this.enemies.indexOf(f)}`;
         this._emitFx(ref, "poison", "毒 " + dmg);
@@ -372,6 +423,14 @@
 
     _enemyAct(e) {
       const a = e.intent || { name: e.atkName || "攻击", dmg: e.atk || 8, soul: e.soulAtk, pierce: e.pierceAtk, kind: "normal" };
+      // 守御意图：本回合不攻击，凝聚护体（守御型 AI——金钟罩流）
+      if (a.kind === "guard") {
+        const cap = Math.round(e.hpMax * 0.5);
+        e.shield = Math.min(cap, (e.shield || 0) + (a.shield || 12));
+        this._log(`${e.name} 凝聚「${a.name}」，护体 +${a.shield}（共${e.shield}）——一时间固若金汤！`);
+        this._emitFx(`enemy:${this.enemies.indexOf(e)}`, "miss", "护体");
+        return;
+      }
       // 蓄力意图：本回合不攻击，标记蓄力，下回合释放重击（看穿者可趁机爆发/打断）
       if (a.kind === "charge") {
         e._charging = { name: a.name, dmg: Math.round((a.dmg || 8) * 2), pierce: a.pierce };
@@ -386,7 +445,11 @@
       if (this.rng() < dodge) { this._log(`${e.name} 使「${a.name}」，被 ${this.player.name} 闪避！`); this._emitFx("player", "miss", "闪避"); return; }
       const r = this.player.takeDamage(a.dmg || 8, { soul: a.soul, pierce: a.pierce });
       if (r.blocked) { this._log(`${e.name} 的「${a.name}」对你无效`); this._emitFx("player", "miss", "无效"); }
-      else { this._log(`${e.name} 使「${a.name}」，你受到 ${r.dealt} 伤害（${Math.max(0, Math.round(this.player.hp))}/${this.player.hpMax}）`); this._emitFx("player", "hurt", r.dealt); }
+      else {
+        if (this.player.hp <= 0) this.deathCause = { by: e.name, move: a.name };   // 败因记录（复盘归因）
+        this._log(`${e.name} 使「${a.name}」，你受到 ${r.dealt} 伤害（${Math.max(0, Math.round(this.player.hp))}/${this.player.hpMax}）`);
+        this._emitFx("player", "hurt", r.dealt);
+      }
     }
 
     _maybeSpawnWave() {
@@ -396,6 +459,8 @@
         this.enemies = wave.map(e => new Fighter(e));
         this._rollEnemyIntents();
         this._log(`—— 新的敌人现身！——`);
+        // 波次入场点明打法（败得不明不白是体验毒药）
+        this.enemies.forEach(e => { if (e.introNote) this._log(`【敌情】${e.introNote}`); });
         this.status = "ongoing";
       }
     }

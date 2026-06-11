@@ -517,10 +517,13 @@ const Engine = {
     const rate = clamp(0.45 + s.insight * 0.03 + (s.mood / s.moodMax) * 0.2 - (s.demon / 100) * 0.2, 0.15, 0.95);
     if (Math.random() < rate) {
       s.swordMastery = true;
+      // 进化而非并列：连环眨眼【替换】眨眼连击（技能栏不膨胀）
       if (!s.knownSkills.includes("lianhuan")) s.knownSkills.push("lianhuan");
-      if (typeof Loadout !== "undefined") { const r = Loadout.equipSkill(s, "lianhuan"); if (!r.ok && !s.spells.includes("lianhuan")) {/* 槽满则留在技能池 */} }
-      this.log("【剑法大成】三月闭关，你将千百次出剑的体悟尽数咀嚼——某夜剑光一闪，你忽然懂了：剑快不在手，在心。眨眼剑法，至此大成！习得「连环眨眼」，剑势上限+2。", "good");
-      this.addMilestone("《眨眼剑法》大成，习得连环眨眼", "bigitem");
+      s.knownSkills = s.knownSkills.filter(id => id !== "zhayan_lian");
+      if (s.spells.includes("zhayan_lian")) s.spells = s.spells.map(id => id === "zhayan_lian" ? "lianhuan" : id);
+      else if (!s.spells.includes("lianhuan") && typeof Loadout !== "undefined") Loadout.equipSkill(s, "lianhuan");
+      this.log("【剑法大成】三月闭关，你将千百次出剑的体悟尽数咀嚼——某夜剑光一闪，你忽然懂了：剑快不在手，在心。眨眼剑法至此大成：「眨眼连击」蜕变为「连环眨眼」——剑势所至，一剑化数剑！剑势上限+2。", "good");
+      this.addMilestone("《眨眼剑法》大成，连击蜕变连环", "bigitem");
       if (typeof Sfx !== "undefined") Sfx.play("bell");
     } else {
       s.swordIntent = 88;
@@ -1144,6 +1147,10 @@ const Engine = {
       grade: (DATA.techniques[s.technique] || {}).grade || 1,  // 主修功法品阶
       realmTier: Chapters.realmTier(),   // 本章大境界序（影响法术成长）
       momentumCap: s.swordMastery ? 7 : 5,   // 眨眼剑法大成：剑势上限+2
+      qiLayer: realm.layer,                  // 灵气底蕴随练气层数成长
+      // fail-forward：决战每败一次=看破对方几分路数，再战伤害+8%（至多+24%）——
+      // 韩立吃的每次亏都是学费（爽文契约：失败向前走）
+      dmgBonus: 1 + Math.min(3, (s.flags[`losses_${this._nextFightType || ""}`] || 0)) * 0.08,
       // 底牌：平时准备的毒草、暗器带进战斗（准备内化进战斗）
       pouch: { duyao_cao: State.count("duyao_cao"), anqi: State.count("anqi") },
     });
@@ -1181,14 +1188,18 @@ const Engine = {
   // 决战墨大夫：三阶段波次。准备（毒、暗器）内化为战斗底牌——带得越多越能赢
   startShowdownFight() {
     const s = State.data;
+    this._nextFightType = "showdown";
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax; // 决战前默认满血上场
 
-    const modafu = { name: "墨大夫", hp: 52, profile: "modafu", sense: 6, speed: 9, agility: 4,
-      attacks: [{ name: "毒掌", dmg: 12, kind: "normal" }, { name: "腐骨毒针", dmg: 14, pierce: true, kind: "pierce" }] };
-    const tienu  = { name: "铁奴（张铁尸傀）", hp: 70, immunePoison: true, sense: 3, speed: 6, agility: 4,
-      attacks: [{ name: "尸傀挥击", dmg: 14, kind: "normal" }, { name: "崩山重捶", dmg: 19, kind: "charge" }] };
-    const yuhun  = { name: "余子童元神", hp: 48, soulOnly: true, sense: 18, speed: 14, agility: 8, gongli: 22, atkName: "夺舍", atk: 15 };
+    const modafu = { name: "墨大夫", hp: 52, profile: "modafu", sense: 6, speed: 9, agility: 4, tactics: "cunning", qiLayer: 4,
+      attacks: [{ name: "毒掌", dmg: 12, kind: "normal", weight: 12 }, { name: "腐骨毒针", dmg: 14, pierce: true, kind: "pierce", weight: 8 }] };
+    const tienu  = { name: "铁奴（张铁尸傀）", hp: 70, immunePoison: true, sense: 3, speed: 6, agility: 4, tactics: "feral",
+      introNote: "铁奴乃尸傀死物——百毒不侵！毒计无用，须以剑与暗器正面强攻。",
+      attacks: [{ name: "尸傀挥击", dmg: 14, kind: "normal", weight: 14 }, { name: "崩山重捶", dmg: 19, kind: "charge", weight: 6 }] };
+    const yuhun  = { name: "余子童元神", hp: 48, soulOnly: true, sense: 18, speed: 14, agility: 8, gongli: 22, qiLayer: 6,
+      introNote: "元神无形无质——剑、毒、暗器皆穿身而过！唯「运功镇魂」能伤其分毫（需木2水2）。留住灵气，稳住心神！",
+      atkName: "夺舍侵神", atk: 15 };
 
     this._combat = new CombatAPI.Combat({
       player,
@@ -1208,16 +1219,21 @@ const Engine = {
   // 反杀金光上人：金钟罩护身（高护体），唯有毒+暗器破之
   startJinguangFight() {
     const s = State.data;
+    this._nextFightType = "jinguang";
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;
 
-    // 金光上人：修仙杀手，金钟罩护体厚、攻击高；怕毒（持续伤害可绕过金钟罩续航）
+    // 金光上人：修仙者（练气七层）——有灵气、有战斗AI（守御型：血危先固金钟罩）。
+    // 怕毒（持续伤害绕过金钟罩续航）；这是"修仙者敌人=会用灵气出招"的首个范本。
     const jinguang = {
       name: "金光上人", hp: 120, profile: "common", sense: 14, speed: 13, agility: 10,
+      tactics: "guarded", qiLayer: 7,
+      guardMove: { name: "金钟罩·重聚", shield: 16 },
+      introNote: "金光上人乃修仙杀手，金钟罩固若金汤且会重聚——硬拼必败！以毒续伤、以暗器破甲，方有胜机。",
       attacks: [
-        { name: "金符破空", dmg: 18, kind: "normal" },
-        { name: "剑符斩", dmg: 22, pierce: true, kind: "pierce" },
-        { name: "金刚伏魔", dmg: 24, kind: "charge" },
+        { name: "金符破空", dmg: 18, kind: "normal", weight: 12 },
+        { name: "剑符斩", dmg: 22, pierce: true, kind: "pierce", weight: 7 },
+        { name: "金刚伏魔", dmg: 24, kind: "charge", weight: 5 },
       ],
     };
     this._combat = new CombatAPI.Combat({
@@ -1333,10 +1349,12 @@ const Engine = {
 
     UI.closeCombat();
 
-    // 战后复盘一句话：归因本战最大输出手段（操作价值被看见）
+    // 战后复盘一句话：胜归因关键手，败点明死因（败得明白才有再战的方向）
     if (win && c.stats && Object.keys(c.stats).length) {
       const top = Object.entries(c.stats).sort((a, b) => b[1] - a[1])[0];
       if (top && top[1] > 0) this.log(`【复盘】本战关键手：「${top[0]}」共建功 ${top[1]} 伤——你的打法立住了。`, "sys");
+    } else if (!win && c.deathCause) {
+      this.log(`【复盘】你倒在「${c.deathCause.by}」的「${c.deathCause.move}」之下。记住这一招——它不会再得手第二次。`, "sys");
     }
 
     if (meta.type === "encounter") {
@@ -1373,8 +1391,11 @@ const Engine = {
         const dmg = Math.round(s.hpMax * 0.5);
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
         s.demon = clamp(s.demon + 20, 0, 100);
-        this.log(`决战失利，你身受重伤(气血-${dmg})狼狈遁走。修仙之路从无侥幸——回去多备毒草暗器、精进修为再来！`, "bad");
+        s.flags.losses_showdown = (s.flags.losses_showdown || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_showdown) * 8;
+        this.log(`决战失利，你身受重伤(气血-${dmg})狼狈遁走。但这一败没有白吃——你看破了对方几分路数（再战伤害+${bonus}%）。回去备足毒草暗器，再来！`, "bad");
         s.pendingEvent = "showdown";
+        this._retryStage = true;
         UI.renderStory(STORY[s.storyStage]);
       }
     } else if (meta.type === "jinguang") {
@@ -1391,8 +1412,11 @@ const Engine = {
         const dmg = Math.round(s.hpMax * 0.5);
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
         s.demon = clamp(s.demon + 18, 0, 100);
-        this.log(`你低估了金光上人的金钟罩，反被其重创(气血-${dmg})，狼狈遁走。须多备毒草暗器、以毒续伤、以暗器破甲，再寻战机！`, "bad");
+        s.flags.losses_jinguang = (s.flags.losses_jinguang || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_jinguang) * 8;
+        this.log(`你低估了金光上人的金钟罩，反被其重创(气血-${dmg})，狼狈遁走。但你记住了他的招路（再战伤害+${bonus}%）——备足毒草暗器，再寻战机！`, "bad");
         s.pendingEvent = "jinguang_fight";
+        this._retryStage = true;
         UI.renderStory(STORY[s.storyStage]);
       }
     } else if (meta.type === "breakthrough") {

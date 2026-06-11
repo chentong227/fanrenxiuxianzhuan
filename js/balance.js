@@ -88,10 +88,11 @@
         ? ({ 0: 1, 1: 2, 2: 3, 3: 4, 4: 5 })[realmTier]
         : 1 + (realmTier || 0);
     },
+    // 出战技能槽收紧（用户裁决：界面不膨胀，取舍才有 build）。底牌(毒/暗器)不占槽。
     skillSlots(realmTier) {
-      return ({ 0: 8, 1: 10, 2: 12, 3: 14, 4: 16 })[realmTier] != null
-        ? ({ 0: 8, 1: 10, 2: 12, 3: 14, 4: 16 })[realmTier]
-        : 8 + (realmTier || 0) * 2;
+      return ({ 0: 5, 1: 6, 2: 7, 3: 8, 4: 9 })[realmTier] != null
+        ? ({ 0: 5, 1: 6, 2: 7, 3: 8, 4: 9 })[realmTier]
+        : 5 + (realmTier || 0);
     },
     // 辅修功法所授技能的强度折扣（主修全效，辅修打折）
     auxiliaryMul() { return 0.7; },
