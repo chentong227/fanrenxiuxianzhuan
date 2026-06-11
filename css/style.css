@@ -1150,6 +1150,65 @@ html, body { touch-action: manipulation; }
 .codex-rel.rel-warm { color: var(--jade-bright); }
 .codex-rel.rel-cold { color: var(--red); }
 
+/* 情报面纱：图鉴内的逐层底细 */
+.codex-intel {
+  margin: 7px 0 4px; padding: 7px 9px; border-radius: var(--radius);
+  background: rgba(255, 250, 240, 0.03); border: 1px solid var(--border-soft);
+  font-size: 12px; line-height: 1.6;
+}
+.codex-intel .iv-row { display: flex; gap: 6px; align-items: baseline; margin: 2px 0; color: var(--ink-dim); }
+.codex-intel .iv-tag {
+  flex-shrink: 0; font-size: 10.5px; letter-spacing: 2px; color: var(--gold);
+  border: 1px solid rgba(201,169,106,.4); border-radius: 3px; padding: 0 5px;
+}
+.codex-intel .iv-move {
+  display: inline-block; margin: 1px 3px 1px 0; padding: 0 6px; border-radius: 3px;
+  background: rgba(10,8,6,.5); border: 1px solid var(--border); color: var(--ink-faint); font-size: 11px;
+}
+.codex-intel .iv-move.known { color: var(--wx-jin); border-color: rgba(216,198,144,.45); }
+
+/* 风云榜石碑：拓印感——深底、刻字、朱砂标自己 */
+.fame-stone {
+  background: linear-gradient(165deg, rgba(16, 13, 10, 0.92), rgba(10, 8, 6, 0.96));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 10px; margin: 4px 0 8px;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.5);
+}
+.fame-row {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 5px 4px; border-bottom: 1px dashed rgba(255, 250, 240, 0.06);
+  font-size: 13px; color: var(--ink-dim);
+}
+.fame-row:last-child { border-bottom: none; }
+.fame-rank {
+  flex-shrink: 0; width: 22px; height: 22px; line-height: 22px; text-align: center;
+  border: 1px solid rgba(201, 169, 106, 0.35); border-radius: 3px;
+  font-size: 11.5px; color: var(--gold); background: rgba(201, 169, 106, 0.06);
+}
+.fame-name { color: var(--ink); font-weight: 700; letter-spacing: 1px; }
+.fame-title { font-size: 11.5px; color: var(--ink-faint); }
+.fame-val { margin-left: auto; font-size: 12px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.fame-row.me { background: rgba(166, 77, 58, 0.10); border-radius: 4px; }
+.fame-row.me .fame-name { color: var(--cinnabar-bright, #d4836a); }
+.fame-row.dead .fame-name { text-decoration: line-through; opacity: 0.55; }
+.fame-dead {
+  margin-left: 4px; font-size: 10px; color: var(--red);
+  border: 1px solid rgba(178, 58, 50, 0.5); border-radius: 2px; padding: 0 3px; text-decoration: none;
+  display: inline-block;
+}
+
+/* 涟漪窗口行动按钮：朱砂描边，限时机会的紧迫感 */
+.btn-window {
+  border-color: rgba(166, 77, 58, 0.65) !important;
+  color: var(--cinnabar-bright, #d4836a) !important;
+  animation: windowPulse 2.2s ease-in-out infinite;
+}
+.btn-window .win-left { font-size: 10.5px; opacity: 0.75; margin-left: 4px; }
+@keyframes windowPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(166, 77, 58, 0); }
+  50% { box-shadow: 0 0 10px rgba(166, 77, 58, 0.35); }
+}
+
 /* 结识提示飘条（沿用 toast，无需额外） */
 
 /* ============================================================

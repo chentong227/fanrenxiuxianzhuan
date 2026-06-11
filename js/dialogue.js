@@ -99,6 +99,24 @@
             return { text: "你递过一枚灵石。小算盘眉开眼笑——「" + intel[Math.floor(Math.random() * intel.length)] + "」", kind: "event" };
           },
         },
+        {
+          id: "dossier_jinguang", label: "买「金光上人」的底细（灵石×1）", hint: "知其招路，料敌于先",
+          cond: (s) => s.flags.jinguang_appeared && !s.flags.jinguang_dead && (s.intel || {}).jinguang !== 2,
+          effect(s) {
+            if ((typeof State !== "undefined" ? State.count("lingshi") : 0) < 1) return { text: "小算盘两手一摊：「没灵石，免谈。」", kind: "sys" };
+            Engine.buyIntel("jinguang");
+            return { text: "小算盘四下看了看，压着嗓子把金光上人的来路、招式、破绽说了个透。这一块灵石，花得值。", kind: "good" };
+          },
+        },
+        {
+          id: "dossier_jiatianlong", label: "买「贾天龙」的底细（灵石×1）", hint: "知己知彼",
+          cond: (s) => s.flags.gang_war && (s.intel || {}).jiatianlong !== 2,
+          effect(s) {
+            if ((typeof State !== "undefined" ? State.count("lingshi") : 0) < 1) return { text: "小算盘两手一摊：「没灵石，免谈。」", kind: "sys" };
+            Engine.buyIntel("jiatianlong");
+            return { text: "小算盘扒拉着算珠，把贾天龙的武功路数、帮中恩怨一五一十道来。", kind: "good" };
+          },
+        },
       ],
       langzhong: [
         {

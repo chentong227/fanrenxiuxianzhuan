@@ -77,6 +77,13 @@ const State = {
       slainBeasts: [],        // 已伏诛的异闻妖王（不再重复出没）
       revealedRealm: 0,       // 藏拙：示人境界（真实境界=realmIndex；差值=深藏的层数）
       skills: { alchemy: 0, scouting: 0 },   // 杂学熟练度：药理 / 探知（嗑瓜子轴）
+      intel: {},              // 情报面纱：{ npcId: 0听闻|1见过出手|2买过底细 }
+      intelMoves: {},         // 交手自动补全：{ enemyName: [已见招式名] }
+      ripple: null,           // 活跃的涟漪事件链 { id, stage, nextAbs }
+      rippleWindow: null,     // 涟漪开出的限时窗口 { id, dueAbs, note }
+      doneRipples: [],        // 已走完的涟漪链
+      fame: 0,                // 名声（事迹累积，风云榜位次依据）
+      medals: {},             // 漂亮的赢勋章 { id: count }
     };
     this.give("qingyuan_dan", 2);
     if (typeof NPCSIM !== "undefined") NPCSIM.init(this.data);
@@ -127,6 +134,13 @@ const State = {
     if (!d.slainBeasts) d.slainBeasts = [];
     if (d.revealedRealm == null) d.revealedRealm = d.realmIndex;   // 老档：示人=真实（未藏过）
     if (!d.skills) d.skills = { alchemy: 0, scouting: 0 };
+    if (!d.intel) d.intel = {};
+    if (!d.intelMoves) d.intelMoves = {};
+    if (d.ripple === undefined) d.ripple = null;
+    if (d.rippleWindow === undefined) d.rippleWindow = null;
+    if (!d.doneRipples) d.doneRipples = [];
+    if (d.fame == null) d.fame = 0;
+    if (!d.medals) d.medals = {};
     // 旧档修正：剑法大成者，连环眨眼【替换】眨眼连击（v30 曾并列，致"没有提升感"）
     if (d.swordMastery) {
       d.knownSkills = (d.knownSkills || []).filter(id => id !== "zhayan_lian");

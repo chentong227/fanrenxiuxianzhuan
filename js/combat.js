@@ -103,6 +103,7 @@
       this.tactics = cfg.tactics || null;       // 敌人战斗天赋（AI 风格）：feral/cunning/guarded
       this.guardMove = cfg.guardMove || null;   // 防御型敌人的护体招（AI 条件触发）
       this.introNote = cfg.introNote || null;   // 波次入场敌情提示（点明打法）
+      this._dossier = !!cfg._dossier;           // 玩家握有其 L2 底细（情报面纱：料敌必中）
       this.technique = cfg.technique || null;  // 主修功法 id（影响同系招式）
       this.grade = cfg.grade || 1;       // 主修功法品阶（1黄~4天）
       this.auxSkills = cfg.auxSkills || [];   // 来自辅修功法的技能 id（伤害/效果打折）
@@ -150,7 +151,10 @@
     /* ----- 神识优势（玩家 vs 当前首要敌人）----- */
     senseVs(enemy) {
       if (!enemy) return { diff: 0, seeIntent: false, hitBonus: 0, critBonus: 0 };
-      return Balance.senseAdvantage(this.player.sense, enemy.sense || 5);
+      const adv = Balance.senseAdvantage(this.player.sense, enemy.sense || 5);
+      // 做过功课（L2 情报）：知其招路——意图必看穿（情报的实战回报）
+      if (enemy._dossier && !adv.seeIntent) return Object.assign({}, adv, { seeIntent: true });
+      return adv;
     }
 
     /* ----- 敌人意图：决定本回合敌人会用哪招（供神识看穿）-----

@@ -109,6 +109,18 @@ const UI = {
         <span class="obj-hint">${full ? "圆满！回药庐闭关「悟剑」" : "切磋、实战出剑可磨剑意"}</span>
       </div>`;
     }
+    // 涟漪窗口：限时机会（错过即逝——世界不等人）
+    if (sd && sd.rippleWindow) {
+      const rw = sd.rippleWindow;
+      const left = Math.max(0, rw.dueAbs - State.absMonth());
+      const whereTxt = rw.id === "herb_garden" ? "后山" : rw.id === "wolf_bounty" ? "集镇" : rw.id === "cheap_pills" ? "集镇采买" : "";
+      html += `<div class="obj-task ${left <= 1 ? 'urgent' : ''}">
+        <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">风声</span>
+        <b>${rw.note || "限时机会"}</b>
+        ${whereTxt ? `<span class="obj-prog">去「${whereTxt}」</span>` : ""}
+        <span class="obj-left">余 ${left} 月</span>
+      </div>`;
+    }
     box.innerHTML = html;
     box.style.display = html ? "" : "none";
   },
@@ -523,8 +535,19 @@ const UI = {
       if (loc.home && (State.data.swordIntent || 0) >= 100 && !State.data.swordMastery) acts.unshift("wujian");
     }
 
-    box.innerHTML = acts.length
-      ? acts.map(a => `<button class="btn btn-action" data-action="${a}">${labels[a] || a}</button>`).join("")
+    // 涟漪窗口：限时机会在对应地点浮现（过期即逝）
+    let windowBtn = "";
+    const rw = State.data.rippleWindow;
+    if (rw && !loc.scene) {
+      const left = rw.dueAbs - State.absMonth();
+      if ((rw.id === "herb_garden" && loc.id === "houshan") || (rw.id === "wolf_bounty" && loc.id === "town")) {
+        const lbl = rw.id === "herb_garden" ? "寻无主药园" : "应悬赏剿匪";
+        windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('${rw.id}')">${lbl} <span class="win-left">余${left}月</span></button>`;
+      }
+    }
+
+    box.innerHTML = (acts.length || windowBtn)
+      ? windowBtn + acts.map(a => `<button class="btn btn-action" data-action="${a}">${labels[a] || a}</button>`).join("")
       : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>` : "");
     box.querySelectorAll("[data-action]").forEach(btn => {
       btn.addEventListener("click", () => Engine.doAction(btn.dataset.action));
@@ -565,6 +588,7 @@ const UI = {
     this.el("st-stones").textContent = s.stones;
     const alch = this.el("st-alch"); if (alch) alch.textContent = (s.skills && s.skills.alchemy) || 0;
     const scout = this.el("st-scout"); if (scout) scout.textContent = (s.skills && s.skills.scouting) || 0;
+    const fame = this.el("st-fame"); if (fame) fame.textContent = s.fame || 0;
     this.el("st-time").textContent = `${s.year}年${s.month}月`;
 
     this.setBar("cul", s.cultivation, realm.culMax);
@@ -1401,8 +1425,27 @@ const UI = {
         ${ok ? "✦ " : "○ "}<b>${a.title}</b>${ok ? '<span style="color:var(--jade-bright);font-size:11px;margin-left:6px">已达成</span>' : (a.far ? '<span style="color:var(--ink-faint);font-size:11px;margin-left:6px">前路遥遥</span>' : '')}
       </div>`;
     }).join("");
+    // 风云榜：彩霞山一带的座次（石碑）——名声是挣来的，名字是事迹堆出来的
+    const deadIds = { jinguang: s.flags.jinguang_dead, modafu: s.flags.modafu_dead };
+    let board = (typeof WORLD !== "undefined" && WORLD.fameBoard ? WORLD.fameBoard : []).map(f => ({
+      name: f.name, title: f.title, fame: f.fame, note: f.note, dead: !!deadIds[f.id],
+    }));
+    if ((s.fame || 0) > 0) board.push({ name: s.name, title: "七玄门 · 药师", fame: s.fame, note: "事迹渐传，名声渐起。", me: true });
+    board.sort((a, b) => (b.fame - a.fame));
+    const boardHtml = board.map((f, i) => `
+      <div class="fame-row ${f.me ? 'me' : ''} ${f.dead ? 'dead' : ''}">
+        <span class="fame-rank">${["甲","乙","丙","丁","戊","己","庚"][i] || i + 1}</span>
+        <span class="fame-name">${f.name}${f.dead ? '<span class="fame-dead">殁</span>' : ''}</span>
+        <span class="fame-title">${f.title}</span>
+        <span class="fame-val">${f.fame}</span>
+      </div>`).join("");
+    const myFameNote = (s.fame || 0) > 0 ? "" : `<p style="color:var(--ink-faint);font-size:12px;margin:4px 0 0">你尚籍籍无名——伏诛异闻、赢得漂亮、惊世一战，名声自来。</p>`;
+
     this.openModal(`
       <h2>风云录 · 道途</h2>
+      <h3 class="panel-title" style="margin-top:8px">风云榜（彩霞山座次）</h3>
+      <div class="fame-stone">${boardHtml}</div>
+      ${myFameNote}
       <h3 class="panel-title" style="margin-top:8px">道途年表（你挣来的每一步）</h3>
       <div class="chronicle">${msHtml}</div>
       <h3 class="panel-title">前路（已知的远方）</h3>
@@ -1435,9 +1478,25 @@ const UI = {
       const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, n.id) : 0;
       const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : "相识";
       const relCls = rel >= 20 ? "rel-deep" : rel >= 8 ? "rel-warm" : rel <= -8 ? "rel-cold" : "";
+      // 情报面纱：L0 传闻 / L1 已见招式（交手补全）/ L2 底细（买来的）
+      let intelHtml = "";
+      const info = (typeof WORLD !== "undefined" && WORLD.intel) ? WORLD.intel[n.id] : null;
+      if (info) {
+        const lv = (s.intel || {})[n.id] || 0;
+        const seen = new Set();
+        Object.entries(s.intelMoves || {}).forEach(([ename, arr]) => { if (ename.indexOf(n.name) >= 0) arr.forEach(m => seen.add(m)); });
+        const movesHtml = (info.moves || []).map(m =>
+          seen.has(m) ? `<span class="iv-move known">${m}</span>` : `<span class="iv-move">？？</span>`).join("");
+        intelHtml = `<div class="codex-intel">
+          <div class="iv-row"><span class="iv-tag">传闻</span>${info.l0}</div>
+          <div class="iv-row"><span class="iv-tag">招路</span>${movesHtml || "—"}</div>
+          <div class="iv-row"><span class="iv-tag">底细</span>${lv >= 2 ? `<span style="color:var(--gold-bright)">${info.l2}</span>` : `<span style="color:var(--ink-faint)">？？？（小算盘或有门路）</span>`}</div>
+        </div>`;
+      }
       return `<div class="codex-card tappable">
         <div class="codex-head"><b>${n.name}</b><span class="codex-role">${n.role}</span></div>
         <div class="codex-bio">${n.bio}</div>
+        ${intelHtml}
         <div class="codex-rel ${relCls}">关系：${relTxt}</div>
       </div>`;
     };
@@ -1507,14 +1566,17 @@ const UI = {
 
   /* -------- 集镇采买 -------- */
   openMarket() {
+    const s = State.data;
+    const blackMarket = s.rippleWindow && s.rippleWindow.id === "cheap_pills";
     const shop = [
       { id: "lingcao", price: 3 }, { id: "duyao_cao", price: 6 },
-      { id: "qingyuan_dan", price: 8 }, { id: "huixue_dan", price: 6 }, { id: "ningshen_dan", price: 14 },
+      { id: "qingyuan_dan", price: blackMarket ? 3 : 8, sale: blackMarket }, { id: "huixue_dan", price: 6 }, { id: "ningshen_dan", price: 14 },
     ];
     const html = shop.map(it => {
       const item = DATA.items[it.id];
       return `<div class="market-item">
         <span><span class="iname ${item.rarity==='rare'?'rare':item.rarity==='epic'?'epic':''}">${item.name}</span>
+          ${it.sale ? '<span style="color:var(--red);font-size:11px">　黑市贱卖</span>' : ''}
           <span style="color:var(--ink-dim);font-size:12px">　${item.desc}</span></span>
         <button class="btn btn-mini" onclick="Engine.buy('${it.id}')"><span class="mprice">${it.price}两</span></button>
       </div>`;
@@ -1522,6 +1584,7 @@ const UI = {
     this.openModal(`
       <h2>山下集镇 · 采买</h2>
       <p style="color:var(--ink-dim)">纹银：${State.data.silver} 两</p>
+      ${blackMarket ? '<p style="color:var(--gold);font-size:12px">巷尾的药贩子朝你挤眼——丹房失窃的那批养元丹，正在黑市贱卖。过了这村没这店。</p>' : ''}
       ${html}
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
     `);

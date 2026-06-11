@@ -93,12 +93,104 @@ const Engine = {
     if (Math.random() < 0.3) this.log("【世间】" + ev.text, "sys");
   },
 
+  /* ===========================================================
+   *  暗流涟漪链：大事不通报，分阶段渗透（流言→确证→可抓的窗口）
+   * =========================================================== */
+  _RIPPLES: [
+    {
+      id: "hunter_lost",
+      stages: [
+        { news: "坊间闲话：老猎户陈伯进山七八日了，还没见回来。家里人急得直哭。" },
+        { news: "猎户陈伯的草鞋在后山涧边被人寻着了——人多半是没了。山里人叹：靠山吃山，也葬于山。" },
+        { news: "有人说陈伯生前在后山深处拾掇了一片药园，如今成了无主之物……手快有，手慢无。", window: "herb_garden", windowMonths: 3,
+          windowNote: "无主药园（后山·限时）" },
+      ],
+    },
+    {
+      id: "pill_theft",
+      stages: [
+        { news: "门里传开了：丹房昨夜失窃，丢了一批养元丹。管事们脸色铁青。" },
+        { news: "失窃案有了眉目——竟是个外门弟子监守自盗，已被废了功夫逐出山门。" },
+        { news: "那批赃丹几经转手流入了山下黑市，价钱压得极低。集镇的药贩子们闷声发财。", window: "cheap_pills", windowMonths: 3,
+          windowNote: "黑市贱卖养元丹（集镇·限时）" },
+      ],
+    },
+    {
+      id: "wolf_draft",
+      stages: [
+        { news: "山下风声紧：野狼帮在挨村抽丁，青壮挨家被点名，不从者吃刀背。" },
+        { news: "商路被野狼帮的关卡掐断了，集镇物价一日三涨，镖局的买卖也歇了。" },
+        { news: "镖局贴出悬赏：剿杀野狼帮喽啰者，赏银十二两——刀口舔血的营生，干不干？", window: "wolf_bounty", windowMonths: 3,
+          windowNote: "镖局悬赏剿匪（集镇·限时）" },
+      ],
+    },
+  ],
+  _tickRipples(months) {
+    const s = State.data;
+    // 窗口到期自动关闭
+    if (s.rippleWindow && State.absMonth() > s.rippleWindow.dueAbs) {
+      this.log("【涟漪】那桩限时的机会，随光阴一道溜走了。", "sys");
+      s.rippleWindow = null;
+    }
+    // 推进活跃链
+    if (s.ripple) {
+      if (State.absMonth() >= s.ripple.nextAbs) {
+        const chain = this._RIPPLES.find(r => r.id === s.ripple.id);
+        if (!chain) { s.ripple = null; return; }
+        s.ripple.stage += 1;
+        const st = chain.stages[s.ripple.stage];
+        if (!st) { s.doneRipples.push(chain.id); s.ripple = null; return; }
+        s.worldNews = s.worldNews || [];
+        s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "rumor", text: st.news });
+        this.log("【风声】" + st.news, "event");
+        if (st.window) {
+          s.rippleWindow = { id: st.window, dueAbs: State.absMonth() + (st.windowMonths || 3), note: st.windowNote };
+          this.toast("限时机会出现（见际遇栏）");
+          if (typeof Sfx !== "undefined") Sfx.play("chime");
+          s.doneRipples.push(chain.id);
+          s.ripple = null;
+        } else {
+          s.ripple.nextAbs = State.absMonth() + 1 + Math.floor(Math.random() * 2);
+        }
+      }
+      return;
+    }
+    // 启动新链（无活跃链与窗口时低概率）
+    if (s.rippleWindow) return;
+    const pool = this._RIPPLES.filter(r => !(s.doneRipples || []).includes(r.id));
+    if (!pool.length) return;
+    if (Math.random() > Math.min(0.08 * months, 0.3)) return;
+    const chain = pool[Math.floor(Math.random() * pool.length)];
+    s.ripple = { id: chain.id, stage: 0, nextAbs: State.absMonth() + 1 + Math.floor(Math.random() * 2) };
+    s.worldNews = s.worldNews || [];
+    s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "rumor", text: chain.stages[0].news });
+    this.log("【风声】" + chain.stages[0].news, "sys");
+  },
+  // 窗口行动结算
+  doRippleWindow(windowId) {
+    const s = State.data;
+    if (!s.rippleWindow || s.rippleWindow.id !== windowId) return;
+    if (windowId === "herb_garden") {
+      this.passTime(1);
+      State.give("lingcao", 4); State.give("anqi", 2);
+      s.skills.alchemy = (s.skills.alchemy || 0) + 2;
+      this.log("【无主药园】你寻着陈伯生前的药园，仔细采撷——灵草×4、暗器×2（老猎户的防身物）。临走你朝山涧拜了一拜。（药理+2）", "good");
+      s.rippleWindow = null;
+      this.checkLifespan(); State.save(); UI.renderAll();
+    } else if (windowId === "wolf_bounty") {
+      this.log("【悬赏剿匪】你揭了镖局的赏格，循着线索堵住一伙野狼帮喽啰——", "event");
+      this._bountyFight = true;
+      this.startEncounterFight("wolf_gang_thug");
+    }
+  },
+
   // NPC 命途模拟：推进、收集风云录、偶尔向玩家播报重大事件
   _tickWorld(months) {
     const s = State.data;
     if (typeof NPCSIM === "undefined") return;
     if (!s.worldNews) s.worldNews = [];
     this._tickAmbient(months);
+    this._tickRipples(months);
     const news = NPCSIM.tick(s, months, Math.random);
     if (!news.length) return;
     // 全部存入风云录（最多留近 40 条）
@@ -540,8 +632,10 @@ const Engine = {
   buy(itemId) {
     const s = State.data;
     const shop = { lingcao: 3, duyao_cao: 6, qingyuan_dan: 8, huixue_dan: 6, ningshen_dan: 14 };
-    const price = shop[itemId];
+    let price = shop[itemId];
     if (!price) return;
+    // 黑市窗口（涟漪链）：赃丹贱卖
+    if (itemId === "qingyuan_dan" && s.rippleWindow && s.rippleWindow.id === "cheap_pills") price = 3;
     if (s.silver < price) { this.toast("纹银不足", true); return; }
     s.silver -= price;
     State.give(itemId, 1);
@@ -739,6 +833,119 @@ const Engine = {
     this.checkLifespan();
     this.checkStory();
     if (!s.pendingEvent && !s.combat && !this._pendingFortune) this._maybeInteraction();
+    State.save();
+    UI.renderAll();
+  },
+
+  /* ===========================================================
+   *  情报面纱：L0 传闻（免费）/ L1 交手自动补全 / L2 买底细（实战回报：料敌必中）
+   * =========================================================== */
+  _intelIdByEnemyName(name) {
+    if (!name || typeof WORLD === "undefined" || !WORLD.intel) return null;
+    for (const id of Object.keys(WORLD.intel)) {
+      const n = WORLD.npcById ? WORLD.npcById(id) : null;
+      if (n && name.indexOf(n.name) >= 0) return id;
+    }
+    return null;
+  },
+  // 战斗敌人构造时套用情报（L2=做过功课，料敌必中）
+  _applyDossier(enemy) {
+    const s = State.data;
+    const id = this._intelIdByEnemyName(enemy.name);
+    if (id && (s.intel || {})[id] >= 2) enemy._dossier = true;
+    return enemy;
+  },
+  // 交手自动补全：见过的招，永久记住（无论胜败）
+  _recordIntelFromCombat(c) {
+    const s = State.data;
+    if (!s.intelMoves) s.intelMoves = {};
+    c.enemies.forEach(e => {
+      const moves = (e.attacks || []).map(a => a.name).filter(Boolean);
+      if (e.guardMove && e.guardMove.name) moves.push(e.guardMove.name);
+      if (!moves.length && e.atkName) moves.push(e.atkName);
+      if (!moves.length) return;
+      const key = e.name;
+      const seen = new Set(s.intelMoves[key] || []);
+      moves.forEach(m => seen.add(m));
+      s.intelMoves[key] = [...seen];
+      // 对应情报人物：交手即至少 L1
+      const id = this._intelIdByEnemyName(e.name);
+      if (id) { s.intel = s.intel || {}; if ((s.intel[id] || 0) < 1) s.intel[id] = 1; }
+    });
+  },
+  /* ===========================================================
+   *  名声与风云榜：事迹换名次——"别人眼里的你"
+   * =========================================================== */
+  addFame(n, why) {
+    const s = State.data;
+    const before = s.fame || 0;
+    s.fame = before + n;
+    this.log(`【名声】${why}——江湖名声 +${n}（现 ${s.fame}）`, "event");
+    // 超越榜上人物的瞬间：单独播报（扬名时刻）
+    if (typeof WORLD !== "undefined" && WORLD.fameBoard) {
+      const passed = WORLD.fameBoard.filter(f => before < f.fame && s.fame >= f.fame);
+      passed.sort((a, b) => b.fame - a.fame).slice(0, 1).forEach(f => {
+        this.log(`【风云榜】茶馆酒肆间，你的名号已盖过「${f.name}（${f.title}）」。江湖排座次，你又上了一阶。`, "good");
+        this.addMilestone(`风云榜名次盖过「${f.name}」`, "deed");
+        if (typeof Sfx !== "undefined") Sfx.play("chime");
+      });
+      if (before <= 0 && s.fame > 0) this.toast("你的名字开始在江湖流传（见风云榜）");
+    }
+  },
+  /* ===========================================================
+   *  漂亮的赢：胜利的方式也值得记住（勋章）
+   * =========================================================== */
+  _MEDALS: {
+    unscathed: { name: "全身而退", desc: "一场恶战，气血几乎无损——赢得干干净净。", fame: 4 },
+    poison_master: { name: "毒手药王", desc: "大半伤害来自淬毒之刃——墨大夫若泉下有知，不知作何感想。", fame: 3 },
+    giant_slayer: { name: "以下克上", desc: "击败修为高过自己的对手——以弱胜强，此为大勇。", fame: 8 },
+  },
+  awardMedal(id) {
+    const s = State.data;
+    const def = this._MEDALS[id];
+    if (!def) return;
+    s.medals = s.medals || {};
+    const count = (s.medals[id] || 0) + 1;
+    s.medals[id] = count;
+    if (count === 1) {
+      this.log(`【勋章】「${def.name}」——${def.desc}（首次达成，载入年表）`, "good");
+      this.addMilestone(`勋章「${def.name}」：${def.desc}`, "medal");
+      this.addFame(def.fame, `「${def.name}」的事迹传开`);
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    } else {
+      this.toast(`勋章「${def.name}」×${count}`);
+      if (count === 3 || count === 5 || count === 10) this.addFame(2, `屡次「${def.name}」，江湖侧目`);
+    }
+  },
+  // 战斗胜利后的"赢法"判定
+  _checkMedals(c) {
+    const s = State.data;
+    if (!c || c.status !== "win") return;
+    const p = c.player;
+    // 全身而退：恶战之后气血≥九成五
+    if (p.hp >= Math.round(p.hpMax * 0.95)) this.awardMedal("unscathed");
+    // 毒手药王：毒伤占比过半
+    const stats = c.stats || {};
+    const total = Object.values(stats).reduce((a, b) => a + b, 0);
+    const poison = stats["淬毒"] || 0;
+    if (total > 0 && poison / total >= 0.5) this.awardMedal("poison_master");
+    // 以下克上：任一敌人的灵气底子高过自己
+    const myLayer = p.qiLayer || 1;
+    if ((c.enemies || []).some(e => (e.qiLayer || 0) > myLayer)) this.awardMedal("giant_slayer");
+  },
+
+  // 花灵石买底细（小算盘的门路）
+  buyIntel(npcId) {
+    const s = State.data;
+    if (State.count("lingshi") < 1) { this.toast("需要灵石 ×1", true); return; }
+    if ((s.intel || {})[npcId] >= 2) { this.toast("底细已尽在掌握"); return; }
+    State.take("lingshi", 1);
+    s.intel = s.intel || {};
+    s.intel[npcId] = 2;
+    const n = WORLD.npcById(npcId);
+    const info = (WORLD.intel || {})[npcId];
+    this.log(`【底细】你花了一块灵石，从小算盘处买到「${n ? n.name : npcId}」的底细：${info ? info.l2 : ""}（与其交手时，你将料敌于先）`, "good");
+    this.toast("底细到手：交手时料敌必中");
     State.save();
     UI.renderAll();
   },
@@ -1300,7 +1507,7 @@ const Engine = {
   startEncounterFight(enemyId) {
     const tmpl = WORLD.enemies[enemyId];
     if (!tmpl) { this.log("虚惊一场，并无敌踪。", "sys"); return; }
-    const enemy = Object.assign({}, tmpl);
+    const enemy = this._applyDossier(Object.assign({}, tmpl));
     this._combat = new CombatAPI.Combat({
       player: this.playerFighter(),
       enemies: [enemy],
@@ -1332,7 +1539,7 @@ const Engine = {
 
     this._combat = new CombatAPI.Combat({
       player,
-      enemies: [modafu],
+      enemies: [this._applyDossier(modafu)],
       waves: [[tienu], [yuhun]],
       maxRounds: 16,
     });
@@ -1379,7 +1586,7 @@ const Engine = {
     };
     this._combat = new CombatAPI.Combat({
       player,
-      enemies: [jinguang],
+      enemies: [this._applyDossier(jinguang)],
       maxRounds: 18,
     });
     // 金钟罩护体：开局即有厚护盾，暗器(破甲)与毒(持续)是破局关键；金钟罩为法宝护体，不随回合消退
@@ -1479,6 +1686,10 @@ const Engine = {
     const meta = this._combatMeta;
     const win = c.status === "win";
     s.combat = false;
+    // 交手自动补全：见过的招永久入册（情报面纱 L1）
+    this._recordIntelFromCombat(c);
+    // 漂亮的赢：赢的方式也值得记住
+    if (win) this._checkMedals(c);
 
     // 同步战中消耗的底牌（毒、暗器）回主背包
     this._syncPouchBack();
@@ -1506,6 +1717,16 @@ const Engine = {
             else { State.give(k, v); this.log(`战胜「${meta.enemyName}」，获「${DATA.items[k] ? DATA.items[k].name : k}」×${v}。`, "good"); }
           });
         } else this.log(`你击退了「${meta.enemyName}」。`, "good");
+        // 镖局悬赏（涟漪窗口）：兑现赏格
+        if (this._bountyFight) {
+          this._bountyFight = false;
+          if (s.rippleWindow && s.rippleWindow.id === "wolf_bounty") {
+            s.silver += 12;
+            s.rippleWindow = null;
+            this.log("【悬赏兑现】你提着喽啰头目的腰牌回镖局领赏——纹银十二两落袋。镖头抱拳：「壮士留名！」", "good");
+            this.addFame(6, "应镖局悬赏，剿野狼帮喽啰");
+          }
+        }
         // 异闻妖王伏诛：专属战利 + 年表勋章 + 名声入风云录（扬名雏形）
         if (meta.namedBeast) {
           if (meta.namedLoot) {
@@ -1514,6 +1735,7 @@ const Engine = {
             this.log(`【伏诛】异闻中的「${meta.enemyName}」死于你手！剥取战利：${names.join("、")}。`, "good");
           }
           this.addMilestone(`伏诛异闻妖王「${meta.enemyName}」`, "medal");
+          this.addFame(10, `伏诛异闻妖王「${meta.enemyName}」`);
           s.slainBeasts = s.slainBeasts || [];
           if (!s.slainBeasts.includes(meta.namedBeast)) s.slainBeasts.push(meta.namedBeast);
           if (s.beastRumor === meta.namedBeast) s.beastRumor = null;
@@ -1522,6 +1744,7 @@ const Engine = {
           if (typeof Sfx !== "undefined") Sfx.play("success");
         }
       } else {
+        this._bountyFight = false;
         const dmg = Math.round(s.hpMax * 0.2);
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
         s.demon = clamp(s.demon + 8, 0, 100);
@@ -1552,6 +1775,7 @@ const Engine = {
         State.setFlag("modafu_dead");
         this.log("墨大夫毒发倒地，铁奴被你击碎，余子童的元神也被你以功力生生镇灭！你赢了——靠的是准备、算计与一刻不敢松懈的苦修。", "good");
         this.addMilestone("夺舍之夜：反杀墨大夫（余子童）", "showdown");
+        this.addFame(15, "药庐那位韩师傅，深藏不露");
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         s.storyStage += 1;
         this.checkStory();
@@ -1572,6 +1796,7 @@ const Engine = {
         State.give("jinzhong_zhao", 1);
         this.log("金光上人金钟罩虽固，终究敌不过你的毒与暗器。这矮胖和尚至死不信，自己竟栽在一个门派药师手里！七玄门之危，就此解去。", "good");
         this.addMilestone("以下克上：暗算金光上人", "showdown");
+        this.addFame(25, "修仙杀手金光上人死于彩霞山");
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         s.storyStage += 1;
         this.checkStory();
