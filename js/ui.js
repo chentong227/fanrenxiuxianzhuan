@@ -685,11 +685,42 @@ const UI = {
     if (itemId === "jinguang_zhuan") {
       actions += `<button class="btn btn-secondary" onclick="Engine.rechargeZhuan(); UI.closeModal();">灵石回充（灵石×1 → 充能×1）</button>`;
     }
+    // 法器装备（DATA.gear）：穿戴/卸下
+    const gdef = DATA.gear && DATA.gear[itemId];
+    if (gdef) {
+      const equipped = State.data.gear && State.data.gear[gdef.slot] === itemId;
+      const layer = (DATA.realms[State.data.realmIndex] || {}).layer || 1;
+      const can = !gdef.minLayer || layer >= gdef.minLayer;
+      if (equipped) {
+        actions += `<button class="btn btn-secondary" onclick="Engine.unequipGear('${gdef.slot}'); UI.closeModal();">卸下</button>`;
+      } else if (can) {
+        actions += `<button class="btn btn-primary" onclick="Engine.equipGear('${itemId}'); UI.closeModal();">装备（${gdef.slot === "weapon" ? "武器" : gdef.slot === "armor" ? "护身" : "饰物"}）</button>`;
+      } else {
+        actions += `<span style="color:var(--ink-faint);font-size:12px;align-self:center">需练气${gdef.minLayer}层方可驱使</span>`;
+      }
+    }
+    // 法器属性/特性明细（提升感写在脸上）
+    let gearHtml = "";
+    if (gdef) {
+      const names = { hpMax: "气血上限", moodMax: "心境上限", sense: "神识", body: "体魄", speed: "遁速" };
+      const bonusTxt = gdef.bonus ? Object.entries(gdef.bonus).map(([k, v]) => `${names[k] || k} +${v}`).join("　") : "";
+      const spellsTxt = (gdef.grantSpells || []).map(id => {
+        const sp = (typeof CombatAPI !== "undefined") ? CombatAPI.SPELLS[id] : null;
+        return sp ? `「${sp.name}」` : id;
+      }).join(" ");
+      gearHtml = `<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:13px">
+        ${bonusTxt ? `<div style="color:var(--jade-bright)">属性：${bonusTxt}</div>` : ""}
+        ${spellsTxt ? `<div style="color:var(--gold)">战斗技：${spellsTxt}</div>` : ""}
+        ${(gdef.traits || []).map(t => `<div style="color:var(--ink-dim)">特性：${t.desc}</div>`).join("")}
+        <div style="color:var(--ink-faint);font-size:11px;margin-top:4px">驱使门槛：练气${gdef.minLayer || 1}层 · 槽位：${gdef.slot === "weapon" ? "武器" : gdef.slot === "armor" ? "护身" : "饰物"}</div>
+      </div>`;
+    }
     this.openModal(`
       <h2>${item.name}</h2>
       ${isPill ? this._statusStrip() : ""}
       <p style="color:var(--ink-dim)">${rarityLabel(item.rarity)} · ${typeLabel(item.type)}　持有 ×${State.count(itemId)}</p>
       <p>${item.desc}</p>
+      ${gearHtml}
       ${item.effect && Object.keys(item.effect).length ? `<p style="color:var(--jade-bright)">服用：${effectText(item.effect)}</p>` : ""}
       <div class="modal-actions">
         ${actions}
@@ -1782,30 +1813,48 @@ const UI = {
     `);
   },
 
-  /* -------- 万宝楼（黄枫谷坊市）-------- */
+  /* -------- 万宝楼（黄枫谷坊市）：一层消耗品，二层筑基法器 -------- */
   openWanbao() {
     const s = State.data;
-    const goods = Engine.WANBAO_GOODS.map(g => {
+    const row = (g) => {
       const item = DATA.items[g.id];
+      const owned = g.once && State.count(g.id) > 0;
       return `<div class="market-item">
         <span><span class="iname ${item.rarity === 'rare' ? 'rare' : item.rarity === 'epic' ? 'epic' : ''}">${item.name}</span>${g.n > 1 ? `×${g.n}` : ""}
           ${g.note ? `<span style="color:var(--gold);font-size:11px">　${g.note}</span>` : ""}
           <span style="color:var(--ink-dim);font-size:12px">　${item.desc}</span></span>
-        <button class="btn btn-mini" onclick="Engine.wanbaoBuy('${g.id}')"><span class="mprice">灵石${g.price}</span></button>
+        ${owned ? `<span style="color:var(--ink-faint);font-size:12px">已购得</span>`
+                : `<button class="btn btn-mini" onclick="Engine.wanbaoBuy('${g.id}')"><span class="mprice">灵石${g.price}</span></button>`}
       </div>`;
-    }).join("");
-    const intel = s.flags.xueshi_intel
-      ? `<p style="color:var(--jade-bright);font-size:12px">血色禁地的门道已从向之礼处买到——主药在禁地，名额看修为（练气十一层）与大比时节。</p>`
+    };
+    const floor1 = Engine.WANBAO_GOODS.filter(g => !g.floor2).map(row).join("");
+    const floor2 = Engine.WANBAO_GOODS.filter(g => g.floor2).map(row).join("");
+    // 收购行：千年灵草=买法器的本钱（小绿瓶的奇迹变现）
+    const sells = [
+      { id: "qiannian_lingcao", label: "千年灵草 ×1 → 灵石×22", has: State.count("qiannian_lingcao") >= 1, hot: true },
+      { id: "lingyao_dan", label: "灵药 ×1 → 灵石×2", has: State.count("lingyao_dan") >= 1 },
+    ].map(x => `<div class="market-item">
+      <span style="color:${x.hot ? 'var(--gold)' : 'var(--ink-dim)'};font-size:13px">${x.label}${x.hot ? "　掌柜见之眼开" : ""}</span>
+      ${x.has ? `<button class="btn btn-mini" onclick="Engine.wanbaoSell('${x.id}')">售出</button>`
+              : `<span style="color:var(--ink-faint);font-size:12px">无货</span>`}
+    </div>`).join("");
+    // 向之礼：在坊市闲坐的"老杂役"——他的指点分文不取
+    const xiang = s.flags.xueshi_intel
+      ? `<p style="color:var(--jade-bright);font-size:12px">向之礼的指点你记在心里：血色主药在禁地，名额看修为（练气十一层）与大比时节。</p>`
       : `<div class="market-item">
-          <span><span class="iname epic">血色禁地的门道</span><span style="color:var(--ink-dim);font-size:12px">　向之礼神秘一笑：「问这个的，不是要发财，就是要送命。」</span></span>
-          <button class="btn btn-mini" onclick="Engine.buyXueshiIntel()"><span class="mprice">灵石3</span></button>
+          <span><span class="iname">廊下晒太阳的向老头</span><span style="color:var(--ink-dim);font-size:12px">　他朝你招了招手，似乎有话要说。</span></span>
+          <button class="btn btn-mini" onclick="Engine.xiangIntel()">上前听他闲谈</button>
         </div>`;
     this.openModal(`
       <h2>万宝楼 · 采买</h2>
       <p style="color:var(--ink-dim)">灵石：${State.count("lingshi")} 枚　纹银：${s.silver} 两（坊市只认灵石）</p>
-      ${goods}
-      <h3 class="panel-title" style="margin-top:10px">掌柜的门路（情报）</h3>
-      ${intel}
+      ${floor1}
+      <h3 class="panel-title" style="margin-top:10px">二层 · 法器阁（练气十一层方可驱使）</h3>
+      ${floor2}
+      <h3 class="panel-title" style="margin-top:10px">以物易石（掌柜收购）</h3>
+      ${sells}
+      <h3 class="panel-title" style="margin-top:10px">坊市闲人</h3>
+      ${xiang}
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
     `);
   },

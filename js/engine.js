@@ -720,33 +720,113 @@ const Engine = {
     { id: "ningshen_dan", price: 2, note: "凝神静心" },
     { id: "huixue_dan", price: 1, note: "伤药常备" },
     { id: "duyao_cao", price: 1, n: 2, note: "万宝楼什么都收，什么都卖" },
+    // 二层（筑基期法器）：练气期就买得到，驱使不动——攒钱与筑基的双重惦记
+    { id: "jinfuzi_ren", price: 40, once: true, note: "二层 · 镇楼之宝", floor2: true },
+    { id: "xuantie_dun", price: 30, once: true, note: "二层", floor2: true },
+    { id: "feixing_jujian", price: 35, once: true, note: "二层", floor2: true },
   ],
   wanbaoBuy(itemId) {
     const s = State.data;
     const g = this.WANBAO_GOODS.find(x => x.id === itemId);
     if (!g) return;
+    if (g.once && State.count(itemId) > 0) { this.toast("此物已购得"); return; }
     if (State.count("lingshi") < g.price) { this.toast(`需要灵石 ×${g.price}`, true); return; }
     State.take("lingshi", g.price);
     State.give(itemId, g.n || 1);
     s.flags.fangshi_visited = (s.flags.fangshi_visited || 0) + 1;
     const item = DATA.items[itemId];
     this.log(`【万宝楼】购得「${item.name}」${g.n > 1 ? `×${g.n}` : ""}（灵石-${g.price}）。`, "event");
-    this.toast(`${item.name} 到手`);
+    if (g.floor2) {
+      this.addMilestone(`万宝楼二层：购得「${item.name}」`, "bigitem");
+      this.toast(`${item.name} 到手——筑基之后，它才真正属于你`);
+    } else {
+      this.toast(`${item.name} 到手`);
+    }
     this.checkStory();
     State.save();
     UI.renderAll();
     UI.openWanbao();
   },
-  // 向之礼的情报（血色禁地的门道——情报面纱的主线化）
-  buyXueshiIntel() {
+  /* -------- 法器装备：穿戴/卸下（属性即时结算，主动技入战）-------- */
+  equipGear(itemId) {
     const s = State.data;
-    if (s.flags.xueshi_intel) { this.toast("门道已尽在掌握"); return; }
-    if (State.count("lingshi") < 3) { this.toast("需要灵石 ×3", true); return; }
-    State.take("lingshi", 3);
+    const def = DATA.gear[itemId];
+    if (!def) { this.toast("此物不可装备"); return; }
+    if (!State.count(itemId)) return;
+    const layer = (DATA.realms[s.realmIndex] || {}).layer || 1;
+    if (def.minLayer && layer < def.minLayer) {
+      this.toast(`修为不足（需练气${def.minLayer}层方可驱使）`, true);
+      return;
+    }
+    // 同槽旧装备先卸
+    if (s.gear[def.slot]) this.unequipGear(def.slot, true);
+    s.gear[def.slot] = itemId;
+    // 持久属性即时结算
+    if (def.bonus) {
+      if (def.bonus.hpMax) { s.hpMax += def.bonus.hpMax; s.hp += def.bonus.hpMax; }
+      if (def.bonus.moodMax) { s.moodMax += def.bonus.moodMax; s.mood += def.bonus.moodMax; }
+      if (def.bonus.sense) s.sense += def.bonus.sense;
+      if (def.bonus.body) s.body += def.bonus.body;
+    }
+    const item = DATA.items[itemId];
+    const fx = [];
+    if (def.bonus) Object.entries(def.bonus).forEach(([k, v]) => {
+      const names = { hpMax: "气血上限", moodMax: "心境上限", sense: "神识", body: "体魄", speed: "遁速" };
+      fx.push(`${names[k] || k}+${v}`);
+    });
+    this.log(`你将「${item.name}」祭起灵力炼化驱使——${fx.join("，")}${def.grantSpells ? "；战斗技已入战" : ""}。${(def.traits || []).map(t => t.desc).join("；")}`, "good");
+    this.toast(`已装备：${item.name}`);
+    State.save();
+    UI.renderAll();
+  },
+  unequipGear(slot, silent) {
+    const s = State.data;
+    const itemId = s.gear[slot];
+    if (!itemId) return;
+    const def = DATA.gear[itemId];
+    s.gear[slot] = null;
+    if (def && def.bonus) {
+      if (def.bonus.hpMax) { s.hpMax -= def.bonus.hpMax; s.hp = Math.min(s.hp, s.hpMax); }
+      if (def.bonus.moodMax) { s.moodMax -= def.bonus.moodMax; s.mood = Math.min(s.mood, s.moodMax); }
+      if (def.bonus.sense) s.sense -= def.bonus.sense;
+      if (def.bonus.body) s.body -= def.bonus.body;
+    }
+    if (!silent) {
+      this.toast(`已卸下：${DATA.items[itemId].name}`);
+      State.save();
+      UI.renderAll();
+    }
+  },
+
+  /* -------- 万宝楼收购（千年灵草=买法器的本钱——小绿瓶的奇迹变现）-------- */
+  wanbaoSell(itemId) {
+    const s = State.data;
+    const PRICES = { qiannian_lingcao: 22, lingyao_dan: 2 };
+    const p = PRICES[itemId];
+    if (!p || !State.take(itemId, 1)) { this.toast("无此货可售", true); return; }
+    State.give("lingshi", p);
+    const item = DATA.items[itemId];
+    if (itemId === "qiannian_lingcao") {
+      this.log(`【万宝楼】掌柜捧着那棵「千年灵草」手都在抖，二话不说点出 ${p} 枚灵石：「小友若还有，老朽照单全收！」`, "good");
+      this.addMilestone("千年灵草换灵石：小绿瓶的奇迹第一次变现", "bigitem");
+    } else {
+      this.log(`【万宝楼】售出「${item.name}」，灵石+${p}。`, "event");
+    }
+    this.toast(`灵石+${p}`);
+    State.save();
+    UI.renderAll();
+    UI.openWanbao();
+  },
+
+  // 向之礼的引导（考据：他给过韩立指点——分文不取，闲谈之间切中要害）
+  xiangIntel() {
+    const s = State.data;
+    if (s.flags.xueshi_intel) { this.toast("老人的话，你已记在心里"); return; }
     State.setFlag("xueshi_intel");
     s.flags.fangshi_visited = (s.flags.fangshi_visited || 0) + 1;
-    this.log("【万宝楼】向之礼压低声音，给你交了底：「血色禁地，谷里诸脉抢破头的机缘地——里头的血色主药是炼筑基丹的根本。名额按各脉实力分，散修杂役想进去？修为先到练气十一层，再看大比时节的造化。记住，里头死人，是常事。」（血色禁地的门道已知——筑基丹的原料就在那里面）", "good");
-    this.toast("情报到手：血色禁地=筑基丹主药所在");
+    this.log("【闲谈】晒太阳的向老头眯着眼，慢悠悠地开了口：「血色禁地——谷里诸脉抢破头的机缘地。里头的血色主药，是炼筑基丹的根本。名额按各脉实力分，杂役想进去？修为先到练气十一层，再看大比时节的造化。」他顿了顿，又补一句：「里头死人是常事。但你这性子……去得，也回得来。」说完又眯上了眼，仿佛方才什么都没说过。（血色禁地的门道已知——这老人到底是谁？）", "good");
+    this.writeLedger("xiang_guidance", "向之礼闲谈之间为你指点血色禁地的门道");
+    this.toast("向之礼的指点：血色禁地=筑基丹主药所在");
     this.checkStory();
     State.save();
     UI.renderAll();
@@ -1991,16 +2071,23 @@ const Engine = {
     Object.entries(TALIS).forEach(([spellId, itemId]) => {
       if (State.count(itemId) > 0 && !spells.includes(spellId)) spells.push(spellId);
     });
+    // 法器装备：主动技注入（战斗装备类）+被动属性（State.gearBonus 在各处生效）
+    ["weapon", "armor", "accessory"].forEach(slot => {
+      const g = State.gearOf(slot);
+      if (g && g.grantSpells) g.grantSpells.forEach(sk => { if (!spells.includes(sk)) spells.push(sk); });
+    });
+    const dunTrait = State.gearTrait("charge_resist");
     return new CombatAPI.Fighter({
       name: s.name,
       hp: s.hp,
-      sense: s.sense,
+      sense: s.sense + State.gearBonus("sense"),
       speed: State.effectiveSpeed(),
       insight: s.insight,
       gongli: gongli,
       agility: Math.round(State.effectiveSpeed() * 0.6),   // 遁速提供基础闪避
       profile: "hanli_si",       // 四灵根·缺土
       elem: (DATA.techniques[s.technique] || {}).attr || null,   // 道基=主修功法行属（克制语言）
+      chargeResist: dunTrait ? (dunTrait.value || 0.3) : 0,
       spells,
       auxSkills: (typeof Loadout !== "undefined") ? Loadout.auxSkillSet(s) : [],
       technique: s.technique,     // 主修功法（影响同系招式）

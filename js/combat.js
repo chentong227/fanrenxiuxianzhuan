@@ -76,6 +76,12 @@
     // 符宝·金光砖：杀金光上人的战利遗赠——韩立的第一件符宝（充能式大杀器）
     jinguang_zhuan: { name: "金光砖", cost: { any: 1 },     type: "atk", dmg: 34, pierce: true, source: "art", elem: "jin", consume: "jinguang_zhuan_charge",
                 desc: "金光上人的符宝遗赠：金光化砖凌空砸落，势大力沉且破甲。每次催动耗一道充能（灵石可回充）——杀手的凶器，如今是你的底牌。" },
+
+    /* —— 法器战斗技（装备授予，gear grantSpells）—— */
+    zimu_ren:    { name: "子母双刃", cost: { jin: 2 },      type: "atk", dmg: 14, fixedSegs: 2, source: "art", elem: "jin",
+                desc: "金蚨子母刃分进合击——大小双刃一前一后两段连斩，每段独立结算。顶阶法器的锋芒。" },
+    jujian_zhan: { name: "巨剑斩", cost: { jin: 3 },        type: "atk", dmg: 32, pierce: true, source: "art", elem: "jin",
+                desc: "御使丈余巨剑凌空斩落，势大力沉且破甲——一剑之威，胜过百剑之繁。" },
   };
 
   /* ---------- 灵气产出档案 ----------
@@ -132,6 +138,7 @@
       this.swordMastery = !!cfg.swordMastery;    // 眨眼剑法大成：本体蜕变（攒势翻倍）
       this.qiLayer = cfg.qiLayer || 1;   // 练气层数：灵气底蕴随境界成长
       this.dmgBonus = cfg.dmgBonus || 1; // 伤害系数（fail-forward：败北看破对方招式后小幅提升）
+      this.chargeResist = cfg.chargeResist || 0;   // 蓄力重击减伤（玄铁巨盾特性）
       this.tactics = cfg.tactics || null;       // 敌人战斗天赋（AI 风格）：feral/cunning/guarded
       this.guardMove = cfg.guardMove || null;   // 防御型敌人的护体招（AI 条件触发）
       this.introNote = cfg.introNote || null;   // 波次入场敌情提示（点明打法）
@@ -422,8 +429,8 @@
         if (sp.pierce) dodge *= 0.3;
         dodge = clampNum(dodge - adv.hitBonus, 0, 0.45);
         const spentMomentum = sp.spendMomentum ? (caster.momentum || 0) : 0;
-        // 多段连击（连环眨眼）：段数随剑势增长——一剑化数剑（行动经济的质变）
-        const segs = sp.multiSeg ? 1 + Math.floor(spentMomentum / (sp.segPer || 2)) : 1;
+        // 多段连击：剑势驱动（连环眨眼）或法器固定段数（子母双刃）
+        const segs = sp.multiSeg ? 1 + Math.floor(spentMomentum / (sp.segPer || 2)) : (sp.fixedSegs || 1);
         // 剑势：基础伤害 + 消耗剑势的额外伤害（多段技不再叠平伤，伤在段数上）
         let baseDmg = sp.dmg;
         if (sp.spendMomentum && !sp.multiSeg) { baseDmg += spentMomentum * (sp.momentumDmg || 0); }
@@ -627,6 +634,11 @@
         const m = elemMul(a.elem, this.player.elem);
         if (m > 1 && !this._eNoted) { this._eNoted = true; this._log(`（${e.name}的${ELEM_NAME[a.elem]}系法术天克你的道基——护体灵力被压着打！）`); }
         edmg = Math.round(edmg * m);
+      }
+      // 玄铁巨盾·山岳之御：蓄力重击减伤（装备特性的实战兑现）
+      if (a.kind === "release" && this.player.chargeResist > 0) {
+        edmg = Math.round(edmg * (1 - this.player.chargeResist));
+        this._log(`玄铁巨盾横亘身前，山岳之御卸去重击大半力道！`);
       }
       const r = this.player.takeDamage(edmg, { soul: a.soul, pierce: a.pierce });
       if (r.blocked) { this._log(`${e.name} 的「${a.name}」对你无效`); this._emitFx("player", "miss", "无效"); }

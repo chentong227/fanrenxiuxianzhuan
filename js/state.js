@@ -88,6 +88,7 @@ const State = {
       intelElems: {},         // 已揭示的敌方道基行属 { 敌名: elem }（打了才知道）
       ledger: {},             // 因果账本：{ id: {t,label} }——插曲种因，主线节点读账结果（world-architecture §3）
       journey: null,          // 大陆旅途 { to, toName, leg, total, back }（旅途即内容：world-architecture §1.3）
+      gear: { weapon: null, armor: null, accessory: null },   // 法器装备三槽（DATA.gear）
       visitedNodes: ["caixia"],   // 到过的大陆节点（舆图墨痕：走过的路，地图记得）
     };
     this.give("qingyuan_dan", 2);
@@ -147,6 +148,7 @@ const State = {
     if (!d.doneRipples) d.doneRipples = [];
     if (d.fame == null) d.fame = 0;
     if (d.sideUnit === undefined) d.sideUnit = null;
+    if (!d.gear) d.gear = { weapon: null, armor: null, accessory: null };
     if (!d.intelElems) d.intelElems = {};
     if (!d.ledger) d.ledger = {};
     if (d.journey === undefined) d.journey = null;
@@ -203,12 +205,42 @@ const State = {
     }
     return bonus;
   },
+  // 装备的法器（按槽取 DATA.gear 定义；未达驱使门槛视为未装备）
+  gearOf(slot) {
+    const id = this.data.gear && this.data.gear[slot];
+    if (!id) return null;
+    const def = DATA.gear && DATA.gear[id];
+    if (!def) return null;
+    const layer = (DATA.realms[this.data.realmIndex] || {}).layer || 1;
+    if (def.minLayer && layer < def.minLayer) return null;   // 修为不够，驱使不动
+    return Object.assign({ id }, def);
+  },
+  gearBonus(key) {
+    let n = 0;
+    ["weapon", "armor", "accessory"].forEach(slot => {
+      const g = this.gearOf(slot);
+      if (g && g.bonus && g.bonus[key]) n += g.bonus[key];
+    });
+    return n;
+  },
+  gearTrait(traitId) {
+    for (const slot of ["weapon", "armor", "accessory"]) {
+      const g = this.gearOf(slot);
+      if (g && g.traits) {
+        const t = g.traits.find(x => x.id === traitId);
+        if (t) return t;
+      }
+    }
+    return null;
+  },
+
   effectiveSpeed() {
     const ft = this.flightTreasure();
     return (this.data.speed || 0)
       + this.realmSpeedBonus()
       + this.movementArtBonus()
-      + (ft ? ft.speedBonus || 0 : 0);
+      + (ft ? ft.speedBonus || 0 : 0)
+      + this.gearBonus("speed");
   },
 
   // ---- 物品操作 ----

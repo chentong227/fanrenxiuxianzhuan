@@ -293,6 +293,34 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   assert(s.pendingEvent === "chen_after", `林中事了一幕触发（${s.pendingEvent}）`);
   Engine.chooseStory(sandbox.STORY[s.storyStage], 1);
   assert(s.ledger.chen_remember && !s.ledger.chen_wangchen, "不喂忘尘丹：她记得你（命途道岔写账）");
+
+  // —— 法器装备系统：千年灵草变现 → 万宝楼买金蚨子母刃 → 装备（属性+技能+特性）——
+  assert(s.flightId === "qingye_fazhan", "入谷已领青叶法器（第一件飞行法器）");
+  State.give("qiannian_lingcao", 2);
+  Engine.wanbaoSell("qiannian_lingcao");
+  Engine.wanbaoSell("qiannian_lingcao");
+  assert(State.count("lingshi") >= 44, `千年灵草×2变现44灵石（现 ${State.count("lingshi")}）`);
+  Engine.wanbaoBuy("jinfuzi_ren");
+  assert(State.count("jinfuzi_ren") === 1, "金蚨子母刃购得（小绿瓶的奇迹=法器的本钱）");
+  const senseBefore = s.sense;
+  Engine.equipGear("jinfuzi_ren");
+  assert(s.gear.weapon === "jinfuzi_ren", "武器槽已装备");
+  assert(s.sense === senseBefore + 2, "属性即时结算（神识+2）");
+  const pf = Engine.playerFighter();
+  assert(pf.spells.includes("zimu_ren"), "战斗技「子母双刃」入战（装备授予）");
+  // 玄铁巨盾：hpMax+特性
+  State.give("xuantie_dun", 1);
+  const hpMaxBefore = s.hpMax;
+  Engine.equipGear("xuantie_dun");
+  assert(s.hpMax === hpMaxBefore + 30, "玄铁巨盾：气血上限+30");
+  const pf2 = Engine.playerFighter();
+  assert(pf2.chargeResist === 0.3, "特性「山岳之御」入战（蓄力重击减伤30%）");
+  // 驱使门槛：低修为装不上
+  s.realmIndex = 5;
+  Engine.unequipGear("weapon");
+  Engine.equipGear("jinfuzi_ren");
+  assert(s.gear.weapon !== "jinfuzi_ren", "练气六层驱使不动顶阶法器（门槛拦截）");
+  s.realmIndex = 10;
 }
 
 console.log("\n=== 6. 拜别版回乡（离门远行）===");

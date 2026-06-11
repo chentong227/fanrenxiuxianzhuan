@@ -106,6 +106,53 @@ DATA.items = {
     desc: "以灵竹浆制成的空白符纸，制符的根基材料。眼下还用不上——但修仙人的家底，从来都是提前备下的。" },
   zheling_canbao: { name: "遮灵残宝", rarity: "rare", type: "treasure",
     desc: "一面残缺的青铜小镜，能遮掩周身灵气波动。配合那只神秘小瓶使用，足以瞒过大多数修士的耳目——藏拙者的至宝。" },
+
+  /* —— 万宝楼二层：顶阶法器（练气十一层方可驱使——韩立血色禁地的底气）—— */
+  jinfuzi_ren: { name: "金蚨子母刃", rarity: "epic", type: "gear",
+    desc: "顶阶攻击法器：一大一小双刃如金蚨子母相随，可分进合击。练气十一层方可驱使。" },
+  xuantie_dun: { name: "玄铁巨盾", rarity: "epic", type: "gear",
+    desc: "顶阶防御法器：玄铁铸就的厚重巨盾，灵力灌注时如山岳横亘。练气十一层方可驱使。" },
+  feixing_jujian: { name: "巨剑", rarity: "epic", type: "gear",
+    desc: "顶阶攻击法器：丈余玄铁巨剑，灵力催动时可御使飞出、凌空斩敌，势大力沉。练气十一层方可驱使。" },
+  qiannian_lingcao: { name: "千年灵草", rarity: "epic", type: "material",
+    desc: "经小绿瓶以浓缩岁月之力催熟的灵草，药龄堪比千年野生之物。万宝楼见之眼开——一两棵，便够换楼上一件法器。" },
+};
+
+/* ---------- 法器装备体系（v1）：大多做属性+特性（被动），少数做战斗装备（主动技）----------
+ * slot: weapon 武器 / armor 护身 / accessory 饰物。
+ * minLayer: 驱使门槛（练气层数）；bonus: 被动属性；traits: 特性（被动规则，文字+钩子字段）；
+ * grantSpells: 主动战斗技（仅战斗装备类有）。
+ */
+DATA.gear = {
+  // —— 战斗装备类（主动技）——
+  jinfuzi_ren: {
+    slot: "weapon", minLayer: 11,
+    bonus: { sense: 2 },
+    grantSpells: ["zimu_ren"],
+    traits: [{ id: "twin_blade", desc: "子母双刃分进合击：战斗技「子母双刃」两段连击，每段独立结算" }],
+  },
+  feixing_jujian: {
+    slot: "weapon", minLayer: 11,
+    bonus: { body: 1 },
+    grantSpells: ["jujian_zhan"],
+    traits: [{ id: "heavy_sword", desc: "御剑凌空：战斗技「巨剑斩」势大力沉且破甲——一剑之威，胜过百剑之繁" }],
+  },
+  // —— 属性/特性类（被动）——
+  xuantie_dun: {
+    slot: "armor", minLayer: 11,
+    bonus: { hpMax: 30 },
+    traits: [{ id: "charge_resist", value: 0.3, desc: "山岳之御：气血上限+30；受「蓄力重击」伤害-30%" }],
+  },
+  nuanyang_yu: {
+    slot: "accessory", minLayer: 1,
+    bonus: { moodMax: 10 },
+    traits: [{ id: "warm_jade", desc: "暖玉生温：心境上限+10，寒毒阴煞不侵——她的嫁妆，护你周全" }],
+  },
+  zheling_canbao: {
+    slot: "accessory", minLayer: 1,
+    bonus: { sense: 1 },
+    traits: [{ id: "veil_aura", desc: "遮灵敛息：神识+1；周身灵气波动被遮掩，藏拙更深（示人境界不易被看破）" }],
+  },
 };
 
 /* ---------- 行动配置 ----------
@@ -218,11 +265,17 @@ DATA.flightTreasures = {
   none: { name: "徒步赶路", speedBonus: 0, grade: "凡", arc: null,
     desc: "全凭两条腿与粗浅遁术，跋山涉水。练气修士的常态。" },
 
-  // —— 黄枫谷篇起：神风舟（筑基修士的寻常脚力，韩立筑基后长期使用）——
+  // —— 黄枫谷入门发放：青叶法器（韩立第一件飞行法器——考据核定）——
+  qingye_fazhan: {
+    name: "青叶法器", speedBonus: 10, grade: "下品法器", arc: "huangfeng",
+    desc: "黄枫谷入门发放的最低阶飞行法器——一片青叶大如门板，灵力催动可载人低空疾掠。寒酸是寒酸，却是你头一回离地。",
+    origin: "黄枫谷篇：入谷时随青衫腰牌一并发放。",
+  },
+  // —— 神风舟（墨蛟皮所制——血色禁地战利交予齐云霄炼成，考据核定）——
   shen_feng_zhou: {
     name: "神风舟", speedBonus: 30, grade: "黄阶法器", arc: "huangfeng", locked: true,
-    desc: "御风疾驰的小舟形法器，比徒步遁光快上数倍，是筑基修士赶路的寻常脚力。韩立筑基后购得，天南赶路全靠它。",
-    origin: "黄枫谷篇（筑基后）：坊市购得。",
+    desc: "以墨蛟之皮为帆、御风疾驰的小舟形法器，比徒步遁光快上数倍。韩立前期赶路全靠它。",
+    origin: "黄枫谷篇：血色禁地斩墨蛟取其皮，托元武国齐云霄炼制而成（墨蛟链小大件）。",
   },
   // —— 乱星海篇：渡海乘风雷舟（跨海远行）——
   du_hai_lei_zhou: {
@@ -266,6 +319,8 @@ DATA.bottle = {
   crops: {
     lingcao:   { seed: "lingcao",   matureItem: "lingyao_dan", yield: 1, growth: 100, name: "灵草→灵药" },
     duyao_cao: { seed: "duyao_cao", matureItem: "duyao_cao",   yield: 2, growth: 100, name: "毒草（催熟）" },
+    // 千年灵草：小绿瓶的真正奇迹——岁月可以催熟（考据：韩立换购万宝楼法器的本钱）
+    qiannian:  { seed: "lingcao",   matureItem: "qiannian_lingcao", yield: 1, growth: 300, name: "灵草→千年灵草（耗时极长）" },
   },
 };
 

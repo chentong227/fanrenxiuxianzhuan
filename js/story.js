@@ -663,10 +663,13 @@ const STORY = [
     onArrive(s) {
       State.setFlag("hf_arrived");
       if (!s.metNpcs.includes("wushishu")) s.metNpcs.push("wushishu");
+      // 入门发放：青叶法器（韩立第一件飞行法器——头一回离地）
+      s.flightId = "qingye_fazhan";
       Engine.writeLedger("wu_kindness", "入谷之日，吴师叔的提点之恩");
+      Engine.toast("入门发放：青叶法器（遁速+10——头一回离地）");
     },
     choices: [
-      { text: "随吴师叔去执事殿", hint: "升仙令许诺的东西，就在前头" },
+      { text: "随吴师叔去执事殿", hint: "升仙令许诺的东西，就在前头；袖里那片青叶还微微发烫" },
     ],
   },
   {
