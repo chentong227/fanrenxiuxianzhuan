@@ -576,9 +576,58 @@ const Engine = {
     if (s.combat) { this.toast("酣战之中，无暇他顾"); return; }
     const cfg = DATA.exploreSites[siteId];
     if (typeof Explore === "undefined" || !cfg) { this.toast("此地暂不可探"); return; }
-    s.explore = Explore.generate(cfg, Math.random);
+    s.explore = Explore.generate(Object.assign({}, cfg, { senseVal: s.sense }), Math.random);
     UI.openExplore(s.explore);
     State.save();
+  },
+
+  // 探索异状小事件池（踩到"？"格：吉凶各半，搏不搏自己选）
+  _EXPLORE_MYSTERIES: [
+    {
+      title: "塌陷的兽穴", text: "脚下的土层忽然松动，露出一个黑黢黢的洞口，隐有微光。",
+      choices: [
+        { text: "探身摸一把", effect(s) { if (Math.random() < 0.55) { s.explore.bag.lingshi = (s.explore.bag.lingshi || 0) + 2; return { text: "你摸到一枚冰凉的灵石——是头前个倒霉鬼的遗落！（灵石+2）", kind: "good" }; } const dmg = 10; s.hp = Math.max(1, s.hp - dmg); return { text: `穴中竟有蛇虫！你被狠狠咬了一口（气血-${dmg}），悻悻缩手。`, kind: "bad" }; } },
+        { text: "不冒这个险", effect() { return { text: "你绕开洞口。深山之中，贪小利者多横死。", kind: "sys" }; } },
+      ],
+    },
+    {
+      title: "前人遗骸", text: "草丛里横着一具白骨，衣衫早已朽烂，指骨还紧紧攥着什么。",
+      choices: [
+        { text: "掰开看看", effect(s) { if (Math.random() < 0.6) { s.explore.bag.anqi = (s.explore.bag.anqi || 0) + 2; return { text: "是两支保存完好的飞针——前辈遗物，你拜了三拜收下。（暗器+2）", kind: "good" }; } s.demon = Math.min(100, s.demon + 4); return { text: "只是一截枯枝。死人攥着枯枝走完最后一程——你心头一寒。（心魔+4）", kind: "bad" }; } },
+        { text: "就地掩埋", effect(s) { s.mood = Math.min(s.moodMax, s.mood + 4); return { text: "你拢土埋骨。或许他日也有人这样待你。（心境+4）", kind: "good" }; } },
+      ],
+    },
+    {
+      title: "灵气漩涡", text: "一小股灵气在岩缝间打着旋，吸之可补，但乱流刺骨。",
+      choices: [
+        { text: "吐纳吸取", effect(s) { const realm = State.realm(); if (Math.random() < 0.65) { s.spirit = Math.min(realm.spMax, s.spirit + 15); return { text: "你就地吐纳，灵力小补（灵力+15）。", kind: "good" }; } const dmg = 8; s.hp = Math.max(1, s.hp - dmg); return { text: `乱流入体如针扎（气血-${dmg}）！你赶忙收功。`, kind: "bad" }; } },
+        { text: "绕开乱流", effect() { return { text: "来历不明的灵气，不吸也罢。", kind: "sys" }; } },
+      ],
+    },
+    {
+      title: "受困的灵狐", text: "一只皮毛雪白的小狐被藤蔓缠住，看到你，呜呜地低鸣。",
+      choices: [
+        { text: "割藤放生", effect(s) { if (Math.random() < 0.5) { s.explore.bag.lingcao = (s.explore.bag.lingcao || 0) + 2; return { text: "灵狐绕着你转了两圈，刨出两株灵草相赠，倏然遁去。（灵草+2）", kind: "good" }; } return { text: "灵狐头也不回地跑了。罢了，本也不图报。", kind: "sys" }; } },
+        { text: "警惕绕行", effect() { return { text: "深山精怪，谁知真假。你按剑绕开。", kind: "sys" }; } },
+      ],
+    },
+    {
+      title: "雾中岔路", text: "浓雾忽起，眼前隐约岔出一条捷径，似能少绕半座山。",
+      choices: [
+        { text: "走捷径", effect(s) { if (Math.random() < 0.6) { s.explore.steps = Math.max(0, s.explore.steps - 3); return { text: "捷径果然通畅，省下不少脚程。（耗时-3步）", kind: "good" }; } s.explore.steps += 3; return { text: "雾中转向，你多绕了一大圈才回到原路。（耗时+3步）", kind: "bad" }; } },
+        { text: "稳走大路", effect() { return { text: "迷雾古怪，你按原路稳步前行。", kind: "sys" }; } },
+      ],
+    },
+  ],
+  // 弹出异状事件（复用奇遇弹窗 UI）
+  _openExploreMystery() {
+    const pool = this._EXPLORE_MYSTERIES;
+    const f = pool[Math.floor(Math.random() * pool.length)];
+    this._pendingFortune = {
+      title: f.title, text: f.text,
+      choices: f.choices.map(c => ({ text: c.text, effect: c.effect })),
+    };
+    UI.openFortune(this._pendingFortune);
   },
 
   // 玩家在探索网格中移动
@@ -589,17 +638,20 @@ const Engine = {
     if (!r.ok) { this.toast(r.reason); return; }
 
     // 处理移动产生的事件
-    let pendingBeast = null;
+    let pendingBeast = null, pendingMystery = false;
     for (const ev of r.events) {
       if (ev.type === "collect") {
-        this.toast(`采得 ${ev.name}`);
+        this.toast(`${ev.rich ? "重获" : "采得"} ${ev.name}`);
+        if (typeof Sfx !== "undefined") Sfx.play("pick");
         if (UI.flashExploreCell) UI.flashExploreCell(s.explore.player.x, s.explore.player.y);
       } else if (ev.type === "rival_take") {
         this.toast(`${ev.companion.name} 抢走了 ${ev.name}`, true);
       } else if (ev.type === "conflict") {
         pendingBeast = { kind: "conflict", companion: ev.companion };
       } else if (ev.type === "beast") {
-        pendingBeast = { kind: "beast", enemy: ev.enemy };
+        pendingBeast = { kind: "beast", enemy: ev.enemy, boss: ev.boss, bossLoot: ev.bossLoot };
+      } else if (ev.type === "mystery") {
+        pendingMystery = true;
       } else if (ev.type === "exit") {
         UI.renderExplore(s.explore);
         this.finishExplore(true);
@@ -609,10 +661,18 @@ const Engine = {
 
     UI.renderExplore(s.explore);
 
-    // 触发战斗（凶兽 / 同伴反目）——离开探索界面打一场，胜后回到原格继续
+    // 触发战斗（凶兽/妖兽王/同伴反目）——离开探索界面打一场，胜后回到原格继续
     if (pendingBeast) {
       if (pendingBeast.kind === "beast") {
         this._exploreFightReturn = true;
+        // 妖兽王：胜后丰厚战利并入探索袋
+        if (pendingBeast.boss && pendingBeast.bossLoot) {
+          this._exploreBossLoot = {};
+          Object.entries(pendingBeast.bossLoot).forEach(([k, range]) => {
+            this._exploreBossLoot[k] = range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1));
+          });
+          this.log("【妖兽王】盘踞深处的凶物被你惊动——这是本地最凶的一战，也是最肥的一笔！", "bad");
+        }
         UI.closeExplore();
         this.startEncounterFight(pendingBeast.enemy);
       } else if (pendingBeast.kind === "conflict") {
@@ -622,6 +682,9 @@ const Engine = {
         UI.closeExplore();
         this.startEncounterFight("rogue_cultivator");
       }
+    } else if (pendingMystery) {
+      // 异状小事件：踩上才知吉凶
+      this._openExploreMystery();
     }
     State.save();
   },
@@ -1147,6 +1210,7 @@ const Engine = {
       grade: (DATA.techniques[s.technique] || {}).grade || 1,  // 主修功法品阶
       realmTier: Chapters.realmTier(),   // 本章大境界序（影响法术成长）
       momentumCap: s.swordMastery ? 7 : 5,   // 眨眼剑法大成：剑势上限+2
+      swordMastery: !!s.swordMastery,        // 大成：眨眼剑法本体蜕变（攒势翻倍）
       qiLayer: realm.layer,                  // 灵气底蕴随练气层数成长
       // fail-forward：决战每败一次=看破对方几分路数，再战伤害+8%（至多+24%）——
       // 韩立吃的每次亏都是学费（爽文契约：失败向前走）
@@ -1197,9 +1261,9 @@ const Engine = {
     const tienu  = { name: "铁奴（张铁尸傀）", hp: 70, immunePoison: true, sense: 3, speed: 6, agility: 4, tactics: "feral",
       introNote: "铁奴乃尸傀死物——百毒不侵！毒计无用，须以剑与暗器正面强攻。",
       attacks: [{ name: "尸傀挥击", dmg: 14, kind: "normal", weight: 14 }, { name: "崩山重捶", dmg: 19, kind: "charge", weight: 6 }] };
-    const yuhun  = { name: "余子童元神", hp: 48, soulOnly: true, sense: 18, speed: 14, agility: 8, gongli: 22, qiLayer: 6,
+    const yuhun  = { name: "余子童元神", hp: 40, soulOnly: true, sense: 18, speed: 14, agility: 8, gongli: 22, qiLayer: 6,
       introNote: "元神无形无质——剑、毒、暗器皆穿身而过！唯「运功镇魂」能伤其分毫（需木2水2）。留住灵气，稳住心神！",
-      atkName: "夺舍侵神", atk: 15 };
+      atkName: "夺舍侵神", atk: 11 };   // 失了傀儡与皮囊的虚弱残魂（被秒式难度违背爽文契约）
 
     this._combat = new CombatAPI.Combat({
       player,
@@ -1374,6 +1438,18 @@ const Engine = {
       // 探索途中触发的战斗：打完回到探索网格继续
       if (this._exploreFightReturn) {
         this._exploreFightReturn = false;
+        // 妖兽王战利：胜则丰收入袋，败则与你无缘
+        if (this._exploreBossLoot) {
+          if (win && s.explore) {
+            Object.entries(this._exploreBossLoot).forEach(([k, n]) => {
+              s.explore.bag[k] = (s.explore.bag[k] || 0) + n;
+            });
+            const names = Object.entries(this._exploreBossLoot).map(([k, n]) => `${DATA.items[k] ? DATA.items[k].name : k}×${n}`).join("、");
+            this.log(`【妖兽王伏诛】你从兽穴中搜得：${names}——深入险地，果有厚报！`, "good");
+            if (typeof Sfx !== "undefined") Sfx.play("success");
+          }
+          this._exploreBossLoot = null;
+        }
         this._combat = null; this._combatMeta = null;
         this.checkLifespan();
         State.save();
@@ -1395,8 +1471,7 @@ const Engine = {
         const bonus = Math.min(3, s.flags.losses_showdown) * 8;
         this.log(`决战失利，你身受重伤(气血-${dmg})狼狈遁走。但这一败没有白吃——你看破了对方几分路数（再战伤害+${bonus}%）。回去备足毒草暗器，再来！`, "bad");
         s.pendingEvent = "showdown";
-        this._retryStage = true;
-        UI.renderStory(STORY[s.storyStage]);
+        this._retryAfterLoss = "showdown";   // 战斗状态彻底清理后再开重试剧情卡（防卡死）
       }
     } else if (meta.type === "jinguang") {
       if (win) {
@@ -1416,8 +1491,7 @@ const Engine = {
         const bonus = Math.min(3, s.flags.losses_jinguang) * 8;
         this.log(`你低估了金光上人的金钟罩，反被其重创(气血-${dmg})，狼狈遁走。但你记住了他的招路（再战伤害+${bonus}%）——备足毒草暗器，再寻战机！`, "bad");
         s.pendingEvent = "jinguang_fight";
-        this._retryStage = true;
-        UI.renderStory(STORY[s.storyStage]);
+        this._retryAfterLoss = "jinguang_fight";
       }
     } else if (meta.type === "breakthrough") {
       this._resolveBreakthroughResult(win);
@@ -1427,6 +1501,15 @@ const Engine = {
     this.checkLifespan();
     State.save();
     UI.renderAll();
+    // 决战败北重试：一切战斗状态清理完毕后，再开剧情卡直达抉择（防中途状态残留卡死）
+    if (this._retryAfterLoss) {
+      const evId = this._retryAfterLoss;
+      this._retryAfterLoss = null;
+      this._retryStage = true;
+      const stage = STORY.find(st => st.id === evId) || STORY[s.storyStage];
+      try { UI.renderStory(stage); }
+      catch (e) { this._retryStage = false; UI.renderStory(stage); }   // 兜底：重试径异常则完整重播
+    }
   },
 
   /* -------- 服食丹药 / 使用物品 -------- */
@@ -1437,13 +1520,21 @@ const Engine = {
     const s = State.data;
     const realm = State.realm();
     const e = item.effect || {};
+    // 记录变化量：吃药必须看得见效果（治"体验割裂"）
+    const delta = [];
+    const track = (label, before, after) => { const d = Math.round(after - before); if (d !== 0) delta.push(`${label}${d > 0 ? "+" : ""}${d}`); };
+    const b = { sp: s.spirit, hp: s.hp, mood: s.mood, demon: s.demon, cul: s.cultivation };
     if (e.sp) s.spirit = clamp(s.spirit + e.sp, 0, realm.spMax);
     if (e.hp) s.hp = clamp(s.hp + e.hp, 0, s.hpMax);
     if (e.mood) s.mood = clamp(s.mood + e.mood, 0, s.moodMax);
     if (e.demon) s.demon = clamp(s.demon + e.demon, 0, 100);
     if (e.cul) s.cultivation += e.cul;
+    track("灵力", b.sp, s.spirit); track("气血", b.hp, s.hp); track("心境", b.mood, s.mood);
+    track("心魔", b.demon, s.demon); track("修为", b.cul, s.cultivation);
     State.take(itemId, 1);
-    this.log(`你服下「${item.name}」。`, "good");
+    const fx = delta.length ? `（${delta.join("　")}）` : "（药力平平，未见起色）";
+    this.log(`你服下「${item.name}」${fx}。`, "good");
+    this.toast(`${item.name}：${delta.join(" ") || "无变化"}`);
     this.checkStory();
     State.save();
     UI.renderAll();

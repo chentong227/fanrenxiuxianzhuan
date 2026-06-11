@@ -31,8 +31,8 @@
                 desc: "运转《长春功》吐纳调息，固本回元。修长春功者，回元更多。" },
     huti:     { name: "长春护体", cost: { mu: 3 },          type: "def", shield: 14, school: "mu", source: "art",
                 desc: "以木灵之力护住周身。修长春功者，护体更坚。" },
-    ningshen: { name: "凝神静气", cost: { mu: 1 },          type: "buff", nextQiBonus: 3, source: "art", oncePerRound: true,
-                desc: "凝神定志，蓄养下回合灵气。每回合只可凝神一次。" },
+    ningshen: { name: "凝神静气", cost: { mu: 1 },          type: "buff", stash: true, source: "art", oncePerRound: true,
+                desc: "凝神定志：本回合结束时，将剩余灵气结转至下回合（至多按境界蓄势上限）。不凝神则余气散尽。" },
 
     // 眨眼剑法：凡人武学，快、诡、廉价；施放积累「剑势」
     zhayan:   { name: "眨眼剑法", cost: { jin: 2 },         type: "atk", dmg: 8, dodgeSelf: 0.15, buildMomentum: 1, source: "martial",
@@ -94,6 +94,7 @@
       this.nextQiBonus = 0;
       this.momentum = 0;                 // 剑势（眨眼剑法积累，眨眼连击消耗）
       this.momentumCap = cfg.momentumCap || 5;   // 剑势上限（眨眼剑法大成 +2）
+      this.swordMastery = !!cfg.swordMastery;    // 眨眼剑法大成：本体蜕变（攒势翻倍）
       this.qiLayer = cfg.qiLayer || 1;   // 练气层数：灵气底蕴随境界成长
       this.dmgBonus = cfg.dmgBonus || 1; // 伤害系数（fail-forward：败北看破对方招式后小幅提升）
       this.tactics = cfg.tactics || null;       // 敌人战斗天赋（AI 风格）：feral/cunning/guarded
@@ -208,18 +209,22 @@
       if (this.rng() < ins.epiphanyChance) { total += 2; this._epiphany = true; }
       else this._epiphany = false;
 
-      // 上回合剩余灵气结转（受境界上限约束）：练气期几乎存不住，高阶方能囤气酝酿大招
+      // 灵气结转：唯有上回合主动「凝神静气」者方可蓄势（受境界上限约束）。
+      // 不凝神则余气散尽——蓄势是取舍，不是白嫖；筑基「蓄势解禁」后才会放宽为自动。
       const carryCap = Balance.qiCarryCap(this.player.realmTier);
       const carried = {};
       let carriedTotal = 0;
-      // 优先保留现有量较多的灵气，整体不超过 carryCap
-      const prevPairs = ELEMENTS.map(e => [e, this.qi[e] || 0]).sort((a, b) => b[1] - a[1]);
-      let budget = carryCap;
-      for (const [e, v] of prevPairs) {
-        const keep = Math.min(v, budget);
-        carried[e] = keep;
-        budget -= keep;
-        carriedTotal += keep;
+      if (this.player._stashNext) {
+        this.player._stashNext = false;
+        // 优先保留现有量较多的灵气，整体不超过 carryCap
+        const prevPairs = ELEMENTS.map(e => [e, this.qi[e] || 0]).sort((a, b) => b[1] - a[1]);
+        let budget = carryCap;
+        for (const [e, v] of prevPairs) {
+          const keep = Math.min(v, budget);
+          carried[e] = keep;
+          budget -= keep;
+          carriedTotal += keep;
+        }
       }
 
       this.qi = { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 };
@@ -333,8 +338,11 @@
             : `${caster.name} 施「${sp.name}」，对 ${target.name} 造成 ${totalDealt} 伤害` + (target.shield > 0 ? `（余护体${target.shield}）` : ""));
         }
         if (sp.dodgeSelf) caster.dodgeBuff = (caster.dodgeBuff || 0) + sp.dodgeSelf;
-        // 剑势结算：积累 / 消耗
-        if (sp.buildMomentum) { caster.momentum = Math.min(caster.momentumCap || 5, (caster.momentum || 0) + sp.buildMomentum); }
+        // 剑势结算：积累 / 消耗（剑法大成：本体蜕变，攒势翻倍——两剑即可四连斩）
+        if (sp.buildMomentum) {
+          const gain = sp.buildMomentum * (caster.swordMastery ? 2 : 1);
+          caster.momentum = Math.min(caster.momentumCap || 5, (caster.momentum || 0) + gain);
+        }
         if (sp.spendMomentum) { caster.momentum = 0; }
 
       } else if (sp.type === "soul" && target) {
@@ -374,12 +382,15 @@
           this._log(`${caster.name} 施「${sp.name}」，护体 +${shield}（共${caster.shield}${cap ? `/${cap}` : ''}）`);
         }
       } else if (sp.type === "buff") {
-        if (sp.nextQiBonus) {
-          // 蓄气有上限：只有高阶修士才蓄得住更多灵气，杜绝无限聚气
+        if (sp.stash) {
+          // 凝神蓄势：标记本回合结束时结转剩余灵气（量在 startRound 按 carryCap 结算）
+          caster._stashNext = true;
+          this._log(`${caster.name} 施「${sp.name}」，凝神定志——本回合余下的灵气将蓄入下一回合（至多${Balance.qiCarryCap(caster.realmTier)}）。`);
+        } else if (sp.nextQiBonus) {
           const cap = Balance.qiCarryCap(caster.realmTier);
           caster.nextQiBonus = Math.min(cap, (caster.nextQiBonus || 0) + sp.nextQiBonus);
+          this._log(`${caster.name} 施「${sp.name}」，凝神蓄力（下回合灵气+${caster.nextQiBonus}）`);
         }
-        this._log(`${caster.name} 施「${sp.name}」，凝神蓄力（下回合灵气+${caster.nextQiBonus}，至多${Balance.qiCarryCap(caster.realmTier)}）`);
       }
     }
 
@@ -461,6 +472,10 @@
         this._log(`—— 新的敌人现身！——`);
         // 波次入场点明打法（败得不明不白是体验毒药）
         this.enemies.forEach(e => { if (e.introNote) this._log(`【敌情】${e.introNote}`); });
+        // 斩敌之威：阶段战不是消耗马拉松——波次衔接小幅回气（爽文契约）
+        const heal = Math.round(this.player.hpMax * 0.12);
+        this.player.hp = clampNum(this.player.hp + heal, 0, this.player.hpMax);
+        this._log(`斩敌之威，气势如虹——你抢回片刻喘息（气血+${heal}）。`);
         this.status = "ongoing";
       }
     }

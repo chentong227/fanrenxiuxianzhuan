@@ -29,7 +29,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 6,
+    ASSET_VER: 7,
 
     // id → 仓库图路径（无图返回 null，调用方回退 emoji 占位）
     url(id) {

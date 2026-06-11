@@ -68,6 +68,19 @@ const Main = {
       if (ov && !ov.hidden) { e.preventDefault(); UI.storyAdvance(); }
     });
 
+    // 根治移动端双击/捏合缩放锁死 UI（iOS 不尊重 user-scalable=no，须 JS 拦截）
+    document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
+    document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: false });
+    let _lastTouch = 0;
+    document.addEventListener("touchend", (e) => {
+      const now = Date.now();
+      if (now - _lastTouch < 320 && e.cancelable) {
+        e.preventDefault();                      // 拦下系统双击缩放
+        if (e.target && e.target.click) e.target.click();   // 手动补发点击，快速连点不丢拍
+      }
+      _lastTouch = now;
+    }, { passive: false });
+
     // —— 一键导入密钥（免输入）——
     // 形如 #k=<活世界key>&i=<生图key>（也兼容旧的 llmkey=/imgkey=）。
     // hash 只存在于浏览器地址，不会发往服务器、不入仓库，安全。导入后即写本机并清掉URL。

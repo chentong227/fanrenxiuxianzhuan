@@ -22,13 +22,19 @@
   };
 
   // 资源/内容定义：具象化图标 + 采集产出
-  // kind: 'herb'|'duherb'|'ore'|'chest'|'beast'|'exit'|'entry'
+  // kind: 'herb'|'duherb'|'ore'|'chest'|'beast'|'boss'|'secret'|'mystery'|'exit'|'entry'
   const CONTENT = {
     herb:   { icon: "🌿", name: "灵草", loot: { lingcao: [1, 3] }, steps: 1, value: 1 },
     duherb: { icon: "☠",  name: "毒草", loot: { duyao_cao: [1, 2] }, steps: 1, value: 1 },
     ore:    { icon: "💎", name: "灵石矿", loot: { lingshi: [1, 2] }, steps: 2, value: 3 },
     chest:  { icon: "🧰", name: "机缘箱", loot: { lingshi: [2, 4] }, steps: 2, value: 5, rich: true },
     beast:  { icon: "🐾", name: "凶兽", enemy: true, value: 4 },
+    // 妖兽王：盘踞最深处的硬茬，打赢=本图最肥一笔（深入与否的核心抉择）
+    boss:   { icon: "👹", name: "妖兽王", enemy: true, boss: true, value: 9, loot: { lingshi: [3, 5], lingcao: [2, 3] } },
+    // 暗室：神识够强才能察觉的隐藏机缘（神识的探索用途）
+    secret: { icon: "🚪", name: "隐秘暗室", loot: { lingshi: [2, 3], ningshen_dan: [1, 1] }, steps: 2, value: 7, rich: true },
+    // 异状：踩上才知吉凶的小事件（探索的心跳）
+    mystery:{ icon: "❓", name: "异状", value: 2 },
     exit:   { icon: "⮐",  name: "出口", value: 0 },
     entry:  { icon: "◈",  name: "入口", value: 0 },
   };
@@ -71,25 +77,43 @@
         if (x === entry.x && y === entry.y) continue;
         free.push({ x, y });
       }
-      // 洗牌
+      // 洗牌后按"距入口深度"分层（深度梯度：越深越富，去还是不去=核心抉择）
       for (let i = free.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [free[i], free[j]] = [free[j], free[i]]; }
+      const depth = (pt) => Math.abs(pt.x - entry.x) + Math.abs(pt.y - entry.y);
+      const maxDepth = w + h - 2;
+      const shallow = free.filter(pt => depth(pt) <= maxDepth * 0.45);
+      const deep = free.filter(pt => depth(pt) > maxDepth * 0.45);
       const dens = cfg.density || { herb: 5, duherb: 3, ore: 3, chest: 2, beast: 4 };
-      let p = 0;
-      const place = (kind, n) => {
-        for (let k = 0; k < n && p < free.length; k++, p++) {
-          const { x, y } = free[p];
-          const cell = cells[idx(x, y)];
-          cell.content = kind;
-          const def = CONTENT[kind];
-          if (def.loot) {
-            cell.loot = {};
-            Object.entries(def.loot).forEach(([item, [lo, hi]]) => { cell.loot[item] = randInt(rng, lo, hi); });
-          }
-          if (def.enemy) cell.enemy = cfg.beastEnemy || "wild_wolf";
+      const fill = (cell, kind) => {
+        cell.content = kind;
+        const def = CONTENT[kind];
+        if (def.loot) {
+          cell.loot = {};
+          Object.entries(def.loot).forEach(([item, [lo, hi]]) => { cell.loot[item] = randInt(rng, lo, hi); });
+        }
+        if (def.enemy) cell.enemy = cfg.beastEnemy || "wild_wolf";
+      };
+      const place = (kind, n, pool) => {
+        for (let k = 0; k < n; k++) {
+          const pt = pool.pop() || free.pop();
+          if (!pt) return;
+          fill(cells[idx(pt.x, pt.y)], kind);
         }
       };
-      place("herb", dens.herb); place("duherb", dens.duherb); place("ore", dens.ore);
-      place("chest", dens.chest); place("beast", dens.beast);
+      // 浅层：草药与零散凶兽（新手区）；深层：灵石/机缘箱/恶兽（富贵险中求）
+      place("herb", dens.herb, shallow); place("duherb", dens.duherb, shallow);
+      place("beast", Math.ceil(dens.beast / 2), shallow);
+      place("ore", dens.ore, deep); place("chest", dens.chest, deep);
+      place("beast", Math.floor(dens.beast / 2), deep);
+      // 妖兽王：盘踞最深的一格（本图最大的肉，也最大的险）
+      deep.sort((a, b) => depth(a) - depth(b));
+      const bossPt = deep.pop();
+      if (bossPt) { fill(cells[idx(bossPt.x, bossPt.y)], "boss"); cells[idx(bossPt.x, bossPt.y)].enemy = cfg.bossEnemy || "rogue_cultivator"; }
+      // 隐秘暗室：藏在中深处，神识到了才会显形
+      const secretPt = deep.length ? deep.splice(Math.floor(deep.length / 2), 1)[0] : shallow.pop();
+      if (secretPt) { fill(cells[idx(secretPt.x, secretPt.y)], "secret"); cells[idx(secretPt.x, secretPt.y)].hidden = true; }
+      // 异状格 ×2：踩上才知吉凶
+      place("mystery", 2, deep.length >= 2 ? deep : shallow);
 
       // 同伴落在入口附近
       const companions = (cfg.companions || []).map((cp, i) => ({
@@ -112,9 +136,10 @@
         log: [],
         finished: false,
         sightRadius: cfg.sightRadius || 1,
+        senseVal: cfg.senseVal || 5,   // 神识：决定能否察觉隐秘暗室
       };
       this._reveal(state, state.player.x, state.player.y);
-      this._log(state, `你踏入「${state.siteName}」。脚下是一片未知之地，且行且探。`);
+      this._log(state, `你踏入「${state.siteName}」。脚下是一片未知之地，且行且探——深处愈险，亦愈富。`);
       return state;
     },
 
@@ -130,7 +155,13 @@
       for (let y = cy - r; y <= cy + r; y++) {
         for (let x = cx - r; x <= cx + r; x++) {
           const c = this.cellAt(state, x, y);
-          if (c) c.discovered = true;
+          if (!c) continue;
+          c.discovered = true;
+          // 神识扫过：够强才能察觉隐秘暗室（神识的探索用途）
+          if (c.hidden && c.content === "secret" && (state.senseVal || 0) >= 8) {
+            c.hidden = false;
+            this._log(state, "你的神识扫过一处异样——岩壁之后竟藏着一间暗室！");
+          }
         }
       }
     },
@@ -164,12 +195,17 @@
         const def = CONTENT[cell.content];
         if (cell.content === "exit") {
           result.events.push({ type: "exit" });
+        } else if (cell.content === "mystery") {
+          cell.taken = true; cell.content = null;
+          result.events.push({ type: "mystery" });   // 吉凶由 engine 抽事件裁定
+        } else if (cell.content === "secret" && cell.hidden) {
+          // 神识不足者一脚踏空——暗室就在身边却浑然不觉（什么都不发生）
         } else if (def.enemy) {
-          result.events.push({ type: "beast", cell, enemy: cell.enemy });
+          result.events.push({ type: "beast", cell, enemy: cell.enemy, boss: !!def.boss, bossLoot: def.boss ? def.loot : null });
         } else if (def.loot && cell.loot) {
           // 采集
           this._collectCell(state, cell);
-          result.events.push({ type: "collect", loot: cell.loot, name: def.name });
+          result.events.push({ type: "collect", loot: cell.loot, name: def.name, rich: !!def.rich });
         }
       }
 

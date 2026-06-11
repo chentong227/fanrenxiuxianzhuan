@@ -119,6 +119,13 @@ const State = {
     if (d.swordIntent == null) d.swordIntent = 0;
     if (d.swordMastery == null) d.swordMastery = false;
     if (!d.milestones) d.milestones = [];
+    // 旧档修正：剑法大成者，连环眨眼【替换】眨眼连击（v30 曾并列，致"没有提升感"）
+    if (d.swordMastery) {
+      d.knownSkills = (d.knownSkills || []).filter(id => id !== "zhayan_lian");
+      if (!d.knownSkills.includes("lianhuan")) d.knownSkills.push("lianhuan");
+      d.spells = (d.spells || []).filter(id => id !== "zhayan_lian");
+      if (!d.spells.includes("lianhuan")) d.spells.push("lianhuan");
+    }
     if (typeof Loadout !== "undefined") Loadout.migrate(d);
   },
   hasSave() { return !!localStorage.getItem(SAVE_KEY); },

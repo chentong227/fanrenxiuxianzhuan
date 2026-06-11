@@ -593,9 +593,10 @@ const UI = {
     }
     this.openModal(`
       <h2>${item.name}</h2>
+      ${isPill ? this._statusStrip() : ""}
       <p style="color:var(--ink-dim)">${rarityLabel(item.rarity)} · ${typeLabel(item.type)}　持有 ×${State.count(itemId)}</p>
       <p>${item.desc}</p>
-      ${item.effect && Object.keys(item.effect).length ? `<p style="color:var(--jade-bright)">${effectText(item.effect)}</p>` : ""}
+      ${item.effect && Object.keys(item.effect).length ? `<p style="color:var(--jade-bright)">服用：${effectText(item.effect)}</p>` : ""}
       <div class="modal-actions">
         ${actions}
         <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
@@ -1043,6 +1044,19 @@ const UI = {
     State.save(); this.openTechniques(); this.renderAll();
   },
 
+  // 弹窗内当前状态摘要条（闭关/服药时数值可见，治"体验割裂"）
+  _statusStrip() {
+    const s = State.data;
+    const realm = State.realm();
+    return `<div class="status-strip">
+      <span>修为 <b>${s.cultivation}/${realm.culMax}</b></span>
+      <span>灵力 <b>${s.spirit}/${realm.spMax}</b></span>
+      <span>气血 <b>${s.hp}/${s.hpMax}</b></span>
+      <span>心境 <b>${s.mood}</b></span>
+      <span>心魔 <b class="${s.demon >= 35 ? 'warn' : ''}">${s.demon}</b></span>
+    </div>`;
+  },
+
   /* -------- 闭关时长选择（真实修仙：时间是资源也是代价）-------- */
   openSeclusion() {
     const s = State.data;
@@ -1088,6 +1102,7 @@ const UI = {
 
     this.openModal(`
       <h2>闭关修炼</h2>
+      ${this._statusStrip()}
       <p style="color:var(--ink-dim)">于修仙者而言，光阴最是宝贵，也最不值钱。闭得越久，修为越深，可寿元、心境亦在流逝。
       当前每月约可精进修为 ${perMonth}；距本层圆满约需 <b style="color:var(--gold)">${need}</b> 月。</p>
       <div class="modal-actions">
@@ -1706,11 +1721,14 @@ const UI = {
       const afford = c.canAfford(id);
       const noPouch = sp.consume && !(p.pouch[sp.consume] > 0);
       const pouchTxt = sp.consume ? `<span class="spouch ${noPouch ? 'empty' : ''}">余 ×${p.pouch[sp.consume] || 0}</span>` : "";
+      // 剑法大成：本体名号蜕变（提升感写在脸上）
+      const dispName = (id === "zhayan" && p.swordMastery) ? "眨眼剑法·大成" : sp.name;
+      const dispFx = (id === "zhayan" && p.swordMastery) ? spellEffectText(sp) + " 攒势×2" : spellEffectText(sp);
       return `<button class="spell-btn ${extraCls || ''} ${afford ? '' : 'off'}" ${afford ? '' : 'disabled'} onclick="Engine.combatCast('${id}', ${target})" title="${sp.desc || ''}">
         <span class="seal ${sp.consume ? 'cinnabar' : 'wx-' + wx}">${sealChar(sp.name)}</span>
         <span class="sp-body">
-          <span class="sname">${sp.name}</span>
-          <span class="scost">${costDots} ${spellEffectText(sp)}${pouchTxt}</span>
+          <span class="sname">${dispName}</span>
+          <span class="scost">${costDots} ${dispFx}${pouchTxt}</span>
         </span>
       </button>`;
     };
@@ -1772,7 +1790,8 @@ const UI = {
         let cls = "ex-cell " + (c.discovered ? "seen " : "fog ") + (TE[c.terrain].blocked ? "blocked " : "");
         let inner = "";
         if (c.discovered) {
-          if (c.content && CO[c.content]) inner = `<span class="ex-icon">${CO[c.content].icon}</span>`;
+          // 隐秘暗室未被神识察觉时不显形
+          if (c.content && CO[c.content] && !c.hidden) inner = `<span class="ex-icon${CO[c.content].boss ? ' boss' : ''}">${CO[c.content].icon}</span>`;
           if (TE[c.terrain].blocked) inner = `<span class="ex-icon dim">${c.terrain === "water" ? "💧" : "⛰"}</span>`;
         }
         if (comp) inner = `<span class="ex-icon comp">🧍</span>`;
