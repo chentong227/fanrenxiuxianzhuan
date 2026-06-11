@@ -18,6 +18,8 @@
       <button onclick="PV.jinguang()">金光上人</button>
       <button onclick="PV.bt()">心魔战</button>
       <button onclick="PV.story()">剧情演出</button>
+      <button onclick="PV.chron()">风云录</button>
+      <button onclick="PV.codex()">图鉴</button>
       <button onclick="PV.debug()">探针</button>
     </div>
     <pre id="pv-debug" style="position:fixed;top:34px;left:4px;z-index:999;color:#7fe3c0;font-size:10px;background:rgba(0,0,0,.8);padding:4px;max-width:96vw;white-space:pre-wrap"></pre>
@@ -122,6 +124,23 @@
       jinguang()  { State.data.location = "shanmen"; Engine.startJinguangFight ? Engine.startJinguangFight() : PV.encounter(); },
       bt()        { State.data.demon = 60; Engine.startBreakthroughFight({ big: false }); },
       story()     { State.data.location = "qingniu"; UI.renderStory(STORY[0]); },
+      chron() {
+        // 模拟中期进度：有名声、有勋章、有涟漪窗口、金光已现身
+        const s = State.data;
+        s.fame = 42; s.flags.jinguang_appeared = true;
+        s.medals = { unscathed: 2, giant_slayer: 1 };
+        s.milestones = [{ t: "第1年3月", title: "勋章「以下克上」：击败修为高过自己的对手", kind: "medal" }];
+        s.rippleWindow = { id: "wolf_bounty", dueAbs: State.absMonth() + 2, note: "镖局悬赏野狼帮喽啰" };
+        UI.openChronicle();
+      },
+      codex() {
+        const s = State.data;
+        s.metNpcs = ["modafu", "lifeiyu", "jinguang"];
+        s.flags.jinguang_appeared = true;
+        s.intel = { jinguang: 2 };
+        s.intelMoves = { "金光上人": ["金符破空", "剑符斩"] };
+        UI.openCodex();
+      },
       debug() {
         const box = document.getElementById("combat-enemies");
         const img = box ? box.querySelector(".cfigure img") : null;

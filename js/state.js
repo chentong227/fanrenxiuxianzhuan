@@ -134,13 +134,13 @@ const State = {
     if (!d.slainBeasts) d.slainBeasts = [];
     if (d.revealedRealm == null) d.revealedRealm = d.realmIndex;   // 老档：示人=真实（未藏过）
     if (!d.skills) d.skills = { alchemy: 0, scouting: 0 };
+    if (!d.medals) d.medals = {};
     if (!d.intel) d.intel = {};
     if (!d.intelMoves) d.intelMoves = {};
     if (d.ripple === undefined) d.ripple = null;
     if (d.rippleWindow === undefined) d.rippleWindow = null;
     if (!d.doneRipples) d.doneRipples = [];
     if (d.fame == null) d.fame = 0;
-    if (!d.medals) d.medals = {};
     // 旧档修正：剑法大成者，连环眨眼【替换】眨眼连击（v30 曾并列，致"没有提升感"）
     if (d.swordMastery) {
       d.knownSkills = (d.knownSkills || []).filter(id => id !== "zhayan_lian");

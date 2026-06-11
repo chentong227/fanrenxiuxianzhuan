@@ -137,6 +137,7 @@
       this.round = 0;
       this.stats = {};               // 玩家各手段累计输出（战后复盘归因用）
       this._stat = (key, n) => { if (n > 0) this.stats[key] = (this.stats[key] || 0) + n; };
+      this._startHp = this.player.hp;   // 开战血量（"全身而退"勋章判定）
       this.qi = { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 };
       this.status = "ongoing";
       this.log = [];

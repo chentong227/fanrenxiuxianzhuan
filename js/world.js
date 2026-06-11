@@ -213,6 +213,16 @@ WORLD.fameBoard = [
   { id: "yuelu", name: "岳鹿道人", title: "云游散修", fame: 22, note: "来历不明的散修，在彩霞山一带出没。" },
 ];
 
+/* 风云榜：彩霞山一带的江湖座次（石碑）。名实一致：榜上人物的强弱与游戏内数值一致。
+ * 玩家凭 s.fame 攀榜——藏拙者榜上无名，正合其意；扬名者步步登高。 */
+WORLD.fameBoard = [
+  { id: "jinguang",    name: "金光上人", title: "修仙杀手 · 金钟罩", fame: 120, note: "传闻刀枪不入，杀人越货。" },
+  { id: "modafu",      name: "墨大夫",   title: "七玄门 · 医毒双绝", fame: 85,  note: "门中老人讳莫如深。" },
+  { id: "menzhu",      name: "七玄门门主", title: "彩霞山之主",       fame: 80,  note: "凡俗武林一方之雄。" },
+  { id: "jiatianlong", name: "贾天龙",   title: "野狼帮帮主",        fame: 66,  note: "野心勃勃，广纳亡命。" },
+  { id: "lifeiyu",     name: "厉飞雨",   title: "七玄门 · 后起之秀",  fame: 38,  note: "门派大比锋芒初露。" },
+];
+
 /* 异闻池：投放到风云录/际遇的"有名有姓的猎物"——听闻在前，相遇在后 */
 WORLD.beastRumors = [
   { id: "beast_baihu",  title: "白额虎王噬人", rumor: "集镇炸了锅：又一个采药人没回来。有人在后山深处见过一头白额吊睛猛虎，大如牛犊，眼有灵光。" },
