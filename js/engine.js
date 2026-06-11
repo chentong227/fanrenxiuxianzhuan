@@ -538,6 +538,7 @@ const Engine = {
     else if (action === "market") { UI.openMarket(); return; }
     else if (action === "fair") { UI.openFair(); return; }
     else if (action === "yaoyuan") { this.yaoyuanWork(); return; }
+    else if (action === "wanbao") { UI.openWanbao(); return; }
     else if (action === "alchemy") this.alchemy();
     else if (action === "investigate") this.investigate();
     else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
@@ -709,6 +710,46 @@ const Engine = {
     State.save();
     UI.renderAll();
     UI.openFortune(this._pendingFortune);
+  },
+
+  /* -------- 万宝楼（黄枫谷坊市）：修仙界的钱在这里花得出去 -------- */
+  WANBAO_GOODS: [
+    { id: "huoshe_fu", price: 2, note: "比小会还齐" },
+    { id: "hanbing_fu", price: 2, note: "" },
+    { id: "fu_zhi", price: 1, n: 5, note: "制符根基" },
+    { id: "ningshen_dan", price: 2, note: "凝神静心" },
+    { id: "huixue_dan", price: 1, note: "伤药常备" },
+    { id: "duyao_cao", price: 1, n: 2, note: "万宝楼什么都收，什么都卖" },
+  ],
+  wanbaoBuy(itemId) {
+    const s = State.data;
+    const g = this.WANBAO_GOODS.find(x => x.id === itemId);
+    if (!g) return;
+    if (State.count("lingshi") < g.price) { this.toast(`需要灵石 ×${g.price}`, true); return; }
+    State.take("lingshi", g.price);
+    State.give(itemId, g.n || 1);
+    s.flags.fangshi_visited = (s.flags.fangshi_visited || 0) + 1;
+    const item = DATA.items[itemId];
+    this.log(`【万宝楼】购得「${item.name}」${g.n > 1 ? `×${g.n}` : ""}（灵石-${g.price}）。`, "event");
+    this.toast(`${item.name} 到手`);
+    this.checkStory();
+    State.save();
+    UI.renderAll();
+    UI.openWanbao();
+  },
+  // 向之礼的情报（血色禁地的门道——情报面纱的主线化）
+  buyXueshiIntel() {
+    const s = State.data;
+    if (s.flags.xueshi_intel) { this.toast("门道已尽在掌握"); return; }
+    if (State.count("lingshi") < 3) { this.toast("需要灵石 ×3", true); return; }
+    State.take("lingshi", 3);
+    State.setFlag("xueshi_intel");
+    s.flags.fangshi_visited = (s.flags.fangshi_visited || 0) + 1;
+    this.log("【万宝楼】向之礼压低声音，给你交了底：「血色禁地，谷里诸脉抢破头的机缘地——里头的血色主药是炼筑基丹的根本。名额按各脉实力分，散修杂役想进去？修为先到练气十一层，再看大比时节的造化。记住，里头死人，是常事。」（血色禁地的门道已知——筑基丹的原料就在那里面）", "good");
+    this.toast("情报到手：血色禁地=筑基丹主药所在");
+    this.checkStory();
+    State.save();
+    UI.renderAll();
   },
 
   /* -------- 太南小会（离门远行）：修仙者集市——正反馈密集地 -------- */
@@ -2202,6 +2243,35 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // 坊市归途：杀陆云风（黄枫谷中期大事件）——同阶恶战，杀人灭口的死局你不躲
+  startLuyunfengFight() {
+    const s = State.data;
+    this._nextFightType = "luyunfeng";
+    const player = this.playerFighter();
+    const lu = this._applyDossier({
+      name: "陆云风", hp: 210, profile: "common", sense: 11, speed: 12, agility: 9,
+      tactics: "cunning", qiLayer: 11, elem: "mu",
+      introNote: "陆云风练气十一层，与你同阶——但他骄横惯了，杀人时从不想自己也会死。读他的招，他贪攻必露破绽。",
+      attacks: [
+        { name: "青叶剑光", dmg: 22, kind: "normal", weight: 12, elem: "mu" },
+        { name: "缚灵金索", dmg: 17, kind: "pierce", weight: 7, elem: "jin" },
+        { name: "怒剑诀", dmg: 30, kind: "charge", weight: 6, elem: "mu" },
+      ],
+    });
+    this._combat = new CombatAPI.Combat({
+      player,
+      enemies: [lu],
+      maxRounds: 18,
+      side: this.sideUnitFor("encounter"),
+    });
+    this._combatMeta = { type: "luyunfeng" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("陆云风霍然回头，认出你的瞬间杀意全开：「看药园的杂役？！——也好，一起埋了！」");
+    this.log("【林中血】杀人灭口的死局——你出手了。对面是同阶的内门弟子，这一战没有退路。", "bad");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 突破战：与瓶颈心魔对战（复用战斗引擎）
   startBreakthroughFight(opts = {}) {
     const s = State.data;
@@ -2457,6 +2527,28 @@ const Engine = {
         this._retryAfterLoss = "wan_hunt";
       }
       if (win) { s.storyStage += 1; this.checkStory(); }
+    } else if (meta.type === "luyunfeng") {
+      if (win) {
+        State.setFlag("luyunfeng_dead");
+        State.give("zhuji_dan", 2);
+        if (!s.metNpcs.includes("chenqiaoqian")) s.metNpcs.push("chenqiaoqian");
+        this.log("陆云风毙命林间。你从他储物袋中得【筑基丹×2】——入谷之日被夺走的东西，今日连本带利讨了回来。", "good");
+        this.addMilestone("坊市归途：杀陆云风，夺回筑基丹×2", "showdown");
+        this.settleLedger("zhuji_dan_grudge", "叶师叔夺走一枚，他师侄还回两枚——这笔账，先收一半利息");
+        Engine.writeLedger("met_chen", "林中救下陈巧倩——她的命途自此与你有了交点");
+        this.addFame(5, "黄枫谷坊市一带，传闻有内门弟子失踪");
+        s.mood = clamp(s.mood + 6, 0, s.moodMax);
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        const dmg = Math.round(s.hpMax * 0.4);
+        s.hp = clamp(s.hp - dmg, 1, s.hpMax);
+        s.flags.losses_luyunfeng = (s.flags.losses_luyunfeng || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_luyunfeng) * 8;
+        this.log(`陆云风的剑光老辣，你负伤暂退、隐入林间（气血-${dmg}）。他还押着陈巧倩没走——调息再上，你看破了他几分剑路（再战伤害+${bonus}%）。`, "bad");
+        s.pendingEvent = "chen_rescue";
+        this._retryAfterLoss = "chen_rescue";
+      }
     } else if (meta.type === "revenge") {
       if (win) {
         State.setFlag("wan_avenged");
@@ -2658,6 +2750,12 @@ const Engine = {
     if (choice.resolve === "wan_hunt_fight") {
       s.pendingEvent = null;
       this.startWanHunt();
+      return;
+    }
+    // 坊市归途：杀陆云风救陈巧倩（同阶恶战）
+    if (choice.resolve === "luyunfeng_fight") {
+      s.pendingEvent = null;
+      this.startLuyunfengFight();
       return;
     }
 

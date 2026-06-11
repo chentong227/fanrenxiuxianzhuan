@@ -20,7 +20,7 @@
     xiaosuanpan: 1, jiatianlong: 1, jinguang: 1,
     nongfu: 1, sanxiu: 1, langzhong: 1, biaoshi: 1, langhao: 1,
     sanshu: 1, tienu: 1, mocaihuan: 1, wanxiaoshan: 1,
-    wushishu: 1, luyunfeng: 1, yeshishu: 1, mashibo: 1,
+    wushishu: 1, luyunfeng: 1, yeshishu: 1, mashibo: 1, chenqiaoqian: 1,
   };
   // 已生成的表情变体：{ 人物id: { 表情名: 1 } }
   const EMOS = {

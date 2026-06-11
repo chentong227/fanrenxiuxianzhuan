@@ -74,6 +74,18 @@ const UI = {
       fate += `<div class="obj-main"><span class="obj-key">天命</span>
         <b>${obj.title}</b><span class="obj-hint">${obj.hint}</span></div>`;
     }
+    // 血色禁地日历锚：年级倒计时常驻——大帆里的每一月，都在为那一天攒
+    const sx = State.data;
+    if (sx && sx.flags && sx.flags.xueshi_due && !sx.flags.xueshi_opened) {
+      const left = Math.max(0, sx.flags.xueshi_due - State.absMonth());
+      const ready = sx.realmIndex >= 10;
+      fate += `<div class="obj-task" style="border-left-color:var(--cinnabar)">
+        <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">血禁</span>
+        <b>血色禁地 · 大比时节</b>
+        <span class="obj-left">约余 ${left} 月</span>
+        <span class="obj-hint">${ready ? "修为已够（练气十一层）——届时名额之争，看你的了" : "入选门槛：练气十一层（修炼/后篇是正路）"}</span>
+      </div>`;
+    }
     if (tasks.length) {
       fate += tasks.map(t => {
         const urgent = t.left <= 2;
@@ -1066,7 +1078,7 @@ const UI = {
     if (!name) return null;
     // 剧情专属人物（不在大世界 NPC 名册中）
     const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan",
-      "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo" };
+      "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo", "陈巧倩": "chenqiaoqian" };
     if (extra[name]) return extra[name];
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
       const n = WORLD.npcs.find(x => x.name === name);
@@ -1766,6 +1778,34 @@ const UI = {
       ${goods}
       <h3 class="panel-title" style="margin-top:10px">以物易石（摊主收购）</h3>
       ${sells}
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
+    `);
+  },
+
+  /* -------- 万宝楼（黄枫谷坊市）-------- */
+  openWanbao() {
+    const s = State.data;
+    const goods = Engine.WANBAO_GOODS.map(g => {
+      const item = DATA.items[g.id];
+      return `<div class="market-item">
+        <span><span class="iname ${item.rarity === 'rare' ? 'rare' : item.rarity === 'epic' ? 'epic' : ''}">${item.name}</span>${g.n > 1 ? `×${g.n}` : ""}
+          ${g.note ? `<span style="color:var(--gold);font-size:11px">　${g.note}</span>` : ""}
+          <span style="color:var(--ink-dim);font-size:12px">　${item.desc}</span></span>
+        <button class="btn btn-mini" onclick="Engine.wanbaoBuy('${g.id}')"><span class="mprice">灵石${g.price}</span></button>
+      </div>`;
+    }).join("");
+    const intel = s.flags.xueshi_intel
+      ? `<p style="color:var(--jade-bright);font-size:12px">血色禁地的门道已从向之礼处买到——主药在禁地，名额看修为（练气十一层）与大比时节。</p>`
+      : `<div class="market-item">
+          <span><span class="iname epic">血色禁地的门道</span><span style="color:var(--ink-dim);font-size:12px">　向之礼神秘一笑：「问这个的，不是要发财，就是要送命。」</span></span>
+          <button class="btn btn-mini" onclick="Engine.buyXueshiIntel()"><span class="mprice">灵石3</span></button>
+        </div>`;
+    this.openModal(`
+      <h2>万宝楼 · 采买</h2>
+      <p style="color:var(--ink-dim)">灵石：${State.count("lingshi")} 枚　纹银：${s.silver} 两（坊市只认灵石）</p>
+      ${goods}
+      <h3 class="panel-title" style="margin-top:10px">掌柜的门路（情报）</h3>
+      ${intel}
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
     `);
   },

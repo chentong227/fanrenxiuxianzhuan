@@ -66,7 +66,7 @@ DATA.items = {
   lingyao_dan:  { name: "灵乳灵药", rarity: "rare", type: "pill",
     desc: "小绿瓶催熟的珍稀灵药，灵气浓郁。服之大补修为，是韩立瞒着墨大夫精进的本钱。", effect: { cul: 120, sp: 40 } },
   zhuji_dan:    { name: "筑基丹",   rarity: "epic", type: "pill",
-    desc: "突破练气、凝聚灵根成基的无价之宝。七玄门中绝难得见，乃后话。", effect: {} },
+    desc: "突破练气、凝聚灵根成基的无价之宝。入谷那日你曾握过一枚——它离开掌心的模样，你记到今天。（练气十一层后，于洞府行「尝试突破」冲击筑基）", effect: {} },
   lingcao:      { name: "灵草",     rarity: "common", type: "material",
     desc: "可入药的低阶灵草，栽入小绿瓶催熟后可炼成灵药。" },
   duyao_cao:    { name: "毒草",     rarity: "rare", type: "material",

@@ -268,6 +268,31 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   assert(!!Engine._pendingFortune, "差事抉择弹出");
   Engine.chooseFortune(0);
   assert(((s.skills && s.skills.alchemy) || 0) === alchBefore + 1, "本分打理：药理+1（嗑瓜子产出）");
+  assert(s.flags.xueshi_due > 0, "血色禁地日历锚已立（天命栏倒计时）");
+
+  // —— 坊市归途：杀陆云风救陈巧倩（条件锚：十一层+坊市购物）——
+  s.realmIndex = 10;   // 练气十一层
+  State.give("lingshi", 5);
+  Engine.wanbaoBuy("huixue_dan");
+  Engine.checkStory();
+  assert(s.pendingEvent === "chen_rescue", `坊市归途剧情触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 0);
+  assert(s.combat && Engine._combat && Engine._combat.enemies[0].name === "陆云风", "陆云风之战开打（同阶恶战）");
+  let g7 = 0;
+  while (s.combat && Engine._combat && g7++ < 10) {
+    Engine._combat.enemies.forEach(e => { e.hp = 0; });
+    Engine._combat._checkEnd();
+    if (Engine._combat.status !== "ongoing") Engine._finishCombat();
+    else Engine._combat.endRound();
+  }
+  assert(s.flags.luyunfeng_dead, "陆云风伏诛");
+  assert(State.count("zhuji_dan") === 2, "夺回筑基丹×2（恨账收一半利息）");
+  assert(s.metNpcs.includes("chenqiaoqian"), "陈巧倩入图鉴");
+  // 忘尘丹之择：选「不喂」（改命起点）
+  Engine.checkStory();
+  assert(s.pendingEvent === "chen_after", `林中事了一幕触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY[s.storyStage], 1);
+  assert(s.ledger.chen_remember && !s.ledger.chen_wangchen, "不喂忘尘丹：她记得你（命途道岔写账）");
 }
 
 console.log("\n=== 6. 拜别版回乡（离门远行）===");

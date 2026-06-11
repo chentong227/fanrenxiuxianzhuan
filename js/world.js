@@ -152,6 +152,17 @@ WORLD.locations = [
     actions: ["yaoyuan", "gather", "rest"],
     encounters: [],
   },
+  {
+    id: "fangshi",
+    arc: "huangfeng",
+    name: "黄枫谷 · 坊市",
+    desc: "谷中弟子互通有无的坊市，万宝楼三层飞檐最是气派。法器灵符、丹方玉简，皆论灵石——修仙界的钱，在这里才花得出去。",
+    travelCost: 1,
+    map: { x: 30, y: 64 },
+    unlock: (s) => s.flags.yaoyuan_started,
+    actions: ["wanbao", "rest"],
+    encounters: [],
+  },
 ];
 
 /* ---------- 大陆层（world-architecture L0）：天南 · 越国一带 ----------
@@ -172,7 +183,7 @@ WORLD.continent = {
       desc: "镜州第二大山，原名落凤山——传说古时一头五色彩凤落于此地，化作此山。七玄门据此百年，是你修仙路的起点。" },
     { id: "qingniu",  name: "青牛镇",  pos: { x: 26, y: 31 }, locs: [],
       desc: "七玄门治下的小镇，你的家乡就在镇郊五里沟。爹娘的白发，几亩薄田。", months: 1, danger: "低", visit: "home" },
-    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate", "baiyao_yuan"],
+    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate", "baiyao_yuan", "fangshi"],
       desc: "越国七大仙门之一，居建州太岳山脉深处——此山脉连绵数千里，北接元武国。升仙令在手，此处便是你的去处。", months: 3, danger: "高",
       gate: (s) => State.count("shengxian_ling") > 0
         ? (s.flags.departure_complete ? null : (s.flags.arc1_complete ? "升仙大会未了（太南谷）——仙门入谷自有章程" : "七玄门之事未了"))
@@ -395,6 +406,18 @@ WORLD.npcs = [
     bio: "黑瘦干瘪的看园老者，刀子嘴豆腐心。你初到便凭药理让他另眼相看，把心尖子的青元参苗交了给你。对药草是真心，对人——大概也是。",
     lines: ["参苗盖草帘了没有？没盖就滚去盖。", "你这手辨药的功夫，跟哪个学的……还行。", "例钱在房梁上，自己取，少一个子儿算老夫的。"],
     where: ["baiyao_yuan"], cond: (s) => s.flags.yaoyuan_started,
+  },
+  {
+    id: "xiangzhili", name: "向之礼", role: "万宝楼 · 掌柜",
+    bio: "黄枫谷坊市万宝楼的掌柜，八面玲珑，消息灵通。血色禁地的门道、谷中各脉的恩怨，他都门儿清——当然，开口都是生意。",
+    lines: ["客官面生——头回来万宝楼吧？楼上请，好东西都在二层。", "血色禁地？呵，问这个的，不是要发财，就是要送命。", "灵石管够的话，没有老朽打听不来的事。"],
+    where: ["fangshi"], cond: (s) => s.flags.yaoyuan_started,
+  },
+  {
+    id: "chenqiaoqian", name: "陈巧倩", role: "黄枫谷 · 师姐",
+    bio: "黄枫谷陈家的师姐，眉目清冷。坊市归途那夜之后，她欠你一条命，你欠她一个无法回答的问题。自那以后，她待人愈发疏离——除了你。",
+    lines: ["韩师弟。……没什么，顺路。", "丹方若缺药引，陈家药圃或可匀你一些。", "（她欲言又止，最终只是颔首而过）"],
+    where: ["fangshi", "baiyao_yuan"], cond: (s) => s.flags.luyunfeng_dead,
   },
   { id: "langzhong", name: "走方郎中", role: "凡俗医者", bio: "走街串巷的凡俗大夫，医术平平却见多识广。", lines: ["客官面色不佳，可要抓副药？"], where: ["town"] },
   { id: "biaoshi", name: "镖局趟子手", role: "押镖汉子", bio: "替商队押镖的江湖汉子，刀口舔血讨生活。", lines: ["这年头跑镖，最怕撞上野狼帮的人。"], where: ["town"] },
