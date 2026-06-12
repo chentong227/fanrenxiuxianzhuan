@@ -73,9 +73,18 @@
 - js 模块序：data → world → state → balance → loadout → combat → explore →
   story → chapters → engine → ui → llm → audio → art → main（全局对象，无模块系统）。
 
-## 五、当前状态指针（2026-06-12）
+## 五、当前状态指针（2026-06-13）
 
-- 版本 v78；**黄枫谷篇主线全链路已实装并 E2E 全绿**（journey.test.js）：
+- **版本 v92；战场景深体系三轮返修定稿（v90~v92，docs/depth-design.md §六必读）**：
+  ①统一相机数学方向修正（镜头后拉=全员变小，近缩多远缩少）+镜头"追人"时序
+  （人 .42s 快动/镜头 1.15s 长尾+宽死区）；②战斗底图全部重生成为**舞台盒构图**
+  （两翼收口环抱+中央开阔+下 2/5 地面——单图完胜条带三层，bt_road_mid 实质退役）；
+  ③排深读法定稿（排距 12cqh+缩放档差 .84/.72/.63+z 序铁律+地线提亮+排间雾带）；
+  ④**cqh 相对坐标系（架构基石）**：战场内地线/排距/脚位/飞高/立绘高全部用
+  cqh+底图 100%/100% 贴合——人物与地面带对位与屏幕尺寸/缩放解耦（⚠ cqh 仅限
+  #axis-field 容器内，洞窟 cave-track 用会变巨人）；⑤前景遮挡层用户裁决暂停
+  （资产与 cropfg.ps1 管线保留）。环境色反光（bg-forest/road/night 挂 overlay）已接。
+- v78 基线：**黄枫谷篇主线全链路已实装并 E2E 全绿**（journey.test.js）：
   入谷序列 → 禁地名额大会 → 血色禁地（**舆图实装版**：L1 走格+封岳狙杀+L3 墨蛟洞
   〔南宫婉同道〕）→ 炼筑基丹（lianZhujiDan）→ 三段式筑基（poolBonus=突破水准刻入气海）
   → 李化元赠《青元剑诀》（主修换代+品阶系数生效）→ 洞府选址（lingquan/jingmai/yinbi
@@ -190,6 +199,21 @@
   deadFade 淡出），不再半透明赖场。弹幕单行化（同屏 1 条 3.2s 新顶旧，正源=战录框）。
 - **LLM 分享链接**：`?llmkey=sk-...&llmmodel=...`——落地即存 localStorage、
   地址栏即抹（replaceState）；发朋友即开即玩（main.js 初始化段）。
-- **悬而未决（小问题待办）**：~~bgm_combat 重生成~~（✓）；bt_night.png JPEG 字节
-  （显示无碍）；韩立飞姿 v3 双脚并垂未达"前后交叠"（模型不收敛——高阶精绘批次再攻）；
-  站姿待机=呼吸式（钟摆摇已否）。
+- **统一相机（v89——"飞天没感觉/缩放撕裂/卡地底全是同一个问题"的根治）**：
+  一组镜头数（zoom/lift/cam）同帧派发所有层——世界层（axis-lane+axis-units+地台
+  ::before，origin 贴地）吃 `translateX(视差) scale(zoom)` 一体缩，**人/格/地/血条
+  比例永不撕裂**（--uscale 只缩立绘的旧方案已废）；中景 scale 吃 (1-zoom)*0.5、
+  远景吃 *0.2——**近缩多远缩少=真透视**；全层同曲线同时长 .8s（层间不脱节）；
+  升空 zoom 额外 -0.05-0.045×airGrade（飞得高看得远），lift 让中景沉得比远景多。
+  ⚠ **卡地底实锤**：_popFloat 曾给单位硬写 position:relative——absolute 被打回
+  文档流，reconcile 后内联永不自愈（旧版整层重建掩盖了它）。已修（static 才补）。
+  教训：**给战斗单位写任何内联样式前先想想 reconcile 之后它会不会赖着不走**。
+  调试探针：`?dbgpos=1`（每次渲染打印单位几何+computed 变换）。
+- **丝滑渲染（v88 reconcile）**：`_syncUnits` 单位 DOM 持久化差量更新——走位滑步/
+  升空浮移/换排/转身（真变向才翻面）/血条全过渡；旧"整层 innerHTML 重建"=闪现+
+  朝向闪回+过渡失效的元凶。三层背景（far 远景/mid 中景透明条带/CSS 地台）已装
+  bt_road 首套（midlayer 生图 kind：**勿写"剪影"会真给黑影**；中景基线必须抬离
+  战位排否则"南宫婉站石头上"）。
+- **悬而未决（小问题待办）**：~~bgm_combat~~（✓）；bt_night.png JPEG 字节（无碍）；
+  韩立飞姿双脚并垂未达"前后交叠"（高阶精绘批次再攻）；中景层 valley/forest/night
+  三套未生成（bt_road 验收后批量）；多侧位 sides[] 全链路（裁决在档，下轮）。

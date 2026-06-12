@@ -1900,20 +1900,59 @@ const UI = {
     this.el("combat-overlay").hidden = false;
     const titles = { encounter: "斗 法", showdown: "夺舍之夜 · 决战", breakthrough: "突破 · 心战", jinguang: "暗算金光上人", luyunfeng: "坊市归途 · 林中血" };
     this.el("combat-title").textContent = titles[meta.type] || "斗 法";
-    // 战斗背景：心战用墨黑，其余用当前地点场景图（压暗虚化）
+    // 战斗背景：心战用墨黑，其余用当前地点场景图（压暗虚化）。
+    // 三层分级制（v88）：底名_far 远景层（无立物）+ 底名_mid 中景物件透明条带（人物身后
+    // 独立视差）——两层齐备时人物真正"插在层间"；缺层回退单图，照旧可玩
     const bg = this.el("combat-bg");
     if (bg) {
       const loc = State.location();
       // 战斗背景：洞窟/场景继承优先（同轴一体——开战不换天地）> 专用战场底图 > 地点横版场景
-      let url = null;
+      let url = null, midUrl = null;
       if (meta.type !== "breakthrough" && typeof Art !== "undefined") {
-        url = (meta.sceneBg && Art.has(meta.sceneBg))
-          ? Art.sceneUrl(meta.sceneBg, { landscape: true })
-          : this._battleBgFor(loc, meta);
+        if (meta.sceneBg && Art.has(meta.sceneBg)) {
+          url = Art.sceneUrl(meta.sceneBg, { landscape: true });
+        } else {
+          // v90 对照实验结论：舞台盒构图单图（两翼收口环抱+中央开阔）优先——
+          // "人被环境包住"的在场感远胜条带中景三层合成；far/mid 退为缺图回退
+          const base = this._battleBaseFor(loc, meta);
+          if (base && Art.has(base)) {
+            url = Art.sceneUrl(base, { landscape: true });
+          } else if (base && Art.has(base + "_far") && Art.has(base + "_mid")) {
+            url = Art.sceneUrl(base + "_far", { landscape: true });
+            midUrl = Art.sceneUrl(base + "_mid", { landscape: true });
+          } else {
+            url = this._battleBgFor(loc, meta);
+          }
+        }
       }
       bg.style.backgroundImage = url ? `url("${url}")` : "";
       bg.style.transform = "";
       bg.classList.toggle("on", !!url);
+      const mid = this.el("combat-bgmid");
+      if (mid) {
+        mid.style.backgroundImage = midUrl ? `url("${midUrl}")` : "";
+        mid.style.transform = "";
+        mid.classList.toggle("on", !!midUrl);
+      }
+      // 前景遮挡层（v90）：贴底一线草石压在单位前——离镜头最近的一层。
+      // 分场景配色（用户裁决：前景色必须与底图地面一致才像长在地里）；
+      // 洞窟 pano/心战不挂（洞里没草）。环境色反光（bg-*）同 biome 派发
+      const fg = this.el("combat-fg");
+      const ov0 = this.el("combat-overlay");
+      const bgName = (meta.sceneBg && Art.has && Art.has(meta.sceneBg)) ? meta.sceneBg
+        : (meta.type !== "breakthrough" && typeof Art !== "undefined") ? this._battleBaseFor(loc, meta) : "";
+      const biome = /^bt_/.test(bgName || "")
+        ? (/night/.test(bgName) ? "night" : /road/.test(bgName) ? "road" : "forest") : null;
+      ["bg-forest", "bg-road", "bg-night"].forEach(k => ov0.classList.remove(k));
+      if (biome && meta.type !== "breakthrough") ov0.classList.add("bg-" + biome);
+      if (fg) {
+        // 前景遮挡暂停（v90 用户裁决：先不做前景，景深主体先行）——资产与管线保留，
+        // 重启时把 fgUrl 换回 Art.sceneUrl("fg_" + biome)
+        const fgUrl = null;
+        fg.style.backgroundImage = "";
+        fg.style.transform = "";
+        fg.classList.toggle("on", !!fgUrl);
+      }
       this.el("combat-overlay").classList.toggle("mind", meta.type === "breakthrough");
     }
     // 洞窟无缝开战：镜头一沉推近（探索拉远→战斗推近）——动的是镜头，不是场景
@@ -1993,15 +2032,18 @@ const UI = {
     return null;
   },
 
+  // 地点/战斗类型 → 战场底图基名（三层制：基名+_far/_mid 取层；单图回退用基名本身）
+  _battleBaseFor(loc, meta) {
+    if (meta && (meta.type === "showdown" || meta.type === "jinguang")) return "bt_night";
+    const id = loc ? loc.id : "";
+    if (/road|town|jiayuan|qingniu/.test(id) || (State.data && State.data.journey)) return "bt_road";
+    if (/huangfeng|baiyao|fangshi|tainan/.test(id)) return "bt_valley";
+    return "bt_forest";
+  },
   // 地点/战斗类型 → 战场底图（下半幅开阔地面的横版图；缺图回退地点场景图）
   _battleBgFor(loc, meta) {
     if (typeof Art === "undefined") return null;
-    if (meta && (meta.type === "showdown" || meta.type === "jinguang")) return Art.sceneUrl("bt_night", { landscape: true });
-    const id = loc ? loc.id : "";
-    let bt = "bt_forest";
-    if (/road|town|jiayuan|qingniu/.test(id) || (State.data && State.data.journey)) bt = "bt_road";
-    else if (/huangfeng|baiyao|fangshi|tainan/.test(id)) bt = "bt_valley";
-    else if (/houshan|yaolu|wuting|shanmen|miju/.test(id)) bt = "bt_forest";
+    const bt = this._battleBaseFor(loc, meta);
     const url = Art.sceneUrl(bt, { landscape: true });
     return url || Art.locUrl(loc, { landscape: true });
   },
@@ -2220,7 +2262,9 @@ const UI = {
     const el = document.createElement("div");
     el.className = "float-fx fx-" + kind;
     el.textContent = text;
-    anchor.style.position = "relative";
+    // ⚠ 只给"无定位"的锚补 relative——axis-unit 是 absolute，硬写 relative 会把它
+    // 打回文档流（v88 实锤的"被打一下就卡进地底"，reconcile 后内联残留永不自愈）
+    if (getComputedStyle(anchor).position === "static") anchor.style.position = "relative";
     anchor.appendChild(el);
     setTimeout(() => el.remove(), 1100);
   },
@@ -2302,15 +2346,17 @@ const UI = {
     return `「${intent.name}」锁定而来（约${dmg}伤）——护体法术可挡（锁头打不空，盾是正解）。`;
   },
 
-  /* 防撞排布：同高度层（地/空分组）单位按屏幕 x 排序扫描，
+  /* 防撞排布：同高度层×同排分组，组内按屏幕 x 排序扫描，
    * 相邻间距 < 最小间距时把右侧单位顺势推开（追加到 --lx）——
-   * 占格规则不动、只动演出位；同格异排/相邻格的"叠成一坨"由此根治 */
+   * 占格规则不动、只动演出位。⚠ 跨排不互推（v90 二改）：后排从前排身后
+   * 探出半个身位是"纵深"本身（z 序+缩放+斜移已保证可读），推开反而拍扁排深 */
   _decrowd(unitsEl, c) {
-    const track = unitsEl.getBoundingClientRect().width;
+    const track = unitsEl.getBoundingClientRect().width / (this._camZoom || 1);   // 还原 zoom 前的轨宽（--lx 是缩放前坐标系的值）
     if (!track) return;
     const MIN = Math.max(44, Math.min(64, track * 0.052));
     const items = [...unitsEl.querySelectorAll(".axis-unit")].map(el => {
       const m = el.className.match(/lane-(\d)/);
+      el.style.removeProperty("--lx");   // 防累计（reconcile 后元素持久——必须从类基准重算）
       const baseLx = parseFloat(getComputedStyle(el).getPropertyValue("--lx")) || 0;
       return {
         el, lane: m ? +m[1] : 0,
@@ -2319,8 +2365,9 @@ const UI = {
         lx: baseLx,
       };
     });
-    [false, true].forEach(air => {
-      const g = items.filter(o => o.air === air).sort((a, b) => a.x - b.x);
+    const keys = [...new Set(items.map(o => (o.air ? "a" : "g") + o.lane))];
+    keys.forEach(k => {
+      const g = items.filter(o => (o.air ? "a" : "g") + o.lane === k).sort((a, b) => a.x - b.x);
       for (let i = 1; i < g.length; i++) {
         const need = g[i - 1].x + MIN - g[i].x;
         if (need > 0) {
@@ -2339,7 +2386,8 @@ const UI = {
     const i = opts.enemyIndex;
     const demonized = opts.isBT || /心魔/.test(u.name);
     // 单位图优先级：战斗全身立绘（battlers/）> 剧情半身像 > 字符玉牌
-    let fig = null;
+    // （reconcile 改造：产出 src/类/玉牌三件，img 元素由 _syncUnits 持久管理——不再重建）
+    let figSrc = null, figCls = "", figGlyph = null;
     if (typeof Art !== "undefined" && Art.battlerUrl) {
       let bid = null;
       if (isPlayer) bid = Art.hasBattler("bt_hanli") ? "bt_hanli" : null;
@@ -2347,13 +2395,15 @@ const UI = {
       else bid = this._battlerByName(u.name);
       // 飞行姿态变体（v87）：凌空且 _fly 立绘已入库——换飞姿（双脚前后、衣袂后卷）
       if (bid && (u.alt || 0) === 1 && Art.hasBattler(bid + "_fly")) bid = bid + "_fly";
-      if (bid) fig = `<img class="au-img battler${demonized ? " demonized" : ""}" src="${Art.battlerUrl(bid)}" alt="" />`;
+      if (bid) { figSrc = Art.battlerUrl(bid); figCls = " battler" + (demonized ? " demonized" : ""); }
     }
-    if (!fig) {
+    if (!figSrc) {
       const aid = isPlayer ? "hanli" : (isSide ? (u.art || null) : this._artIdByName(u.name));
-      fig = (aid && typeof Art !== "undefined" && Art.has && Art.has(aid))
-        ? `<img class="au-img${demonized ? " demonized" : ""}" src="${Art.url(aid)}" alt="" />`
-        : `<div class="au-glyph"><span>${isPlayer ? "韩" : isSide ? "傀" : this._enemyGlyph(u.name)}</span></div>`;
+      if (aid && typeof Art !== "undefined" && Art.has && Art.has(aid)) {
+        figSrc = Art.url(aid); figCls = demonized ? " demonized" : "";
+      } else {
+        figGlyph = `<div class="au-glyph"><span>${isPlayer ? "韩" : isSide ? "傀" : this._enemyGlyph(u.name)}</span></div>`;
+      }
     }
     const hpPct = Math.max(0, u.hp / u.hpMax * 100);
     const shPct = u.shield ? Math.min(100, u.shield / u.hpMax * 100) : 0;
@@ -2437,7 +2487,7 @@ const UI = {
         }
       }
     }
-    if (flip && fig) fig = fig.replace('class="au-img', 'class="au-img flipped-img');
+    if (flip) figCls += " flipped-img";
     const cls = ["axis-unit",
       isPlayer ? "self" : isSide ? "side" : "enemy",
       u.alive === false || u.hp <= 0 ? "dead" : "",
@@ -2447,20 +2497,94 @@ const UI = {
       (u.lane || 0) > 0 ? "lane-" + Math.min(u.lane, 3) : "",                   // 僚位排：真单位站出来的纵深（2.5 排制）
       (u.alt || 0) === 1 ? "airborne air-" + Math.min(u.airGrade || 1, 3) : "", // 凌空：高度=境界档（飞得比对手高=实力俯视）
       (!isPlayer && !isSide && u.alive && this._armed && this._armed.kind === "enemy") ? "targetable" : "",   // 择敌：点它即放
-    ].join(" ");
-    const left = ((u.pos + 0.5) / c.W * 100).toFixed(2);
-    const click = (!isPlayer && !isSide && u.alive) ? `onclick="UI.pickTarget(${i})"` : "";
-    return `<div class="${cls}" style="left:${left}%" data-uid="${isPlayer ? 'player' : isSide ? 'side' : 'enemy:' + i}" ${click}>
-      <div class="au-badges">${badges.join("")}</div>
-      ${(u.alt || 0) === 1 ? '<i class="air-pillar"></i>' : ""}
-      ${orbit}${fig}
-      <div class="au-bars">
-        <div class="au-hp"><i style="width:${hpPct}%"></i>${shPct ? `<i class="sh" style="width:${shPct}%"></i>` : ""}</div>
-        ${isPlayer ? `<div class="au-mp"><i style="width:${mpPct}%"></i></div>` : ""}
-      </div>
-      <div class="au-hpnum">${Math.max(0, Math.round(u.hp))}/${u.hpMax}${u.shield ? `<i class="au-shnum">+${u.shield}</i>` : ""}</div>
-      <div class="au-name">${u.name}${(!isPlayer && !isSide && i === opts.target && u.alive) ? '<span class="au-lock">◈</span>' : ""}</div>
-    </div>`;
+    ].filter(Boolean).join(" ");
+    // 深排镜头视差（v90）：镜头平移时僚位排"跟着镜头滑一点"——前排刷刷过、
+    // 后排缓缓过（演出偏移，规则站位不变；用上一帧 _cam，transition 平滑掉一帧延迟）
+    const lanePar = (u.lane || 0) > 0 ? (c._cam || 0) * 0.04 * Math.min(u.lane, 3) : 0;
+    return {
+      uid: isPlayer ? "player" : isSide ? "side" : "enemy:" + i,
+      cls,
+      left: ((u.pos + 0.5 + lanePar) / c.W * 100).toFixed(2) + "%",
+      clickIdx: (!isPlayer && !isSide && u.alive) ? i : null,
+      badges: badges.join(""),
+      extra: orbit,
+      figSrc, figCls, figGlyph,
+      hpPct, shPct, mpPct: isPlayer ? mpPct : null, isPlayer,
+      hpNum: `${Math.max(0, Math.round(u.hp))}/${u.hpMax}${u.shield ? `<i class="au-shnum">+${u.shield}</i>` : ""}`,
+      name: `${u.name}${(!isPlayer && !isSide && i === opts.target && u.alive) ? '<span class="au-lock">◈</span>' : ""}`,
+    };
+  },
+
+  /* ===== 丝滑渲染（v88 reconcile）：单位 DOM 持久化、差量更新 =====
+   * 旧版整层 innerHTML 重建=入场动画重播+朝向闪回+left/translate 过渡全失效（"全是刷新"）。
+   * 现在：外壳类与位置变更交给 CSS transition（滑步/升空/换排/缩放全过渡）；
+   * img 持久（src/类只在真变化时碰——转身只在真变向时播）；血条宽度过渡保留。 */
+  _syncUnits(c, list) {
+    const box = this.el("axis-units");
+    if (!box) return;
+    const seen = new Set();
+    list.forEach(d => {
+      seen.add(d.uid);
+      let el = box.querySelector(`[data-uid="${CSS.escape(d.uid)}"]`);
+      if (!el) {
+        el = document.createElement("div");
+        el.dataset.uid = d.uid;
+        el.className = d.cls;
+        el.style.left = d.left;
+        el.innerHTML = `<div class="au-badges"></div><i class="air-pillar"></i><span class="au-extra"></span><span class="au-fig"></span>
+          <div class="au-bars"><div class="au-hp"><i></i></div></div>
+          <div class="au-hpnum"></div><div class="au-name"></div>`;
+        box.appendChild(el);
+        el._cls = d.cls; el._left = d.left;
+      }
+      if (el._cls !== d.cls) { el.className = d.cls; el._cls = d.cls; }
+      if (el._left !== d.left) { el.style.left = d.left; el._left = d.left; }
+      el.onclick = d.clickIdx != null ? () => UI.pickTarget(d.clickIdx) : null;
+      // 徽章（每回合变，轻量重写——不含 img 无闪烁）
+      const bd = el.querySelector(".au-badges");
+      if (bd._h !== d.badges) { bd.innerHTML = d.badges; bd._h = d.badges; }
+      // 伴身（装备战斗内不变，初建一次）
+      const ex = el.querySelector(".au-extra");
+      if (ex._h !== d.extra) { ex.innerHTML = d.extra || ""; ex._h = d.extra; }
+      // 立绘：img 持久——src/类仅真变化时更新（飞姿切换/转身才动，杜绝重建闪烁）
+      const figBox = el.querySelector(".au-fig");
+      if (d.figSrc) {
+        let img = figBox.querySelector("img.au-img");
+        if (!img) { figBox.innerHTML = `<img class="au-img" alt="" />`; img = figBox.firstChild; }
+        if (img._src !== d.figSrc) { img.src = d.figSrc; img._src = d.figSrc; }
+        const icls = "au-img" + d.figCls;
+        if (img._icls !== icls) { img.className = icls; img._icls = icls; }
+      } else if (figBox._h !== d.figGlyph) { figBox.innerHTML = d.figGlyph || ""; figBox._h = d.figGlyph; }
+      // 血条：结构签名变化才重建（盾条/灵条出现与否），否则只改宽度（width 过渡保留）
+      const bars = el.querySelector(".au-bars");
+      const sig = (d.shPct ? "s" : "") + (d.mpPct != null ? "m" : "");
+      if (bars._sig !== sig) {
+        bars.innerHTML = `<div class="au-hp"><i style="width:${d.hpPct}%"></i>${d.shPct ? `<i class="sh" style="width:${d.shPct}%"></i>` : ""}</div>`
+          + (d.mpPct != null ? `<div class="au-mp"><i style="width:${d.mpPct}%"></i></div>` : "");
+        bars._sig = sig;
+      } else {
+        const hpI = bars.querySelector(".au-hp i:not(.sh)");
+        if (hpI) hpI.style.width = d.hpPct + "%";
+        const shI = bars.querySelector(".au-hp i.sh");
+        if (shI) shI.style.width = d.shPct + "%";
+        const mpI = bars.querySelector(".au-mp i");
+        if (mpI && d.mpPct != null) mpI.style.width = d.mpPct + "%";
+      }
+      const hn = el.querySelector(".au-hpnum");
+      if (hn._h !== d.hpNum) { hn.innerHTML = d.hpNum; hn._h = d.hpNum; }
+      const nm = el.querySelector(".au-name");
+      if (nm._h !== d.name) { nm.innerHTML = d.name; nm._h = d.name; }
+    });
+    // 退场：不在名单里的（死透已演完/已遁走）移除
+    [...box.children].forEach(el => { if (el.dataset.uid && !seen.has(el.dataset.uid)) el.remove(); });
+    // 临时探针（?dbgpos=1）：单位几何快照——查"卡进地底"
+    if (location.search.indexOf("dbgpos=1") >= 0) {
+      [...box.querySelectorAll(".axis-unit")].forEach(el => {
+        const r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        console.log(`[pos] ${el.dataset.uid} cls=${el.className} | inline=${el.style.cssText} | translate=${cs.translate} transform=${cs.transform} scale=${cs.scale} bottom=${cs.bottom} | rect=${Math.round(r.top - b.top)}~${Math.round(r.bottom - b.top)} boxH=${Math.round(b.height)}`);
+      });
+    }
   },
 
   /* 战斗结算卡：胜/遁/败 + 每个敌人的结局（伏诛/走脱）+ 复盘与战利——
@@ -2617,59 +2741,74 @@ const UI = {
     }
     lane.innerHTML = laneHtml;
 
-    // —— 单位层：玩家/侧位/敌人按格站位（CSS transition 滑动）——
+    // —— 单位层（v88 丝滑渲染）：DOM 持久+差量更新——移动滑步/升空浮起/转身/缩放全走 CSS 过渡。
     //    阵亡退场：尸体只渲染"咽气那一拍"（让墨溅+淡出播完），下一次重渲染即除名
     const unitsEl = this.el("axis-units");
     this._deadShown = this._deadShown || {};
-    let unitsHtml = this._axisSprite(c, p, { isBT, target });
-    if (c.side) unitsHtml += this._axisSprite(c, c.side, { isBT, target });
+    const unitList = [this._axisSprite(c, p, { isBT, target })];
+    if (c.side) unitList.push(this._axisSprite(c, c.side, { isBT, target }));
     c.enemies.forEach((e, i) => {
       if (e.escaped) return;
       if (!e.alive) {
         if (this._deadShown[i]) return;   // 已演过死——不再入场
         this._deadShown[i] = true;
       }
-      unitsHtml += this._axisSprite(c, e, { isBT, target, enemyIndex: i });
+      unitList.push(this._axisSprite(c, e, { isBT, target, enemyIndex: i }));
     });
-    unitsEl.innerHTML = unitsHtml;
+    this._syncUnits(c, unitList);
 
     // —— 场景即战场：宽轴（W>11）拉镜头（死区跟随）——你在画面里走，镜头只在你贴近画框时才拉。
     //    镜头跟人不锁人：移动是"人滑过画面"，不是"世界从脚下滑走"。长卷背景以视差随镜头退行。 ——
     const laneEl2 = this.el("axis-lane");
     const bgEl2 = this.el("combat-bg");
-    // 镜头三联动（depth-design D3）：升空=镜头后拉——视野 V、人物景深 uscale、
-    // 身法 moveCap 三者同源于 airGrade（境界即高度）；只缩"人"不缩"场"
-    //（整场 transform:scale=单位层悬空+黑框，v85 教训）；地面单位脚锚地线不动
+    // —— 统一相机（v89——"全是同一个问题"的根治）：一组镜头数（zoom/lift/cam）
+    //    同帧派发到所有层。镜头后拉时：世界（人+格+地台）整体缩、中景半缩、远景微缩
+    //    ——近缩多远缩少=真透视；同曲线同时长=层间永不脱节 ——
     const fieldEl0 = this.el("axis-field");
     const air = (p.alt || 0) === 1, aGrade = Math.min(p.airGrade || 1, 3);
+    const aliveN = c.units().length;
+    // zoom：人数/排数退档 × 升空大幅后拉（airGrade 越高拉得越远——飞得高看得远）
+    const zoom = Math.max(0.72, Math.min(1,
+      1 - 0.035 * ((c.L || 2) - 2) - 0.02 * Math.max(0, aliveN - 3)
+        - (air ? 0.05 + 0.045 * aGrade : 0)));
+    const lift = air ? aGrade : 0;   // 天空抬升档：底图层下沉露天（中景沉得比远景多）
+    this._camZoom = zoom;
     if (fieldEl0) {
-      const aliveN = c.units().length;
-      const uscale = Math.max(0.72, Math.min(1,
-        1 - 0.04 * ((c.L || 2) - 2) - 0.025 * Math.max(0, aliveN - 3)
-          - (air ? 0.04 + 0.04 * aGrade : 0)));
-      fieldEl0.style.setProperty("--uscale", uscale.toFixed(3));
       fieldEl0.style.setProperty("--lanes", c.L || 2);
       fieldEl0.classList.toggle("sky-view", air);
-      // 踩地对齐（v86 根修）：底图只铺到战场下沿——底图下 1/3 的近地台面正好垫在
-      // 单位脚下；否则地面带被操作台吞掉，人全站在底图的远山上（用户实锤的"站山上"）
-      const ovEl = this.el("combat-overlay"), bgAl = this.el("combat-bg");
-      if (ovEl && bgAl) {
+      const ovEl = this.el("combat-overlay");
+      if (ovEl) {
         const fr = fieldEl0.getBoundingClientRect(), or2 = ovEl.getBoundingClientRect();
-        if (fr.height > 0) bgAl.style.setProperty("--bg-cut", Math.max(0, Math.round(or2.bottom - fr.bottom)) + "px");
+        if (fr.height > 0) ovEl.style.setProperty("--bg-cut", Math.max(0, Math.round(or2.bottom - fr.bottom)) + "px");
       }
     }
-    const skyShift = air ? ` translateY(${(1.4 + aGrade * 0.8).toFixed(1)}%)` : "";   // 飞天底图沉降：露出更多天空（档位越高看得越高）
+    // 层深缩放（v90 方向修正）：镜头后拉=所有层一起变小（近层缩多、远层缩少；
+    // 远层下限 1.10 防黑边）。地面态=推近的镜头（背景偏大），升空=退回全图——
+    // 之前是"人缩小、背景反而放大"，层间反向运动正是"浮在一张图上"的数学根源
+    const zn = Math.max(0, Math.min(1, (zoom - 0.72) / 0.28));   // 1=贴地推近 0=高空全图
+    const farScale = (1.10 + zn * 0.12).toFixed(3);
+    const midScale = (1.00 + zn * 0.31).toFixed(3);
+    // 镜头上摇阶梯（升空看天）：近层在画面里沉得多——前景>世界>中景>远景，同向不同速
+    const worldY = lift ? ` translateY(${(lift * 3).toFixed(1)}%)` : "";
+    const midY = lift ? ` translateY(${(lift * 2.2).toFixed(1)}%)` : "";
+    const farY = lift ? ` translateY(${(lift * 1.0).toFixed(1)}%)` : "";
+    const fgY = lift ? ` translateY(${(lift * 16).toFixed(1)}%)` : "";   // 前景大幅滑出：脚边的草最先离开镜头
+    const fgEl = this.el("combat-fg");
+    const ovSky = this.el("combat-overlay");
+    if (ovSky) ovSky.classList.toggle("sky", air);   // 升空：前景淡出（贴地遮挡物不再挡视野）
     if (c.W > 11) {
-      const V = air ? Math.min(c.W, 11 + 2 * aGrade) : 11, m = 3;
+      // 宽死区（v90）：玩家在画面中部大半区域随便走，镜头纹丝不动——"是韩立在动"；
+      // 只有逼近画框边缘才缓缓追上（追，不绑）
+      const V = air ? Math.min(c.W, 11 + 2 * aGrade) : 11, m = 2.4;
       const trackW = (c.W / V) * 100;
       let cam = (typeof c._cam === "number") ? c._cam : (p.pos + 0.5 - V / 2);
       if (p.pos + 0.5 < cam + m) cam = p.pos + 0.5 - m;
       if (p.pos + 0.5 > cam + V - m) cam = p.pos + 0.5 - (V - m);
-      // 锁定目标尽量入画（打谁看谁）；与玩家死区冲突时，玩家优先——镜头永远不丢人
+      // 锁定目标"半出画才拉"（v90 放宽）：目标贴边不动镜——镜头活动越少越稳
       const te2 = (target >= 0 && c.enemies[target] && c.enemies[target].alive) ? c.enemies[target] : null;
       if (te2) {
-        if (te2.pos + 0.5 > cam + V - 0.8) cam = te2.pos + 0.5 - (V - 0.8);
-        if (te2.pos + 0.5 < cam + 0.8) cam = te2.pos + 0.5 - 0.8;
+        if (te2.pos + 0.5 > cam + V + 0.2) cam = te2.pos + 0.5 - (V - 0.6);
+        if (te2.pos + 0.5 < cam - 0.2) cam = te2.pos + 0.5 - 0.6;
         if (p.pos + 0.5 < cam + 1.2) cam = p.pos + 0.5 - 1.2;
         if (p.pos + 0.5 > cam + V - 1.2) cam = p.pos + 0.5 - (V - 1.2);
       }
@@ -2689,14 +2828,23 @@ const UI = {
       cam = Math.max(0, Math.min(c.W - V, cam));
       c._cam = cam;
       const shift = (cam / c.W) * 100;
+      // 世界层：视差平移 + 镜头 zoom + 上摇沉降，同一个 transform（origin 贴地——脚位不漂）
       [laneEl2, unitsEl].forEach(el => {
         el.style.width = trackW + "%";
-        el.style.transform = `translateX(-${shift.toFixed(2)}%)`;
+        el.style.transform = `translateX(-${shift.toFixed(2)}%)${worldY} scale(${zoom.toFixed(3)})`;
         el.classList.add("cam-track");
       });
       if (bgEl2) {
         const camT = (c.W - V) > 0 ? cam / (c.W - V) : 0;
-        bgEl2.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${skyShift} scale(1.18)`;
+        bgEl2.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${farY} scale(${farScale})`;
+        const midEl = this.el("combat-bgmid");
+        if (midEl && midEl.classList.contains("on")) {
+          midEl.style.transform = `translateX(${(-camT * 17).toFixed(2)}%)${midY} scale(${midScale})`;
+        }
+        // 前景=最快视差层（近景动得快是景深的第一线索）：幅度大于世界层
+        if (fgEl && fgEl.classList.contains("on")) {
+          fgEl.style.transform = `translateX(${(-camT * 30).toFixed(2)}%)${fgY}`;
+        }
       }
       // 锁定目标在镜头外：画框边缘点名（远闻其声的战斗版——它在那头，没丢）
       this._fightFarCue(te2 && te2.pos + 0.5 > cam + V ? `${te2.name} ▶`
@@ -2704,9 +2852,17 @@ const UI = {
         te2 && te2.pos + 0.5 < cam);
     } else {
       [laneEl2, unitsEl].forEach(el => {
-        el.style.width = ""; el.style.transform = ""; el.classList.remove("cam-track");
+        el.style.width = "";
+        el.style.transform = `${worldY.trim()} ${zoom < 0.999 ? `scale(${zoom.toFixed(3)})` : ""}`.trim();
+        el.classList.add("cam-track");   // 窄轴同样吃镜头过渡（升空后拉要丝滑）
       });
-      if (bgEl2) bgEl2.style.transform = skyShift ? `${skyShift.trim()} scale(1.06)` : "";
+      // 窄轴同一族层深数学（方向一致：升空全员退小）
+      if (bgEl2) bgEl2.style.transform = `${farY.trim()} scale(${farScale})`.trim();
+      const midEl0 = this.el("combat-bgmid");
+      if (midEl0 && midEl0.classList.contains("on")) {
+        midEl0.style.transform = `${midY.trim()} scale(${midScale})`.trim();
+      }
+      if (fgEl && fgEl.classList.contains("on")) fgEl.style.transform = fgY.trim();
       this._fightFarCue(null);
     }
 

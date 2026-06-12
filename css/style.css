@@ -465,12 +465,54 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
  * 底图下 1/3 的"近地台面"必须落在单位脚下，而不是被操作台吞掉（v86 踩地对齐） */
 .combat-bg {
   position: absolute; top: -2%; left: -2%; right: -2%; bottom: var(--bg-cut, 0px);
-  background-size: cover; background-position: center bottom;
+  /* v91 贴合（架构修正）：100%/100% 拉伸取代 cover——底图"地面带"占容器恒定比例，
+   * 人物（cqh 脚位）与地面的对位关系不再随屏幕宽高比漂移（轻微变形风景图无感，
+   * cover 的裁切量才是"换个屏幕人就上天"的元凶） */
+  background-size: 100% 100%; background-position: center bottom;
   opacity: 0; transition: opacity .6s ease, transform 1.1s cubic-bezier(.4, .05, .3, 1);
   transform-origin: 50% 88%;
   filter: brightness(.84) saturate(.98);
 }
 .combat-bg.on { opacity: 1; }
+/* 中景物件层（三层分级制 v88）：透明实物条带叠在远景之上、人物之后——
+ * 独立视差速率（比远景快），人飞到"树前"成立：树真的在更远的层、以不同速度退行。
+ * ⚠ 层逻辑铁律（v88 验收教训）：中景基线必须抬到最深僚位排之后（约地线上方 96px）、
+ * 尺寸缩一档、亮度压暗——基线若与战位排同线，物件就会怼在人物脚下"穿模"（南宫婉站石头上） */
+.combat-bgmid {
+  position: absolute; top: -2%; left: -3%; right: -3%; bottom: var(--bg-cut, 0px);
+  /* "远"三件齐：透视缩（远处路牌只剩几十像素高）+ 抬到中景地带（地平线下沿）+ 雾化压暗 */
+  background-size: auto 28%; background-position: center calc(100% - 124px); background-repeat: repeat-x;
+  opacity: 0; transition: opacity .6s ease, transform 1.1s cubic-bezier(.4, .05, .3, 1);
+  transform-origin: 50% 88%; pointer-events: none;
+  filter: brightness(.62) saturate(.8) blur(.4px);
+}
+.combat-bgmid.on { opacity: .92; }
+@media (max-width: 640px) {
+  .combat-bgmid { background-size: auto 25%; background-position: center calc(100% - 96px); }
+}
+/* 前景遮挡层（v90 用户点名：最前面的草石加强景深）——离镜头最近的一层：
+ * 失焦+压暗（近景虚）、压在全部单位之上、贴战场下沿；镜头平移时以最快速率退行
+ * （近景动得快=视差的第一线索）；升空时下沉+淡出（脚边的草最先滑出镜头）。
+ * transform 由 JS 与统一相机同帧派发（fgY/fgX），同曲线同时长 */
+/* 前景=贴底一线小草（v90 定稿：用户裁决回归平铺版）——
+ * space 平铺降密度（丛与丛之间留空），失焦微暗，绝不遮战场 */
+.combat-fg {
+  position: absolute; left: -4%; right: -4%; bottom: calc(var(--bg-cut, 0px) - 6px);
+  height: 11%; pointer-events: none; z-index: 6;
+  background-size: auto 100%; background-position: center bottom; background-repeat: space;
+  opacity: 0; transition: opacity .6s ease, transform 1.15s cubic-bezier(.22, .82, .26, 1);
+  transform-origin: 50% 100%;
+  filter: blur(1px) brightness(.74) saturate(.95);
+}
+.combat-fg.on { opacity: .9; }
+/* 升空：前景草石淡去（人离地了，脚边遮挡物不再挡视野——高度感的负空间） */
+.combat-overlay.sky .combat-fg.on { opacity: .25; }
+@media (max-width: 640px) { .combat-fg { height: 9%; } }
+/* 环境色反光（v90）：接触影外圈晕一层底图地面色——脚与地的色彩咬合
+ * （人物色调与场景"各画各的"是浮贴感的来源之一，脚下反光是最便宜的融合笔） */
+.combat-overlay.bg-forest .axis-unit::before { box-shadow: 0 2px 16px 3px rgba(98,126,58,.30); }
+.combat-overlay.bg-road .axis-unit::before { box-shadow: 0 2px 16px 3px rgba(170,136,74,.32); }
+.combat-overlay.bg-night .axis-unit::before { box-shadow: 0 2px 16px 3px rgba(72,102,152,.28); }
 .combat-veil {
   position: absolute; inset: 0; pointer-events: none;
   background:
@@ -653,23 +695,37 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   position: relative; flex-shrink: 0;
   height: clamp(240px, 40vh, 380px);
   margin-bottom: 6px;
-  /* 纵深地基（depth-design D0）：每排一条地线，全部参数出自这一族变量 */
-  --ground0: 26px;       /* 战位排地线（离画底） */
-  --lane-gap: 20px;      /* 排距：每深一排地线抬高一档 */
+  /* ⚓ 相对坐标系（v91 架构修正——用户实锤"缩放页面人物跑天上"）：
+   * 战场内所有纵深参数（地线/排距/脚位/飞高/立绘高）一律用 cqh（战场高度百分比），
+   * 底图同步 100%/100% 贴合——人物与底图地面带的位置关系从此恒定，
+   * 与屏幕尺寸/缩放/宽高比彻底解耦。⚠ 洞窟（cave-track）无此容器，
+   * 走 var() 默认 px 值，互不干扰 */
+  container-type: size;
+  --ground0: 9.3cqh;     /* 战位排地线（离画底）：战场高的 9.3% */
+  --lane-gap: 12cqh;     /* 排距：每深一排地线抬高一档（34px@283 → 12%） */
+  --feet: 14.3cqh;       /* 单位脚底距容器底 */
   --lanes: 2;            /* 排数（JS 注入：场景定 2~4） */
 }
-/* 透视地台：向远处收窄的"地面"——脚下有地，排才有处可站（fg-band/整场缩放之否后的正解）。
- * 横向地纹=各排地线（被梯形裁剪自动随深度内收=近宽远窄）；drop-shadow 勾出侧缘收拢线 */
-.axis-field::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+/* 透视地台：向远处收窄的"地面"——脚下有地，排才有处可站。
+ * v89 统一相机：地台挂在 axis-units（世界层，z 低于格刻度）——镜头 zoom 时与
+ * 单位/格子一体缩放，地线与脚永不脱开（挂 axis-field 上则世界缩、地不缩=撕裂） */
+.axis-units::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -24px;
   height: calc(var(--ground0) + (var(--lanes) - 1) * var(--lane-gap) + 18px);
-  pointer-events: none;
+  pointer-events: none; z-index: -1;
   background:
-    linear-gradient(90deg, transparent 2%, rgba(190,170,140,.30) 14%, rgba(190,170,140,.30) 86%, transparent 98%) 0 calc(100% - var(--ground0)) / 100% 1.5px no-repeat,
-    linear-gradient(90deg, transparent 6%, rgba(190,170,140,.20) 18%, rgba(190,170,140,.20) 82%, transparent 94%) 0 calc(100% - var(--ground0) - var(--lane-gap)) / 100% 1.2px no-repeat,
-    linear-gradient(90deg, transparent 10%, rgba(190,170,140,.13) 22%, rgba(190,170,140,.13) 78%, transparent 90%) 0 calc(100% - var(--ground0) - 2 * var(--lane-gap)) / 100% 1px no-repeat,
-    linear-gradient(90deg, transparent 14%, rgba(190,170,140,.09) 26%, rgba(190,170,140,.09) 74%, transparent 86%) 0 calc(100% - var(--ground0) - 3 * var(--lane-gap)) / 100% 1px no-repeat,
-    linear-gradient(180deg, rgba(14,11,8,0) 0%, rgba(18,14,11,.16) 45%, rgba(8,6,4,.32) 100%);
+    /* 排地线（v90 三改：一眼可见）：脚的落点是纵深的第一读数——排距拉大后，
+     * 地线必须亮到能在底图地面纹理上读出来；越深的排向中央收得越狠（透视消失点） */
+    linear-gradient(90deg, transparent 2%, rgba(214,192,156,.44) 12%, rgba(214,192,156,.44) 88%, transparent 98%) 0 calc(100% - var(--ground0)) / 100% 2px no-repeat,
+    linear-gradient(90deg, transparent 10%, rgba(214,192,156,.36) 21%, rgba(214,192,156,.36) 79%, transparent 90%) 0 calc(100% - var(--ground0) - var(--lane-gap)) / 100% 1.6px no-repeat,
+    linear-gradient(90deg, transparent 18%, rgba(214,192,156,.24) 29%, rgba(214,192,156,.24) 71%, transparent 82%) 0 calc(100% - var(--ground0) - 2 * var(--lane-gap)) / 100% 1.3px no-repeat,
+    linear-gradient(90deg, transparent 26%, rgba(214,192,156,.15) 36%, rgba(214,192,156,.15) 64%, transparent 74%) 0 calc(100% - var(--ground0) - 3 * var(--lane-gap)) / 100% 1px no-repeat,
+    /* 排间雾带（v90 二改提浓）：排与排之间隔一层看得见的空气——"后排隔着雾"的层间呼吸感 */
+    linear-gradient(180deg, transparent, rgba(196,206,214,.13) 55%, transparent) 0 calc(100% - var(--ground0) - var(--lane-gap) + 10px) / 100% 16px no-repeat,
+    linear-gradient(180deg, transparent, rgba(196,206,214,.09) 55%, transparent) 0 calc(100% - var(--ground0) - 2 * var(--lane-gap) + 8px) / 100% 13px no-repeat,
+    /* 地面明暗（v90 二改方向反转）：近亮远暗才是地面的透视明暗——
+     * 上沿（深处）压暗、脚前（下沿）不压——之前底部最暗是反的 */
+    linear-gradient(180deg, rgba(8,6,4,.34) 0%, rgba(14,11,8,.14) 52%, rgba(8,6,4,0) 100%);
   clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
   filter: drop-shadow(0 0 1px rgba(190,170,140,.18));
 }
@@ -841,33 +897,51 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .axis-unit {
   position: absolute; bottom: 0; transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center;
-  transition: left .42s cubic-bezier(.3,.9,.35,1);
+  /* 丝滑三过渡（v88 reconcile 后生效）：走位滑步 / 升空换排浮移（translate）/ 排深缩放 */
+  transition: left .42s cubic-bezier(.3,.9,.35,1),
+              translate .5s cubic-bezier(.3,.85,.3,1),
+              scale .45s ease;
   pointer-events: auto; width: clamp(76px, 13vw, 130px);
 }
+.axis-unit .au-fig { display: contents; }   /* 立绘容器不参与布局（img 仍是 flex 子项） */
+.axis-unit .au-extra { display: contents; }
+/* v89 统一相机：人物尺寸恢复定值——所有"变小"都走世界 zoom（人/格/地台/血条一体缩），
+ * 杜绝"只缩立绘、血条名牌不缩"的比例撕裂（--uscale 已废） */
 .axis-unit .au-img {
-  height: calc(clamp(120px, 22vh, 200px) * var(--uscale, 1)); width: auto; max-width: none;
+  height: clamp(120px, 22vh, 200px); width: auto; max-width: none;
   filter: drop-shadow(0 12px 18px rgba(0,0,0,.66));
   transform-origin: 50% 97%;   /* 脚底轴心：站姿动作绕脚摇，脚尖钉死在地（踩地感的动作面） */
   animation: portraitIn .4s ease, idleRock 3.8s ease-in-out 1s infinite;
+  /* 镜头缩放渐变 + 转身过渡（reconcile 后 img 持久——只在真变向时翻面，不再闪回） */
+  transition: height .45s ease, transform .24s ease;
 }
-/* 战斗全身立绘（v86 比例校准：竞技场底图就位后，人物抬一档与中景物件比例咬合——
- * 之前 17vh 是给"风景底图"配的缩档，人比路牌小一倍反而怪）
- * --uscale=镜头公式（排数×单位数）：人随场景缩——只缩人不缩场，黑框根治 */
-.axis-unit .au-img.battler { height: calc(clamp(104px, 21vh, 180px) * var(--uscale, 1)); }
+.axis-unit .au-img.battler { height: clamp(104px, 21vh, 180px); }
+/* v91 相对坐标系（仅战斗轴）：身高=战场高的百分比（cqh）——任何屏幕/缩放下与
+ * 底图地面带比例恒定。⚠ 只限 #axis-field（size 容器）内：洞窟 cave-track 无容器，
+ * cqh 会回退视口单位把人放成巨人——洞窟沿用上面的 clamp 默认 */
+#axis-field .axis-unit .au-img { height: 55cqh; }
+#axis-field .axis-unit .au-img.battler { height: 52cqh; }
 /* 站位错落：奇数格整体退后半步（上移+微缩+微暗）——同一条轴读出"路有宽度" */
 /* —— 2.5 排制：纵深=真实单位站位（lane 偏移）× 高度（alt 偏移）——CSS 变量叠加合成。
  * 排偏移统一吃 --lane-gap（脚锚到自己那排的地线上=踩地）；off-row=半档深度。
  * --lx=排横向错位（透视斜移）：同格异排不再叠成一团（血条/立绘自然岔开） —— */
-.axis-unit { translate: var(--lx, 0px) calc(var(--ly, 0px) + var(--ay, 0px)); scale: var(--ls, 1); }
-.axis-unit.off-row { --ly: calc(-.5 * var(--lane-gap, 20px)); --lx: 7px; --ls: .96; }
+/* v90：缩放围绕脚底（origin 贴地）——排深缩放脚位不漂，--ly 与排地线的数学完全对齐；
+ * idleRock 呼吸也因此天然"脚钉地、头肩动" */
+.axis-unit { translate: calc(var(--lx, 0px) + var(--ax, 0px)) calc(var(--ly, 0px) + var(--ay, 0px)); scale: var(--ls, 1); transform-origin: 50% 100%; z-index: 10; }
+/* 玩家=最近景（主角微放大一档——镜头离你最近） */
+.axis-unit.self { --ls: 1.05; }
+.axis-unit.off-row { --ly: calc(-.5 * var(--lane-gap, 20px)); --lx: 7px; --ls: .94; z-index: 9; }
 .axis-unit.off-row .au-img { filter: drop-shadow(0 12px 18px rgba(0,0,0,.66)) brightness(.94); }
-/* 僚位排：每深一排 上移一档+右斜一档+缩一档+暗一档（空气透视+斜透视）；战位排恒压前 */
-.axis-unit.lane-1 { --ly: calc(-1 * var(--lane-gap, 20px)); --lx: 15px; --ls: .93; z-index: 4; }
-.axis-unit.lane-2 { --ly: calc(-2 * var(--lane-gap, 20px)); --lx: 29px; --ls: .87; z-index: 3; }
-.axis-unit.lane-3 { --ly: calc(-3 * var(--lane-gap, 20px)); --lx: 43px; --ls: .82; z-index: 2; }
-.axis-unit.lane-1 .au-img { filter: drop-shadow(0 10px 15px rgba(0,0,0,.6)) brightness(.95); }
-.axis-unit.lane-2 .au-img { filter: drop-shadow(0 8px 12px rgba(0,0,0,.55)) brightness(.9); }
-.axis-unit.lane-3 .au-img { filter: drop-shadow(0 7px 10px rgba(0,0,0,.5)) brightness(.86); }
+/* 僚位排（v90 档差加大：近大远小一眼可辨）：每深一排 上移一档+右斜一档+
+ * 缩一大档+空气透视一档（暗+灰+微失焦——远处色淡形虚，画师的标准空气透视）。
+ * ⚠ z 序铁律：战位排(10) > off-row(9) > lane-1(8) > lane-2(6) > lane-3(4)——
+ * 后排永远画在前排身后（v90 修：之前战位排无 z，深排灵狼的尾巴盖在狼王脸上） */
+.axis-unit.lane-1 { --ly: calc(-1 * var(--lane-gap, 20px)); --lx: 24px; --ls: .84; z-index: 8; }
+.axis-unit.lane-2 { --ly: calc(-2 * var(--lane-gap, 20px)); --lx: 44px; --ls: .72; z-index: 6; }
+.axis-unit.lane-3 { --ly: calc(-3 * var(--lane-gap, 20px)); --lx: 62px; --ls: .63; z-index: 4; }
+.axis-unit.lane-1 .au-img { filter: drop-shadow(0 10px 15px rgba(0,0,0,.6)) brightness(.93) saturate(.88); }
+.axis-unit.lane-2 .au-img { filter: drop-shadow(0 8px 12px rgba(0,0,0,.55)) brightness(.88) saturate(.8) blur(.3px); }
+.axis-unit.lane-3 .au-img { filter: drop-shadow(0 7px 10px rgba(0,0,0,.5)) brightness(.84) saturate(.74) blur(.4px); }
 /* （接触影统一走 .axis-unit::before；::after 槽位留给 target/self 脚圈——伪元素各司其职） */
 /* 朝向不再用静态镜像：所有单位按"面向自己的对手"动态翻转（.flipped/.flipped-img，见 _axisSprite） */
 /* 站姿待机=呼吸式（v87 二改：钟摆摇被否——脚底钉死、躯干随呼吸微微起伏拉伸，
@@ -899,7 +973,11 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   background: radial-gradient(ellipse, rgba(0,0,0,.5) 0%, rgba(0,0,0,.24) 45%, transparent 72%);
   animation: shadowBreath 3.2s ease-in-out 1s infinite;
 }
-.axis-unit.airborne::before { bottom: calc(var(--feet, 40px) + var(--ay, 0px)); width: 56%; opacity: .8; }
+/* 凌空投影=高度计：飞得越高，地上的影子越小越淡（+ay 反向补偿=影子永远钉在地线，
+ * 影与人的距离就是高度读数） */
+.axis-unit.airborne::before { bottom: calc(var(--feet, 40px) + var(--ay, 0px)); width: 46%; opacity: .55; }
+.axis-unit.airborne.air-2::before { width: 38%; opacity: .42; }
+.axis-unit.airborne.air-3::before { width: 30%; opacity: .3; }
 @keyframes shadowBreath { 0%,100% { transform: translateX(-50%) scale(1); opacity: 1; } 50% { transform: translateX(-50%) scale(.94); opacity: .85; } }
 .axis-unit.dead::before { opacity: .25; animation: none; }
 /* 锁定/我方的脚下色圈：贴着接触影、正在脚底（觅长生式选中圈——圈即站位） */
@@ -1653,17 +1731,12 @@ html, body { touch-action: manipulation; }
   .axis-cell .zone-ring { bottom: 10px; height: 13px; }
   .axis-units { inset: 0 0 18px 0; }
   .axis-unit { width: clamp(52px, 12vw, 86px); }
-  /* 竖屏：战斗立绘同步抬档（与竞技场底图比例咬合） */
-  .axis-unit .au-img { height: calc(clamp(104px, 17vh, 160px) * var(--uscale, 1)); }
-  .axis-unit .au-img.battler { height: calc(clamp(92px, 17vh, 150px) * var(--uscale, 1)); }
-  .axis-field { --ground0: 20px; --lane-gap: 15px; }
+  /* v91 相对坐标系：立绘高/地线/排距/飞高全部 cqh（随战场自适应）——
+   * 移动端不再需要 px 覆盖（曾经的"改了等于没改"高发区），只留横向斜移微调 */
   .axis-unit.off-row { --lx: 5px; }
-  .axis-unit.lane-1 { --lx: 11px; }
-  .axis-unit.lane-2 { --lx: 21px; }
-  .axis-unit.lane-3 { --lx: 31px; }
-  .axis-unit.airborne { --ay: -72px; }
-  .axis-unit.airborne.air-2 { --ay: -96px; }
-  .axis-unit.airborne.air-3 { --ay: -120px; }
+  .axis-unit.lane-1 { --lx: 17px; }
+  .axis-unit.lane-2 { --lx: 32px; }
+  .axis-unit.lane-3 { --lx: 45px; }
   .au-blades { scale: .8; }
   .axis-unit .au-glyph { width: clamp(44px, 11vw, 64px); }
   .axis-unit .au-name { font-size: 10px; }
@@ -2682,25 +2755,47 @@ html, body { touch-action: manipulation; }
 /* 凌空（纵深语言 v3——depth-design D2）：高度=境界档（airGrade），与"远"（排）彻底分家。
  * 三件套：遁光踏足 + 影子留在地线上（基础 ::after 吃 --ay 自动归地）+ 垂直光柱（高度的脐带）。
  * "韩立飞得比南陇侯高"——档位差同屏可见，高度即境界的俯视 */
-.axis-unit.airborne { --ay: -96px; z-index: 7; }
-.axis-unit.airborne.air-2 { --ay: -126px; }
-.axis-unit.airborne.air-3 { --ay: -156px; }
+/* 高度档（v91 相对坐标系+抬高）：飞高=战场高的百分比（cqh）——任何屏幕下高度感恒定。
+ * air-1 抬 30%（zoom 后拉配合下，头顶不出画框）——用户实锤"飞太低踩在同道头上"，
+ * 高度必须一眼读出"在她上空"而不是"站她头顶" */
+.axis-unit.airborne { --ay: -30cqh; z-index: 11; }
+.axis-unit.airborne.air-2 { --ay: -40cqh; }
+.axis-unit.airborne.air-3 { --ay: -50cqh; }
+/* ⚠ z 序铁律（v92 修，用户实锤"她升空盖住我"）：升空不改变排深主序——
+ * 深排单位飞上天也仍在前排身后（各排内 +1 压过本排地面单位即可）。
+ * 同时升空横向错位（--ax）：深排飞行单位再斜退一步，"她在我斜后上方"而非正上叠脸 */
+.axis-unit.lane-1.airborne { z-index: 9; --ax: 13px; }
+.axis-unit.lane-2.airborne { z-index: 7; --ax: 22px; }
+.axis-unit.lane-3.airborne { z-index: 5; --ax: 30px; }
 .axis-unit.airborne .au-img {
   filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)) drop-shadow(0 0 16px rgba(140,210,250,.22));
   animation: portraitIn .4s ease, hoverFloat 2.6s ease-in-out .4s infinite;
 }
+/* 升空不丢空气透视（v92 修——airborne 滤镜曾整条覆盖排深暗化，深排单位一升空
+ * 反而变亮"贴脸"）：深排飞行单位仍带本排的暗化与降饱和 */
+.axis-unit.lane-1.airborne .au-img {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)) drop-shadow(0 0 16px rgba(140,210,250,.22)) brightness(.93) saturate(.88);
+}
+.axis-unit.lane-2.airborne .au-img {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)) drop-shadow(0 0 14px rgba(140,210,250,.2)) brightness(.88) saturate(.8);
+}
+.axis-unit.lane-3.airborne .au-img {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)) drop-shadow(0 0 12px rgba(140,210,250,.18)) brightness(.84) saturate(.74);
+}
 /* 垂直光柱（元素自带两枚伪元素：柱体+遁光踏足）——从脚下遁光垂到地面影子，
- * 人与影一线相连，"悬在何处的上空"一眼即知（::before 槽位还给接触影） */
-.axis-unit .air-pillar { display: none; }
-.axis-unit.airborne .air-pillar {
+ * 人与影一线相连，"悬在何处的上空"一眼即知（::before 槽位还给接触影）。
+ * 常驻 DOM、靠 opacity 过渡现隐——升空时遁光渐亮而非突现（丝滑） */
+.axis-unit .air-pillar {
   display: block; position: absolute; left: 50%; width: 2px;
   bottom: calc(var(--feet, 40px) + var(--ay, 0px) + 8px);
   height: calc(-1 * var(--ay, 0px) - 12px);
   translate: -50% 0; pointer-events: none; z-index: -1;
   background: linear-gradient(180deg, rgba(150,225,255,.34), rgba(150,225,255,.04));
+  opacity: 0; transition: opacity .45s ease .12s;
 }
+.axis-unit.airborne .air-pillar { opacity: 1; }
 /* 遁光踏足：御器悬空的灵光平台（修仙者不是浮空，是踏光而立）——挂在光柱顶端=脚底 */
-.axis-unit.airborne .air-pillar::before {
+.axis-unit .air-pillar::before {
   content: ""; position: absolute; left: 50%; top: -9px; width: 88px; height: 15px;
   translate: -50% 0; border-radius: 50%;
   background: radial-gradient(ellipse at 50% 58%, rgba(150,225,255,.55), rgba(110,195,240,.2) 55%, transparent 78%);
@@ -2708,9 +2803,10 @@ html, body { touch-action: manipulation; }
 }
 @keyframes dunGlow { 0%, 100% { opacity: .6; scale: .9 1; } 50% { opacity: 1; scale: 1.1 1; } }
 @keyframes hoverFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -9px; } }
-/* 镜头公式改走 --uscale（只缩人不缩场，见 .au-img）——整场几何缩放已废：
- * scale 场会把单位/血条/雾柱缩成一块"悬空矩形"，边缘与底图割裂出黑框（v85 教训） */
-#axis-field { transition: transform .6s ease; transform-origin: 50% 78%; }
+/* 统一相机（v89）：世界层（axis-lane+axis-units+地台）吃同一个 scale(zoom)，
+ * origin 贴地（50% 100%）——镜头后拉时人/格/地/影一体变小、脚位不漂；
+ * far/mid 各按层深系数缩（近缩多远缩少=真透视）。axis-field 本体不再变换 */
+.axis-lane, .axis-units { transform-origin: 50% 100%; }
 #axis-field.sky-view .axis-unit .au-img { filter: drop-shadow(0 10px 14px rgba(0,0,0,.5)); }
 
 /* ===== 二次确认（群战择敌/择地）：法术先上膛，再点目标 ===== */
@@ -2754,8 +2850,12 @@ html, body { touch-action: manipulation; }
   78% { translate: calc(var(--fx-shake, 8px) * .3) -1px; }
 }
 .fx-shaking { animation: fxShake .4s ease-out; }
-/* 镜头轨道（战斗宽轴通用） */
-.cam-track { transition: transform .8s cubic-bezier(.4, .05, .3, 1), width .3s; }
+/* 镜头轨道（战斗宽轴通用）——v90 镜头是"追"不是"绑"：
+ * 人物 left 过渡 .42s（人先动），镜头 1.15s 长尾缓动慢半拍跟上——
+ * "韩立在画面里走、镜头随后缓缓追"，而不是"世界跟着脚底滑"（用户实锤的体感翻转）。
+ * 全部背景层仍同曲线同时长（层间不脱节） */
+.cam-track { transition: transform 1.15s cubic-bezier(.22, .82, .26, 1), width .4s; }
+.combat-bg, .combat-bgmid { transition: opacity .6s ease, transform 1.15s cubic-bezier(.22, .82, .26, 1); }
 /* 洞窟热点（轴格上的采集物）：灵光底座，走近才亮 */
 .cave-hot {
   position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);

@@ -203,8 +203,10 @@ const Main = {
           // 客随统帅：南宫婉前辈压阵（mastery 2——她点将，你接应）
           Engine._sideOverride = Object.assign(Engine._nangongwanAlly(), { mastery: 2, hp: 120, hpMax: 120 });
           // 战场：旷野长轴 + 路边灵物（战中可采——贪与稳）
+          // sceneBg=舞台盒森林单图（v90 对照实验：两翼收口构图 vs 三层合成，验"浮在图上"的根因）
           Engine._caveFightCfg = {
             W: 15, lanes: 3, playerPos: 3, sidePos: 4, enemyPos: 12,   // 旷野=3 排（排数与格数同源）
+            sceneBg: "bt_forest",
             hotspots: [
               { id: "d_herb", pos: 2, name: "血色主药", loot: { xueshi_zhuyao: 1 } },   // 在身后：回采=放风筝走位的奖励
               { id: "d_stone", pos: 9, name: "岩缝灵石", loot: { lingshi: 3 } },
@@ -214,6 +216,7 @@ const Main = {
           if (Engine._combat && Engine._combat.enemies[0]) {
             Engine._combat.enemies[0].mastery = 1;   // 狼王=兽王老练档
             // 编队展示（2.5 排制）：头狼压战位、灵狼游走僚位策应——杀穿前排，后排才被逼上来
+            // （lane 2 对狼这种低矮立绘太狠：缩成保护色隐进背景——深二排留给高大单位）
             const packWolf = new CombatAPI.Fighter(Object.assign({}, WORLD.enemies.wild_wolf, { team: "enemy", lane: 1, pos: 10 }));
             Engine._combat.enemies.push(packWolf);
             Engine._combat._rollOneIntent(packWolf);

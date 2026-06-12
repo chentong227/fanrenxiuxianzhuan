@@ -38,8 +38,14 @@
     qingniu: { p: 1 }, road: { p: 1 }, shanmen: { p: 1 }, miju: { p: 1 },
     jiayuan_city: { p: 1 }, tainan_fair: { p: 1 }, huangfeng_gate: { p: 1 },
     baiyao_yuan: {},
-    // 战斗场景底图（对阵轴战场：下半幅开阔地面，横版专用）
+    // 战斗场景底图（对阵轴战场：下半幅开阔地面，横版专用；v90 起为舞台盒构图——
+    // 两翼近景收口环抱+中央开阔，"人被环境包住"）
     bt_forest: {}, bt_road: {}, bt_valley: {}, bt_night: {},
+    // 前景遮挡条带（v90）：近景失焦草石（透明 PNG），压在全部单位之前——最快视差层。
+    // 分场景配色：前景与底图地面同色才像"长在地里"（fg_combat=通用回退）
+    fg_combat: {}, fg_forest: {}, fg_road: {}, fg_night: {},
+    // 三层分级制（v88）：_far=无立物远景层；_mid=中景物件透明条带（人物身后独立视差）
+    bt_road_far: {}, bt_road_mid: {},
     // 血色禁地与地火之屋
     xueshi_jindi: {}, dihuo_wu: {},
     // 长卷全景（21:9 横向卷轴底图——镜头横移时背景跟着退，探索轴/战斗轴共用）
@@ -74,7 +80,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 14,
+    ASSET_VER: 15,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 
