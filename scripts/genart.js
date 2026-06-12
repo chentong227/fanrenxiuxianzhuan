@@ -18,6 +18,8 @@ const ONLY = process.argv[3];
 if (!KEY) { console.error("用法: node scripts/genart.js <OPENROUTER_KEY> [onlyId]"); process.exit(1); }
 
 const MODEL = "google/gemini-2.5-flash-image";
+// 高质量模型（战斗立绘/战斗场景等长期资产——质量优先，按条目 hq:true 启用，不滥用）
+const MODEL_HQ = process.env.GEN_HQ_MODEL || "google/gemini-3-pro-image-preview";
 const PROXY = process.env.GEN_PROXY || "http://127.0.0.1:7890";
 const OUT = path.join(__dirname, "..", "assets");
 const TMP = path.join(__dirname, "..", "test");
@@ -31,6 +33,12 @@ const STYLE_CG = "《凡人修仙传》动画剧版同款画风，3D渲染电影
 // 竖版（手机竖屏专用资产，文件名 <id>_p.png）：纵向构图顶天立地，杜绝竖屏 cover 放大糊化
 const STYLE_SCENE_P = "《凡人修仙传》动画剧版同款画风，3D渲染电影级场景，写实国风仙侠，光影氛围考究，意境悠远，竖构图9:16纵向画幅、上下顶天立地铺满全图、无黑边无边框无留白，无人物特写无文字无水印";
 const STYLE_CG_P = "《凡人修仙传》动画剧版同款画风，3D渲染电影级剧情画面，写实国风仙侠，戏剧张力与光影氛围拉满，竖构图9:16纵向画幅、主体居中、上下顶天立地铺满全图、无黑边无边框无留白，无文字无水印无logo";
+// 战斗立绘（对阵轴单位）：全身像、白底抠图、姿态有威胁感——立在战场上的"棋子"
+const STYLE_BATTLER = "《凡人修仙传》动画剧版同款画风，3D渲染电影级质感，写实国风仙侠，单个完整全身像（从头到脚完整入画，脚部着地不裁切），姿态自然带战意，竖构图，纯白色背景#ffffff、主体与背景边界清晰分明、背景不含任何道具阴影或纹理，无文字无水印无logo";
+// 战斗场景（对阵轴战场底图）：横版、下半幅是开阔可站人的地面、中远景纵深——"人站在地图里"
+const STYLE_BATTLE_SCENE = "《凡人修仙传》动画剧版同款画风，3D渲染电影级场景，写实国风仙侠，横构图16:9，画面下半部为开阔平整的地面（空旷可供人物站立对峙，无遮挡物），中景与远景纵深分明、光影氛围考究，画面铺满整个画幅、无黑边无边框无留白，无人物无文字无水印";
+// 长卷全景（横向卷轴底图）：超宽画幅、横向连续构图——镜头左右平移时背景跟着走（探索轴/战斗轴共用）
+const STYLE_PANO = "《凡人修仙传》动画剧版同款画风，3D渲染电影级场景，写实国风仙侠，超宽全景横构图21:9宽幅、横向卷轴式连续构图（画面自左至右地貌连续渐变、无重复无拼接感），画面下半部为连续平整可行走的地面（无遮挡物），中景与远景纵深分明、光影氛围考究，画面铺满整个画幅、无黑边无边框无留白，无人物无文字无水印";
 
 const DEFS = {
   // —— 主要人物立绘（剧版特征锚定，确保识别度）——
@@ -135,11 +143,73 @@ Object.entries(EMO_DEFS).forEach(([id, prompt]) => {
   DEFS[id] = { kind: "portrait", file: id, prompt };
 });
 
+/* ============ 战斗资产（对阵轴 MVP：妖兽/敌人全身立绘 + 战场底图）============
+ * 全部 hq:true（长期资产质量优先）；ref 字段=参考图编辑（角色一致性变体——
+ * 同一底模换形态/配色，免重抽，nano banana 系看家本领）。 */
+const BATTLE_DEFS = {
+  // —— 妖兽全身立绘（battlers/）——
+  bt_wolf:   { kind: "battler", hq: true, prompt: "一头凶悍的灵狼妖兽，体型如小牛犊，铁灰色粗硬鬃毛，双目泛着幽绿凶光，獠牙外露低伏欲扑的姿态，爪锋锐利，周身隐隐有淡淡妖气" },
+  bt_chimu:  { kind: "battler", hq: true, ref: "battlers/bt_wolf.png",
+               prompt: "同一画风的狼形妖兽变体：赤目狼王——比灵狼更高大威猛的狼王，双目赤红如血，深炭黑色鬃毛间透出暗红色火纹，獠牙更长，姿态更具压迫感，周身缭绕淡淡赤色火煞之气" },
+  bt_baihu:  { kind: "battler", hq: true, prompt: "一头白额吊睛猛虎妖兽，体型雄壮如牛，白色额纹醒目，金黄虎纹皮毛油亮，双目金芒慑人，巨爪按地、虎躯低伏蓄势欲扑，周身金色妖煞之气隐现，兽王威仪" },
+  bt_wugong: { kind: "battler", hq: true, prompt: "一只铁背蜈蚣王妖兽，丈余长的巨型蜈蚣昂起前半身，铁灰色金属光泽的厚重甲壳层层叠叠，百足如林，一对毒牙泛着幽蓝寒光，触须高扬，姿态狰狞慑人" },
+  // —— 人形敌全身立绘 ——
+  bt_bandit:  { kind: "battler", hq: true, prompt: "凡俗山贼，三十多岁的精悍匪徒，乱发束巾，满脸横肉短须，身着打补丁的深褐色短打、缠布绑腿，双手握一柄环首砍刀斜指，咧嘴狞笑，匪气十足" },
+  bt_wuren:   { kind: "battler", hq: true, prompt: "凡俗武林弟子，二十出头的精壮青年武人，短打劲装束腰、袖口扎紧，马步沉稳、双拳抱式蓄劲，眼神剽悍专注，江湖武人的利落杀气" },
+  bt_sanxiu:  { kind: "battler", hq: true, prompt: "落魄散修，三十多岁面色风霜的修士，半旧青灰道袍下摆磨损，束发简陋，单手掐诀、另一手悬着一枚泛土黄色灵光的小石剑法器，眼神警惕桀骜，野路子修士的狠劲" },
+  // —— 剧情人物战斗立绘（ref=各自半身像：锁脸出全身战斗姿态——参考图编辑保一致性）——
+  bt_hanli:   { kind: "battler", hq: true, ref: "portraits/hanli.png",
+                prompt: "同一人物的完整全身像：少年韩立全身战斗姿态，侧身而立、一手扬起两指并剑准备御使法器，另一手收于腰侧扣着符纸，眼神冷静专注，橄榄黄绿色交领道袍下摆随气劲微扬，腰悬储物袋，沉稳蓄势" },
+  // —— 飞行姿态变体（ref=站姿战斗立绘锁角色一致性）——用户裁决：姿态与站立几乎相同、
+  //    不跳不跃不浮夸，只靠"脚尖垂下微错开+衣发轻飘"读出凌空（修仙御风的从容） ——
+  // （南宫婉飞姿已弃：v2 与站姿无异+抠图白圈——裙装角色飞姿复用站姿即可，省一张图）
+  bt_hanli_fly: { kind: "battler", hq: true, ref: "battlers/bt_hanli.png",
+                prompt: "同一人物同一服饰同一姿态的细微变体：少年韩立凌空静悬，身姿与平地站立几乎完全相同——上身保持原样的戒备姿态（一手两指并剑、一手收于腰侧），双脚离地自然下垂、足尖绷直向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬贴近前脚踝，凌空挺立的利落感），道袍下摆与腰带向后轻轻飘起一角，发梢微扬，从容驭气、克制飘逸，无跳跃无大动作" },
+  bt_luyunfeng: { kind: "battler", hq: true, ref: "portraits/luyunfeng.png",
+                prompt: "同一人物的完整全身像：陆云风全身战斗姿态，锦缎滚边青袍倨傲而立，单手负后、另一手两指掐剑诀，一柄青芒小剑悬浮于身前，神情阴鸷睥睨，世家子弟的骄横杀意" },
+  bt_jinguang: { kind: "battler", hq: true, ref: "portraits/jinguang.png",
+                prompt: "同一人物的完整全身像：金光上人全身战斗姿态，矮胖身躯罩在淡金色半透明光罩中，土黄僧袍鼓荡，双掌合十怒目狰狞，周身金光流转，杀手和尚的凶悍" },
+  bt_modafu:  { kind: "battler", hq: true, ref: "portraits/modafu.png",
+                prompt: "同一人物的完整全身像：墨大夫全身战斗姿态，深褐色金线团纹医袍老者侧身而立，枯瘦的手五指箕张、指间泛着青黑毒气，另一手拢于袖中，眼神阴狠狞笑，佛珠缠腕，毒师的森然" },
+  bt_tienu:   { kind: "battler", hq: true, ref: "portraits/tienu.png",
+                prompt: "同一人物的完整全身像：尸傀铁奴全身战斗姿态，铁青肤色的少年尸傀僵直前倾站立，双臂垂坠指节泛黑，双目空洞浊白，破败灰色短打，周身淡淡阴气缠绕，悲凉诡异" },
+  bt_wanxiaoshan: { kind: "battler", hq: true, ref: "portraits/wanxiaoshan.png",
+                prompt: "同一人物的完整全身像：万小山全身战斗姿态，圆脸憨厚的年轻散修紧张地双手搓出一团小火球，半旧靛青色道袍，鼓囊行囊仍背在背上，神情认真又微微发慌，可爱的同道" },
+  // —— 战斗场景底图（scenes/bt_*.png）——竞技场构图 v2（踩地感的根：地面是"近景台面"不是远眺）：
+  //    底部三分之一必须是延伸到画外的平整近地（纹理为脚边尺度：碎石草茎清晰可辨），
+  //    低机位平视微俯、地面横向开阔无遮挡（站位带），中景立物收两翼，远景给层次——人物将直接站在这块地上
+  bt_forest: { kind: "bgscene", hq: true, file: "bt_forest", prompt: "游戏横版战斗场景：低机位平视微俯的林中旷地，画面底部三分之一是延伸到画外的平整苔土地面（近景脚边尺度：青苔碎石落叶纹理清晰、横向开阔无遮挡的站位带），中景两侧古木枝叶在画框边缘收拢（全部景物以成年人身高为比例锚：近景灌木膝高、树干间距留出站位带，景深越远越小），远景林雾幽深天光斑驳，无人物无生物，野径斗法之地的幽与险" },
+  bt_road:   { kind: "bgscene", hq: true, file: "bt_road", prompt: "游戏横版战斗场景：低机位平视微俯的荒郊官道，画面底部三分之一是延伸到画外的平整黄土路面（近景脚边尺度：车辙碎石枯草纹理清晰、横向开阔无遮挡的站位带），中景路侧一截低矮的歪斜旧路牌与膝高乱石收边（全部景物以成年人身高为比例锚：路牌不高于一人、不超过画面高度五分之一，景深越远越小），远景丘陵雾霭黄昏冷光，无人物无生物，荒野遭遇战的萧索肃杀" },
+  bt_valley: { kind: "bgscene", hq: true, file: "bt_valley", prompt: "游戏横版战斗场景：低机位平视微俯的山谷旷地，画面底部三分之一是延伸到画外的平整青草坡地（近景脚边尺度：草茎裸岩野花纹理清晰、横向开阔无遮挡的站位带），中景两侧苍翠山壁枫木收边（全部景物以成年人身高为比例锚：近景裸岩膝高、枫木树冠远离地面带，景深越远越小），远景云雾峰峦天光清亮，无人物无生物，灵秀山谷中的对峙之地" },
+  bt_night:  { kind: "bgscene", hq: true, file: "bt_night", prompt: "游戏横版战斗场景：低机位平视微俯的月夜林缘，画面底部三分之一是延伸到画外的平整草地（近景脚边尺度：银辉浸染的草茎黑石纹理清晰、横向开阔无遮挡的站位带），中景林影如墨枝桠狰狞收边（全部景物以成年人身高为比例锚：近景黑石膝高、林木退至中景，景深越远越小），远景冷月高悬薄云掠过，无人物无生物，夜战伏杀的阴冷杀机" },
+
+  /* —— 血色禁地批（huangfeng-design 第三幕：会议人物+禁地场景+墨蛟）—— */
+  nangongwan: { kind: "portrait", hq: true, prompt: "少女南宫婉，约十八九岁，掩月宗天之骄女，乌黑如瀑的长发松挽垂落，眉目清艳绝伦、眼神清冷矜贵中藏锋芒，肤白胜雪，身着月白广袖修士长裙、银线绣月纹，姿容明艳不可方物又拒人千里" },
+  lihuayuan: { kind: "portrait", hq: true, prompt: "李化元，黄枫谷首席大长老，须发皆白的清癯老者，白发高束玉冠，长髯垂胸，目光深邃温和而不怒自威，身着月白镶青边的大长老道袍、袖口绣云纹，仙风道骨，结丹大修士的渊渟岳峙" },
+  fengyue: { kind: "portrait", hq: true, prompt: "修士封岳，三十岁上下的阴鸷精瘦男修，眉骨高耸眼窝深陷，眼神如毒蛇般冷静狠戾，墨绿色紧身劲装外罩暗纹皮甲，腕缚皮护手，腰间挂着数枚淬黑短刺，狙杀者的阴冷压迫感" },
+  zhongwu: { kind: "portrait", prompt: "修士钟吾，四十岁圆滑的胖商修，圆脸细眼总挂着生意人的笑，灰褐道袍外罩缀玉算盘的褡裢，手里捻着一卷地图，精明市侩但守信" },
+  hanyunzhi: { kind: "portrait", prompt: "女修菡云芝，二十五六岁的御灵宗女修，温婉沉静，乌发简髻插一支木簪，鹅黄道袍外罩浅褐披帛，怀抱一只药篓，眉眼间有挥之不去的轻愁" },
+  bt_mojiao: { kind: "battler", hq: true, prompt: "一头墨蛟妖兽，三四丈长的漆黑蛟龙幼体，蛇形长躯覆满乌黑鳞甲、鳞片泛着冷光，头生双角初成，血红竖瞳，利齿森然，身躯盘起昂首欲扑，周身缠绕浓重的黑色妖雾，凶戾慑人" },
+  bt_nangongwan: { kind: "battler", hq: true, ref: "portraits/nangongwan.png", guard: true,
+                prompt: "同一人物的完整全身像：南宫婉全身战斗姿态，白衣广袖凌波而立，足尖轻点、裙裾如月华铺展，一手扬袖间一条泛着幽幽月华青辉的淡青色绫带绕身飞舞（绫带为淡青蓝色发光，不是白色），另一手两指竖于唇前掐诀，眉目清艳冷冽，掩月宗天骄居高临下的从容杀意" },
+  bt_dujiao: { kind: "battler", hq: true, prompt: "一头独角青鳞妖兽，体型如巨狮的一级妖兽，通体覆盖青色鳞甲，额生一根螺旋独角泛着幽光，四肢粗壮利爪扣地，獠牙外露低吼，肌肉贲张作扑击姿态，周身腾起淡青色妖气，凶悍威猛" },
+  xueshi_jindi: { kind: "scene", hq: true, prompt: "血色禁地秘境，赤红色雾气弥漫的诡异山谷，嶙峋赤岩与暗红色藤蔓交错，谷底散落泛着血色微光的奇花异草，远处一汪暗红水潭隐有巨影盘踞，天空被血色屏障笼罩，瑰丽而凶险的上古禁地氛围" },
+  // —— 长卷全景（scenes/pano_*.png：探索轴/战斗轴的横移长背景——镜头拉动时背景跟着走）——
+  pano_dongku: { kind: "pano", hq: true, file: "pano_dongku", prompt: "血色禁地深潭洞窟的超宽全景横剖长卷：幽深巨大的水蚀洞窟自左向右绵延——左端是狭窄洞口岩道、散落着断口平滑的兽骨，中段沿岸渐次开阔、暗红色潭水铺展、岩壁血藤垂落点缀着泛血色微光的灵草与岩缝晶石，右端深处潭心最阔、黑雾隐隐巨影盘踞，岩顶倒悬钟乳石、暗红水光在岩壁上流转如倒悬之河，下沿是连续平整的潭岸岩台，阴森瑰丽的妖窟氛围" },
+  pano_xueshi: { kind: "pano", hq: true, file: "pano_xueshi", prompt: "血色禁地野外的超宽全景：单一连续镜头拍摄的一片完整谷地（绝对不是多联画、无任何竖向分割线或画框，地平线与天空自左至右完全连贯），赤红雾气笼罩——左侧嶙峋赤岩隘口，中部开阔赤色草甸与泛血光的奇花药圃、暗红藤蔓缠绕枯木，右侧血雾渐浓隐约可见水潭轮廓，天空被血色屏障封顶，下沿是连续平整的赤土地面，瑰丽凶险的上古禁地氛围" },
+  dihuo_wu: { kind: "scene", prompt: "仙门地火之屋内景，开凿于山岩内的炼丹石室，中央一座青铜丹炉架在地火裂隙之上、炉下赤红地火翻腾，四壁刻满导火纹路微微发亮，架上摆着玉瓶药匣，热浪与丹香蒸腾，幽暗中一片炉火通明" },
+  cg_mojiao: { kind: "cg", hq: true, file: "cg_mojiao", prompt: "血色禁地深处的生死并肩之战：赤红雾气弥漫的水潭边，漆黑蛟龙妖兽自潭中暴起、黑雾翻涌血瞳凶戾，潭岸上白衣女修与青衫少年背靠背而立——女修广袖扬起月华流转，少年扬手掷出金色符宝，符光划破血雾，二人衣袂翻飞，殊死合击的电影级瞬间" },
+};
+Object.assign(DEFS, BATTLE_DEFS);
+
 const STYLES = {
   portrait: STYLE_PORTRAIT,
   scene: STYLE_SCENE, scene_p: STYLE_SCENE_P,
   cg: STYLE_CG, cg_p: STYLE_CG_P,
   map: STYLE_SCENE,
+  battler: STYLE_BATTLER,
+  bgscene: STYLE_BATTLE_SCENE,
+  pano: STYLE_PANO,
 };
 // kind → 输出子目录（assets 分类重构 2026-06-11）
 const SUBDIR = {
@@ -147,14 +217,29 @@ const SUBDIR = {
   scene: "scenes", scene_p: "scenes",
   cg: "cg", cg_p: "cg",
   map: "maps",
+  battler: "battlers",
+  bgscene: "scenes",
+  pano: "scenes",
 };
 
-function genOne(id, def) {
+function genOne(id, def, opts = {}) {
   const style = STYLES[def.kind] || STYLE_SCENE;
+  // 参考图编辑（角色一致性变体）：把底图喂进去，prompt 只描述"变什么"
+  const content = [];
+  if (def.ref && !opts.noRef) {
+    const refFile = path.join(OUT, def.ref);
+    if (fs.existsSync(refFile)) {
+      const refB64 = fs.readFileSync(refFile).toString("base64");
+      content.push({ type: "image_url", image_url: { url: `data:image/png;base64,${refB64}` } });
+      content.push({ type: "text", text: `以参考图中的形象为底（保持同一画风、同一体态结构与渲染质感），生成变体：${def.prompt}。${style}。` });
+    }
+  }
+  if (!content.length) content.push({ type: "text", text: `${style}。画面内容：${def.prompt}。` });
+  const model = (def.hq && !opts.fallback) ? MODEL_HQ : MODEL;
   const body = JSON.stringify({
-    model: MODEL,
+    model,
     modalities: ["image", "text"],
-    messages: [{ role: "user", content: `${style}。画面内容：${def.prompt}。` }],
+    messages: [{ role: "user", content }],
   });
   const bodyFile = path.join(TMP, "_genart.body.json");
   const respFile = path.join(TMP, "_genart.resp.json");
@@ -167,12 +252,26 @@ function genOne(id, def) {
     "-H", "X-Title: FanrenXiuxian",
     "--data", "@" + bodyFile,
     "-o", respFile,
+    "--max-time", "180",
   ], { stdio: "ignore" });
   const j = JSON.parse(fs.readFileSync(respFile, "utf8"));
-  if (j.error) throw new Error(JSON.stringify(j.error));
+  if (j.error) {
+    // 高质量模型不可用（id 变动/限流）→ 自动降级 flash-image 重试一次
+    if (def.hq && !opts.fallback) {
+      console.log(`  [${id}] HQ 模型失败，降级 flash 重试: ` + JSON.stringify(j.error).slice(0, 120));
+      return genOne(id, def, Object.assign({}, opts, { fallback: true }));
+    }
+    throw new Error(JSON.stringify(j.error));
+  }
   const m = j.choices && j.choices[0] && j.choices[0].message;
   const url = m && m.images && m.images[0] && m.images[0].image_url && m.images[0].image_url.url;
-  if (!url) throw new Error("无图片返回: " + JSON.stringify(j).slice(0, 200));
+  if (!url) {
+    if (def.hq && !opts.fallback) {
+      console.log(`  [${id}] HQ 无图返回，降级 flash 重试`);
+      return genOne(id, def, Object.assign({}, opts, { fallback: true }));
+    }
+    throw new Error("无图片返回: " + JSON.stringify(j).slice(0, 200));
+  }
   const b64 = url.split(",")[1];
   const dir = path.join(OUT, SUBDIR[def.kind] || "");
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -182,12 +281,23 @@ function genOne(id, def) {
   return outFile;
 }
 
-// 生成后自动后处理：立绘抠透明底；场景/CG 裁影院黑边（竖版同样强裁左右黑条）
+// 生成后自动后处理：立绘/战斗立绘抠透明底；场景/CG 裁影院黑边（竖版同样强裁左右黑条）。
+// 上游偶发回 JPEG 字节（扩展名仍 .png）——先转真 PNG 再抠（jpg2png.ps1，.NET 自带解码）
+function ensurePng(file) {
+  const buf = fs.readFileSync(file);
+  if (buf.readUInt32BE(0) === 0x89504e47) return;
+  console.log("  非 PNG 字节，自动转码…");
+  execFileSync("powershell", ["-ExecutionPolicy", "Bypass", "-File", path.join(__dirname, "jpg2png.ps1"), "-Path", file], { stdio: "inherit" });
+}
 function postProcess(file, def) {
   try {
-    if (def.kind === "portrait") {
-      execFileSync("node", [path.join(__dirname, "cutout.js"), file, file], { stdio: "inherit" });
+    if (def.kind === "portrait" || def.kind === "battler") {
+      ensurePng(file);
+      const cutArgs = [path.join(__dirname, "cutout.js"), file, file];
+      if (def.guard) cutArgs.push("--guard");   // 白衣/浅色主体：中央保护区防洪泛误吞
+      execFileSync("node", cutArgs, { stdio: "inherit" });
     } else if (def.kind !== "map") {
+      ensurePng(file);
       execFileSync("node", [path.join(__dirname, "cropbars.js"), "--force", file], { stdio: "inherit" });
     }
   } catch (e) { console.log("  后处理失败（图已保存，可手动处理）:", e.message); }

@@ -836,6 +836,254 @@ const STORY = [
       },
     ],
   },
+
+  /* ============================================================
+   * 黄枫谷篇 · 第三幕「血色试炼」（动漫 9/12~15 话考据）
+   * 注：禁地箱庭探索 v2 重制中——本链先以叙事+对阵轴战斗跑通主线，
+   *     重制完成后「五日采药」段将替换为真探索（docs/explore-redesign.md）。
+   * ============================================================ */
+  {
+    id: "jindi_meeting",
+    cond: (s) => s.flags.xueshi_due && State.absMonth() >= s.flags.xueshi_due && s.realmIndex >= 10 && !s.flags.xueshi_opened,
+    bgm: "tense",
+    objTitle: "大比时节",
+    objHint: "血色禁地开启在即——名额之争，今日在大殿见分晓。",
+    title: "血色禁地 · 名额之会",
+    text: [
+      { scene: "黄枫谷 · 山门大殿" },
+      "大比时节，议事大殿内挤满了各脉弟子。你随百药园的杂役队伍站在最末，前面是一片赭黄道袍的海。",
+      "高台之上坐着一位白发玉冠的老者——入谷那日同门口中的「李师祖」，黄枫谷首席大长老，李化元。",
+      { say: "李化元", text: "血色禁地，六十年灵气一衰。此番开启，名额三十，各脉按例分派。" },
+      "台下顿时嗡声一片。有人高声问为何不再依五年旧例，李化元尚未答话，殿侧一个清冷的声音先开了口。",
+      { say: "南宫婉", emo: "cold", text: "诸位若是看过近三十年的灵药产数，就不会问这句话了。禁地灵气衰减，主药一茬比一茬薄——再按五年开，开到后头就是空山。" },
+      "白衣广袖的年轻女修立在殿侧，眉目清艳，声音不高，满殿却静了下来。有人低声道：那是掩月宗的南宫婉，此番代宗门观礼。",
+      { aside: "掩月宗……天之骄女。传闻她筑基用了不到四年。" },
+      "名额分派到百药园一脉时，管事的报上去三个名字，没有你。",
+      "你出列，朝高台一礼，只说了一句：「弟子练气十一层，药理粗通——禁地里的主药，认得全。」",
+      "满殿哄笑。李化元却抬了抬眼皮，目光落在你身上，停了一息。",
+      { say: "李化元", text: "百药园马师伯荐过你。也罢——多你一个名额。活着回来。" },
+    ],
+    onArrive(s) {
+      State.setFlag("xueshi_opened");
+      if (!s.metNpcs.includes("lihuayuan")) s.metNpcs.push("lihuayuan");
+      if (!s.metNpcs.includes("nangongwan")) s.metNpcs.push("nangongwan");
+      Engine.writeLedger("jindi_seat", "名额大会上凭一句「主药认得全」拼下血色禁地席位");
+      Engine.addMilestone("血色禁地：名额到手", "deed");
+    },
+    choices: [
+      { text: "清点行装，踏入血幕——五日生死局，开始了。", resolve: "jindi_enter" },
+    ],
+  },
+  {
+    // 【已被舆图系统接管】血色禁地五日 → js/exploremap.js（L1 舆图）。叙事卡留档不再触发。
+    id: "jindi_days",
+    skipIf: () => true,
+    cond: (s) => s.flags.xueshi_opened && !s.flags.jindi_mid_done && !s.flags.mojiao_slain,
+    bgm: "tense",
+    title: "血色禁地 · 五日",
+    text: [
+      { scene: "血色禁地" },
+      "入禁那日，三十人鱼贯踏入血幕。赤红的雾气吞掉每个人的身影——从这一刻起，五日之内，生死各安天命。",
+      "禁地里的天是暗红色的。赤岩嶙峋，藤蔓如血管般攀爬，脚边的草叶泛着诡异的血色微光。",
+      { aside: "血色主药多生在中环以深。外环安稳，药也薄；越深，药越足——人也越凶。" },
+      "第一日，你在外环摸清了禁地的脾性，袋里已有两株主药。前方岔路，血雾深处隐隐传来争斗声与……极轻的脚步声。",
+      { aside: "有人在猎人。猎的不是妖兽——是同门。" },
+    ],
+    choices: [
+      {
+        text: "稳守外环：按药理按图索骥，安稳采满五日。",
+        hint: "主药×4 稳稳到手——但中环的厚药与你无缘",
+        effect(s) {
+          State.give("xueshi_zhuyao", 4);
+          State.setFlag("jindi_mid_done");
+          Engine.writeLedger("jindi_safe", "血色禁地中稳守外环，安稳采药");
+          Engine.passTime(1);
+          return { text: "三日下来，你像在百药园当值一样按部就班：辨土、寻脉、起药——主药四株稳稳入袋。\n\n远处偶有惨叫声穿透血雾，你充耳不闻。稳，是你在七玄门学会的第一个字。\n\n（血色主药×4。第四日，该往深处的水潭去了——主药最厚的地方，绕不开。）", kind: "good" };
+        },
+      },
+      {
+        text: "深入中环：药足之地，富贵险中求。",
+        hint: "主药×6——但血雾里那个猎人，恐怕正等着你这样的",
+        resolve: "fengyue_ambush",
+      },
+    ],
+  },
+  {
+    // 【已被舆图系统接管】封岳=舆图巡逻棋子，相遇即战。叙事卡留档不再触发。
+    id: "fengyue_ambush",
+    skipIf: () => true,
+    cond: (s) => false,   // 仅由 jindi_days 选择直达（resolve 径）
+    bgm: "tense",
+    title: "中环 · 狙杀者",
+    text: [
+      { scene: "血色禁地" },
+      "中环的主药果然厚——两日不到，你已采足六株。第三日清晨，你蹲身起第七株药时，后颈的寒毛忽然全竖了起来。",
+      "你侧身的刹那，一枚淬黑短刺擦着耳际钉进岩壁，没柄。",
+      { say: "封岳", tone: "blood", text: "好警觉。难怪马老头肯荐你这么个杂役。" },
+      "血雾里走出一个墨绿劲装的精瘦男修，足下一双灰靴轻得没有声音。你认得这双靴子——谷里失踪弟子的卷宗上，画过。",
+      { say: "封岳", text: "把药袋留下。再把储物袋也留下。我赶时间。" },
+      { aside: "狙杀者封岳——靠猎杀同门换资粮的亡命徒。他的靴子能让他快人一步……杀了他，那双靴子就是我的。" },
+    ],
+    choices: [
+      { text: "「药我自己拿命换的。你的命，也一样。」——战！", resolve: "fengyue_fight" },
+    ],
+  },
+  {
+    // 【已被舆图系统接管】深潭=L3 墨蛟洞（观战/隐蔽采集/决战）。叙事卡留档不再触发。
+    id: "jindi_deep",
+    skipIf: () => true,
+    cond: (s) => s.flags.jindi_mid_done && !s.flags.mojiao_slain,
+    bgm: "boss",
+    title: "深处 · 血潭",
+    text: [
+      { scene: "血色禁地" },
+      "第四日，你循着主药的脉络一路向深，到了禁地最深处——一汪暗红的水潭。",
+      "潭边的血色主药密得像园圃，株株饱满欲滴。而潭水中央，一道白衣身影正凌波而立，广袖轻扬间摘走潭心最大的那株。",
+      { say: "南宫婉", emo: "cold", text: "……是你。名额会上多出来的那个。" },
+      "她话音未落，潭水轰然炸开——漆黑的蛟影自水底暴起，黑雾翻涌，血红的竖瞳冷冷扫过潭岸的两个人。",
+      { say: "南宫婉", tone: "blood", text: "墨蛟！它早就守着这片药——退！" },
+      { aside: "退？潭边的主药、它身上的角与鳞……还有这个压制了修为也敢进禁地的女人。今天没有退路，也不需要。" },
+    ],
+    choices: [
+      { text: "「掩月宗的道友——借个背。」背靠背，战墨蛟！", resolve: "mojiao_fight" },
+    ],
+  },
+  {
+    id: "mojiao_after",
+    // 兜底：没杀墨蛟就出了禁地（提前走/五日强制传出）→ 跳过潭边戏，主线照走
+    skipIf: (s) => s.flags.mojiao_resolved || (s.flags.jindi_left && !s.flags.mojiao_slain),
+    cond: (s) => s.flags.mojiao_slain && !s.flags.mojiao_resolved,
+    title: "潭边 · 不能说的，与记一辈子的",
+    text: [
+      { scene: "血色禁地", cg: "mojiao" },
+      "墨蛟庞大的尸身轰然砸进浅滩，黑雾散尽。你拄着膝盖喘息，后劲一阵阵涌上来——赢了。",
+      "就在这时，蛟腹之下「啵」地一声轻响。一缕说不出名目的异香，混进血色雾气里，丝丝缕缕，避无可避。",
+      { aside: "不好——妖兽临死的脏东西破了。屏息！……来不及了。" },
+      "香气入肺，识海像被温水漫过。你最后的清明里，只看见她回头望来的那一眼——那双总是冷冷的眼睛，此刻雾蒙蒙的，像化开的月亮。",
+      "（血色的雾，遮住了潭边。）",
+      "——醒来时，天光已经换了颜色。",
+      "她背对着你坐在三步外，白衣整整齐齐，乌发一丝不乱，仿佛什么都没有发生。只有潭水知道发生过什么。",
+      { say: "南宫婉", emo: "cold", text: "墨蛟淫囊之毒，你我皆中，谁也怪不得谁。——今日之事，此生不得对第三人提起。" },
+      "她的声音冷静得近乎残忍，说完便起身取材：割角、剥鳞、自蛟首中摄出元神。最后，她把一枚拳头大的暗色「内丹」抛了过来。",
+      { say: "南宫婉", text: "内丹归你，角鳞也归你。掩月宗要的元神，我已取了。两清。" },
+      "你接住内丹，应了声「好」。她广袖一拂便要凌空而去——却在血雾边缘，停了一步。",
+      { say: "南宫婉", text: "……还没问你名字。" },
+      "「韩立。」你说，「立碑的立。」",
+      "她背对着你，半晌没动。血色雾气里，你听见她极轻地重复了一遍。",
+      { say: "南宫婉", emo: "smile", text: "韩立。立碑的立。……我记下了。" },
+      { aside: "她说此生不得提起。可有些事不必提起，也烂不掉——它会跟着人走很远，远到谁也想不到的地方。" },
+      "出禁地那日，李化元亲自在血幕外等着。听完你报上的灵药数目，老人捋须的手停了一停。",
+      { say: "李化元", text: "三十五种。比老夫赌约里押的还多三种。——韩立，可愿做老夫的记名弟子？" },
+    ],
+    onArrive(s) {
+      State.setFlag("mojiao_resolved");
+      State.setFlag("nangongwan_bond");   // 正宫线之根：血色之夜（命途线 fate-design）
+      State.give("xueshi_zhuyao", 2);
+      Engine.writeLedger("mojiao_together", "血色禁地深潭，与南宫婉背靠背斩杀墨蛟");
+      Engine.writeLedger("mojiao_oath", "墨蛟淫囊之毒下共度血色一夜——此生不得对第三人提起的约定，与一个被记住的名字");
+      Engine.writeLedger("mojiao_neidan", "墨蛟「内丹」入袋——这枚丹的来路，日后见分晓");
+      Engine.addMilestone("血色之夜：南宫婉记住了你的名字", "showdown");
+      Engine.addMilestone("拜入李化元门下（记名弟子）", "deed");
+      Engine.addFame(12, "血色禁地中斩杀墨蛟的杂役弟子");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      { text: "把这五日、连同不能说的那一夜，都埋进血色雾气里。「弟子韩立，拜见师尊。」", resolve: "advance" },
+    ],
+  },
+
+  /* ============================================================
+   * 黄枫谷篇 · 第四幕「筑基」：地火炼丹 → 狂嗑筑基 → 青元剑诀 → 洞府 → 叶师叔之报
+   * ============================================================ */
+  {
+    id: "qingyuan_gift",
+    skipIf: (s) => s.flags.qingyuan_given,
+    cond: (s) => State.realm().tier === "foundation" && !s.flags.qingyuan_given,
+    title: "筑基 · 青元剑诀",
+    text: [
+      { scene: "黄枫谷 · 山门大殿" },
+      "筑基的消息传开那日，整个百药园都炸了——四灵根伪灵根筑基，黄枫谷立谷以来，数得出几个？",
+      "李化元把你唤去丹房，案上摊着一卷泛黄的剑诀。",
+      { say: "李化元", text: "长春功到头了。筑基之后主修须换——这卷《青元剑诀》，谷中流传九层，弟子多止步三层。以你的心性，不止于此。" },
+      "你双手接过。卷册入手微沉，翻开第一页，一缕青芒自纸面流过。",
+      { say: "李化元", tone: "soft", text: "去吧。把它练出名堂来——别辜负你那二十颗丹。" },
+      { aside: "十九颗碎在丹田里，最后一颗成了。筑基这条路，是拿命堆出来的——往后的路，更是。" },
+    ],
+    onArrive(s) {
+      State.setFlag("qingyuan_given");
+      DATA.techniques.qingyuan_sword.locked = false;
+      if (typeof Loadout !== "undefined") {
+        Loadout.learnTechnique(s, "qingyuan_sword");
+        Loadout.setMain(s, "qingyuan_sword");
+        ["qingyuan_jianmang", "qingyuan_jiandun"].forEach(id => Loadout.equipSkill(s, id));
+      }
+      Engine.addMilestone("主修换代：《青元剑诀》", "bigitem");
+      Engine.settleLedger("zhuji_dan_grudge", "入谷那日被夺走的东西，你用二十颗丹与一个境界，彻底讨了回来");
+    },
+    choices: [
+      { text: "闭关参剑——青元剑芒，当自指间出。", resolve: "advance" },
+    ],
+  },
+  {
+    id: "dongfu_pick",
+    skipIf: (s) => s.flags.dongfu_done,
+    cond: (s) => s.flags.qingyuan_given && !s.flags.dongfu_done,
+    title: "洞府 · 安身之地",
+    text: [
+      { scene: "huangfeng_gate" },
+      "筑基弟子，有开洞府之权。掌门殿发下三处可选之地的图册，附赠一面「迷踪阵旗」——这是规制内的体面。",
+      { aside: "杂役棚里睡了三年，如今也轮到自己择一处山头了。" },
+    ],
+    choices: [
+      {
+        text: "灵泉眼：泉眼吐灵，修炼事半功倍——但先得击退占洞的妖物。",
+        hint: "修炼效率最高（动漫之选）",
+        effect(s) {
+          State.setFlag("dongfu_done"); s.flags.dongfu_type = "lingquan";
+          Engine.addMilestone("洞府落成：灵泉眼", "bigitem");
+          Engine.writeLedger("dongfu_lingquan", "择灵泉眼开洞府（修炼效率+），驱走了占洞的灵猿");
+          return { text: "你提剑上山，洞中盘踞的白毛灵猿与你斗了半日，终是不敌，呜咽着让出泉眼。\n\n泉水叮咚，灵气氤氲——你的第一座洞府，悬在黄枫谷的云雾里。自此闭关修炼，事半功倍（修炼效率+15%）。", kind: "good" };
+        },
+      },
+      {
+        text: "僻静谷：藏风聚气，最不打眼。",
+        hint: "藏拙者之选：洞府不显，扬名涟漪-（低调度+）",
+        effect(s) {
+          State.setFlag("dongfu_done"); s.flags.dongfu_type = "pijing";
+          Engine.addMilestone("洞府落成：僻静谷", "bigitem");
+          Engine.writeLedger("dongfu_pijing", "择僻静幽谷开洞府——藏拙者的本能");
+          return { text: "你选了最不打眼的那道幽谷。同门都说杂役出身就是小家子气——你笑笑不答。\n\n谷口布下迷踪阵旗，云雾一锁，神仙难寻。藏得深，才睡得着。（洞府隐蔽：是非更难寻上门。）", kind: "good" };
+        },
+      },
+    ],
+  },
+  {
+    id: "ye_finale",
+    skipIf: (s) => s.flags.huangfeng_complete,
+    cond: (s) => s.flags.dongfu_done && !s.flags.huangfeng_complete,
+    bgm: "tense",
+    title: "尾声 · 叶师叔之报",
+    text: [
+      { scene: "黄枫谷 · 山门大殿" },
+      "你筑基后第三个月，黄枫谷出了大事。",
+      "执法堂深夜锁拿叶师叔——罪名是「私通魔道」。卷宗上写得分明：千竹教卧底，潜伏二十年，入谷四连里被他夺走的那枚筑基丹，早顺着暗线送去了魔道。",
+      { aside: "当日满殿无人敢言的那位叶师叔……原来掌门的「不主持公道」，背后还有这一层。" },
+      "可惜执法堂晚了一步。叶师叔越狱遁走，三日后，尸身在谷外百里的乱石滩上被发现——出手的是路过的散修雷万鹤，一击毙命。",
+      { say: "马师伯", tone: "soft", text: "千竹教的人，死在自己买凶的路上。报应这东西，从来不缺席，只是不挑时辰。" },
+      "执法堂清点叶师叔洞府时，搜出的赃物里有一卷无人能识的功法残卷——神识一触，深奥得叫人头痛。卷首两个古字：大衍。",
+      { aside: "「大衍诀」……执法堂当它是废卷归档了。可那一眼，你记住了——总有一天，它会是你的。" },
+    ],
+    onArrive(s) {
+      State.setFlag("huangfeng_complete");
+      Engine.settleLedger("ye_grudge", "夺丹的叶师叔身败名裂、死于非命——这笔账，世界替你收了");
+      Engine.writeLedger("dayan_clue", "叶师叔遗物中那卷「大衍诀」残卷，归档在执法堂库房——你记住了");
+      Engine.addMilestone("黄枫谷篇 · 完：伪灵根筑基，谷中立足", "breakthrough");
+      if (typeof Sfx !== "undefined") Sfx.play("bell");
+    },
+    choices: [
+      { text: "魔道暗流已动——天南，要变天了。（黄枫谷篇·完）", resolve: "advance" },
+    ],
+  },
 ];
 
 window.STORY = STORY;

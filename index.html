@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="build" content="51" />
+  <meta name="build" content="87" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -25,11 +25,11 @@
   })();
   </script>
   <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=51" />
+  <link rel="stylesheet" href="css/style.css?v=87" />
 </head>
 <body>
   <div id="app">
-    <!-- 开始 / 角色创建界面：山门为底，竖排题字 -->
+    <!-- 开局 / 角色创建界面：山门为底，竖排题字 -->
     <section id="screen-create" class="screen active">
       <div class="create-bg"></div>
       <div class="create-veil"></div>
@@ -55,9 +55,9 @@
 
         <p class="hint">天地灵根稀有，绝大多数修士不过五灵根、伪灵根之流。资质平庸者，唯有以苦修与万全准备弥补天资。</p>
 
-        <button id="btn-start" class="btn btn-primary" disabled>踏 入 仙 途</button>
+        <button id="btn-start" class="btn btn-primary" disabled>踏 入 此 界</button>
         <button id="btn-load" class="btn btn-ghost">读取存档</button>
-        <div class="build-tag">build v51</div>
+        <div class="build-tag">build v87</div>
       </div>
     </section>
 
@@ -73,7 +73,7 @@
           <span id="loc-desc" class="loc-desc-inline"></span>
         </div>
         <div id="scene-pins" class="scene-pins"></div>
-        <!-- 在场人物：立绘"站"在场景下沿 -->
+        <!-- 在场人物：立绘站在场景下沿 -->
         <div id="locals" class="locals"></div>
         <div id="scene-confirm" class="scene-confirm"></div>
       </div>
@@ -81,17 +81,17 @@
       <header class="topbar">
         <div class="char-brief">
           <span class="game-logo">凡人修仙传</span>
-          <span id="top-time" class="t-realm">第1年</span>
+          <span id="top-time" class="t-realm">——</span>
         </div>
         <div class="topbar-actions">
           <button id="btn-codex" class="btn btn-mini tb-full">人物</button>
           <button id="btn-chronicle" class="btn btn-mini tb-full">风云录</button>
           <button id="btn-techniques" class="btn btn-mini tb-full">功法</button>
           <button id="btn-llm" class="btn btn-mini tb-full">活世界</button>
-          <button id="btn-sound" class="btn btn-mini tb-full" title="音效开关">音</button>
+          <button id="btn-sound" class="btn btn-mini tb-full" title="音效开关">♪</button>
           <button id="btn-save" class="btn btn-mini tb-full">存档</button>
           <button id="btn-menu" class="btn btn-mini tb-full">主菜单</button>
-          <button id="btn-more" class="btn btn-mini btn-more" title="系统">☰</button>
+          <button id="btn-more" class="btn btn-mini btn-more" title="系统">⋯</button>
         </div>
       </header>
 
@@ -135,7 +135,7 @@
             <div class="attr-cell" data-tip="悟性：突破时更快削减瓶颈心魔，并提升临场顿悟与习功法/炼丹效率。"><span>悟性</span><b id="st-insight">0</b></div>
             <div class="attr-cell" data-tip="体魄：影响气血上限与抗打击。"><span>体魄</span><b id="st-body">0</b></div>
             <div class="attr-cell"><span>灵石</span><b id="st-stones">0</b></div>
-            <div class="attr-cell"><span>岁月</span><b id="st-time">第1年</b></div>
+            <div class="attr-cell"><span>岁月</span><b id="st-time">——</b></div>
             <div class="attr-cell" data-tip="药理：采药炼丹的熟练度。越高采得越多、炼丹偶得双丹。"><span>药理</span><b id="st-alch">0</b></div>
             <div class="attr-cell" data-tip="探知：山林行走的熟练度。越高越易察觉暗室，16级后探索视野+1。"><span>探知</span><b id="st-scout">0</b></div>
             <div class="attr-cell" data-tip="名声：事迹换来的江湖座次。够高便能登上风云榜（见风云录）。"><span>名声</span><b id="st-fame">0</b></div>
@@ -168,25 +168,45 @@
       </nav>
     </section>
 
-    <!-- 战斗界面：场景做底，敌我立绘对峙，下方五行灵气珠池+招式 -->
+    <!-- 战斗界面：对阵轴立绘战场（场景做底，单位按格站位，下方法力池+手牌）-->
     <div id="combat-overlay" class="combat-overlay" hidden>
       <div id="combat-banner" class="combat-banner" hidden></div>
       <div id="combat-bg" class="combat-bg"></div>
       <div class="combat-veil"></div>
       <div id="combat-cast" class="combat-cast" hidden></div>
       <div class="combat-box">
-        <div id="combat-title" class="combat-title">斗 法</div>
-        <div class="combat-field">
-          <div id="combat-enemies" class="combat-enemies"></div>
-          <div class="combat-vs">对</div>
-          <div id="combat-player" class="combat-player"></div>
+        <div class="combat-tophud">
+          <div id="combat-title" class="combat-title">斗 法</div>
+          <div id="combat-round" class="combat-roundnum"></div>
         </div>
+        <div id="axis-field" class="axis-field">
+          <div id="axis-units" class="axis-units"></div>
+          <div id="axis-lane" class="axis-lane"></div>
+          <div id="combat-floats" class="combat-floats"></div>
+          <button id="combat-logbtn" class="logbtn-corner" title="完整战录">录</button>
+        </div>
+        <div id="combat-intent" class="combat-intent" hidden></div>
         <div class="combat-console">
-          <div class="combat-qi" id="combat-qi"></div>
+          <div class="combat-mprow" id="combat-mprow"></div>
           <div class="combat-spells" id="combat-spells"></div>
-          <div class="combat-log" id="combat-log"></div>
+          <div id="quick-row" class="quick-row"></div>
+          <div class="combat-log" id="combat-log" hidden></div>
           <div class="combat-actions">
-            <button class="btn btn-primary" id="combat-endround">结束本回合</button>
+            <button class="btn btn-secondary btn-mini" id="combat-quick" hidden>速战速决</button>
+            <button class="btn btn-secondary btn-mini" id="combat-fly" hidden onclick="Engine.combatFly()">升空</button>
+            <button class="btn btn-secondary btn-mini" id="combat-flee" hidden>遁走</button>
+            <button class="btn btn-primary" id="combat-endround">结束回合</button>
+          </div>
+        </div>
+        <div id="fx-global" class="fx-global" hidden></div>
+        <!-- 战斗结算卡：胜负到底发生了什么，看清楚再走 -->
+        <div id="combat-outro" class="combat-outro" hidden>
+          <div class="co-card">
+            <div id="co-result" class="co-result">胜</div>
+            <div id="co-foes" class="co-foes"></div>
+            <div id="co-detail" class="co-detail"></div>
+            <div id="co-loot" class="co-loot"></div>
+            <button id="co-confirm" class="btn btn-primary">收 功</button>
           </div>
         </div>
       </div>
@@ -225,6 +245,29 @@
       </div>
     </div>
 
+    <!-- 箱庭探索 v3：L1 舆图（水墨节点图）+ L3 横版深窟（段落制）-->
+    <div id="exmap-overlay" class="exmap-overlay" hidden>
+      <div id="exmap-bg" class="exmap-bg"></div>
+      <div class="exmap-veil"></div>
+      <!-- L1 舆图层 -->
+      <div id="exmap-field" class="exmap-field">
+        <div class="exmap-head">
+          <div id="exmap-title" class="exmap-title">血色禁地</div>
+          <div id="exmap-clock" class="exmap-clock"></div>
+        </div>
+        <svg id="exmap-edges" class="exmap-edges" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+        <div id="exmap-nodes" class="exmap-nodes"></div>
+        <div id="exmap-actions" class="exmap-actions"></div>
+      </div>
+      <!-- L3 横版段落层 -->
+      <div id="exmap-scene" class="exmap-scene" hidden>
+        <div id="exmap-scene-stage" class="exmap-scene-stage"></div>
+        <div id="exmap-scene-panel" class="exmap-scene-panel"></div>
+      </div>
+      <!-- 见闻字幕（L1/L3 共用——挂在最上层，洞窟里也看得见） -->
+      <div id="exmap-notes" class="exmap-notes"></div>
+    </div>
+
     <!-- 剧情演出（视觉小说式：双人相对立绘 + 逐句推进）-->
     <div id="story-overlay" class="story-overlay" hidden>
       <div id="story-bg" class="story-bg"></div>
@@ -235,7 +278,7 @@
       <div class="story-dialog" id="story-dialog" onclick="UI.storyAdvance()">
         <div class="story-speaker" id="story-speaker"></div>
         <div class="story-text" id="story-text"></div>
-        <div class="story-cue" id="story-cue">▽ 轻触继续</div>
+        <div class="story-cue" id="story-cue">▼ 轻触继续</div>
       </div>
       <div class="story-choices" id="story-choices"></div>
     </div>
@@ -248,25 +291,27 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=51"></script>
-  <script src="js/state.js?v=51"></script>
-  <script src="js/chapters.js?v=51"></script>
-  <script src="js/balance.js?v=51"></script>
-  <script src="js/world.js?v=51"></script>
-  <script src="js/npcsim.js?v=51"></script>
-  <script src="js/interactions.js?v=51"></script>
-  <script src="js/combat.js?v=51"></script>
-  <script src="js/explore.js?v=51"></script>
-  <script src="js/loadout.js?v=51"></script>
-  <script src="js/dialogue.js?v=51"></script>
-  <script src="js/llm.js?v=51"></script>
-  <script src="js/audio.js?v=51"></script>
-  <script src="js/art.js?v=51"></script>
-  <script src="js/fortunes.js?v=51"></script>
-  <script src="js/quests.js?v=51"></script>
-  <script src="js/story.js?v=51"></script>
-  <script src="js/engine.js?v=51"></script>
-  <script src="js/ui.js?v=51"></script>
-  <script src="js/main.js?v=51"></script>
+  <script src="js/data.js?v=87"></script>
+  <script src="js/state.js?v=87"></script>
+  <script src="js/chapters.js?v=87"></script>
+  <script src="js/balance.js?v=87"></script>
+  <script src="js/world.js?v=87"></script>
+  <script src="js/npcsim.js?v=87"></script>
+  <script src="js/interactions.js?v=87"></script>
+  <script src="js/combat.js?v=87"></script>
+  <script src="js/explore.js?v=87"></script>
+  <script src="js/exploremap.js?v=87"></script>
+  <script src="js/loadout.js?v=87"></script>
+  <script src="js/dialogue.js?v=87"></script>
+  <script src="js/llm.js?v=87"></script>
+  <script src="js/audio.js?v=87"></script>
+  <script src="js/fx.js?v=87"></script>
+  <script src="js/art.js?v=87"></script>
+  <script src="js/fortunes.js?v=87"></script>
+  <script src="js/quests.js?v=87"></script>
+  <script src="js/story.js?v=87"></script>
+  <script src="js/engine.js?v=87"></script>
+  <script src="js/ui.js?v=87"></script>
+  <script src="js/main.js?v=87"></script>
 </body>
 </html>

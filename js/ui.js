@@ -16,7 +16,7 @@ const UI = {
     this.renderRecentLog();
   },
 
-  // 行动页"刚刚发生"反馈条：最新一条见闻的摘要（修复行动/见闻分屏割裂）
+  // 行动页"刚刚发生"反馈条：最近三条见闻（用户裁决：只显一行看不出做了什么——加大）
   renderRecentLog() {
     const box = this.el("recent-log");
     if (!box) return;
@@ -25,12 +25,22 @@ const UI = {
     if (!log.length && !side) { box.innerHTML = ""; box.style.display = "none"; return; }
     let html = side;
     if (log.length) {
-      const last = log[log.length - 1];
-      const tmp = document.createElement("div");
-      tmp.innerHTML = last.body || "";
-      let txt = (tmp.textContent || "").trim().replace(/\s+/g, " ");
-      if (txt.length > 64) txt = txt.slice(0, 64) + "…";
-      html += `<span class="rl-tag">${last.t}</span><span class="rl-txt entry-${last.kind || 'event'}">${txt}</span><span class="rl-more">见闻 ›</span>`;
+      const strip = (e, cap) => {
+        const tmp = document.createElement("div");
+        tmp.innerHTML = e.body || "";
+        let txt = (tmp.textContent || "").trim().replace(/\s+/g, " ");
+        if (txt.length > cap) txt = txt.slice(0, cap) + "…";
+        return txt;
+      };
+      const recent = log.slice(-3);
+      html += recent.map((e, i) => {
+        const isLast = i === recent.length - 1;
+        return `<div class="rl-row ${isLast ? 'rl-latest' : ''}">
+          <span class="rl-tag">${e.t}</span>
+          <span class="rl-txt entry-${e.kind || 'event'}">${strip(e, isLast ? 120 : 76)}</span>
+        </div>`;
+      }).join("");
+      html += `<div class="rl-more">完整见闻 ›</div>`;
     }
     box.style.display = "";
     box.innerHTML = html;
@@ -576,6 +586,7 @@ const UI = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
+      liandan: "地火炼丹 🔥",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
@@ -584,6 +595,9 @@ const UI = {
       acts = acts.filter(a => a !== "bottle" || State.data.bottle.unlocked);
       // 剑意圆满：洞府出现「悟剑」（大件链攻坚入口）
       if (loc.home && (State.data.swordIntent || 0) >= 100 && !State.data.swordMastery) acts.unshift("wujian");
+      // 血色主药在手：地火之屋炼筑基丹（筑基丹链的"造"环节）
+      if (loc.home && loc.id === "huangfeng_gate" && State.data.flags.mojiao_resolved
+        && State.count("xueshi_zhuyao") >= 4 && !State.data.flags.zhuji_lian_done) acts.unshift("liandan");
     }
 
     // 涟漪窗口：限时机会在对应地点浮现（过期即逝）
@@ -693,6 +707,12 @@ const UI = {
       const can = !gdef.minLayer || layer >= gdef.minLayer;
       if (equipped) {
         actions += `<button class="btn btn-secondary" onclick="Engine.unequipGear('${gdef.slot}'); UI.closeModal();">卸下</button>`;
+        // 法宝出战位：战斗技法器可"收起不出战"——境界换代后，旧法宝不挤新手牌
+        (gdef.grantSpells || []).forEach(sk => {
+          const benched = (State.data.benchTreasures || []).includes(sk);
+          const skName = (typeof CombatAPI !== "undefined" && CombatAPI.SPELLS[sk]) ? CombatAPI.SPELLS[sk].name : sk;
+          actions += `<button class="btn btn-mini" onclick="Engine.toggleBenchTreasure('${sk}'); UI.closeModal();">${benched ? `「${skName}」重新出战` : `收起「${skName}」（不入战斗手牌）`}</button>`;
+        });
       } else if (can) {
         actions += `<button class="btn btn-primary" onclick="Engine.equipGear('${itemId}'); UI.closeModal();">装备（${gdef.slot === "weapon" ? "武器" : gdef.slot === "armor" ? "护身" : "饰物"}）</button>`;
       } else {
@@ -1829,15 +1849,26 @@ const UI = {
     };
     const floor1 = Engine.WANBAO_GOODS.filter(g => !g.floor2).map(row).join("");
     const floor2 = Engine.WANBAO_GOODS.filter(g => g.floor2).map(row).join("");
-    // 收购行：千年灵草=买法器的本钱（小绿瓶的奇迹变现）
-    const sells = [
-      { id: "qiannian_lingcao", label: "千年灵草 ×1 → 灵石×22", has: State.count("qiannian_lingcao") >= 1, hot: true },
-      { id: "lingyao_dan", label: "灵药 ×1 → 灵石×2", has: State.count("lingyao_dan") >= 1 },
-    ].map(x => `<div class="market-item">
-      <span style="color:${x.hot ? 'var(--gold)' : 'var(--ink-dim)'};font-size:13px">${x.label}${x.hot ? "　掌柜见之眼开" : ""}</span>
-      ${x.has ? `<button class="btn btn-mini" onclick="Engine.wanbaoSell('${x.id}')">售出</button>`
+    // 收购行：千年灵草/灵药 + 妖材（sell 字段自动上架——皮骨牙丹都换得了灵石）
+    const sellRows = [
+      { id: "qiannian_lingcao", price: 22, hot: true },
+      { id: "lingyao_dan", price: 2 },
+    ];
+    Object.entries(DATA.items).forEach(([id, it]) => {
+      if (it.sell && State.count(id) > 0 && !sellRows.some(r => r.id === id)) {
+        sellRows.push({ id, price: it.sell, hot: id === "yaodan_1" });
+      }
+    });
+    const sells = sellRows.map(x => {
+      const it = DATA.items[x.id];
+      const has = State.count(x.id) >= 1;
+      if (!has && !["qiannian_lingcao", "lingyao_dan"].includes(x.id)) return "";   // 妖材：无货不占行
+      return `<div class="market-item">
+      <span style="color:${x.hot ? 'var(--gold)' : 'var(--ink-dim)'};font-size:13px">${it.name} ×1 → 灵石×${x.price}${has ? `（存${State.count(x.id)}）` : ""}${x.hot ? "　掌柜见之眼开" : ""}</span>
+      ${has ? `<button class="btn btn-mini" onclick="Engine.wanbaoSell('${x.id}')">售出</button>`
               : `<span style="color:var(--ink-faint);font-size:12px">无货</span>`}
-    </div>`).join("");
+    </div>`;
+    }).join("");
     // 向之礼：在坊市闲坐的"老杂役"——他的指点分文不取
     const xiang = s.flags.xueshi_intel
       ? `<p style="color:var(--jade-bright);font-size:12px">向之礼的指点你记在心里：血色主药在禁地，名额看修为（练气十一层）与大比时节。</p>`
@@ -1864,28 +1895,56 @@ const UI = {
    * =========================================================== */
   _combatTarget: 0,
   openCombat(combat, meta) {
+    this._deadShown = {};        // 阵亡退场账本：每具尸体只渲染"咽气那一拍"（深拍后不再入场）
+    this._combatLogLen = 0;
     this.el("combat-overlay").hidden = false;
-    const titles = { encounter: "斗 法", showdown: "夺舍之夜 · 决战", breakthrough: "突破 · 心战", jinguang: "暗算金光上人" };
+    const titles = { encounter: "斗 法", showdown: "夺舍之夜 · 决战", breakthrough: "突破 · 心战", jinguang: "暗算金光上人", luyunfeng: "坊市归途 · 林中血" };
     this.el("combat-title").textContent = titles[meta.type] || "斗 法";
     // 战斗背景：心战用墨黑，其余用当前地点场景图（压暗虚化）
     const bg = this.el("combat-bg");
     if (bg) {
       const loc = State.location();
-      const url = (meta.type !== "breakthrough" && loc && typeof Art !== "undefined") ? Art.locUrl(loc) : null;
+      // 战斗背景：洞窟/场景继承优先（同轴一体——开战不换天地）> 专用战场底图 > 地点横版场景
+      let url = null;
+      if (meta.type !== "breakthrough" && typeof Art !== "undefined") {
+        url = (meta.sceneBg && Art.has(meta.sceneBg))
+          ? Art.sceneUrl(meta.sceneBg, { landscape: true })
+          : this._battleBgFor(loc, meta);
+      }
       bg.style.backgroundImage = url ? `url("${url}")` : "";
+      bg.style.transform = "";
       bg.classList.toggle("on", !!url);
       this.el("combat-overlay").classList.toggle("mind", meta.type === "breakthrough");
     }
-    const endBtn = this.el("combat-endround");
-    endBtn.onclick = () => Engine.combatEndRound();
+    // 洞窟无缝开战：镜头一沉推近（探索拉远→战斗推近）——动的是镜头，不是场景
+    const ovEl = this.el("combat-overlay");
+    ovEl.classList.remove("seamless-in");
+    if (meta.seamless) { void ovEl.offsetWidth; ovEl.classList.add("seamless-in"); }
+    this.el("combat-endround").onclick = () => Engine.combatEndRound();
+    const quickBtn = this.el("combat-quick");
+    if (quickBtn) {
+      quickBtn.hidden = !meta.canQuick;
+      quickBtn.onclick = () => Engine.combatQuickResolve();
+    }
+    const fleeBtn = this.el("combat-flee");
+    if (fleeBtn) fleeBtn.onclick = () => Engine.combatFlee();
+    const logBtn = this.el("combat-logbtn");
+    if (logBtn) logBtn.onclick = () => {
+      const lg = this.el("combat-log");
+      if (lg) { lg.hidden = !lg.hidden; if (!lg.hidden) lg.scrollTop = lg.scrollHeight; }
+    };
+    const lg0 = this.el("combat-log"); if (lg0) lg0.hidden = true;
     this._combatTarget = combat.enemies.findIndex(e => e.alive);
-    this._combatLogLen = 0;
+    this._combatLogLen = combat.log.length;
     if (typeof Sfx !== "undefined") {
       Sfx.play("danger");
-      // BGM 换轨：决战/妖王=boss 压迫轨；心魔=阴冷轨；其余=战斗轨
+      // BGM 换轨：激昂只留给配得上的仗——决战/妖王/越级=boss 压迫轨；
+      // 心魔=阴冷轨；寻常斗法=低强度对峙轨（用户裁决：日常战斗不轰轰烈烈）
       if (Sfx.bgm) {
+        const myLayer = (State.realm() || {}).layer || 1;
+        const overTier = combat.enemies.some(e => e.alive && (e.qiLayer || 0) - myLayer >= 2);
         const bossFight = meta.type === "showdown" || meta.type === "jinguang"
-          || (typeof Engine !== "undefined" && Engine._combatMeta && Engine._combatMeta.namedBeast);
+          || meta.namedBeast || overTier;
         Sfx.bgm(bossFight ? "boss" : meta.type === "breakthrough" ? "tense" : "combat");
       }
     }
@@ -1909,12 +1968,54 @@ const UI = {
     if (/喽啰|野狼帮/.test(name) && Art.has("langhao")) return "langhao";
     return null;
   },
+  // 敌名 → 战斗全身立绘（battlers/：妖兽/人形敌/剧情人物战斗姿态）
+  _battlerByName(name) {
+    if (!name || typeof Art === "undefined" || !Art.battlerUrl) return null;
+    const MAP = [
+      // 有名有姓的优先（专属战斗立绘）
+      [/陆云风/, "bt_luyunfeng"],
+      [/金光上人/, "bt_jinguang"],
+      [/墨大夫/, "bt_modafu"],
+      [/铁奴|张铁尸傀/, "bt_tienu"],
+      [/万小山/, "bt_wanxiaoshan"],
+      [/墨蛟/, "bt_mojiao"],
+      [/封岳/, "bt_sanxiu"],           // 狙杀者暂用散修体（专属图后补）
+      // 类型谱共用
+      [/赤目狼王|血煞兽/, "bt_chimu"],
+      [/虎/, "bt_baihu"],
+      [/蜈蚣/, "bt_wugong"],
+      [/狼/, "bt_wolf"],               // 灵狼/狼群（狼王规则在前已截获）
+      [/山贼|贼|匪|流寇/, "bt_bandit"],
+      [/弟子|武师|喽啰|打手|蛮修/, "bt_wuren"],
+      [/散修|修士|枯修/, "bt_sanxiu"],
+    ];
+    for (const [re, id] of MAP) { if (re.test(name) && Art.hasBattler(id)) return id; }
+    return null;
+  },
+
+  // 地点/战斗类型 → 战场底图（下半幅开阔地面的横版图；缺图回退地点场景图）
+  _battleBgFor(loc, meta) {
+    if (typeof Art === "undefined") return null;
+    if (meta && (meta.type === "showdown" || meta.type === "jinguang")) return Art.sceneUrl("bt_night", { landscape: true });
+    const id = loc ? loc.id : "";
+    let bt = "bt_forest";
+    if (/road|town|jiayuan|qingniu/.test(id) || (State.data && State.data.journey)) bt = "bt_road";
+    else if (/huangfeng|baiyao|fangshi|tainan/.test(id)) bt = "bt_valley";
+    else if (/houshan|yaolu|wuting|shanmen|miju/.test(id)) bt = "bt_forest";
+    const url = Art.sceneUrl(bt, { landscape: true });
+    return url || Art.locUrl(loc, { landscape: true });
+  },
+
   // 无立绘敌人的字符玉牌
   _enemyGlyph(name) {
     if (/狼/.test(name)) return "狼";
-    if (/贼/.test(name)) return "贼";
+    if (/虎/.test(name)) return "虎";
+    if (/蛟|蛇/.test(name)) return "蛟";
+    if (/贼|寇/.test(name)) return "贼";
     if (/弟子/.test(name)) return "武";
     if (/蜈|虫/.test(name)) return "虫";
+    if (/散修|修士/.test(name)) return "修";
+    if (/心魔|劫/.test(name)) return "魔";
     return "敌";
   },
   // 开战时的醒目横幅（让"遭遇/决战/渡劫"有明确的起始感）
@@ -1938,48 +2039,181 @@ const UI = {
   },
   closeCombat() {
     this.el("combat-overlay").hidden = true;
+    this._armed = null;
+    if (typeof Fx !== "undefined") Fx.clear();
     // 战罢归于地点轨（在哪打完，回哪的声音）
     if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(this._bgmForLocation(State.location()));
   },
 
-  // 施法反馈：目标震动 + 招式名横幅一闪
-  flashCombat(spellId) {
-    const box = this.el("combat-enemies");
-    if (box) {
-      const t = box.querySelector(".combatant.target") || box.querySelector(".combatant");
-      if (t) { t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); }
+  // 轴上锚点：data-uid 定位单位 sprite
+  _axisAnchor(ref) {
+    const box = this.el("axis-units");
+    if (!box) return null;
+    return box.querySelector(`[data-uid="${ref}"]`) || box;
+  },
+
+  // 施法反馈：施法者突进步 + 御使飞行 + 目标震动白闪 + 招式名横幅
+  flashCombat(spellId, targetIndex) {
+    const sp = (typeof CombatAPI !== "undefined") ? CombatAPI.SPELLS[spellId] : null;
+    // 弹道锚定真实目标（BUG 修复：旧版锚 _combatTarget——目标死后弹道仍一直锁着尸体打）
+    const c0 = Engine._combat;
+    const ti = targetIndex != null ? targetIndex : (c0 ? this.curTarget(c0) : this._combatTarget);
+    const tgt = this._axisAnchor(`enemy:${ti}`);
+    const me = this._axisAnchor("player");
+    // 出手身法：贴身技=大步前冲；远程=前倾发力（打击感的"人动了"）
+    if (sp && me && sp.type === "atk") {
+      const melee = sp.range && sp.range[1] <= 1;
+      me.classList.remove("strike-melee", "strike-cast"); void me.offsetWidth;
+      me.classList.add(melee ? "strike-melee" : "strike-cast");
+      setTimeout(() => me.classList.remove("strike-melee", "strike-cast"), 500);
+    }
+    // 催刃出袭（主攻法宝伴身联动）：点子母刃的那一拍，绕身刃阵齐齐掠向目标再归位
+    if (sp && sp.source === "treasure" && sp.type === "atk" && me && tgt) {
+      const blades = me.querySelector(".au-blades");
+      if (blades) {
+        const dir = tgt.getBoundingClientRect().left >= me.getBoundingClientRect().left ? 1 : -1;
+        blades.style.setProperty("--bdir", dir);
+        blades.classList.remove("launch"); void blades.offsetWidth;
+        blades.classList.add("launch");
+        setTimeout(() => blades.classList.remove("launch"), 700);
+      }
+    }
+    // 御使飞行：攻击类且非贴身武学——一道法器印划过战场 + fx 流光弹道
+    if (sp && me && tgt && sp.type === "atk" && sp.range && sp.range[1] >= 2) {
+      const field = this.el("axis-field");
+      const fr = field.getBoundingClientRect();
+      const a = me.getBoundingClientRect(), b = tgt.getBoundingClientRect();
+      const fly = document.createElement("div");
+      fly.className = `fly-seal wx-${sp.elem || "jin"}`;
+      fly.textContent = sealChar(sp.name);
+      fly.style.left = (a.left + a.width / 2 - fr.left) + "px";
+      fly.style.top = (a.top + a.height * 0.4 - fr.top) + "px";
+      field.appendChild(fly);
+      requestAnimationFrame(() => {
+        fly.style.left = (b.left + b.width / 2 - fr.left) + "px";
+        fly.style.top = (b.top + b.height * 0.4 - fr.top) + "px";
+        fly.classList.add("gone");
+      });
+      setTimeout(() => fly.remove(), 480);
+      setTimeout(() => { if (tgt) { tgt.classList.remove("shake"); void tgt.offsetWidth; tgt.classList.add("shake"); } }, 320);
+      // fx：分功法配方特效（每个法术一张脸——青芒/火蛇/冰棱/金砖各不相同）
+      if (typeof Fx !== "undefined" && Fx.ensure(field)) {
+        Fx.castSpell(spellId, me, tgt, sp);
+      }
+    } else if (tgt) {
+      tgt.classList.remove("shake"); void tgt.offsetWidth; tgt.classList.add("shake");
+      // 贴身武学/自身术：同走配方分发
+      if (typeof Fx !== "undefined" && sp) {
+        const field = this.el("axis-field");
+        if (Fx.ensure(field)) Fx.castSpell(spellId, me, tgt, sp);
+      }
+    } else if (sp && me && typeof Fx !== "undefined") {
+      const field = this.el("axis-field");
+      if (Fx.ensure(field)) Fx.castSpell(spellId, me, null, sp);
+    }
+    // 法宝催动：脚下金环灵光（"物"的仪式感，配方特效之外的统一仪式）
+    if (sp && sp.source === "treasure" && me && typeof Fx !== "undefined" && Fx._ctx) {
+      const at = Fx.at(me, 0.86);
+      if (at) Fx.ring(at.x, at.y, { c: "#e9cd86", vr: 3.2, life: 460 });
     }
     // 招式名大字横幅
-    if (spellId && typeof CombatAPI !== "undefined") {
-      const sp = CombatAPI.SPELLS[spellId];
+    if (sp) {
       const el = this.el("combat-cast");
-      if (sp && el) {
-        const wx = Object.keys(sp.cost || {})[0] || "jin";
-        el.innerHTML = `<span class="cc-name wx-${wx}">${sp.name}</span>`;
+      if (el) {
+        // 法宝催动：更大的字、灵光环爆——"催动法宝"得看着像回事
+        const isTreasure = sp.source === "treasure";
+        el.innerHTML = `<span class="cc-name wx-${sp.elem || "jin"}${isTreasure ? " cc-treasure" : ""}">${isTreasure ? "︻催动︼ " : ""}${sp.name}</span>`;
         el.hidden = false;
         el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
         clearTimeout(this._castTimer);
-        this._castTimer = setTimeout(() => { el.hidden = true; }, 700);
+        this._castTimer = setTimeout(() => { el.hidden = true; }, isTreasure ? 950 : 700);
       }
-      if (typeof Sfx !== "undefined") Sfx.play(sp && sp.type === "heal" ? "heal" : sp && sp.type === "def" ? "shield" : "sword");
+      if (typeof Sfx !== "undefined") Sfx.play(sp.type === "heal" ? "heal" : sp.type === "def" ? "shield" : sp.source === "treasure" ? "bell" : "sword");
     }
   },
 
-  // 弹出战斗飘字（消费引擎的 fx 队列）
+  // 弹出战斗飘字（消费引擎的 fx 队列，锚到轴上 sprite）+ 三时刻重演出
   flushCombatFx(c) {
     if (!c || !c._fx || !c._fx.length) return;
     const fx = c._fx.slice();
     c._fx.length = 0;
     let delay = 0;
+    const fxReady = typeof Fx !== "undefined" && Fx.ensure(this.el("axis-field"));
     for (const f of fx) {
-      const anchor = f.ref === "player"
-        ? this.el("combat-player")
-        : f.ref === "side"
-        ? (this.el("combat-player").querySelector(".side-unit") || this.el("combat-player"))
-        : (this.el("combat-enemies").children[parseInt(f.ref.split(":")[1], 10)] || this.el("combat-enemies"));
+      // —— 全局重演出：趁虚时停金字 / 蓄势释放大字压屏（蓄势全开加白金屏闪+震屏）——
+      if (f.ref === "global") {
+        const g = this.el("fx-global");
+        if (g) setTimeout(() => {
+          g.hidden = false;
+          g.className = "fx-global " + (f.kind === "ult" ? "fxg-ult" : "fxg-exploit");
+          g.innerHTML = `<span class="fxg-text">${f.text || ""}</span>`;
+          if (typeof Sfx !== "undefined") Sfx.play(f.kind === "ult" ? "bell" : "danger");
+          if (f.kind === "ult" && fxReady) { Fx.flash("#ffe9ad", 220, .36); Fx.shake(10); }
+          clearTimeout(this._fxgTimer);
+          this._fxgTimer = setTimeout(() => { g.hidden = true; g.className = "fx-global"; }, f.kind === "ult" ? 1200 : 850);
+        }, delay);
+        delay += 320;
+        continue;
+      }
+      const anchor = this._axisAnchor(f.ref);
       if (!anchor) continue;
-      setTimeout(() => this._popFloat(anchor, f.kind, f.text), delay);
-      delay += 180;
+      // —— 敌方/侧位出手特效（fxcast）：行属光带弹道 / 贴身爪弧——招式看得见来路 ——
+      if (f.kind === "fxcast") {
+        if (fxReady) {
+          const fromA = f.from ? this._axisAnchor(f.from) : null;
+          setTimeout(() => {
+            const to = Fx.at(anchor);
+            if (!to) return;
+            if (f.melee) {
+              Fx._slashArc(to, Math.random() * 1.4 - 0.7, f.elem ? undefined : "#f0e8e0");
+              Fx.burst(to.x, to.y, f.elem || "none", 6, { power: 2.6 });
+            } else if (fromA) {
+              const from = Fx.at(fromA);
+              if (from) Fx.ribbon(from, to, {
+                elem: f.elem || "none", width: f.wave ? 4.6 : 4, flyMs: 240,
+                wave: f.wave ? 20 : 0, waveN: 3,
+                core: f.wave ? "#f5f8ff" : undefined, glowC: f.wave ? "#9fc3e8" : undefined,
+              });
+            }
+          }, delay);
+          delay += 120;
+        }
+        continue;
+      }
+      // —— 终结一击：慢放灰化+水墨溅散 ——
+      if (f.kind === "slay") {
+        setTimeout(() => {
+          anchor.classList.add("slaying");
+          const burst = document.createElement("div");
+          burst.className = "ink-burst";
+          for (let k = 0; k < 6; k++) burst.appendChild(document.createElement("i"));
+          anchor.appendChild(burst);
+          setTimeout(() => burst.remove(), 1300);
+        }, delay);
+        delay += 300;
+        continue;
+      }
+      setTimeout(() => {
+        this._popFloat(anchor, f.kind, f.text);
+        if (f.kind === "hurt" || f.kind === "dmg" || f.kind === "crit" || f.kind === "pierce") {
+          anchor.classList.remove("shake", "hitflash"); void anchor.offsetWidth;
+          anchor.classList.add("shake", "hitflash");
+          setTimeout(() => anchor.classList.remove("hitflash"), 360);
+          // fx 爆点：受击位迸溅（暴击金芒更盛+轻震屏；带行属按行属调色；砸地带尘环）
+          if (fxReady) {
+            const at = Fx.at(anchor);
+            if (at) {
+              Fx.burst(at.x, at.y, f.elem || (f.kind === "crit" ? "jin" : f.kind === "hurt" ? "huo" : "none"), f.kind === "crit" ? 22 : 10);
+              if (f.slam) Fx.ring(at.x, at.y + 26, { c: "#cbb89a", vr: 3.4, life: 300, lw: 2 });
+              if (f.kind === "crit") {
+                Fx.shake(6);
+                if (f.defElem) Fx.material(at.x, at.y, f.defElem);   // 材质反应：克制命中的官设演出
+              }
+            }
+          }
+        }
+      }, delay);
+      delay += 200;
     }
   },
   _popFloat(anchor, kind, text) {
@@ -1991,13 +2225,54 @@ const UI = {
     setTimeout(() => el.remove(), 1100);
   },
 
-  // 玩家手动切换攻击目标
+  // 玩家手动切换攻击目标；择敌模式下=确认目标并施放（二次确认收口）
   pickTarget(i) {
     if (!Engine._combat) return;
     const e = Engine._combat.enemies[i];
     if (!e || !e.alive) return;
     this._combatTarget = i;
+    if (this._armed && this._armed.kind === "enemy") {
+      const id = this._armed.id;
+      this._armed = null;
+      Engine.combatCast(id, i);
+      return;
+    }
     this.renderCombat(Engine._combat, Engine._combatMeta);
+  },
+  /* —— 二次确认（群战）：点法术=上膛，再点目标/格子=施放 ——
+   * 择敌：攻击/减益类且场上多敌——点敌方立绘确认（单敌不啰嗦，直接放）
+   * 择地：阵旗类（非自身阵）永远点格落阵——阵随心落，不黏敌人站位 */
+  armSpell(id) {
+    const c = Engine._combat;
+    if (!c || c.status !== "ongoing") return;
+    const sp = CombatAPI.SPELLS[id];
+    if (!sp) return;
+    if (this._armed && this._armed.id === id) {   // 再点一次=收手
+      this._armed = null;
+      this.renderCombat(c, Engine._combatMeta);
+      return;
+    }
+    if (sp.type === "zone" && !sp.selfZone) {
+      this._armed = { id, kind: "cell", r: sp.range.slice() };
+      if (typeof Sfx !== "undefined") Sfx.play("click");
+      this.renderCombat(c, Engine._combatMeta);
+      return;
+    }
+    const needsEnemy = (sp.type === "atk" || sp.type === "debuff") && sp.range && sp.range[1] > 0;
+    if (needsEnemy && c.enemies.filter(e => e.alive).length > 1) {
+      this._armed = { id, kind: "enemy" };
+      if (typeof Sfx !== "undefined") Sfx.play("click");
+      this.renderCombat(c, Engine._combatMeta);
+      return;
+    }
+    this._armed = null;
+    Engine.combatCast(id, this.curTarget(c));
+  },
+  castAtCell(i) {
+    const a = this._armed;
+    if (!a || a.kind !== "cell") return;
+    this._armed = null;
+    Engine.combatCastAt(a.id, i);
   },
   // 当前有效目标（首个存活兜底）
   curTarget(c) {
@@ -2005,137 +2280,913 @@ const UI = {
     return c.enemies.findIndex(e => e.alive);
   },
 
-  // 神识料敌：根据意图类型给出"该如何应对"的提示（看穿意图=真决策）
+  // 神识料敌：根据意图类型给出"该如何应对"的提示（看穿意图=真决策，三型攻防语言）
   _intentHint(intent) {
     const dmg = intent.dmg || 0;
+    if (intent.kind === "approach")
+      return `它够不着你，正在<b style="color:var(--gold)">逼近</b>——这回合是你白拿的先手：输出、布置、或拉开距离。`;
+    if (intent.kind === "flee")
+      return `它在<b style="color:var(--gold)">寻隙遁走</b>——再不拦下，战利品就长腿跑了！`;
+    if (intent.kind === "guard")
+      return `「${intent.name}」<b style="color:var(--blue)">凝罩固守</b>——本回合它不攻，正是叠毒蓄势的良机。`;
     if (intent.kind === "charge")
-      return `「${intent.name}」正在<b style="color:var(--gold)">蓄力</b>——本回合它不出手！正是你叠毒、攒剑势、全力爆发的良机。`;
+      return `「${intent.name}」正在<b style="color:var(--gold)">蓄力</b>（破绽毕露·受击+30%）——打断它，或抢输出！`;
+    if (intent.targetCell != null)
+      return `「${intent.name}」<b style="color:var(--red)">砸向第${intent.targetCell + 1}步（约${dmg}伤）</b>${intent.track ? "·会追身一格" : ""}——挪开脚步${intent.track ? "两步" : ""}，或举盾硬接；它扑空便是你的趁虚之机！`;
+    if (intent.aim === "zone")
+      return `「${intent.name}」将<b style="color:var(--red)">席卷第${(intent.zoneFrom || 0) + 1}~${(intent.zoneTo || 0) + 1}步（约${dmg}伤）</b>——拉出区间，或硬扛。`;
     if (intent.kind === "release")
-      return `「${intent.name}」<b style="color:var(--red)">蓄力爆发（约${dmg}伤）</b>！速以眨眼剑法叠闪避，护体挡不住。`;
+      return `「${intent.name}」<b style="color:var(--red)">蓄力爆发（约${dmg}伤）</b>！护体挡不住全部——躲开或硬接。`;
     if (intent.kind === "pierce")
-      return `「${intent.name}」<b style="color:var(--blue)">破甲（约${dmg}伤）</b>——护体无效，唯眨眼剑法叠闪避可避。`;
-    return `「${intent.name}」（约${dmg}伤）——寻常攻击，长春护体即可挡下。`;
+      return `「${intent.name}」<b style="color:var(--blue)">破甲锁定（约${dmg}伤）</b>——护体无效，靠身法与硬血。`;
+    return `「${intent.name}」锁定而来（约${dmg}伤）——护体法术可挡（锁头打不空，盾是正解）。`;
+  },
+
+  /* 防撞排布：同高度层（地/空分组）单位按屏幕 x 排序扫描，
+   * 相邻间距 < 最小间距时把右侧单位顺势推开（追加到 --lx）——
+   * 占格规则不动、只动演出位；同格异排/相邻格的"叠成一坨"由此根治 */
+  _decrowd(unitsEl, c) {
+    const track = unitsEl.getBoundingClientRect().width;
+    if (!track) return;
+    const MIN = Math.max(44, Math.min(64, track * 0.052));
+    const items = [...unitsEl.querySelectorAll(".axis-unit")].map(el => {
+      const m = el.className.match(/lane-(\d)/);
+      const baseLx = parseFloat(getComputedStyle(el).getPropertyValue("--lx")) || 0;
+      return {
+        el, lane: m ? +m[1] : 0,
+        air: el.classList.contains("airborne"),
+        x: (parseFloat(el.style.left) || 0) / 100 * track + baseLx,
+        lx: baseLx,
+      };
+    });
+    [false, true].forEach(air => {
+      const g = items.filter(o => o.air === air).sort((a, b) => a.x - b.x);
+      for (let i = 1; i < g.length; i++) {
+        const need = g[i - 1].x + MIN - g[i].x;
+        if (need > 0) {
+          g[i].x += need;
+          g[i].lx += need;
+          g[i].el.style.setProperty("--lx", g[i].lx.toFixed(1) + "px");
+        }
+      }
+    });
+  },
+
+  // 单位 sprite（轴上立绘）：立绘/玉牌 + 脚下血条 + 头顶意图气泡 + 身侧悬浮法器
+  _axisSprite(c, u, opts) {
+    const isPlayer = u === c.player;
+    const isSide = !!u.isSide;
+    const i = opts.enemyIndex;
+    const demonized = opts.isBT || /心魔/.test(u.name);
+    // 单位图优先级：战斗全身立绘（battlers/）> 剧情半身像 > 字符玉牌
+    let fig = null;
+    if (typeof Art !== "undefined" && Art.battlerUrl) {
+      let bid = null;
+      if (isPlayer) bid = Art.hasBattler("bt_hanli") ? "bt_hanli" : null;
+      else if (isSide) bid = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
+      else bid = this._battlerByName(u.name);
+      // 飞行姿态变体（v87）：凌空且 _fly 立绘已入库——换飞姿（双脚前后、衣袂后卷）
+      if (bid && (u.alt || 0) === 1 && Art.hasBattler(bid + "_fly")) bid = bid + "_fly";
+      if (bid) fig = `<img class="au-img battler${demonized ? " demonized" : ""}" src="${Art.battlerUrl(bid)}" alt="" />`;
+    }
+    if (!fig) {
+      const aid = isPlayer ? "hanli" : (isSide ? (u.art || null) : this._artIdByName(u.name));
+      fig = (aid && typeof Art !== "undefined" && Art.has && Art.has(aid))
+        ? `<img class="au-img${demonized ? " demonized" : ""}" src="${Art.url(aid)}" alt="" />`
+        : `<div class="au-glyph"><span>${isPlayer ? "韩" : isSide ? "傀" : this._enemyGlyph(u.name)}</span></div>`;
+    }
+    const hpPct = Math.max(0, u.hp / u.hpMax * 100);
+    const shPct = u.shield ? Math.min(100, u.shield / u.hpMax * 100) : 0;
+    const mpPct = isPlayer ? Math.max(0, u.mp / u.mpMax * 100) : 0;
+    // 头顶：意图气泡（一个字，点按弹完整应对提示——信息分级）+ 状态标
+    const badges = [];
+    if (!isPlayer && !isSide && u.alive && u.intent) {
+      const ic = u.intent.kind === "flee" ? "遁" : u.intent.kind === "guard" ? "守"
+        : u.intent.kind === "approach" ? "近"
+        : u.intent.kind === "charge" ? "蓄" : u.intent.kind === "release" ? "爆"
+        : u.intent.targetCell != null ? "砸" : u.intent.aim === "zone" ? "扫"
+        : u.intent.kind === "pierce" ? "破" : "击";
+      badges.push(`<span class="au-intent ik-${u.intent.kind || 'atk'}" onclick="event.stopPropagation(); UI.showIntentDetail(${i})">${ic}</span>`);
+    }
+    if (u._charging) badges.push(`<span class="au-mark mk-charge">蓄势</span>`);
+    if (u._whiffed) badges.push(`<span class="au-mark mk-whiff">趁虚！</span>`);
+    else if (u.exposed) badges.push(`<span class="au-mark mk-expose">破绽</span>`);
+    // 同道头顶简令章（A2 意图气泡 v0）：一眼看清她此刻领的是哪道令。
+    // 客随（mastery≥2 的高境同道）：全自动、不受令——章显"帅"（她指挥你，不是你指挥她）
+    if (isSide && u.alive !== false && u.hp > 0) {
+      if (u.kind === "ally" && (u.mastery || 0) >= 2) {
+        badges.push(`<span class="au-mark mk-stance mk-lead" title="她的境界远在你之上——接好她递的刀便是">帅</span>`);
+      } else {
+        const stCh = { follow: "随", attack: "攻", guard: "守", retreat: "撤" }[u.stance || "follow"];
+        badges.push(`<span class="au-mark mk-stance" onclick="event.stopPropagation(); Engine.cycleSideStance()">${stCh}</span>`);
+      }
+    }
+    if (u.status && u.status.poison) badges.push(`<span class="au-mark mk-poison">毒${u.status.poison.dmg}</span>`);
+    if (u.status && u.status.dingshen > 0) badges.push(`<span class="au-mark mk-hold">定</span>`);
+    // 身侧悬浮法器（觅长生式拥有感）：已装备的武器/护身法器化作灵光绕身
+    let orbit = "";
+    if (isPlayer && typeof State !== "undefined" && State.gearOf) {
+      const orbs = [];
+      const w = State.gearOf("weapon"), a = State.gearOf("armor");
+      const wName = w && DATA.items[State.data.gear.weapon] ? DATA.items[State.data.gear.weapon].name : null;
+      const aName = a && DATA.items[State.data.gear.armor] ? DATA.items[State.data.gear.armor].name : null;
+      // 主攻法宝伴身（正典：金蚨子母刃一母八子绕身）——有主攻法宝技时以刃阵替代武器印
+      const SPL = (typeof CombatAPI !== "undefined") ? CombatAPI.SPELLS : null;
+      const hasMainTre = SPL && (u.spells || []).some(id =>
+        SPL[id] && SPL[id].source === "treasure" && !SPL[id].quick && SPL[id].type === "atk");
+      if (hasMainTre) {
+        orbit = `<div class="au-blades">${'<i class="bld"></i>'.repeat(9)}</div>`;
+      } else if (wName) {
+        orbs.push(`<span class="orb orb-w" title="${wName}">${sealChar(wName)}</span>`);
+      }
+      if (aName) orbs.push(`<span class="orb orb-a" title="${aName}">${sealChar(aName)}</span>`);
+      if (orbs.length) orbit += `<div class="au-orbit">${orbs.join("")}</div>`;
+    }
+    // 相对朝向：每个单位都面向"自己正在对付的人"——玩家盯锁定目标、同道盯最近敌人、
+    // 敌人盯最近的我方；被绕背（_backTurned）的敌人保持旧朝向——背门是真的背对着你
+    let flip = "";
+    if (typeof Art !== "undefined" && Art.battlerFace) {
+      const bid2 = (() => {
+        let b = null;
+        if (isPlayer) b = Art.hasBattler("bt_hanli") ? "bt_hanli" : null;
+        else if (isSide) b = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
+        else b = this._battlerByName(u.name);
+        if (b && (u.alt || 0) === 1 && Art.hasBattler(b + "_fly")) b = b + "_fly";   // 飞姿用飞姿的朝向元数据
+        return b;
+      })();
+      // 素材朝向：战斗立绘有注册元数据；半身像回退按"右向"处理（与旧版敌方镜像观感一致）
+      const face = bid2 ? Art.battlerFace(bid2) : "r";
+      if (face !== "c") {
+        let oppPos = null;
+        if (isPlayer) {
+          const te = (opts.target >= 0 && c.enemies[opts.target] && c.enemies[opts.target].alive)
+            ? c.enemies[opts.target] : (c.enemies.find(e => e.alive) || { pos: c.W - 1 });
+          oppPos = te.pos;
+        } else if (isSide) {
+          const te = c.enemies.find(e => e.alive) || { pos: c.W - 1 };
+          oppPos = te.pos;
+        } else {
+          const foes = [c.player].concat(c.side && c.side.hp > 0 ? [c.side] : []);
+          const near = foes.reduce((a, b) => Math.abs(b.pos - u.pos) < Math.abs(a.pos - u.pos) ? b : a);
+          // 绕背的那一拍它还没回头——朝向反着给（它行动时才转身，与机制一致）
+          oppPos = u._backTurned ? (u.pos + (near.pos > u.pos ? -1 : 1)) : near.pos;
+        }
+        if (oppPos !== u.pos) {
+          const want = u.pos < oppPos ? "r" : "l";
+          if (face !== want) flip = " flipped";
+        }
+      }
+    }
+    if (flip && fig) fig = fig.replace('class="au-img', 'class="au-img flipped-img');
+    const cls = ["axis-unit",
+      isPlayer ? "self" : isSide ? "side" : "enemy",
+      u.alive === false || u.hp <= 0 ? "dead" : "",
+      (!isPlayer && !isSide && i === opts.target) ? "target" : "",
+      u._charging ? "charging" : "",
+      (!isPlayer && (u.lane || 0) === 0 && u.pos % 2 === 1) ? "off-row" : "",   // 错落站位：战位排敌群奇数格退后半步
+      (u.lane || 0) > 0 ? "lane-" + Math.min(u.lane, 3) : "",                   // 僚位排：真单位站出来的纵深（2.5 排制）
+      (u.alt || 0) === 1 ? "airborne air-" + Math.min(u.airGrade || 1, 3) : "", // 凌空：高度=境界档（飞得比对手高=实力俯视）
+      (!isPlayer && !isSide && u.alive && this._armed && this._armed.kind === "enemy") ? "targetable" : "",   // 择敌：点它即放
+    ].join(" ");
+    const left = ((u.pos + 0.5) / c.W * 100).toFixed(2);
+    const click = (!isPlayer && !isSide && u.alive) ? `onclick="UI.pickTarget(${i})"` : "";
+    return `<div class="${cls}" style="left:${left}%" data-uid="${isPlayer ? 'player' : isSide ? 'side' : 'enemy:' + i}" ${click}>
+      <div class="au-badges">${badges.join("")}</div>
+      ${(u.alt || 0) === 1 ? '<i class="air-pillar"></i>' : ""}
+      ${orbit}${fig}
+      <div class="au-bars">
+        <div class="au-hp"><i style="width:${hpPct}%"></i>${shPct ? `<i class="sh" style="width:${shPct}%"></i>` : ""}</div>
+        ${isPlayer ? `<div class="au-mp"><i style="width:${mpPct}%"></i></div>` : ""}
+      </div>
+      <div class="au-hpnum">${Math.max(0, Math.round(u.hp))}/${u.hpMax}${u.shield ? `<i class="au-shnum">+${u.shield}</i>` : ""}</div>
+      <div class="au-name">${u.name}${(!isPlayer && !isSide && i === opts.target && u.alive) ? '<span class="au-lock">◈</span>' : ""}</div>
+    </div>`;
+  },
+
+  /* 战斗结算卡：胜/遁/败 + 每个敌人的结局（伏诛/走脱）+ 复盘与战利——
+   * 看清楚发生了什么再收功（防"莫名其妙就退出战斗"）。确认后才走 _finishCombat。 */
+  showCombatOutro(c, meta, done) {
+    const ov = this.el("combat-outro");
+    if (!ov) { done(); return; }
+    const win = c.status === "win";
+    const fled = c.status === "fled";
+    const allEscaped = win && c.enemies.length > 0 && c.enemies.every(e => e.escaped || e.hp <= 0) && c.enemies.some(e => e.escaped) && !c.enemies.some(e => e.hp <= 0);
+    // 终结演出先播完（墨溅 1.2s），结算卡随后压上
+    const delay = win ? 1050 : 450;
+    setTimeout(() => {
+      const res = this.el("co-result");
+      res.textContent = win ? (allEscaped ? "逐" : "胜") : fled ? "遁" : "败";
+      res.className = "co-result " + (win ? "co-win" : fled ? "co-flee" : "co-lose");
+      // 敌人结局名单：死的是死、跑的是跑，一目了然
+      this.el("co-foes").innerHTML = c.enemies.map(e => {
+        const fate = e.hp <= 0 ? '<b class="cf-slain">伏诛</b>' : e.escaped ? '<b class="cf-fled">走脱</b>' : win ? '<b class="cf-fled">退散</b>' : '<b class="cf-stand">未竟</b>';
+        return `<div class="co-foe">${e.name} · ${fate}</div>`;
+      }).join("");
+      // 复盘：关键手 / 消耗 / 余裕
+      const lines = [];
+      if (c.stats && Object.keys(c.stats).length) {
+        const top = Object.entries(c.stats).sort((a, b) => b[1] - a[1])[0];
+        if (top && top[1] > 0) lines.push(`关键手「${top[0]}」共建功 ${top[1]} 伤`);
+        // 协同复盘（A2）：接住统帅递的刀几次，配合是看得见的
+        if (c.stats["接应配合"]) lines.push(`接应点将 ×${c.stats["接应配合"]}——她递的刀，你都接住了`);
+      }
+      if (!win && c.deathCause) lines.push(`你倒在「${c.deathCause.by}」的「${c.deathCause.move}」之下`);
+      const mpUsed = Math.max(0, Math.round((c.player.mpMax || 0) - c.player.mp));
+      lines.push(`耗灵力 ${mpUsed}　气血余 ${Math.max(0, Math.round(c.player.hp))}/${c.player.hpMax}`);
+      this.el("co-detail").innerHTML = lines.map(l => `<div>${l}</div>`).join("");
+      // 战利预览（与 _finishCombat 发放同源）：败/遁无所得
+      let lootTxt = "";
+      if (win && meta.type === "encounter") {
+        const parts = [];
+        if (meta.reward) Object.entries(meta.reward).forEach(([k, v]) => parts.push(k === "silver" ? `纹银×${v}` : `${DATA.items[k] ? DATA.items[k].name : k}×${v}`));
+        if (meta.namedLoot && !c.enemies.some(e => e.escaped)) Object.entries(meta.namedLoot).forEach(([k, v]) => parts.push(`${DATA.items[k] ? DATA.items[k].name : k}×${v}`));
+        if (meta.namedBeast && c.enemies.some(e => e.escaped)) parts.push("（妖王走脱——异闻未了，专属战利与你无缘）");
+        if (parts.length) lootTxt = "得：" + parts.join("、");
+      } else if (fled) lootTxt = "全身而退——这一仗没输，只是没赢。";
+      this.el("co-loot").textContent = lootTxt;
+      this.el("co-confirm").onclick = () => { ov.hidden = true; done(); };
+      ov.hidden = false;
+      if (typeof Sfx !== "undefined") Sfx.play(win ? "success" : "danger");
+    }, delay);
+  },
+
+  // 点意图气泡 → 弹出完整应对提示（3.5s 自隐——一眼信息与详查信息分级）
+  showIntentDetail(i) {
+    const c = Engine._combat;
+    if (!c) return;
+    const e = c.enemies[i];
+    const el = this.el("combat-intent");
+    if (!e || !e.intent || !el) return;
+    el.hidden = false;
+    el.innerHTML = `⚡ ${this._intentHint(e.intent)}`;
+    clearTimeout(this._intentTimer);
+    this._intentTimer = setTimeout(() => { el.hidden = true; }, 3500);
+  },
+
+  // 单行瞬时战报（v87 用户裁决：弹幕堆叠挡视野——同屏只留 1 条，新顶旧、速来速走；
+  // 完整信息以加大的战录框为正源，点「录」随时回看）
+  _floatLogs(c) {
+    const box = this.el("combat-floats");
+    if (!box) { this._combatLogLen = c.log.length; return; }
+    const fresh = c.log.slice(this._combatLogLen);
+    this._combatLogLen = c.log.length;
+    const last = fresh.filter(l => !/^【第\d+回合】/.test(l)).pop();   // 只取最新一条有效战报
+    if (last) {
+      box.innerHTML = "";                                            // 新顶旧：永不堆叠
+      const el = document.createElement("div");
+      el.className = "log-float" + (/造成|毒发|胜|趁虚|落空|砸了个空/.test(last) ? " lf-hit" : /受到|败|砸在|耗尽/.test(last) ? " lf-hurt" : "");
+      el.textContent = last;
+      box.appendChild(el);
+      clearTimeout(this._floatTimer);
+      this._floatTimer = setTimeout(() => el.remove(), 3200);
+    }
+    // 完整战录框同步（展开时可见）
+    const lg = this.el("combat-log");
+    if (lg) {
+      const logs = c.log.slice(-40);
+      lg.innerHTML = logs.map(l => {
+        const cls = /造成|毒发|中的|尽灭|胜|趁虚|落空/.test(l) ? "cl-hit" : /受到|气血耗尽|败|砸在/.test(l) ? "cl-hurt" : "";
+        return `<div class="${cls}">${l}</div>`;
+      }).join("");
+      if (!lg.hidden) lg.scrollTop = lg.scrollHeight;
+    }
   },
 
   renderCombat(c, meta) {
     const SP = CombatAPI.SPELLS;
-    const EL = CombatAPI.ELEM_NAME;
+    // 锁定目标已死：自动换到下一个活敌（弹道/脚圈/手牌射程全部跟着走）
+    if (this._combatTarget != null && (!c.enemies[this._combatTarget] || !c.enemies[this._combatTarget].alive)) {
+      this._combatTarget = null;
+    }
     const target = this.curTarget(c);
     const adv = target >= 0 ? c.senseVs(c.enemies[target]) : { seeIntent: false };
-    const multi = c.enemies.length > 1;
     const isBT = meta.type === 'breakthrough';
-
-    // 敌方：立绘对峙 + 血条 + 意图
-    const ELEM_GLYPH = { jin: "金", mu: "木", shui: "水", huo: "火", tu: "土" };
-    const knownElems = (typeof State !== "undefined" && State.data.intelElems) || {};
-    this.el("combat-enemies").innerHTML = c.enemies.map((e, i) => {
-      const tags = [];
-      // 道基行徽：情报门控——打过（揭示）或买过底细（L2）才看得见对方的根脚
-      if (e.elem && (knownElems[e.name] || e._dossier)) {
-        tags.push(`<span class="elem-badge elem-${e.elem}">${ELEM_GLYPH[e.elem]}</span>`);
-      }
-      if (e.immunePoison) tags.push("百毒不侵");
-      if (e.soulOnly) tags.push("神魂之体");
-      const statusTxt = e.status.poison ? `<span class="cstatus">☠ 中毒 ${e.status.poison.dmg}/回合·余${e.status.poison.turns}</span>` : "";
-      const intentTxt = (i === target && adv.seeIntent && e.intent && e.alive)
-        ? `<div class="cintent">⚡ 神识料敌：${this._intentHint(e.intent)}</div>` : "";
-      const hpPct = Math.max(0, e.hp / e.hpMax * 100);
-      const shieldPct = e.shield ? Math.min(100, e.shield / e.hpMax * 100) : 0;
-      // 立绘 / 字符玉牌
-      const aid = this._artIdByName(e.name);
-      const demonized = isBT || /心魔/.test(e.name);
-      const fig = aid
-        ? `<div class="cfigure${demonized ? " demonized" : ""}"><img src="${Art.url(aid)}" alt="" /></div>`
-        : `<div class="cfigure glyph"><span>${this._enemyGlyph(e.name)}</span></div>`;
-      return `<div class="combatant enemy ${e.alive ? '' : 'dead'} ${i === target ? 'target' : ''}" ${e.alive && multi ? `onclick="UI.pickTarget(${i})"` : ''}>
-        ${fig}
-        <div class="cinfo">
-          <div class="cname"><b>${e.name}</b><span class="ctag">${tags.join(' ')}</span></div>
-          <div class="cbar">
-            <div class="cbar-fill" style="width:${hpPct}%"></div>
-            ${shieldPct ? `<div class="cbar-fill shield" style="width:${shieldPct}%"></div>` : ''}
-          </div>
-          <div class="cbar-num">气血 ${Math.max(0, Math.round(e.hp))}/${e.hpMax}${e.shield ? `　<span style="color:var(--blue)">护体${e.shield}</span>` : ''}</div>
-          ${statusTxt}
-        </div>
-        ${intentTxt}
-        ${i === target && e.alive ? '<div class="target-tag">◈ 锁定</div>' : ''}
-      </div>`;
-    }).join("");
-
-    // 我方：韩立立绘 + 道心/气血
     const p = c.player;
-    const hpPct = Math.max(0, p.hp / p.hpMax * 100);
-    const shieldPct = p.shield ? Math.min(100, p.shield / p.hpMax * 100) : 0;
-    const hurl = (typeof Art !== "undefined") ? Art.url("hanli") : null;
-    // 侧位单位（尸傀/灵宠/同道）：主人身侧的窄卡
-    const isAlly = c.side && c.side.kind === "ally";
-    const sideHtml = c.side ? `<div class="combatant side-unit ${c.side.hp > 0 ? '' : 'dead'}">
-      ${isAlly && c.side.art && typeof Art !== "undefined" && Art.url(c.side.art)
-        ? `<div class="cfigure side-fig"><img src="${Art.url(c.side.art)}" alt="" /></div>` : ""}
-      <div class="cinfo">
-        <div class="cname"><b>${c.side.name}</b><span class="ctag">${c.side.hp > 0 ? (isAlly ? '同道' : '随行') : (isAlly ? '重伤退场' : '倒地')}</span></div>
-        <div class="cbar"><div class="cbar-fill side" style="width:${Math.max(0, c.side.hp / c.side.hpMax * 100)}%"></div></div>
-        <div class="cbar-num">${isAlly ? '气血' : '躯体'} ${Math.max(0, Math.round(c.side.hp))}/${c.side.hpMax}</div>
-      </div>
-    </div>` : "";
-    this.el("combat-player").innerHTML = `<div class="combatant self">
-      ${hurl ? `<div class="cfigure"><img src="${hurl}" alt="" /></div>` : ""}
-      <div class="cinfo">
-        <div class="cname"><b>${p.name}</b><span class="ctag">${isBT ? '道心之战' : `神识${p.sense}·遁速${p.speed}`}</span></div>
-        <div class="cbar">
-          <div class="cbar-fill self" style="width:${hpPct}%"></div>
-          ${shieldPct ? `<div class="cbar-fill shield" style="width:${shieldPct}%"></div>` : ''}
-        </div>
-        <div class="cbar-num">${isBT ? '道心' : '气血'} ${Math.max(0, Math.round(p.hp))}/${p.hpMax}${p.shield ? `　<span style="color:var(--blue)">护体${p.shield}</span>` : ''}</div>
-        ${p.status.poison ? `<span class="cstatus">☠ 中毒 ${p.status.poison.dmg}/回合</span>` : ''}
-      </div>
-    </div>` + sideHtml;
 
-    // 五行灵气珠池：五色玉珠，充盈发光、空则黯淡
-    this.el("combat-qi").innerHTML =
-      CombatAPI.ELEMENTS.map(e =>
-        `<div class="qi-orb ${e} ${c.qi[e] > 0 ? 'lit' : 'zero'}" title="${EL[e]}行灵气">
-          <span class="qo-char">${EL[e]}</span><b class="qo-n">${c.qi[e]}</b>
-        </div>`
-      ).join("") +
-      (p.momentum ? `<div class="qi-orb momentum lit" title="剑势：连击可引爆"><span class="qo-char">势</span><b class="qo-n">${p.momentum}</b></div>` : "");
+    // —— 回合数 ——
+    const rd = this.el("combat-round");
+    if (rd) rd.textContent = `第 ${c.round} 回合`;
 
-    // 法术/招式 与 底牌 分区渲染（底牌=消耗性手段，独立体系，不与灵技混排）
-    const spellBtn = (id, extraCls) => {
+    // —— 危险格标记：收集敌方 cell/zone 意图（方阵：罩全排的雾带更高更浓）——
+    const dangerCells = new Set(), zoneCells = new Set(), zoneFrontCells = new Set();
+    c.enemies.forEach(e => {
+      if (!e.alive || !e.intent) return;
+      if (e.intent.targetCell != null) dangerCells.add(e.intent.targetCell);
+      if (e.intent.aim === "zone" && e.intent.zoneFrom != null) {
+        const frontOnly = e.intent.depth === "front";
+        for (let z = e.intent.zoneFrom; z <= e.intent.zoneTo; z++) {
+          zoneCells.add(z);
+          if (frontOnly) zoneFrontCells.add(z);
+        }
+      }
+    });
+
+    // —— 地面步位刻度：格是法术现象不是棋盘——
+    //    平时=淡墨刻度点；可走=青色涟漪；锁格=红雾柱升起；范围=红雾带；阵法=地面阵纹
+    const lane = this.el("axis-lane");
+    const movable = new Set(c.status === "ongoing" ? c.movableCells(p) : []);
+    const moveLeft = (c.moveCap ? c.moveCap(p) : p.move) - (c._pMoved || 0);
+    // 择地模式（阵旗上膛）：射程内步位亮金圈点格落阵；上膛中走位点击让位给布阵
+    const armedCellMode = this._armed && this._armed.kind === "cell";
+    let laneHtml = "";
+    for (let i = 0; i < c.W; i++) {
+      const fz = (c.zones || []).find(z => i >= z.from && i <= z.to);
+      const zCls = fz ? `zone-${fz.type}` : "";
+      const canGo = !armedCellMode && movable.has(i) && moveLeft > 0;
+      const castable = armedCellMode
+        && Math.abs(i - p.pos) >= this._armed.r[0] && Math.abs(i - p.pos) <= this._armed.r[1];
+      const cls = ["axis-cell", zCls,
+        canGo ? "can-move" : "",
+        castable ? "cast-cell" : "",
+        dangerCells.has(i) ? "danger-cell" : "",
+        zoneCells.has(i) ? "danger-zone" : "",
+        zoneFrontCells.has(i) ? "zone-front" : "",   // "扫"战位排：矮雾带（僚位无虞）；不标=罩全排高雾带
+        i === 0 ? "edge-home" : "", i === c.W - 1 ? "edge-far" : "",
+      ].join(" ");
+      // 同轴一体：洞窟没采完的热点原格还在——走到跟前花一个主行动照采（一边打一边贪）
+      const hot = (c.hotspots || []).find(h => h.pos === i && !h.taken);
+      const hotNear = hot && c.playerCanTake && c.playerCanTake(hot);
+      laneHtml += `<div class="${cls}" ${castable ? `onclick="UI.castAtCell(${i})"` : canGo ? `onclick="Engine.combatMove(${i})"` : ""}>
+        ${dangerCells.has(i) ? '<i class="mist-pillar"></i>' : ""}
+        ${zoneCells.has(i) ? '<i class="mist-band"></i>' : ""}
+        ${fz ? `<i class="zone-ring"></i>` : ""}
+        ${castable ? '<i class="cast-mark"></i>' : ""}
+        ${hot ? `<span class="cave-hot${hotNear ? " near" : ""}" ${hotNear ? `onclick="event.stopPropagation();Engine.combatTake('${hot.id}')"` : ""} title="${hot.name}（花一个主行动采下）">${this._hotIcon(hot.name)}<i>${hot.name}</i></span>` : ""}
+        <i class="dot"></i>
+      </div>`;
+    }
+    lane.innerHTML = laneHtml;
+
+    // —— 单位层：玩家/侧位/敌人按格站位（CSS transition 滑动）——
+    //    阵亡退场：尸体只渲染"咽气那一拍"（让墨溅+淡出播完），下一次重渲染即除名
+    const unitsEl = this.el("axis-units");
+    this._deadShown = this._deadShown || {};
+    let unitsHtml = this._axisSprite(c, p, { isBT, target });
+    if (c.side) unitsHtml += this._axisSprite(c, c.side, { isBT, target });
+    c.enemies.forEach((e, i) => {
+      if (e.escaped) return;
+      if (!e.alive) {
+        if (this._deadShown[i]) return;   // 已演过死——不再入场
+        this._deadShown[i] = true;
+      }
+      unitsHtml += this._axisSprite(c, e, { isBT, target, enemyIndex: i });
+    });
+    unitsEl.innerHTML = unitsHtml;
+
+    // —— 场景即战场：宽轴（W>11）拉镜头（死区跟随）——你在画面里走，镜头只在你贴近画框时才拉。
+    //    镜头跟人不锁人：移动是"人滑过画面"，不是"世界从脚下滑走"。长卷背景以视差随镜头退行。 ——
+    const laneEl2 = this.el("axis-lane");
+    const bgEl2 = this.el("combat-bg");
+    // 镜头三联动（depth-design D3）：升空=镜头后拉——视野 V、人物景深 uscale、
+    // 身法 moveCap 三者同源于 airGrade（境界即高度）；只缩"人"不缩"场"
+    //（整场 transform:scale=单位层悬空+黑框，v85 教训）；地面单位脚锚地线不动
+    const fieldEl0 = this.el("axis-field");
+    const air = (p.alt || 0) === 1, aGrade = Math.min(p.airGrade || 1, 3);
+    if (fieldEl0) {
+      const aliveN = c.units().length;
+      const uscale = Math.max(0.72, Math.min(1,
+        1 - 0.04 * ((c.L || 2) - 2) - 0.025 * Math.max(0, aliveN - 3)
+          - (air ? 0.04 + 0.04 * aGrade : 0)));
+      fieldEl0.style.setProperty("--uscale", uscale.toFixed(3));
+      fieldEl0.style.setProperty("--lanes", c.L || 2);
+      fieldEl0.classList.toggle("sky-view", air);
+      // 踩地对齐（v86 根修）：底图只铺到战场下沿——底图下 1/3 的近地台面正好垫在
+      // 单位脚下；否则地面带被操作台吞掉，人全站在底图的远山上（用户实锤的"站山上"）
+      const ovEl = this.el("combat-overlay"), bgAl = this.el("combat-bg");
+      if (ovEl && bgAl) {
+        const fr = fieldEl0.getBoundingClientRect(), or2 = ovEl.getBoundingClientRect();
+        if (fr.height > 0) bgAl.style.setProperty("--bg-cut", Math.max(0, Math.round(or2.bottom - fr.bottom)) + "px");
+      }
+    }
+    const skyShift = air ? ` translateY(${(1.4 + aGrade * 0.8).toFixed(1)}%)` : "";   // 飞天底图沉降：露出更多天空（档位越高看得越高）
+    if (c.W > 11) {
+      const V = air ? Math.min(c.W, 11 + 2 * aGrade) : 11, m = 3;
+      const trackW = (c.W / V) * 100;
+      let cam = (typeof c._cam === "number") ? c._cam : (p.pos + 0.5 - V / 2);
+      if (p.pos + 0.5 < cam + m) cam = p.pos + 0.5 - m;
+      if (p.pos + 0.5 > cam + V - m) cam = p.pos + 0.5 - (V - m);
+      // 锁定目标尽量入画（打谁看谁）；与玩家死区冲突时，玩家优先——镜头永远不丢人
+      const te2 = (target >= 0 && c.enemies[target] && c.enemies[target].alive) ? c.enemies[target] : null;
+      if (te2) {
+        if (te2.pos + 0.5 > cam + V - 0.8) cam = te2.pos + 0.5 - (V - 0.8);
+        if (te2.pos + 0.5 < cam + 0.8) cam = te2.pos + 0.5 - 0.8;
+        if (p.pos + 0.5 < cam + 1.2) cam = p.pos + 0.5 - 1.2;
+        if (p.pos + 0.5 > cam + V - 1.2) cam = p.pos + 0.5 - (V - 1.2);
+      }
+      // 接力运镜（A2 v0）：同道正缠斗的目标软性入画——优先级最低，绝不挤掉玩家与锁定目标
+      const st2 = (c._sideTarget != null && c.enemies[c._sideTarget] && c.enemies[c._sideTarget].alive)
+        ? c.enemies[c._sideTarget] : null;
+      if (st2 && st2 !== te2) {
+        if (st2.pos + 0.5 > cam + V - 0.5) cam = st2.pos + 0.5 - (V - 0.5);
+        if (st2.pos + 0.5 < cam + 0.5) cam = st2.pos + 0.5 - 0.5;
+        if (te2) {
+          if (te2.pos + 0.5 > cam + V - 0.8) cam = te2.pos + 0.5 - (V - 0.8);
+          if (te2.pos + 0.5 < cam + 0.8) cam = te2.pos + 0.5 - 0.8;
+        }
+        if (p.pos + 0.5 < cam + 1.2) cam = p.pos + 0.5 - 1.2;
+        if (p.pos + 0.5 > cam + V - 1.2) cam = p.pos + 0.5 - (V - 1.2);
+      }
+      cam = Math.max(0, Math.min(c.W - V, cam));
+      c._cam = cam;
+      const shift = (cam / c.W) * 100;
+      [laneEl2, unitsEl].forEach(el => {
+        el.style.width = trackW + "%";
+        el.style.transform = `translateX(-${shift.toFixed(2)}%)`;
+        el.classList.add("cam-track");
+      });
+      if (bgEl2) {
+        const camT = (c.W - V) > 0 ? cam / (c.W - V) : 0;
+        bgEl2.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${skyShift} scale(1.18)`;
+      }
+      // 锁定目标在镜头外：画框边缘点名（远闻其声的战斗版——它在那头，没丢）
+      this._fightFarCue(te2 && te2.pos + 0.5 > cam + V ? `${te2.name} ▶`
+        : te2 && te2.pos + 0.5 < cam ? `◀ ${te2.name}` : null,
+        te2 && te2.pos + 0.5 < cam);
+    } else {
+      [laneEl2, unitsEl].forEach(el => {
+        el.style.width = ""; el.style.transform = ""; el.classList.remove("cam-track");
+      });
+      if (bgEl2) bgEl2.style.transform = skyShift ? `${skyShift.trim()} scale(1.06)` : "";
+      this._fightFarCue(null);
+    }
+
+    // —— 防撞排布（v87 拥挤重设计）：同高度层单位按屏距扫描，间距不足时右侧者
+    //    顺势让开（深排让得多）——规则站位不动，只挪演出排布；血条名牌随之岔开 ——
+    this._decrowd(unitsEl, c);
+
+    // —— 神识料敌提示条（上膛中优先显示择敌/择地指引）——
+    const intentEl = this.el("combat-intent");
+    if (intentEl) {
+      const te = target >= 0 ? c.enemies[target] : null;
+      if (this._armed) {
+        const asp = CombatAPI.SPELLS[this._armed.id];
+        intentEl.hidden = false;
+        intentEl.innerHTML = this._armed.kind === "cell"
+          ? `✦ 「${asp.name}」已上膛——<b style="color:var(--gold)">点亮金圈的步位落阵</b>；再点法术牌可收手。`
+          : `✦ 「${asp.name}」已上膛——<b style="color:var(--gold)">点选要打的敌人</b>；再点法术牌可收手。`;
+      } else if (te && te.alive && te.intent && adv.seeIntent) {
+        intentEl.hidden = false;
+        intentEl.innerHTML = `⚡ 神识料敌：${this._intentHint(te.intent)}`;
+      } else if (te && te.alive && (dangerCells.size || zoneCells.size)) {
+        intentEl.hidden = false;
+        intentEl.innerHTML = `⚠ 杀气锁地：红光处即将遭袭——挪开脚步，或举盾硬接。`;
+      } else { intentEl.hidden = true; intentEl.innerHTML = ""; }
+    }
+
+    // —— 灵力池 + 行动经济行 ——
+    const mpPct = Math.max(0, p.mp / p.mpMax * 100);
+    const acts = (c._pActsMax || 1) - (c._pActsUsed || 0);
+    this.el("combat-mprow").innerHTML = `
+      <div class="mp-pool" title="灵力：一切手段共用一池，整场不自动恢复">
+        <span class="mp-label">灵力</span>
+        <div class="mp-bar"><i style="width:${mpPct}%"></i></div>
+        <span class="mp-num">${Math.round(p.mp)}/${p.mpMax}</span>
+      </div>
+      <div class="act-chips">
+        <span class="act-chip ${acts > 0 ? '' : 'used'}" title="主行动">出手×${Math.max(0, acts)}</span>
+        <span class="act-chip ${c._pQuickUsed ? 'used' : ''}" title="瞬发牌（符箓丹药）每回合一张">瞬发${c._pQuickUsed ? '已用' : '×1'}</span>
+        <span class="act-chip ${moveLeft > 0 ? '' : 'used'}" title="移动力：点亮起的格子挪步">身法×${Math.max(0, moveLeft)}</span>
+        ${p.momentum ? `<span class="act-chip momentum" title="剑势：连击可引爆">势×${p.momentum}</span>` : ""}
+      </div>`;
+
+    // —— 手牌（主行动 + 瞬发底牌分区）——
+    const rangeTxt = sp => sp.range && sp.range[1] > 0
+      ? (sp.range[0] === sp.range[1] ? (sp.range[0] === 1 ? "贴身" : `${sp.range[0]}格`) : `${sp.range[0]}~${sp.range[1]}格`)
+      : "自身";
+    const spellBtn = (id, extraCls, role) => {
       const sp = SP[id];
-      const wx = sp.elem || Object.keys(sp.cost || {})[0] || "jin";
-      const costDots = Object.entries(sp.cost).map(([e, n]) =>
-        e === "any"
-          ? `<span class="cost-dot free" title="任意一系灵气">任${n}</span>`
-          : `<span class="cost-dot wx-${e}" title="${EL[e]}行">${EL[e]}${n}</span>`).join("") || `<span class="cost-dot free">无耗</span>`;
+      const wx = sp.elem || (sp.school || "jin");
       const afford = c.canAfford(id);
+      // 射程判定（二次确认配套）：阵旗看"有没有格可落"（恒真）；打击类看"够得着任一活敌"——
+      // 锁定目标够不着但别的敌人够得着时，牌不再误灰（上膛后点谁打谁）
+      const inR = (sp.type === "zone" && !sp.selfZone) ? true
+        : (sp.range && sp.range[1] === 0) ? true
+        : c.enemies.some((e2, i2) => e2.alive && c.castableAt(id, i2));
       const noPouch = sp.consume && !(p.pouch[sp.consume] > 0);
-      const pouchTxt = sp.consume ? `<span class="spouch ${noPouch ? 'empty' : ''}">余 ×${p.pouch[sp.consume] || 0}</span>` : "";
-      // 剑法大成：本体名号蜕变（提升感写在脸上）
+      const cdLeft = c.cooldownLeft ? c.cooldownLeft(id) : 0;
+      const usable = afford && inR;
+      const why = !afford
+        ? (cdLeft > 0 ? `回气${cdLeft}` : noPouch ? "无存货" : (sp.mp || 0) > p.mp ? "灵力不足" : sp.quick && c._pQuickUsed ? "瞬发已用" : "行动已尽")
+        : (!inR ? "射程外" : "");
+      const pouchTxt = (sp.consume ? `<span class="spouch ${noPouch ? 'empty' : ''}">×${p.pouch[sp.consume] || 0}</span>` : "")
+        + (why ? `<span class="spouch empty">${why}</span>` : "");
       const dispName = (id === "zhayan" && p.swordMastery) ? "眨眼剑法·大成" : sp.name;
       const dispFx = (id === "zhayan" && p.swordMastery) ? spellEffectText(sp) + " 攒势×2" : spellEffectText(sp);
-      return `<button class="spell-btn ${extraCls || ''} ${afford ? '' : 'off'}" ${afford ? '' : 'disabled'} onclick="Engine.combatCast('${id}', ${target})" title="${sp.desc || ''}">
-        <span class="seal ${sp.consume ? 'cinnabar' : 'wx-' + wx}">${sealChar(sp.name)}</span>
+      const armedCls = (this._armed && this._armed.id === id) ? "armed" : "";
+      const roleTag = role === "main" ? `<span class="role-tag rt-main">主</span>`
+        : role === "def" ? `<span class="role-tag rt-def">御</span>` : "";
+      return `<button class="spell-btn ${extraCls || ''} ${armedCls} ${usable ? '' : 'off'}" ${usable ? '' : 'disabled'} onclick="UI.armSpell('${id}')" title="${sp.desc || ''}">
+        ${roleTag}<span class="seal ${sp.consume ? 'cinnabar' : 'wx-' + wx}">${sealChar(sp.name)}</span>
         <span class="sp-body">
-          <span class="sname">${dispName}</span>
-          <span class="scost">${costDots} ${dispFx}${pouchTxt}</span>
+          <span class="sname">${dispName}<span class="srange">${rangeTxt(sp)}</span></span>
+          <span class="scost"><span class="cost-dot mp-dot">${sp.mp ? `灵力${sp.mp}` : "零耗"}</span> ${dispFx}${pouchTxt}</span>
         </span>
       </button>`;
     };
-    const mains = p.spells.filter(id => SP[id] && !SP[id].consume);
-    const trumps = p.spells.filter(id => SP[id] && SP[id].consume);
+    // —— 手牌四区制（combat-arsenal-design 四·五）：同一张双排同滑网格内分区，单屏不竖涨 ——
+    //    法宝法器区：催动外物（source=treasure，练气法器→筑基上品→结丹法宝同区换代）
+    //    法术区：功法法术+武学（主行动的主体）
+    //    瞬发区：符箓/阵法/丹药（不占主行动的底牌）
+    //    灵傀区：灵宠/傀儡/同道（侧位单位随身牌：血量+简令）
+    let treasures = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source === "treasure");
+    const mains = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source !== "treasure");
+    const quicks = p.spells.filter(id => SP[id] && SP[id].quick);
+    // 主攻/防御位（用户裁决）：法宝区有主次之分——主攻法宝（装备武器所授，余者首张攻击法宝
+    // 兜底）排第一标"主"；护体类法宝标"御"；其余为次位。主攻法宝另有伴身演出（au-blades）
+    const wGear = (typeof State !== "undefined" && State.gearOf) ? State.gearOf("weapon") : null;
+    const mainTre = (wGear && wGear.grantSpells && wGear.grantSpells.find(id => treasures.includes(id)))
+      || treasures.find(id => SP[id].type === "atk") || null;
+    if (mainTre) treasures = [mainTre].concat(treasures.filter(id => id !== mainTre));
+    const treRole = id => id === mainTre ? "main" : (SP[id].type !== "atk" ? "def" : "");
     this.el("combat-spells").innerHTML =
-      mains.map(id => spellBtn(id)).join("") +
-      (trumps.length ? `<div class="trump-row"><span class="trump-tag">底牌</span>${trumps.map(id => spellBtn(id, "trump")).join("")}</div>` : "");
+      `<div class="spell-grid">`
+      + (treasures.length ? `<span class="zone-tag zt-treasure">法宝</span>${treasures.map(id => spellBtn(id, "treasure", treRole(id))).join("")}` : "")
+      + `<span class="zone-tag">法术</span>${mains.map(id => spellBtn(id)).join("")}`
+      + `</div>`;
+    // 瞬发 + 助战：同一条窄排（瞬发牌横滑；助战卡点击换简令）。
+    // 客随例外（用户裁决）：境界远高于你的同道（mastery≥2）全自动——她指挥你（点将），
+    // 你指挥不了她；简令四档只对平辈/下属（尸傀/灵宠/低阶同道）生效
+    const qrow = this.el("quick-row");
+    if (qrow) {
+      const petCard = (u) => {
+        const down = u.hp <= 0;
+        const lead = u.kind === "ally" && (u.mastery || 0) >= 2;
+        const st = u.stance || "follow";
+        const stCh = lead ? "帅" : ({ follow: "随", attack: "攻", guard: "守", retreat: "撤" }[st] || "随");
+        const hpPct = Math.max(0, Math.round(u.hp / u.hpMax * 100));
+        const mpPct = u.mpMax ? Math.max(0, Math.round((u.mp || 0) / u.mpMax * 100)) : 0;
+        return `<button class="pet-card ${down ? 'down' : ''} ${lead ? 'lead' : ''}" ${down ? 'disabled' : ''}
+          onclick="Engine.cycleSideStance()" title="${down ? u.name + ' 已离场' : lead ? '她的境界远在你之上——全程自主出手，每回合为你点将' : '点击换简令：随行→强攻→护主→后撤'}">
+          <span class="seal">${u.name[0]}</span>
+          <span class="pc-body"><span class="pc-name">${u.name}</span>
+          <span class="pc-hp"><i style="width:${hpPct}%"></i></span>
+          ${u.mpMax ? `<span class="pc-mp"><i style="width:${mpPct}%"></i></span>` : ""}</span>
+          <span class="pc-st">${down ? "殁" : stCh}</span>
+        </button>`;
+      };
+      qrow.innerHTML =
+        (c.side ? `<span class="zone-tag zt-pet">助战</span>${petCard(c.side)}` : "")
+        + (quicks.length ? `<span class="zone-tag zt-quick">瞬发</span>${quicks.map(id => spellBtn(id, "trump")).join("")}` : "");
+    }
 
-    // 战斗日志
-    const logs = c.log.slice(-9);
-    this.el("combat-log").innerHTML = logs.map((l, i) => {
-      const cls = /造成|毒发|中的|尽灭|胜/.test(l) ? "cl-hit" : /受到|气血耗尽|败|逆冲/.test(l) ? "cl-hurt" : i === logs.length - 1 ? "cl-new" : "";
-      return `<div class="${cls}">${l}</div>`;
-    }).join("");
-    this.el("combat-log").scrollTop = this.el("combat-log").scrollHeight;
+    // —— 遁走按钮：仅在阵脚亮出 ——
+    const fleeBtn = this.el("combat-flee");
+    if (fleeBtn) fleeBtn.hidden = !(c.status === "ongoing" && c.playerCanFlee && c.playerCanFlee());
+    const quickBtn = this.el("combat-quick");
+    if (quickBtn) quickBtn.hidden = !(meta.canQuick && c.round <= 1);
+    // —— 升空/落地：有腾空之能才亮（空层 2.5D）——
+    const flyBtn = this.el("combat-fly");
+    if (flyBtn) {
+      flyBtn.hidden = !(c.status === "ongoing" && p.canFly);
+      flyBtn.textContent = (p.alt || 0) === 1 ? "落地" : "升空";
+      flyBtn.disabled = !(c.playerCanFly && c.playerCanFly());
+    }
+
+    // —— 战报：弹幕飘过 + 战录框同步 ——
+    this._floatLogs(c);
+  },
+
+  /* ===========================================================
+   *  箱庭探索 v3 · L1 舆图 + L3 横版深窟（exploremap.js）
+   * =========================================================== */
+  openExmap() {
+    const s = State.data;
+    if (!s.exmap) return;
+    this.el("exmap-overlay").hidden = false;
+    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm("tense");
+    this._exmapNoteQueue = [];
+    this.renderExmap();
+  },
+  closeExmap() {
+    this.el("exmap-overlay").hidden = true;
+    this.el("exmap-notes").innerHTML = "";
+  },
+
+  // 见闻字幕：底部浮现一行（移动演出/警兆/场景描述）
+  exmapNote(text, kind) {
+    const box = this.el("exmap-notes");
+    if (!box) return;
+    const div = document.createElement("div");
+    div.className = "exmap-note" + (kind ? " " + kind : "");
+    div.textContent = text;
+    box.appendChild(div);
+    while (box.children.length > 3) box.removeChild(box.firstChild);
+    setTimeout(() => { div.classList.add("fade"); setTimeout(() => div.remove(), 900); }, kind === "desc" ? 6800 : 4800);
+  },
+
+  renderExmap() {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const f = ExploreMap.cur(x);
+    const isCave = f.kind === "cave" || f.kind === "scene";
+    this.el("exmap-field").style.display = isCave ? "none" : "";
+    this.el("exmap-scene").hidden = !isCave;
+    if (isCave) { this._renderExmapScene(x, f); return; }
+    this._renderExmapField(x, f);
+  },
+
+  /* ---------- L1 舆图渲染 ---------- */
+  _renderExmapField(x, f) {
+    const map = ExploreMap.mapOf(f);
+    // 背景：禁地全景横图，压暗作舆图底
+    const bg = this.el("exmap-bg");
+    const bgUrl = Art.sceneUrl(map.bg, { landscape: true });
+    if (bgUrl && bg.dataset.cur !== bgUrl) { bg.style.backgroundImage = `url('${bgUrl}')`; bg.dataset.cur = bgUrl; }
+
+    // 钟盘：第X日 + 血幕预警
+    const ci = ExploreMap.clockInfo(x);
+    const nextCurfew = (map.curfew || []).find(cf => ci.clock < cf.at);
+    this.el("exmap-title").textContent = map.name;
+    this.el("exmap-clock").innerHTML =
+      `<span class="exclk-day">第 ${ci.day} 日</span>` +
+      `<span class="exclk-ticks">${"●".repeat(Math.max(0, (map.ticksPerDay || 6) - ci.tick))}${"○".repeat(ci.tick)}</span>` +
+      `<span class="exclk-left">血幕阖于 ${ci.left} 钟后</span>` +
+      (nextCurfew ? `<span class="exclk-warn">血幕收缩：${nextCurfew.at - ci.clock} 钟后</span>` : "");
+
+    // 节点与连线
+    const opts = ExploreMap.options(x);
+    const optMap = {};
+    opts.forEach(o => { optMap[o.id] = o; });
+    const pat = ExploreMap.patrolAt(x);
+
+    // 连线（SVG，已见节点之间才画）
+    const svg = this.el("exmap-edges");
+    let lines = "";
+    (map.edges || []).forEach(([a, b]) => {
+      const na = map.nodes[a], nb = map.nodes[b];
+      const seenA = f.visited[a], seenB = f.visited[b];
+      if (!seenA && !seenB) return;
+      const isOpt = (a === f.node && optMap[b]) || (b === f.node && optMap[a]);
+      lines += `<line x1="${na.x}" y1="${na.y}" x2="${nb.x}" y2="${nb.y}" class="exedge${isOpt ? " reach" : ""}"/>`;
+    });
+    svg.innerHTML = lines;
+
+    // 节点
+    const box = this.el("exmap-nodes");
+    let html = "";
+    Object.entries(map.nodes).forEach(([id, n]) => {
+      const seen = f.visited[id];
+      const opt = optMap[id];
+      // 可见性：去过 / 相邻可去（雾影）/ 情报标出（钟吾图、古阵）
+      if (!seen && !opt && !(pat && (id === pat.node || id === pat.next) && f.intel.patrol_route)) return;
+      const here = id === f.node;
+      let cls = "exnode";
+      if (here) cls += " here";
+      if (opt && !opt.closed) cls += " reach";
+      if (f.closed[id]) cls += " closed";
+      if (f.cleared[id]) cls += " cleared";
+      if (!seen || (seen === "seen" && !here)) cls += " ghost";   // 雾影：没去过/只在图上见过
+      let riskMark = "";
+      if (!f.closed[id] && pat && id === pat.node && f.intel.patrol_route) riskMark = `<span class="exrisk killer">杀</span>`;
+      else if (!f.closed[id] && pat && id === pat.next && f.intel.patrol_route) riskMark = `<span class="exrisk shadow">影</span>`;
+      else if (opt && opt.risk === "killer") riskMark = `<span class="exrisk killer">杀</span>`;
+      else if (opt && opt.risk === "shadow") riskMark = `<span class="exrisk shadow">影</span>`;
+      else if (!f.closed[id] && n.kind === "danger") riskMark = `<span class="exrisk lair">凶</span>`;
+      else if (!f.closed[id] && n.kind === "enter" && n.boss) riskMark = `<span class="exrisk boss">渊</span>`;
+      const cost = opt && !here ? `<span class="excost">${opt.cost}钟</span>` : "";
+      const click = (opt && !f.closed[id] && !here) ? `onclick="Engine.exmapTravel('${id}')"` : "";
+      html += `<div class="${cls}" style="left:${n.x}%;top:${n.y}%" ${click}>
+        <span class="exicon">${n.icon || "·"}</span>
+        <span class="exname">${n.name}</span>${cost}${riskMark}
+      </div>`;
+    });
+    // 韩立棋子（CSS transition 沿位移走——移动演出）
+    const cn = map.nodes[f.node];
+    html += `<div class="expawn" style="left:${cn.x}%;top:${cn.y}%"><img src="${Art.url("hanli") || ""}" alt=""></div>`;
+    // 封岳棋子（有情报才显形；无情报时只有风险标注）
+    if (pat && f.intel.patrol_route && !f.closed[pat.node]) {
+      const pn = map.nodes[pat.node];
+      html += `<div class="expawn foe" style="left:${pn.x}%;top:${pn.y}%"><img src="${Art.url(pat.def.art) || ""}" alt=""></div>`;
+    }
+    box.innerHTML = html;
+
+    // 行动条：按当前节点类型给动作（到达即所得）
+    const node = map.nodes[f.node];
+    const acts = [];
+    if (node.loot && !f.cleared[f.node]) acts.push(`<button class="btn" onclick="Engine.exmapGather()">${node.kind === "danger" ? "搜刮（1钟）" : "采集（1钟）"}</button>`);
+    if (node.kind === "lore" && !f.guzhenUsed) acts.push(`<button class="btn" onclick="Engine.exmapReadLore()">以神识读阵</button>`);
+    if (node.kind === "enter") acts.push(`<button class="btn btn-warn" onclick="Engine.exmapEnterSub()">潜入洞窟</button>`);
+    if (node.kind === "exit") acts.push(`<button class="btn btn-warn" onclick="Engine.finishExmap('leave')">离开禁地</button>`);
+    acts.push(`<button class="btn btn-ghost" onclick="Engine.exmapStay(1)">${node.kind === "rest" ? "打坐调息（1钟）" : "驻守一钟"}</button>`);
+    this.el("exmap-actions").innerHTML = acts.join("");
+  },
+
+  /* ---------- L3 轴式洞窟渲染：探索格=战斗格（同一条轴，镜头跟随） ---------- */
+  // 朝向工具：素材 face vs 期望朝向（面向对手）→ 是否镜像
+  _faceFlip(bid, selfPos, otherPos) {
+    if (typeof Art === "undefined" || !Art.battlerFace || otherPos == null) return "";
+    const face = Art.battlerFace(bid);
+    if (face === "c") return "";
+    const want = selfPos < otherPos ? "r" : "l";
+    return face === want ? "" : " flipped";
+  },
+
+  _renderExmapScene(x, f) {
+    const map = ExploreMap.mapOf(f);
+    const bg = this.el("exmap-bg");
+    const bgUrl = Art.sceneUrl(map.bg, { landscape: true });
+    if (bgUrl && bg.dataset.cur !== bgUrl) { bg.style.backgroundImage = `url('${bgUrl}')`; bg.dataset.cur = bgUrl; }
+
+    const W = map.W;
+    const beast = (map.watchers || []).find(wt => wt.beast);
+    const blown = map.exposeLimit ? (f.expose || 0) >= map.exposeLimit : false;
+
+    // 入场氛围字幕（一次性队列）
+    if (!f.introDone) {
+      f.introDone = true;
+      (map.intro || []).forEach((t, i) => setTimeout(() => this.exmapNote(t, "desc"), 400 + i * 2200));
+    }
+
+    // —— 拉镜头（死区跟随）：韩立在画面里走，镜头只在他贴近画框边缘时才拉 ——
+    //    锁死居中=世界在动；死区跟随=人在走、镜头追人（横版卷轴的语感）
+    const stage = this.el("exmap-scene-stage");
+    const V = 12;                                    // 探索视口格数（开战推近到11——镜头一沉）
+    const margin = 3.2;                              // 死区边距（格）：贴边才拉镜
+    const trackW = (W / V) * 100;
+    let cam = (typeof f._cam === "number") ? f._cam : (f.pos + 0.5 - V / 2);
+    if (f.pos + 0.5 < cam + margin) cam = f.pos + 0.5 - margin;
+    if (f.pos + 0.5 > cam + V - margin) cam = f.pos + 0.5 - (V - margin);
+    cam = Math.max(0, Math.min(W - V, cam));
+    f._cam = cam;
+    const shift = (cam / W) * 100;                   // 占 track 自身宽度的百分比
+    const camT = W > V ? cam / (W - V) : 0;          // 镜头行程 0~1（长卷背景视差用）
+
+    // —— 持久骨架：pano/track/units 不重建——移动与拉镜才有过渡动画（"走出来"的关键）——
+    let track = stage.querySelector(".cave-track");
+    if (!track || stage.dataset.cave !== f.mapId) {
+      stage.dataset.cave = f.mapId;
+      stage.innerHTML = `
+        <div class="cave-pano"></div>
+        <div class="cave-track">
+          <div class="axis-lane cave-lane"></div>
+          <div class="axis-units"></div>
+        </div>
+        <div class="cave-far-glow" hidden><i></i><span></span></div>`;
+      track = stage.querySelector(".cave-track");
+    }
+    // 长卷背景：跟着镜头走、但比脚下慢半拍（视差=纵深）——背景在退，才看得出人在前进
+    const pano = stage.querySelector(".cave-pano");
+    const panoId = (map.pano && Art.has(map.pano)) ? map.pano : map.bg;
+    const panoUrl = Art.sceneUrl(panoId, { landscape: true });
+    if (pano.dataset.cur !== panoUrl) { pano.style.backgroundImage = `url('${panoUrl}')`; pano.dataset.cur = panoUrl; }
+    pano.style.left = `-${(camT * 50).toFixed(2)}%`;
+    track.style.width = trackW + "%";
+    track.style.transform = `translateX(-${shift.toFixed(2)}%)`;
+
+    // 轴格：步位刻度 + 热点 + 已布置标记 + 可走点位（格子状态整排重排，不参与动画）
+    let laneHtml = "";
+    for (let i = 0; i < W; i++) {
+      const hot = (map.hotspots || []).find(h => h.pos === i && !f.taken[h.id]);
+      const prepEntry = Object.entries(f.preps || {}).find(([pid, c]) => c === i);
+      const prepDef = prepEntry ? (map.preps || []).find(pp => pp.id === prepEntry[0]) : null;
+      const isWatcher = (map.watchers || []).some(wt => wt.pos === i);
+      const canGo = !isWatcher && i !== f.pos;
+      const placing = this._cavePlacing;
+      const canPlace = placing && !isWatcher && Math.abs(f.pos - i) <= 2 && !prepEntry;
+      const cls = ["axis-cell", canGo && !placing ? "can-move" : "", canPlace ? "can-place" : "",
+        prepDef && prepDef.zone ? `zone-${prepDef.zone}` : ""].join(" ");
+      const click = canPlace ? `onclick="UI.cavePlaceAt(${i})"` : (canGo && !placing ? `onclick="Engine.exmapCaveMove(${i})"` : "");
+      laneHtml += `<div class="${cls}" ${click}>
+        ${prepDef ? `<i class="zone-ring"></i><span class="cave-prep-mark" title="${prepDef.name}">${prepDef.mine ? "伏" : "阵"}</span>` : ""}
+        ${hot ? `<span class="cave-hot${Math.abs(f.pos - hot.pos) <= 1 ? " near" : ""}" ${Math.abs(f.pos - hot.pos) <= 1 ? `onclick="event.stopPropagation();Engine.exmapCaveTake('${hot.id}')"` : ""} title="${hot.name}（+${hot.expose}惊动）">${this._hotIcon(hot.name)}<i>${hot.name}</i></span>` : ""}
+        <i class="dot"></i>
+      </div>`;
+    }
+    track.querySelector(".axis-lane").innerHTML = laneHtml;
+
+    // 单位增量更新：同一拨人只挪位置/转朝向——左右走是滑出来的（CSS 过渡），转身是即时的
+    const unitsEl = track.querySelector(".axis-units");
+    const udefs = [{ key: "hanli", art: "bt_hanli", fallback: "hanli", name: "韩立",
+                     cls: "axis-unit self cave-u", pos: f.pos, facePos: beast ? beast.pos : W - 1 }];
+    (map.watchers || []).forEach((wt, wi) => {
+      // 朝向：缠斗双方互盯；被惊动后妖兽转头锁你——谁在看你，立绘说了算
+      const other = wt.beast
+        ? (blown ? { pos: f.pos } : (map.watchers.find(w2 => !w2.beast) || { pos: 0 }))
+        : (map.watchers.find(w2 => w2.beast) || { pos: W - 1 });
+      udefs.push({ key: "wt" + wi, art: wt.art, name: wt.name + (wt.beast ? "" : "（缠斗中）"),
+                   cls: "axis-unit cave-u " + (wt.beast ? "enemy cave-beast" : "side") + " fighting",
+                   pos: wt.pos, facePos: other.pos });
+    });
+    const ukeys = udefs.map(d => d.key).join(",");
+    if (unitsEl.dataset.keys !== ukeys) {
+      unitsEl.dataset.keys = ukeys;
+      unitsEl.innerHTML = udefs.map(d => {
+        const src = Art.battlerUrl(d.art) || (d.fallback ? Art.url(d.fallback) : null);
+        if (!src) return "";
+        return `<div class="${d.cls}" data-k="${d.key}">
+          <img class="au-img battler" src="${src}" alt="">
+          <div class="au-name">${d.name}</div>
+        </div>`;
+      }).join("");
+    }
+    udefs.forEach(d => {
+      const uel = unitsEl.querySelector(`[data-k="${d.key}"]`);
+      if (!uel) return;
+      uel.style.left = ((d.pos + 0.5) / W * 100).toFixed(2) + "%";
+      const img = uel.querySelector(".au-img");
+      if (img) img.classList.toggle("flipped", !!this._faceFlip(d.art, d.pos, d.facePos));
+    });
+
+    // 远光：战团还在镜头外时，画框右缘垂一道微光与竖排小字——先见其光，后见其人
+    const glow = stage.querySelector(".cave-far-glow");
+    if (glow) {
+      const outOfView = beast && (beast.pos + 0.5) > cam + V;
+      glow.hidden = !outOfView;
+      if (outOfView) glow.querySelector("span").textContent = blown ? "深处的目光，正向你压来" : "深处绫光明灭，斗法未歇";
+    }
+
+    // —— 底部面板：题字 + 惊动仪表 + 布置符牌 + 动手 ——
+    const panel = this.el("exmap-scene-panel");
+    const limit = map.exposeLimit || 100;
+    const exp = Math.min(f.expose || 0, limit);
+    const expDanger = exp / limit >= 0.7;
+    const prepIcons = { kunzu: "困", juling: "聚", anfu: "符", tienu: "傀" };
+    let html = `
+      <div class="exsc-head">
+        <div class="exsc-title-block">
+          <div class="exsc-title">${map.name}</div>
+          <div class="exsc-sub">走到跟前才能采，选好落点才能布——它没察觉你之前，每一步都是先机。</div>
+        </div>
+        <div class="exsc-expose${expDanger ? " danger" : ""}" title="贪与稳：每一次出手都可能惊动潭底">
+          <span class="exsc-explabel">惊<br>动</span>
+          <div class="exsc-expbar"><i style="width:${Math.round(exp / limit * 100)}%"></i></div>
+          <span class="exsc-expnum">${exp}<i>/${limit}</i></span>
+        </div>
+      </div>`;
+    html += `<div class="exsc-preps">`;
+    (map.preps || []).forEach(p => {
+      const placedCell = (f.preps || {})[p.id];
+      const placed = placedCell != null;
+      const have = p.item ? (typeof State !== "undefined" ? State.count(p.item) : 0)
+        : (p.side ? ((State.data.sideUnit && State.data.sideUnit.status !== "broken") ? 1 : 0) : 1);
+      const dis = placed || have < 1;
+      const selecting = this._cavePlacing === p.id;
+      html += `<button class="prep-card${placed ? " placed" : ""}${selecting ? " selecting" : ""}${dis && !placed ? " lack" : ""}"
+        ${dis ? "disabled" : `onclick="UI.cavePlacePick('${p.id}')"`} title="${p.hint}">
+        <span class="prep-seal">${prepIcons[p.id] || "阵"}</span>
+        <span class="prep-body">
+          <span class="prep-name">${p.name}${placed ? `<i class="prep-where">第${placedCell + 1}步</i>` : ""}</span>
+          <span class="prep-eff">${selecting ? "点轴上的格子落位（自身两步内）" : (placed ? "已落位——开战即生效" : p.hint)}</span>
+        </span>
+        <span class="prep-tag">${placed ? "✓" : p.item ? `×${have}` : (p.side ? (have ? "随行" : "不在") : "")}</span>
+      </button>`;
+    });
+    html += `</div>`;
+    // —— 出手即开战：手牌常驻，射程是把真尺——第一招的伤害就是开战的那一下 ——
+    const hand = (typeof Engine !== "undefined" && Engine.cavePlayerSpells) ? Engine.cavePlayerSpells() : [];
+    const dist = beast ? Math.abs(f.pos - beast.pos) : null;
+    if (hand.length) {
+      html += `<div class="exsc-hand">
+        <div class="exsc-hand-head">
+          <span class="eh-title">出手即开战</span>
+          <span class="eh-dist${blown ? " alert" : ""}">距墨蛟 ${dist} 格 · ${blown ? "它已有备" : "它未察觉——首击即先机"}</span>
+        </div>
+        <div class="exsc-hand-row">`;
+      hand.forEach(hd => {
+        const rTxt = hd.range[0] === hd.range[1] ? (hd.range[0] === 1 ? "贴身" : hd.range[0] + "格") : `${hd.range[0]}~${hd.range[1]}格`;
+        html += `<button class="hand-card${hd.ok ? "" : " off"}${hd.source === "treasure" ? " treasure" : ""}"
+          ${hd.ok ? `onclick="Engine.exmapCaveStrike('${hd.id}')"` : "disabled"}
+          title="${hd.ok ? (blown ? "它有备而来——这一招打出去就是硬仗" : "趁它缠斗出手——这一招就是开战第一击") : (hd.why || "")}">
+          <b>${hd.name}</b><i>${rTxt}</i>${hd.ok ? "" : `<u>${hd.why}</u>`}
+        </button>`;
+      });
+      html += `</div></div>`;
+    }
+    html += `<div class="exsc-actions">
+      ${this._cavePlacing ? `<button class="btn btn-ghost" onclick="UI.cavePlacePick(null)">收手不放</button>` : ""}
+      <button class="btn btn-ghost cave-leave" onclick="Engine.exmapCaveLeave()">退出洞窟</button>
+    </div>`;
+    panel.innerHTML = html;
+  },
+
+  // 热点图标（探索轴/战斗轴共用——同轴一体，开打了东西也还在那）
+  _hotIcon(name) { return /主药|老株/.test(name) ? "🌿" : /灵石/.test(name) ? "💎" : "🌱"; },
+
+  // 战斗版远端点名：锁定目标在镜头外时，画框边缘亮出名字与方向
+  _fightFarCue(text, leftSide) {
+    const field = this.el("axis-field");
+    if (!field) return;
+    let cue = field.querySelector(".fight-far-cue");
+    if (!text) { if (cue) cue.hidden = true; return; }
+    if (!cue) {
+      cue = document.createElement("div");
+      cue.className = "fight-far-cue";
+      field.appendChild(cue);
+    }
+    cue.hidden = false;
+    cue.textContent = text;
+    cue.classList.toggle("left", !!leftSide);
+  },
+
+  // 放置模式：选布置物 → 点格落位
+  cavePlacePick(prepId) {
+    this._cavePlacing = this._cavePlacing === prepId ? null : prepId;
+    this.renderExmap();
+  },
+  cavePlaceAt(cell) {
+    const pid = this._cavePlacing;
+    this._cavePlacing = null;
+    if (pid) Engine.exmapCavePlace(pid, cell);
   },
 
   /* ===========================================================

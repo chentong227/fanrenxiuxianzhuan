@@ -18,6 +18,7 @@ const State = {
       realmIndex: 0,          // 当前境界索引（指向 DATA.realms）
       cultivation: 0,         // 当前层修为
       spirit: 60,             // 灵力
+      poolBonus: 0,           // 灵力池永久加成（突破水准+天材地宝/特殊境遇累计——balance.manaPool）
       sense: 5,               // 神识
       body: 8,                // 体魄
 
@@ -67,7 +68,9 @@ const State = {
       relations: {},          // 与各 NPC 的关系值（好感/仇怨）
       metNpcs: [],            // 已相识 NPC 的 id（人物图鉴）
       pendingEvent: null,     // 当前待处理的选择事件 id
-      explore: null,          // 箱庭探索会话（进入副本时生成）
+      explore: null,          // 箱庭探索会话（旧网格，进入副本时生成）
+      exmap: null,            // 箱庭探索 v3：L1 舆图+嵌套栈会话（exploremap.js）
+      benchTreasures: [],     // 收起不出战的法宝技（gear grantSpells 的出战开关）
       dialogueDone: {},       // 已完成的一次性对话主题（防刷）
 
       swordIntent: 0,         // 剑意（眨眼剑法修行链：实战用剑积累，满则可悟剑）
@@ -115,6 +118,7 @@ const State = {
   // 老存档兜底：新增字段补默认值（保证篇章扩展后旧档不崩）
   _migrate() {
     const d = this.data;
+    if (!d.benchTreasures) d.benchTreasures = [];
     if (!d.activeChapter) d.activeChapter = "qixuan";
     if (!d.unlockedChapters) d.unlockedChapters = ["qixuan"];
     if (!d.tasks) d.tasks = [];
@@ -152,6 +156,9 @@ const State = {
     if (!d.intelElems) d.intelElems = {};
     if (!d.ledger) d.ledger = {};
     if (d.journey === undefined) d.journey = null;
+    if (d.exmap === undefined) d.exmap = null;
+    // 灵力池永久加成（突破水准+特殊境遇累计）。老档按"普通水准"补偿已突破的层数
+    if (d.poolBonus == null) d.poolBonus = (d.realmIndex || 0) * 2;
     if (!d.visitedNodes) d.visitedNodes = ["caixia"];
     // 老档补发：已反杀墨大夫者，曲魂幡尸傀随行
     if (d.flags && d.flags.modafu_dead && !d.sideUnit) {

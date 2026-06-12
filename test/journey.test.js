@@ -20,7 +20,7 @@ sandbox.window = sandbox; sandbox.globalThis = sandbox;
 sandbox.UI = new Proxy({}, { get() { return () => {}; } });
 const ctx = vm.createContext(sandbox);
 
-for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js", "js/world.js", "js/npcsim.js", "js/interactions.js", "js/combat.js", "js/explore.js", "js/loadout.js", "js/dialogue.js", "js/fortunes.js", "js/quests.js", "js/story.js", "js/engine.js"]) {
+for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js", "js/world.js", "js/npcsim.js", "js/interactions.js", "js/combat.js", "js/explore.js", "js/exploremap.js", "js/loadout.js", "js/dialogue.js", "js/fortunes.js", "js/quests.js", "js/story.js", "js/engine.js"]) {
   const code = fs.readFileSync(path.join(__dirname, "..", f), "utf8");
   vm.runInContext(code, ctx, { filename: f });
 }
@@ -321,6 +321,160 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   Engine.equipGear("jinfuzi_ren");
   assert(s.gear.weapon !== "jinfuzi_ren", "练气六层驱使不动顶阶法器（门槛拦截）");
   s.realmIndex = 10;
+}
+
+console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇收口 ===");
+{
+  const s = State.data;
+  s.pendingEvent = null;
+  // —— 名额大会（日历锚到期+练气十一层）——
+  s.realmIndex = 10;
+  s.flags.xueshi_due = State.absMonth();   // 锚到期
+  Engine.checkStory();
+  assert(s.pendingEvent === "jindi_meeting", `名额大会触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "jindi_meeting"), 0);
+  assert(s.flags.xueshi_opened, "名额到手（xueshi_opened）");
+  assert(s.metNpcs.includes("nangongwan") && s.metNpcs.includes("lihuayuan"), "南宫婉/李化元入图鉴");
+  // —— 五日禁地（v3 舆图）：选择"踏入血幕"即开 L1 ——
+  assert(s.exmap && s.exmap.stack.length === 1, "踏入血幕：L1 舆图已开（exmap 会话）");
+  const EM = sandbox.ExploreMap;
+  assert(EM.cur(s.exmap).node === "rukou", "起点=血幕裂口");
+  // 外环采药（东圃）
+  Engine.exmapTravel("waipu_d");
+  Engine.exmapGather();
+  assert((s.exmap.bag.xueshi_zhuyao || 0) >= 1, `外环主药入袋（${s.exmap.bag.xueshi_zhuyao}）`);
+  // 踩进中环——封岳巡逻撞个正着（route: liechang→zhongtan→yanxue→zhongtan）
+  Engine.exmapTravel("zhongtan");
+  assert(s.combat && Engine._combat && Engine._combat.enemies[0].name === "封岳", "中环撞上封岳=遭遇战");
+  Engine._combat.enemies.forEach(e => { e.hp = 0; });
+  Engine._combat._checkEnd();
+  Engine._finishCombat();
+  assert(s.flags.fengyue_dead && s.flags.jindi_mid_done, "封岳伏诛（狙杀者反被猎）");
+  assert(State.count("tayun_xue") === 1, "踏云靴到手（杀手的脚程归你）");
+  assert(s.exmap && EM.patrolAt(s.exmap) === null, "封岳死后：禁地杀气消散（巡逻清除）");
+  // 中环厚药 + 古阵读图
+  Engine.exmapGather();
+  assert((s.exmap.bag.xueshi_zhuyao || 0) >= 4, `中环厚药入袋（共 ${s.exmap.bag.xueshi_zhuyao}）`);
+  Engine.exmapTravel("guzhen");
+  Engine.exmapReadLore();
+  assert(EM.cur(s.exmap).intel.patrol_route, "古阵残纹：全图+路线情报");
+  // 踏云靴=swift 特性：装备后战斗移动力+1
+  s.realmIndex = 12;   // 练气十三层（驱使门槛11层）
+  Engine.equipGear("tayun_xue");
+  assert(s.gear.accessory === "tayun_xue", "踏云靴已装备（饰物槽）");
+  const pfSwift = Engine.playerFighter();
+  assert(pfSwift.move === 2, "足下生云：战斗移动力 2（雷遁拉扯的前身）");
+  // —— 深潭洞口 → L3 墨蛟洞（洞口印记+轴式洞窟：探索格=战斗格）——
+  Engine.exmapTravel("shentan");
+  Engine.exmapEnterSub();
+  assert(!!Engine._pendingFortune, "洞口临渊确认弹出");
+  Engine.chooseFortune(0);   // 立印记入洞
+  assert(s.exmap.stack.length === 2 && EM.cur(s.exmap).kind === "cave", "压栈入洞（L3 轴式 cave 帧）");
+  assert(!!s._caveSnap, "洞口印记已立（败退可重来）");
+  // 走格采集（空间化：走到跟前才能采）——稳手只采一株，把惊动留给布置
+  Engine.exmapCaveMove(7);
+  Engine.exmapCaveTake("zhuyao1");   // pos 8 邻格
+  Engine.exmapCaveMove(17);          // 走近战团（≥17 触发观战）
+  assert((s.exmap.bag.xueshi_zhuyao || 0) >= 6, `主药凑足（共 ${s.exmap.bag.xueshi_zhuyao}）`);
+  const cf = EM.cur(s.exmap);
+  assert(cf.intel.cave_watch, "走近战团：观战得情报（决战先机）");
+  assert((cf.expose || 0) < 50, `稳手未惊动（expose=${cf.expose}）`);
+  // —— 战前布置到格（韩立式谋定后动：诱敌入阵的物理语义）——
+  State.give("zhenqi_kunzu", 1); State.give("huoshe_fu", 2);
+  Engine.exmapCavePlace("kunzu", 16);
+  Engine.exmapCaveMove(19);
+  Engine.exmapCavePlace("anfu", 21);
+  assert(cf.preps.kunzu === 16 && cf.preps.anfu === 21, "困足阵+伏火符落位到格");
+  assert(State.count("zhenqi_kunzu") === 0, "阵旗实扣（布置即消耗）");
+  // —— 出手即开战：攻击常驻但射程是真尺——隔太远打不出，走近了第一招就是宣战 ——
+  const farHand = Engine.cavePlayerSpells();
+  const farFu = farHand.find(h => h.id === "huoshe_fu");
+  assert(farFu && !farFu.ok, `距6格火蛇符还够不着（${farFu && farFu.why}）`);
+  Engine.exmapCaveMove(21);   // 贴到4格：火蛇符射程内（近身惊动+6，仍未破限）
+  const hand2 = Engine.cavePlayerSpells();
+  assert(hand2.find(h => h.id === "huoshe_fu" && h.ok), "走近4格：火蛇符够得着了（射程=同一把尺）");
+  assert((EM.cur(s.exmap).expose || 0) < 50, `贴近的代价已付仍未惊动（expose=${EM.cur(s.exmap).expose}）`);
+  Engine.exmapCaveStrike("huoshe_fu");
+  const cc = Engine._combat;
+  assert(s.combat && cc && cc.enemies[0].name === "墨蛟", "墨蛟之战开打（第一招即宣战）");
+  assert(cc.enemies[0].hp < cc.enemies[0].hpMax, `开战第一击已落（墨蛟 ${cc.enemies[0].hp}/${cc.enemies[0].hpMax}）`);
+  assert(cc._pQuickUsed, "火蛇符是瞬发开局——主行动还在手里");
+  assert(cc.W === 27, `战场=探索轴（W=${cc.W}，27 格长轴战）`);
+  assert(cc.player.pos === 21 && cc.enemies[0].pos === 25, `站位无缝继承（我${cc.player.pos}，敌${cc.enemies[0].pos}）`);
+  assert(cc.side && cc.side.name === "南宫婉", "南宫婉从观战位原地参战（同道侧位）");
+  assert((cc.enemies[0].exposed || 0) >= 1, "观战先机兑现：墨蛟开局破绽大开");
+  assert((cc.enemies[0].status.dingshen || 0) >= 1, "偷袭得手：未惊动开战=墨蛟首拍措手不及（攻击常驻的先机）");
+  assert(cc.zones.some(z => z.type === "kunzu" && z.from === 15 && z.team === "player"), "困足阵原格预铺（第16~18步）");
+  assert(cc.mines.some(m => m.kind === "anfu" && m.cell === 21), "伏火符埋设原格（第22步）");
+  // 同轴一体：没采完的热点原格在战斗轴上，战中走到跟前花一个主行动照采
+  assert((cc.hotspots || []).some(h => h.id === "laozh" && h.pos === 21), "余下热点带进战斗轴（21步老株还在）");
+  const bagBefore = s.exmap.bag.xueshi_zhuyao || 0;
+  Engine.combatTake("laozh");   // 玩家21，老株21：同格（瞬发开局没占主行动——还摘得动）
+  assert((s.exmap.bag.xueshi_zhuyao || 0) === bagBefore + 2, "战中采得主药×2（一边打一边贪）");
+  assert(cc._pActsUsed >= 1, "战中采集吃掉主行动（蹲下去摘的那一拍不打人）");
+  assert(EM.cur(s.exmap).taken.laozh, "战中采过，洞窟帐面同步（探索/战斗一本账）");
+  // 地雷实弹：把墨蛟挪到伏火符格验证触发
+  const mj = cc.enemies[0];
+  const hpBefore = mj.hp;
+  mj.pos = 21; cc._checkMine(mj);
+  assert(mj.hp < hpBefore, `墨蛟踩雷（-${hpBefore - mj.hp}）——诱敌入局兑现`);
+  Engine._combat.enemies.forEach(e => { e.hp = 0; });
+  Engine._combat._checkEnd();
+  Engine._finishCombat();
+  assert(s.flags.mojiao_slain, "墨蛟伏诛");
+  assert(State.count("mojiao_jiao") >= 1 && State.count("mojiao_lin") >= 1, "墨蛟角鳞到手（乌龙夺/神风舟的料）");
+  assert(!s.exmap && s.flags.jindi_left, "决战告捷：出洞出图（五日血色收官）");
+  assert(State.count("xueshi_zhuyao") >= 6, `主药并入行囊（${State.count("xueshi_zhuyao")}）`);
+  if (!s.pendingEvent) Engine.checkStory();
+  assert(s.pendingEvent === "mojiao_after", `潭边一幕触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "mojiao_after"), 0);
+  assert(s.flags.mojiao_resolved, "拜入李化元门下（记名弟子）");
+  assert(s.ledger.mojiao_neidan, "「内丹」入账（来路日后见分晓）");
+  // —— 地火炼丹：筑基丹满匣 ——
+  s.location = "huangfeng_gate";
+  State.give("lingcao", 6);
+  Engine.lianZhujiDan();
+  assert(State.count("zhuji_dan") >= 14, `筑基丹满匣（实际 ${State.count("zhuji_dan")}）`);
+  assert(s.flags.zhuji_lian_done, "炼丹已成（图鉴空位闭合）");
+  // —— 狂嗑筑基（大境界突破：四层->十三层->筑基）——
+  s.pendingEvent = null;
+  s.realmIndex = 12;
+  s.cultivation = State.realm().culMax;
+  s.spirit = State.realm().spMax;
+  s.mood = s.moodMax; s.demon = 0;
+  let tries = 0;
+  while (State.realm().tier !== "foundation" && tries++ < 30) {
+    Engine.attemptBreakthrough();
+    if (s.combat && Engine._combat) {   // 心魔劫：直接打赢
+      Engine._combat.enemies.forEach(e => { e.hp = 0; });
+      Engine._combat._checkEnd();
+      Engine._finishCombat();
+    }
+    s.cultivation = State.realm().culMax;
+    s.spirit = State.realm().spMax;
+    s.mood = s.moodMax; s.demon = 0;
+    if (!State.count("zhuji_dan")) State.give("zhuji_dan", 1);   // 兜底：丹耗尽补一颗（19败1成的真实）
+  }
+  assert(State.realm().tier === "foundation", `筑基成功（${State.realm().name}，历 ${tries} 次冲关）`);
+  assert((s.poolBonus || 0) > 0, `突破水准刻进气海（poolBonus=${s.poolBonus}）`);
+  // —— 青元剑诀（主修换代）：突破结算时已自动触发（onArrive 即换）——
+  if (s.pendingEvent === "qingyuan_gift") Engine.chooseStory(sandbox.STORY.find(x => x.id === "qingyuan_gift"), 0);
+  assert(s.flags.qingyuan_given, "李化元赠诀已发生（qingyuan_given）");
+  assert(s.technique === "qingyuan_sword", "主修已换《青元剑诀》");
+  assert(s.spells.includes("qingyuan_jianmang"), "青元剑芒入战");
+  const pfQy = Engine.playerFighter();
+  assert(pfQy.grade === 3, "玄阶功法品阶生效（灵力池随之上涨）");
+  // —— 洞府选址 ——
+  if (!s.pendingEvent) Engine.checkStory();
+  assert(s.pendingEvent === "dongfu_pick", `洞府选址触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "dongfu_pick"), 0);
+  assert(s.flags.dongfu_type === "lingquan", "灵泉眼洞府落成（修炼+15%）");
+  // —— 叶师叔之报（黄枫谷篇收口）——
+  if (!s.pendingEvent) Engine.checkStory();
+  assert(s.pendingEvent === "ye_finale", `叶师叔之报触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "ye_finale"), 0);
+  assert(s.flags.huangfeng_complete, "黄枫谷篇 · 完（huangfeng_complete）");
+  assert(s.ledger.dayan_clue, "大衍诀残卷线索入账（魔道争锋篇的钩子）");
 }
 
 console.log("\n=== 6. 拜别版回乡（离门远行）===");

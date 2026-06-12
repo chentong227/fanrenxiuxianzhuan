@@ -116,6 +116,48 @@ DATA.items = {
     desc: "顶阶攻击法器：丈余玄铁巨剑，灵力催动时可御使飞出、凌空斩敌，势大力沉。练气十一层方可驱使。" },
   qiannian_lingcao: { name: "千年灵草", rarity: "epic", type: "material",
     desc: "经小绿瓶以浓缩岁月之力催熟的灵草，药龄堪比千年野生之物。万宝楼见之眼开——一两棵，便够换楼上一件法器。" },
+
+  /* —— 血色禁地 · 筑基丹链（huangfeng-design 第三/四幕）—— */
+  xueshi_zhuyao: { name: "血色主药", rarity: "epic", type: "material",
+    desc: "血色禁地特有的赤红灵药，根茎里流动着血色光华——炼制筑基丹的根本主药，外间有价无市。每一株，都是拿命换的。" },
+  lieyang_hua: { name: "烈阳花", rarity: "rare", type: "material", sell: 14,
+    desc: "向阳崖壁上才开的金红色灵花，离得老远就觉得脸上发烫——上好的制符与炼丹辅材，御灵宗的人尤其识货。" },
+  mojiao_jiao: { name: "墨蛟之角", rarity: "epic", type: "material",
+    desc: "墨蛟头顶初成的双角，质地胜过精铁，内蕴水行妖力。懂行的炼器师见了会两眼放光——听闻元武国有位姓齐的巧匠……（小大件链：乌龙夺）" },
+  mojiao_lin: { name: "墨蛟鳞甲", rarity: "rare", type: "material",
+    desc: "墨蛟周身的乌黑鳞片，刀剑难透。既是炼制护甲的上材，也是「神风舟」一类飞行法器的龙骨贴片。（小大件链：神风舟）" },
+  mojiao_pi: { name: "墨蛟之皮", rarity: "epic", type: "material",
+    desc: "整张剥下的蛟皮，韧逾百炼软甲、遇水不沉。炼器师以此为主材可制乘风破浪的「神风舟」——妖王身上没有一处是凡品。（小大件链：神风舟）" },
+
+  /* —— 妖材经济 v1（用户裁决）：妖兽掉的是"材"不是成品——
+   * 普通妖兽掉皮骨牙（硝制贩卖/炼器打底），高阶妖兽掉妖丹（炼药炼器坊市硬通货），
+   * 妖王伏诛掉具名稀有材→自然衔接大件链条（bigitem-design 妖材→法宝链）。 —— */
+  langya_fang: { name: "妖狼牙", rarity: "common", type: "material", sell: 2,
+    desc: "灵狼的尖牙，山民拿去镶刀头，符师拿去做符胆。零碎妖材，攒多了也是钱。" },
+  shougu_bone: { name: "妖兽骨", rarity: "common", type: "material", sell: 3,
+    desc: "妖兽的腿骨脊骨，比凡兽骨沉得多。炼器打底、入药煅灰，皆有人收。" },
+  xuesha_jing: { name: "血煞结晶", rarity: "rare", type: "material", sell: 8,
+    desc: "血煞兽心口凝的一粒暗红晶子，攥在手里微微发烫——制血煞符的主材，邪修出双倍价。" },
+  yaodan_1: { name: "一阶妖丹", rarity: "epic", type: "material", sell: 30,
+    desc: "开了灵智的妖兽颅内凝成的内丹，妖元未散。炼药入丹是大补，炼器淬火添灵性，坊市之上从不愁卖——妖丹即妖兽一生修为，硬通货中的硬通货。" },
+  hupi_jinwen: { name: "金纹虎皮", rarity: "rare", type: "material", sell: 20,
+    desc: "白额吊睛虎的整张皮，金纹隐有锋锐之气。制甲衬可御金煞，万宝楼见之眼开。" },
+  tiebei_qiao: { name: "铁背甲壳", rarity: "rare", type: "material", sell: 16,
+    desc: "蜈蚣王的背甲，敲之铮铮如铁。盾材、甲材的上选——它生前就是靠这身硬壳横行。" },
+  chiyan_langpi: { name: "赤焰狼皮", rarity: "rare", type: "material", sell: 18,
+    desc: "赤目狼王的火红皮毛，寒冬贴身可驱寒，制成甲衬能卸三分火煞。猎户传说里的宝贝。" },
+  tayun_xue: { name: "踏云靴", rarity: "epic", type: "gear",
+    desc: "封岳的杀手家底：一双轻若无物的灰色短靴，灵力注入时足下生云。穿上它，战阵之中身法快人一步——杀手的脚程，如今是你的。" },
+
+  /* —— 战内瞬发牌（对阵轴 v2：灵力恢复链与控制符——combat-axis-rules.md §4/§5）—— */
+  huiyuan_dan: { name: "回元丹", rarity: "rare", type: "consumable",
+    desc: "速回灵力的丹药，战中一口吞下、灵力回涌（瞬发）。灵力池整场不复——这一粒，常是续命的那口气。" },
+  dingshen_fu: { name: "定身符", rarity: "rare", type: "consumable",
+    desc: "符上封存禁锢之术，扬手贴出、定住敌身一回合（瞬发）。拆大招、保蓄势、断追击——会用的人，一张顶半条命。" },
+  zhenqi_kunzu: { name: "困足阵旗", rarity: "rare", type: "consumable",
+    desc: "微缩阵旗，掷地即布两步困足之阵（持续数回合）：敌踏入阵中，脚下如陷泥沼、寸步难行。挡突进的硬墙（瞬发）。" },
+  zhenqi_juling: { name: "聚灵阵旗", rarity: "rare", type: "consumable",
+    desc: "微缩阵旗，掷于自家阵脚布两步聚灵之阵（持续数回合）：立于阵中，每回合灵力自回。久战续航的根本（瞬发）。" },
 };
 
 /* ---------- 法器装备体系（v1）：大多做属性+特性（被动），少数做战斗装备（主动技）----------
@@ -129,7 +171,7 @@ DATA.gear = {
     slot: "weapon", minLayer: 11,
     bonus: { sense: 2 },
     grantSpells: ["zimu_ren"],
-    traits: [{ id: "twin_blade", desc: "子母双刃分进合击：战斗技「子母双刃」两段连击，每段独立结算" }],
+    traits: [{ id: "twin_blade", desc: "一母八子分进合击：战斗技「金蚨子母刃」子刃两段连击，每段独立结算" }],
   },
   feixing_jujian: {
     slot: "weapon", minLayer: 11,
@@ -142,6 +184,11 @@ DATA.gear = {
     slot: "armor", minLayer: 11,
     bonus: { hpMax: 30 },
     traits: [{ id: "charge_resist", value: 0.3, desc: "山岳之御：气血上限+30；受「蓄力重击」伤害-30%" }],
+  },
+  tayun_xue: {
+    slot: "accessory", minLayer: 11,
+    bonus: { speed: 3 },
+    traits: [{ id: "swift", desc: "足下生云：遁速+3；战阵中每回合可多挪一步（移动力+1）——杀手的脚程" }],
   },
   nuanyang_yu: {
     slot: "accessory", minLayer: 1,
@@ -189,6 +236,7 @@ DATA.techniques = {
   },
   qingyuan_sword: {
     name: "青元剑诀", arc: "huangfeng", attr: "mu", locked: true, grade: 3,
+    grantSpells: ["tuna", "huti", "ningshen", "qingyuan_jianmang", "qingyuan_jiandun"],
     desc: "青元子所创的木属性剑修功法。黄枫谷流传的只有九层（弟子多止步三层作辅修），韩立筑基后以此为主修——三层可发青元剑芒，五层护体剑盾，七层剑影分光。传闻完整剑诀共十三层，可修至化神。",
     origin: "黄枫谷篇：筑基后李化元所赠；金色书页中藏着完整十三层法诀与青竹蜂云剑炼制之法。",
     acquireArc: "黄枫谷篇（筑基之后）",
@@ -336,6 +384,21 @@ DATA.exploreSites = {
     beastEnemy: "wild_wolf",
     companions: [],   // 七玄门篇暂独行；可由剧情/交互加入同伴
     arc: "qixuan",
+  },
+  // —— 血色禁地（黄枫谷篇第三幕：五日限时深探索，死亡=真死的硬仗）——
+  // 主药=筑基丹的根本；深处水潭=墨蛟（南宫婉并肩战）；中层游弋着狙杀者封岳。
+  xueshi_jindi: {
+    id: "xueshi_jindi", name: "血色禁地",
+    w: 12, h: 12, stepCost: 0, sightRadius: 1,   // 禁地内不走大世界月份——走"天"（步数预算）
+    maxSteps: 60,                                 // 五日之限：每步≈一刻，60 步禁地闭合（强制传送出）
+    density: { herb: 7, duherb: 4, ore: 4, chest: 4, beast: 6 },
+    specialHerb: "xueshi_zhuyao",                 // 部分灵草格替换为血色主药（主线目标）
+    specialHerbN: 6,
+    stalker: "fengyue",                           // 狙杀者：中层游弋的修士杀局（撞上=恶战，胜得踏云靴）
+    beastEnemy: "jindi_beast",
+    bossEnemy: "mojiao",
+    bossSide: "nangongwan",                       // 深处 boss 战的并肩同道（考据：压制修为的南宫婉）
+    arc: "huangfeng", locked: true,               // 由禁地开启剧情解锁进入
   },
   // —— 后续篇章副本（占位，待对应篇章开放）——
   xutian_dian: {

@@ -77,6 +77,25 @@
         : 2 + (realmTier || 0) * 3;
     },
 
+    /* ---- 法力池深度（对阵轴 v2 战斗资源）----
+     * 用户裁决（2026-06-11）：灵力上限严格随 功法×境界×突破水准×特殊境遇——
+     *  - 境界：大境界基数跳档（练气→筑基灵海化是质变）+ 层内线性成长
+     *  - 功法：主修品阶决定聚灵效率（黄1.0/玄1.1/地1.2/天1.3——换功法=池立涨的体感）
+     *  - 突破水准 & 特殊境遇：poolBonus 永久累计（突破道心余裕/天材地宝/灵泉境遇），
+     *    绝对值直加、不吃功法折扣（天赐不论出身）。
+     */
+    manaPool(tier, layer, grade, poolBonus) {
+      const T = [
+        { b: 40, per: 6 },     // 练气：40+6/层（十三层≈118）
+        { b: 130, per: 12 },   // 筑基：灵海（跳档质变）
+        { b: 360, per: 24 },   // 结丹：金丹吐纳
+        { b: 800, per: 45 },   // 元婴
+        { b: 1600, per: 80 },  // 化神
+      ][tier || 0] || { b: 40 + (tier || 0) * 360, per: 50 };
+      const gradeMul = 1 + Math.max(0, (grade || 1) - 1) * 0.1;
+      return Math.round((T.b + (layer || 1) * T.per) * gradeMul + (poolBonus || 0));
+    },
+
     /* ---- 小境界突破：心魔低于此阈值则可水到渠成；高于则须先闯「心战」 ---- */
     demonTrialThreshold() { return 35; },
 
@@ -102,14 +121,15 @@
     sourceMul(source) { return source === "martial" ? 0.8 : 1.0; },
     gradeMul(grade) { return ({ 0: 0.85, 1: 1.0, 2: 1.15, 3: 1.35, 4: 1.6 })[grade || 1] || 1.0; },
     realmScale(source, realmTier) {
-      // 武学几乎不随境界成长；法术随境界成长
+      // 武学几乎不随境界成长；法术随境界成长；法器（御物）成长最陡——威力=注入法力
       if (source === "martial") return 1 + (realmTier || 0) * 0.05;
+      if (source === "treasure") return 1 + (realmTier || 0) * 0.5;
       return 1 + (realmTier || 0) * 0.35;
     },
     spellPower(base, source, grade, realmTier) {
       let mul = this.sourceMul(source) * this.realmScale(source, realmTier);
-      // 品阶加成只作用于功法法术，不作用于凡人武学
-      if (source !== "martial") mul *= this.gradeMul(grade);
+      // 品阶加成只作用于功法法术；法器威力看的是法器本身与注入法力，不吃功法品阶
+      if (source !== "martial" && source !== "treasure") mul *= this.gradeMul(grade);
       return Math.max(1, Math.round(base * mul));
     },
   };

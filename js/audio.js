@@ -81,6 +81,25 @@
     pick(c) { tone(c, { freq: 1175, dur: 0.1, gain: 0.035 }); tone(c, { freq: 1568, dur: 0.12, gain: 0.025, delay: 0.06 }); },
     // 打字机轻嗒（对话逐字，极轻——气口不是轰炸）
     type(c) { noise(c, { dur: 0.025, gain: 0.012, band: 2600 }); },
+    // —— 远声（声纹梯度：离战团越近听得越真——音量刻意极低，是"远方"不是"耳边"）——
+    // 远方妖吼：低频下滑长音 + 闷雷噪
+    farRoar(c) {
+      tone(c, { freq: 92, slideTo: 48, type: "sawtooth", dur: 1.1, gain: 0.022 });
+      noise(c, { dur: 0.9, gain: 0.014, low: 190, delay: 0.08 });
+    },
+    // 天雷劈落：高频炸裂 + 低频滚雷尾（fx.js 闪电配套）
+    thunder(c) {
+      noise(c, { dur: 0.16, gain: 0.06, low: 2400 });
+      tone(c, { freq: 1900, slideTo: 220, type: "sawtooth", dur: 0.22, gain: 0.03 });
+      noise(c, { dur: 1.2, gain: 0.028, low: 140, delay: 0.1 });
+      tone(c, { freq: 64, slideTo: 38, type: "sine", dur: 1.1, gain: 0.03, delay: 0.12 });
+    },
+    // 远方斗法：绫帛破空的细啸 + 法器轻鸣（隐约金石声）
+    farClash(c) {
+      tone(c, { freq: 1860, slideTo: 2600, dur: 0.34, gain: 0.008 });
+      tone(c, { freq: 1244, dur: 0.5, gain: 0.011, delay: 0.22 });
+      noise(c, { dur: 0.28, gain: 0.007, band: 3000, delay: 0.06 });
+    },
   };
 
   let lastPlay = {};

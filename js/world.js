@@ -215,75 +215,125 @@ WORLD.continent = {
  * AI v1：每个敌人 2~3 种攻击意图 + tactics 战斗天赋（feral兽性/cunning算计/guarded守御），
  * 让每个敌人都是一道"解谜题"——读招应招，而非无脑互殴。weight 为选招权重。
  */
+/* 对阵轴字段（combat-axis-rules.md）：
+ *   move 移动力；mp 法力/妖力池（修士技耗蓝，肉搏零耗）；
+ *   攻击 aim：缺省=lock 锁头（盾挡）/ cell 打格子（亮格可躲，lunge=落空惯性冲入）/
+ *   zone 范围（区间全体）；range 缺省按物性推断（妖兽[1,1]/修士[1,3]）。 */
 WORLD.enemies = {
   wild_wolf: {
-    name: "灵狼", hp: 55, sense: 3, speed: 12, agility: 6, tactics: "feral", reward: { lingcao: 1 },
+    name: "灵狼", hp: 55, sense: 3, speed: 12, agility: 6, move: 2, mp: 40, tactics: "feral",
+    reward: { lingcao: 1 }, namedLoot: { langya_fang: 1 },   // 普通妖兽掉普通材料（妖材经济 v1）
     attacks: [
-      { name: "扑咬", dmg: 14, kind: "normal", weight: 14 },
+      { name: "扑咬", dmg: 14, kind: "normal", weight: 12, aim: "cell", lunge: true, range: [1, 3] },
       { name: "撕喉", dmg: 11, kind: "pierce", weight: 5 },
       { name: "弓背低嚎", dmg: 18, kind: "charge", weight: 6 },
     ],
   },
   outer_disciple: {
-    name: "外门弟子", hp: 85, sense: 6, speed: 10, agility: 5, reward: { silver: 4 },
+    name: "外门弟子", hp: 85, sense: 6, speed: 10, agility: 5, move: 2, mp: 40, reward: { silver: 4 },
     attacks: [
-      { name: "拳脚", dmg: 15, kind: "normal", weight: 14 },
-      { name: "锁喉擒拿", dmg: 11, kind: "pierce", weight: 6 },
+      { name: "拳脚", dmg: 15, kind: "normal", weight: 14, range: [1, 1] },
+      { name: "锁喉擒拿", dmg: 11, kind: "pierce", weight: 6, range: [1, 1] },
     ],
   },
   bandit: {
-    name: "山贼", hp: 75, sense: 4, speed: 8, agility: 3, tactics: "feral", reward: { silver: 3 },
+    name: "山贼", hp: 75, sense: 4, speed: 8, agility: 3, move: 2, mp: 40, tactics: "feral", reward: { silver: 3 },
     attacks: [
-      { name: "刀劈", dmg: 14, kind: "normal", weight: 14 },
-      { name: "狠命抡刀", dmg: 20, kind: "charge", weight: 6 },
+      { name: "刀劈", dmg: 14, kind: "normal", weight: 14, range: [1, 1] },
+      { name: "狠命抡刀", dmg: 20, kind: "charge", weight: 6, aim: "cell", range: [1, 1] },
     ],
   },
   rogue_cultivator: {
-    name: "散修", hp: 130, sense: 9, speed: 11, agility: 8, tactics: "cunning", qiLayer: 3, elem: "tu", reward: { lingshi: 1 },
+    // lane:1=法修天性缩在阵后放术（编队成立时生效；落单时引擎自动压上战位排——无敌龟壳不存在）
+    name: "散修", hp: 130, sense: 9, speed: 11, agility: 8, move: 1, mp: 52, tactics: "cunning", qiLayer: 3, elem: "tu", armor: 2, lane: 1, reward: { lingshi: 1 },
     attacks: [
-      { name: "土遁石击", dmg: 26, kind: "normal", weight: 12, elem: "tu" },
-      { name: "法器贯刺", dmg: 20, kind: "pierce", weight: 8 },
-      { name: "聚灵蓄势", dmg: 30, kind: "charge", weight: 5 },
+      { name: "土遁石击", dmg: 26, kind: "normal", weight: 12, elem: "tu", mp: 7 },
+      { name: "法器贯刺", dmg: 20, kind: "pierce", weight: 8, mp: 8 },
+      { name: "聚灵蓄势", dmg: 30, kind: "charge", weight: 5, mp: 12, range: [1, 4] },
     ],
   },
   wolf_gang_thug: {
-    name: "野狼帮喽啰", hp: 95, sense: 5, speed: 9, agility: 4, reward: { silver: 6 },
+    name: "野狼帮喽啰", hp: 95, sense: 5, speed: 9, agility: 4, move: 2, mp: 40, reward: { silver: 6 },
     attacks: [
-      { name: "狼牙棒", dmg: 17, kind: "normal", weight: 14 },
-      { name: "横扫蓄力", dmg: 23, kind: "charge", weight: 6 },
+      { name: "狼牙棒", dmg: 17, kind: "normal", weight: 14, range: [1, 1] },
+      { name: "横扫蓄力", dmg: 23, kind: "charge", weight: 6, aim: "zone", zoneSpan: 1, range: [1, 2] },
     ],
   },
 
   /* —— 异闻妖王（听闻其名 → 深入后山 → 真实可战）：威名先至，名实一致。
-   * 妖兽吐纳天地灵气，妖气亦有行属（elem）——传闻里就写明行属，做功课备克制符是正解。 —— */
+   * 妖兽吐纳天地灵气，妖气亦有行属（elem）——传闻里就写明行属，做功课备克制符是正解。
+   * 三型攻击各有其王：白虎=cell 扑杀（躲格）、蜈蚣=zone 毒雾（拉区间）、狼王=高速连动。 —— */
   beast_baihu: {
-    name: "白额吊睛虎", hp: 200, sense: 7, speed: 14, agility: 12, tactics: "feral", elem: "jin", nature: "beast",
-    introNote: "正是异闻中那头噬人虎王！金风裂爪天克你的木行道基——爪疾力沉，血怒时必拼命扑杀。火符能灼其金煞，稳住护体，别贪刀。",
+    name: "白额吊睛虎", hp: 240, sense: 7, speed: 14, agility: 12, move: 2, mp: 60, stubborn: true, tactics: "feral", elem: "jin", nature: "beast",
+    introNote: "正是异闻中那头噬人虎王！金风裂爪天克你的木行道基——它的血怒扑杀会随你身形一折再扑，寻常一步躲不开：要么两步开外，要么趁它蓄势打断，要么举盾硬接。火符灼其金煞，别恋战。",
     attacks: [
-      { name: "裂风虎爪", dmg: 26, kind: "normal", weight: 12, elem: "jin" },
-      { name: "虎啸震林", dmg: 22, kind: "pierce", weight: 6 },
-      { name: "血怒扑杀", dmg: 32, kind: "charge", weight: 7 },
+      { name: "裂风虎爪", dmg: 30, kind: "normal", weight: 12, elem: "jin", range: [1, 1] },
+      { name: "虎啸震林", dmg: 16, kind: "normal", weight: 6, aim: "zone", zoneSpan: 1, range: [1, 4] },
+      { name: "血怒扑杀", dmg: 32, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 4] },
+      { name: "腾身虎扑", dmg: 24, kind: "normal", weight: 6, elem: "jin", antiAir: true, range: [1, 2] },
     ],
-    reward: { silver: 12 }, namedLoot: { huixue_dan: 2, lingcao: 2, huoshe_fu: 1 },
+    // 妖王掉妖材不掉成品：整皮+妖丹+骨（卖给万宝楼/留作大件料）——妖材经济 v1
+    reward: { silver: 12 }, namedLoot: { hupi_jinwen: 1, yaodan_1: 1, shougu_bone: 2 },
   },
   beast_wugong: {
-    name: "铁背蜈蚣王", hp: 185, immunePoison: true, sense: 6, speed: 8, agility: 7, tactics: "cunning", elem: "tu", nature: "beast",
-    introNote: "铁背蜈蚣王——土行厚甲、自身百毒不侵！你的毒计无用，但木气克土：长春功门下的法术正中其门，再以暗器破其节甲。",
+    name: "铁背蜈蚣王", hp: 185, immunePoison: true, sense: 6, speed: 8, agility: 7, move: 1, mp: 60, tactics: "cunning", elem: "tu", nature: "beast",
+    introNote: "铁背蜈蚣王——土行厚甲、自身百毒不侵！你的毒计无用，但木气克土：长春功门下的法术正中其门。它的腥毒雾会罩住一片地界——拉出区间再打。",
     attacks: [
-      { name: "百足绞缠", dmg: 22, kind: "normal", weight: 12 },
-      { name: "毒牙噬咬", dmg: 26, kind: "pierce", weight: 8 },
+      { name: "百足绞缠", dmg: 22, kind: "normal", weight: 12, range: [1, 1] },
+      { name: "毒牙噬咬", dmg: 26, kind: "pierce", weight: 8, range: [1, 1] },
+      { name: "腥风毒雾", dmg: 15, kind: "normal", weight: 8, aim: "zone", zoneSpan: 1, range: [1, 4] },
     ],
-    reward: { lingshi: 1 }, namedLoot: { duyao_cao: 4, anqi: 2 },
+    reward: { lingshi: 1 }, namedLoot: { tiebei_qiao: 2, yaodan_1: 1, duyao_cao: 2 },
   },
-  beast_chimu: {
-    name: "赤目狼王", hp: 185, sense: 9, speed: 15, agility: 16, tactics: "feral", elem: "huo", nature: "beast",
-    introNote: "赤目狼王——一身火煞，身法鬼魅难以捉摸！水克火，寒冰符是它的克星。它越是受伤越疯，看准蓄力回合全力压制。",
+  /* —— 血色禁地（黄枫谷篇第三幕）—— */
+  jindi_beast: {
+    name: "血煞兽", hp: 130, sense: 6, speed: 12, agility: 8, move: 2, mp: 50, tactics: "feral", elem: "huo", nature: "beast",
+    introNote: "禁地中游荡的血雾凶兽——通体赤红、嗜血成性。水克火，寒冰符正中其门。",
     attacks: [
-      { name: "撕咬", dmg: 22, kind: "normal", weight: 12 },
-      { name: "炎爪影袭", dmg: 18, kind: "pierce", weight: 7, elem: "huo" },
-      { name: "狂性大发", dmg: 29, kind: "charge", weight: 8 },
+      { name: "血爪", dmg: 22, kind: "normal", weight: 12, elem: "huo", range: [1, 1] },
+      { name: "血雾喷吐", dmg: 14, kind: "normal", weight: 6, elem: "huo", aim: "zone", zoneSpan: 1, range: [1, 3] },
+      { name: "嗜血扑杀", dmg: 26, kind: "charge", weight: 6, aim: "cell", lunge: true, range: [1, 3] },
     ],
-    reward: { silver: 10 }, namedLoot: { lingshi: 2, huixue_dan: 1, hanbing_fu: 1 },
+    reward: { lingshi: 1 }, namedLoot: { xuesha_jing: 1 },
+  },
+  fengyue: {
+    name: "封岳", hp: 235, sense: 14, speed: 15, agility: 11, move: 2, mp: 90, qiLayer: 13, elem: "jin", armor: 3,
+    tactics: "cunning", stubborn: true,
+    introNote: "黄枫谷的狙杀者封岳——靠猎杀同门换取资粮的亡命之徒。淬毒短刺又快又毒，踏云靴让他来去如风。他的「贯心刺」会追着你的身形折转，一步躲不开！",
+    attacks: [
+      { name: "淬毒短刺", dmg: 24, kind: "normal", weight: 12, elem: "jin", mp: 7 },
+      { name: "穿喉一线", dmg: 20, kind: "pierce", weight: 8, mp: 9 },
+      { name: "贯心刺", dmg: 30, kind: "charge", weight: 6, aim: "cell", track: true, mp: 12, range: [1, 4] },
+    ],
+    reward: { lingshi: 6 }, namedLoot: { tayun_xue: 1, anqi: 3 },
+  },
+  mojiao: {
+    name: "墨蛟", hp: 270, sense: 9, speed: 13, agility: 9, move: 2, mp: 85, elem: "shui", nature: "beast",
+    tactics: "feral", stubborn: true, canFlee: false, boss: true,
+    introNote: "禁地深潭之主——通体墨鳞的蛟龙幼体，黑雾护体、利齿如戟！它的「泥流潜袭」会循着你的气息追击，一步躲不开：要么两步开外，要么趁它蓄势打断。鳞厚甲坚，破甲与符宝方是正解。",
+    attacks: [
+      { name: "撕咬", dmg: 26, kind: "normal", weight: 12, range: [1, 1] },
+      // 横扫=蛟尾"扫"战位排（depth:front——僚位的她躲得掉）；毒雾/啸震类不标=默认"罩"全排
+      { name: "横扫", dmg: 20, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front" },
+      { name: "水矢", dmg: 15, kind: "normal", weight: 7, elem: "shui", range: [2, 5], mp: 6 },
+      { name: "泥流潜袭", dmg: 32, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, mp: 12, range: [1, 5] },
+    ],
+    armor: 5,
+    // 大妖王=大件之源：角→乌龙夺、皮鳞→神风舟（bigitem 妖材→法宝链；动漫/原著：燕家堡代工）
+    reward: { lingshi: 4 }, namedLoot: { mojiao_jiao: 1, mojiao_pi: 1, mojiao_lin: 3, xueshi_zhuyao: 2 },
+  },
+
+  beast_chimu: {
+    name: "赤目狼王", hp: 185, sense: 9, speed: 19, agility: 16, move: 2, mp: 60, tactics: "feral", elem: "huo", nature: "beast",
+    introNote: "赤目狼王——一身火煞，身法鬼魅快得只剩残影，稍有不慎便是连袭两击！水克火，寒冰符是它的克星。它越是受伤越疯，看准蓄力回合全力压制。",
+    attacks: [
+      { name: "撕咬", dmg: 22, kind: "normal", weight: 12, range: [1, 1] },
+      { name: "炎爪影袭", dmg: 18, kind: "normal", weight: 7, elem: "huo", aim: "cell", lunge: true, range: [1, 3] },
+      { name: "狂性大发", dmg: 29, kind: "charge", weight: 8 },
+      // 对空压力：兽王腾身扑杀专咬低空——悬空不是免死金牌（antiAir 绕开空层滤招/挥空）
+      { name: "凌空扑杀", dmg: 20, kind: "normal", weight: 6, elem: "huo", antiAir: true, range: [1, 2] },
+    ],
+    reward: { silver: 10 }, namedLoot: { chiyan_langpi: 1, yaodan_1: 1, langya_fang: 2 },
   },
 };
 
@@ -418,6 +468,18 @@ WORLD.npcs = [
     bio: "常在坊市与药园间闲逛的青衫老修，自称练气杂役，谷中无人在意他。可他随口一句闲谈，往往切中要害——血色禁地的门道，他熟稔得不像个杂役。你直觉：此老身上的平静，深得见不到底。",
     lines: ["小友又在攒家底？嗯，是个稳当性子。", "血色禁地么……去得，也回得来——只看你贪不贪。", "（他眯眼晒着太阳，仿佛谷中百年风雨都与他无关）"],
     where: ["fangshi", "baiyao_yuan"], cond: (s) => s.flags.yaoyuan_started,
+  },
+  {
+    id: "nangongwan", name: "南宫婉", role: "掩月宗 · 天之骄女",
+    bio: "掩月宗百年一遇的天才女修，姿容明艳不可方物，眼神却清冷矜贵。血色禁地中她压制修为与你并肩斩蛟——「我叫韩立，立碑的立。」你说这话时，她笑了一下。",
+    lines: ["（她看了你一眼，没有说话）", "韩师弟的符宝，用得很准。", "禁地一别，后会有期。"],
+    where: ["huangfeng_gate"], cond: (s) => !!s.flags.mojiao_slain,
+  },
+  {
+    id: "lihuayuan", name: "李化元", role: "黄枫谷 · 首席大长老",
+    bio: "黄枫谷首席大长老，结丹大修士——入谷时同门口中的「李师祖」，名额会上亲自分配禁地名额的那位老人。墨蛟之战后，他破例收你为记名弟子。",
+    lines: ["伪灵根能走到这一步，老夫有些意外。", "筑基之后，来寻老夫。", "心性比资质难得，你两样都有。"],
+    where: ["huangfeng_gate"], cond: (s) => !!s.flags.xueshi_opened,
   },
   {
     id: "chenqiaoqian", name: "陈巧倩", role: "黄枫谷 · 师姐",

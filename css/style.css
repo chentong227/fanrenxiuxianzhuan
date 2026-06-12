@@ -459,17 +459,23 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   display: flex; align-items: stretch; justify-content: center; animation: fadein .25s;
   overflow: hidden;
 }
+/* 战斗背景：人站在地图里（觅长生式）——场景与探索同一份"真"（不虚化、不重压暗，
+ * 用户裁决：开战不该把天地糊掉）；可读性交给 veil 的上下渐变，不动场景本身 */
+/* 战斗底图：只铺到战场下沿（bottom 由 JS 按 axis-field 实际位置注入）——
+ * 底图下 1/3 的"近地台面"必须落在单位脚下，而不是被操作台吞掉（v86 踩地对齐） */
 .combat-bg {
-  position: absolute; inset: -2%; background-size: cover; background-position: center 40%;
-  opacity: 0; transition: opacity .6s ease;
-  filter: brightness(.42) saturate(.7) blur(3px);
+  position: absolute; top: -2%; left: -2%; right: -2%; bottom: var(--bg-cut, 0px);
+  background-size: cover; background-position: center bottom;
+  opacity: 0; transition: opacity .6s ease, transform 1.1s cubic-bezier(.4, .05, .3, 1);
+  transform-origin: 50% 88%;
+  filter: brightness(.84) saturate(.98);
 }
 .combat-bg.on { opacity: 1; }
 .combat-veil {
   position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse at 50% 30%, transparent 40%, rgba(8,6,4,.66) 100%),
-    linear-gradient(180deg, rgba(8,6,4,.5) 0%, transparent 26%, transparent 50%, rgba(8,6,4,.86) 88%);
+    radial-gradient(ellipse at 50% 36%, transparent 46%, rgba(8,6,4,.5) 100%),
+    linear-gradient(180deg, rgba(8,6,4,.58) 0%, rgba(8,6,4,.14) 20%, rgba(8,6,4,.1) 48%, rgba(8,6,4,.84) 84%);
 }
 /* 心战（突破/心魔劫）：墨紫色调 */
 .combat-overlay.mind { background: #0a0710; }
@@ -498,6 +504,11 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .cc-name.wx-jin { color: var(--wx-jin); } .cc-name.wx-mu { color: var(--wx-mu); }
 .cc-name.wx-shui { color: var(--wx-shui); } .cc-name.wx-huo { color: var(--wx-huo); }
 .cc-name.wx-tu { color: var(--wx-tu); }
+/* 法宝催动横幅：更大的字+鎏金光爆——"催动"得看着像回事 */
+.cc-name.cc-treasure {
+  font-size: 1.35em; letter-spacing: 6px;
+  text-shadow: 0 0 22px rgba(226, 194, 119, .95), 0 0 50px rgba(226, 194, 119, .5), 0 3px 14px rgba(0, 0, 0, .9);
+}
 
 .combat-box {
   position: relative; z-index: 2; width: min(860px, 100vw);
@@ -632,6 +643,529 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   line-height: 1.55; backdrop-filter: blur(2px);
 }
 
+/* ===== 对阵轴战场（combat-axis-rules.md §11：觅长生式立绘战场）===== */
+.combat-tophud { display: flex; align-items: baseline; justify-content: center; gap: 14px; }
+.combat-roundnum { color: var(--ink-dim); font-size: 12.5px; letter-spacing: 2px; }
+
+/* ===== 战场带：格是法术现象，不是棋盘（UI MVP 2026-06-11 用户拍板）=====
+ * 地面只有一条淡墨地平线+步位墨点；可走=青涟漪、锁格=红雾柱、范围=红雾带、阵法=阵纹。 */
+.axis-field {
+  position: relative; flex-shrink: 0;
+  height: clamp(240px, 40vh, 380px);
+  margin-bottom: 6px;
+  /* 纵深地基（depth-design D0）：每排一条地线，全部参数出自这一族变量 */
+  --ground0: 26px;       /* 战位排地线（离画底） */
+  --lane-gap: 20px;      /* 排距：每深一排地线抬高一档 */
+  --lanes: 2;            /* 排数（JS 注入：场景定 2~4） */
+}
+/* 透视地台：向远处收窄的"地面"——脚下有地，排才有处可站（fg-band/整场缩放之否后的正解）。
+ * 横向地纹=各排地线（被梯形裁剪自动随深度内收=近宽远窄）；drop-shadow 勾出侧缘收拢线 */
+.axis-field::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+  height: calc(var(--ground0) + (var(--lanes) - 1) * var(--lane-gap) + 18px);
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 2%, rgba(190,170,140,.30) 14%, rgba(190,170,140,.30) 86%, transparent 98%) 0 calc(100% - var(--ground0)) / 100% 1.5px no-repeat,
+    linear-gradient(90deg, transparent 6%, rgba(190,170,140,.20) 18%, rgba(190,170,140,.20) 82%, transparent 94%) 0 calc(100% - var(--ground0) - var(--lane-gap)) / 100% 1.2px no-repeat,
+    linear-gradient(90deg, transparent 10%, rgba(190,170,140,.13) 22%, rgba(190,170,140,.13) 78%, transparent 90%) 0 calc(100% - var(--ground0) - 2 * var(--lane-gap)) / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent 14%, rgba(190,170,140,.09) 26%, rgba(190,170,140,.09) 74%, transparent 86%) 0 calc(100% - var(--ground0) - 3 * var(--lane-gap)) / 100% 1px no-repeat,
+    linear-gradient(180deg, rgba(14,11,8,0) 0%, rgba(18,14,11,.16) 45%, rgba(8,6,4,.32) 100%);
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 0 1px rgba(190,170,140,.18));
+}
+.axis-field::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 88px;
+  background: linear-gradient(180deg, transparent, rgba(8,6,4,.3) 55%, rgba(8,6,4,.46));
+  pointer-events: none;
+}
+/* 步位刻度层（贴地，透明无框）——浮于立绘上层（雾柱半透明可罩单位=被锁定感），
+ * 非可走格不拦点击 */
+.axis-lane {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 52px;
+  display: flex; padding: 0 2px; z-index: 3; pointer-events: none;
+}
+.axis-cell { flex: 1; position: relative; border: none; background: none; pointer-events: none; }
+.axis-cell.can-move { pointer-events: auto; }
+/* 步位墨点（平时几乎隐形） */
+.axis-cell .dot {
+  position: absolute; left: 50%; bottom: 22px; width: 5px; height: 5px; margin-left: -2.5px;
+  border-radius: 50%; background: rgba(200,182,150,.28);
+}
+.axis-cell.edge-home .dot { background: rgba(126,185,142,.5); }
+.axis-cell.edge-far .dot { background: rgba(194,92,80,.4); }
+/* 可走：青色涟漪圈（点击移动） */
+.axis-cell.can-move { cursor: pointer; }
+.axis-cell.can-move .dot {
+  width: 9px; height: 9px; margin-left: -4.5px; bottom: 20px;
+  background: rgba(126,205,152,.85); box-shadow: 0 0 10px rgba(126,205,152,.5);
+}
+.axis-cell.can-move::before {
+  content: ""; position: absolute; left: 50%; bottom: 12px; width: 34px; height: 13px;
+  transform: translateX(-50%); border-radius: 50%;
+  border: 1.5px solid rgba(126,205,152,.55);
+  animation: rippleOut 1.7s ease-out infinite;
+}
+.axis-cell.can-move:hover .dot { background: #b8f0c8; box-shadow: 0 0 16px rgba(150,230,170,.8); }
+@keyframes rippleOut {
+  0% { opacity: .8; transform: translateX(-50%) scale(.45); }
+  75% { opacity: 0; transform: translateX(-50%) scale(1.25); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1.25); }
+}
+/* 杀气锁格：红雾柱从地面升起 */
+.axis-cell .mist-pillar {
+  position: absolute; left: 50%; bottom: 16px; width: 64%; height: 96px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent 0%, rgba(201,80,62,.07) 30%, rgba(201,80,62,.3) 78%, rgba(220,95,70,.42) 100%);
+  border-radius: 40% 40% 22% 22%; filter: blur(2.5px);
+  animation: mistBreath 1.15s ease-in-out infinite; pointer-events: none;
+}
+.axis-cell .mist-pillar::after {
+  content: ""; position: absolute; left: 50%; bottom: -4px; width: 120%; height: 14px;
+  transform: translateX(-50%); border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(220,95,70,.5), transparent 70%);
+}
+@keyframes mistBreath { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+/* 范围预告（方阵）：默认"罩"全排=高雾带；.zone-front"扫"战位排=低矮雾带（僚位无虞） */
+.axis-cell .mist-band {
+  position: absolute; left: -2px; right: -2px; bottom: 14px; height: 64px;
+  background: linear-gradient(180deg, transparent, rgba(201,80,62,.18) 45%, rgba(201,80,62,.36));
+  filter: blur(2px); animation: mistBreath 1.3s ease-in-out infinite; pointer-events: none;
+}
+.axis-cell.zone-front .mist-band {
+  height: 28px;
+  background: linear-gradient(180deg, transparent, rgba(201,80,62,.24) 65%, rgba(201,80,62,.36));
+}
+/* 阵法：地面阵纹光圈（困足金 / 聚灵蓝 / 迷踪紫） */
+.axis-cell .zone-ring {
+  position: absolute; left: 50%; bottom: 13px; width: 78%; height: 17px;
+  transform: translateX(-50%); border-radius: 50%; pointer-events: none;
+  border: 1.5px solid rgba(194,163,107,.65);
+  box-shadow: 0 0 12px rgba(194,163,107,.3), inset 0 0 10px rgba(194,163,107,.22);
+  animation: zonePulse 2.4s ease-in-out infinite;
+}
+.axis-cell.zone-juling .zone-ring { border-color: rgba(111,159,200,.65); box-shadow: 0 0 12px rgba(111,159,200,.32), inset 0 0 10px rgba(111,159,200,.22); }
+.axis-cell.zone-mizong .zone-ring { border-color: rgba(154,127,212,.6); box-shadow: 0 0 12px rgba(154,127,212,.3), inset 0 0 10px rgba(154,127,212,.2); }
+@keyframes zonePulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+
+/* 出手身法：贴身大步前冲 / 远程前倾发力（"人动了"的打击感） */
+.axis-unit.strike-melee .au-img, .axis-unit.strike-melee .au-glyph { animation: strikeMelee .48s cubic-bezier(.2,.9,.3,1); }
+@keyframes strikeMelee {
+  0% { translate: 0 0; }
+  28% { translate: 26px -6px; rotate: 2.5deg; }
+  55% { translate: 18px -2px; }
+  100% { translate: 0 0; rotate: 0deg; }
+}
+.axis-unit.strike-cast .au-img, .axis-unit.strike-cast .au-glyph { animation: strikeCast .42s ease; }
+@keyframes strikeCast {
+  0% { translate: 0 0; }
+  30% { translate: 9px -3px; rotate: 1.2deg; }
+  100% { translate: 0 0; rotate: 0deg; }
+}
+/* 命中白闪：挨打的那一下看得见 */
+.axis-unit.hitflash .au-img, .axis-unit.hitflash .au-glyph {
+  filter: brightness(2.1) saturate(.6) drop-shadow(0 0 14px rgba(255,220,180,.8)) !important;
+  transition: filter .06s;
+}
+
+/* 脚下血量数字（用户裁决：数值必须可见） */
+.axis-unit .au-hpnum {
+  font-size: 10.5px; color: #e8dcc4; letter-spacing: 0; line-height: 1.1; margin-top: 1px;
+  text-shadow: 0 1px 4px rgba(0,0,0,.95), 0 0 8px rgba(0,0,0,.7); white-space: nowrap;
+}
+.au-hpnum .au-shnum { font-style: normal; color: #8fc4ec; margin-left: 3px; }
+
+/* 战斗结算卡：胜负与每个敌人的下场，看清楚再收功 */
+.combat-outro {
+  position: absolute; inset: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(6,4,3,.6); backdrop-filter: blur(3px);
+  animation: fxgIn .3s ease;
+}
+.co-card {
+  min-width: min(340px, 86vw); max-width: 90vw; padding: 26px 30px 22px;
+  background: linear-gradient(160deg, rgba(26,20,14,.97), rgba(16,12,9,.97));
+  border: 1px solid rgba(201,169,106,.45); border-radius: 14px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.7), inset 0 0 40px rgba(201,169,106,.05);
+  text-align: center; animation: coCardIn .45s cubic-bezier(.2,1.2,.4,1);
+}
+@keyframes coCardIn { from { transform: translateY(18px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+.co-result {
+  font-family: var(--font-title, serif); font-size: 56px; font-weight: 700; line-height: 1.2;
+  letter-spacing: 8px; margin-bottom: 8px;
+}
+.co-result.co-win { color: var(--gold-bright); text-shadow: 0 0 30px rgba(236,217,168,.55); }
+.co-result.co-flee { color: #a8c4b8; text-shadow: 0 0 24px rgba(140,190,160,.4); }
+.co-result.co-lose { color: #c98a7a; text-shadow: 0 0 24px rgba(194,92,80,.45); }
+.co-foes { margin-bottom: 10px; }
+.co-foe { font-size: 14px; color: #d8cdb8; padding: 2px 0; letter-spacing: 1px; }
+.co-foe .cf-slain { color: var(--red); }
+.co-foe .cf-fled { color: #b8d6a8; }
+.co-foe .cf-stand { color: var(--ink-dim); }
+.co-detail { font-size: 12.5px; color: var(--ink-dim); line-height: 1.8; margin-bottom: 10px; border-top: 1px dashed rgba(140,120,90,.3); padding-top: 8px; }
+.co-loot { font-size: 13px; color: var(--gold-bright); margin-bottom: 14px; min-height: 18px; }
+.combat-outro .btn { min-width: 160px; letter-spacing: 6px; }
+
+/* 战录角标：战场右上角小印 */
+.logbtn-corner {
+  position: absolute; top: 6px; right: 8px; z-index: 9;
+  width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; color: var(--ink-dim); letter-spacing: 0;
+  background: rgba(14,11,8,.72); border: 1px solid rgba(140,120,90,.4);
+  backdrop-filter: blur(2px);
+}
+.logbtn-corner:hover { color: var(--gold-bright); border-color: rgba(201,169,106,.6); }
+
+/* 弹幕战报：挪到战场最上沿（用户裁决——下沿持久弹幕挡操作/挡点选） */
+.combat-floats {
+  position: absolute; left: 4%; right: 4%; top: 4px; z-index: 7;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  pointer-events: none;
+}
+.log-float {
+  max-width: 92%; padding: 3px 12px; border-radius: 12px;
+  font-size: 11.5px; color: #d4c8b2; letter-spacing: .4px; text-align: center;
+  background: rgba(12,9,7,.62); border: 1px solid rgba(140,120,90,.22);
+  backdrop-filter: blur(2px);
+  animation: logFloat 3.2s ease forwards;   /* 单行瞬时：速来速走，不挡视野（正源在战录框） */
+}
+.log-float.lf-hit { color: #e8d8b0; border-color: rgba(201,169,106,.35); }
+.log-float.lf-hurt { color: #e8b0a0; border-color: rgba(194,92,80,.35); }
+@keyframes logFloat {
+  0% { opacity: 0; transform: translateY(-8px); }
+  8%, 78% { opacity: .96; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(6px); }
+}
+
+/* 单位层：立绘锚地平线，left 过渡=滑步 */
+.axis-units { position: absolute; inset: 0 0 24px 0; pointer-events: none; z-index: 2; }
+.axis-unit {
+  position: absolute; bottom: 0; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center;
+  transition: left .42s cubic-bezier(.3,.9,.35,1);
+  pointer-events: auto; width: clamp(76px, 13vw, 130px);
+}
+.axis-unit .au-img {
+  height: calc(clamp(120px, 22vh, 200px) * var(--uscale, 1)); width: auto; max-width: none;
+  filter: drop-shadow(0 12px 18px rgba(0,0,0,.66));
+  transform-origin: 50% 97%;   /* 脚底轴心：站姿动作绕脚摇，脚尖钉死在地（踩地感的动作面） */
+  animation: portraitIn .4s ease, idleRock 3.8s ease-in-out 1s infinite;
+}
+/* 战斗全身立绘（v86 比例校准：竞技场底图就位后，人物抬一档与中景物件比例咬合——
+ * 之前 17vh 是给"风景底图"配的缩档，人比路牌小一倍反而怪）
+ * --uscale=镜头公式（排数×单位数）：人随场景缩——只缩人不缩场，黑框根治 */
+.axis-unit .au-img.battler { height: calc(clamp(104px, 21vh, 180px) * var(--uscale, 1)); }
+/* 站位错落：奇数格整体退后半步（上移+微缩+微暗）——同一条轴读出"路有宽度" */
+/* —— 2.5 排制：纵深=真实单位站位（lane 偏移）× 高度（alt 偏移）——CSS 变量叠加合成。
+ * 排偏移统一吃 --lane-gap（脚锚到自己那排的地线上=踩地）；off-row=半档深度。
+ * --lx=排横向错位（透视斜移）：同格异排不再叠成一团（血条/立绘自然岔开） —— */
+.axis-unit { translate: var(--lx, 0px) calc(var(--ly, 0px) + var(--ay, 0px)); scale: var(--ls, 1); }
+.axis-unit.off-row { --ly: calc(-.5 * var(--lane-gap, 20px)); --lx: 7px; --ls: .96; }
+.axis-unit.off-row .au-img { filter: drop-shadow(0 12px 18px rgba(0,0,0,.66)) brightness(.94); }
+/* 僚位排：每深一排 上移一档+右斜一档+缩一档+暗一档（空气透视+斜透视）；战位排恒压前 */
+.axis-unit.lane-1 { --ly: calc(-1 * var(--lane-gap, 20px)); --lx: 15px; --ls: .93; z-index: 4; }
+.axis-unit.lane-2 { --ly: calc(-2 * var(--lane-gap, 20px)); --lx: 29px; --ls: .87; z-index: 3; }
+.axis-unit.lane-3 { --ly: calc(-3 * var(--lane-gap, 20px)); --lx: 43px; --ls: .82; z-index: 2; }
+.axis-unit.lane-1 .au-img { filter: drop-shadow(0 10px 15px rgba(0,0,0,.6)) brightness(.95); }
+.axis-unit.lane-2 .au-img { filter: drop-shadow(0 8px 12px rgba(0,0,0,.55)) brightness(.9); }
+.axis-unit.lane-3 .au-img { filter: drop-shadow(0 7px 10px rgba(0,0,0,.5)) brightness(.86); }
+/* （接触影统一走 .axis-unit::before；::after 槽位留给 target/self 脚圈——伪元素各司其职） */
+/* 朝向不再用静态镜像：所有单位按"面向自己的对手"动态翻转（.flipped/.flipped-img，见 _axisSprite） */
+/* 站姿待机=呼吸式（v87 二改：钟摆摇被否——脚底钉死、躯干随呼吸微微起伏拉伸，
+ * 头肩动、脚不动=活人站在地上；上下整体浮动是飞行单位的专利 hoverFloat） */
+@keyframes idleRock {
+  0%, 100% { scale: 1 1; }
+  50% { scale: 1.006 1.014; }
+}
+.axis-unit .au-glyph {
+  width: clamp(56px, 9vw, 88px); aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 1.5px solid rgba(194,92,80,.55);
+  background: radial-gradient(circle at 50% 36%, rgba(194,92,80,.22), rgba(14,10,8,.85) 75%);
+  box-shadow: 0 0 22px rgba(194,92,80,.2), inset 0 0 16px rgba(0,0,0,.6);
+}
+.axis-unit.self .au-glyph { border-color: rgba(126,185,142,.55); background: radial-gradient(circle at 50% 36%, rgba(96,150,110,.22), rgba(10,12,8,.85) 75%); }
+.axis-unit .au-glyph span { font-size: clamp(26px, 4.4vw, 40px); color: #e0c9a4; text-shadow: 0 2px 10px rgba(0,0,0,.85); }
+/* 阵亡退场（v87）：水墨溅散演出（~0.9s）放完后彻底淡出——尸体不再半透明赖在场上
+ * （引擎侧 _deadShown 保证只渲染"咽气那一拍"，之后不再入 DOM） */
+.axis-unit.dead { opacity: .35; filter: grayscale(1); pointer-events: none; animation: deadFade 1.2s ease .9s forwards; }
+.axis-unit.dead .au-img { animation: none; }
+@keyframes deadFade { to { opacity: 0; visibility: hidden; } }
+.axis-unit.enemy { cursor: pointer; }
+.axis-unit.target .au-name { color: #e8b8a8; }
+/* 接触阴影：踩实地面的关键一笔——所有单位脚下都有椭圆投影。
+ * --feet=脚底距容器底（信息条区高度）；--ay 补偿=凌空时影子留在地线上（影在地、人在天） */
+.axis-unit::before {
+  content: ""; position: absolute; bottom: var(--feet, 40px); left: 50%; transform: translateX(-50%);
+  width: 90%; height: 17px; border-radius: 50%; z-index: -1;
+  background: radial-gradient(ellipse, rgba(0,0,0,.5) 0%, rgba(0,0,0,.24) 45%, transparent 72%);
+  animation: shadowBreath 3.2s ease-in-out 1s infinite;
+}
+.axis-unit.airborne::before { bottom: calc(var(--feet, 40px) + var(--ay, 0px)); width: 56%; opacity: .8; }
+@keyframes shadowBreath { 0%,100% { transform: translateX(-50%) scale(1); opacity: 1; } 50% { transform: translateX(-50%) scale(.94); opacity: .85; } }
+.axis-unit.dead::before { opacity: .25; animation: none; }
+/* 锁定/我方的脚下色圈：贴着接触影、正在脚底（觅长生式选中圈——圈即站位） */
+.axis-unit.target::after {
+  content: ""; position: absolute; bottom: calc(var(--feet, 40px) + var(--ay, 0px) - 3px); left: 50%; transform: translateX(-50%);
+  width: 88%; height: 19px; border-radius: 50%;
+  border: 1.5px solid rgba(222,118,98,.8);
+  background: radial-gradient(ellipse, rgba(194,92,80,.30) 30%, rgba(194,92,80,.12) 58%, transparent 74%);
+  box-shadow: 0 0 10px rgba(214,112,96,.3), inset 0 0 8px rgba(214,112,96,.25);
+  animation: selRing 1.6s ease-in-out infinite;
+}
+.axis-unit.self::after {
+  content: ""; position: absolute; bottom: calc(var(--feet, 40px) + var(--ay, 0px) - 3px); left: 50%; transform: translateX(-50%);
+  width: 88%; height: 19px; border-radius: 50%;
+  border: 1.5px solid rgba(136,200,156,.66);
+  background: radial-gradient(ellipse, rgba(126,185,142,.22) 30%, rgba(126,185,142,.08) 58%, transparent 74%);
+  box-shadow: 0 0 9px rgba(126,185,142,.25), inset 0 0 8px rgba(126,185,142,.2);
+}
+@keyframes selRing { 0%,100% { opacity: 1; } 50% { opacity: .62; } }
+.axis-unit.charging .au-img, .axis-unit.charging .au-glyph {
+  filter: drop-shadow(0 0 18px rgba(232,198,106,.7));
+  animation: chargePulse .9s ease-in-out infinite;
+}
+@keyframes chargePulse { 0%,100% { scale: 1; } 50% { scale: 1.04; } }
+.axis-unit .demonized { filter: brightness(.12) saturate(.2) drop-shadow(0 0 18px rgba(154,127,212,.55)) !important; }
+
+/* 主攻法宝伴身（正典考据：金蚨子母刃=一母八子，动画官设**青绿色冷光小刃**）——
+ * 八柄子刃绕身浮游、母刃居手侧；刃形=刃身渐变收锋+刃尖高光+寒芒辉（不是色块）；
+ * 各自相位差浮动；催动时 .launch 整阵射向目标（以后青竹蜂云剑=剑阵绕身复用） */
+.axis-unit .au-blades { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.au-blades .bld {
+  position: absolute; width: 6px; height: 19px;
+  /* 小刀形：上窄锋下圆柄（clip 出刃形），青绿冷光渐变+刃脊高光 */
+  clip-path: polygon(50% 0%, 88% 22%, 78% 86%, 62% 100%, 38% 100%, 22% 86%, 12% 22%);
+  background: linear-gradient(185deg, #eafff0 0%, #9fe8b4 26%, #4fbf7e 58%, #1e6e4a 100%);
+  box-shadow: 0 0 8px rgba(110, 230, 160, .75), 0 0 3px rgba(220, 255, 235, .9);
+  animation: bladeBob 2.8s ease-in-out infinite;
+}
+/* 母刃：手侧大一号（驭刃之主），辉更盛 */
+.au-blades .bld:nth-child(1) { width: 8px; height: 28px; right: 3px; top: 48%; rotate: 10deg; box-shadow: 0 0 12px rgba(130,240,175,.95), 0 0 4px rgba(230,255,240,1); animation-delay: 0s; }
+/* 八子刃：左右两弧各四，错相位浮动（绕身分袭的阵势） */
+.au-blades .bld:nth-child(2) { left: -16px; top: 24%; rotate: -16deg; animation-delay: -.3s; }
+.au-blades .bld:nth-child(3) { left: -8px;  top: 36%; rotate: -10deg; animation-delay: -.9s; }
+.au-blades .bld:nth-child(4) { left: -19px; top: 48%; rotate: -20deg; animation-delay: -1.5s; }
+.au-blades .bld:nth-child(5) { left: -5px;  top: 60%; rotate: -6deg;  animation-delay: -2.1s; }
+.au-blades .bld:nth-child(6) { right: -14px; top: 22%; rotate: 14deg; animation-delay: -.6s; }
+.au-blades .bld:nth-child(7) { right: -6px;  top: 34%; rotate: 8deg;  animation-delay: -1.2s; }
+.au-blades .bld:nth-child(8) { right: -18px; top: 46%; rotate: 18deg; animation-delay: -1.8s; }
+.au-blades .bld:nth-child(9) { right: -10px; top: 58%; rotate: 6deg;  animation-delay: -2.4s; }
+@keyframes bladeBob { 0%,100% { translate: 0 0; opacity: .95; } 50% { translate: 0 -6px; opacity: .75; } }
+/* 催刃出袭：点金蚨子母刃的那一拍——绕身刃阵齐齐射向目标方向（--bdir=±1），打完归位 */
+.au-blades.launch .bld {
+  animation: bladeLaunch .55s cubic-bezier(.5, 0, .85, .4) forwards;
+}
+.au-blades.launch .bld:nth-child(2n) { animation-delay: .06s; }
+.au-blades.launch .bld:nth-child(3n) { animation-delay: .12s; }
+@keyframes bladeLaunch {
+  0% { translate: 0 0; opacity: 1; }
+  18% { translate: calc(var(--bdir, 1) * -14px) -4px; opacity: 1; }   /* 先收势后掠 */
+  100% { translate: calc(var(--bdir, 1) * 270px) -10px; opacity: 0; rotate: calc(var(--bdir, 1) * 88deg); }
+}
+
+/* 身侧悬浮法器（拥有感）：装备化作灵光绕身 */
+.axis-unit .au-orbit { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.au-orbit .orb {
+  position: absolute; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; border-radius: 6px; rotate: 45deg;
+  background: rgba(18,14,10,.86); border: 1px solid rgba(216,198,144,.6);
+  color: var(--wx-jin); box-shadow: 0 0 10px rgba(216,198,144,.35);
+}
+.au-orbit .orb > * { rotate: -45deg; }
+.au-orbit .orb-w { left: -14px; top: 32%; animation: orbFloatA 3.4s ease-in-out infinite; }
+.au-orbit .orb-a { right: -14px; top: 46%; color: var(--blue); border-color: rgba(111,159,200,.6); box-shadow: 0 0 10px rgba(111,159,200,.3); animation: orbFloatB 3.9s ease-in-out infinite; }
+@keyframes orbFloatA { 0%,100% { translate: 0 0; } 50% { translate: -3px -7px; } }
+@keyframes orbFloatB { 0%,100% { translate: 0 0; } 50% { translate: 3px -6px; } }
+
+/* 终结一击：慢放灰化 + 水墨溅散 */
+.axis-unit.slaying .au-img, .axis-unit.slaying .au-glyph {
+  animation: slayFade 1.2s ease forwards !important;
+}
+@keyframes slayFade {
+  0% { filter: grayscale(0) brightness(1.3); transform: scale(1.05); }
+  35% { filter: grayscale(.6) brightness(1.05); }
+  100% { filter: grayscale(1) brightness(.4) blur(1.5px); transform: scale(.97); opacity: .35; }
+}
+.ink-burst { position: absolute; left: 50%; top: 40%; pointer-events: none; z-index: 8; }
+.ink-burst i {
+  position: absolute; width: 9px; height: 9px; border-radius: 50% 60% 50% 65%;
+  background: rgba(20,14,10,.85); box-shadow: 0 0 6px rgba(0,0,0,.6);
+  animation: inkFly 1.1s cubic-bezier(.2,.7,.4,1) forwards;
+}
+.ink-burst i:nth-child(1) { --dx: -46px; --dy: -38px; }
+.ink-burst i:nth-child(2) { --dx: 42px;  --dy: -52px; animation-delay: .04s; }
+.ink-burst i:nth-child(3) { --dx: -60px; --dy: 6px;  animation-delay: .08s; }
+.ink-burst i:nth-child(4) { --dx: 56px;  --dy: -8px; animation-delay: .05s; }
+.ink-burst i:nth-child(5) { --dx: -24px; --dy: -64px; animation-delay: .1s; }
+.ink-burst i:nth-child(6) { --dx: 20px;  --dy: 30px; animation-delay: .07s; }
+@keyframes inkFly {
+  0% { transform: translate(0, 0) scale(1); opacity: .95; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(.3); opacity: 0; }
+}
+
+/* 全局重演出：趁虚时停金字 / 蓄势释放大字压屏 */
+.fx-global {
+  position: absolute; inset: 0; z-index: 30; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.fx-global.fxg-exploit { background: rgba(8,5,3,.42); animation: fxgIn .12s ease; }
+.fx-global.fxg-exploit .fxg-text {
+  font-family: var(--font-title, serif); font-size: clamp(34px, 7vw, 60px); font-weight: 700;
+  color: var(--gold-bright); letter-spacing: 10px; text-shadow: 0 0 28px rgba(236,217,168,.8), 0 3px 10px rgba(0,0,0,.9);
+  animation: exploitPop .85s cubic-bezier(.2,1.4,.4,1) forwards;
+}
+@keyframes exploitPop {
+  0% { transform: scale(2.2); opacity: 0; }
+  18% { transform: scale(1); opacity: 1; }
+  80% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(1.05); opacity: 0; }
+}
+.fx-global.fxg-ult { background: rgba(4,3,2,.7); animation: ultFlash 1.2s ease forwards; }
+.fx-global.fxg-ult .fxg-text {
+  writing-mode: vertical-rl; font-family: var(--font-title, serif);
+  font-size: clamp(44px, 9vw, 80px); font-weight: 700; color: #f4e8cc;
+  letter-spacing: 18px; text-shadow: 0 0 36px rgba(236,217,168,.9), 0 0 80px rgba(201,169,106,.5);
+  animation: ultText 1.2s ease forwards;
+}
+@keyframes ultFlash { 0% { background: rgba(244,238,224,.85); } 12% { background: rgba(4,3,2,.7); } 100% { background: rgba(4,3,2,.62); } }
+@keyframes ultText {
+  0% { transform: scale(1.3); opacity: 0; filter: blur(5px); }
+  16% { transform: scale(1); opacity: 1; filter: blur(0); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes fxgIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 瞬发牌横滑排（手机原生手势，不挤不收纳） */
+.quick-row {
+  display: flex; align-items: stretch; gap: 5px; margin-bottom: 5px;
+  overflow-x: auto; padding: 4px 1px 2px; -webkit-overflow-scrolling: touch;
+  border-top: 1px dashed rgba(181, 72, 61, .4);
+  scrollbar-width: none;   /* 划得动但不见滚条（手机手势原生） */
+}
+.quick-row::-webkit-scrollbar { display: none; }
+.quick-row:empty { display: none; }
+.quick-row .spell-btn { flex: 0 0 116px; min-width: 116px; padding: 1px 3px; gap: 3px; font-size: 11px; border-radius: 6px; }
+.quick-row .seal { width: 19px; height: 19px; font-size: 11px; border-width: 1px; border-radius: 2px; }
+.quick-row .sname { font-size: 11px; letter-spacing: .3px; }
+.quick-row .scost { font-size: 9px; gap: 2px; }
+.quick-row .cost-dot { padding: 0 3px; font-size: 9px; line-height: 13px; border-radius: 2px; }
+.quick-row .trump-tag { flex-shrink: 0; }
+/* 灵傀卡：侧位单位的随身牌（血/简令）——点一下换简令：随→攻→守→撤 */
+.pet-card {
+  flex: 0 0 112px; min-width: 112px; display: flex; align-items: center; gap: 4px;
+  padding: 2px 4px; border-radius: 6px; cursor: pointer; font-family: inherit;
+  background: rgba(150, 190, 160, .05); border: 1px solid rgba(150, 190, 160, .3); color: var(--ink);
+}
+.pet-card:hover { border-color: var(--jade); }
+.pet-card .seal { width: 20px; height: 20px; font-size: 11.5px; border-width: 1px; color: #a9c7b2; border-color: rgba(150,190,160,.5); }
+.pet-card .pc-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.pet-card .pc-name { font-size: 11px; color: #cfe0d2; letter-spacing: .3px; white-space: nowrap; overflow: hidden; }
+.pet-card .pc-hp { height: 4px; border-radius: 2px; background: rgba(0,0,0,.5); overflow: hidden; }
+.pet-card .pc-hp i { display: block; height: 100%; background: linear-gradient(90deg, #5e9e7c, #8fc7a5); }
+/* 同道灵力微条（同规则可读性：她也有池、也会被耗蓝——消耗战看得见） */
+.pet-card .pc-mp { height: 3px; border-radius: 2px; background: rgba(0,0,0,.5); overflow: hidden; margin-top: 1px; }
+.pet-card .pc-mp i { display: block; height: 100%; background: linear-gradient(90deg, #3f6c96, #6f9fc8); }
+.pet-card .pc-st {
+  flex-shrink: 0; font-size: 11px; font-weight: 700; width: 22px; height: 22px; line-height: 20px;
+  text-align: center; border-radius: 50%; border: 1px solid rgba(150,190,160,.5); color: #a9c7b2;
+  background: rgba(10,8,6,.5);
+}
+.pet-card.down { opacity: .45; filter: grayscale(.7); cursor: default; }
+
+/* 脚下血条/法力微条 + 名牌 */
+.axis-unit .au-bars { width: 86%; margin-top: 2px; }
+.au-hp, .au-mp { position: relative; height: 5px; border-radius: 3px; overflow: hidden; background: rgba(8,6,4,.78); border: 1px solid rgba(140,120,90,.35); margin-bottom: 2px; }
+.au-hp i { display: block; height: 100%; background: linear-gradient(90deg,#7c3a32,var(--red)); transition: width .3s; }
+.axis-unit.self .au-hp i, .axis-unit.side .au-hp i { background: linear-gradient(90deg,#2c5d4a,var(--jade-bright)); }
+.au-hp i.sh { position: absolute; top: 0; left: 0; opacity: .55; background: linear-gradient(90deg,#3a5a7a,var(--blue)); }
+.au-mp { height: 4px; }
+.au-mp i { display: block; height: 100%; background: linear-gradient(90deg,#3a5a8a,#7fb8e8); transition: width .3s; }
+.axis-unit .au-name {
+  font-size: 11px; color: #d8cdb8; margin-top: 2px; white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0,0,0,.9); letter-spacing: .5px;
+}
+.au-lock { color: var(--red); margin-left: 2px; }
+
+/* 头顶徽记：意图气泡 + 状态标 */
+.axis-unit .au-badges {
+  position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px; white-space: nowrap; z-index: 3;
+}
+.au-intent {
+  width: 22px; height: 22px; border-radius: 50% 50% 50% 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #f0e2c8;
+  background: rgba(26,18,12,.92); border: 1px solid rgba(201,169,106,.55);
+  box-shadow: 0 2px 8px rgba(0,0,0,.6);
+  animation: intentBob 1.4s ease-in-out infinite;
+}
+@keyframes intentBob { 0%,100% { translate: 0 0; } 50% { translate: 0 -3px; } }
+.au-intent.ik-charge, .au-intent.ik-release { border-color: rgba(232,150,90,.8); color: #f0c090; }
+.au-intent.ik-flee { border-color: rgba(160,200,150,.7); color: #b8e0a8; }
+.au-intent.ik-guard { border-color: rgba(111,159,200,.8); color: #a8cce8; }
+.au-mark {
+  font-size: 10px; padding: 1px 5px; border-radius: 4px; letter-spacing: 1px;
+  background: rgba(26,18,12,.9); border: 1px solid rgba(140,120,90,.5); color: #cfc2a8;
+}
+.au-mark.mk-whiff { border-color: rgba(236,217,168,.8); color: var(--gold-bright); animation: whiffFlash .5s ease-in-out infinite alternate; }
+@keyframes whiffFlash { from { box-shadow: 0 0 4px rgba(236,217,168,.3); } to { box-shadow: 0 0 12px rgba(236,217,168,.7); } }
+.au-mark.mk-expose { border-color: rgba(201,95,80,.7); color: #e8a090; }
+.au-mark.mk-charge { border-color: rgba(232,198,106,.7); color: #e8c66a; }
+.au-mark.mk-poison { border-color: rgba(126,185,100,.6); color: #93d67f; }
+.au-mark.mk-hold { border-color: rgba(111,159,200,.7); color: #a8cce8; }
+/* 同道简令章（A2 v0）：头顶一字令——点章即换令（与灵傀卡同源） */
+.au-mark.mk-stance { border-color: rgba(150,190,160,.65); color: #a9c7b2; cursor: pointer; pointer-events: auto; }
+.au-mark.mk-stance:hover { box-shadow: 0 0 8px rgba(150,190,160,.45); }
+
+/* 御使飞行印：法器划过战场 */
+.fly-seal {
+  position: absolute; z-index: 6; width: 30px; height: 30px; margin: -15px 0 0 -15px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; border-radius: 6px; rotate: 45deg;
+  background: rgba(20,15,10,.9); border: 1px solid currentColor;
+  box-shadow: 0 0 14px currentColor; pointer-events: none;
+  transition: left .42s cubic-bezier(.5,0,.8,.4), top .42s cubic-bezier(.5,0,.8,.4), opacity .42s;
+}
+.fly-seal.wx-jin { color: var(--wx-jin); } .fly-seal.wx-mu { color: var(--wx-mu); }
+.fly-seal.wx-shui { color: var(--wx-shui); } .fly-seal.wx-huo { color: var(--wx-huo); }
+.fly-seal.wx-tu { color: var(--wx-tu); }
+.fly-seal.gone { opacity: .15; }
+
+/* 神识料敌提示条 */
+.combat-intent {
+  flex-shrink: 0; margin-bottom: 8px; padding: 7px 12px;
+  font-size: 12px; line-height: 1.6; color: var(--gold-bright);
+  background: rgba(14,11,8,.85); border: 1px solid rgba(201,169,106,.4); border-radius: var(--radius);
+  backdrop-filter: blur(3px);
+}
+
+/* 法力池行：横条 + 行动经济筹码 */
+.combat-mprow { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.mp-pool { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px; }
+.mp-label { font-size: 12px; color: #9fb8d8; letter-spacing: 2px; }
+.mp-bar {
+  flex: 1; height: 12px; border-radius: 6px; overflow: hidden;
+  background: rgba(8,6,4,.8); border: 1px solid rgba(90,110,140,.4);
+  box-shadow: inset 0 1px 4px rgba(0,0,0,.6);
+}
+.mp-bar i { display: block; height: 100%; background: linear-gradient(90deg,#2a4a72,#6f9fc8); transition: width .35s ease; box-shadow: 0 0 8px rgba(111,159,200,.5); }
+.mp-num { font-size: 12.5px; color: #a8c4e0; min-width: 56px; text-align: right; }
+.act-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.act-chip {
+  font-size: 11px; padding: 3px 8px; border-radius: 10px; letter-spacing: 1px;
+  color: var(--gold-bright); background: rgba(36,28,18,.7); border: 1px solid rgba(201,169,106,.4);
+}
+.act-chip.used { opacity: .35; }
+.act-chip.momentum { color: #f0d8a0; border-color: rgba(236,217,168,.7); box-shadow: 0 0 8px rgba(236,217,168,.25); }
+
+/* 技能射程 badge / 法力耗标 */
+.sname .srange {
+  font-size: 10px; color: var(--ink-dim); border: 1px solid rgba(140,120,90,.35);
+  padding: 0 4px; border-radius: 4px; margin-left: 5px; vertical-align: 1px; letter-spacing: 0;
+}
+.cost-dot.mp-dot { color: #a8c4e0; border-color: rgba(111,159,200,.45); background: rgba(30,46,66,.4); }
+
 /* 操作台：半透明墨底 */
 .combat-console {
   background: var(--paper); border: 1px solid var(--border-soft); border-radius: var(--radius-lg);
@@ -669,12 +1203,64 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .qi-orb.momentum .qo-char { color: var(--gold-bright); }
 
 /* 招式按钮：印章 + 名 + 消耗 */
-.combat-spells { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px,1fr)); gap: 8px; margin-bottom: 12px; }
+/* 手牌：紧凑双排同滑网格（一次手势两排齐动）——四区制：法宝法器｜法术｜瞬发｜灵傀。
+ * 单屏铁律：格子小而密、字贴框，划的是排内，页面永不竖涨 */
+.combat-spells { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+.spell-grid {
+  display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 3px 4px; overflow-x: auto; padding: 1px 1px 2px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.spell-grid::-webkit-scrollbar { display: none; }
+/* 硬紧凑（用户两次催）：字贴框、章贴字——一屏摆下更多牌 */
+.spell-grid .spell-btn { width: 110px; min-width: 110px; padding: 1px 3px; gap: 3px; font-size: 11px; border-radius: 6px; }
+.spell-grid .seal { width: 19px; height: 19px; font-size: 11px; border-width: 1px; border-radius: 2px; }
+.spell-grid .sname { font-size: 11px; line-height: 1.15; letter-spacing: .3px; }
+.spell-grid .scost { font-size: 9px; line-height: 1.2; gap: 2px; }
+.spell-grid .cost-dot { padding: 0 3px; font-size: 9px; line-height: 13px; border-radius: 2px; }
+.spell-grid .sname .srange { font-size: 9px; padding: 0 2px; margin-left: 2px; border-radius: 3px; }
+.spell-grid .sp-body { gap: 0; }
+/* 法宝牌大一号：以后战斗的重点是法宝区（用户裁决）——physically 比法术牌醒目 */
+.spell-grid .spell-btn.treasure { width: 126px; min-width: 126px; padding: 2px 4px; }
+.spell-grid .spell-btn.treasure .seal { width: 23px; height: 23px; font-size: 12.5px; }
+.spell-grid .spell-btn.treasure .sname { font-size: 12px; }
+.zone-tag {
+  writing-mode: vertical-rl; text-orientation: upright; flex-shrink: 0;
+  font-size: 10px; letter-spacing: 1px; color: var(--ink-faint);
+  display: flex; align-items: center; padding: 0;
+}
+/* 网格内分区标签：竖排两行通占——同一条滑轨里把"法宝/法术"切开 */
+.spell-grid .zone-tag { grid-row: 1 / span 2; align-self: stretch; justify-content: center; }
+.zone-tag.zt-treasure { color: #e2c277; }
+.zone-tag.zt-quick { color: var(--cinnabar); }
+.zone-tag.zt-pet { color: #a9c7b2; }
+/* 法宝牌：鎏金缘+内灼灵光——催动的是"物"，战斗的重心所在（用户裁决：法宝区为重） */
+.spell-btn.treasure {
+  border-color: rgba(226, 194, 119, .55);
+  background: linear-gradient(180deg, rgba(226, 194, 119, .1), rgba(226, 194, 119, .03));
+  box-shadow: inset 0 0 14px rgba(226, 194, 119, .08), 0 0 6px rgba(226, 194, 119, .12);
+}
+.spell-btn.treasure:hover:not(:disabled) { border-color: #e2c277; background: rgba(226, 194, 119, .14); box-shadow: 0 0 14px rgba(226, 194, 119, .28); }
+.spell-btn.treasure .seal { box-shadow: 0 0 10px rgba(226, 194, 119, .55); border-color: rgba(226, 194, 119, .7); }
+.spell-btn.treasure .sname { color: #f2dfae; }
 .spell-btn {
+  position: relative;
   display: flex; align-items: center; gap: 9px; text-align: left; padding: 8px 10px;
   background: rgba(255, 250, 240, 0.03); border: 1px solid var(--border); border-radius: var(--radius-lg);
   cursor: pointer; color: var(--ink); font-family: inherit; font-size: 13px; transition: all .15s;
 }
+/* 主攻/防御角章（法宝区主次之分）：主=鎏金，御=玄青 */
+.spell-btn .role-tag {
+  position: absolute; top: -5px; right: -4px; z-index: 2;
+  width: 15px; height: 15px; line-height: 15px; text-align: center;
+  font-size: 9.5px; font-weight: 700; border-radius: 3px; rotate: 6deg;
+}
+.spell-btn .role-tag.rt-main { color: #2a1f10; background: linear-gradient(160deg, #f0dca0, #cfae62); box-shadow: 0 0 7px rgba(226,194,119,.7); }
+.spell-btn .role-tag.rt-def { color: #cfe2f0; background: linear-gradient(160deg, #2c4a66, #1b2e42); border: 1px solid rgba(111,159,200,.55); }
+/* 客随统帅卡（mastery≥2 同道）：金边压字——她不受令，她点将 */
+.pet-card.lead { border-color: rgba(226,194,119,.55); background: rgba(226,194,119,.06); cursor: help; }
+.pet-card.lead .pc-st { color: #f0dca0; border-color: rgba(226,194,119,.7); box-shadow: 0 0 7px rgba(226,194,119,.4); }
+.au-mark.mk-lead { border-color: rgba(226,194,119,.75); color: #f0dca0; cursor: default; box-shadow: 0 0 7px rgba(226,194,119,.35); }
 .spell-btn:hover:not(:disabled) { border-color: var(--jade); background: rgba(111,174,147,.08); }
 .spell-btn:disabled { opacity: .35; cursor: not-allowed; }
 .spell-btn.off { filter: grayscale(.6); }
@@ -694,28 +1280,36 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .spell-btn .spouch { color: var(--jade-bright); }
 .spell-btn .spouch.empty { color: var(--red); }
 
-/* 底牌行：消耗性手段独立分区（毒/暗器——与灵技体系分离） */
+/* 底牌/瞬发行：消耗性手段独立分区（符/丹/阵旗——与灵技体系分离，多牌自动换行） */
 .trump-row {
-  grid-column: 1 / -1; display: flex; align-items: stretch; gap: 8px;
+  grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px;
   padding-top: 8px; border-top: 1px dashed rgba(181, 72, 61, .4);
 }
+.trump-row .spell-btn { flex: 1 1 150px; min-width: 150px; max-width: 100%; }
 .trump-tag {
   writing-mode: vertical-rl; text-orientation: upright; flex-shrink: 0;
   font-size: 11px; letter-spacing: 2px; color: var(--cinnabar);
   display: flex; align-items: center; padding: 0 1px;
 }
-.spell-btn.trump { flex: 1; border-color: rgba(181, 72, 61, .35); background: rgba(181, 72, 61, .05); }
+.spell-btn.trump { flex: 1 1 150px; min-width: 150px; max-width: 100%; border-color: rgba(181, 72, 61, .35); background: rgba(181, 72, 61, .05); }
 .spell-btn.trump:hover:not(:disabled) { border-color: var(--cinnabar); background: rgba(181,72,61,.12); }
 
+/* 战录框：占位加大+排版（用户裁决）——行有呼吸、新旧有别、色有语义 */
 .combat-log {
-  height: 108px; overflow-y: auto; background: rgba(8,6,4,.5); border: 1px solid var(--border-soft);
-  border-radius: var(--radius); padding: 9px 11px; font-size: 13px; color: var(--ink-dim); line-height: 1.6; margin-bottom: 12px;
+  height: 152px; overflow-y: auto; background: rgba(8,6,4,.56); border: 1px solid var(--border-soft);
+  border-radius: var(--radius); padding: 10px 13px; font-size: 13px; color: var(--ink-dim);
+  line-height: 1.7; margin-bottom: 10px; scrollbar-width: thin;
 }
+.combat-log > div { padding: 1.5px 0; border-bottom: 1px dashed rgba(140, 120, 90, .1); }
+.combat-log > div:last-child { border-bottom: none; }
 .combat-log .cl-hit { color: var(--jade-bright); }
 .combat-log .cl-hurt { color: var(--red); }
 .combat-log .cl-new { color: var(--ink); }
-.combat-actions { display: flex; justify-content: center; }
-.combat-actions .btn { min-width: 200px; }
+/* 行动排：定高一行排齐——次按钮收紧、主按钮吃满余宽（多按钮并存也不爆版） */
+.combat-actions { display: flex; justify-content: center; align-items: center; gap: 8px; }
+.combat-actions .btn { width: auto; min-width: 0; margin-top: 0; height: 46px; padding: 0 18px; }
+.combat-actions .btn-primary { flex: 1 1 auto; max-width: 380px; }
+.combat-actions .btn-mini { flex: 0 0 auto; font-size: 13px; }
 
 /* 受击/施法时的轻微震动反馈 */
 @keyframes hitshake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
@@ -803,17 +1397,24 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .status-strip b.warn { color: var(--red); }
 
 /* ===== 行动页"刚刚发生"反馈条（桌面隐藏：右栏见闻常驻可见）===== */
+/* 刚刚发生：最近三条见闻（最新一条加亮、旧两条收灰）——一眼看清"做了什么"  */
 .recent-log {
-  display: none; align-items: baseline; gap: 7px; cursor: pointer;
-  padding: 8px 10px; margin-bottom: 8px; border-radius: var(--radius);
+  display: none; flex-direction: column; gap: 5px; cursor: pointer;
+  padding: 10px 12px; margin-bottom: 8px; border-radius: var(--radius);
   background: rgba(255, 250, 240, 0.03); border: 1px solid var(--border-soft);
-  border-left: 2px solid var(--gold); font-size: 12.5px; line-height: 1.5;
+  border-left: 2px solid var(--gold); font-size: 13px; line-height: 1.55;
 }
+.recent-log .rl-row { display: flex; align-items: baseline; gap: 7px; opacity: .62; }
+.recent-log .rl-row.rl-latest { opacity: 1; font-size: 13.5px; }
 .recent-log .rl-tag { color: var(--gold); font-size: 11px; flex-shrink: 0; }
-.recent-log .rl-txt { color: var(--ink); flex: 1; min-width: 0; }
+.recent-log .rl-txt {
+  color: var(--ink); flex: 1; min-width: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.recent-log .rl-row.rl-latest .rl-txt { -webkit-line-clamp: 3; }
 .recent-log .rl-txt.entry-good { color: var(--jade-bright); }
+.recent-log .rl-more { align-self: flex-end; color: var(--ink-faint); font-size: 11px; }
 .recent-log .rl-txt.entry-bad { color: var(--red); }
-.recent-log .rl-more { color: var(--ink-faint); font-size: 11px; flex-shrink: 0; }
 
 /* 双击缩放锁死修复：游戏型 UI 禁用双击缩放手势 */
 html, body { touch-action: manipulation; }
@@ -1039,25 +1640,52 @@ html, body { touch-action: manipulation; }
   .create-title-block .subtitle { writing-mode: vertical-rl; letter-spacing: 4px; font-size: 11px; }
   .create-box { width: 92vw; padding: 20px 16px 16px; flex-shrink: 0; }
 
-  /* 战斗界面：敌我并肩对峙（左右各半），按钮加大易点 */
+  /* 战斗界面（对阵轴竖屏）：立绘不缩气势优先、格距压缩、手牌大拇指区 */
   .combat-box { width: 100vw; padding: 8px 8px 12px; }
-  .combat-title { font-size: 16px; letter-spacing: 5px; margin: 2px 0 6px; }
-  .combat-field { grid-template-columns: 1fr 1fr; gap: 6px; align-items: end; min-height: 168px; flex-shrink: 0; }
-  .combat-vs { display: none; }
-  .combatant { padding: 4px; margin-bottom: 2px; }
-  .combatant .cfigure { height: clamp(78px, 13vh, 120px); }
-  .cfigure.glyph { width: clamp(58px, 9vh, 80px); }
-  .combatant .cinfo { max-width: none; }
-  .cintent { max-width: none; font-size: 11px; }
+  .combat-title { font-size: 16px; letter-spacing: 5px; margin: 2px 0 4px; }
+  .combat-tophud { gap: 8px; }
+  .axis-field { height: clamp(220px, 38vh, 320px); margin-bottom: 4px; }
+  .axis-lane { height: 44px; }
+  .axis-cell .dot { bottom: 17px; }
+  .axis-cell.can-move::before { bottom: 9px; width: 26px; height: 10px; }
+  .axis-cell .mist-pillar { height: 68px; bottom: 12px; }
+  .axis-cell .mist-band { bottom: 11px; height: 22px; }
+  .axis-cell .zone-ring { bottom: 10px; height: 13px; }
+  .axis-units { inset: 0 0 18px 0; }
+  .axis-unit { width: clamp(52px, 12vw, 86px); }
+  /* 竖屏：战斗立绘同步抬档（与竞技场底图比例咬合） */
+  .axis-unit .au-img { height: calc(clamp(104px, 17vh, 160px) * var(--uscale, 1)); }
+  .axis-unit .au-img.battler { height: calc(clamp(92px, 17vh, 150px) * var(--uscale, 1)); }
+  .axis-field { --ground0: 20px; --lane-gap: 15px; }
+  .axis-unit.off-row { --lx: 5px; }
+  .axis-unit.lane-1 { --lx: 11px; }
+  .axis-unit.lane-2 { --lx: 21px; }
+  .axis-unit.lane-3 { --lx: 31px; }
+  .axis-unit.airborne { --ay: -72px; }
+  .axis-unit.airborne.air-2 { --ay: -96px; }
+  .axis-unit.airborne.air-3 { --ay: -120px; }
+  .au-blades { scale: .8; }
+  .axis-unit .au-glyph { width: clamp(44px, 11vw, 64px); }
+  .axis-unit .au-name { font-size: 10px; }
+  .au-intent { width: 20px; height: 20px; font-size: 11px; }
+  .au-mark { font-size: 9px; padding: 0 4px; }
+  .au-orbit .orb { width: 19px; height: 19px; font-size: 10px; }
+  .au-orbit .orb-w { left: -9px; }
+  .au-orbit .orb-a { right: -9px; }
+  .combat-floats { top: 2px; }
+  .log-float { font-size: 11.5px; padding: 3px 10px; }
+  .fx-global.fxg-exploit .fxg-text { letter-spacing: 6px; }
+  .combat-intent { font-size: 11px; padding: 6px 9px; margin-bottom: 6px; }
+  .combat-mprow { gap: 8px; margin-bottom: 8px; }
+  .mp-pool { min-width: 150px; }
+  .mp-num { font-size: 11.5px; min-width: 48px; }
+  .act-chip { font-size: 10px; padding: 2px 6px; }
   .combat-console { padding: 9px; }
-  .combat-qi { gap: 9px; margin-bottom: 9px; }
-  .qi-orb { width: 38px; height: 38px; }
-  .qi-orb .qo-char { font-size: 15px; }
-  .combat-spells { grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 9px; }
-  .spell-btn { padding: 8px 7px; font-size: 12.5px; gap: 6px; }
-  .seal { width: 28px; height: 28px; font-size: 15px; }
-  .combat-log { height: 72px; font-size: 12px; }
-  .combat-actions .btn { min-width: 0; width: 100%; padding: 11px; }
+  /* 手机档：手牌沿用桌面紧凑值（勿在此放大——曾因此“紧凑改了等于没改”） */
+  .sname .srange { font-size: 9px; }
+  .combat-log { height: 118px; font-size: 12.5px; }
+  .combat-actions { gap: 6px; }
+  .combat-actions .btn { height: 44px; padding: 0 12px; }
 
   /* 触摸目标更大 */
   .btn { padding: 12px 16px; }
@@ -1889,6 +2517,430 @@ html, body { touch-action: manipulation; }
   .nw-center { grid-column: 1 / -1; order: -1; margin-bottom: 6px; }
   .nw-portrait { width: 96px; height: 96px; }
   .nw-act.bad { flex-direction: row; text-align: left; }
+}
+
+/* ============================================================
+ * 箱庭探索 v3 · L1 舆图（水墨节点图）+ L3 横版深窟
+ * ============================================================ */
+.exmap-overlay { position: fixed; inset: 0; z-index: 60; background: #0c0a09; }
+.exmap-bg {
+  position: absolute; inset: 0; background-size: cover; background-position: center;
+  filter: brightness(.5) saturate(.75) sepia(.18) hue-rotate(-12deg);
+}
+.exmap-veil {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 42%, transparent 32%, rgba(10, 6, 6, .62) 100%),
+    linear-gradient(180deg, rgba(26, 8, 8, .55), transparent 22%, transparent 70%, rgba(8, 5, 5, .8));
+}
+.exmap-field { position: absolute; inset: 0; }
+.exmap-head {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; pointer-events: none;
+}
+.exmap-title {
+  font-family: var(--font-title, serif); font-size: 20px; letter-spacing: 6px;
+  color: #e8d9c0; text-shadow: 0 0 14px rgba(160, 30, 30, .55), 0 2px 6px #000;
+}
+.exmap-clock { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #cdb89a; text-shadow: 0 1px 3px #000; }
+.exclk-day { font-size: 15px; color: #e8d9c0; letter-spacing: 2px; }
+.exclk-ticks { color: #c9544a; letter-spacing: 2px; font-size: 10px; }
+.exclk-left { opacity: .75; }
+.exclk-warn { color: #e0707a; animation: exwarn-pulse 2.2s ease-in-out infinite; }
+@keyframes exwarn-pulse { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
+
+.exmap-edges { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.exedge { stroke: rgba(214, 196, 168, .28); stroke-width: .35; stroke-dasharray: 1.4 1.6; }
+.exedge.reach { stroke: rgba(240, 214, 165, .66); stroke-width: .5; stroke-dasharray: none; }
+
+.exmap-nodes { position: absolute; inset: 0; z-index: 2; }
+.exnode {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 54px; padding: 6px 8px; border-radius: 10px; cursor: default;
+  background: rgba(16, 11, 10, .55); border: 1px solid rgba(200, 176, 140, .22);
+  backdrop-filter: blur(2px); transition: border-color .25s, box-shadow .25s, opacity .25s;
+}
+.exnode .exicon { font-size: 17px; line-height: 1; filter: drop-shadow(0 2px 3px #000); }
+.exnode .exname { font-size: 11px; color: #ddcbac; letter-spacing: 1px; text-shadow: 0 1px 3px #000; white-space: nowrap; }
+.exnode .excost { font-size: 10px; color: #a8946f; }
+.exnode.reach { cursor: pointer; border-color: rgba(240, 214, 165, .6); box-shadow: 0 0 14px rgba(240, 200, 130, .18); animation: exnode-breath 2.6s ease-in-out infinite; }
+.exnode.reach:hover { border-color: #f0d6a5; box-shadow: 0 0 20px rgba(240, 200, 130, .4); }
+@keyframes exnode-breath { 0%, 100% { box-shadow: 0 0 10px rgba(240, 200, 130, .12); } 50% { box-shadow: 0 0 20px rgba(240, 200, 130, .3); } }
+.exnode.here { border-color: #e8c87e; background: rgba(40, 28, 16, .72); box-shadow: 0 0 18px rgba(232, 200, 126, .35); }
+.exnode.ghost { opacity: .55; border-style: dashed; }
+.exnode.cleared .exicon { filter: grayscale(.8) brightness(.7); }
+.exnode.cleared .exname { color: #8d7f68; }
+.exnode.closed { opacity: .42; border-color: rgba(160, 50, 50, .5); background: rgba(40, 10, 10, .6); pointer-events: none; }
+.exnode.closed::after {
+  content: "封"; position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 18px; color: #c9544a; text-shadow: 0 0 8px rgba(180, 40, 40, .8); letter-spacing: 0;
+}
+.exrisk {
+  position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 10px; color: #ffe9e2;
+  border: 1px solid rgba(255, 120, 100, .6); background: rgba(120, 22, 18, .92);
+  box-shadow: 0 0 10px rgba(200, 50, 40, .55); animation: exwarn-pulse 1.8s ease-in-out infinite;
+}
+.exrisk.shadow { background: rgba(120, 70, 18, .92); border-color: rgba(255, 180, 100, .55); box-shadow: 0 0 10px rgba(200, 130, 40, .5); }
+.exrisk.lair { animation: none; opacity: .92; }
+.exrisk.boss { background: rgba(70, 14, 40, .95); border-color: rgba(220, 100, 160, .55); animation: none; }
+
+.expawn {
+  position: absolute; z-index: 3; width: 40px; height: 40px; border-radius: 50%;
+  transform: translate(-50%, -120%);
+  border: 2px solid #e8c87e; overflow: hidden; background: #1c130c;
+  box-shadow: 0 0 14px rgba(232, 200, 126, .45), 0 4px 10px rgba(0, 0, 0, .6);
+  transition: left 1.1s cubic-bezier(.45, .05, .35, 1), top 1.1s cubic-bezier(.45, .05, .35, 1);
+  pointer-events: none;
+}
+.expawn img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.expawn.foe { border-color: #c9544a; box-shadow: 0 0 16px rgba(200, 60, 50, .6); transform: translate(-50%, -120%) scale(.92); }
+
+.exmap-notes {
+  position: absolute; left: 50%; bottom: 86px; transform: translateX(-50%); z-index: 6;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: min(620px, 88vw); pointer-events: none;
+}
+/* L3 洞窟时字幕浮在舞台下沿（面板之上）——远声与观战见闻都看得见 */
+.exmap-overlay:has(.exmap-scene:not([hidden])) .exmap-notes { bottom: calc(42% + 14px); }
+.exmap-note {
+  padding: 7px 16px; border-radius: 18px; font-size: 13px; line-height: 1.55;
+  color: #e6d8c2; background: rgba(14, 10, 9, .82); border: 1px solid rgba(200, 176, 140, .25);
+  text-shadow: 0 1px 2px #000; animation: exnote-in .5s ease both; transition: opacity .9s;
+}
+.exmap-note.warn { color: #f0b9ad; border-color: rgba(220, 110, 90, .5); background: rgba(40, 12, 10, .88); }
+.exmap-note.good { color: #cfe6c0; border-color: rgba(140, 200, 120, .4); }
+.exmap-note.desc { color: #d8c5a5; font-size: 12.5px; opacity: .95; }
+.exmap-note.fade { opacity: 0; }
+@keyframes exnote-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.exmap-actions {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 6;
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 94vw;
+}
+.exmap-actions .btn { box-shadow: 0 4px 14px rgba(0, 0, 0, .5); }
+
+/* ---------- L3 轴式洞窟：探索格=战斗格（镜头跟随的长轴） ---------- */
+.exmap-scene { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; }
+.exmap-scene[hidden] { display: none; }
+.exmap-scene-stage { position: relative; flex: 1 1 58%; min-height: 0; overflow: hidden; }
+.exmap-scene-stage::after {
+  /* 潭岸地面：水光与雾气压住立绘脚跟（踩实地面） */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 92px; pointer-events: none; z-index: 2;
+  background: linear-gradient(180deg, transparent, rgba(28, 12, 12, .5) 45%, rgba(16, 7, 7, .85));
+}
+.exmap-scene-stage::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse at 50% 30%, transparent 40%, rgba(10, 5, 5, .5) 100%);
+}
+.cave-track {
+  position: absolute; left: 0; bottom: 0; top: 0; z-index: 3;
+  transition: transform 1s cubic-bezier(.42, .05, .3, 1);
+  will-change: transform;
+}
+/* 长卷背景：跟着镜头退行（比脚下慢半拍的视差=纵深）——背景在动，证明人在走 */
+.cave-pano {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 150%;
+  background-size: cover; background-position: center bottom;
+  transition: left 1s cubic-bezier(.42, .05, .3, 1);
+  z-index: 0; pointer-events: none;
+  filter: brightness(.82) saturate(.95);
+}
+/* 远光：战团在镜头外时画框右缘的微光——先见其光，后见其人 */
+.cave-far-glow {
+  position: absolute; right: 0; top: 12%; bottom: 18%; width: 86px; z-index: 4;
+  display: flex; align-items: center; justify-content: flex-end; pointer-events: none;
+}
+.cave-far-glow i {
+  position: absolute; inset: 0;
+  background: linear-gradient(270deg, rgba(196, 120, 224, .26), rgba(196, 120, 224, .07) 55%, transparent 85%);
+  animation: farglow-pulse 2.8s ease-in-out infinite;
+}
+.cave-far-glow span {
+  writing-mode: vertical-rl; font-size: 11px; color: #e0c8ee; letter-spacing: 4px;
+  margin-right: 12px; text-shadow: 0 0 10px rgba(190, 120, 230, .9), 0 1px 3px #000; opacity: .9;
+}
+@keyframes farglow-pulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+.cave-track .axis-lane { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; height: 46px; z-index: 3; }
+.cave-track .axis-units { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.cave-track .axis-units .axis-unit { pointer-events: none; }
+/* 走格是"走出来"的：洞窟内单位左右滑步比战斗内更沉（一步一步踏过去） */
+.cave-track .axis-unit { bottom: 52px; transition: left .95s cubic-bezier(.5, .08, .35, 1); }
+.cave-u .au-img { max-height: 17vh; }
+.cave-beast .au-img { max-height: 22vh; filter: drop-shadow(0 0 22px rgba(160, 40, 40, .45)) drop-shadow(0 10px 14px rgba(0, 0, 0, .7)); }
+.cave-u.fighting { animation: exsc-fight 1.8s ease-in-out infinite; }
+@keyframes exsc-fight { 0%, 100% { margin-left: 0; } 30% { margin-left: 8px; } 60% { margin-left: -5px; } }
+/* 洞窟轴格：暗水墨刻度，比战斗格更沉 */
+.cave-lane .axis-cell .dot { background: rgba(214, 196, 168, .22); }
+.cave-lane .axis-cell.can-move .dot { background: rgba(150, 220, 170, .55); }
+/* 朝向镜像：素材朝向与"面向对手"不符时翻转 */
+.au-img.flipped-img, .au-img.flipped { transform: scaleX(-1); }
+
+/* ===== 空层（2.5D）：凌空单位与飞天镜头 ===== */
+/* 凌空（纵深语言 v3——depth-design D2）：高度=境界档（airGrade），与"远"（排）彻底分家。
+ * 三件套：遁光踏足 + 影子留在地线上（基础 ::after 吃 --ay 自动归地）+ 垂直光柱（高度的脐带）。
+ * "韩立飞得比南陇侯高"——档位差同屏可见，高度即境界的俯视 */
+.axis-unit.airborne { --ay: -96px; z-index: 7; }
+.axis-unit.airborne.air-2 { --ay: -126px; }
+.axis-unit.airborne.air-3 { --ay: -156px; }
+.axis-unit.airborne .au-img {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)) drop-shadow(0 0 16px rgba(140,210,250,.22));
+  animation: portraitIn .4s ease, hoverFloat 2.6s ease-in-out .4s infinite;
+}
+/* 垂直光柱（元素自带两枚伪元素：柱体+遁光踏足）——从脚下遁光垂到地面影子，
+ * 人与影一线相连，"悬在何处的上空"一眼即知（::before 槽位还给接触影） */
+.axis-unit .air-pillar { display: none; }
+.axis-unit.airborne .air-pillar {
+  display: block; position: absolute; left: 50%; width: 2px;
+  bottom: calc(var(--feet, 40px) + var(--ay, 0px) + 8px);
+  height: calc(-1 * var(--ay, 0px) - 12px);
+  translate: -50% 0; pointer-events: none; z-index: -1;
+  background: linear-gradient(180deg, rgba(150,225,255,.34), rgba(150,225,255,.04));
+}
+/* 遁光踏足：御器悬空的灵光平台（修仙者不是浮空，是踏光而立）——挂在光柱顶端=脚底 */
+.axis-unit.airborne .air-pillar::before {
+  content: ""; position: absolute; left: 50%; top: -9px; width: 88px; height: 15px;
+  translate: -50% 0; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 58%, rgba(150,225,255,.55), rgba(110,195,240,.2) 55%, transparent 78%);
+  filter: blur(2.5px); animation: dunGlow 1.9s ease-in-out infinite;
+}
+@keyframes dunGlow { 0%, 100% { opacity: .6; scale: .9 1; } 50% { opacity: 1; scale: 1.1 1; } }
+@keyframes hoverFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -9px; } }
+/* 镜头公式改走 --uscale（只缩人不缩场，见 .au-img）——整场几何缩放已废：
+ * scale 场会把单位/血条/雾柱缩成一块"悬空矩形"，边缘与底图割裂出黑框（v85 教训） */
+#axis-field { transition: transform .6s ease; transform-origin: 50% 78%; }
+#axis-field.sky-view .axis-unit .au-img { filter: drop-shadow(0 10px 14px rgba(0,0,0,.5)); }
+
+/* ===== 二次确认（群战择敌/择地）：法术先上膛，再点目标 ===== */
+.spell-btn.armed {
+  border-color: var(--gold-bright, #ecd9a8) !important;
+  box-shadow: 0 0 12px rgba(236,217,168,.5), inset 0 0 10px rgba(236,217,168,.12);
+  animation: armedPulse 1s ease-in-out infinite alternate;
+}
+@keyframes armedPulse { from { box-shadow: 0 0 6px rgba(236,217,168,.35); } to { box-shadow: 0 0 16px rgba(236,217,168,.7); } }
+/* 择敌：可选目标灵光勾边脉动（点立绘即放） */
+.axis-unit.targetable { cursor: pointer; }
+.axis-unit.targetable .au-img {
+  filter: drop-shadow(0 12px 18px rgba(0,0,0,.66)) drop-shadow(0 0 14px rgba(236,217,168,.75));
+  animation: targetGlow .9s ease-in-out infinite alternate;
+}
+@keyframes targetGlow {
+  from { filter: drop-shadow(0 12px 18px rgba(0,0,0,.66)) drop-shadow(0 0 8px rgba(236,217,168,.45)); }
+  to   { filter: drop-shadow(0 12px 18px rgba(0,0,0,.66)) drop-shadow(0 0 18px rgba(236,217,168,.95)); }
+}
+/* 择地：射程内步位亮金圈（点格布阵） */
+.axis-cell.cast-cell { pointer-events: auto; cursor: pointer; }
+.axis-cell .cast-mark {
+  position: absolute; left: 50%; bottom: 12px; width: 34px; height: 13px;
+  translate: -50% 0; border-radius: 50%; pointer-events: none;
+  border: 1.5px solid rgba(236,217,168,.75);
+  background: radial-gradient(ellipse, rgba(236,217,168,.28), transparent 72%);
+  animation: armedPulse 1.1s ease-in-out infinite alternate;
+}
+
+/* ===== 特效画布（fx.js）：铺满战场、永不挡点击 ===== */
+.fx-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 26; pointer-events: none;
+}
+/* 震屏：天雷/重击的物理反馈（位移量由 --fx-shake 注入） */
+@keyframes fxShake {
+  0%, 100% { translate: 0 0; }
+  18% { translate: calc(var(--fx-shake, 8px) * -1) 2px; }
+  38% { translate: var(--fx-shake, 8px) -2px; }
+  58% { translate: calc(var(--fx-shake, 8px) * -.55) 1px; }
+  78% { translate: calc(var(--fx-shake, 8px) * .3) -1px; }
+}
+.fx-shaking { animation: fxShake .4s ease-out; }
+/* 镜头轨道（战斗宽轴通用） */
+.cam-track { transition: transform .8s cubic-bezier(.4, .05, .3, 1), width .3s; }
+/* 洞窟热点（轴格上的采集物）：灵光底座，走近才亮 */
+.cave-hot {
+  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 21px; opacity: .65; pointer-events: none;
+  filter: drop-shadow(0 2px 4px #000) saturate(.7);
+}
+.cave-hot::after {
+  content: ""; position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
+  width: 30px; height: 9px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(200, 230, 170, .28), transparent 70%);
+}
+.cave-hot i { font-style: normal; font-size: 10px; color: #cdb89a; white-space: nowrap; text-shadow: 0 1px 3px #000; letter-spacing: .5px; }
+.cave-hot.near { opacity: 1; pointer-events: auto; cursor: pointer; filter: drop-shadow(0 2px 4px #000) drop-shadow(0 0 10px rgba(190, 240, 170, .5)); animation: cavehot-bob 2.2s ease-in-out infinite; }
+.cave-hot.near i { color: #dff0c8; }
+.cave-hot.near::after { background: radial-gradient(ellipse, rgba(200, 240, 170, .55), transparent 70%); }
+.cave-hot.near:hover { transform: translateX(-50%) scale(1.18); }
+@keyframes cavehot-bob { 0%, 100% { margin-bottom: 0; } 50% { margin-bottom: 4px; } }
+.cave-prep-mark {
+  position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10.5px; color: #cfe2f0; background: rgba(30, 46, 60, .9);
+  border: 1px solid rgba(140, 190, 220, .55); box-shadow: 0 0 10px rgba(110, 170, 210, .4);
+}
+.axis-cell.can-place { pointer-events: auto; cursor: pointer; }
+.axis-cell.can-place .dot { background: #9fc8e8; box-shadow: 0 0 12px rgba(140, 190, 230, .7); animation: exnode-breath 1.6s ease-in-out infinite; }
+.exsc-sub { display: block; font-size: 11px; color: #a89a82; letter-spacing: 0; margin-top: 3px; }
+.exsc-hot.selecting { border-color: #9fc8e8; background: rgba(28, 44, 58, .75); box-shadow: 0 0 12px rgba(140, 190, 230, .35); }
+.exmap-scene-panel {
+  flex: 0 0 auto; max-height: 46%; overflow-y: auto; z-index: 5; position: relative;
+  background:
+    linear-gradient(180deg, rgba(232, 200, 126, .07), transparent 3px),
+    linear-gradient(180deg, rgba(14, 10, 9, .92), rgba(9, 6, 5, .97));
+  border-top: 1px solid rgba(232, 200, 126, .35);
+  box-shadow: 0 -12px 30px rgba(0, 0, 0, .55);
+  padding: 12px 18px 14px;
+}
+.exmap-scene-panel::before {
+  content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #e8c87e, transparent);
+  box-shadow: 0 0 12px rgba(232, 200, 126, .5);
+}
+.exsc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 9px; }
+.exsc-title { font-family: var(--font-title, serif); font-size: 17px; letter-spacing: 4px; color: #e8c87e; text-shadow: 0 0 14px rgba(232, 200, 126, .25); }
+.exsc-sub { display: block; font-size: 11px; color: #a08f74; letter-spacing: .5px; margin-top: 4px; }
+.exsc-p { font-size: 13.5px; line-height: 1.78; color: #d9cab0; margin: 0 0 7px; }
+.exsc-say { font-size: 13.5px; line-height: 1.7; color: #bcd6ef; margin: 4px 0 7px; }
+.exsc-say.blood { color: #f0a9a0; }
+.exsc-aside { font-size: 12.5px; line-height: 1.7; color: #a89a82; font-style: italic; margin: 2px 0 8px; }
+/* 惊动仪表：竖匾式（贪与稳的脉搏） */
+.exsc-expose {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 7px;
+  padding: 6px 10px; border-radius: 9px;
+  background: rgba(30, 16, 13, .6); border: 1px solid rgba(190, 110, 90, .3);
+}
+.exsc-expose.danger { border-color: rgba(230, 100, 80, .65); animation: exwarn-pulse 1.8s ease-in-out infinite; }
+.exsc-explabel { font-size: 10px; line-height: 1.15; color: #cf9d8e; letter-spacing: 0; }
+.exsc-expbar { width: 110px; height: 8px; border-radius: 5px; background: rgba(255, 255, 255, .07); overflow: hidden; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .5); }
+.exsc-expbar i { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, #7a4029, #c9544a, #f0734f); transition: width .45s cubic-bezier(.3, .8, .4, 1); box-shadow: 0 0 8px rgba(220, 90, 60, .55); }
+.exsc-expnum { font-size: 14px; color: #eba78f; font-variant-numeric: tabular-nums; font-family: var(--font-title, serif); }
+.exsc-expnum i { font-style: normal; font-size: 10px; color: #97705f; }
+/* 布置符牌：印章+名目+落点（韩立的家底，一张一张摆出来） */
+/* 布置符牌：一排横滑（单屏铁律——页面不竖涨，划的是排内） */
+.exsc-preps {
+  display: flex; gap: 8px; margin: 4px 0;
+  overflow-x: auto; padding-bottom: 3px; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.exsc-preps::-webkit-scrollbar { display: none; }
+.exsc-preps .prep-card { flex: 0 0 228px; min-width: 228px; }
+.prep-card {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 8px 10px; border-radius: 10px; cursor: pointer;
+  color: #e3d2b4; border: 1px solid rgba(150, 180, 205, .28);
+  background: linear-gradient(135deg, rgba(26, 36, 46, .55), rgba(16, 20, 26, .65));
+  transition: border-color .22s, box-shadow .22s, transform .15s;
+}
+.prep-card:hover:not(:disabled) { border-color: #9fc8e8; box-shadow: 0 0 14px rgba(130, 180, 220, .25); transform: translateY(-1px); }
+.prep-card:disabled { cursor: default; }
+.prep-card.lack { opacity: .42; filter: saturate(.4); }
+.prep-card.placed { border-color: rgba(140, 200, 150, .5); background: linear-gradient(135deg, rgba(22, 38, 28, .55), rgba(14, 22, 17, .65)); }
+.prep-card.selecting { border-color: #cfe6f8; box-shadow: 0 0 18px rgba(150, 200, 240, .45); animation: exnode-breath 1.6s ease-in-out infinite; }
+.prep-seal {
+  flex: 0 0 34px; width: 34px; height: 34px; border-radius: 8px;
+  display: grid; place-items: center;
+  font-family: var(--font-title, serif); font-size: 17px; color: #dceaf5;
+  background: radial-gradient(circle at 35% 30%, rgba(90, 130, 165, .55), rgba(34, 50, 66, .8));
+  border: 1px solid rgba(160, 200, 230, .4);
+  box-shadow: inset 0 1px 4px rgba(255, 255, 255, .12), 0 2px 6px rgba(0, 0, 0, .45);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+}
+.prep-card.placed .prep-seal { color: #d8f0dd; background: radial-gradient(circle at 35% 30%, rgba(90, 150, 105, .5), rgba(30, 52, 36, .8)); border-color: rgba(150, 210, 160, .45); }
+.prep-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.prep-name { font-size: 13px; letter-spacing: 1px; color: #e9dcc2; }
+.prep-where { font-style: normal; margin-left: 7px; font-size: 10.5px; color: #9fd0aa; letter-spacing: 0; }
+.prep-eff { font-size: 10.5px; color: #92aabb; line-height: 1.45; white-space: normal; }
+.prep-card.placed .prep-eff { color: #8fae95; }
+.prep-tag { flex: 0 0 auto; font-size: 11px; color: #b9a886; font-variant-numeric: tabular-nums; }
+.prep-card.placed .prep-tag { color: #9fd0aa; font-size: 14px; }
+/* 出手即开战手牌：射程够才亮——攻击常驻，第一招就是宣战 */
+.exsc-hand { margin: 6px 0 0; }
+.exsc-hand-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+.eh-title { font-size: 12px; letter-spacing: 2px; color: #d8b88a; }
+.eh-dist { font-size: 11px; color: #9fd0aa; letter-spacing: .5px; }
+.eh-dist.alert { color: #e8a08e; }
+.exsc-hand-row {
+  display: flex; gap: 7px; overflow-x: auto; padding-bottom: 3px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.exsc-hand-row::-webkit-scrollbar { display: none; }
+.hand-card {
+  flex: 0 0 auto; min-width: 92px; padding: 7px 11px; border-radius: 9px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: #ffe3cf; font-family: inherit;
+  background: linear-gradient(135deg, rgba(110, 38, 26, .8), rgba(64, 20, 14, .9));
+  border: 1px solid rgba(235, 130, 100, .5);
+  box-shadow: 0 0 12px rgba(200, 70, 45, .22), inset 0 1px 3px rgba(255, 200, 170, .15);
+  transition: box-shadow .2s, transform .12s;
+}
+.hand-card b { font-size: 13px; letter-spacing: 1px; font-weight: 600; white-space: nowrap; }
+.hand-card i { font-style: normal; font-size: 10px; color: #f0bfa6; opacity: .85; }
+.hand-card u { text-decoration: none; font-size: 9.5px; color: #c9a08e; white-space: nowrap; }
+.hand-card:hover:not(:disabled) { box-shadow: 0 0 20px rgba(220, 90, 55, .45); transform: translateY(-1px); }
+.hand-card.off {
+  cursor: not-allowed; color: #9a8a7a; opacity: .62;
+  background: rgba(30, 22, 18, .6); border-color: rgba(150, 120, 100, .25); box-shadow: none;
+}
+.hand-card.off b { font-weight: 400; }
+.hand-card.treasure { border-color: rgba(226, 194, 119, .55); background: linear-gradient(135deg, rgba(96, 74, 26, .8), rgba(56, 42, 14, .9)); }
+.hand-card.treasure:hover:not(:disabled) { box-shadow: 0 0 20px rgba(226, 194, 119, .45); }
+
+/* 动手钮：战书规格（最重的一颗按钮） */
+.exsc-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; align-items: stretch; }
+.cave-fight-btn {
+  flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 11px 18px; border-radius: 11px; cursor: pointer;
+  font-size: 14.5px; letter-spacing: 1.5px; color: #ffe9d8;
+  background: linear-gradient(135deg, rgba(120, 36, 26, .85), rgba(70, 18, 14, .92));
+  border: 1px solid rgba(235, 130, 100, .55);
+  box-shadow: 0 0 18px rgba(200, 70, 45, .3), inset 0 1px 4px rgba(255, 200, 170, .18);
+  transition: box-shadow .25s, transform .15s;
+}
+.cave-fight-btn:hover { box-shadow: 0 0 28px rgba(220, 90, 55, .5), inset 0 1px 4px rgba(255, 200, 170, .25); transform: translateY(-1px); }
+/* 偷袭态：未被察觉时的攻击常驻——潜行绿，与"迎战红"一眼分明 */
+.cave-fight-btn.sneak {
+  background: linear-gradient(135deg, rgba(26, 74, 48, .88), rgba(12, 40, 26, .94));
+  border-color: rgba(120, 220, 160, .5);
+  box-shadow: 0 0 18px rgba(70, 190, 120, .28), inset 0 1px 4px rgba(190, 255, 215, .15);
+}
+.cave-fight-btn.sneak:hover { box-shadow: 0 0 28px rgba(80, 210, 130, .45), inset 0 1px 4px rgba(190, 255, 215, .22); }
+.cave-fight-btn.sneak .cfb-seal {
+  background: radial-gradient(circle at 35% 30%, rgba(80, 200, 130, .9), rgba(20, 80, 45, .95));
+  border-color: rgba(160, 255, 200, .6); box-shadow: 0 0 10px rgba(80, 210, 130, .6);
+}
+/* 洞窟无缝开战：镜头一沉（探索拉远→战斗推近）——是镜头在动，不是换场景 */
+.combat-overlay.seamless-in .axis-field { animation: seamless-zoom .8s cubic-bezier(.3, .7, .25, 1) both; }
+@keyframes seamless-zoom { from { transform: scale(.88); } to { transform: none; } }
+/* 战斗版远端点名：锁定目标在镜头外——画框边缘亮名字，它在那头没丢 */
+.fight-far-cue {
+  position: absolute; right: 8px; top: 38%; z-index: 5; pointer-events: none;
+  padding: 5px 9px; border-radius: 9px; font-size: 11.5px; letter-spacing: 1px;
+  color: #f0c8b8; background: rgba(40, 12, 10, .78); border: 1px solid rgba(220, 110, 90, .45);
+  text-shadow: 0 1px 3px #000; animation: farglow-pulse 2.2s ease-in-out infinite;
+}
+.fight-far-cue.left { right: auto; left: 8px; }
+.cfb-seal {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  font-family: var(--font-title, serif); font-size: 14px; color: #fff0e0;
+  background: radial-gradient(circle at 35% 30%, rgba(220, 90, 55, .9), rgba(120, 30, 20, .95));
+  border: 1px solid rgba(255, 170, 130, .6); box-shadow: 0 0 10px rgba(220, 90, 55, .6);
+}
+.cave-leave { flex: 0 0 auto; }
+
+@media (max-width: 760px) {
+  .exmap-title { font-size: 16px; letter-spacing: 3px; }
+  .exmap-clock { flex-wrap: wrap; gap: 6px; font-size: 11px; max-width: 60vw; justify-content: flex-end; }
+  .exnode { min-width: 44px; padding: 4px 6px; }
+  .exnode .exname { font-size: 10px; }
+  .expawn { width: 32px; height: 32px; }
+  .exmap-notes { bottom: 96px; }
+  .exmap-note { font-size: 12px; }
+  .exmap-scene-stage { flex-basis: 44%; }
+  .exmap-scene-panel { max-height: 58%; padding: 10px 12px 12px; }
+  .exsc-p { font-size: 12.5px; }
 }
 
 /* ============================================================

@@ -21,6 +21,7 @@
     nongfu: 1, sanxiu: 1, langzhong: 1, biaoshi: 1, langhao: 1,
     sanshu: 1, tienu: 1, mocaihuan: 1, wanxiaoshan: 1,
     wushishu: 1, luyunfeng: 1, yeshishu: 1, mashibo: 1, chenqiaoqian: 1,
+    nangongwan: 1, lihuayuan: 1, fengyue: 1, zhongwu: 1, hanyunzhi: 1,
   };
   // 已生成的表情变体：{ 人物id: { 表情名: 1 } }
   const EMOS = {
@@ -37,10 +38,30 @@
     qingniu: { p: 1 }, road: { p: 1 }, shanmen: { p: 1 }, miju: { p: 1 },
     jiayuan_city: { p: 1 }, tainan_fair: { p: 1 }, huangfeng_gate: { p: 1 },
     baiyao_yuan: {},
+    // 战斗场景底图（对阵轴战场：下半幅开阔地面，横版专用）
+    bt_forest: {}, bt_road: {}, bt_valley: {}, bt_night: {},
+    // 血色禁地与地火之屋
+    xueshi_jindi: {}, dihuo_wu: {},
+    // 长卷全景（21:9 横向卷轴底图——镜头横移时背景跟着退，探索轴/战斗轴共用）
+    pano_dongku: {}, pano_xueshi: {},
+  };
+
+  // 战斗全身立绘（battlers/：轴上单位图——妖兽/人形敌/剧情人物战斗姿态）
+  // 战斗全身立绘注册：face = 素材朝向（l/r/c）——渲染层按"面向对手"决定是否镜像
+  // v83 逐张目检校准：兽类素材头朝右(r)；正面构图(c)永不镜像；南宫婉原生朝左(l)。
+  // _fly=凌空飞姿变体（v87，airborne 时自动换用——双脚离地前后错开、衣袂后卷）
+  const BATTLERS = {
+    bt_wolf: { face: "r" }, bt_chimu: { face: "r" }, bt_baihu: { face: "r" }, bt_wugong: { face: "r" },
+    bt_bandit: { face: "c" }, bt_wuren: { face: "l" }, bt_sanxiu: { face: "c" },
+    bt_hanli: { face: "r" }, bt_hanli_fly: { face: "r" },
+    bt_luyunfeng: { face: "c" }, bt_jinguang: { face: "c" },
+    bt_modafu: { face: "c" }, bt_tienu: { face: "c" }, bt_wanxiaoshan: { face: "c" },
+    bt_mojiao: { face: "l" }, bt_nangongwan: { face: "l" },   // 南宫婉飞姿=复用站姿（用户裁决：v2 与站姿无异+抠图白圈，弃）
+    bt_dujiao: { face: "l" },
   };
 
   // 剧情 CG（p:1 = 竖版已生成）
-  const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 } };
+  const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 }, mojiao: {} };
 
   // 舆图
   const MAPS = { tiannan_map: 1 };
@@ -53,7 +74,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 9,
+    ASSET_VER: 14,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 
@@ -70,16 +91,22 @@
     },
     has(id) { return !!(PORTRAITS[id] || SCENES[id] || MAPS[id]); },
 
-    // 场景图：竖屏优先竖版
-    sceneUrl(id) {
+    // 场景图：竖屏优先竖版；opts.landscape=true 强制横版（战斗轴是横向战场，横图才铺得开）
+    sceneUrl(id, opts) {
       const def = SCENES[id];
       if (!def) return null;
-      if (def.p && isPortraitScreen()) return this._v(`assets/scenes/${id}_p.png`);
+      if (def.p && isPortraitScreen() && !(opts && opts.landscape)) return this._v(`assets/scenes/${id}_p.png`);
       return this._v(`assets/scenes/${id}.png`);
     },
 
     // 地点配图：直接按地点 id 取图
-    locUrl(loc) { return loc ? this.sceneUrl(loc.id) : null; },
+    locUrl(loc, opts) { return loc ? this.sceneUrl(loc.id, opts) : null; },
+
+    // 战斗全身立绘（对阵轴单位图）
+    battlerUrl(id) { return BATTLERS[id] ? this._v(`assets/battlers/${id}.png`) : null; },
+    hasBattler(id) { return !!BATTLERS[id]; },
+    // 素材朝向（l/r/c）：渲染层按"面向对手"决定是否 scaleX(-1) 镜像
+    battlerFace(id) { return (BATTLERS[id] && BATTLERS[id].face) || "l"; },
 
     // 关键剧情 CG：竖屏优先竖版；未入库返回 null（演出回退到地点场景图）
     cgUrl(id) {

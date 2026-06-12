@@ -544,6 +544,7 @@ const Engine = {
     else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
     else if (action === "travel") { UI.openTravel(); return; }
     else if (action === "wujian") { this.doWujian(); return; }
+    else if (action === "liandan") { this.lianZhujiDan(); return; }
 
     this.checkLifespan();
     this.checkStory();
@@ -716,6 +717,10 @@ const Engine = {
   WANBAO_GOODS: [
     { id: "huoshe_fu", price: 2, note: "比小会还齐" },
     { id: "hanbing_fu", price: 2, note: "" },
+    { id: "dingshen_fu", price: 3, note: "定身一瞬，胜负已分" },
+    { id: "huiyuan_dan", price: 3, note: "战中回元的那口气" },
+    { id: "zhenqi_kunzu", price: 3, note: "阵法轴 · 挡突进" },
+    { id: "zhenqi_juling", price: 3, note: "阵法轴 · 久战续航" },
     { id: "fu_zhi", price: 1, n: 5, note: "制符根基" },
     { id: "ningshen_dan", price: 2, note: "凝神静心" },
     { id: "huixue_dan", price: 1, note: "伤药常备" },
@@ -798,17 +803,19 @@ const Engine = {
     }
   },
 
-  /* -------- 万宝楼收购（千年灵草=买法器的本钱——小绿瓶的奇迹变现）-------- */
+  /* -------- 万宝楼收购：千年灵草/灵药 + 妖材（妖材经济 v1——皮骨牙丹皆是钱）-------- */
   wanbaoSell(itemId) {
     const s = State.data;
     const PRICES = { qiannian_lingcao: 22, lingyao_dan: 2 };
-    const p = PRICES[itemId];
+    const item = DATA.items[itemId];
+    const p = PRICES[itemId] != null ? PRICES[itemId] : (item && item.sell) || 0;
     if (!p || !State.take(itemId, 1)) { this.toast("无此货可售", true); return; }
     State.give("lingshi", p);
-    const item = DATA.items[itemId];
     if (itemId === "qiannian_lingcao") {
       this.log(`【万宝楼】掌柜捧着那棵「千年灵草」手都在抖，二话不说点出 ${p} 枚灵石：「小友若还有，老朽照单全收！」`, "good");
       this.addMilestone("千年灵草换灵石：小绿瓶的奇迹第一次变现", "bigitem");
+    } else if (itemId === "yaodan_1") {
+      this.log(`【万宝楼】掌柜捏着那枚「一阶妖丹」对光一照，眼睛眯成了缝：「好丹！丹房炼器房都抢着要。」灵石+${p}。`, "good");
     } else {
       this.log(`【万宝楼】售出「${item.name}」，灵石+${p}。`, "event");
     }
@@ -1050,6 +1057,12 @@ const Engine = {
         pendingBeast = { kind: "beast", enemy: ev.enemy, boss: ev.boss, bossLoot: ev.bossLoot };
       } else if (ev.type === "mystery") {
         pendingMystery = true;
+      } else if (ev.type === "timeup") {
+        // 限时秘境：禁制闭合，强制送出（血色禁地五日之限）
+        UI.renderExplore(s.explore);
+        this.log("【血色禁地】五日之限已至，血幕轰然闭合——一股巨力裹着你向外抛去。袋里装了多少，就是多少了。", "event");
+        this.finishExplore(false);
+        return;
       } else if (ev.type === "exit") {
         UI.renderExplore(s.explore);
         this.finishExplore(true);
@@ -1070,6 +1083,12 @@ const Engine = {
             this._exploreBossLoot[k] = range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1));
           });
           this.log("【妖兽王】盘踞深处的凶物被你惊动——这是本地最凶的一战，也是最肥的一笔！", "bad");
+        }
+        // 并肩同道（血色禁地·墨蛟之战）：深潭之主现身时，她也到了
+        const siteCfg = DATA.exploreSites[s.explore.siteId] || {};
+        if (pendingBeast.boss && siteCfg.bossSide === "nangongwan" && !s.flags.mojiao_slain) {
+          this._sideOverride = this._nangongwanAlly();
+          this.log("【并肩】血潭边早有一道白衣身影——掩月宗南宫婉，竟也循着主药到了此处。墨蛟暴起的刹那，你们背靠了背。", "event");
         }
         UI.closeExplore();
         this.startEncounterFight(pendingBeast.enemy);
@@ -1117,6 +1136,481 @@ const Engine = {
     this.checkLifespan();
     this.checkStory();
     if (!s.pendingEvent && !s.combat && !this._pendingFortune) this._maybeInteraction();
+    State.save();
+    UI.renderAll();
+  },
+
+  /* ===========================================================
+   *  箱庭探索 v3 —— L1 舆图 + 嵌套栈（见 js/exploremap.js）
+   *  血色禁地：五日灾厄钟 / 封岳巡逻 / 血幕收缩 / 墨蛟洞（L3）
+   * =========================================================== */
+  enterJindiMap() {
+    const s = State.data;
+    if (s.combat) { this.toast("酣战之中，无暇他顾"); return; }
+    s.exmap = ExploreMap.start("xueshi_l1", { flags: s.flags });
+    State.setFlag("jindi_entered");
+    this.log("入禁那日，三十人鱼贯踏入血幕。赤红的雾气吞掉每个人的身影——五日之内，生死各安天命。", "event");
+    if (typeof UI !== "undefined" && UI.openExmap) UI.openExmap();
+    State.save();
+  },
+
+  // 统一解释舆图事件（travel/stay/gather/readLore 共用）
+  _exmapEvents(events) {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    for (const ev of events) {
+      if (ev.type === "note") {
+        if (UI.exmapNote) UI.exmapNote(ev.text);
+      } else if (ev.type === "warning") {
+        if (UI.exmapNote) UI.exmapNote(ev.text, "warn");
+      } else if (ev.type === "curfew") {
+        this.log(`【血色禁地】${ev.note}`, "bad");
+        if (UI.exmapNote) UI.exmapNote(ev.note, "warn");
+      } else if (ev.type === "lore") {
+        this.log(`【血色禁地】${ev.text}`, "good");
+        if (UI.exmapNote) UI.exmapNote("残阵之眼睁开——全图轮廓与那道杀气的路线，尽收识海。", "good");
+      } else if (ev.type === "loot") {
+        const names = Object.entries(ev.loot).map(([k, n]) => `${DATA.items[k] ? DATA.items[k].name : k}×${n}`).join("、");
+        this.toast(`采得：${names}`);
+        if (typeof Sfx !== "undefined") Sfx.play("pick");
+      } else if (ev.type === "encounter") {
+        if (UI.renderExmap) UI.renderExmap();
+        this._exmapFight(ev);
+        return;
+      } else if (ev.type === "timeup") {
+        this.finishExmap("timeup");
+        return;
+      } else if (ev.type === "arrive") {
+        this._exmapArrive(ev);
+      }
+    }
+    if (UI.renderExmap) UI.renderExmap();
+    State.save();
+  },
+
+  exmapTravel(nodeId) {
+    const s = State.data;
+    if (!s.exmap) return;
+    const r = ExploreMap.travel(s.exmap, nodeId);
+    if (!r.ok) { this.toast(r.reason, true); return; }
+    this._exmapEvents(r.events);
+  },
+
+  // 驻守：耗钟等人/恢复。庇护岩穴恢复更厚（遮息阵下打坐）
+  exmapStay(ticks) {
+    const s = State.data;
+    if (!s.exmap) return;
+    const f = ExploreMap.cur(s.exmap);
+    const map = ExploreMap.mapOf(f);
+    const node = map.nodes[f.node];
+    const n = ticks || 1;
+    const realm = State.realm();
+    if (node && node.kind === "rest") {
+      s.hp = clamp(s.hp + Math.round(s.hpMax * 0.12 * n), 1, s.hpMax);
+      s.spirit = clamp(s.spirit + Math.round(realm.spMax * 0.18 * n), 0, realm.spMax);
+      this.toast("遮息阵下打坐调息——气血灵力小复");
+    } else {
+      s.spirit = clamp(s.spirit + Math.round(realm.spMax * 0.06 * n), 0, realm.spMax);
+    }
+    const r = ExploreMap.stay(s.exmap, n);
+    this._exmapEvents(r.events);
+  },
+
+  exmapGather() {
+    const s = State.data;
+    if (!s.exmap) return;
+    const r = ExploreMap.gather(s.exmap);
+    if (!r.ok) { this.toast(r.reason, true); return; }
+    this._exmapEvents(r.events);
+  },
+
+  exmapReadLore() {
+    const s = State.data;
+    if (!s.exmap) return;
+    const r = ExploreMap.readLore(s.exmap);
+    if (!r.ok) { this.toast(r.reason, true); return; }
+    this.writeLedger("jindi_guzhen", "血色禁地中借古阵残纹窥得全局，封岳的猎杀路线尽在掌握");
+    this._exmapEvents(r.events);
+  },
+
+  // 到达节点：首访给场景描述；NPC 在场自动相遇
+  _exmapArrive(ev) {
+    const s = State.data, x = s.exmap;
+    const f = ExploreMap.cur(x);
+    const map = ExploreMap.mapOf(f);
+    const node = map.nodes[f.node];
+    if (!node) return;
+    if (ev.firstVisit && node.desc && UI.exmapNote) UI.exmapNote(node.desc, "desc");
+    // NPC 时间表：presence 区间内在场
+    if (node.kind === "npc" && node.presence) {
+      const ci = ExploreMap.clockInfo(x);
+      const here = ci.clock >= node.presence[0] && ci.clock < node.presence[1];
+      if (here && node.npc === "zhongwu") this._exmapZhongwu();
+      else if (here && node.npc === "hanyunzhi") this._exmapHanyunzhi();
+      else if (!here && UI.exmapNote) {
+        UI.exmapNote(node.npc === "zhongwu"
+          ? "灯架空着，摊主不在——许是时候未到，许是已经收摊。"
+          : "烈阳花将开未开，花圃里空无一人。（约的人，怕是还没到。）", "desc");
+      }
+    }
+  },
+
+  // 钟吾的摊：禁地里的黑市（地图情报=花钱版古阵）
+  _exmapZhongwu() {
+    const s = State.data, x = s.exmap;
+    if (!s.metNpcs.includes("zhongwu")) s.metNpcs.push("zhongwu");
+    const f = ExploreMap.cur(x);
+    const choices = [];
+    if (!f.intel.patrol_route) {
+      choices.push({ text: "买他的禁地舆图（灵石×8）", reopen: "zhongwu", effect: (st) => {
+        if (State.count("lingshi") < 8) return { text: "钟吾掂了掂你的钱袋，笑着摇头：「灵石不够，画押也不收。」", kind: "bad" };
+        State.take("lingshi", 8);
+        f.intel.patrol_route = true;
+        Object.keys(ExploreMap.mapOf(f).nodes).forEach(id => { f.visited[id] = f.visited[id] || "seen"; });
+        Engine.writeLedger("jindi_zhongwu_map", "血色禁地中重金购下钟吾手绘舆图——封岳的猎杀路线一目了然");
+        return { text: "钟吾摊开一张兽皮舆图：禁地全貌、药圃方位，连那道游弋的杀气走哪条路，都用朱砂标得明明白白。\n\n「那位『猎人』的脾性，我观察三天了。」他压低声音，「拿好。命比灵石值钱。」", kind: "good" };
+      }});
+    }
+    choices.push({ text: "血色主药×1 换回元丹×2", reopen: "zhongwu", effect: () => {
+      if ((x.bag.xueshi_zhuyao || 0) < 1 && State.count("xueshi_zhuyao") < 1) return { text: "你袋里还没有主药。钟吾耸耸肩：「空手套白狼，禁地里行不通。」", kind: "bad" };
+      if ((x.bag.xueshi_zhuyao || 0) >= 1) x.bag.xueshi_zhuyao -= 1; else State.take("xueshi_zhuyao", 1);
+      State.give("huiyuan_dan", 2);
+      return { text: "一手交药，一手交丹。钟吾的丹瓶在禁地里比外头贵三成——但灵力见底的时候，贵的是命。（回元丹×2）", kind: "good" };
+    }});
+    choices.push({ text: "灵石×5 换定身符×1", reopen: "zhongwu", effect: () => {
+      if (State.count("lingshi") < 5) return { text: "灵石不够。钟吾把符纸收了回去。", kind: "bad" };
+      State.take("lingshi", 5);
+      State.give("dingshen_fu", 1);
+      return { text: "「黄枫谷符堂的正货。」钟吾把符递来，「对上那位『猎人』，这张纸能换你一条命。」（定身符×1）", kind: "good" };
+    }});
+    choices.push({ text: "告辞", effect: () => ({ text: "钟吾朝你拱拱手：「五日之内，灯亮着我就在。——活着出去。」", kind: "sys" }) });
+    this._pendingFortune = {
+      title: "雾中灯火 · 钟吾的摊",
+      text: "灯下坐着个圆脸的胖修士，面前兽皮上摆着丹瓶、符纸和一卷舆图。见你过来，他眼睛一弯：「同门，禁地里头一回见活人摆摊吧？——钟吾，童叟无欺。」",
+      choices,
+    };
+    UI.openFortune(this._pendingFortune);
+  },
+
+  // 菡云芝的烈阳花委托（第三日抵达花圃）
+  _exmapHanyunzhi() {
+    const s = State.data, x = s.exmap;
+    if (s.flags.hanyunzhi_done) return;
+    if (!s.metNpcs.includes("hanyunzhi")) s.metNpcs.push("hanyunzhi");
+    this._pendingFortune = {
+      title: "烈阳花圃 · 故人",
+      text: "花圃边立着个青裙女修，正对着崖上的烈阳花发愁——是菡云芝，太南小会上赠你制符笔的御灵宗女修。\n\n「韩道友？」她又惊又喜，旋即苦笑，「烈阳花三日内不采就谢了。可这崖壁陡得很，我一个人，盯不住四面。」",
+      choices: [
+        { text: "替她护法采花（耗一钟）", effect: (st) => {
+          const r = ExploreMap.stay(x, 1);
+          State.give("lieyang_hua", 1);
+          State.give("huoshe_fu", 2);
+          State.setFlag("hanyunzhi_done");
+          Engine.writeLedger("hanyunzhi_flower", "血色禁地中替菡云芝护法采得烈阳花——御灵宗的人情，记下了");
+          Engine._exmapEvents(r.events);
+          return { text: "你按剑立在崖下，神识张开四面——她攀上崖壁，把开得最盛的几朵尽数收入玉盒。\n\n「分你一朵，再加两张火蛇符。」她把东西塞过来，眼睛弯弯，「御灵宗欠你一个人情。人情比符值钱。」\n\n（烈阳花×1、火蛇符×2）", kind: "good" };
+        }},
+        { text: "自顾采花，先走一步", effect: () => {
+          State.give("lieyang_hua", 2);
+          State.setFlag("hanyunzhi_done");
+          return { text: "你抢在她前头攀上崖壁，把向阳的两朵摘了。菡云芝在崖下看着，没说话。\n\n下崖时她已经走了。（烈阳花×2——御灵宗的人情，没了。）", kind: "bad" };
+        }},
+        { text: "「花我不要。道友自取，我替你看着。」", effect: () => {
+          State.give("huoshe_fu", 2);
+          State.setFlag("hanyunzhi_done");
+          State.setFlag("hanyunzhi_favor");
+          Engine.writeLedger("hanyunzhi_flower", "血色禁地中分文不取替菡云芝护法——御灵宗的人情，厚厚记下了");
+          return { text: "她怔了怔，笑出声来：「太南小会那支笔，果然没送错人。」\n\n采完花，她把两张火蛇符硬塞进你手里，又留下一句话：「御灵宗在天南，有人欠你人情。」（火蛇符×2）", kind: "good" };
+        }},
+      ],
+    };
+    UI.openFortune(this._pendingFortune);
+  },
+
+  // 舆图遭遇战（封岳）：伏击=开局先机
+  _exmapFight(ev) {
+    const s = State.data;
+    this._exmapFightReturn = true;
+    this._nextFightType = ev.enemy;
+    if (ev.atRest) this.log("【遭遇】杀气破开血雾直压过来——他循着你的气息找上门了。", "bad");
+    if (UI.closeExmap) UI.closeExmap();
+    // 禁地野外开战：长卷全景做底（开战不换天地）
+    this._caveFightCfg = (typeof Art !== "undefined" && Art.has && Art.has("pano_xueshi"))
+      ? { sceneBg: "pano_xueshi" } : null;
+    this.startEncounterFight(ev.enemy);
+    this._caveFightCfg = null;
+    if (ev.ambush && this._combat && this._combat.enemies[0]) {
+      const e = this._combat.enemies[0];
+      const cut = Math.round(e.hpMax * 0.12);
+      e.hp = Math.max(1, e.hp - cut);
+      e.exposed = 1;   // 破绽暴露一回合（伏击先机）
+      this._combat._log(`伏击得手！你早读熟了他的路线——${e.name} 被你一击重创（气血-${cut}，破绽大开）。`);
+      this.log("【伏击】这一次，是猎人走进了陷阱。", "good");
+    }
+  },
+
+  // 深潭洞口 → 墨蛟洞（L3）：洞口印记快照 + 压栈
+  exmapEnterSub() {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const f = ExploreMap.cur(x);
+    const map = ExploreMap.mapOf(f);
+    const node = map.nodes[f.node];
+    if (!node || node.kind !== "enter") return;
+    const sub = ExploreMap.MAPS[node.sub];
+    this._pendingFortune = {
+      title: `${node.name} · 临渊`,
+      text: sub.confirm || "要进去吗？",
+      choices: [
+        { text: "立下洞口印记，入洞", effect: () => {
+          delete s._caveSnap;
+          s._caveSnap = JSON.stringify(Object.assign({}, s, { _caveSnap: undefined }));
+          const r = ExploreMap.enterSub(x);
+          if (!r.ok) return { text: r.reason, kind: "bad" };
+          return { text: "你在洞口岩壁上刻下一道印记，吸一口气，潜入水下的黑暗。\n\n（洞口印记已立——若有不测，可从此处重来。）", kind: "event" };
+        }},
+        { text: "再整备整备，稍后再来", effect: () => ({ text: "你退后一步。潭水无声，那个洞口像一只阖着的眼。", kind: "sys" }) },
+      ],
+    };
+    UI.openFortune(this._pendingFortune);
+  },
+
+  /* ---------- L3 轴式洞窟：走格/采集/布置/动手（探索格=战斗格，无缝衔接） ---------- */
+  exmapCaveMove(pos) {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const r = ExploreMap.caveMove(x, pos);
+    if (!r.ok) { this.toast(r.reason || "走不得", true); return; }
+    for (const ev of (r.events || [])) {
+      if (ev.type === "intel") {
+        this.log(`【观战】${ev.text}`, "good");
+        if (UI.exmapNote) UI.exmapNote(ev.text, "good");
+        this.writeLedger("mojiao_watch", "深潭洞中伏岩观战，看清了墨蛟的路数与旧伤破绽");
+      } else if (ev.type === "sound") {
+        // 声纹梯度：远闻其声，近见其形——耳朵先于眼睛抵达战团
+        if (UI.exmapNote) UI.exmapNote(`♪ ${ev.text}`, "desc");
+        if (typeof Sfx !== "undefined" && ev.sfx) Sfx.play(ev.sfx);
+      } else if (ev.type === "near") {
+        // 近身惊动：贴得越近，每一步越响
+        if (ev.text && UI.exmapNote) UI.exmapNote(ev.text, "warn");
+      } else if (ev.type === "blown") {
+        this.log("【惊动】潭面的涟漪猛地一滞——水底那双眼睛，扫过来了。", "bad");
+        if (UI.exmapNote) UI.exmapNote("潭水死寂——它知道你在。", "warn");
+        if (typeof Sfx !== "undefined") Sfx.play("danger");
+      }
+    }
+    if (UI.renderExmap) UI.renderExmap();
+    State.save();
+  },
+
+  exmapCaveTake(hotId) {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const r = ExploreMap.caveTake(x, hotId);
+    if (!r.ok) { this.toast(r.reason || "采不得", true); return; }
+    const names = Object.entries(r.loot).map(([k, n]) => `${DATA.items[k] ? DATA.items[k].name : k}×${n}`).join("、");
+    this.toast(`采得：${names}`);
+    if (typeof Sfx !== "undefined") Sfx.play("pick");
+    if (r.blown) {
+      this.log("【惊动】潭面的涟漪猛地一滞——水底那双眼睛，扫过来了。", "bad");
+      if (UI.exmapNote) UI.exmapNote("潭水死寂——它知道你在。", "warn");
+    }
+    if (UI.renderExmap) UI.renderExmap();
+    State.save();
+  },
+
+  // 布置到格：UI 先选布置物（进入放置模式），点格落位
+  exmapCavePlace(prepId, cell) {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const f = ExploreMap.cur(x);
+    const map = ExploreMap.mapOf(f);
+    const p = (map.preps || []).find(pp => pp.id === prepId);
+    if (!p) return;
+    if (p.item && State.count(p.item) < 1) { this.toast(`没有${DATA.items[p.item] ? DATA.items[p.item].name : p.item}`, true); return; }
+    if (p.side && (!s.sideUnit || s.sideUnit.status === "broken")) { this.toast("铁奴不在身边（或已破损）", true); return; }
+    const r = ExploreMap.cavePlace(x, prepId, cell);
+    if (!r.ok) { this.toast(r.reason || "布不得", true); return; }
+    if (p.item) State.take(p.item, 1);
+    this.toast(`已布下：${p.name}（第${cell + 1}步）`);
+    if (typeof Sfx !== "undefined") Sfx.play("pick");
+    this.log(`【布置】${p.name}落位于第${cell + 1}步——${p.hint}。`, "sys");
+    if (UI.renderExmap) UI.renderExmap();
+    State.save();
+  },
+
+  // 法宝出战开关：收起的法宝技不进战斗手牌（元婴期不被筑基期法器撑爆）
+  toggleBenchTreasure(skillId) {
+    const s = State.data;
+    if (!s.benchTreasures) s.benchTreasures = [];
+    const i = s.benchTreasures.indexOf(skillId);
+    if (i >= 0) { s.benchTreasures.splice(i, 1); this.toast("法宝已重新出战"); }
+    else { s.benchTreasures.push(skillId); this.toast("法宝已收起（不入战斗手牌）"); }
+    State.save();
+  },
+
+  // 场景即战场：按地点开阔度给战场宽度（数据有 fieldW 用数据，否则按气质推断）
+  _fieldWidthFor(locId) {
+    const loc = (typeof DATA !== "undefined" && DATA.locations && DATA.locations[locId]) || {};
+    if (loc.fieldW) return loc.fieldW;
+    const id = locId || "";
+    if (/yaolu|wuting|mishi|dihuo|miju/.test(id)) return 9;          // 室内/院落：方寸之地
+    if (/town|jishi|fair|city|gate|men|fang/.test(id)) return 11;    // 街市/山门：放得开手脚
+    if (/houshan|road|lin|valley|shan|jindi|ye/.test(id)) return 15; // 山野/官道：可跑可绕
+    return 11;
+  },
+
+  // 退出洞窟：弹栈回 L1 深潭洞口（已采的带走，布置的算沉没——阵旗收不回来）
+  exmapCaveLeave() {
+    const s = State.data, x = s.exmap;
+    if (!x || x.stack.length <= 1) return;
+    ExploreMap.exitSub(x);
+    delete s._caveSnap;
+    this.log("你贴着洞壁退出深潭洞窟——水声在身后渐沉。（布下的阵旗收不回来了）", "sys");
+    if (UI.renderExmap) UI.renderExmap();
+    State.save();
+  },
+
+  /* 探索手牌：出手即开战——攻击常驻，但射程是把真尺（隔半个洞窟打不出剑）。
+   * 只列即时攻击牌（蓄势/纯增益不能当开局第一击）；可打性=射程∩存货∩灵力。 */
+  cavePlayerSpells() {
+    const s = State.data, x = s.exmap;
+    if (!x) return [];
+    const f = ExploreMap.cur(x);
+    if (!f || f.kind !== "cave") return [];
+    const map = ExploreMap.mapOf(f);
+    const beast = (map.watchers || []).find(wt => wt.beast);
+    if (!beast || !map.fight) return [];
+    const dist = Math.abs(f.pos - beast.pos);
+    const pf = this.playerFighter();
+    const SP = CombatAPI.SPELLS;
+    const out = [];
+    (pf.spells || []).forEach(id => {
+      const sp = SP[id];
+      if (!sp || !sp.dmg || sp.chargeTurns) return;
+      if (!sp.range || sp.range[1] <= 0) return;
+      const inRange = dist >= sp.range[0] && dist <= sp.range[1];
+      const noPouch = sp.consume && !((pf.pouch || {})[sp.consume] > 0);
+      const noMp = (sp.mp || 0) > pf.mp;
+      out.push({
+        id, name: sp.name, range: sp.range, source: sp.source || "art",
+        quick: !!sp.quick, dist, ok: inRange && !noPouch && !noMp,
+        why: !inRange ? (dist > sp.range[1] ? `射程${sp.range[1]}格·还差${dist - sp.range[1]}步` : "太近施展不开")
+          : noPouch ? "无存货" : noMp ? "灵力不足" : "",
+      });
+    });
+    return out;
+  },
+
+  // 出手即开战：第一招的伤害就是开战的那一下——攻击本身即宣战，无须"偷袭"按钮
+  exmapCaveStrike(spellId) {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const card = this.cavePlayerSpells().find(h => h.id === spellId);
+    if (!card) return;
+    if (!card.ok) { this.toast(card.why || "施展不得", true); return; }
+    this.exmapCaveFight();   // 组战场：站位/布置/惊动/底图/镜头全继承（偷袭/迎战加成在内）
+    const c = this._combat;
+    if (!c || c.status !== "ongoing") return;
+    const r = c.cast(spellId, 0);   // 开战第一击=这一招（照常占首回合行动经济）
+    if (r && r.ok) c._log("这一招既是出手，也是宣战——洞里再没有躲着看的人了。");
+    if (typeof UI !== "undefined") {
+      if (UI.renderCombat) UI.renderCombat(c, this._combatMeta);
+      if (UI.flushCombatFx) UI.flushCombatFx(c);
+    }
+    State.save();
+  },
+
+  // 动手：观战的对象原地转为敌方单位——探索轴即战斗轴（站位/阵法/伏着全部继承）
+  // 同轴一体：攻击常驻——未惊动时动手=偷袭（敌措手不及），被惊动=迎战（敌有备而来）
+  exmapCaveFight() {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const info = ExploreMap.caveFightInfo(x);
+    if (!info) return;
+    this._nextFightType = info.enemy;
+    this._exmapFightReturn = true;
+    this.log(`【${info.sneak ? "偷袭" : "动手"}】${info.cue}`, "event");
+
+    // 同道入战：南宫婉从观战位原地参战（战团消耗按你贪的程度折损她的气血）
+    const ally = this._nangongwanAlly();
+    const drain = Math.min(40, (info.takenCount || 0) * (info.allyDrain || 0));
+    if (drain > 0) {
+      ally.hp = Math.max(30, ally.hp - drain);
+      this.log(`（你在岸上多采的每一株，都是她在潭心多撑的一招——南宫婉已带伤，气血 ${ally.hp}/${ally.hpMax}。）`, "sys");
+    }
+    this._sideOverride = ally;
+
+    if (UI.closeExmap) UI.closeExmap();
+    // 组战场：长轴宽度/站位继承/阵法格预铺/地雷埋设
+    const zones = [], mines = [];
+    (info.prepDefs || []).forEach(p => {
+      const cell = info.preps[p.id];
+      if (cell == null) return;
+      if (p.zone) {
+        zones.push({ from: Math.max(0, cell - 1), to: Math.min(info.W - 1, cell + 1),
+                     type: p.zone, turns: p.zone === "juling" ? 5 : 4, team: "player" });
+      } else if (p.mine) {
+        mines.push({ cell, kind: p.mine, name: p.name,
+                     dmg: p.mine === "tienu" ? Math.round(((s.sideUnit || {}).atk || 13) * 2) : 24,
+                     hold: p.mine === "tienu" ? 1 : 0 });
+      }
+    });
+    const fCur = ExploreMap.cur(x);
+    const curMap = ExploreMap.mapOf(fCur);
+    // 战场底图：长卷全景优先（已生成才用），回退洞窟场景图——开战不换天地
+    const sceneBg = (typeof Art !== "undefined" && curMap.pano && Art.has(curMap.pano)) ? curMap.pano : info.sceneBg;
+    this._caveFightCfg = { W: info.W, playerPos: info.playerPos, enemyPos: info.enemyPos,
+                           sidePos: info.allyPos, zones, mines,
+                           hotspots: info.hotspots, sceneBg, seamless: true,
+                           cam: (typeof fCur._cam === "number") ? fCur._cam : null };
+    this.startEncounterFight(info.enemy);
+    this._caveFightCfg = null;
+    const c = this._combat;
+    if (c && c.enemies[0]) {
+      const e0 = c.enemies[0];
+      if (info.sneak) {
+        // 偷袭开局：它的注意力全在缠身的绫光上——第一拍是白送你的
+        e0.status.dingshen = (e0.status.dingshen || 0) + 1;
+        c._log("偷袭得手！墨蛟的凶性全锁在缠身的绫光上，背门冲着你大开——它这一拍动不了。");
+      }
+      if (info.intel && !info.blown) {
+        e0.exposed = 1;
+        c._log("观战所得在此兑现——墨蛟出水必先摆尾、左肋旧伤未愈，你一眼盯住了破绽（破绽大开）。");
+      } else if (info.blown) {
+        e0.shield = (e0.shield || 0) + 14;
+        c._log("你的动静早惊了潭底——墨蛟有备而来，黑雾护体（敌护体+14）。");
+      }
+      if (typeof UI !== "undefined" && UI.renderCombat) UI.renderCombat(c, this._combatMeta);
+    }
+  },
+
+  // 离开禁地 / 五日强制传出：结算出图
+  finishExmap(reason) {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const gained = [];
+    Object.entries(x.bag).forEach(([k, n]) => {
+      if (n > 0) { State.give(k, n); gained.push(`${DATA.items[k] ? DATA.items[k].name : k}×${n}`); }
+    });
+    s.exmap = null;
+    delete s._caveSnap;
+    State.setFlag("jindi_left");
+    if (UI.closeExmap) UI.closeExmap();
+    this.passTime(1);
+    const summary = gained.length ? `清点行囊：${gained.join("、")}。` : "行囊空空。";
+    if (reason === "timeup") {
+      this.log(`【血色禁地】五日之限已至，血幕轰然闭合——一股巨力裹着你向外抛去。${summary}`, "event");
+    } else if (reason === "victory") {
+      this.log(`【血色禁地】墨蛟伏诛，深潭归于死寂。你随南宫婉踏出血幕时，残阳正照在禁地门前。${summary}`, "good");
+    } else {
+      this.log(`【血色禁地】你赶在血幕闭合前从裂口退了出来。${summary}`, "event");
+    }
+    s.flags.adventured = true;
+    if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
+    s.skills.scouting += 3;
+    this.checkLifespan();
+    this.checkStory();
     State.save();
     UI.renderAll();
   },
@@ -1571,7 +2065,9 @@ const Engine = {
     const base = 14 + Math.floor(s.sense * 0.4);
     const moodFactor = 0.6 + (s.mood / s.moodMax) * 0.6;
     const demonPenalty = 1 - (s.demon / 200);
-    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty));
+    // 洞府加成：灵泉眼吐灵，闭关事半功倍（dongfu_pick 抉择的长期兑现）
+    const dongfuMul = s.flags.dongfu_type === "lingquan" ? 1.15 : 1;
+    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * dongfuMul));
     let gain = perMonth * months;
 
     // 心境告急：心乱则修为难进、心魔易侵（杂念丛生，事倍功半）
@@ -1854,10 +2350,18 @@ const Engine = {
       this.startEncounterFight(enemy);
       return;
     }
+    // 摊位重开：连续交易类奇遇（钟吾的摊——买完一样还能再买）
+    if (choice.reopen === "zhongwu" && s.exmap) {
+      State.save();
+      if (UI.renderExmap) UI.renderExmap();
+      this._exmapZhongwu();
+      return;
+    }
     // 旅途中的抉择已了：继续赶路（旅途即内容）
     if (this._resumeJourneyIfAny()) return;
     this.checkLifespan();
     this.checkStory();
+    if (s.exmap && UI.renderExmap) UI.renderExmap();
     State.save();
     UI.renderAll();
   },
@@ -1999,23 +2503,33 @@ const Engine = {
     ];
   },
 
-  // 突破战结果结算
-  _resolveBreakthroughResult(win) {
+  // 突破战结果结算（daoxinRatio：null=顺势水到渠成；0~1=心战收束时道心余裕）
+  _resolveBreakthroughResult(win, daoxinRatio) {
     const s = State.data;
     const wasBig = this._btWasBig;
     if (win) {
       const gains = [];
+      const poolBefore = Balance.manaPool(Chapters.realmTier(), State.realm().layer,
+        (DATA.techniques[s.technique] || {}).grade || 1, s.poolBonus);
       s.realmIndex += 1;
       const nr = State.realm();
       s.cultivation = 0;
-      const spGain = nr.spMax - (DATA.realms[s.realmIndex - 1] || nr).spMax;
       s.spirit = nr.spMax;
       s.sense += wasBig ? 8 : 3; s.body += wasBig ? 5 : 2;
       s.hpMax += wasBig ? 40 : 15; s.hp = s.hpMax;
       if (nr.lifespan) s.lifespan += nr.lifespan;
       s.demon = clamp(s.demon - (wasBig ? 12 : 5), 0, 100);
-      gains.push(`灵气底蕴 +1（战斗每回合灵气增长）`);
-      gains.push(`灵力上限 +${spGain}（至 ${nr.spMax}）`);
+      // —— 突破的水准刻进气海（用户裁决：灵力池严格随突破水准）——
+      // 顺势=水到渠成；心战道心余裕≥70%=道心圆满；<35%=险胜伤了根基
+      let poolGain, poolNote;
+      if (daoxinRatio == null) { poolGain = wasBig ? 6 : 3; poolNote = "水到渠成，气海拓得开阔"; }
+      else if (daoxinRatio >= 0.7) { poolGain = wasBig ? 8 : 4; poolNote = "道心圆满，气海拓得格外开阔"; }
+      else if (daoxinRatio < 0.35) { poolGain = wasBig ? 3 : 1; poolNote = "险胜伤了些根基，气海略有滞涩"; }
+      else { poolGain = wasBig ? 5 : 2; poolNote = "气海随之拓开"; }
+      s.poolBonus = (s.poolBonus || 0) + poolGain;
+      const poolAfter = Balance.manaPool(Chapters.realmTier(), nr.layer,
+        (DATA.techniques[s.technique] || {}).grade || 1, s.poolBonus);
+      gains.push(`灵力池 ${poolBefore} → ${poolAfter}（${poolNote}——突破的水准，刻进了气海）`);
       gains.push(`神识 +${wasBig ? 8 : 3}　体魄 +${wasBig ? 5 : 2}`);
       gains.push(`气血上限 +${wasBig ? 40 : 15}（伤势尽复）`);
       if (nr.lifespan) gains.push(`寿元 +${nr.lifespan} 载`);
@@ -2072,20 +2586,36 @@ const Engine = {
       if (State.count(itemId) > 0 && !spells.includes(spellId)) spells.push(spellId);
     });
     // 法器装备：主动技注入（战斗装备类）+被动属性（State.gearBonus 在各处生效）
+    // 法宝出战位（bench）：收起的法宝不入战——元婴期不被筑基期法器撑爆手牌
     ["weapon", "armor", "accessory"].forEach(slot => {
       const g = State.gearOf(slot);
-      if (g && g.grantSpells) g.grantSpells.forEach(sk => { if (!spells.includes(sk)) spells.push(sk); });
+      if (g && g.grantSpells) g.grantSpells.forEach(sk => {
+        if ((s.benchTreasures || []).includes(sk)) return;
+        if (!spells.includes(sk)) spells.push(sk);
+      });
     });
     const dunTrait = State.gearTrait("charge_resist");
     return new CombatAPI.Fighter({
       name: s.name,
       hp: s.hp,
+      // 灵力池（v2：统一灵力，整场不刷新；战后按比例回写灵力——连战共享一池）
+      // 池深=功法品阶×境界跳档×层成长+突破水准/特殊境遇累计（balance.manaPool，用户裁决）
+      // 开战水位=灵力百分比映射（灵力没调息满，开战灵力就不满——打坐与丹药的真实意义）
+      mp: (() => {
+        const poolMax = Balance.manaPool(Chapters.realmTier(), realm.layer,
+          (DATA.techniques[s.technique] || {}).grade || 1, s.poolBonus);
+        const ratio = clamp(s.spirit / (realm.spMax || s.spirit || 1), 0, 1);
+        return Math.max(15, Math.round(poolMax * ratio));
+      })(),
+      mpMax: Balance.manaPool(Chapters.realmTier(), realm.layer,
+        (DATA.techniques[s.technique] || {}).grade || 1, s.poolBonus),
+      // 移动力：基础1；身法法器/功法另加（踏云靴时代 move 2）
+      move: 1 + (State.gearTrait("swift") ? 1 : 0),
       sense: s.sense + State.gearBonus("sense"),
       speed: State.effectiveSpeed(),
       insight: s.insight,
       gongli: gongli,
       agility: Math.round(State.effectiveSpeed() * 0.6),   // 遁速提供基础闪避
-      profile: "hanli_si",       // 四灵根·缺土
       elem: (DATA.techniques[s.technique] || {}).attr || null,   // 道基=主修功法行属（克制语言）
       chargeResist: dunTrait ? (dunTrait.value || 0.3) : 0,
       spells,
@@ -2096,6 +2626,11 @@ const Engine = {
       momentumCap: s.swordMastery ? 7 : 5,   // 眨眼剑法大成：剑势上限+2
       swordMastery: !!s.swordMastery,        // 大成：眨眼剑法本体蜕变（攒势翻倍）
       qiLayer: realm.layer,                  // 灵气底蕴随练气层数成长
+      // 腾空之能（空层 2.5D）：御器飞行（筑基）/风雷翅（后期）/调试旗——有翼方上天
+      canFly: !!(s.flags.fly_unlocked || State.gearTrait("fly")),
+      // 飞行档（depth-design D2/D3）：境界即高度——升空高度/视野/凌空身法三联动。
+      // 练气·乘器=1（勉强离地），筑基·御器=1，结丹·御空=2，元婴·遁光=3（分档细调归 flight-ladder F0）
+      airGrade: Math.max(1, Math.min(3, Chapters.realmTier())),
       // fail-forward：决战每败一次=看破对方几分路数，再战伤害+8%（至多+24%）——
       // 韩立吃的每次亏都是学费（爽文契约：失败向前走）
       dmgBonus: 1 + Math.min(3, (s.flags[`losses_${this._nextFightType || ""}`] || 0)) * 0.08,
@@ -2104,12 +2639,58 @@ const Engine = {
       pouch: (() => {
         const bag = (s.explore && !s.explore.finished) ? (s.explore.bag || {}) : {};
         const p = {};
-        ["duyao_cao", "anqi", "huoshe_fu", "hanbing_fu", "jinguang_zhuan_charge"].forEach(id => {
+        ["duyao_cao", "anqi", "huoshe_fu", "hanbing_fu", "jinguang_zhuan_charge",
+         "huixue_dan", "huiyuan_dan", "dingshen_fu", "zhenqi_kunzu", "zhenqi_juling"].forEach(id => {
           p[id] = State.count(id) + (bag[id] || 0);
         });
         return p;
       })(),
     });
+  },
+
+  /* -------- 地火之屋炼筑基丹（筑基丹链的"造"环节：血色主药→二十颗丹的底气）--------
+   * 动漫口径：韩立以禁地所采主药炼出二十余颗（旁人三五颗已是高产）——药理与主药数定产量。 */
+  lianZhujiDan() {
+    const s = State.data;
+    if (!s.flags.mojiao_resolved) { this.toast("血色主药未备齐——禁地之行在前"); return; }
+    if (s.flags.zhuji_lian_done) { this.toast("筑基丹已炼成，余药不必再耗"); return; }
+    const zhuyao = State.count("xueshi_zhuyao");
+    if (zhuyao < 4) { this.toast("血色主药不足四株，开炉无意义", true); return; }
+    if (State.count("lingcao") < 4) { this.toast("辅药不足：还需灵草×4", true); return; }
+    if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
+    // 产量 = 基础6 + 主药×1.5 + 药理加成（动漫20颗口径：6株主药+高药理）
+    const n = Math.min(22, Math.round(6 + zhuyao * 1.5 + Math.min(8, (s.skills.alchemy || 0) / 3)));
+    State.take("xueshi_zhuyao", zhuyao);
+    State.take("lingcao", 4);
+    State.give("zhuji_dan", n);
+    State.setFlag("zhuji_lian_done");
+    s.skills.alchemy += 4;
+    this.passTime(3);
+    this.log(`【地火之屋】三个月闭门不出。地火翻腾，丹炉九转——开炉那刻，丹香冲得人眼眶发热：筑基丹 ×${n}！寻常弟子三五颗已是高产，你这一炉，够把"伪灵根"三个字砸碎了。（图鉴里那个空位，已无需讨还。）`, "good");
+    this.addMilestone(`地火炼丹：筑基丹×${n} 出炉`, "bigitem");
+    this.settleLedger("jindi_seat", "禁地名额没有白拼——主药化作了满匣筑基丹");
+    this.toast(`筑基丹 ×${n} 入袋！洞府「尝试突破」冲击筑基`);
+    if (typeof Sfx !== "undefined") Sfx.play("success");
+    this.checkStory();
+    State.save();
+    UI.renderAll();
+  },
+
+  // 南宫婉（同道侧位卡）：血色禁地并肩战——压制修为至炼气期的掩月宗天骄
+  // 人格=背景：掩月宗水法天骄，战斗经验远在你之上——冷静拉距、专抓破绽窗口（接力打法）
+  _nangongwanAlly() {
+    return {
+      id: "nangongwan", name: "南宫婉", kind: "ally", art: "nangongwan",
+      hp: 95, hpMax: 95, guard: 0.25, elem: "shui", move: 1,
+      // 同规则三件套（用户铁律：侧位与玩家/敌方一个规则）：灵力池+招式耗灵+腾空之能
+      mp: 80, canFly: true, airGrade: 2,   // 掩月宗天骄=御空二档（飞得比练气的你高——境界的俯视）
+      persona: { aggr: 6, prot: 3, kite: 6 },
+      moves: [
+        { name: "月华绫", dmg: 16, weight: 12, elem: "shui", range: [1, 3], mp: 4, line: "广袖一扬，月华如练卷向" },
+        { name: "素女剑光", dmg: 24, weight: 5, elem: "shui", range: [1, 2], mp: 8, line: "眸光一冷，剑光裂空斩向" },
+        { name: "拂尘一掸", dmg: 9, weight: 6, elem: "shui", range: [1, 1], mp: 0, line: "信手一掸，水袖击向" },
+      ],
+    };
   },
 
   // 侧位单位（尸傀/灵宠/傀儡）：随行出战的第二单位（combat-arsenal-design.md 轴4）
@@ -2118,13 +2699,48 @@ const Engine = {
     const u = s.sideUnit;
     if (!u || u.status === "broken" || u.carry === false) return null;
     if (fightType === "breakthrough") return null;   // 心魔是自己的战斗，外物难援
-    return { id: u.id, name: u.name, hp: u.hp, hpMax: u.hpMax, atk: u.atk, atkName: u.atkName,
-             elem: u.elem || null, nature: u.nature || null, guard: u.guard || 0.3 };
+    return { id: u.id, name: u.name, kind: u.kind || "corpse", hp: u.hp, hpMax: u.hpMax,
+             atk: u.atk, atkName: u.atkName, move: u.move != null ? u.move : 1,
+             moves: u.moves || null, art: u.art || null,
+             elem: u.elem || null, nature: u.nature || null, guard: u.guard || 0.3,
+             // 人格（背景即打法）：尸傀无智而忠——护主权重拉满，不抢窗口不惜身
+             persona: u.persona || { aggr: 3, prot: 9, kite: 0 } };
+  },
+  // 升空/落地（空层 2.5D）：把战斗抬进修仙者的天空
+  combatFly() {
+    const c = this._combat;
+    if (!c) return;
+    const r = c.playerFly();
+    if (!r.ok) { this.toast(r.reason); return; }
+    if (typeof UI !== "undefined") {
+      if (UI.flushCombatFx) UI.flushCombatFx(c);
+      if (UI.renderCombat) UI.renderCombat(c, this._combatMeta);
+    }
+    State.save();
+  },
+  // 简令轮换：随→攻→守→撤（点灵傀卡）——指挥不是微操，是一句话的事
+  cycleSideStance() {
+    const c = this._combat;
+    if (!c || !c.side || c.side.hp <= 0) return;
+    // 客随铁律（用户裁决）：境界远高于你的同道全自动——她指挥你（每回合点将），
+    // 你指挥不了她。简令四档只对平辈/下属（尸傀/灵宠/低阶同道）生效
+    if (c.side.kind === "ally" && (c.side.mastery || 0) >= 2) {
+      this.toast(`${c.side.name}的境界远在你之上——接好她递的刀便是`);
+      return;
+    }
+    const order = ["follow", "attack", "guard", "retreat"];
+    const cur = order.indexOf(c.side.stance || "follow");
+    c.setSideStance(order[(cur + 1) % 4]);   // 简令即阵型：换令同时换排（攻=压上战位/守=贴身僚位/撤=最深排）
+    const txt = { follow: "随行——跟你的焦点打", attack: "强攻——压上战位排，下重手专补刀",
+                  guard: "护主——贴身代刀，稳字当头", retreat: "后撤——退到阵后自保" }[c.side.stance];
+    this.log(`【简令】${c.side.name}：${txt}。`, "sys");
+    if (typeof UI !== "undefined" && UI.renderCombat) UI.renderCombat(c, this._combatMeta);
   },
   // 战后把侧位单位的损耗写回（hp 归零=破损，须修缮，不会永失——尸傀不死，只是坏了）
   _syncSideBack() {
     const c = this._combat, s = State.data;
     if (!c || !c.side || !s.sideUnit) return;
+    if (c.side.id && s.sideUnit.id && c.side.id !== s.sideUnit.id) return;   // 剧情同道（南宫婉等）不回写常驻侧位
     s.sideUnit.hp = clamp(Math.round(c.side.hp), 0, s.sideUnit.hpMax);
     if (s.sideUnit.hp <= 0 && s.sideUnit.status !== "broken") {
       s.sideUnit.status = "broken";
@@ -2139,7 +2755,8 @@ const Engine = {
     const s = State.data;
     const p = c.player.pouch || {};
     const bag = (s.explore && !s.explore.finished) ? (s.explore.bag || {}) : null;
-    ["duyao_cao", "anqi", "huoshe_fu", "hanbing_fu", "jinguang_zhuan_charge"].forEach(id => {
+    ["duyao_cao", "anqi", "huoshe_fu", "hanbing_fu", "jinguang_zhuan_charge",
+     "huixue_dan", "huiyuan_dan", "dingshen_fu", "zhenqi_kunzu", "zhenqi_juling"].forEach(id => {
       const left = p[id] || 0;
       const had = State.count(id) + (bag ? (bag[id] || 0) : 0);
       let used = had - left;
@@ -2156,21 +2773,41 @@ const Engine = {
 
   // 普通遭遇战
   startEncounterFight(enemyId) {
+    const s = State.data;
     const tmpl = WORLD.enemies[enemyId];
     if (!tmpl) { this.log("虚惊一场，并无敌踪。", "sys"); return; }
     const enemy = this._applyFameWariness(this._applyDossier(Object.assign({}, tmpl)));
-    this._combat = new CombatAPI.Combat({
+    // 侧位：剧情同道（_sideOverride 一次性）优先于常驻随行（尸傀）
+    const sideUnit = this._sideOverride || this.sideUnitFor("encounter");
+    this._sideOverride = null;
+    // L3 轴式洞窟开战：战场宽度/站位/阵法/伏着从探索轴无缝继承（_caveFightCfg 一次性）
+    const caveCfg = this._caveFightCfg || {};
+    // 场景即战场：宽度随地点开阔度展开（9~27），接敌距离照旧——多出来的全是身后与侧翼
+    const sceneW = caveCfg.W || this._fieldWidthFor(s.location);
+    const engage = Math.min(sceneW - 2, (tmpl.engageDist || (enemyId.indexOf("beast_") === 0 ? 6 : 7)));
+    this._combat = new CombatAPI.Combat(Object.assign({
       player: this.playerFighter(),
       enemies: [enemy],
-      maxRounds: 20,
-      side: this.sideUnitFor("encounter"),
-    });
+      maxRounds: sceneW > 12 ? 26 : 20,
+      side: sideUnit,
+      W: sceneW,
+      // 排数与格数同源（2.5 排制）：都看真实战场多大——洞窟憋仄 2 排，旷野 3 排
+      lanes: caveCfg.lanes != null ? caveCfg.lanes : (caveCfg.seamless ? 2 : 3),
+      enemyPos: caveCfg.enemyPos != null ? caveCfg.enemyPos : Math.min(sceneW - 1, 1 + engage),
+    }, caveCfg));
     if (enemy._wary) {
       this._combat.enemies[0].shield = 12;
       this.log(`「${tmpl.name}」眯起眼："彩霞山那位……久闻大名。"——你的名声在外，对方早有防备（开局护体12）。`, "sys");
     }
-    this._combatMeta = { type: "encounter", reward: tmpl.reward, enemyName: tmpl.name,
-      namedBeast: enemyId.indexOf("beast_") === 0 ? enemyId : null, namedLoot: tmpl.namedLoot || null };
+    // 速决资格：境界压人一头的寻常遭遇（异闻妖王与剧情 boss 除外——有名有姓的仗值得亲手打）
+    const myLayer = (State.realm() || {}).layer || 1;
+    const canQuick = enemyId.indexOf("beast_") !== 0 && !tmpl.boss
+      && myLayer - (tmpl.qiLayer || Math.ceil((tmpl.hp || 60) / 30)) >= 2;
+    this._combatMeta = { type: "encounter", reward: tmpl.reward, enemyName: tmpl.name, canQuick,
+      namedBeast: enemyId.indexOf("beast_") === 0 ? enemyId : null, namedLoot: tmpl.namedLoot || null,
+      sceneBg: caveCfg.sceneBg || null, seamless: !!caveCfg.seamless };
+    // 镜头交接：探索镜头的位置原样带进战斗——开战那一拍，画框不跳
+    if (caveCfg.cam != null) this._combat._cam = Math.max(0, Math.min(sceneW - 11, caveCfg.cam));
     State.data.combat = true;
     this._combat.startRound();
     this.log(`你在${State.location().name}遭遇「${tmpl.name}」，斗法一触即发！`, "bad");
@@ -2184,14 +2821,14 @@ const Engine = {
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax; // 决战前默认满血上场
 
-    const modafu = { name: "墨大夫", hp: 52, profile: "modafu", sense: 6, speed: 9, agility: 4, tactics: "cunning", qiLayer: 4, elem: "mu",
-      attacks: [{ name: "毒掌", dmg: 12, kind: "normal", weight: 12 }, { name: "腐骨毒针", dmg: 14, pierce: true, kind: "pierce", weight: 8 }] };
-    const tienu  = { name: "铁奴（张铁尸傀）", hp: 70, nature: "corpse", sense: 3, speed: 6, agility: 4, tactics: "feral",
+    const modafu = { name: "墨大夫", hp: 52, sense: 6, speed: 9, agility: 4, move: 1, mp: 46, tactics: "cunning", qiLayer: 4, elem: "mu",
+      attacks: [{ name: "毒掌", dmg: 12, kind: "normal", weight: 12, range: [1, 2], mp: 5 }, { name: "腐骨毒针", dmg: 14, pierce: true, kind: "pierce", weight: 8, mp: 7 }] };
+    const tienu  = { name: "铁奴（张铁尸傀）", hp: 70, nature: "corpse", sense: 3, speed: 6, agility: 4, move: 2, tactics: "feral",
       introNote: "铁奴乃尸傀死物——尸无血脉，百毒不侵！毒计无用，须以剑与暗器正面强攻。",
-      attacks: [{ name: "尸傀挥击", dmg: 14, kind: "normal", weight: 14 }, { name: "崩山重捶", dmg: 19, kind: "charge", weight: 6 }] };
-    const yuhun  = { name: "余子童元神", hp: 40, nature: "ghost", sense: 18, speed: 14, agility: 8, gongli: 22, qiLayer: 6,
-      introNote: "元神无形无质——剑、毒、暗器皆穿身而过！唯「运功镇魂」能伤其分毫（需木1水1），神魂镇压正是鬼魅克星。留住灵气，稳住心神！",
-      atkName: "夺舍侵神", atk: 11 };   // 失了傀儡与皮囊的虚弱残魂（被秒式难度违背爽文契约）
+      attacks: [{ name: "尸傀挥击", dmg: 14, kind: "normal", weight: 14 }, { name: "崩山重捶", dmg: 19, kind: "charge", weight: 6, aim: "cell" }] };
+    const yuhun  = { name: "余子童元神", hp: 40, nature: "ghost", sense: 18, speed: 14, agility: 8, move: 2, mp: 50, gongli: 22, qiLayer: 6,
+      introNote: "元神无形无质——剑、毒、暗器皆穿身而过！唯「运功镇魂」能伤其分毫，神魂镇压正是鬼魅克星。稳住心神！",
+      attacks: [{ name: "夺舍侵神", dmg: 11, soul: true, kind: "normal", weight: 12, range: [1, 4], mp: 6 }] };   // 失了傀儡与皮囊的虚弱残魂
 
     this._combat = new CombatAPI.Combat({
       player,
@@ -2230,14 +2867,14 @@ const Engine = {
     // 金光上人：修仙者（练气七层）——有灵气、有战斗AI（守御型：血危先固金钟罩）。
     // 金行道基天克长春功（动漫一致感：正面斗法=找死，毒/暗器/火符才是胜机）。
     const jinguang = {
-      name: "金光上人", hp: 120, profile: "common", sense: 14, speed: 13, agility: 10,
+      name: "金光上人", hp: 140, sense: 14, speed: 13, agility: 10, move: 1, mp: 72,
       tactics: "guarded", qiLayer: 7, elem: "jin",
       guardMove: { name: "金钟罩·重聚", shield: 16 },
-      introNote: "金光上人乃修仙杀手，一身金系符术天克你的木行道基，金钟罩固若金汤且会重聚——硬拼必败！以毒续伤、以暗器破甲、以火符灼金，方有胜机。",
+      introNote: "金光上人乃修仙杀手，一身金系符术天克你的木行道基，金钟罩固若金汤且会重聚——硬拼必败！以毒续伤、以暗器破甲、以火符灼金；他的金刚伏魔砸的是脚下地界，看准落点挪开。",
       attacks: [
-        { name: "金符破空", dmg: 15, kind: "normal", weight: 12, elem: "jin" },
-        { name: "剑符斩", dmg: 18, pierce: true, kind: "pierce", weight: 7, elem: "jin" },
-        { name: "金刚伏魔", dmg: 20, kind: "charge", weight: 5, elem: "jin" },
+        { name: "金符破空", dmg: 22, kind: "normal", weight: 12, elem: "jin", mp: 6 },
+        { name: "剑符斩", dmg: 26, pierce: true, kind: "pierce", weight: 7, elem: "jin", mp: 8 },
+        { name: "金刚伏魔", dmg: 30, kind: "charge", weight: 5, elem: "jin", mp: 10, aim: "cell", range: [1, 3] },
       ],
     };
     this._combat = new CombatAPI.Combat({
@@ -2284,10 +2921,10 @@ const Engine = {
     this._nextFightType = "revenge";
     const player = this.playerFighter();
     const mk = (name, hp, atk) => ({
-      name, hp, sense: 5, speed: 9, agility: 4, qiLayer: 3, elem: "tu", tactics: "cunning",
+      name, hp, sense: 5, speed: 9, agility: 4, move: 1, mp: 48, qiLayer: 3, elem: "tu", tactics: "cunning",
       attacks: [
-        { name: "法器斩", dmg: atk, kind: "normal", weight: 12, elem: "tu" },
-        { name: "土遁刺", dmg: atk - 3, kind: "pierce", weight: 6, elem: "tu" },
+        { name: "法器斩", dmg: atk, kind: "normal", weight: 12, elem: "tu", mp: 6 },
+        { name: "土遁刺", dmg: atk - 3, kind: "pierce", weight: 6, elem: "tu", mp: 7 },
       ],
     });
     this._combat = new CombatAPI.Combat({
@@ -2317,9 +2954,11 @@ const Engine = {
       maxRounds: 14,
       side: { id: "wanxiaoshan", name: "万小山", kind: "ally", art: "wanxiaoshan",
               hp: 60, hpMax: 60, guard: 0.15, elem: "huo",
+              // 人格=背景：商贾子弟野路子——惜命后排扔火球，绝不上前挡刀
+              persona: { aggr: 4, prot: 1, kite: 4 },
               moves: [
-                { name: "火球术", dmg: 11, weight: 12, elem: "huo", line: "搓出一颗火球砸去" },
-                { name: "符纸·小火蛇", dmg: 15, weight: 5, elem: "huo", line: "肉痛地拍出一张符纸——「这张可值钱了！」" },
+                { name: "火球术", dmg: 11, weight: 12, elem: "huo", range: [1, 3], line: "搓出一颗火球砸去" },
+                { name: "符纸·小火蛇", dmg: 15, weight: 5, elem: "huo", range: [1, 3], line: "肉痛地拍出一张符纸——「这张可值钱了！」" },
               ] },
     });
     this._combatMeta = { type: "wanhunt" };
@@ -2336,13 +2975,13 @@ const Engine = {
     this._nextFightType = "luyunfeng";
     const player = this.playerFighter();
     const lu = this._applyDossier({
-      name: "陆云风", hp: 210, profile: "common", sense: 11, speed: 12, agility: 9,
-      tactics: "cunning", qiLayer: 11, elem: "mu",
-      introNote: "陆云风练气十一层，与你同阶——但他骄横惯了，杀人时从不想自己也会死。读他的招，他贪攻必露破绽。",
+      name: "陆云风", hp: 190, sense: 11, speed: 12, agility: 9, move: 1, mp: 84,
+      tactics: "cunning", qiLayer: 11, elem: "mu", armor: 3,
+      introNote: "陆云风练气十一层，与你同阶——但他骄横惯了，杀人时从不想自己也会死。读他的招，他贪攻必露破绽；耗他的灵力，他的剑光会先于人哑火。",
       attacks: [
-        { name: "青叶剑光", dmg: 22, kind: "normal", weight: 12, elem: "mu" },
-        { name: "缚灵金索", dmg: 17, kind: "pierce", weight: 7, elem: "jin" },
-        { name: "怒剑诀", dmg: 30, kind: "charge", weight: 6, elem: "mu" },
+        { name: "青叶剑光", dmg: 26, kind: "normal", weight: 12, elem: "mu", mp: 7 },
+        { name: "缚灵金索", dmg: 22, kind: "pierce", weight: 7, elem: "jin", mp: 9 },
+        { name: "怒剑诀", dmg: 36, kind: "charge", weight: 6, elem: "mu", mp: 12, range: [1, 4] },
       ],
     });
     this._combat = new CombatAPI.Combat({
@@ -2398,7 +3037,8 @@ const Engine = {
     this._combat = new CombatAPI.Combat({
       player,
       enemies: [{ name: demonName, hp: Math.max(20, bottleneckHp),
-                  sense: 5, agility: 0, atkName: "心魔反噬", atk: demonAtk,
+                  sense: 5, agility: 0, move: 2, mp: 999,   // 心魔不竭：意志之战没有耗蓝取巧
+                  atkName: "心魔反噬", atk: demonAtk,
                   introNote: face.taunt || null }],
       maxRounds,
       mode: "breakthrough",
@@ -2411,13 +3051,23 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // 战斗收束：先放演出与结算卡（看清楚发生了什么），确认后才真正落账
+  _combatOver() {
+    const c = this._combat, meta = this._combatMeta;
+    if (!c) return;
+    if (meta && meta.type === "breakthrough") { this._finishCombat(); return; }   // 突破有自己的仪式
+    if (typeof UI !== "undefined" && UI.renderCombat) UI.renderCombat(c, meta);   // 定格终局画面
+    if (typeof UI !== "undefined" && UI.showCombatOutro) UI.showCombatOutro(c, meta, () => this._finishCombat());
+    else this._finishCombat();
+  },
+
   // 玩家在战斗中施法
   combatCast(spellId, targetIndex) {
     if (!this._combat) return;
     const r = this._combat.cast(spellId, targetIndex);
     if (!r.ok) { this.toast(r.reason); return; }
     if (typeof UI !== "undefined" && UI.flushCombatFx) UI.flushCombatFx(this._combat);
-    if (typeof UI !== "undefined" && UI.flashCombat) UI.flashCombat(spellId);
+    if (typeof UI !== "undefined" && UI.flashCombat) UI.flashCombat(spellId, targetIndex);
     // 剑意修行链：实战用剑积累剑意（大成前）
     const s = State.data;
     if (!s.swordMastery && (spellId === "zhayan" || spellId === "zhayan_lian")) {
@@ -2428,18 +3078,76 @@ const Engine = {
         this.toast("剑意圆满！可回药庐悟剑");
       }
     }
-    if (this._combat.status !== "ongoing") this._finishCombat();
+    if (this._combat.status !== "ongoing") this._combatOver();
+    else UI.renderCombat(this._combat, this._combatMeta);
+  },
+
+  // 择地施放（阵旗二次确认）：阵心落在玩家点的格上
+  combatCastAt(spellId, cell) {
+    if (!this._combat) return;
+    const r = this._combat.cast(spellId, undefined, { cell });
+    if (!r.ok) { this.toast(r.reason); return; }
+    if (typeof UI !== "undefined" && UI.flushCombatFx) UI.flushCombatFx(this._combat);
+    if (typeof UI !== "undefined" && UI.flashCombat) UI.flashCombat(spellId);
+    if (this._combat.status !== "ongoing") this._combatOver();
     else UI.renderCombat(this._combat, this._combatMeta);
   },
 
   // 结束当前回合（敌方行动 + 状态结算）
   combatEndRound() {
     if (!this._combat) return;
+    if (typeof UI !== "undefined") UI._armed = null;   // 收手：上膛的法术不跨回合
     this._combat.endRound();
     if (typeof UI !== "undefined" && UI.flushCombatFx) UI.flushCombatFx(this._combat);
-    if (this._combat.status !== "ongoing") { this._finishCombat(); return; }
+    if (this._combat.status !== "ongoing") { this._combatOver(); return; }
     this._combat.startRound();
     UI.renderCombat(this._combat, this._combatMeta);
+  },
+
+  // 轴上移动（不结束回合：移动与出手同回合内自由编排）
+  combatMove(toPos) {
+    if (!this._combat) return;
+    const r = this._combat.playerMove(toPos);
+    if (!r.ok) { this.toast(r.reason); return; }
+    if (typeof Sfx !== "undefined") Sfx.play("click");
+    UI.renderCombat(this._combat, this._combatMeta);
+  },
+
+  // 战中采集（同轴一体）：洞窟热点原格在战斗轴上，走到跟前花一个主行动摘下
+  combatTake(hotId) {
+    const c = this._combat;
+    if (!c) return;
+    const r = c.playerTake(hotId);
+    if (!r.ok) { this.toast(r.reason || "采不得", true); return; }
+    const s = State.data;
+    const names = Object.entries(r.loot || {}).map(([k, n]) => `${DATA.items[k] ? DATA.items[k].name : k}×${n}`).join("、");
+    if (s.exmap) {
+      // 洞窟语境：照旧进探囊（出图统一结算；败北回印记时随快照一并回滚）
+      const f = ExploreMap.cur(s.exmap);
+      if (f && f.taken) f.taken[r.id] = true;
+      Object.entries(r.loot || {}).forEach(([k, n]) => { s.exmap.bag[k] = (s.exmap.bag[k] || 0) + n; });
+    } else {
+      Object.entries(r.loot || {}).forEach(([k, n]) => State.give(k, n));
+    }
+    this.toast(`战中采得：${names}`);
+    if (typeof Sfx !== "undefined") Sfx.play("pick");
+    UI.renderCombat(c, this._combatMeta);
+    State.save();
+  },
+
+  // 遁走（须在最左格）：抽身离场——留得青山在
+  combatFlee() {
+    if (!this._combat) return;
+    const r = this._combat.playerFlee();
+    if (!r.ok) { this.toast(r.reason); return; }
+    this._combatOver();
+  },
+
+  // 速战速决：碾压局交给 AI 代打（同一引擎无头跑，平衡只此一处）
+  combatQuickResolve() {
+    if (!this._combat || !this._combatMeta || !this._combatMeta.canQuick) return;
+    this._combat.autoResolve(this._combat.maxRounds);
+    this._combatOver();
   },
 
   // 战斗结束结算
@@ -2448,6 +3156,7 @@ const Engine = {
     const c = this._combat;
     const meta = this._combatMeta;
     const win = c.status === "win";
+    const fled = c.status === "fled";   // 主动遁走：非死之败——不掉血不加心魔，输的是机会
     s.combat = false;
     // 交手自动补全：见过的招永久入册（情报面纱 L1）
     this._recordIntelFromCombat(c);
@@ -2460,12 +3169,63 @@ const Engine = {
     this._syncPouchBack();
     this._syncSideBack();
 
-    // 同步玩家气血回主状态（突破是"道心"，不回写气血）
+    // 同步玩家气血与灵力回主状态（突破是"道心"，不回写气血）
+    // 灵力按比例回写灵力：战中耗了三成灵力=灵力掉三成——连战共享一池，
+    // 打坐/丹药/聚灵阵是真实的续航手段
     if (meta.type !== "breakthrough") {
       s.hp = clamp(Math.round(c.player.hp), 0, s.hpMax);
+      const spMax = (State.realm() || {}).spMax || s.spirit || 1;
+      const ratio = c.player.mpMax > 0 ? clamp(c.player.mp / c.player.mpMax, 0, 1) : 1;
+      s.spirit = clamp(Math.round(spMax * ratio), 0, spMax);
     }
 
     UI.closeCombat();
+
+    // 主动遁走：单独收尾（fail-forward 的另一翼——能走脱本身就是本事）
+    if (fled) {
+      this.log(`你且战且退，遁出了战圈。${meta.enemyName ? `「${meta.enemyName}」没有追来——` : ""}这一仗没输，只是没赢。`, "sys");
+      // 舆图战遁走：退回探索层（洞窟=缩回洞口；交过手就再无偷袭——它认得你了）
+      if (this._exmapFightReturn) {
+        this._exmapFightReturn = false;
+        this._combat = null; this._combatMeta = null;
+        if (s.exmap) {
+          const xx = s.exmap, fc = ExploreMap.cur(xx);
+          if (fc && fc.kind === "cave") {
+            const mp = ExploreMap.mapOf(fc);
+            fc.pos = mp.playerPos != null ? mp.playerPos : 1;
+            fc._cam = 0;
+            if (mp.exposeLimit) fc.expose = Math.max(fc.expose || 0, mp.exposeLimit);
+            this.log("你缩回洞口的岩影里。潭心的目光在水面下逡巡——它认得你了，背门不会再敞第二次。", "bad");
+          }
+          if (UI.openExmap) UI.openExmap();
+          if (UI.renderExmap) UI.renderExmap();
+        }
+        this.checkLifespan();
+        State.save();
+        return;
+      }
+      if (meta.type === "showdown" || meta.type === "jinguang" || meta.type === "luyunfeng" || meta.type === "wanhunt" || meta.type === "revenge") {
+        // 剧情战遁走=暂避锋芒，重开事件择机再战（不吃败仗重伤，但事情没办成）
+        const retryMap = { showdown: "showdown", jinguang: "jinguang_fight", luyunfeng: "chen_rescue", wanhunt: "wan_hunt", revenge: "wan_death" };
+        s.pendingEvent = retryMap[meta.type] || null;
+        this._retryAfterLoss = retryMap[meta.type] || null;
+        if (meta.type === "wanhunt") s.flags.wan_hunt_done = false;
+      }
+      this._combat = null;
+      this._combatMeta = null;
+      this.checkLifespan();
+      State.save();
+      UI.renderAll();
+      if (this._retryAfterLoss) {
+        const evId = this._retryAfterLoss;
+        this._retryAfterLoss = null;
+        this._retryStage = true;
+        const stage = STORY.find(st => st.id === evId) || STORY[s.storyStage];
+        try { UI.renderStory(stage); }
+        catch (e) { this._retryStage = false; UI.renderStory(stage); }
+      }
+      return;
+    }
 
     // 战后复盘一句话：胜归因关键手，败点明死因（败得明白才有再战的方向）
     if (win && c.stats && Object.keys(c.stats).length) {
@@ -2493,21 +3253,61 @@ const Engine = {
             this.addFame(6, "应镖局悬赏，剿野狼帮喽啰");
           }
         }
-        // 异闻妖王伏诛：专属战利 + 年表勋章 + 名声入风云录（扬名雏形）
-        if (meta.namedBeast) {
-          if (meta.namedLoot) {
+        // 专属战利（namedLoot）：真伏诛才有——走脱者带着家底跑了
+        const anyEscaped = c.enemies.some(e => e.escaped);
+        if (meta.namedLoot && !meta.namedBeast) {
+          if (anyEscaped) {
+            this.log(`「${meta.enemyName}」带伤走脱——他身上那些好东西，也跟着跑了。`, "event");
+          } else {
             const names = [];
             Object.entries(meta.namedLoot).forEach(([k, v]) => { State.give(k, v); names.push(`${DATA.items[k] ? DATA.items[k].name : k}×${v}`); });
-            this.log(`【伏诛】异闻中的「${meta.enemyName}」死于你手！剥取战利：${names.join("、")}。`, "good");
+            this.log(`【缴获】从「${meta.enemyName}」身上搜得：${names.join("、")}。`, "good");
           }
-          this.addMilestone(`伏诛异闻妖王「${meta.enemyName}」`, "medal");
-          this.addFame(10, `伏诛异闻妖王「${meta.enemyName}」`);
-          s.slainBeasts = s.slainBeasts || [];
-          if (!s.slainBeasts.includes(meta.namedBeast)) s.slainBeasts.push(meta.namedBeast);
-          if (s.beastRumor === meta.namedBeast) s.beastRumor = null;
-          s.worldNews = s.worldNews || [];
-          s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "fortune", text: `传言后山那头「${meta.enemyName}」已被门中一位弟子毙杀，山民拍手称快——据说是药庐那位韩师傅。` });
-          if (typeof Sfx !== "undefined") Sfx.play("success");
+        }
+        // 异闻妖王：伏诛=专属战利+勋章+扬名；走脱=异闻未了（它带着伤，还会回来）
+        if (meta.namedBeast) {
+          if (anyEscaped) {
+            this.log(`「${meta.enemyName}」带着满身伤遁入深山——异闻未了。它记住你了，你也记住它了：这笔账，山里再算。`, "event");
+            // 不入伏诛册、不掉专属战利——异闻链保持开启，再遇时它带旧伤（涟漪味）
+          } else {
+            if (meta.namedLoot) {
+              const names = [];
+              Object.entries(meta.namedLoot).forEach(([k, v]) => { State.give(k, v); names.push(`${DATA.items[k] ? DATA.items[k].name : k}×${v}`); });
+              this.log(`【伏诛】异闻中的「${meta.enemyName}」死于你手！剥取战利：${names.join("、")}。`, "good");
+            }
+            this.addMilestone(`伏诛异闻妖王「${meta.enemyName}」`, "medal");
+            this.addFame(10, `伏诛异闻妖王「${meta.enemyName}」`);
+            s.slainBeasts = s.slainBeasts || [];
+            if (!s.slainBeasts.includes(meta.namedBeast)) s.slainBeasts.push(meta.namedBeast);
+            if (s.beastRumor === meta.namedBeast) s.beastRumor = null;
+            s.worldNews = s.worldNews || [];
+            s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "fortune", text: `传言后山那头「${meta.enemyName}」已被门中一位弟子毙杀，山民拍手称快——据说是药庐那位韩师傅。` });
+            if (typeof Sfx !== "undefined") Sfx.play("success");
+          }
+        }
+        // —— 血色禁地剧情战钩子 ——
+        if (meta.enemyName === "封岳" && !anyEscaped) {
+          State.setFlag("fengyue_dead");
+          State.setFlag("jindi_mid_done");
+          if (s.exmap) {
+            this.log("封岳的尸身滑进血雾里。你解下他脚上那双灰靴——杀手的脚程，自此归你。禁地里那道游弋的杀气，散了。", "good");
+          } else {
+            State.give("xueshi_zhuyao", 6);
+            this.log("封岳的尸身滑进血雾里。你解下他脚上那双灰靴——杀手的脚程，自此归你。中环主药也采足了六株。", "good");
+          }
+          this.writeLedger("fengyue_slain", "血色禁地中反杀狙杀者封岳，夺其踏云靴");
+          this.addMilestone("猎杀猎人：反杀封岳", "showdown");
+        } else if (meta.enemyName === "封岳" && anyEscaped) {
+          State.setFlag("jindi_mid_done");
+          if (s.exmap) {
+            this.log("封岳带伤遁走，没敢回头——那双靴子与你无缘了。但至少，这片血雾里少了一个猎人。", "event");
+          } else {
+            State.give("xueshi_zhuyao", 5);
+            this.log("封岳带伤遁走，没敢回头。你在中环又采了两日——主药五株入袋，只是那双靴子与你无缘了。", "event");
+          }
+        }
+        if (meta.enemyName === "墨蛟" && !anyEscaped) {
+          State.setFlag("mojiao_slain");
         }
       } else {
         this._bountyFight = false;
@@ -2515,6 +3315,42 @@ const Engine = {
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
         s.demon = clamp(s.demon + 8, 0, 100);
         this.log(`你不敌「${meta.enemyName}」，负伤遁走（气血-${dmg}）。`, "bad");
+      }
+      // 舆图（v3）途中触发的战斗：胜负各有归处
+      if (this._exmapFightReturn) {
+        this._exmapFightReturn = false;
+        this._combat = null; this._combatMeta = null;
+        this.checkLifespan();
+        if (s.exmap) {
+          const inCave = s.exmap.stack.length > 1;
+          if (win && meta.enemyName === "墨蛟") {
+            // 决战告捷：出洞出图，潭边戏（mojiao_after）由主线接管
+            this.finishExmap("victory");
+            return;
+          }
+          if (!win && inCave && s._caveSnap) {
+            // 洞中败北：从洞口印记重来（进洞前的一切如旧）
+            const snap = JSON.parse(s._caveSnap);
+            Object.keys(s).forEach(k => { if (k !== "_caveSnap") delete s[k]; });
+            Object.assign(s, snap);
+            s._caveSnap = JSON.stringify(Object.assign({}, snap));
+            this.log("【洞口印记】黑雾吞没意识的前一刻，洞口的印记亮起——再睁眼，你站在潭边，一切如刻下印记那一刻。", "event");
+            this.toast("从洞口印记重来");
+          } else if (!win && !inCave && meta.enemyName === "封岳") {
+            // 败给猎人：他要的是药——劫走袋中主药，把你撂在血雾里
+            const x = s.exmap;
+            const robbed = Math.ceil((x.bag.xueshi_zhuyao || 0) / 2);
+            if (robbed > 0) x.bag.xueshi_zhuyao -= robbed;
+            const f = ExploreMap.cur(x);
+            f.node = ExploreMap.mapOf(f).entry;
+            this.log(`封岳翻走你袋中${robbed > 0 ? `主药${robbed}株` : "所有值钱物什"}，冷笑一声没下杀手：「杂役的命，不值我脏靴子。」——你拖着伤躲回了血幕裂口。`, "bad");
+          }
+          State.save();
+          if (s.hp > 0 && s.exmap) { UI.openExmap && UI.openExmap(); return; }
+        }
+        State.save();
+        UI.renderAll();
+        return;
       }
       // 探索途中触发的战斗：打完回到探索网格继续
       if (this._exploreFightReturn) {
@@ -2656,11 +3492,14 @@ const Engine = {
         this._retryAfterLoss = "wan_death";
       }
     } else if (meta.type === "breakthrough") {
-      this._resolveBreakthroughResult(win);
+      // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
+      this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
     }
     this._combat = null;
     this._combatMeta = null;
     this.checkLifespan();
+    // 战后剧情接续：禁地战斗等设下的 flag 立刻被主线拾起（封岳→深潭、墨蛟→潭边）
+    if (!s.pendingEvent && !this._retryAfterLoss) this.checkStory();
     State.save();
     UI.renderAll();
     // 决战败北重试：一切战斗状态清理完毕后，再开剧情卡直达抉择（防中途状态残留卡死）
@@ -2759,7 +3598,14 @@ const Engine = {
   checkStory() {
     const s = State.data;
     if (s.pendingEvent) return;
-    const next = STORY[s.storyStage];
+    if (s.exmap) return;   // 秘境舆图会话中不插主线卡（出图结算时再查）
+    let next = STORY[s.storyStage];
+    // skipIf：分支节点的"已失效/已完成"判定——顺序流越过它（封岳线绕开/稳守线跳过狙杀等）
+    let guard = 0;
+    while (next && next.skipIf && next.skipIf(s) && guard++ < 12) {
+      s.storyStage += 1;
+      next = STORY[s.storyStage];
+    }
     if (!next) return;
     // 阶段 0 无 cond，直接触发；其余需满足 cond
     if (next.cond && !next.cond(s)) return;
@@ -2843,6 +3689,35 @@ const Engine = {
     if (choice.resolve === "luyunfeng_fight") {
       s.pendingEvent = null;
       this.startLuyunfengFight();
+      return;
+    }
+    // 血色禁地：深入中环 → 封岳狙杀剧情卡（叙事径直达）
+    if (choice.resolve === "fengyue_ambush") {
+      s.pendingEvent = "fengyue_ambush";
+      const st = STORY.find(x => x.id === "fengyue_ambush");
+      if (st) { UI.renderStory(st); return; }
+    }
+    // 踏入血色禁地（v3 舆图：五日灾厄钟/封岳巡逻/墨蛟洞）
+    if (choice.resolve === "jindi_enter") {
+      s.pendingEvent = null;
+      s.storyStage += 1;   // 越过 jindi_meeting（后续叙事卡均 skipIf 跳过）
+      UI.clearStory();
+      this.enterJindiMap();
+      return;
+    }
+    // 封岳之战（狙杀者：胜得踏云靴）
+    if (choice.resolve === "fengyue_fight") {
+      s.pendingEvent = null;
+      this._nextFightType = "fengyue";
+      this.startEncounterFight("fengyue");
+      return;
+    }
+    // 墨蛟之战（血潭并肩：南宫婉入战）
+    if (choice.resolve === "mojiao_fight") {
+      s.pendingEvent = null;
+      this._nextFightType = "mojiao";
+      this._sideOverride = this._nangongwanAlly();
+      this.startEncounterFight("mojiao");
       return;
     }
 

@@ -33,6 +33,8 @@
     boss:   { icon: "👹", name: "妖兽王", enemy: true, boss: true, value: 9, loot: { lingshi: [3, 5], lingcao: [2, 3] } },
     // 暗室：神识够强才能察觉的隐藏机缘（神识的探索用途）
     secret: { icon: "🚪", name: "隐秘暗室", loot: { lingshi: [2, 3], ningshen_dan: [1, 1] }, steps: 2, value: 7, rich: true },
+    // 狙杀者：图中游弋的修士杀局（血色禁地：封岳）——比凶兽更毒的"人"
+    stalker:{ icon: "🗡", name: "狙杀者", enemy: true, value: 8 },
     // 异状：踩上才知吉凶的小事件（探索的心跳）
     mystery:{ icon: "❓", name: "异状", value: 2 },
     exit:   { icon: "⮐",  name: "出口", value: 0 },
@@ -109,6 +111,38 @@
       deep.sort((a, b) => depth(a) - depth(b));
       const bossPt = deep.pop();
       if (bossPt) { fill(cells[idx(bossPt.x, bossPt.y)], "boss"); cells[idx(bossPt.x, bossPt.y)].enemy = cfg.bossEnemy || "rogue_cultivator"; }
+      // 特殊主药（血色禁地：部分灵草格升格为主线主药——中深层才有，越深越多）
+      if (cfg.specialHerb && cfg.specialHerbN) {
+        let placed = 0;
+        for (let i = 0; i < cells.length && placed < cfg.specialHerbN; i++) {
+          const c = cells[i];
+          if (c.content !== "herb") continue;
+          const pt = { x: i % w, y: (i / w) | 0 };
+          if (depth(pt) <= maxDepth * 0.35) continue;   // 浅层不出主药
+          c.specialLoot = cfg.specialHerb;
+          c.loot = {}; c.loot[cfg.specialHerb] = 1;
+          placed++;
+        }
+        // 不够数：深层补种
+        while (placed < cfg.specialHerbN && deep.length) {
+          const pt = deep.pop();
+          const c = cells[idx(pt.x, pt.y)];
+          if (c.content) continue;
+          fill(c, "herb");
+          c.specialLoot = cfg.specialHerb;
+          c.loot = {}; c.loot[cfg.specialHerb] = 1;
+          placed++;
+        }
+      }
+      // 狙杀者（血色禁地：中层游弋的修士杀局——撞上=恶战，绕开=保平安）
+      if (cfg.stalker) {
+        const mid = free.filter(pt => { const d = depth(pt); return d > maxDepth * 0.35 && d <= maxDepth * 0.62; });
+        const sp = mid.length ? mid[Math.floor(rng() * mid.length)] : deep.pop();
+        if (sp) {
+          const c = cells[idx(sp.x, sp.y)];
+          c.content = "stalker"; c.enemy = cfg.stalker;
+        }
+      }
       // 隐秘暗室：藏在中深处，神识到了才会显形
       const secretPt = deep.length ? deep.splice(Math.floor(deep.length / 2), 1)[0] : shallow.pop();
       if (secretPt) { fill(cells[idx(secretPt.x, secretPt.y)], "secret"); cells[idx(secretPt.x, secretPt.y)].hidden = true; }
@@ -147,7 +181,8 @@
         player: { x: entry.x, y: entry.y },
         entry, exit,
         companions,
-        steps: 0, stepCost: cfg.stepCost || 0.34,   // 每步耗时（月），结算时取整
+        steps: 0, stepCost: cfg.stepCost != null ? cfg.stepCost : 0.34,   // 每步耗时（月），结算时取整
+        maxSteps: cfg.maxSteps || 0,   // 限时秘境：步数预算（血色禁地五日之限），0=不限
         bag: {},          // 本次探索已采集（结算时并入主背包）
         log: [],
         finished: false,
@@ -208,6 +243,17 @@
 
       const cell = this.cellAt(state, nx, ny);
       const result = { ok: true, events: [] };
+
+      // 限时秘境：步数预算耗尽=禁制闭合，强制送出（血色禁地五日之限）
+      if (state.maxSteps > 0 && state.steps >= state.maxSteps) {
+        this._log(state, "天际血幕骤然收拢——五日之限已至，禁制将阖！一股大力裹住你向外传送……");
+        result.events.push({ type: "timeup" });
+        return result;
+      }
+      if (state.maxSteps > 0) {
+        const left = state.maxSteps - state.steps;
+        if (left === 20 || left === 10 || left === 5) this._log(state, `（血幕的颜色又深了几分——剩余时辰不多了：余 ${left} 步）`);
+      }
 
       // 踩到内容
       if (cell.content && !cell.taken) {

@@ -27,8 +27,21 @@ for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js",
 
 const { State, Engine, STORY, DATA, Chapters } = sandbox;
 
-// ---- 战斗自动驾驶 ----
+// ---- 战斗自动驾驶（对阵轴：用引擎内置 AI——会走位/选射程内技能/抓趁虚）----
 function autopilotCombat() {
+  let guard = 0;
+  while (State.data.combat && guard++ < 300) {
+    const cc = Engine._combat;
+    if (!cc) break;
+    cc._autoPlayerTurn();
+    if (!State.data.combat) break;
+    if (cc.status !== "ongoing") { Engine._finishCombat(); break; }
+    Engine.combatEndRound();
+  }
+}
+
+// （旧引擎手选策略，已由内置 AI 取代）
+function autopilotCombat_legacy() {
   let guard = 0;
   while (State.data.combat && guard++ < 300) {
     const cc = Engine._combat;

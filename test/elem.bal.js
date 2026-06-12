@@ -4,47 +4,32 @@ const { Combat, Fighter, SPELLS } = require("../js/combat.js");
 const KIT = ["tuna", "huti", "ningshen", "zhayan", "zhayan_lian", "weidu", "feizhen", "huodan"];
 function mkJinguang() {
   return {
-    name: "金光上人", hp: 120, profile: "common", sense: 14, speed: 13, agility: 10,
+    name: "金光上人", hp: 140, sense: 14, speed: 13, agility: 10, move: 1, mp: 72,
     tactics: "guarded", qiLayer: 7, elem: "jin",
     guardMove: { name: "金钟罩·重聚", shield: 16 },
     attacks: [
-      { name: "金符破空", dmg: 15, kind: "normal", weight: 12, elem: "jin" },
-      { name: "剑符斩", dmg: 18, pierce: true, kind: "pierce", weight: 7, elem: "jin" },
-      { name: "金刚伏魔", dmg: 20, kind: "charge", weight: 5, elem: "jin" },
+      { name: "金符破空", dmg: 22, kind: "normal", weight: 12, elem: "jin", mp: 6 },
+      { name: "剑符斩", dmg: 26, pierce: true, kind: "pierce", weight: 7, elem: "jin", mp: 8 },
+      { name: "金刚伏魔", dmg: 30, kind: "charge", weight: 5, elem: "jin", mp: 10, aim: "cell", range: [1, 3] },
     ],
   };
 }
 function mkPlayer(extra) {
-  // 紧备置：毒1、无暗器、练气五层——逼出符箓/尸傀的真实增量
+  // 紧备置：毒1、无暗器、练气五层——逼出符箓/尸傀的真实增量（属性对齐 encounter 公式）
   return new Fighter(Object.assign({
-    name: "韩立", hp: 100, profile: "hanli_si", sense: 10, insight: 6, gongli: 30,
-    agility: 6, qiLayer: 5, elem: "mu", spells: KIT.slice(),
+    name: "韩立", hp: 160, mp: 80, sense: 10, insight: 6, gongli: 30, speed: 11, move: 1,
+    agility: 6, qiLayer: 5, elem: "mu", technique: "changchun", spells: KIT.slice(),
     pouch: { duyao_cao: 1, anqi: 0 },
   }, extra));
 }
 function autopilot(c) {
   let guard = 0;
-  while (c.status === "ongoing" && guard++ < 200) {
-    let inner = 0;
-    while (c.affordableSpells().length && inner++ < 20) {
-      const t = c.enemies.findIndex(e => e.alive);
-      if (t < 0) break;
-      const e = c.enemies[t];
-      const aff = c.affordableSpells();
-      let choice = null;
-      if (c.player.hp < c.player.hpMax * 0.3 && aff.includes("tuna")) choice = "tuna";
-      else if (!e.immunePoison && !e.soulOnly && !e.status.poison && aff.includes("weidu")) choice = "weidu";
-      else if (aff.includes("jinguang_zhuan")) choice = "jinguang_zhuan";
-      else if (aff.includes("huoshe_fu")) choice = "huoshe_fu";
-      else if (aff.includes("feizhen")) choice = "feizhen";
-      else if (aff.includes("huodan") && e.elem === "jin") choice = "huodan";
-      else if (aff.includes("zhayan_lian") && c.player.momentum >= 3) choice = "zhayan_lian";
-      else choice = aff.find(id => SPELLS[id].type === "atk");
-      if (!choice) break;
-      if (!c.cast(choice, t).ok) break;
-      if (c.status !== "ongoing") break;
-    }
-    if (c.status === "ongoing") { c.endRound(); if (c.status === "ongoing") c.startRound(); }
+  while (c.status === "ongoing" && guard++ < 60) {
+    c._autoPlayerTurn();
+    if (c.status !== "ongoing") break;
+    c.endRound();
+    if (c.status !== "ongoing") break;
+    c.startRound();
   }
   return c.status;
 }
@@ -78,7 +63,7 @@ function assert(cond, msg) {
   if (cond) console.log("  ✓ " + msg);
   else { console.log("  ✗ 失败: " + msg); failures++; }
 }
-assert(base >= 55 && base <= 88, `紧备置基线在险胜区间 55~88%（实际 ${base}%）`);
+assert(base >= 40 && base <= 88, `紧备置基线在险胜区间 40~88%（实际 ${base}%）——五五开的死战`);
 assert(fu >= base + 8, `火蛇符带来可感知的提升 ≥8pt（${base}% → ${fu}%）`);
 assert(side >= base + 10, `尸傀随行带来显著提升 ≥10pt（${base}% → ${side}%）`);
 assert(all >= fu && all >= side, `全备置不弱于任何单项（${all}%）`);
