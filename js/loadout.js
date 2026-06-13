@@ -41,9 +41,11 @@
       const tier = (typeof Chapters !== "undefined") ? Chapters.realmTier() : (s._realmTier || 0);
       return Balance.skillSlots(tier);
     },
-    // 占槽的出战技能数（底牌不计）
+    // 占槽的出战法术数（底牌不计；法宝法器技不计——法宝走主/御/悬浮三位制，gear 注入）
     equippedCount(s) {
-      return (s.spells || []).filter(id => !this.isTrump(id)).length;
+      const SP = (typeof CombatAPI !== "undefined") ? CombatAPI.SPELLS : null;
+      return (s.spells || []).filter(id => !this.isTrump(id)
+        && !(SP && SP[id] && SP[id].source === "treasure")).length;
     },
     auxCap(s) {
       const tier = (typeof Chapters !== "undefined") ? Chapters.realmTier() : (s._realmTier || 0);

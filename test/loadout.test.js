@@ -33,9 +33,9 @@ console.log("\n=== 1. 起始配装：主修长春功，技能已装备 ===");
   assert(Loadout.knownPool(s).includes("zhayan"), "技能池含眨眼剑法");
 }
 
-console.log("\n=== 2. 技能槽随境界增多 ===");
+console.log("\n=== 2. 法术槽恒6 / 辅修槽随境界增多 ===");
 {
-  assert(Balance.skillSlots(0) < Balance.skillSlots(1), `练气槽位 < 筑基槽位（${Balance.skillSlots(0)} < ${Balance.skillSlots(1)}）`);
+  assert(Balance.skillSlots() === 6, `出战法术槽恒 6（${Balance.skillSlots()}）——v96 取舍即构筑、不随境界膨胀`);
   assert(Balance.secondaryTechniqueSlots(0) < Balance.secondaryTechniqueSlots(2), "辅修槽随境界增多");
 }
 
@@ -97,8 +97,11 @@ console.log("\n=== 6. 辅修技能战斗打折（×auxMul）===");
   const mk = (aux) => new CombatAPI.Fighter({ name: "韩立", hp: 100, profile: "hanli_si", insight: 0,
     spells: ["zhayan"], grade: 1, realmTier: 0, auxSkills: aux ? ["zhayan"] : [] });
   function hit(fighter) {
-    const c = new CombatAPI.Combat({ player: fighter, enemies: [{ name: "桩", hp: 9999, agility: 0 }], rng: () => 0.99 });
-    c.startRound(); c.qi.jin = 9;
+    const c = new CombatAPI.Combat({ player: fighter, enemies: [{ name: "桩", hp: 9999, agility: 0, speed: 10, mp: 0 }], rng: () => 0.99 });
+    c.startRound();
+    // v87 法力池：旧 c.qi.jin 已废（眨眼剑法 mp:0 武学，给满灵力无副作用）；
+    // 对阵轴 v2：贴身武学需排进射程——眨眼剑法 range[1,1]，故置距 1
+    c.player.mp = c.player.mpMax; c.player.pos = 2; c.enemies[0].pos = 3;
     const hp0 = c.enemies[0].hp;
     c.cast("zhayan", 0);
     return hp0 - c.enemies[0].hp;

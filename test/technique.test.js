@@ -34,9 +34,13 @@ assert(DATA.techniques.great_development.locked === true, "《大衍诀》在七
 const banned = ["qingyuan_sword", "great_development"];
 assert(!State.data.spells.some(id => banned.includes(id)), "玩家招式池不含锁定功法");
 
+// 锁定功法绝不能出现在「黄枫谷篇」之前的脚本（七玄门篇+离门远行）。
+// ⚠ 青元剑诀=筑基后李化元所赠、大衍诀=叶师叔遗物残卷——二者都是黄枫谷篇正当内容
+// （考据正确，合法存在于 story.js 后段）；故只校验黄枫谷篇之前的脚本不得提前出现。
 const storySrc = fs.readFileSync(path.join(__dirname, "..", "js/story.js"), "utf8");
-assert(!/qingyuan_sword|青元剑诀/.test(storySrc), "剧情脚本未在本篇出现青元剑诀");
-assert(!/great_development|大衍诀/.test(storySrc), "剧情脚本未在本篇出现大衍诀");
+const preHuangfeng = storySrc.split("黄枫谷篇")[0];
+assert(!/qingyuan_sword|青元剑诀/.test(preHuangfeng), "黄枫谷篇前的剧情脚本未提前出现青元剑诀（筑基后李化元才赠）");
+assert(!/great_development|大衍诀/.test(preHuangfeng), "黄枫谷篇前的剧情脚本未提前出现大衍诀（叶师叔遗物才现）");
 
 for (const [k, t] of Object.entries(DATA.techniques)) {
   assert(!!t.origin && !!t.name, `《${t.name}》标注了来历`);

@@ -114,6 +114,14 @@ DATA.items = {
     desc: "顶阶防御法器：玄铁铸就的厚重巨盾，灵力灌注时如山岳横亘。练气十一层方可驱使。" },
   feixing_jujian: { name: "巨剑", rarity: "epic", type: "gear",
     desc: "顶阶攻击法器：丈余玄铁巨剑，灵力催动时可御使飞出、凌空斩敌，势大力沉。练气十一层方可驱使。" },
+
+  /* —— 伴身法宝（v96 三类法宝制：被动面板件——装备即生效，战斗零操作）—— */
+  yunling_zhu: { name: "蕴灵珠", rarity: "rare", type: "gear",
+    desc: "伴身法宝：温润玉珠悬于气海之侧，吐纳灵机绵绵不绝——敛息回元与聚灵阵每口回灵+3。练气十一层方可伴身。" },
+  hugen_jia: { name: "护根软甲", rarity: "rare", type: "gear",
+    desc: "伴身法宝：千年藤心织就的贴身软甲——气血上限+20、护甲+1。练气十一层方可伴身。" },
+  ningshen_huan: { name: "凝神玉环", rarity: "rare", type: "gear",
+    desc: "伴身法宝：悬于眉心的青玉小环，凝神聚识——神识+2、灵力池+8。练气十一层方可伴身。" },
   qiannian_lingcao: { name: "千年灵草", rarity: "epic", type: "material",
     desc: "经小绿瓶以浓缩岁月之力催熟的灵草，药龄堪比千年野生之物。万宝楼见之眼开——一两棵，便够换楼上一件法器。" },
 
@@ -199,6 +207,24 @@ DATA.gear = {
     slot: "accessory", minLayer: 1,
     bonus: { sense: 1 },
     traits: [{ id: "veil_aura", desc: "遮灵敛息：神识+1；周身灵气波动被遮掩，藏拙更深（示人境界不易被看破）" }],
+  },
+
+  // —— 伴身法宝（v96 三类法宝制：被动面板件，slot:"side"——装备即生效战斗零操作；
+  //    槽数=神识档（境界+大衍诀）。数值过 encounter.bal 箱线 ——
+  yunling_zhu: {
+    slot: "side", minLayer: 11,
+    bonus: { regenBoost: 3 },
+    traits: [{ id: "regen_pearl", desc: "蕴灵珠伴身：敛息回元与聚灵阵每口回灵+3——久战的底气（池制不破：仍须花动作回灵）" }],
+  },
+  hugen_jia: {
+    slot: "side", minLayer: 11,
+    bonus: { hpMax: 20, armor: 1 },
+    traits: [{ id: "root_armor", desc: "护根软甲贴身：气血上限+20、护甲+1——挨打的本钱" }],
+  },
+  ningshen_huan: {
+    slot: "side", minLayer: 11,
+    bonus: { sense: 2, mpMax: 8 },
+    traits: [{ id: "mind_ring", desc: "凝神玉环悬于眉心：神识+2、灵力池+8——多驭一物的余裕" }],
   },
 };
 

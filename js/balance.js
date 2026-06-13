@@ -107,11 +107,13 @@
         ? ({ 0: 1, 1: 2, 2: 3, 3: 4, 4: 5 })[realmTier]
         : 1 + (realmTier || 0);
     },
-    // 出战技能槽收紧（用户裁决：界面不膨胀，取舍才有 build）。底牌(毒/暗器)不占槽。
-    skillSlots(realmTier) {
-      return ({ 0: 5, 1: 6, 2: 7, 3: 8, 4: 9 })[realmTier] != null
-        ? ({ 0: 5, 1: 6, 2: 7, 3: 8, 4: 9 })[realmTier]
-        : 5 + (realmTier || 0);
+    // 出战法术槽（v96 用户裁决：**恒 6**——14PM 单屏 3×2 不滑屏，取舍即构筑）。
+    // 底牌(毒/暗器/符丹)不占槽；法宝法器不占槽（法宝走主/御/伴身三类制）。
+    skillSlots() { return 6; },
+    // 伴身法宝槽（v96 三类法宝制）：槽数=神识档——境界递增+大衍诀+1
+    // （"神识=多法宝并用上限"的字面落地：练气1/筑基2/结丹3/元婴4，大衍诀再+1）
+    sideTreasureSlots(realmTier, hasDayan) {
+      return Math.max(1, 1 + (realmTier || 0)) + (hasDayan ? 1 : 0);
     },
     // 辅修功法所授技能的强度折扣（主修全效，辅修打折）
     auxiliaryMul() { return 0.7; },

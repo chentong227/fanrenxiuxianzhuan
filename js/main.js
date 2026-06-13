@@ -146,13 +146,17 @@ const Main = {
           const r = field.getBoundingClientRect();
           if (fxq === "plate") {
             // 九宫定帧大合影：同刻齐放，340ms 处冻结主循环（canvas 不再清屏），镜像一次
+            // fxset=jinlei → 辟邪神雷专台（金雷三连+金天雷，验收"最好看的金色雷"）
             Fx._budget = 4000;   // 验收台放开预算
-            const ids = ["qingyuan_jianmang", "huoshe_fu", "hanbing_fu", "jinguang_zhuan", "dingshen_fu", "feizhen", "zhayan_lian", "tuna", "LIGHTNING"];
+            const ids = (q.get("fxset") === "jinlei")
+              ? ["shenlei_pi", "shenlei_fujian", "leidun", "leidun_out", "GOLDLIGHTNING", "GOLDLIGHTNING"]
+              : ["qingyuan_jianmang", "huoshe_fu", "hanbing_fu", "jinguang_zhuan", "dingshen_fu", "feizhen", "zhayan_lian", "tuna", "LIGHTNING"];
             ids.forEach((id, i) => {
               const cx = (i % 3) * 0.33, cy = Math.floor(i / 3) * 0.3;
               const from = { x: r.width * (cx + 0.04), y: r.height * (cy + 0.24) };
               const to = { x: r.width * (cx + 0.27), y: r.height * (cy + 0.22) };
               if (id === "LIGHTNING") Fx.lightning(to.x, to.y, { life: 2000 });
+              else if (id === "GOLDLIGHTNING") Fx.lightning(to.x, to.y, { gold: true, life: 2000 });
               else Fx.RECIPES[id](Fx, from, to);
             });
             setTimeout(() => {
@@ -189,23 +193,40 @@ const Main = {
         s.hpMax = 250; s.hp = 250;
         s.spirit = (DATA.realms[10] || {}).spMax || 200;
         s.technique = "changchun"; s.name = "韩立";
-        s.spells = ["tuna", "huti", "ningshen", "zhayan", "zhayan_lian", "weidu", "feizhen", "huodan", "zimu_ren"];   // 子母双刃=法宝区（战斗重心展示）
+        // 出战法术恒 6（v96）+法宝三位制演示：青竹蜂云剑=本命主攻（持续剑阵+神雷附剑）、
+        // 如意花篮=悬浮（祭出位）。zimu_ren 留作次级法宝
+        s.spells = ["tuna", "huti", "ningshen", "zhayan", "weidu", "huodan", "qingzhu_jian", "zimu_ren", "ruyi_hualan"];
         State.give("lingshi", 20);
         State.give("duyao_cao", 3); State.give("anqi", 3);
         State.give("huoshe_fu", 2); State.give("hanbing_fu", 2);
         State.give("jinguang_zhuan", 1); State.give("jinguang_zhuan_charge", 2);
         State.give("huixue_dan", 2); State.give("huiyuan_dan", 2); State.give("dingshen_fu", 2);
         State.give("zhenqi_kunzu", 2); State.give("zhenqi_juling", 1);
+        // 伴身法宝演武（v96 三类法宝制：被动面板件——蕴灵珠回灵+3/护根甲血+20甲+1；
+        // dayan flag=伴身槽+1 的演示（练气1槽+大衍诀1=2 槽全用上)
+        State.give("yunling_zhu", 1); State.give("hugen_jia", 1);
+        s.sideTreasures = ["yunling_zhu", "hugen_jia"];
+        State.setFlag("dayan_learned");
         State.setFlag("fly_unlocked");   // 演武解锁腾空（正式内容随御器/风雷翅开放）
         s.storyStage = STORY.length;     // 演武场不跑剧情（免得开场卡压在战后）
         this.enterGame();
         setTimeout(() => {
-          // 客随统帅：南宫婉前辈压阵（mastery 2——她点将，你接应）
-          Engine._sideOverride = Object.assign(Engine._nangongwanAlly(), { mastery: 2, hp: 120, hpMax: 120 });
+          // 客随统帅+低阶同道双轨（T4 多侧位演武）：南宫婉（mastery 2=她指挥你）
+          // + 万小山（mastery 0=你下简令）——一场看全"统帅/简令"两种指挥关系
+          Engine._sideOverride = [
+            Object.assign(Engine._nangongwanAlly(), { mastery: 2, hp: 120, hpMax: 120 }),
+            { id: "wanxiaoshan", name: "万小山", kind: "ally", art: "wanxiaoshan", mastery: 0,
+              hp: 60, hpMax: 60, guard: 0.15, elem: "huo", mp: 26, mpMax: 30,
+              persona: { aggr: 4, prot: 1, kite: 4 },
+              moves: [
+                { name: "火球术", dmg: 11, weight: 12, elem: "huo", range: [1, 3], mp: 4, line: "搓出一颗火球砸去" },
+                { name: "符纸·小火蛇", dmg: 15, weight: 5, elem: "huo", range: [1, 3], mp: 6, line: "肉痛地拍出一张符纸——「这张可值钱了！」" },
+              ] },
+          ];
           // 战场：旷野长轴 + 路边灵物（战中可采——贪与稳）
           // sceneBg=舞台盒森林单图（v90 对照实验：两翼收口构图 vs 三层合成，验"浮在图上"的根因）
           Engine._caveFightCfg = {
-            W: 15, lanes: 3, playerPos: 3, sidePos: 4, enemyPos: 12,   // 旷野=3 排（排数与格数同源）
+            W: 15, lanes: 3, playerPos: 3, sidesPos: [4, 2], enemyPos: 12,   // 旷野=3 排（排数与格数同源）
             sceneBg: "bt_forest",
             hotspots: [
               { id: "d_herb", pos: 2, name: "血色主药", loot: { xueshi_zhuyao: 1 } },   // 在身后：回采=放风筝走位的奖励
@@ -213,13 +234,24 @@ const Main = {
             ],
           };
           Engine.startEncounterFight("beast_chimu");
+          // 神雷三用途演武（v96：正典=结丹后青竹蜂云剑——演武先行验证"取舍/耗尽"编排）
+          if (Engine._combat) {
+            const hp0 = Engine._combat.player;
+            hp0.charges = { shenlei: { name: "辟邪神雷", cur: 9, max: 9 } };
+            ["shenlei_pi", "shenlei_fujian", "leidun"].forEach(id => {
+              if (!hp0.spells.includes(id)) hp0.spells.push(id);
+            });
+          }
           if (Engine._combat && Engine._combat.enemies[0]) {
-            Engine._combat.enemies[0].mastery = 1;   // 狼王=兽王老练档
-            // 编队展示（2.5 排制）：头狼压战位、灵狼游走僚位策应——杀穿前排，后排才被逼上来
-            // （lane 2 对狼这种低矮立绘太狠：缩成保护色隐进背景——深二排留给高大单位）
-            const packWolf = new CombatAPI.Fighter(Object.assign({}, WORLD.enemies.wild_wolf, { team: "enemy", lane: 1, pos: 10 }));
+            const king = Engine._combat.enemies[0];
+            king.mastery = 1;   // 狼王=兽王老练档
+            // 阵型展示（T3 pack）：狼王=领队、灵狼=从者守队形带——杀王则群溃（士气崩）
+            king.formation = "pack"; king.leader = true;
+            const packWolf = new CombatAPI.Fighter(Object.assign({}, WORLD.enemies.wild_wolf,
+              { team: "enemy", lane: 1, pos: 10, formation: "pack" }));
             Engine._combat.enemies.push(packWolf);
             Engine._combat._rollOneIntent(packWolf);
+            UI.renderCombat(Engine._combat, Engine._combatMeta);   // 神雷章/编队即时上屏
           }
           Engine._combat._log("【演武】南宫婉负手而立：『赤目狼王凶性十足，正好——你我搭把手，叫你见识见识何为配合。』");
         }, 300);

@@ -2109,19 +2109,17 @@ const UI = {
       me.classList.add(melee ? "strike-melee" : "strike-cast");
       setTimeout(() => me.classList.remove("strike-melee", "strike-cast"), 500);
     }
-    // 催刃出袭（主攻法宝伴身联动）：点子母刃的那一拍，绕身刃阵齐齐掠向目标再归位
-    if (sp && sp.source === "treasure" && sp.type === "atk" && me && tgt) {
-      const blades = me.querySelector(".au-blades");
-      if (blades) {
-        const dir = tgt.getBoundingClientRect().left >= me.getBoundingClientRect().left ? 1 : -1;
-        blades.style.setProperty("--bdir", dir);
-        blades.classList.remove("launch"); void blades.offsetWidth;
-        blades.classList.add("launch");
-        setTimeout(() => blades.classList.remove("launch"), 700);
-      }
+    // 催动绕身法宝阵列出袭（通用闭环协议）：青竹剑阵/子母刃等绕身阵列攻击时，飞行体各自汇聚
+    // 射向目标 → 拖尾暴涨 → 命中 → 回归。取代额外配方光效（真实剑/刃出动，不再叠独立光块）
+    const useOrbit = !!(sp && sp.source === "treasure" && sp.type === "atk" && me && tgt
+      && this._launchOrbit(me, tgt, sp));
+    if (useOrbit) {
+      if (typeof Sfx !== "undefined") Sfx.play("swordWhoosh");   // 群剑出袭·破空锐啸
+      // 命中那拍（出袭飞达目标≈40%×0.92s≈0.37s）目标震动
+      setTimeout(() => { if (tgt) { tgt.classList.remove("shake"); void tgt.offsetWidth; tgt.classList.add("shake"); } }, 370);
     }
-    // 御使飞行：攻击类且非贴身武学——一道法器印划过战场 + fx 流光弹道
-    if (sp && me && tgt && sp.type === "atk" && sp.range && sp.range[1] >= 2) {
+    // 御使飞行：攻击类且非贴身武学——一道法器印划过战场 + fx 流光弹道（出袭法宝已用真实阵列代替，跳过）
+    if (!useOrbit && sp && me && tgt && sp.type === "atk" && sp.range && sp.range[1] >= 2) {
       const field = this.el("axis-field");
       const fr = field.getBoundingClientRect();
       const a = me.getBoundingClientRect(), b = tgt.getBoundingClientRect();
@@ -2142,14 +2140,14 @@ const UI = {
       if (typeof Fx !== "undefined" && Fx.ensure(field)) {
         Fx.castSpell(spellId, me, tgt, sp);
       }
-    } else if (tgt) {
+    } else if (!useOrbit && tgt) {
       tgt.classList.remove("shake"); void tgt.offsetWidth; tgt.classList.add("shake");
       // 贴身武学/自身术：同走配方分发
       if (typeof Fx !== "undefined" && sp) {
         const field = this.el("axis-field");
         if (Fx.ensure(field)) Fx.castSpell(spellId, me, tgt, sp);
       }
-    } else if (sp && me && typeof Fx !== "undefined") {
+    } else if (!useOrbit && sp && me && typeof Fx !== "undefined") {
       const field = this.el("axis-field");
       if (Fx.ensure(field)) Fx.castSpell(spellId, me, null, sp);
     }
@@ -2170,8 +2168,67 @@ const UI = {
         clearTimeout(this._castTimer);
         this._castTimer = setTimeout(() => { el.hidden = true; }, isTreasure ? 950 : 700);
       }
-      if (typeof Sfx !== "undefined") Sfx.play(sp.type === "heal" ? "heal" : sp.type === "def" ? "shield" : sp.source === "treasure" ? "bell" : "sword");
+      // 出手音（T7 行属分系）：金石有锋、火有轰势、冰有澈、木有破空——招式听得出是什么
+      if (typeof Sfx !== "undefined") {
+        const castSnd = { jin: "castJin", mu: "castMu", shui: "castShui", huo: "castHuo", tu: "castTu" };
+        Sfx.play(sp.type === "heal" ? "heal" : sp.type === "def" ? "shield"
+          : sp.source === "martial" ? "meleeWhoosh"
+          : castSnd[sp.elem] || (sp.source === "treasure" ? "castJin" : "sword"));
+        if (sp.source === "treasure") Sfx.play("bell");   // 法宝催动叠一记钟鸣（仪式感）
+      }
     }
+  },
+
+  // 催动绕身法宝阵列出袭（通用协议）：为每个阵列(.au-swords/.au-blades…)的飞行体注入
+  // --strike-x/y（自身中心→目标命中点位移）+ --strike-r（剑尖朝目标角度），派发 launch 触发
+  // 各飞行体自己的 *Strike 闭环动画。返回是否触发（无阵列→false，让调用方回退到配方光效）。
+  _launchOrbit(me, tgt, sp) {
+    if (!me || !tgt) return false;
+    const orbits = me.querySelectorAll(".au-swords, .au-blades");
+    if (!orbits.length) return false;
+    const tr = tgt.getBoundingClientRect();
+    const tgtX = tr.left + tr.width / 2;
+    const tgtY = tr.top + tr.height * 0.46;   // 命中点≈躯干中心
+    orbits.forEach(orbit => {
+      const or = orbit.getBoundingClientRect();
+      orbit.querySelectorAll(".sw, .bld").forEach(f => {
+        // 用 offset 布局位置（不含浮游 transform 抖动）求飞行体静止中心
+        const fx = or.left + f.offsetLeft + f.offsetWidth / 2;
+        const fy = or.top + f.offsetTop + f.offsetHeight / 2;
+        const dx = tgtX - fx, dy = tgtY - fy;
+        f.style.setProperty("--strike-x", dx.toFixed(1) + "px");
+        f.style.setProperty("--strike-y", dy.toFixed(1) + "px");
+        // 剑尖朝目标：剑形剑尖朝下(=屏幕 +90°)，转到 atan2 方向需 -90°
+        f.style.setProperty("--strike-r", (Math.atan2(dy, dx) * 180 / Math.PI - 90).toFixed(1) + "deg");
+      });
+      orbit.classList.remove("launch"); void orbit.offsetWidth;
+      orbit.classList.add("launch");
+      setTimeout(() => orbit.classList.remove("launch"), 960);
+    });
+    return true;
+  },
+
+  // 应雷仪式：神雷附剑施放、剑阵转金那一刻——剑阵应雷齐震 + 金雷光环暴胀涌现 + 金雷环从人物炸开
+  // + 应雷之声（群剑共鸣剑吟）。由 engine.combatShenlei 在 renderCombat 之后调用（此刻剑阵 DOM 已切 .lei 态）。
+  leiRitual() {
+    const me = this._axisAnchor("player");
+    if (!me) return;
+    const swords = me.querySelector(".au-swords.lei");
+    if (swords) {
+      swords.classList.remove("lei-cast"); void swords.offsetWidth;
+      swords.classList.add("lei-cast");
+      setTimeout(() => swords.classList.remove("lei-cast"), 720);
+    }
+    // 金雷环从人物炸开（双环：金外+白芯）=“应雷成环”的能量波（castSpell 的金雷劈自身是引子，此为剑阵应雷的回响）
+    const field = this.el("axis-field");
+    if (typeof Fx !== "undefined" && Fx.ensure(field)) {
+      const at = Fx.at(me, 0.5);
+      if (at) {
+        Fx.ring(at.x, at.y, { c: "#ffd970", vr: 5.6, life: 480, lw: 3.8 });
+        setTimeout(() => Fx.ring(at.x, at.y, { c: "#fff", vr: 3.6, life: 360, lw: 2 }), 80);
+      }
+    }
+    if (typeof Sfx !== "undefined") Sfx.play("leiCharge");   // 应雷之声：群剑共鸣剑吟 + 通电涌动
   },
 
   // 弹出战斗飘字（消费引擎的 fx 队列，锚到轴上 sprite）+ 三时刻重演出
@@ -2181,7 +2238,16 @@ const UI = {
     c._fx.length = 0;
     let delay = 0;
     const fxReady = typeof Fx !== "undefined" && Fx.ensure(this.el("axis-field"));
+    // 行动者切镜（T6）：谁出手镜头看谁（与该拍演出同拍递镜）；
+    // 同一行动者连续多拍只切一次——镜头能不动就不动（晕镜的反义词）
+    let lastPeek = null;
     for (const f of fx) {
+      const actor = (f.kind === "fxcast" && f.from) ? f.from : null;
+      if (actor && actor !== lastPeek) {
+        lastPeek = actor;
+        const ref = actor, at = delay;
+        setTimeout(() => this._camPeek(c, ref), at);
+      }
       // —— 全局重演出：趁虚时停金字 / 蓄势释放大字压屏（蓄势全开加白金屏闪+震屏）——
       if (f.ref === "global") {
         const g = this.el("fx-global");
@@ -2204,6 +2270,11 @@ const UI = {
         if (fxReady) {
           const fromA = f.from ? this._axisAnchor(f.from) : null;
           setTimeout(() => {
+            // 敌方/侧位出手也有声（T7）：行属分系——听声辨招
+            if (typeof Sfx !== "undefined") {
+              const castSnd = { jin: "castJin", mu: "castMu", shui: "castShui", huo: "castHuo", tu: "castTu" };
+              Sfx.play(f.melee ? "meleeWhoosh" : castSnd[f.elem] || "sword");
+            }
             const to = Fx.at(anchor);
             if (!to) return;
             if (f.melee) {
@@ -2225,6 +2296,7 @@ const UI = {
       // —— 终结一击：慢放灰化+水墨溅散 ——
       if (f.kind === "slay") {
         setTimeout(() => {
+          if (typeof Sfx !== "undefined") Sfx.play("die");
           anchor.classList.add("slaying");
           const burst = document.createElement("div");
           burst.className = "ink-burst";
@@ -2237,6 +2309,21 @@ const UI = {
       }
       setTimeout(() => {
         this._popFloat(anchor, f.kind, f.text);
+        // 受击/事件音（T7）：背袭寒刃、重创骨裂、暴击重锤、升降风啸——每一记都有"形"
+        if (typeof Sfx !== "undefined") {
+          const t = f.text || "";
+          if (/背袭/.test(t)) Sfx.play("backstab");
+          else if (/重创/.test(t)) Sfx.play("maim");
+          else if (f.kind === "crit") Sfx.play("crit");
+          else if (f.kind === "hurt" || f.kind === "dmg") Sfx.play("hit");
+          else if (f.kind === "pierce") Sfx.play("sword");
+          else if (f.kind === "soul") Sfx.play("shield");
+          else if (f.kind === "miss") {
+            if (/击落|落地/.test(t)) Sfx.play("landDown");
+            else if (/腾空/.test(t)) Sfx.play("flyUp");
+            else if (/闪避|扑空|挥空|拉出/.test(t)) Sfx.play("whiff");
+          }
+        }
         if (f.kind === "hurt" || f.kind === "dmg" || f.kind === "crit" || f.kind === "pierce") {
           anchor.classList.remove("shake", "hitflash"); void anchor.offsetWidth;
           anchor.classList.add("shake", "hitflash");
@@ -2257,6 +2344,8 @@ const UI = {
       }, delay);
       delay += 200;
     }
+    // 演出散场：镜头缓缓回到你身上（下一回合是你的）
+    if (lastPeek) setTimeout(() => this._camPeek(c, "player"), delay + 900);
   },
   _popFloat(anchor, kind, text) {
     const el = document.createElement("div");
@@ -2428,7 +2517,7 @@ const UI = {
         badges.push(`<span class="au-mark mk-stance mk-lead" title="她的境界远在你之上——接好她递的刀便是">帅</span>`);
       } else {
         const stCh = { follow: "随", attack: "攻", guard: "守", retreat: "撤" }[u.stance || "follow"];
-        badges.push(`<span class="au-mark mk-stance" onclick="event.stopPropagation(); Engine.cycleSideStance()">${stCh}</span>`);
+        badges.push(`<span class="au-mark mk-stance" onclick="event.stopPropagation(); Engine.cycleSideStance(${opts.sideIndex || 0})">${stCh}</span>`);
       }
     }
     if (u.status && u.status.poison) badges.push(`<span class="au-mark mk-poison">毒${u.status.poison.dmg}</span>`);
@@ -2440,17 +2529,42 @@ const UI = {
       const w = State.gearOf("weapon"), a = State.gearOf("armor");
       const wName = w && DATA.items[State.data.gear.weapon] ? DATA.items[State.data.gear.weapon].name : null;
       const aName = a && DATA.items[State.data.gear.armor] ? DATA.items[State.data.gear.armor].name : null;
-      // 主攻法宝伴身（正典：金蚨子母刃一母八子绕身）——有主攻法宝技时以刃阵替代武器印
+      // 主攻法宝伴身：青竹蜂云剑=12 把剑持续绕身（swordOrbit），神雷附剑时缠金雷（lei）；
+      // 子母刃=一母八子青芒小刃；皆"持续"绕身，催动时整阵掠向目标
       const SPL = (typeof CombatAPI !== "undefined") ? CombatAPI.SPELLS : null;
+      const swordTre = SPL && (u.spells || []).find(id => SPL[id] && SPL[id].swordOrbit);
       const hasMainTre = SPL && (u.spells || []).some(id =>
         SPL[id] && SPL[id].source === "treasure" && !SPL[id].quick && SPL[id].type === "atk");
-      if (hasMainTre) {
+      if (swordTre) {
+        // 青竹蜂云剑·剑阵（12 把，持续绕身）：常态=剑身缠普通蓝色小电流；
+        // 神雷附剑生效（_leiEnchant>0）→升级为金色大电流+周身金雷光环
+        const lei = (u._leiEnchant || 0) > 0;
+        // 神雷附剑态额外渲染：lei-aura(周身金雷光环) + 4 道 lei-bolt(周身环境雷弧，此起彼伏窜现)
+        const leiExtra = lei ? '<i class="lei-aura"></i>' + '<i class="lei-bolt"></i>'.repeat(4) : '';
+        orbit = `<div class="au-swords ${lei ? "lei" : "arc"}">${'<i class="sw"><b></b></i>'.repeat(10)}${leiExtra}</div>`;
+      } else if (hasMainTre) {
         orbit = `<div class="au-blades">${'<i class="bld"></i>'.repeat(9)}</div>`;
       } else if (wName) {
         orbs.push(`<span class="orb orb-w" title="${wName}">${sealChar(wName)}</span>`);
       }
       if (aName) orbs.push(`<span class="orb orb-a" title="${aName}">${sealChar(aName)}</span>`);
       if (orbs.length) orbit += `<div class="au-orbit">${orbs.join("")}</div>`;
+    }
+    // 悬浮法宝绕身（三位制·祭出位 v96/v98）：祭起的法宝化作宝光绕身浮转、自行运转
+    // （敌我同规则——任何单位 floats 都现身；如意花篮等"驭物类"在此可见）
+    if (u.floats && u.floats.length) {
+      const SPF = (typeof CombatAPI !== "undefined") ? CombatAPI.SPELLS : null;
+      const toks = u.floats.slice(0, 4).map((id, k) => {
+        const sp = SPF && SPF[id];
+        const wx = sp ? (sp.elem || "jin") : "jin";
+        const title = `${sp ? sp.name : id}（祭起·绕身运转）`;
+        // 如意花篮=竹篾小篮+彩花泉涌；其余驭物宝器=无字灵光宝珠（绝不再用印文"如"字凑数）
+        if (id === "ruyi_hualan") {
+          return `<i class="fl-orb fl-basket fl-${k}" title="${title}"><b class="bk"></b><b class="pet p1"></b><b class="pet p2"></b><b class="pet p3"></b></i>`;
+        }
+        return `<i class="fl-orb fl-gem fl-${k} wx-${wx}" title="${title}"></i>`;
+      }).join("");
+      orbit += `<div class="au-floats">${toks}</div>`;
     }
     // 相对朝向：每个单位都面向"自己正在对付的人"——玩家盯锁定目标、同道盯最近敌人、
     // 敌人盯最近的我方；被绕背（_backTurned）的敌人保持旧朝向——背门是真的背对着你
@@ -2502,7 +2616,7 @@ const UI = {
     // 后排缓缓过（演出偏移，规则站位不变；用上一帧 _cam，transition 平滑掉一帧延迟）
     const lanePar = (u.lane || 0) > 0 ? (c._cam || 0) * 0.04 * Math.min(u.lane, 3) : 0;
     return {
-      uid: isPlayer ? "player" : isSide ? "side" : "enemy:" + i,
+      uid: isPlayer ? "player" : isSide ? ((opts.sideIndex || 0) > 0 ? "side:" + opts.sideIndex : "side") : "enemy:" + i,
       cls,
       left: ((u.pos + 0.5 + lanePar) / c.W * 100).toFixed(2) + "%",
       clickIdx: (!isPlayer && !isSide && u.alive) ? i : null,
@@ -2538,7 +2652,14 @@ const UI = {
         el._cls = d.cls; el._left = d.left;
       }
       if (el._cls !== d.cls) { el.className = d.cls; el._cls = d.cls; }
-      if (el._left !== d.left) { el.style.left = d.left; el._left = d.left; }
+      if (el._left !== d.left) {
+        // 雷遁瞬移（v98）：玩家这一步不是"滑"过去，是穿亚空间"换地方出现"——关掉 left 过渡瞬切
+        if (this._blinkSnap && d.uid === "player") {
+          const prev = el.style.transition;
+          el.style.transition = "none"; el.style.left = d.left; void el.offsetWidth; el.style.transition = prev;
+        } else { el.style.left = d.left; }
+        el._left = d.left;
+      }
       el.onclick = d.clickIdx != null ? () => UI.pickTarget(d.clickIdx) : null;
       // 徽章（每回合变，轻量重写——不含 img 无闪烁）
       const bd = el.querySelector(".au-badges");
@@ -2575,8 +2696,18 @@ const UI = {
       const nm = el.querySelector(".au-name");
       if (nm._h !== d.name) { nm.innerHTML = d.name; nm._h = d.name; }
     });
+    this._blinkSnap = false;   // 瞬移帧只管这一拍
     // 退场：不在名单里的（死透已演完/已遁走）移除
     [...box.children].forEach(el => { if (el.dataset.uid && !seen.has(el.dataset.uid)) el.remove(); });
+    // 雷遁出现帧（v98）：瞬移落定后，落点炸出亚空间金光破口
+    if (this._blinkOut) {
+      this._blinkOut = false;
+      const pl = box.querySelector('[data-uid="player"]');
+      if (pl && typeof Fx !== "undefined" && Fx.ensure(this.el("axis-field")) && Fx.RECIPES.leidun_out) {
+        const at = Fx.at(pl);
+        if (at) Fx.RECIPES.leidun_out(Fx, at);
+      }
+    }
     // 临时探针（?dbgpos=1）：单位几何快照——查"卡进地底"
     if (location.search.indexOf("dbgpos=1") >= 0) {
       [...box.querySelectorAll(".axis-unit")].forEach(el => {
@@ -2746,7 +2877,9 @@ const UI = {
     const unitsEl = this.el("axis-units");
     this._deadShown = this._deadShown || {};
     const unitList = [this._axisSprite(c, p, { isBT, target })];
-    if (c.side) unitList.push(this._axisSprite(c, c.side, { isBT, target }));
+    (c.sides || (c.side ? [c.side] : [])).forEach((s, si) => {
+      unitList.push(this._axisSprite(c, s, { isBT, target, sideIndex: si }));
+    });
     c.enemies.forEach((e, i) => {
       if (e.escaped) return;
       if (!e.alive) {
@@ -2767,9 +2900,10 @@ const UI = {
     const fieldEl0 = this.el("axis-field");
     const air = (p.alt || 0) === 1, aGrade = Math.min(p.airGrade || 1, 3);
     const aliveN = c.units().length;
-    // zoom：人数/排数退档 × 升空大幅后拉（airGrade 越高拉得越远——飞得高看得远）
+    // zoom：人数/排数退档 × 升空大幅后拉（airGrade 越高拉得越远——飞得高看得远）。
+    // v95 人数退档收敛（0.02→0.015）：人物已按"大战场小人物"缩了一档，镜头不再叠缩
     const zoom = Math.max(0.72, Math.min(1,
-      1 - 0.035 * ((c.L || 2) - 2) - 0.02 * Math.max(0, aliveN - 3)
+      1 - 0.035 * ((c.L || 2) - 2) - 0.015 * Math.max(0, aliveN - 3)
         - (air ? 0.05 + 0.045 * aGrade : 0)));
     const lift = air ? aGrade : 0;   // 天空抬升档：底图层下沉露天（中景沉得比远景多）
     this._camZoom = zoom;
@@ -2796,10 +2930,11 @@ const UI = {
     const fgEl = this.el("combat-fg");
     const ovSky = this.el("combat-overlay");
     if (ovSky) ovSky.classList.toggle("sky", air);   // 升空：前景淡出（贴地遮挡物不再挡视野）
-    if (c.W > 11) {
+    if (c.W > 13) {
       // 宽死区（v90）：玩家在画面中部大半区域随便走，镜头纹丝不动——"是韩立在动"；
-      // 只有逼近画框边缘才缓缓追上（追，不绑）
-      const V = air ? Math.min(c.W, 11 + 2 * aGrade) : 11, m = 2.4;
+      // 只有逼近画框边缘才缓缓追上（追，不绑）。
+      // v95 大战场小人物：基线视野 11→13 格——同屏更多天地，人物自然更小
+      const V = air ? Math.min(c.W, 13 + 2 * aGrade) : 13, m = 2.4;
       const trackW = (c.W / V) * 100;
       let cam = (typeof c._cam === "number") ? c._cam : (p.pos + 0.5 - V / 2);
       if (p.pos + 0.5 < cam + m) cam = p.pos + 0.5 - m;
@@ -2834,6 +2969,8 @@ const UI = {
         el.style.transform = `translateX(-${shift.toFixed(2)}%)${worldY} scale(${zoom.toFixed(3)})`;
         el.classList.add("cam-track");
       });
+      // 镜头参数快照（T6 行动者切镜用：fx 分拍演出时 _camPeek 沿用本帧的 zoom/沉降/视差系数）
+      this._camParts = { V, worldY, farY, midY, farScale, midScale, zoom };
       if (bgEl2) {
         const camT = (c.W - V) > 0 ? cam / (c.W - V) : 0;
         bgEl2.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${farY} scale(${farScale})`;
@@ -2846,9 +2983,10 @@ const UI = {
           fgEl.style.transform = `translateX(${(-camT * 30).toFixed(2)}%)${fgY}`;
         }
       }
-      // 锁定目标在镜头外：画框边缘点名（远闻其声的战斗版——它在那头，没丢）
-      this._fightFarCue(te2 && te2.pos + 0.5 > cam + V ? `${te2.name} ▶`
-        : te2 && te2.pos + 0.5 < cam ? `◀ ${te2.name}` : null,
+      // 锁定目标在镜头外：画框边缘点名+血量读数（远端战团摘要——它在那头打到几成，一眼可知）
+      const cueHp = te2 ? Math.max(0, Math.round(te2.hp / te2.hpMax * 100)) : 0;
+      this._fightFarCue(te2 && te2.pos + 0.5 > cam + V ? `${te2.name} ${cueHp}% ▶`
+        : te2 && te2.pos + 0.5 < cam ? `◀ ${te2.name} ${cueHp}%` : null,
         te2 && te2.pos + 0.5 < cam);
     } else {
       [laneEl2, unitsEl].forEach(el => {
@@ -2892,6 +3030,9 @@ const UI = {
     // —— 灵力池 + 行动经济行 ——
     const mpPct = Math.max(0, p.mp / p.mpMax * 100);
     const acts = (c._pActsMax || 1) - (c._pActsUsed || 0);
+    // 特色资源章（v96：神雷等 build 独立数值——打一道少一道，取舍即战术）
+    const chargeChips = p.charges ? Object.values(p.charges).map(ch =>
+      `<span class="act-chip charge ${ch.cur <= 0 ? 'used' : ''}" title="${ch.name}：战斗内不回充——用一道少一道">⚡${ch.name.slice(0, 2)}×${ch.cur}</span>`).join("") : "";
     this.el("combat-mprow").innerHTML = `
       <div class="mp-pool" title="灵力：一切手段共用一池，整场不自动恢复">
         <span class="mp-label">灵力</span>
@@ -2903,6 +3044,7 @@ const UI = {
         <span class="act-chip ${c._pQuickUsed ? 'used' : ''}" title="瞬发牌（符箓丹药）每回合一张">瞬发${c._pQuickUsed ? '已用' : '×1'}</span>
         <span class="act-chip ${moveLeft > 0 ? '' : 'used'}" title="移动力：点亮起的格子挪步">身法×${Math.max(0, moveLeft)}</span>
         ${p.momentum ? `<span class="act-chip momentum" title="剑势：连击可引爆">势×${p.momentum}</span>` : ""}
+        ${chargeChips}
       </div>`;
 
     // —— 手牌（主行动 + 瞬发底牌分区）——
@@ -2929,6 +3071,19 @@ const UI = {
       const dispName = (id === "zhayan" && p.swordMastery) ? "眨眼剑法·大成" : sp.name;
       const dispFx = (id === "zhayan" && p.swordMastery) ? spellEffectText(sp) + " 攒势×2" : spellEffectText(sp);
       const armedCls = (this._armed && this._armed.id === id) ? "armed" : "";
+      // 悬浮法宝（三位制·祭出位）：点卡=祭起/收回；祭起中金边呼吸+随时可收
+      if (sp.type === "float") {
+        const up = (p.floats || []).includes(id);
+        const can = up || (afford && (p.floats || []).length < (c.floatSlots ? c.floatSlots(p) : 1));
+        return `<button class="spell-btn ${extraCls || ''} ${up ? 'floating' : ''} ${can ? '' : 'off'}" ${can ? '' : 'disabled'}
+          onclick="Engine.combatFloat('${id}')" title="${sp.desc || ''}">
+          <span class="role-tag rt-float">${up ? "祭" : "悬"}</span><span class="seal wx-${wx}">${sealChar(sp.name)}</span>
+          <span class="sp-body">
+            <span class="sname">${sp.name}<span class="srange">${up ? "运转中" : "悬浮"}</span></span>
+            <span class="scost"><span class="cost-dot mp-dot">${up ? `燃灵${sp.float.upkeep}/回` : `灵力${sp.mp}`}</span> ${up ? "点击收回" : "祭起绕身"}</span>
+          </span>
+        </button>`;
+      }
       const roleTag = role === "main" ? `<span class="role-tag rt-main">主</span>`
         : role === "def" ? `<span class="role-tag rt-def">御</span>` : "";
       return `<button class="spell-btn ${extraCls || ''} ${armedCls} ${usable ? '' : 'off'}" ${usable ? '' : 'disabled'} onclick="UI.armSpell('${id}')" title="${sp.desc || ''}">
@@ -2944,45 +3099,111 @@ const UI = {
     //    法术区：功法法术+武学（主行动的主体）
     //    瞬发区：符箓/阵法/丹药（不占主行动的底牌）
     //    灵傀区：灵宠/傀儡/同道（侧位单位随身牌：血量+简令）
-    let treasures = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source === "treasure");
+    // 神雷类特色资源技（chargeCost）一律不入法宝/法术/瞬发栏——统一走辟邪神雷单卡三选
+    let treasures = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source === "treasure" && !SP[id].chargeCost);
     const mains = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source !== "treasure");
-    const quicks = p.spells.filter(id => SP[id] && SP[id].quick);
+    const quicks = p.spells.filter(id => SP[id] && SP[id].quick && !SP[id].chargeCost);
     // 主攻/防御位（用户裁决）：法宝区有主次之分——主攻法宝（装备武器所授，余者首张攻击法宝
     // 兜底）排第一标"主"；护体类法宝标"御"；其余为次位。主攻法宝另有伴身演出（au-blades）
     const wGear = (typeof State !== "undefined" && State.gearOf) ? State.gearOf("weapon") : null;
     const mainTre = (wGear && wGear.grantSpells && wGear.grantSpells.find(id => treasures.includes(id)))
       || treasures.find(id => SP[id].type === "atk") || null;
+    // 三位制排序：主→御→悬浮（祭出位）——主与御各一，余者皆走悬浮（combat-arsenal 二·五）
     if (mainTre) treasures = [mainTre].concat(treasures.filter(id => id !== mainTre));
-    const treRole = id => id === mainTre ? "main" : (SP[id].type !== "atk" ? "def" : "");
+    const treRole = id => id === mainTre ? "main" : (SP[id].type === "def" ? "def" : "");
+    // 法术恒 6（v96 用户裁决：14PM 单屏 3×2 不滑屏——超出部分不渲染并提示去编排）
+    // 神雷类特色资源技不进法术格（走辟邪神雷单卡三选——像灵虫一样点选生效）
+    const mains6 = mains.filter(id => !SP[id].chargeCost).slice(0, 6);
+    const mainsAll = mains.filter(id => !SP[id].chargeCost);
+    // 伴身法宝印鉴（v96 三类法宝制）：被动件挂法宝栏尾——只展示不可点（效果常驻面板）
+    const sideTre = (typeof State !== "undefined" && State.sideTreasures) ? State.sideTreasures() : [];
+    const sideSeals = sideTre.map(g => {
+      const it = DATA.items[g.id];
+      const fx = g.bonus ? Object.entries(g.bonus).map(([k, v]) => {
+        const names = { hpMax: "血", mpMax: "灵", sense: "识", armor: "甲", speed: "速", regenBoost: "息" };
+        return `${names[k] || k}+${v}`;
+      }).join(" ") : "";
+      return `<span class="side-seal" title="${it ? it.name : g.id}（伴身）：${(g.traits || []).map(t => t.desc).join("；")}">
+        <i class="seal">${sealChar(it ? it.name : g.id)}</i><b>${fx}</b></span>`;
+    }).join("");
+    // 辟邪神雷三选（v98 用户裁决：条状叠在本命法宝卡【正上方】，不占格——
+    // 点击→选择→生效：打/附/遁。神雷=本命法宝（青竹蜂云剑）所蕴的手段，故贴本命卡头）
+    let shenleiStrip = "";
+    const slCh = p.charges && p.charges.shenlei;
+    if (slCh) {
+      const can = m => {
+        const sp2 = SP[m];
+        return sp2 && slCh.cur >= sp2.chargeCost.n && (sp2.mp || 0) <= p.mp
+          && (sp2.quick ? !c._pQuickUsed : c._pActsUsed < c._pActsMax);
+      };
+      const opt = (m, ch, tip) => `<i class="sl-opt ${can(m) ? "" : "off"}" onclick="event.stopPropagation();${can(m) ? `Engine.combatShenlei('${m}')` : ""}" title="${tip}">${ch}</i>`;
+      shenleiStrip = `<div class="shenlei-strip ${slCh.cur <= 0 ? "off" : ""}" title="辟邪神雷：${slCh.cur}/${slCh.max} 道——打一道少一道（青竹蜂云剑所蕴）">
+        <span class="sl-name">辟邪神雷 <b>⚡×${slCh.cur}</b></span>
+        ${opt("shenlei_pi", "劈", "辟邪神雷·劈：耗雷1灵6——自天而降一道金雷（克邪魔×1.8）")}
+        ${opt("shenlei_fujian", "附", "神雷附剑：耗雷3灵4——青竹云剑绕身缠金雷，三回合主攻法宝带雷+8克邪")}
+        ${opt("leidun", "遁", "雷遁：耗雷1灵5（瞬发）——穿亚空间瞬移，本回合移动无视挡线+2步")}
+      </div>`;
+    }
+    // 本命法宝单元（v98）：神雷条贴主攻卡头顶——竖向堆叠成一个"本命法宝列"，
+    // 整体占位不变（主攻卡内排紧凑一档让出条位）；无神雷则退化为普通主攻卡
+    const mainCell = (mainTre && shenleiStrip)
+      ? `<div class="treasure-main">${shenleiStrip}${spellBtn(mainTre, "treasure compact", "main")}</div>`
+      : (mainTre ? spellBtn(mainTre, "treasure", "main") : "");
+    const restTre = treasures.filter(id => id !== mainTre);
+    // 法宝行与法术行分排（v97 用户裁决：法术在法宝正下方独立一排）
     this.el("combat-spells").innerHTML =
-      `<div class="spell-grid">`
-      + (treasures.length ? `<span class="zone-tag zt-treasure">法宝</span>${treasures.map(id => spellBtn(id, "treasure", treRole(id))).join("")}` : "")
-      + `<span class="zone-tag">法术</span>${mains.map(id => spellBtn(id)).join("")}`
+      `<div class="spell-grid treasure-row">`
+      + (treasures.length || sideSeals || shenleiStrip ? `<span class="zone-tag zt-treasure">法宝</span>${mainCell}${restTre.map(id => spellBtn(id, "treasure", treRole(id))).join("")}${sideSeals}` : "")
+      + `</div><div class="spell-grid">`
+      + `<span class="zone-tag">法术</span>${mains6.map(id => spellBtn(id)).join("")}`
+      + (mainsAll.length > 6 ? `<span class="zone-overflow" title="出战法术上限 6——洞府中重新编排">+${mainsAll.length - 6} 未出战</span>` : "")
       + `</div>`;
     // 瞬发 + 助战：同一条窄排（瞬发牌横滑；助战卡点击换简令）。
     // 客随例外（用户裁决）：境界远高于你的同道（mastery≥2）全自动——她指挥你（点将），
     // 你指挥不了她；简令四档只对平辈/下属（尸傀/灵宠/低阶同道）生效
     const qrow = this.el("quick-row");
     if (qrow) {
-      const petCard = (u) => {
+      const petCard = (u, idx, stackN) => {
         const down = u.hp <= 0;
         const lead = u.kind === "ally" && (u.mastery || 0) >= 2;
         const st = u.stance || "follow";
         const stCh = lead ? "帅" : ({ follow: "随", attack: "攻", guard: "守", retreat: "撤" }[st] || "随");
         const hpPct = Math.max(0, Math.round(u.hp / u.hpMax * 100));
         const mpPct = u.mpMax ? Math.max(0, Math.round((u.mp || 0) / u.mpMax * 100)) : 0;
+        // 灵虫/灵宠形态钩（用户裁决：点形态章切换化枪/附体/分身——u.forms 定义后生效，
+        // 血玉蜘蛛起为单形态，乱星海噬金虫开多形态）
+        const formCh = (u.forms && u.forms.length > 1)
+          ? `<span class="pc-form" onclick="event.stopPropagation(); Engine.cycleSideForm(${idx})" title="切换形态">${u.form || u.forms[0]}</span>` : "";
         return `<button class="pet-card ${down ? 'down' : ''} ${lead ? 'lead' : ''}" ${down ? 'disabled' : ''}
-          onclick="Engine.cycleSideStance()" title="${down ? u.name + ' 已离场' : lead ? '她的境界远在你之上——全程自主出手，每回合为你点将' : '点击换简令：随行→强攻→护主→后撤'}">
-          <span class="seal">${u.name[0]}</span>
+          onclick="Engine.cycleSideStance(${idx})" title="${down ? u.name + ' 已离场' : lead ? '她的境界远在你之上——全程自主出手，每回合为你点将' : '点击换简令：随行→强攻→护主→后撤'}">
+          <span class="seal">${u.name[0]}${stackN > 1 ? `<i class="pc-stack">×${stackN}</i>` : ""}</span>
           <span class="pc-body"><span class="pc-name">${u.name}</span>
           <span class="pc-hp"><i style="width:${hpPct}%"></i></span>
           ${u.mpMax ? `<span class="pc-mp"><i style="width:${mpPct}%"></i></span>` : ""}</span>
-          <span class="pc-st">${down ? "殁" : stCh}</span>
+          ${formCh}<span class="pc-st">${down ? "殁" : stCh}</span>
         </button>`;
       };
+      // T4 多侧位+堆叠（用户裁决：傀儡×2×3）：同 id 同类聚合为一张卡带数量章，
+      // 简令对整组下达（点卡=组令）；具名同道（南宫婉/万小山）各自一张
+      const sidesAll = c.sides || (c.side ? [c.side] : []);
+      const groups = [];
+      sidesAll.forEach((u, i) => {
+        const key = u.id || ("u" + i);
+        const g = groups.find(x => x.key === key && u.kind !== "ally");
+        if (g) g.n++;
+        else groups.push({ key, u, idx: i, n: 1 });
+      });
+      // 助战=独立一栏（用户裁决）；瞬发自成一行
+      const petRow = this.el("pet-row");
+      if (petRow) {
+        petRow.innerHTML = groups.length
+          ? `<span class="zone-tag zt-pet">助战</span>${groups.map(g => petCard(g.u, g.idx, g.n)).join("")}` : "";
+        petRow.hidden = !groups.length;
+      }
       qrow.innerHTML =
-        (c.side ? `<span class="zone-tag zt-pet">助战</span>${petCard(c.side)}` : "")
-        + (quicks.length ? `<span class="zone-tag zt-quick">瞬发</span>${quicks.map(id => spellBtn(id, "trump")).join("")}` : "");
+        (quicks.length ? `<span class="zone-tag zt-quick">瞬发</span>${quicks.map(id => spellBtn(id, "trump")).join("")}` : "")
+        // 回退：无独立助战栏的旧 DOM（preview 等）仍并入瞬发行
+        + (!petRow && groups.length ? `<span class="zone-tag zt-pet">助战</span>${groups.map(g => petCard(g.u, g.idx, g.n)).join("")}` : "");
     }
 
     // —— 遁走按钮：仅在阵脚亮出 ——
@@ -3319,6 +3540,48 @@ const UI = {
   _hotIcon(name) { return /主药|老株/.test(name) ? "🌿" : /灵石/.test(name) ? "💎" : "🌱"; },
 
   // 战斗版远端点名：锁定目标在镜头外时，画框边缘亮出名字与方向
+  /* ===== 行动者切镜（tactics T6）：回合制的天然优势——谁行动，镜头看谁 =====
+   * fx 分拍演出时把镜头平移到行动者（只动 translateX，zoom/沉降/视差沿用当帧快照）；
+   * 行动者已在画面中带（±2.5 格余量）则纹丝不动——镜头能不动就不动（晕镜的反义词）。
+   * 大跨度（>5 格）自动放慢过渡（1.7s）——"切镜要丝滑，不要又晕又看不清"（用户原话） */
+  _camPeek(c, ref) {
+    if (!c || c.W <= 13 || !this._camParts || typeof c._cam !== "number") return;
+    const u = ref === "player" ? c.player
+      : /^side/.test(ref || "") ? (c.sides ? c.sides[+(ref.split(":")[1] || 0)] : c.side)
+      : /^enemy:/.test(ref || "") ? c.enemies[+ref.split(":")[1]] : null;
+    if (!u || (u.hp != null && u.hp <= 0 && ref !== "player")) return;
+    const P = this._camParts, V = P.V;
+    const cur = c._cam;
+    // 已在画面中带：不动镜
+    if (u.pos + 0.5 >= cur + 2.5 && u.pos + 0.5 <= cur + V - 2.5) return;
+    let cam = Math.max(0, Math.min(c.W - V, u.pos + 0.5 - V / 2));
+    if (Math.abs(cam - cur) < 0.6) return;
+    c._cam = cam;
+    const slow = Math.abs(cam - cur) > 5;
+    const shift = (cam / c.W) * 100;
+    const camT = (c.W - V) > 0 ? cam / (c.W - V) : 0;
+    [this.el("axis-lane"), this.el("axis-units")].forEach(el => {
+      if (!el) return;
+      el.style.transitionDuration = slow ? "1.7s" : "";
+      el.style.transform = `translateX(-${shift.toFixed(2)}%)${P.worldY} scale(${P.zoom.toFixed(3)})`;
+    });
+    const bg = this.el("combat-bg");
+    if (bg) {
+      bg.style.transitionDuration = slow ? "1.7s" : "";
+      bg.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${P.farY} scale(${P.farScale})`;
+    }
+    const mid = this.el("combat-bgmid");
+    if (mid && mid.classList.contains("on")) {
+      mid.style.transitionDuration = slow ? "1.7s" : "";
+      mid.style.transform = `translateX(${(-camT * 17).toFixed(2)}%)${P.midY} scale(${P.midScale})`;
+    }
+    // 限速恢复（下一次 renderCombat 的统一时长接管）
+    if (slow) setTimeout(() => {
+      [this.el("axis-lane"), this.el("axis-units"), this.el("combat-bg"), this.el("combat-bgmid")]
+        .forEach(el => { if (el) el.style.transitionDuration = ""; });
+    }, 1750);
+  },
+
   _fightFarCue(text, leftSide) {
     const field = this.el("axis-field");
     if (!field) return;

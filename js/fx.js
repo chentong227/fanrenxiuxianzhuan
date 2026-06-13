@@ -17,6 +17,8 @@
   const ELEM_COLOR = {
     huo: ["#ffd9a8", "#ff6a26"], shui: ["#dff0ff", "#4d9bea"], jin: ["#fff6cf", "#e8c04a"],
     mu: ["#dcffe2", "#46c573"], tu: ["#f3e3bc", "#c29748"], lei: ["#f2f8ff", "#86b4ff"],
+    // jinlei=辟邪神雷（金色天雷，用户裁决：金色的雷，很帅）
+    jinlei: ["#fff3c4", "#ffb01e"],
     none: ["#f3e9d2", "#c8a861"],
   };
   const col = e => ELEM_COLOR[e] || ELEM_COLOR.none;
@@ -39,7 +41,7 @@
 
   const Fx = {
     _cv: null, _ctx: null, _host: null, _glow: null,
-    _parts: [], _bolts: [], _strokes: [], _raf: 0,
+    _parts: [], _bolts: [], _strokes: [], _swords: [], _arcs: [], _raf: 0,
     _budget: 420,           // 粒子全场封顶（手机红线）
     _degraded: 1,           // 降档系数：帧难看时减半出粒
     _slowFrames: 0,
@@ -146,6 +148,41 @@
       });
       this._run();
     },
+    /* 飞剑环阵（青竹蜂云剑：n 柄飞剑绕身旋舞，椭圆轨道带透视）——
+     * 神雷附剑的主体：剑随气旋、雷缠剑身。剑形真画（细长剑刃+护手），非光块 */
+    swordRing(cx, cy, o = {}) {
+      this._swords.push({
+        cx, cy, r: o.r || 52, n: o.n || 12, t: 0, life: o.life || 1500,
+        spin: o.spin || 0.05, intro: o.intro || 260, outro: o.outro || 340,
+        len: o.len || 17, blade: o.blade || "#bdf7cf", core: o.core || "#ffffff",
+        lei: o.lei || false,   // 雷缠：剑身偶现金弧
+      });
+      this._run();
+    },
+    /* 短促电弧（两点之间的金蛇）——剑阵雷缠/瞬移破口的零件 */
+    arc(x0, y0, x1, y1, o = {}) {
+      const pts = [[x0, y0]]; const n = 7;
+      const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len, ny = dx / len;
+      for (let i = 1; i < n; i++) { const t = i / n; const s = rnd(-0.5, 0.5) * 10; pts.push([x0 + dx * t + nx * s, y0 + dy * t + ny * s]); }
+      pts.push([x1, y1]);
+      this._arcs.push({ pts, t: 0, life: o.life || 160, w: o.w || 1.8, c: o.c || "255,214,90" });
+    },
+    _drawSword(ctx, x, y, ang, len, blade, core, alpha) {
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(ang);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = blade;
+      ctx.beginPath();
+      ctx.moveTo(len, 0); ctx.lineTo(-len * 0.22, 2.4);
+      ctx.lineTo(-len * 0.42, 0); ctx.lineTo(-len * 0.22, -2.4);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = core; ctx.globalAlpha = alpha * 0.95; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(len * 0.92, 0); ctx.lineTo(-len * 0.28, 0); ctx.stroke();
+      ctx.strokeStyle = blade; ctx.globalAlpha = alpha; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(-len * 0.24, -3.6); ctx.lineTo(-len * 0.24, 3.6); ctx.stroke();
+      ctx.restore();
+    },
     /* 弹道：连续光带 + 头部火花（默认实现换 ribbon，散点拖尾作余烬） */
     trail(from, to, o = {}) {
       if (!from || !to) return;
@@ -202,7 +239,7 @@
       this._run();
     },
 
-    /* 天雷劈落 */
+    /* 天雷劈落（opts.gold=金色辟邪神雷；opts.bolt 自定三层描边色 [外晕,中,芯]） */
     lightning(x, y, opts = {}) {
       if (!this._ctx) return;
       const make = (x0, y0, x1, y1, spread) => {
@@ -215,16 +252,21 @@
         pts.push([x1, y1]);
         return pts;
       };
-      const main = make(x + rnd(-30, 30), -20, x, y, 64);
+      const gold = opts.gold;
+      // 金雷从天幕最高处落下（"天降"感）——蓝雷沿用原起点
+      const main = make(x + rnd(-30, 30), gold ? -this._h * 0.9 : -20, x, y, gold ? 80 : 64);
       const branches = [];
       for (let b = 0; b < 2 + Math.floor(Math.random() * 2); b++) {
         const k = 3 + Math.floor(Math.random() * (main.length - 6));
         const [bx, by] = main[k];
         branches.push(make(bx, by, bx + rnd(-60, 60), by + rnd(60, 140), 40));
       }
-      this._bolts.push({ pts: main, branches, life: opts.life || (opts.small ? 280 : 460), t: 0, w: opts.small ? 2.2 : 3.4 });
-      this.burst(x, y, "lei", opts.small ? 14 : 26, { power: 5 });
-      this.flash("#d6e8ff", opts.small ? 110 : 190, opts.small ? .4 : .8);
+      this._bolts.push({
+        pts: main, branches, life: opts.life || (opts.small ? 280 : 460), t: 0, w: opts.small ? 2.2 : 3.4,
+        bolt: opts.bolt || (gold ? ["255,176,30", "255,214,90", "255,248,210"] : ["122,168,255", "170,205,255", "244,250,255"]),
+      });
+      this.burst(x, y, gold ? "jinlei" : "lei", opts.small ? 14 : 26, { power: 5 });
+      this.flash(gold ? "#ffe9ad" : "#d6e8ff", opts.small ? 110 : 190, opts.small ? .4 : .8);
       this.shake(opts.small ? 5 : 11);
       if (typeof Sfx !== "undefined") Sfx.play("thunder");
       this._run();
@@ -256,6 +298,69 @@
           const a = (i / 12) * TAU;
           F.mote(from.x + Math.cos(a) * 30, from.y - 8 + Math.sin(a) * 38, { vy: -.5, life: 700, size: 2.6, c: "#a8f0e0", delay: i * 28 });
         }
+        F._run();
+      },
+      /* ============================================================
+       * 辟邪神雷三连（v98 用户点名"做最好看的金色雷"）——金芯白炽，雷者天威
+       * 金色雷：辟邪神雷克鬼魅邪魔（青竹蜂云剑·七十二雷）
+       * ============================================================ */
+      /* 劈：天幕金闪→自天而降的粗金雷柱（金晕白芯三层）→分支→命中金环冲击+残雷爬体 */
+      shenlei_pi(F, from, to) {
+        if (!to) return;
+        // ① 天幕预闪（雷前的静——金芒漫天）
+        F.flash("#fff2c8", 80, .28);
+        setTimeout(() => {
+          // ② 主雷：自天幕最高处劈落（gold=金色三层描边+起点拉到画顶）
+          F.lightning(to.x, to.y, { gold: true, life: 600 });
+          setTimeout(() => F.lightning(to.x + rnd(-16, 16), to.y, { gold: true, small: true, life: 320 }), 90);
+          // ③ 命中：金色冲击环×2+金雷迸散+金闪+重震
+          F.ring(to.x, to.y + 8, { c: "#ffd970", vr: 5.4, life: 380, lw: 3.6 });
+          setTimeout(() => F.ring(to.x, to.y + 8, { c: "#fff", vr: 3.4, life: 300, lw: 1.8 }), 70);
+          F.burst(to.x, to.y, "jinlei", 32, { power: 6.2 });
+          F.flash("#ffe39a", 200, .5);
+          F.shake(13);
+          // ④ 残雷爬体：金弧在目标身上窜 600ms
+          for (let i = 0; i < 4; i++) {
+            setTimeout(() => F.lightning(to.x + rnd(-18, 18), to.y + rnd(-10, 6), { gold: true, small: true, life: 170 }), 180 + i * 130);
+          }
+        }, 120);
+        F._run();
+      },
+      /* 附剑：金雷自天落于身→七十二青竹云剑应雷而出、剑身缠金电（buff 的仪式感）。
+       * 剑环本体已由 DOM 剑阵（ui.js .au-swords.lei + leiRitual 应雷仪式）接管——此处只放"引子"特效 */
+      shenlei_fujian(F, from) {
+        // ① 一道金雷劈在自身（唤剑的引子）
+        F.lightning(from.x, from.y - 6, { gold: true, small: true, life: 280 });
+        F.flash("#ffe39a", 110, .3);
+        // ② 应雷迸放：金环 + 一圈青芒（剑身成环交给 DOM 剑阵——不再画 canvas 临时剑环以免与之重叠）
+        setTimeout(() => {
+          F.ring(from.x, from.y - 6, { c: "#ffd970", vr: 2.6, life: 560, lw: 2.4 });
+          // 剑出时一圈青芒迸放
+          for (let i = 0; i < 12 * F._degraded; i++) {
+            const a = (i / 12) * TAU;
+            F.mote(from.x + Math.cos(a) * 18, from.y - 6 + Math.sin(a) * 12, { vx: Math.cos(a) * 1.6, vy: Math.sin(a) * 1.0, life: 480, size: 3, c: i % 3 ? "#bdf7cf" : "#fff3c4", delay: i * 18 });
+          }
+        }, 220);
+        F._run();
+      },
+      /* 雷遁：瞬移不是快，是"换了个空间"——原地金弧吞身（消失帧），不在此画"出现"
+       * （出现帧由 UI 在落点再放一次 leidun_out——两段式瞬移） */
+      leidun(F, from) {
+        F.lightning(from.x, from.y - 8, { gold: true, small: true, life: 220 });
+        F.burst(from.x, from.y - 12, "jinlei", 20, { power: 4.4 });
+        F.ring(from.x, from.y - 10, { r: 44, vr: -3.6, life: 240, lw: 2.8, c: "#ffd970" });   // 大金环向内收缩=被空间吞没
+        // 竖直金光柱（破空遁入的瞬间）
+        for (let i = 0; i < 10 * F._degraded; i++) F.spark(from.x + rnd(-6, 6), from.y - 4, { vy: rnd(-7, -3), c: "#ffe39a", life: 260 });
+        F.flash("#fff2c8", 90, .36);
+        F._run();
+      },
+      /* 雷遁·出现帧：落点金光炸出（亚空间破口乍现） */
+      leidun_out(F, from) {
+        F.lightning(from.x, from.y - 8, { gold: true, small: true, life: 200 });
+        F.burst(from.x, from.y - 12, "jinlei", 16, { power: 3.8 });
+        F.ring(from.x, from.y - 10, { c: "#fff", vr: 3.8, life: 240, lw: 2 });
+        F.ring(from.x, from.y - 10, { c: "#ffd970", vr: 2.4, life: 320, lw: 2.6 });
+        F.flash("#fff2c8", 70, .26);
         F._run();
       },
       /* 眨眼剑法：两道交叉钢色快斩（武学：快、白、利） */
@@ -471,7 +576,7 @@
     },
     _frame(dt) {
       const ctx = this._ctx;
-      if (!ctx || (!this._parts.length && !this._bolts.length && !this._strokes.length)) {
+      if (!ctx || (!this._parts.length && !this._bolts.length && !this._strokes.length && !this._swords.length && !this._arcs.length)) {
         if (ctx) ctx.clearRect(0, 0, this._cv.width, this._cv.height);
         return false;
       }
@@ -510,6 +615,41 @@
         ctx.globalAlpha = 1;
       }
 
+      // 飞剑环阵（青竹云剑绕身：椭圆透视轨道+剑身缠金雷）
+      this._swords = this._swords.filter(s => (s.t += dt) < s.life);
+      for (const s of this._swords) {
+        const introK = Math.min(1, s.t / s.intro);
+        const outK = s.t > s.life - s.outro ? Math.max(0, (s.life - s.t) / s.outro) : 1;
+        const alpha = introK * outK;
+        const rr = s.r * (0.4 + 0.6 * introK);          // 剑阵自内向外张开
+        const base = s.t * s.spin;
+        const pos = [];
+        for (let i = 0; i < s.n; i++) {
+          const a = base + (i / s.n) * TAU;
+          const x = s.cx + Math.cos(a) * rr;
+          const y = s.cy + Math.sin(a) * rr * 0.5;       // 0.5=俯视椭圆（透视绕身）
+          const depth = 0.55 + 0.45 * ((Math.sin(a) + 1) / 2);   // 前明后暗（绕到背面变淡）
+          this._drawSword(ctx, x, y, a + Math.PI / 2, s.len, s.blade, s.core, alpha * depth);
+          pos.push([x, y]);
+        }
+        // 剑身缠金雷：偶发相邻剑间金弧
+        if (s.lei && Math.random() < 0.5 * (dt / 16)) {
+          const i = Math.floor(Math.random() * s.n);
+          const p0 = pos[i], p1 = pos[(i + 1) % s.n];
+          this.arc(p0[0], p0[1], p1[0], p1[1]);
+        }
+      }
+      // 短金弧
+      this._arcs = this._arcs.filter(a => (a.t += dt) < a.life);
+      for (const a of this._arcs) {
+        const k = 1 - a.t / a.life;
+        ctx.lineCap = "round"; ctx.lineJoin = "round";
+        ctx.strokeStyle = `rgba(${a.c},${(.9 * k).toFixed(3)})`; ctx.lineWidth = a.w;
+        ctx.beginPath(); ctx.moveTo(a.pts[0][0], a.pts[0][1]);
+        for (let i = 1; i < a.pts.length; i++) ctx.lineTo(a.pts[i][0], a.pts[i][1]);
+        ctx.stroke();
+      }
+
       // 闪电折线
       this._bolts = this._bolts.filter(b => (b.t += dt) < b.life);
       for (const b of this._bolts) {
@@ -522,11 +662,12 @@
           ctx.lineWidth = w; ctx.stroke();
         };
         ctx.lineCap = "round"; ctx.lineJoin = "round";
-        ctx.strokeStyle = `rgba(122,168,255,${(.28 * k * flick).toFixed(3)})`; draw(b.pts, b.w * 6);
-        ctx.strokeStyle = `rgba(170,205,255,${(.5 * k * flick).toFixed(3)})`; draw(b.pts, b.w * 2.4);
-        ctx.strokeStyle = `rgba(244,250,255,${(.95 * k * flick).toFixed(3)})`; draw(b.pts, b.w);
+        const bc = b.bolt || ["122,168,255", "170,205,255", "244,250,255"];
+        ctx.strokeStyle = `rgba(${bc[0]},${(.28 * k * flick).toFixed(3)})`; draw(b.pts, b.w * 6);
+        ctx.strokeStyle = `rgba(${bc[1]},${(.5 * k * flick).toFixed(3)})`; draw(b.pts, b.w * 2.4);
+        ctx.strokeStyle = `rgba(${bc[2]},${(.95 * k * flick).toFixed(3)})`; draw(b.pts, b.w);
         for (const br of b.branches) {
-          ctx.strokeStyle = `rgba(190,215,255,${(.55 * k * flick).toFixed(3)})`; draw(br, b.w * 0.6);
+          ctx.strokeStyle = `rgba(${bc[1]},${(.55 * k * flick).toFixed(3)})`; draw(br, b.w * 0.6);
         }
       }
 
@@ -604,6 +745,7 @@
 
     clear() {
       this._parts.length = 0; this._bolts.length = 0; this._strokes.length = 0;
+      this._swords.length = 0; this._arcs.length = 0;
       if (this._ctx && this._cv) this._ctx.clearRect(0, 0, this._cv.width, this._cv.height);
     },
   };

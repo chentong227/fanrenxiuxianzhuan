@@ -48,13 +48,14 @@ function autopilot(c) {
   return c.status;
 }
 // 用一个"功法攻击"招式做对照：注入临时法术
-SPELLS._gptest = { name: "测试法术", cost: { mu: 2 }, type: "atk", dmg: 12, source: "art" };
+// 对阵轴 v2：法力池 mp + 射程 range（旧 cost:{mu} 五行珠制已废）。range 拉满=本 MC 只比品阶威力、不掺位置变量
+SPELLS._gptest = { name: "测试法术", mp: 4, range: [1, 99], type: "atk", dmg: 12, source: "art" };
 function buildVs(grade) {
   // qiLayer 6：以"练气六层灵气底蕴"为蒙特卡洛基准（灵气总量随境界成长后的对照点）
   const p = new Fighter({ name: "修士", hp: 110, profile: "common", grade, realmTier: 0, qiLayer: 6, spells: ["_gptest", "tuna"] });
   // profile common 五行均衡，保证 mu 足够
-  const e = { name: "陪练", hp: 110, sense: 5, agility: 4, atkName: "击", atk: 12 };
-  return new Combat({ player: p, enemies: [e], maxRounds: 14 });
+  const e = { name: "陪练", hp: 110, sense: 5, agility: 4, atkName: "击", atk: 12, speed: 10, mp: 0 };
+  return new Combat({ player: p, enemies: [e], maxRounds: 14, W: 9, playerPos: 2, enemyPos: 4 });
 }
 const rates = {};
 for (const g of [1, 2, 3]) {

@@ -752,7 +752,9 @@ const Engine = {
     UI.renderAll();
     UI.openWanbao();
   },
-  /* -------- 法器装备：穿戴/卸下（属性即时结算，主动技入战）-------- */
+  /* -------- 法器装备：穿戴/卸下（属性即时结算，主动技入战）--------
+   * v96 三类法宝制：slot:"side"=伴身法宝（被动面板件）——进 sideTreasures 数组，
+   * 槽数=神识档（State.sideTreasureSlots：境界+大衍诀） */
   equipGear(itemId) {
     const s = State.data;
     const def = DATA.gear[itemId];
@@ -761,6 +763,22 @@ const Engine = {
     const layer = (DATA.realms[s.realmIndex] || {}).layer || 1;
     if (def.minLayer && layer < def.minLayer) {
       this.toast(`修为不足（需练气${def.minLayer}层方可驱使）`, true);
+      return;
+    }
+    if (def.slot === "side") {
+      if (!s.sideTreasures) s.sideTreasures = [];
+      if (s.sideTreasures.includes(itemId)) { this.toast("已在伴身之列"); return; }
+      const cap = State.sideTreasureSlots();
+      if (s.sideTreasures.length >= cap) {
+        this.toast(`神识不济——同时伴身 ${cap} 件已是极限（境界精进或习得《大衍诀》可再驭）`, true);
+        return;
+      }
+      s.sideTreasures.push(itemId);
+      const item0 = DATA.items[itemId];
+      this.log(`你将「${item0 ? item0.name : itemId}」炼入周身气机，伴身而悬——${(def.traits || []).map(t => t.desc).join("；")}`, "good");
+      this.toast(`伴身：${item0 ? item0.name : itemId}（${s.sideTreasures.length}/${cap}）`);
+      State.save();
+      UI.renderAll();
       return;
     }
     // 同槽旧装备先卸
@@ -781,6 +799,16 @@ const Engine = {
     });
     this.log(`你将「${item.name}」祭起灵力炼化驱使——${fx.join("，")}${def.grantSpells ? "；战斗技已入战" : ""}。${(def.traits || []).map(t => t.desc).join("；")}`, "good");
     this.toast(`已装备：${item.name}`);
+    State.save();
+    UI.renderAll();
+  },
+  // 伴身法宝卸下（按 itemId——伴身槽是数组不是固定位）
+  unequipSideTreasure(itemId) {
+    const s = State.data;
+    if (!s.sideTreasures || !s.sideTreasures.includes(itemId)) return;
+    s.sideTreasures = s.sideTreasures.filter(x => x !== itemId);
+    const item = DATA.items[itemId];
+    this.toast(`已收起：${item ? item.name : itemId}`);
     State.save();
     UI.renderAll();
   },
@@ -1450,14 +1478,23 @@ const Engine = {
   },
 
   // 场景即战场：按地点开阔度给战场宽度（数据有 fieldW 用数据，否则按气质推断）
+  /* 战场即场景（v96 用户裁决"战场大小随实际剧情动态变动，要做好"）：
+   * 宽窄=地点开阔度；显式覆盖走 DATA.locations[].fieldW / fieldLanes（剧情战自定义
+   * 走 _caveFightCfg.W/lanes——皇宫大殿/金鼓原旷野各按 modao-design 编排表给数）。
+   * 排数与格数同源：方寸 2 排、街市 2 排、山野 3 排、旷野长轴 3~4 排 */
   _fieldWidthFor(locId) {
     const loc = (typeof DATA !== "undefined" && DATA.locations && DATA.locations[locId]) || {};
     if (loc.fieldW) return loc.fieldW;
     const id = locId || "";
     if (/yaolu|wuting|mishi|dihuo|miju/.test(id)) return 9;          // 室内/院落：方寸之地
     if (/town|jishi|fair|city|gate|men|fang/.test(id)) return 11;    // 街市/山门：放得开手脚
-    if (/houshan|road|lin|valley|shan|jindi|ye/.test(id)) return 15; // 山野/官道：可跑可绕
+    if (/houshan|road|lin|valley|shan|jindi|ye/.test(id)) return 17; // 山野/官道：可跑可绕（v96 旷野再放宽）
     return 11;
+  },
+  _fieldLanesFor(locId, w) {
+    const loc = (typeof DATA !== "undefined" && DATA.locations && DATA.locations[locId]) || {};
+    if (loc.fieldLanes) return loc.fieldLanes;
+    return w >= 17 ? 3 : w >= 11 ? 3 : 2;   // 旷野铺得开排，室内憋仄
   },
 
   // 退出洞窟：弹栈回 L1 深潭洞口（已采的带走，布置的算沉没——阵旗收不回来）
@@ -2597,18 +2634,21 @@ const Engine = {
     const dunTrait = State.gearTrait("charge_resist");
     return new CombatAPI.Fighter({
       name: s.name,
-      hp: s.hp,
+      // 伴身件被动面板（v96）：血上限/灵力池/护甲走动态加成（State.sideBonus）
+      hp: s.hp + State.sideBonus("hpMax"),
+      hpMax: s.hpMax + State.sideBonus("hpMax"),
+      armor: State.sideBonus("armor"),
       // 灵力池（v2：统一灵力，整场不刷新；战后按比例回写灵力——连战共享一池）
       // 池深=功法品阶×境界跳档×层成长+突破水准/特殊境遇累计（balance.manaPool，用户裁决）
       // 开战水位=灵力百分比映射（灵力没调息满，开战灵力就不满——打坐与丹药的真实意义）
       mp: (() => {
         const poolMax = Balance.manaPool(Chapters.realmTier(), realm.layer,
-          (DATA.techniques[s.technique] || {}).grade || 1, s.poolBonus);
+          (DATA.techniques[s.technique] || {}).grade || 1, s.poolBonus) + State.sideBonus("mpMax");
         const ratio = clamp(s.spirit / (realm.spMax || s.spirit || 1), 0, 1);
         return Math.max(15, Math.round(poolMax * ratio));
       })(),
       mpMax: Balance.manaPool(Chapters.realmTier(), realm.layer,
-        (DATA.techniques[s.technique] || {}).grade || 1, s.poolBonus),
+        (DATA.techniques[s.technique] || {}).grade || 1, s.poolBonus) + State.sideBonus("mpMax"),
       // 移动力：基础1；身法法器/功法另加（踏云靴时代 move 2）
       move: 1 + (State.gearTrait("swift") ? 1 : 0),
       sense: s.sense + State.gearBonus("sense"),
@@ -2625,6 +2665,9 @@ const Engine = {
       realmTier: Chapters.realmTier(),   // 本章大境界序（影响法术成长）
       momentumCap: s.swordMastery ? 7 : 5,   // 眨眼剑法大成：剑势上限+2
       swordMastery: !!s.swordMastery,        // 大成：眨眼剑法本体蜕变（攒势翻倍）
+      // 回灵效率（v96 伴身件管线）：不破"池制不自动回灵"铁律——只加成主动回灵动作
+      // （敛息回元/聚灵阵的每口收益+X；蕴灵珠类伴身件由此生效）
+      regenBoost: State.gearBonus("regenBoost"),
       qiLayer: realm.layer,                  // 灵气底蕴随练气层数成长
       // 腾空之能（空层 2.5D）：御器飞行（筑基）/风雷翅（后期）/调试旗——有翼方上天
       canFly: !!(s.flags.fly_unlocked || State.gearTrait("fly")),
@@ -2707,41 +2750,93 @@ const Engine = {
              persona: u.persona || { aggr: 3, prot: 9, kite: 0 } };
   },
   // 升空/落地（空层 2.5D）：把战斗抬进修仙者的天空
+  // 灵虫/灵宠形态轮换（化枪/附体/分身——u.forms 定义驱动；血玉蜘蛛单形态，
+  // 噬金虫多形态随乱星海篇实装。moves 按形态切表：u.movesByForm[form]）
+  cycleSideForm(idx = 0) {
+    const c = this._combat;
+    const u = c && c.sides ? c.sides[idx] : null;
+    if (!c || !u || !u.forms || u.forms.length < 2) return;
+    const cur = u.forms.indexOf(u.form || u.forms[0]);
+    u.form = u.forms[(cur + 1) % u.forms.length];
+    if (u.movesByForm && u.movesByForm[u.form]) u.moves = u.movesByForm[u.form];
+    c._log(`「${u.name}」灵性流转，化作${u.form}之形！`);
+    if (typeof UI !== "undefined" && UI.renderCombat) UI.renderCombat(c, this._combatMeta);
+  },
+  // 辟邪神雷三选（v97：单卡点选生效——劈=择敌上膛 / 附=即时 / 遁=即时瞬发）
+  combatShenlei(mode) {
+    const c = this._combat;
+    if (!c || c.status !== "ongoing") return;
+    if (mode === "shenlei_pi") {
+      // 劈=攻击技：走二次确认（多敌择目标，单敌直放）
+      if (typeof UI !== "undefined" && UI.armSpell) UI.armSpell("shenlei_pi");
+      return;
+    }
+    const r = c.cast(mode);   // 附剑/雷遁：自身向，即时生效
+    if (!r.ok) { this.toast(r.reason); return; }
+    if (typeof Sfx !== "undefined") Sfx.play("thunder");
+    if (typeof UI !== "undefined") {
+      // 雷遁=待发态：真正的瞬移演出留给移动那一拍（combatMove 的 blink 分支），
+      // 施放时只提示，不放消失帧（免得消失帧放两次）
+      if (mode !== "leidun" && UI.flashCombat) UI.flashCombat(mode);
+      else if (mode === "leidun") this.toast("雷遁待发——点亮起的格子，穿空而至");
+      if (UI.flushCombatFx) UI.flushCombatFx(c);
+      if (UI.renderCombat) UI.renderCombat(c, this._combatMeta);
+      // 神雷附剑·应雷仪式（剑阵此刻已切 lei 态）：群剑齐震 + 金雷环炸开 + 应雷之声
+      if (mode === "shenlei_fujian" && UI.leiRitual) UI.leiRitual();
+    }
+  },
+  // 悬浮法宝祭起/收回（三位制·祭出位）
+  combatFloat(spellId) {
+    const c = this._combat;
+    if (!c) return;
+    const r = c.playerFloat(spellId);
+    if (!r.ok) { this.toast(r.reason); return; }
+    if (typeof Sfx !== "undefined") Sfx.play(r.recalled ? "click" : "bell");
+    if (typeof UI !== "undefined") {
+      if (UI.flushCombatFx) UI.flushCombatFx(c);
+      if (UI.renderCombat) UI.renderCombat(c, this._combatMeta);
+    }
+  },
   combatFly() {
     const c = this._combat;
     if (!c) return;
     const r = c.playerFly();
     if (!r.ok) { this.toast(r.reason); return; }
+    if (typeof Sfx !== "undefined") Sfx.play((c.player.alt || 0) === 1 ? "flyUp" : "landDown");
     if (typeof UI !== "undefined") {
       if (UI.flushCombatFx) UI.flushCombatFx(c);
       if (UI.renderCombat) UI.renderCombat(c, this._combatMeta);
     }
     State.save();
   },
-  // 简令轮换：随→攻→守→撤（点灵傀卡）——指挥不是微操，是一句话的事
-  cycleSideStance() {
+  // 简令轮换：随→攻→守→撤（点助战卡）——指挥不是微操，是一句话的事
+  // T4 多侧位：idx 指定第几位（每张助战卡各管各的）
+  cycleSideStance(idx = 0) {
     const c = this._combat;
-    if (!c || !c.side || c.side.hp <= 0) return;
+    const su = c && c.sides ? c.sides[idx] : (c ? c.side : null);
+    if (!c || !su || su.hp <= 0) return;
     // 客随铁律（用户裁决）：境界远高于你的同道全自动——她指挥你（每回合点将），
     // 你指挥不了她。简令四档只对平辈/下属（尸傀/灵宠/低阶同道）生效
-    if (c.side.kind === "ally" && (c.side.mastery || 0) >= 2) {
-      this.toast(`${c.side.name}的境界远在你之上——接好她递的刀便是`);
+    if (su.kind === "ally" && (su.mastery || 0) >= 2) {
+      this.toast(`${su.name}的境界远在你之上——接好她递的刀便是`);
       return;
     }
     const order = ["follow", "attack", "guard", "retreat"];
-    const cur = order.indexOf(c.side.stance || "follow");
-    c.setSideStance(order[(cur + 1) % 4]);   // 简令即阵型：换令同时换排（攻=压上战位/守=贴身僚位/撤=最深排）
+    const cur = order.indexOf(su.stance || "follow");
+    c.setSideStance(order[(cur + 1) % 4], idx);   // 简令即阵型：换令同时换排（攻=压上战位/守=贴身僚位/撤=最深排）
     const txt = { follow: "随行——跟你的焦点打", attack: "强攻——压上战位排，下重手专补刀",
-                  guard: "护主——贴身代刀，稳字当头", retreat: "后撤——退到阵后自保" }[c.side.stance];
-    this.log(`【简令】${c.side.name}：${txt}。`, "sys");
+                  guard: "护主——贴身代刀，稳字当头", retreat: "后撤——退到阵后自保" }[su.stance];
+    this.log(`【简令】${su.name}：${txt}。`, "sys");
     if (typeof UI !== "undefined" && UI.renderCombat) UI.renderCombat(c, this._combatMeta);
   },
   // 战后把侧位单位的损耗写回（hp 归零=破损，须修缮，不会永失——尸傀不死，只是坏了）
+  // T4 多侧位：常驻随行（尸傀）按 id 对号回写
   _syncSideBack() {
     const c = this._combat, s = State.data;
-    if (!c || !c.side || !s.sideUnit) return;
-    if (c.side.id && s.sideUnit.id && c.side.id !== s.sideUnit.id) return;   // 剧情同道（南宫婉等）不回写常驻侧位
-    s.sideUnit.hp = clamp(Math.round(c.side.hp), 0, s.sideUnit.hpMax);
+    if (!c || !s.sideUnit) return;
+    const mine = (c.sides || []).find(x => !x.id || !s.sideUnit.id || x.id === s.sideUnit.id);
+    if (!mine) return;   // 全是剧情同道（南宫婉等）——不回写常驻侧位
+    s.sideUnit.hp = clamp(Math.round(mine.hp), 0, s.sideUnit.hpMax);
     if (s.sideUnit.hp <= 0 && s.sideUnit.status !== "broken") {
       s.sideUnit.status = "broken";
       this.log(`「${s.sideUnit.name}」在战斗中损毁严重，再难驱使——回药庐以毒物阴材温养修缮，方可复原。`, "bad");
@@ -2777,8 +2872,11 @@ const Engine = {
     const tmpl = WORLD.enemies[enemyId];
     if (!tmpl) { this.log("虚惊一场，并无敌踪。", "sys"); return; }
     const enemy = this._applyFameWariness(this._applyDossier(Object.assign({}, tmpl)));
-    // 侧位：剧情同道（_sideOverride 一次性）优先于常驻随行（尸傀）
-    const sideUnit = this._sideOverride || this.sideUnitFor("encounter");
+    // 侧位（T4 多侧位）：剧情同道（_sideOverride，可单可数组）与常驻随行（尸傀）同场
+    const ov = this._sideOverride;
+    const sidesArr = (Array.isArray(ov) ? ov.slice() : ov ? [ov] : []);
+    const perm = this.sideUnitFor("encounter");
+    if (perm && !sidesArr.some(x => x.id && perm.id && x.id === perm.id)) sidesArr.push(perm);
     this._sideOverride = null;
     // L3 轴式洞窟开战：战场宽度/站位/阵法/伏着从探索轴无缝继承（_caveFightCfg 一次性）
     const caveCfg = this._caveFightCfg || {};
@@ -2789,10 +2887,10 @@ const Engine = {
       player: this.playerFighter(),
       enemies: [enemy],
       maxRounds: sceneW > 12 ? 26 : 20,
-      side: sideUnit,
+      sides: sidesArr,
       W: sceneW,
       // 排数与格数同源（2.5 排制）：都看真实战场多大——洞窟憋仄 2 排，旷野 3 排
-      lanes: caveCfg.lanes != null ? caveCfg.lanes : (caveCfg.seamless ? 2 : 3),
+      lanes: caveCfg.lanes != null ? caveCfg.lanes : (caveCfg.seamless ? 2 : this._fieldLanesFor(s.location, sceneW)),
       enemyPos: caveCfg.enemyPos != null ? caveCfg.enemyPos : Math.min(sceneW - 1, 1 + engage),
     }, caveCfg));
     if (enemy._wary) {
@@ -3107,10 +3205,21 @@ const Engine = {
   // 轴上移动（不结束回合：移动与出手同回合内自由编排）
   combatMove(toPos) {
     if (!this._combat) return;
-    const r = this._combat.playerMove(toPos);
+    const c = this._combat;
+    // 雷遁瞬移（v98）：blink 态下移动=穿亚空间——旧位放消失帧、关滑动、落点放出现帧
+    const blink = !!c.player._blinkTurn;
+    if (blink && typeof UI !== "undefined" && UI.el && typeof Fx !== "undefined") {
+      const box = UI.el("axis-units"), pl = box && box.querySelector('[data-uid="player"]');
+      if (pl && Fx.ensure(UI.el("axis-field")) && Fx.RECIPES.leidun) {
+        const at = Fx.at(pl);
+        if (at) Fx.RECIPES.leidun(Fx, at);
+      }
+    }
+    const r = c.playerMove(toPos);
     if (!r.ok) { this.toast(r.reason); return; }
-    if (typeof Sfx !== "undefined") Sfx.play("click");
-    UI.renderCombat(this._combat, this._combatMeta);
+    if (blink) { UI._blinkSnap = true; UI._blinkOut = true; }
+    else if (typeof Sfx !== "undefined") Sfx.play("click");
+    UI.renderCombat(c, this._combatMeta);
   },
 
   // 战中采集（同轴一体）：洞窟热点原格在战斗轴上，走到跟前花一个主行动摘下

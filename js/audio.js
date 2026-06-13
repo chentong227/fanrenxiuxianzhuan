@@ -100,6 +100,94 @@
       tone(c, { freq: 1244, dur: 0.5, gain: 0.011, delay: 0.22 });
       noise(c, { dur: 0.28, gain: 0.007, band: 3000, delay: 0.06 });
     },
+
+    /* ===== 战斗音效全套（tactics T7：行属分系+战术事件——14PM 预算放开，
+     * 每记都要"有形"：金石有锋、火有轰势、冰有脆裂、背袭有寒意） ===== */
+    // 金：金石锐鸣——法器破空带金属泛音（金光砖/子母刃）
+    castJin(c) {
+      tone(c, { freq: 1320, slideTo: 2800, type: "sawtooth", dur: 0.14, gain: 0.034 });
+      tone(c, { freq: 2640, dur: 0.18, gain: 0.018, delay: 0.03 });
+      noise(c, { dur: 0.1, gain: 0.02, band: 4200, delay: 0.02 });
+    },
+    // 木：剑芒破空——嗖鸣上扬+叶簌尾（青元剑芒）
+    castMu(c) {
+      tone(c, { freq: 880, slideTo: 2400, type: "triangle", dur: 0.16, gain: 0.032 });
+      noise(c, { dur: 0.14, gain: 0.022, band: 3000, delay: 0.02 });
+      tone(c, { freq: 1760, dur: 0.1, gain: 0.012, delay: 0.08 });
+    },
+    // 水/冰：晶澈滑音+冰晶碎裂尾（寒冰符）
+    castShui(c) {
+      tone(c, { freq: 2200, slideTo: 980, type: "sine", dur: 0.22, gain: 0.028 });
+      noise(c, { dur: 0.12, gain: 0.018, band: 5200, delay: 0.1 });
+      tone(c, { freq: 3300, dur: 0.08, gain: 0.011, delay: 0.13 });
+    },
+    // 火：轰燃低吼+噼啪火星（火蛇符/火弹术）
+    castHuo(c) {
+      tone(c, { freq: 130, slideTo: 62, type: "sawtooth", dur: 0.3, gain: 0.05 });
+      noise(c, { dur: 0.26, gain: 0.034, low: 900 });
+      noise(c, { dur: 0.08, gain: 0.018, band: 2600, delay: 0.12 });
+    },
+    // 土：闷沉砸落——大地的分量（金光砖砸地/土系重击）
+    castTu(c) {
+      tone(c, { freq: 96, slideTo: 44, type: "triangle", dur: 0.26, gain: 0.06 });
+      noise(c, { dur: 0.2, gain: 0.04, low: 260 });
+    },
+    // 贴身爪弧/拳风：短促破风+肉感收尾
+    meleeWhoosh(c) {
+      noise(c, { dur: 0.1, gain: 0.036, band: 1700 });
+      tone(c, { freq: 420, slideTo: 180, dur: 0.08, gain: 0.022, delay: 0.04 });
+    },
+    // 背袭：逆刃寒光——高频咔+低闷心跳停顿（死角的寒意）
+    backstab(c) {
+      noise(c, { dur: 0.05, gain: 0.04, band: 5600 });
+      tone(c, { freq: 2900, slideTo: 480, type: "sawtooth", dur: 0.1, gain: 0.03, delay: 0.02 });
+      tone(c, { freq: 72, dur: 0.14, gain: 0.07, delay: 0.1 });
+      tone(c, { freq: 60, dur: 0.2, gain: 0.05, delay: 0.3 });
+    },
+    // 重创（断尾/毁器）：骨裂咔嚓——三层短噪错拍+低锤定音
+    maim(c) {
+      noise(c, { dur: 0.05, gain: 0.05, band: 2400 });
+      noise(c, { dur: 0.06, gain: 0.045, band: 1600, delay: 0.05 });
+      noise(c, { dur: 0.08, gain: 0.04, band: 900, delay: 0.11 });
+      tone(c, { freq: 88, slideTo: 40, dur: 0.3, gain: 0.08, delay: 0.13 });
+    },
+    // 暴击：重锤+金芒铃（在 hit 之上叠威）
+    crit(c) {
+      tone(c, { freq: 150, slideTo: 46, dur: 0.2, gain: 0.1 });
+      noise(c, { dur: 0.14, gain: 0.05, low: 420 });
+      tone(c, { freq: 2093, dur: 0.16, gain: 0.022, delay: 0.04 });
+    },
+    // 挥空/闪避：纯破风，无命中感（落空的失重）
+    whiff(c) { noise(c, { dur: 0.16, gain: 0.026, band: 1300 }); },
+    // 升空：风啸上扬+遁光轻鸣
+    flyUp(c) {
+      noise(c, { dur: 0.3, gain: 0.026, band: 2200 });
+      tone(c, { freq: 520, slideTo: 1560, type: "sine", dur: 0.34, gain: 0.024 });
+    },
+    // 落地/击落：坠势+尘土闷震
+    landDown(c) {
+      tone(c, { freq: 980, slideTo: 140, type: "sine", dur: 0.18, gain: 0.022 });
+      tone(c, { freq: 110, slideTo: 50, dur: 0.2, gain: 0.07, delay: 0.14 });
+      noise(c, { dur: 0.18, gain: 0.04, low: 300, delay: 0.14 });
+    },
+    // 殒命：低沉一声+气息消散
+    die(c) {
+      tone(c, { freq: 196, slideTo: 70, dur: 0.5, gain: 0.05 });
+      noise(c, { dur: 0.5, gain: 0.02, low: 600, delay: 0.1 });
+    },
+    // 应雷·群剑共鸣：神雷附剑施放——通电涌动(低频上涌+电滋) + 群剑齐应雷而吟(高频金属泛音叠)
+    leiCharge(c) {
+      tone(c, { freq: 80, slideTo: 340, type: "sawtooth", dur: 0.42, gain: 0.042 });   // 通电低涌
+      noise(c, { dur: 0.34, gain: 0.03, band: 3600 });                                  // 电流滋滋
+      tone(c, { freq: 1320, slideTo: 1980, type: "triangle", dur: 0.5, gain: 0.024, delay: 0.05 });  // 剑吟主
+      tone(c, { freq: 1760, dur: 0.56, gain: 0.015, delay: 0.09 });                     // 剑吟泛音
+      tone(c, { freq: 2640, dur: 0.4, gain: 0.009, delay: 0.13 });                      // 剑吟高泛
+    },
+    // 飞剑出袭破空：群剑掠空的锐啸——高频噪扫 + 下滑嗖鸣
+    swordWhoosh(c) {
+      noise(c, { dur: 0.18, gain: 0.03, band: 4200 });
+      tone(c, { freq: 2400, slideTo: 620, type: "sawtooth", dur: 0.16, gain: 0.02 });
+    },
   };
 
   let lastPlay = {};

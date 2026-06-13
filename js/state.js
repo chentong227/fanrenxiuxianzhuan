@@ -92,6 +92,7 @@ const State = {
       ledger: {},             // 因果账本：{ id: {t,label} }——插曲种因，主线节点读账结果（world-architecture §3）
       journey: null,          // 大陆旅途 { to, toName, leg, total, back }（旅途即内容：world-architecture §1.3）
       gear: { weapon: null, armor: null, accessory: null },   // 法器装备三槽（DATA.gear）
+      sideTreasures: [],      // 伴身法宝槽（v96 三类法宝制：被动面板件，槽数=神识档）
       visitedNodes: ["caixia"],   // 到过的大陆节点（舆图墨痕：走过的路，地图记得）
     };
     this.give("qingyuan_dan", 2);
@@ -153,6 +154,7 @@ const State = {
     if (d.fame == null) d.fame = 0;
     if (d.sideUnit === undefined) d.sideUnit = null;
     if (!d.gear) d.gear = { weapon: null, armor: null, accessory: null };
+    if (!d.sideTreasures) d.sideTreasures = [];   // 伴身法宝槽（v96）
     if (!d.intelElems) d.intelElems = {};
     if (!d.ledger) d.ledger = {};
     if (d.journey === undefined) d.journey = null;
@@ -222,18 +224,54 @@ const State = {
     if (def.minLayer && layer < def.minLayer) return null;   // 修为不够，驱使不动
     return Object.assign({ id }, def);
   },
+  /* —— 伴身法宝（v96 三类法宝制：主攻1/主防1/伴身N）——
+   * 被动面板件：装备即生效，战斗零操作（决策前移到洞府）。
+   * 槽数=神识档（Balance.sideTreasureSlots：境界+大衍诀——"神识=并用上限"的兑现） */
+  sideTreasureSlots() {
+    const tier = (typeof Chapters !== "undefined") ? Chapters.realmTier() : 0;
+    const hasDayan = !!(this.data.flags && this.data.flags.dayan_learned);
+    return (typeof Balance !== "undefined" && Balance.sideTreasureSlots)
+      ? Balance.sideTreasureSlots(tier, hasDayan) : 1;
+  },
+  sideTreasureOf(idx) {
+    const id = (this.data.sideTreasures || [])[idx];
+    if (!id) return null;
+    const def = DATA.gear && DATA.gear[id];
+    if (!def) return null;
+    const layer = (DATA.realms[this.data.realmIndex] || {}).layer || 1;
+    if (def.minLayer && layer > 0 && layer < def.minLayer) return null;
+    return Object.assign({ id }, def);
+  },
+  sideTreasures() {
+    return (this.data.sideTreasures || []).map((_, i) => this.sideTreasureOf(i)).filter(Boolean)
+      .slice(0, this.sideTreasureSlots());
+  },
+  // 伴身件被动面板（v96）：与三槽分账——三槽的 hpMax 等直写 s.hpMax（装备时结算），
+  // 伴身件全部动态计算（装备/卸下零状态污染）
+  sideBonus(key) {
+    let n = 0;
+    this.sideTreasures().forEach(g => { if (g.bonus && g.bonus[key]) n += g.bonus[key]; });
+    return n;
+  },
   gearBonus(key) {
     let n = 0;
     ["weapon", "armor", "accessory"].forEach(slot => {
       const g = this.gearOf(slot);
       if (g && g.bonus && g.bonus[key]) n += g.bonus[key];
     });
+    n += this.sideBonus(key);
     return n;
   },
   gearTrait(traitId) {
     for (const slot of ["weapon", "armor", "accessory"]) {
       const g = this.gearOf(slot);
       if (g && g.traits) {
+        const t = g.traits.find(x => x.id === traitId);
+        if (t) return t;
+      }
+    }
+    for (const g of this.sideTreasures()) {
+      if (g.traits) {
         const t = g.traits.find(x => x.id === traitId);
         if (t) return t;
       }

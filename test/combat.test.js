@@ -47,8 +47,8 @@ console.log("\n=== 2. 射程与贴身 ===");
 {
   const c = new Combat({ player: mkHan(), enemies: [dummy()], rng: noCrit });
   c.startRound();
-  // 初始 player pos1, enemy pos8（W9）：距7
-  assert(c.dist(c.player, c.enemies[0]) === 7, `开局距离7（玩家${c.player.pos}，敌${c.enemies[0].pos}）`);
+  // 初始 player pos1, enemy pos10（W11，v95 大战场小人物：标准战 9→11）：距9
+  assert(c.dist(c.player, c.enemies[0]) === 9, `开局距离9（玩家${c.player.pos}，敌${c.enemies[0].pos}）`);
   const far = c.cast("zhayan", 0);
   assert(!far.ok, `眨眼剑法距7施放失败（${far.reason}）`);
   const far2 = c.cast("zimu_ren", 0);
@@ -376,8 +376,10 @@ console.log("\n=== 14. 推演一还原：陆云风之战（AI 自动打，胜率
       ],
     };
     // 牌况按推演一：金光砖充能1（七玄门战后未回充满）、符2、毒暗器若干
+    // （v95 标准战 W 9→11：裸建战斗补 enemyPos=8 保持原推演的接敌距离 7——
+    //  真实游戏路径由 engageDist 控距，不随 W 变）
     const c = new Combat({ player: mkHan({ hp: 150, mp: 100, qiLayer: 11,
-      pouch: { duyao_cao: 2, anqi: 2, huoshe_fu: 2, jinguang_zhuan_charge: 1 } }), enemies: [lu], maxRounds: 18 });
+      pouch: { duyao_cao: 2, anqi: 2, huoshe_fu: 2, jinguang_zhuan_charge: 1 } }), enemies: [lu], maxRounds: 18, enemyPos: 8 });
     c.startRound();
     if (c.autoResolve(18) === "win") wins++;
   }
@@ -731,6 +733,38 @@ console.log("\n=== 21. 同规则消耗战：敌悬空灵竭跌落 / 同道招式
   c3.startRound();
   assert(c3.player.mp > pMp && c3.side.mp > sMp, `聚灵阵济我方全体（你${pMp}→${c3.player.mp}，同道${sMp}→${c3.side.mp}）`);
   assert(c3.enemies[0].mp === eMp, "敌方站进我方阵中不回灵（阵认主）");
+}
+
+console.log("\n=== 22. sides[] 多侧位（T4）：双同道同场/仇恨分流/挡刀依序/简令各管各 ===");
+{
+  const two = [
+    { id: "a", name: "甲同道", kind: "ally", hp: 60, hpMax: 60, guard: 0, move: 1, mp: 30, mpMax: 30,
+      moves: [{ name: "甲击", dmg: 10, weight: 10, range: [1, 3], mp: 2 }] },
+    { id: "b", name: "乙同道", kind: "ally", hp: 60, hpMax: 60, guard: 0, move: 1, mp: 30, mpMax: 30,
+      moves: [{ name: "乙击", dmg: 10, weight: 10, range: [1, 3], mp: 2 }] },
+  ];
+  const c = new Combat({ player: mkHan(), enemies: [dummy({ name: "敌甲", hp: 300, atk: 8, atkName: "扑咬" })],
+    sides: two, rng: noCrit, W: 11, playerPos: 2, enemyPos: 6, sidesPos: [3, 4] });
+  assert(c.sides.length === 2, `双侧位上轴（${c.sides.length}）`);
+  assert(c.side === c.sides[0], "c.side 别名=第一侧位（旧路径零破坏）");
+  assert(c.sides[0].pos === 3 && c.sides[1].pos === 4, `sidesPos 各就各位（${c.sides[0].pos}/${c.sides[1].pos}）`);
+  c.startRound();
+  const hp0 = c.enemies[0].hp;
+  c._sideAct();
+  assert(c.enemies[0].hp <= hp0 - 16, `两位同道各出一手（敌血 ${hp0}→${c.enemies[0].hp}）`);
+  // 仇恨分流：乙同道狂打→敌的杀意流向乙
+  c.addAggro(c.enemies[0], "side:1", 60);
+  assert(c.aggroTarget(c.enemies[0]) === c.sides[1], "仇恨最高者=乙同道（side:1 键分账）");
+  // 简令各管各：给乙下守令不动甲
+  c.setSideStance("guard", 1);
+  assert(c.sides[1].stance === "guard" && c.sides[0].stance !== "guard", "简令按位下达（乙守甲不动）");
+  // 多侧位挡刀：甲 guard 拉满必挡
+  const c2 = new Combat({ player: mkHan(), enemies: [dummy({ name: "射手", hp: 100, atk: 10, atkName: "冷箭", desiredRange: 2 })],
+    sides: [Object.assign({}, two[0], { guard: 1 })], rng: () => 0.0, W: 9, playerPos: 2, enemyPos: 4, sidesPos: [3] });
+  c2.startRound();
+  const sHp = c2.sides[0].hp;
+  c2._enemyAct(c2.enemies[0]);
+  assert(c2.sides[0].hp < sHp || c2.player.hp === c2.player.hpMax, "挡刀掷骰仍生效（侧位代受）");
 }
 
 console.log(failures === 0 ? "\n全部通过 ✓" : `\n${failures} 项失败 ✗`);

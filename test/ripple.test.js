@@ -69,7 +69,7 @@ ok(WORLD.fameBoard.length >= 5, "榜上有名有姓的人物");
 s.fame = 0; s.milestones = [];
 Engine.addFame(25, "测试事迹");
 ok(s.fame === 25, "名声累积");
-Engine.addFame(10, "再立一功");   // 35 > 厉飞雨30 → 超越播报
+Engine.addFame(15, "再立一功");   // 25→40 > 厉飞雨38（风云榜实值）→ 超越播报
 ok(s.milestones.some(m => m.title.includes("厉飞雨")), "超越榜上人物：扬名时刻入年表");
 
 console.log("=== 勋章 ===");

@@ -96,6 +96,31 @@
                 desc: "万宝楼千年药草换得的顶阶法器：一柄母刃居中驭使，八柄子刃随神识分袭（动漫官设一母八子）。子刃两段连斩、每段独立结算，威力随灵力雄厚而涨。贴身施展不开（-30%）。" },
     jujian_zhan: { name: "巨剑斩", mp: 14, range: [1, 3], type: "atk", dmg: 40, pierce: true, source: "treasure", elem: "jin", cd: 2,
                 desc: "御使丈余巨剑凌空斩落，势大力沉且破甲——一剑之威，胜过百剑之繁。催动后须回气两回合。贴身施展不开（-30%）。" },
+
+    /* —— 悬浮法宝（驭物特例，combat-arsenal 二·五）——三类法宝制下大多数伴身件
+     * 走被动面板，少数"驭物类"保留祭起态（float: { upkeep, auto }）。
+     * ⚠ ruyi_hualan 为演武占位样例（正典获得=乱星海篇，届时精核） */
+    ruyi_hualan: { name: "如意花篮（演武）", mp: 6, range: [0, 0], type: "float", source: "treasure", elem: "mu",
+                float: { upkeep: 3, auto: { kind: "atk", dmg: 8, range: 4, name: "花雨" } },
+                desc: "祭于半空的古朴花篮，彩花自篮中泉涌而出——花雨溅射近处之敌（每回合自动 8 伤），悬浮燃灵 3/回合。点击收回。" },
+
+    /* —— 青竹蜂云剑（本命法宝·主攻；正典=星海飞驰篇炼成，演武先行）——
+     * swordOrbit:true=持续绕身剑阵（UI 渲染 au-swords）；神雷附剑给它缠金雷 */
+    qingzhu_jian: { name: "青竹蜂云剑", mp: 9, range: [1, 4], type: "atk", dmg: 22, fixedSegs: 2, source: "treasure", elem: "mu", swordOrbit: true,
+                desc: "本命法宝·青竹蜂云剑：群剑御空、剑随神念分袭，两段连斩各自结算，威力随灵力雄厚而涨。可引辟邪神雷附剑、凌空劈落、雷遁穿空。" },
+
+    /* —— 辟邪神雷三用途（v96 用户裁决：72 剑 72 雷=独立资源，取舍即战术）——
+     * chargeCost: { id, n }——特色资源消耗（战斗内不回充——池制同源）。
+     * ⚠ 正典获得=星海飞驰篇青竹蜂云剑炼成（结丹）；演武先行验证编排 */
+    shenlei_pi: { name: "辟邪神雷·劈", mp: 6, range: [1, 4], type: "atk", dmg: 34, source: "treasure", elem: "mu",
+                chargeCost: { id: "shenlei", n: 1 }, slays: { ghost: 1.8, demon: 1.8 },
+                desc: "自剑身引一道辟邪神雷凌空劈落——专克邪魔鬼物（×1.8）。耗神雷一道，雷尽则止。" },
+    shenlei_fujian: { name: "神雷附剑", mp: 4, range: [0, 0], type: "buff", source: "treasure", elem: "mu",
+                chargeCost: { id: "shenlei", n: 3 }, leiEnchant: 3,
+                desc: "三道神雷缠上本命飞剑——三回合内主攻法宝带金雷（伤害+8、克邪×1.5）。耗神雷三道。" },
+    leidun:     { name: "雷遁", mp: 5, range: [0, 0], type: "buff", quick: true, source: "treasure", elem: "mu",
+                chargeCost: { id: "shenlei", n: 1 }, blinkMove: true,
+                desc: "化一道银弧穿亚空间而行——本回合移动无视挡线困足、身法+2（瞬发）。耗神雷一道。韩跑跑的本钱。" },
   };
 
   function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -127,6 +152,12 @@
       this.alt = 0;               // 高度层：0 地面 / 1 空中（2.5D 空层——修仙者的天空）
       this.canFly = !!cfg.canFly; // 有无腾空之能（御器/妖禽/风雷翅）
       this.lane = cfg.lane || 0;  // 排（2.5 排制）：0 战位排=规则主排；1+ 僚位排（演出纵深+少量规则钩子）
+      // —— 仇恨账本（tactics T0）：谁打过它/谁在嘲讽它——敌方选目标的唯一依据 ——
+      this.aggro = {};
+      // —— 阵型（tactics T3）：pack=领队队形带 / loose=散兵 / anchor=钉桩守位 ——
+      this.formation = cfg.formation || null;
+      this.leader = !!cfg.leader;
+      this.homePos = null;          // anchor 的岗位（开战时记下）
       // 飞行档（境界即高度——flight-ladder F0 分档：筑基1/结丹2/元婴3…）：
       // 档位同时驱动 凌空机动加成（airMove）/ 升空视觉高度 / 镜头后拉幅度——
       // "韩立飞得比南陇侯高"是实力的俯视；档位差=空层上的境界压制可见
@@ -156,6 +187,7 @@
       this.dmgBonus = cfg.dmgBonus || 1;
       this.chargeResist = cfg.chargeResist || 0;
       this.tactics = cfg.tactics || null;
+      this.regenBoost = cfg.regenBoost || 0;   // 回灵效率（伴身件：敛息/聚灵每口+X，池制不破）
       this.stubborn = !!cfg.stubborn;   // 蓄势韧性（妖王/大修士）：受击打断率减半
       this.boss = !!cfg.boss;
       this.mastery = cfg.mastery != null ? cfg.mastery : null;   // AI 熟练度：0 本能/1 老练/2 宗师（境界即经验）
@@ -167,6 +199,10 @@
       this.auxSkills = cfg.auxSkills || [];
       this.realmTier = cfg.realmTier || 0;
       this.exposed = false;          // 破绽（凝息/蓄势中受击+30%）
+      this.floats = [];              // 悬浮中的法宝（驭物特例——绕身自动运转）
+      // 特色资源（v96 用户裁决"一定要有取舍/耗尽"）：神雷/煞气/符力……
+      // { id: { name, cur, max } }——战斗内不回充（池制同源），耗尽则相关手段哑火
+      this.charges = cfg.charges || null;
       this.escaped = false;          // 已遁走离场
       this.intent = null;
       this.attacks = cfg.attacks || null;
@@ -213,11 +249,19 @@
       this.rng = cfg.rng || Math.random;
       this.mode = cfg.mode || "battle";
       this._pendingEnemyWaves = cfg.waves || null;
-      // —— 轴战场：格数随战斗规格（突破=心象方寸，杂兵 7，标准 9，多敌/boss 11）——
+      // —— 轴战场：格数随战斗规格（v95 大战场小人物：标准 11，多敌/boss 15——
+      //    战场大→走位与射程才有意义；突破=心象方寸不变）——
       this.W = cfg.W || (this.mode === "breakthrough" ? 5
-        : (this.enemies.length >= 2 || cfg.boss) ? 11 : 9);
+        : (this.enemies.length >= 2 || cfg.boss) ? 15 : 11);
       // —— 排数（2.5 排制）：与 W 同源——都由"真实战场有多大"决定（洞窟2/旷野3/大战4）
       this.L = Math.max(2, cfg.lanes || 2);
+      // —— 侧位单位（T4 sides[] 复数化）：同道/灵宠/傀儡可同场多位——
+      //    皇宫三组对位的引擎基石；cfg.side（单）与 cfg.sides（数组）双入口，
+      //    旧代码经 get side()（=sides[0]）零破坏过渡。⚠ 必须先于 units() 任何调用
+      this.sides = [];
+      (cfg.sides ? cfg.sides : (cfg.side ? [cfg.side] : [])).forEach(s => {
+        this.sides.push(this._makeSideFighter(s));
+      });
       // 排位整理：敌方至少一人压战位排（全员僚位=贴身永远够不着，规则上不成立）；排号封顶
       this.units().forEach(u => { u.lane = clampNum(u.lane || 0, 0, this.L - 1); });
       if (this.enemies.length && !this.enemies.some(e => e.alive && (e.lane || 0) === 0)) {
@@ -232,14 +276,15 @@
       // —— 热点（hotspots）：洞窟没采完的灵草灵石原格上轴——战中走到跟前花一个主行动照采
       //    （同轴一体：探索与战斗是同一条轴的两种时间规则，东西不会因为开打就消失）
       this.hotspots = cfg.hotspots ? cfg.hotspots.map(h => Object.assign({}, h)) : [];
-      // —— 侧位单位：上轴成为真实单位（挡线/站位有意义）——
-      this.side = cfg.side ? this._makeSideFighter(cfg.side) : null;
       this._layoutUnits();
       // 探索→战斗无缝衔接：站位继承（L3 轴式洞窟——探索格即战斗格）
       if (cfg.playerPos != null) this.player.pos = clampNum(cfg.playerPos, 0, this.W - 1);
       if (cfg.enemyPos != null) this.enemies.forEach((e, i) => { e.pos = clampNum(cfg.enemyPos - i, 0, this.W - 1); });
-      if (cfg.sidePos != null && this.side) this.side.pos = clampNum(cfg.sidePos, 0, this.W - 1);
-      else if (cfg.playerPos != null && this.side) this.side.pos = clampNum(this.player.pos + 1, 0, this.W - 1);
+      const sposArr = cfg.sidesPos || (cfg.sidePos != null ? [cfg.sidePos] : null);
+      this.sides.forEach((s, i) => {
+        if (sposArr && sposArr[i] != null) s.pos = clampNum(sposArr[i], 0, this.W - 1);
+        else if (cfg.playerPos != null) s.pos = clampNum(this.player.pos + 1 + i, 0, this.W - 1);
+      });
       // —— AI 熟练度分级（用户裁决"分境界多级 AI"：境界即战斗经验）——
       //    0 本能：按权重乱打（野兽/低阶散修）；1 老练：会抓你的破绽下重手（同阶修士/兽王）；
       //    2 宗师：还会读你的布置（不踩困足阵）、挑你起不来的时机蓄势（高阶/剧情 boss）。
@@ -280,18 +325,24 @@
       f.canFly = !!s.canFly;
       f.airGrade = s.airGrade != null ? s.airGrade : 1;
       f.mastery = s.mastery != null ? s.mastery : 1;   // 同道默认老练；≥2=客随（它主导，你配合）
+      // 灵虫/灵宠形态（用户裁决：点形态章切换化枪/附体/分身——乱星海噬金虫开多形态）
+      f.forms = s.forms || null;
+      f.form = s.form || (s.forms ? s.forms[0] : null);
+      f.movesByForm = s.movesByForm || null;
       return f;
     }
+
+    /* 旧接口兼容（T4）：c.side 读=首位侧位——单侧位场景的全部旧路径零改动 */
+    get side() { return this.sides && this.sides[0] || null; }
 
     /* ----- 开战排位：我方左、敌方右；侧位（尸傀/同道）顶前排=挡线位 ----- */
     _layoutUnits() {
       const W = this.W;
-      if (this.side) { this.side.pos = 2; this.player.pos = 1; }
-      else this.player.pos = 1;
+      this.player.pos = 1;
+      this.sides.forEach((s, i) => { s.pos = 2 + i; });
       if (this.mode === "breakthrough") { this.player.pos = 1; }
       const n = this.enemies.length;
       this.enemies.forEach((e, i) => { e.pos = clampNum(W - 1 - i, this.player.pos + 1, W - 1); });
-      // 同步 side 引用 hp（Engine 传入的是快照对象）
     }
 
     _log(msg) { this.log.push(msg); }
@@ -299,7 +350,7 @@
     /* ----- 所有存活单位（轴渲染/占格判定用）----- */
     units() {
       const u = [this.player];
-      if (this.side && this.side.hp > 0) u.push(this.side);
+      this.sides.forEach(s => { if (s.hp > 0) u.push(s); });
       this.enemies.forEach(e => { if (e.alive) u.push(e); });
       return u;
     }
@@ -312,8 +363,8 @@
     }
     /* 简令→排位映射（2.5 排制）：攻=压上战位排拼输出（可被贴身）；
      * 守=贴玩家的僚位随时挡刀；撤=缩到最深排；随=远程僚位/近战战位的天性 */
-    setSideStance(st) {
-      const s = this.side;
+    setSideStance(st, idx = 0) {
+      const s = this.sides[idx];
       if (!s) return;
       s.stance = st;
       const natural = (s.moves || []).some(m => m.range && m.range[1] > 1) ? 1 : 0;
@@ -326,6 +377,139 @@
      * airMove 随 airGrade 境界分档：筑基+2/结丹+3/元婴+4……敌我同规则） */
     moveCap(u) { return (u.move || 1) + ((u.alt || 0) === 1 ? (u.airMove != null ? u.airMove : 2) : 0); }
 
+    /* ===== 悬浮法宝（三位制·祭出位，v96）=====
+     * 神识=并用上限（大衍诀的战斗意义）：基础1，dayan/结丹/元婴逐档+1 */
+    floatSlots(u) {
+      let n = 1 + Math.max(0, (u.realmTier || 0) - 1);   // 结丹(2)+1、元婴(3)+2…
+      if (u._dayan) n += 1;
+      return n;
+    }
+    playerFloat(spellId) {
+      const p = this.player, sp = SPELLS[spellId];
+      if (!sp || sp.type !== "float") return { ok: false, reason: "非悬浮法宝" };
+      if (p.floats.includes(spellId)) {
+        // 收回：不占行动（撤掉神识便是）
+        p.floats = p.floats.filter(x => x !== spellId);
+        this._log(`你心念一动，「${sp.name}」化光收回袖中。`);
+        return { ok: true, recalled: true };
+      }
+      if (p.floats.length >= this.floatSlots(p)) return { ok: false, reason: `神识不济——同时驭使 ${this.floatSlots(p)} 件已是极限` };
+      if (this._pActsUsed >= this._pActsMax) return { ok: false, reason: "行动已尽" };
+      if ((sp.mp || 0) > p.mp) return { ok: false, reason: "灵力不足" };
+      this._pActsUsed++;
+      p.mp -= (sp.mp || 0);
+      p.floats.push(spellId);
+      this._log(`你掐诀祭起「${sp.name}」——宝光绕身悬浮，自行运转（燃灵 ${sp.float.upkeep}/回合）！`);
+      this._emitFx("player", "miss", "祭起");
+      return { ok: true };
+    }
+    /* 悬浮结算（startRound）：抽灵+自动运转；灵力不济=坠收+破绽（同凌空灵竭的物理学） */
+    _floatUpkeep(u) {
+      if (!u.floats || !u.floats.length) return;
+      for (const id of u.floats.slice()) {
+        const sp = SPELLS[id];
+        const cost = (sp.float && sp.float.upkeep) || 3;
+        if ((u.mp || 0) < cost) {
+          u.floats = u.floats.filter(x => x !== id);
+          u.exposed = true;
+          this._log(`灵力不济——「${sp.name}」宝光一黯坠回${u === this.player ? "你" : u.name}袖中，气机一滞（破绽）！`);
+          continue;
+        }
+        u.mp -= cost;
+        const auto = sp.float && sp.float.auto;
+        if (auto && auto.kind === "atk") {
+          // 自动出力：打最近的活敌（敌我同规则——敌方悬浮则打我方最近者）
+          const foes = u.team === "player" ? this.enemies.filter(e => e.alive)
+            : [this.player].concat(this.sides.filter(x => x.hp > 0));
+          const near = foes.filter(f => this.dist(u, f) <= (auto.range || 4))
+            .sort((a, b) => this.dist(u, a) - this.dist(u, b))[0];
+          if (near) {
+            let fd = auto.dmg || 6;
+            if (sp.elem && near.elem) fd = Math.round(fd * elemMul(sp.elem, near.elem));
+            const r = near.takeDamage(fd, {});
+            this._log(`「${sp.name}」自行运转，${auto.name || "宝光"}溅向 ${near === this.player ? "你" : near.name}（-${r.dealt}）。`);
+            this._emitFx(this._refOf(near), "dmg", r.dealt);
+            if (near.team === "enemy") this.addAggro(near, u === this.player ? "player" : this.sideKey(u), r.dealt);
+          }
+        } else if (auto && auto.kind === "shield") {
+          const cap = u._shieldCap || Math.round(u.hpMax * 0.5);
+          if ((u.shield || 0) < cap) {
+            u.shield = Math.min(cap, (u.shield || 0) + (auto.shield || 6));
+            this._log(`「${sp.name}」宝光流转，自行补上护体（+${auto.shield || 6}）。`);
+          }
+        }
+      }
+      this._checkEnd();
+    }
+
+    /* ===== 仇恨账本（tactics T0）——一切战术的地基 =====
+     * 积累：被谁打（主项=伤害）/嘲讽挡线/贴身压力/控制技；衰减：每回合 15%+远距加倍。
+     * 消费分 mastery 三档：本能=纯仇恨；老练=仇恨×挑软柿子；宗师=还会读防御姿态。
+     * anchor 阵型仇恨封顶（钉桩拉不走——强攻或绕过，玩家的抉择）。 */
+    addAggro(e, key, amt) {
+      if (!e || e.team !== "enemy" || !e.alive) return;
+      const cap = e.formation === "anchor" ? 24 : 999;
+      e.aggro[key] = Math.min(cap, (e.aggro[key] || 0) + amt);
+    }
+    /* 仇恨键（T4 多侧位）："player" | "side:0" | "side:1"…（旧键 "side" 视同 "side:0"） */
+    _aggroUnit(key) {
+      if (key === "player") return this.player;
+      const m = /^side(?::(\d+))?$/.exec(key);
+      return m ? this.sides[+(m[1] || 0)] || null : null;
+    }
+    sideKey(s) { const i = this.sides.indexOf(s); return i >= 0 ? "side:" + i : "side:0"; }
+    _decayAggro() {
+      this.enemies.forEach(e => {
+        if (!e.alive) return;
+        for (const k in e.aggro) {
+          const u = this._aggroUnit(k);
+          let f = 0.85;
+          if (!u || u.hp <= 0) f = 0;                      // 死人无仇可记
+          else if (this.dist(e, u) > 6) f = 0.68;          // 拉远了，杀意冷却
+          e.aggro[k] *= f;
+          if (e.aggro[k] < 0.5) delete e.aggro[k];
+        }
+      });
+    }
+    /* 开口的同道（T4 多侧位）：统帅优先，其次第一个活着的 ally */
+    _allyVoice() {
+      if (this._leadBy && this._leadBy.hp > 0) return this._leadBy;
+      return this.sides.find(s => s.hp > 0 && s.kind === "ally") || null;
+    }
+    /* ===== 台词活化（T2）：情境开口+一场不复读——说话因为发生了事 ===== */
+    _say(u, key) {
+      if (!u || typeof WarLines === "undefined") return false;
+      const persona = u._persona || u.art
+        || (u.team === "enemy" ? ((u.nature === "beast" || u.nature === "corpse") ? "enemy_beast" : "enemy_cultivator") : null);
+      if (!persona || !WarLines.has(persona)) return false;
+      this._linesUsed = this._linesUsed || new Set();
+      const line = WarLines.pick(persona, key, this._linesUsed);
+      if (!line) return false;
+      this._log(line.startsWith("（") ? `${u.name}${line}` : `${u.name}：「${line}」`);
+      return true;
+    }
+
+    /* 它现在最恨谁（敌方选目标/朝向/背袭判定共用）——返回 Fighter。
+     * T4：候选=玩家+全部活侧位（多组对位由仇恨自然分流） */
+    aggroTarget(e) {
+      const cands = [{ u: this.player, key: "player" }];
+      this.sides.forEach((s, i) => {
+        if (s.hp > 0) cands.push({ u: s, key: "side:" + i, alt: i === 0 ? "side" : null });
+      });
+      let best = null, bestScore = -1;
+      for (const c of cands) {
+        const raw = (e.aggro[c.key] || 0) + (c.alt ? (e.aggro[c.alt] || 0) : 0);   // 旧键 "side" 并账
+        let s = raw + (c.key === "player" ? 0.01 : 0);   // 平手时杀气最重的是你
+        if ((e.mastery || 0) >= 1) s *= 1 + (1 - c.u.hp / c.u.hpMax) * 0.6;   // 老练：先挑软柿子（阴手"先攻最弱"）
+        if ((e.mastery || 0) >= 2) {
+          // 宗师：读防御姿态——护体厚/身法拉满的目标先放一放
+          if ((c.u.shield || 0) > c.u.hpMax * 0.2 || (c.u.dodgeBuff || 0) >= 0.2) s *= 0.8;
+        }
+        if (s > bestScore) { bestScore = s; best = c.u; }
+      }
+      return best || this.player;
+    }
+
     /* ----- 移动合法性：目标格须空（同层）；路径上同层敌方单位阻挡（挡线），友方可穿。
      * 雷遁（blink）例外：穿亚空间越界而行——无视挡线，只看落点（风雷翅的拉扯资本）。
      * 空中单位互不挡地面（天上的拦不住地上的路）。 ----- */
@@ -335,7 +519,7 @@
       if (toPos === unit.pos) return false;
       if (Math.abs(toPos - unit.pos) > (capOverride != null ? capOverride : this.moveCap(unit))) return false;
       if (this.unitAt(toPos, lv, ln)) return false;
-      if (unit.blink || lv === 1) return true;   // 雷遁/凌空：挡线如无物
+      if (unit.blink || unit._blinkTurn || lv === 1) return true;   // 雷遁（常驻/本回合）/凌空：挡线如无物
       const dir = toPos > unit.pos ? 1 : -1;
       for (let p = unit.pos + dir; p !== toPos; p += dir) {
         const o = this.unitAt(p, 0, ln);
@@ -487,11 +671,13 @@
     _rollOneIntent(e) {
       {
         if (!e.alive) { e.intent = null; return; }
+        // 它的杀意流向（T0）：意图与落点全部以仇恨目标为准——傀儡引怪/钓离的机制根
+        const prey = this.aggroTarget(e);
         if (e._charging) {
           e.intent = { name: e._charging.name + "·爆发", dmg: e._charging.dmg, kind: "release", pierce: e._charging.pierce,
-            aim: e._charging.aim, targetCell: e._charging.aim === "cell" ? this.player.pos : undefined,
-            zoneFrom: e._charging.aim === "zone" ? Math.max(0, this.player.pos - 1) : undefined,
-            zoneTo: e._charging.aim === "zone" ? Math.min(this.W - 1, this.player.pos + 1) : undefined };
+            aim: e._charging.aim, targetCell: e._charging.aim === "cell" ? prey.pos : undefined,
+            zoneFrom: e._charging.aim === "zone" ? Math.max(0, prey.pos - 1) : undefined,
+            zoneTo: e._charging.aim === "zone" ? Math.min(this.W - 1, prey.pos + 1) : undefined };
           return;
         }
         // —— 遁走判定：真到了死生一线（血只剩一成）才起遁意，且非必逃——
@@ -515,13 +701,13 @@
           e.intent = { name: e.guardMove.name, kind: "guard", shield: e.guardMove.shield };
           return;
         }
-        // —— 空层应对：你在天上——能飞的跟着上天；地面的滤掉贴身/砸地手段 ——
-        const pAir = (this.player.alt || 0) === 1 && (e.alt || 0) === 0;
+        // —— 空层应对：猎物在天上——能飞的跟着上天；地面的滤掉贴身/砸地手段 ——
+        const pAir = (prey.alt || 0) === 1 && (e.alt || 0) === 0;
         if (pAir && e.canFly) { e.intent = { name: "腾空追击", kind: "rise" }; return; }
-        if (!((this.player.alt || 0) === 1) && (e.alt || 0) === 1) { e.intent = { name: "俯冲落地", kind: "dive" }; return; }
+        if (!((prey.alt || 0) === 1) && (e.alt || 0) === 1) { e.intent = { name: "俯冲落地", kind: "dive" }; return; }
         // —— 可达性过滤：本回合移动之后也够不着的招不选（狼在七格外不会"预告扑咬"）——
         //    全部够不着 → 意图=逼近（纯移动回合，亮"近"气泡、不亮危险格）
-        const dNow = this.dist(e, this.player);
+        const dNow = this.dist(e, prey);
         const reach = (a) => {
           const r = a.range || ((e.nature === "beast" || e.nature === "corpse") ? [1, 1] : [1, 3]);
           return dNow - this.moveCap(e) <= r[1];
@@ -553,16 +739,24 @@
         inReach.forEach(a => {
           let w = a.weight || 10;
           if (e.tactics === "cunning") {
-            if (a.kind === "pierce" && (this.player.shield || 0) > 0) w *= 3;
-            if (a.kind === "charge" && this.player.hp < this.player.hpMax * 0.5) w *= 2;
+            if (a.kind === "pierce" && (prey.shield || 0) > 0) w *= 3;
+            if (a.kind === "charge" && prey.hp < prey.hpMax * 0.5) w *= 2;
           }
           if (e.tactics === "feral") {
             if (a.kind === "charge" && e.hp < e.hpMax * 0.35) w *= 6;
           }
-          // 老练（≥1）：你破绽毕露时，专挑重手招呼（凝息/蓄势的代价被行家放大）
-          if ((e.mastery || 0) >= 1 && this.player.exposed && (a.dmg || 0) >= heaviest) w *= 2.5;
-          // 宗师（≥2）：你被击落/起不来的那拍，正是蓄势的天赐良机
-          if ((e.mastery || 0) >= 2 && (this.player._knocked || this.player.exposed) && a.kind === "charge") w *= 3;
+          // 老练（≥1）：猎物破绽毕露时，专挑重手招呼（凝息/蓄势的代价被行家放大）
+          if ((e.mastery || 0) >= 1 && prey.exposed && (a.dmg || 0) >= heaviest) w *= 2.5;
+          // 宗师（≥2）：猎物被击落/起不来的那拍，正是蓄势的天赐良机
+          if ((e.mastery || 0) >= 2 && (prey._knocked || prey.exposed) && a.kind === "charge") w *= 3;
+          // 资源取舍（v96 敌我同规则）：特色资源（神雷/煞气）见底时省着用——
+          // 血危拼命才舍得掏（老练以上才有这份算计；本能档有就用）
+          if (a.chargeCost && (e.mastery || 0) >= 1) {
+            const ch = e.charges && e.charges[a.chargeCost.id];
+            if (ch && ch.cur <= ch.max * 0.3) {
+              w *= (e.hp < e.hpMax * 0.35 || prey.exposed) ? 1.6 : 0.3;   // 留底牌等时机
+            }
+          }
           weighted.push([a, w]);
         });
         const sum = weighted.reduce((t, x) => t + x[1], 0) || 1;
@@ -571,14 +765,14 @@
         for (const [a, w] of weighted) { r -= w; if (r <= 0) { pick = a; break; } }
         if (!pick.kind) pick.kind = pick.pierce ? "pierce" : "normal";
         pick = Object.assign({}, pick);
-        // 打格子：意图阶段锁定你"现在站的格"——移开就是躲开（身法的主场）。
+        // 打格子：意图阶段锁定猎物"现在站的格"——移开就是躲开（身法的主场）。
         // 蓄力技例外：蓄力回合只亮"蓄"，落点在爆发回合才重新锁定（防误导走位）
-        if (pick.aim === "cell" && pick.kind !== "charge") pick.targetCell = this.player.pos;
-        // 范围：以你当前位置为中心的区间预告（侧位也在区间内就也吃）
+        if (pick.aim === "cell" && pick.kind !== "charge") pick.targetCell = prey.pos;
+        // 范围：以猎物当前位置为中心的区间预告（区间内的其他人也吃）
         if (pick.aim === "zone" && pick.kind !== "charge") {
           const span = pick.zoneSpan || 1;
-          pick.zoneFrom = Math.max(0, this.player.pos - span);
-          pick.zoneTo = Math.min(this.W - 1, this.player.pos + span);
+          pick.zoneFrom = Math.max(0, prey.pos - span);
+          pick.zoneTo = Math.min(this.W - 1, prey.pos + span);
         }
         e.intent = pick;
       }
@@ -589,19 +783,24 @@
       if (atkDef.elem && victim.elem) sdmg = Math.round(sdmg * elemMul(atkDef.elem, victim.elem));
       const r0 = victim.takeDamage(sdmg, { pierce: atkDef.pierce });
       this._log(`${e.name} 使「${atkDef.name}」，${victim.name} 代受 ${r0.dealt} 伤（${Math.max(0, Math.round(victim.hp))}/${victim.hpMax}）`);
-      this._emitFx("side", "hurt", r0.dealt);
+      this._emitFx(this._refOf(victim), "hurt", r0.dealt);
+      // 挨打的开口（T2）：重伤与轻伤两个口气
+      if (victim.isSide && victim.hp > 0) {
+        this._say(victim, victim.hp < victim.hpMax * 0.35 ? "heavyHurt" : "hurt");
+      }
       this._checkSideDown();
     }
 
-    /* 侧位倒下的收尾文案（cell/zone 路径） */
+    /* 侧位倒下的收尾文案（cell/zone 路径）——T4 多侧位逐个清账 */
     _checkSideDown() {
-      const s = this.side;
-      if (s && s.hp <= 0 && !s._downNoted) {
-        s._downNoted = true;
-        this._log(s.kind === "ally"
-          ? `${s.name} 身负重伤，踉跄退出了战圈——「韩兄……剩下的，看你的了！」`
-          : `${s.name} 轰然倒地，再难动弹——战后须得修缮。`);
-      }
+      this.sides.forEach(s => {
+        if (s.hp <= 0 && !s._downNoted) {
+          s._downNoted = true;
+          this._log(s.kind === "ally"
+            ? `${s.name} 身负重伤，踉跄退出了战圈——「韩兄……剩下的，看你的了！」`
+            : `${s.name} 轰然倒地，再难动弹——战后须得修缮。`);
+        }
+      });
     }
     /* 敌人招式表（带射程默认规则：妖兽/尸傀=贴身肉搏零耗；修士=中距耗蓝） */
     _enemyAttacks(e) {
@@ -611,6 +810,13 @@
         const r = a.range || (a.kind === "charge" ? [1, 1] : isMelee ? [1, 1] : [1, 3]);
         const mp = a.mp != null ? a.mp : (isMelee ? 0 : (a.kind === "pierce" ? 8 : a.kind === "charge" ? 10 : 6));
         return Object.assign({}, a, { range: r, mp });
+      // 断尾（_maim）：被废的看家手段从此出不了手
+      }).filter(a => !e._maimedMove || a.name !== e._maimedMove)
+      // 特色资源耗尽（敌我同规则）：神雷/煞气打光，那一手就没了
+      .filter(a => {
+        if (!a.chargeCost) return true;
+        const ch = e.charges && e.charges[a.chargeCost.id];
+        return ch && ch.cur >= a.chargeCost.n;
       });
       return list;
     }
@@ -620,7 +826,13 @@
       if (this.status !== "ongoing") return;
       this.round++;
       this.player.exposed = false;
-      if (this.side && this.side.exposed && !this.side._charging) this.side.exposed = false;   // 同道破绽同节奏消退（同规则）
+      this.player._blinkTurn = false;   // 雷遁只管一回合（再遁再耗神雷）
+      // 神雷附剑余威递减
+      if (this.player._leiEnchant > 0) {
+        this.player._leiEnchant--;
+        if (this.player._leiEnchant === 0) this._log(`（剑身雷光黯去——神雷附剑之效已尽。）`);
+      }
+      this.sides.forEach(s => { if (s.exposed && !s._charging) s.exposed = false; });   // 同道破绽同节奏消退（同规则）
       this._usedOnce = {};
       // 遁速差 → 行动经济：玩家遁速远胜 → 概率抢得第二主行动；高速强敌 → 概率连动
       const foes = this.enemies.filter(e => e.alive);
@@ -638,27 +850,77 @@
         this._pMoved = this.player.move;
         this._log(`（你撑地而起、气血未定——这一回合迈不开步子。）`);
       }
-      // —— 客随模式（ally-ai 三统属之三）：境界明显高的同道主导战局——
-      //    回合开局它先点将（优先点破绽大开的），你这回合打它点的目标=接应（+15%）。
+      // —— 客随统帅（T2.5 四式战术指导）：境界明显高的同道不是复读点将机——
+      //    她读战局给真指令：集火收口/缠正面教你背袭/稳住等空门/血危叫你归位。
       //    "配合"是双向的：它弱时听你的简令，它强时你接它的球。
       this._leadPlan = null;
-      if (this.side && this.side.hp > 0 && this.side.kind === "ally" && (this.side.mastery || 0) >= 2
-        && this.side.stance !== "retreat") {
-        const winOf = e => (e._charging || e._whiffed || (e.status && e.status.dingshen > 0));
-        let ti = this.enemies.findIndex(e => e.alive && winOf(e));
-        if (ti < 0) {
-          let best = Infinity;
-          this.enemies.forEach((e, i) => { if (e.alive && e.hp < best) { best = e.hp; ti = i; } });
+      // 统帅指令的上一回合兑现：hold 听话（没抢攻）→ 这回合身法预判+接应窗口
+      if (this._holdReward) {
+        this._holdReward = false;
+        this.player.dodgeBuff = (this.player.dodgeBuff || 0) + 0.15;
+        this._followBoost = true;
+        this._log(`（你按住了性子，让它那一击落了空——此刻空门大开，身法与刀都更利了！）`);
+      }
+      // 统帅=场上 mastery 最高的同道（T4 多侧位：只有一人发号施令——军令不出二门）
+      const lead = this.sides.filter(s => s.hp > 0 && s.kind === "ally" && (s.mastery || 0) >= 2 && s.stance !== "retreat")
+        .sort((a, b) => (b.mastery || 0) - (a.mastery || 0))[0] || null;
+      this._leadBy = lead;
+      if (lead) {
+        const s = lead;
+        const alive = this.enemies.filter(e => e.alive);
+        // ① 你血危 → 归位令（回合结束站到她身侧=护体）
+        if (this.player.hp < this.player.hpMax * 0.35) {
+          this._leadPlan = { kind: "regroup", used: false };
+          if (!this._say(s, "cmd_regroup")) this._log(`${s.name}：「到我身后来。」`);
+          this._log(`（统帅令·归位：回合结束时退到她身侧一格内——她会为你布下护体）`);
         }
-        if (ti >= 0) {
-          this._leadPlan = { target: ti, used: false };
-          this._log(`${this.side.name} 眸光一转、绫带已先一步缠向 ${this.enemies[ti].name}："这只交给你收口——接好了！"（本回合打它，伤害+15%）`);
+        // ② 有敌在蓄力且盯着你 → 稳住令（这回合别抢攻=下回合空门）
+        else if (alive.some(e => e._charging || (e.intent && e.intent.kind === "charge"))) {
+          this._leadPlan = { kind: "hold", used: false };
+          if (!this._say(s, "cmd_hold")) this._log(`${s.name}：「稳住，别抢——空门在它落空之后。」`);
+          this._log(`（统帅令·稳住：本回合不出主攻手段，下回合身法+15%并得接应之势）`);
+        }
+        // ③ 某敌的杀意全在她身上 → 拉开令（她锁正面，你绕背——背袭再+15%）
+        else if (alive.some(e => this.aggroTarget(e) === s)) {
+          const ti = this.enemies.findIndex(e => e.alive && this.aggroTarget(e) === s);
+          this._leadPlan = { kind: "spread", target: ti, used: false };
+          if (!this._say(s, "cmd_spread")) this._log(`${s.name}：「它的眼里只有我——去，取它后心。」`);
+          this._log(`（统帅令·拉开：${this.enemies[ti].name} 正死盯着她——绕到它身后动手，背袭再+15%）`);
+        }
+        // ④ 默认 → 点将集火（优先点破绽大开的）
+        else {
+          const winOf = e => (e._charging || e._whiffed || (e.status && e.status.dingshen > 0));
+          let ti = this.enemies.findIndex(e => e.alive && winOf(e));
+          if (ti < 0) {
+            let best = Infinity;
+            this.enemies.forEach((e, i) => { if (e.alive && e.hp < best) { best = e.hp; ti = i; } });
+          }
+          if (ti >= 0) {
+            this._leadPlan = { kind: "focus", target: ti, used: false };
+            if (!this._say(s, "cmd_focus")) this._log(`${s.name}：「这只交给你收口——接好了！」`);
+            this._log(`（统帅令·集火：本回合打 ${this.enemies[ti].name}，伤害+15%）`);
+          }
         }
       }
+      // —— 仇恨流转（T0/T4 多侧位）：旧仇衰减 + 守势嘲讽 + 贴身压力 ——
+      this._decayAggro();
+      this.enemies.forEach(e => {
+        if (!e.alive) return;
+        // 贴身压力：脸贴脸的人很难被无视
+        if (this.dist(e, this.player) <= 1) this.addAggro(e, "player", 2.5);
+        this.sides.forEach((s, i) => {
+          if (s.hp <= 0) return;
+          // 守简令=嘲讽：横在阵前对周围敌人持续拉仇恨（傀儡引怪战法的根）
+          if (s.stance === "guard" && this.dist(e, s) <= 2) this.addAggro(e, "side:" + i, 7);
+          if (this.dist(e, s) <= 1) this.addAggro(e, "side:" + i, 2.5);
+        });
+      });
       // 凌空开销（敌我侧三方同规则，用户铁律：消耗战是以弱胜强的正路——
       // 拖到对方灵竭跌落，和打掉它血条一样光彩）：悬空燃灵逐回合递增（3/4/5…），
       // 灵竭=跌落+破绽。谁都一样：你、同道、敌修、妖禽，无人白飞
       this.units().forEach(u => this._airUpkeep(u));
+      // 悬浮法宝运转（三位制·祭出位）：同一条资源物理学——绕身宝光也要灵力喂
+      this.units().forEach(u => this._floatUpkeep(u));
       // 聚灵阵：立于阵中灵力自回（久战续航的根本）——同规则：我方全体皆可受益，
       // 敌方踩进我方聚灵阵不回灵（阵认主），反之敌阵（若有）也只济敌
       this.units().forEach(u => {
@@ -666,7 +928,7 @@
         if (!z || z.team !== u.team || (u.alt || 0) === 1) return;
         const cap = u.mpMax || u.mp || 0;
         if ((u.mp || 0) >= cap) return;
-        const got = Math.min(8, cap - u.mp);
+        const got = Math.min(8 + (u.regenBoost || 0), cap - u.mp);   // 伴身件：阵中每口更足
         u.mp += got;
         this._log(u === this.player ? `（聚灵阵灵气汇入——灵力+${got}）` : `（${u.name} 借阵中灵气回元——灵力+${got}）`);
       });
@@ -681,6 +943,14 @@
         }
       }
       this._rollEnemyIntents();
+      this._actorRef = "player";   // 切镜（T6）：你的回合，镜头回到你
+      // 开战的开口（T2）：第一回合，同道一句、敌方一句——人未动，气先到
+      if (this.round === 1) {
+        const av = this._allyVoice();
+        if (av) this._say(av, "open");
+        const talker = this.enemies.find(e => e.alive);
+        if (talker) this._say(talker, "open");
+      }
       this._log(`【第${this.round}回合】灵力 ${Math.round(this.player.mp)}/${this.player.mpMax}`
         + (this._pActsMax > 1 ? "（遁速远胜——本回合可出手两次！）" : ""));
     }
@@ -699,8 +969,19 @@
       if (sp.quick && this._pQuickUsed) return false;
       if (!sp.quick && this._pActsUsed >= this._pActsMax) return false;
       if ((sp.mp || 0) > this.player.mp) return false;
+      // 特色资源（神雷等）：耗尽则手段哑火——取舍即战术
+      if (sp.chargeCost) {
+        const ch = this.player.charges && this.player.charges[sp.chargeCost.id];
+        if (!ch || ch.cur < sp.chargeCost.n) return false;
+      }
       const consumeOk = !sp.consume || this.player.hasConsumable(sp.consume);
       return consumeOk;
+    }
+    /* 扣特色资源（cast 收口共用） */
+    _spendCharge(u, sp) {
+      if (!sp.chargeCost || !u.charges) return;
+      const ch = u.charges[sp.chargeCost.id];
+      if (ch) ch.cur = Math.max(0, ch.cur - sp.chargeCost.n);
     }
     /* 射程外但其余可负担（UI 置灰区分提示用） */
     castableAt(spellId, targetIndex) {
@@ -743,10 +1024,10 @@
         return { ok: false, reason: `${target.name} 游走在阵后，贴身手段够不着——御物法术可越排而击` };
       }
       // 集火黑板：你打谁，侧位单位就跟谁（随令）——配合从"看见你的选择"开始
-      if (sp.type === "atk" && target) this._pFocus = targetIndex;
-      // 接应（客随）：打统帅点的将——这一手是给她递的刀（+15%，每回合首次）
-      if (sp.type === "atk" && target && this._leadPlan && !this._leadPlan.used
-        && targetIndex === this._leadPlan.target && !sp.chargeTurns) {
+      if (sp.type === "atk" && target) { this._pFocus = targetIndex; this._pAttacked = true; }
+      // 接应（客随·集火令）：打统帅点的将——这一手是给她递的刀（+15%，每回合首次）
+      if (sp.type === "atk" && target && this._leadPlan && this._leadPlan.kind === "focus"
+        && !this._leadPlan.used && targetIndex === this._leadPlan.target && !sp.chargeTurns) {
         this._leadPlan.used = true;
         this._followBoost = true;
         this._stat("接应配合", 1);
@@ -779,11 +1060,34 @@
         return { ok: true };
       }
 
+      // 特色资源闸（神雷等）：耗尽则手段哑火——"取舍/耗尽才有战术"（用户铁律）
+      if (sp.chargeCost) {
+        const ch = this.player.charges && this.player.charges[sp.chargeCost.id];
+        if (!ch || ch.cur < sp.chargeCost.n) return { ok: false, reason: `${ch ? ch.name : "灵机"}已耗尽——此手段哑火` };
+      }
       this.player.mp -= (sp.mp || 0);
+      this._spendCharge(this.player, sp);
       if (sp.consume) this.player.pouch[sp.consume]--;
       if (sp.oncePerRound) { (this._usedOnce || (this._usedOnce = {}))[spellId] = true; }
       if (sp.cd) this.player.cooldowns[spellId] = sp.cd + 1;
       if (sp.quick) this._pQuickUsed = true; else this._pActsUsed += (sp.actCost || 1);
+
+      // 神雷附剑/雷遁（buff 型特技）：不走 _applySpell 的通用 buff——专项结算
+      if (sp.leiEnchant) {
+        this.player._leiEnchant = sp.leiEnchant;
+        this._log(`三道银蛇自剑鞘窜出、缠上本命飞剑——剑光转为雷色（${sp.leiEnchant} 回合内主攻法宝带雷+8、克邪×1.5）！`);
+        this._emitFx("player", "crit", "神雷附剑");
+        this._checkEnd();
+        return { ok: true };
+      }
+      if (sp.blinkMove) {
+        this.player._blinkTurn = true;
+        this._pMoved = Math.max(0, (this._pMoved || 0) - 2);   // 身法+2（亚空间不走寻常路）
+        this._log(`你周身银光一闪、半步踏入亚空间——本回合行走无视挡线困足（身法+2）！`);
+        this._emitFx("player", "miss", "雷遁");
+        this._checkEnd();
+        return { ok: true };
+      }
 
       this._applySpell(this.player, sp, target, spellId, opts);
       this._checkEnd();
@@ -795,7 +1099,7 @@
     }
     _refOf(unit) {
       if (unit === this.player) return "player";
-      if (unit.isSide) return "side";
+      if (unit.isSide) { const i = this.sides.indexOf(unit); return i > 0 ? `side:${i}` : "side"; }
       return `enemy:${this.enemies.indexOf(unit)}`;
     }
 
@@ -844,6 +1148,11 @@
         if (sp.source !== "martial" && sp.range && sp.range[1] >= 2 && this.dist(caster, target) === 1) {
           baseDmg = Math.round(baseDmg * 0.7); closeSqueeze = true;
         }
+        // 神雷附剑（v96）：主攻法宝带雷——伤害+8、克邪×1.5（三回合余威）
+        if (caster._leiEnchant > 0 && sp.source === "treasure" && caster === this.player) {
+          baseDmg += 8;
+          if (target.nature === "ghost" || target.nature === "demon") baseDmg = Math.round(baseDmg * 1.5);
+        }
         const eMul = elemMul(sp.elem, target.elem);
         const sMul = (sp.slays && target.nature && sp.slays[target.nature]) || 1;
         if (eMul !== 1 || sMul !== 1) {
@@ -857,6 +1166,28 @@
           baseDmg = Math.round(baseDmg * 1.2);
           target._backTurned = false;
           this._log(`（背击！${target.name} 背门大开——这一手又狠又刁！伤害+2成）`);
+        }
+        // —— 背袭（tactics T1）：它的杀意在别处+你在它背面=死门一击 ——
+        // 仇恨账本的几何兑现（刘靖杀青纹后被阴手所杀，是同一条规则的反面）
+        let backstab = false, assassin = false;
+        if (caster === this.player && target.team === "enemy" && sp.dmg) {
+          const at = this.aggroTarget(target);
+          if (at && at !== this.player && at.hp > 0) {
+            const dF = Math.sign(at.pos - target.pos), dM = Math.sign(caster.pos - target.pos);
+            if (dF !== 0 && dM !== 0 && dF !== dM) {
+              backstab = true;
+              baseDmg = Math.round(baseDmg * 1.35);
+              // 死角绝杀：本回合首次出手（它毫无防备）+非 boss——这一刀留下永久的伤
+              assassin = this._pActsUsed === 0 && !this._pQuickUsed && !target.boss;
+              // 统帅"拉开"指令的兑现：她缠住正面，你取后心——再+15%
+              if (this._leadPlan && this._leadPlan.kind === "spread"
+                && this.enemies[this._leadPlan.target] === target && !this._leadPlan.used) {
+                this._leadPlan.used = true;
+                baseDmg = Math.round(baseDmg * 1.15);
+                this._log(`（她缠住了它的正面，你自死角而入——这一手正是她递来的局！再+15%）`);
+              }
+            }
+          }
         }
         // 俯击：居高临下打地面目标——势从天降（+15%）
         if ((caster.alt || 0) > (target.alt || 0)) {
@@ -884,6 +1215,16 @@
             if (target.hp <= 0) break;
           }
           if (caster === this.player) this._stat(sp.name, totalDealt);
+          // 仇恨入账：打谁谁记仇（敌方下回合的杀意流向）
+          if (target.team === "enemy") this.addAggro(target, caster === this.player ? "player" : this.sideKey(caster), totalDealt);
+          // —— 背袭结算：硬直（打掉它的章法）+ 死角绝杀的永久损伤 ——
+          if (backstab && totalDealt > 0 && target.alive) {
+            target.intent = null;
+            this._log(`（背袭！它的杀意全在别处——你这一手自死角而入，${target.name} 踉跄回身、章法尽失！）`);
+            this._emitFx(tref, "crit", "背袭！");
+            if (assassin) this._maim(target);
+            { const av = this._allyVoice(); if (av) this._say(av, "backstabPraise"); }
+          }
           if (anyCrit) this._log(`（神识料敌于先，一击中的！）`);
           if (exploitCharge) {
             this._log(target._whiffed
@@ -927,6 +1268,7 @@
         if (sMul > 1) { dmg = Math.round(dmg * sMul); this._emitFx(tref, "crit", "克星！"); }
         const r = target.takeDamage(dmg, { soul: true });
         if (caster === this.player) this._stat(sp.name, r.dealt);
+        if (target.team === "enemy") this.addAggro(target, caster === this.player ? "player" : this.sideKey(caster), r.dealt);
         this._log(`${caster.name} 运功镇魂，以功力冲击 ${target.name} 的神魂，造成 ${r.dealt} 伤害（${Math.max(0, Math.round(target.hp))}/${target.hpMax}）`);
         this._emitFx(tref, "soul", "镇魂 " + r.dealt);
 
@@ -944,6 +1286,8 @@
         this._emitFx(this._refOf(caster), "heal", zname);
 
       } else if (sp.type === "debuff" && target) {
+        // 控制即挑衅：定身/减益的仇恨不输于伤害（它记得是谁锁的它）
+        if (target.team === "enemy") this.addAggro(target, caster === this.player ? "player" : this.sideKey(caster), 12);
         if (sp.dingshen) {
           target.status.dingshen = (target.status.dingshen || 0) + sp.dingshen;
           // 定身拆蓄势：定住的同时，蓄到一半的大招也散了
@@ -984,9 +1328,10 @@
           this._log(`${caster.name} 施「${sp.name}」，护体 +${shield}（共${caster.shield}${cap ? `/${cap}` : ''}）`);
         }
       } else if (sp.type === "buff") {
-        // 凝息回元：灵力回补 + 破绽毕露（v2 的资源赌局）
+        // 凝息回元：灵力回补 + 破绽毕露（v2 的资源赌局）。
+        // regenBoost（伴身件）：每口回元更足——池制铁律不破（仍要花动作冒破绽）
         if (sp.regen) {
-          const got = Math.min(sp.regen, caster.mpMax - caster.mp);
+          const got = Math.min(sp.regen + (caster.regenBoost || 0), caster.mpMax - caster.mp);
           caster.mp += got;
           if (sp.expose) caster.exposed = true;
           this._log(`${caster.name} 敛息凝神，灵力回涌 +${got}（${Math.round(caster.mp)}/${caster.mpMax}）${sp.expose ? "——但破绽毕露！" : ""}`);
@@ -995,11 +1340,50 @@
       }
     }
 
+    /* 死角绝杀的永久损伤（tactics T1 通用版）：兽断其势、修毁其器。
+     * boss 在 assassin 判定已排除（只吃背袭硬直）——风云榜赛道不崩 */
+    _maim(e) {
+      if (e._maimed) return;
+      e._maimed = true;
+      if (e.nature === "beast" || e.nature === "corpse") {
+        // 断尾：废掉它最重的看家手段（zone 横扫/蓄力扑杀优先）——从此这招再使不出
+        const moves = e.attacks || [];
+        const heavy = moves.find(m => m.aim === "zone" || m.kind === "charge" || m.charge)
+          || moves.reduce((a, b) => (!a || (b.dmg || 0) > (a.dmg || 0)) ? b : a, null);
+        if (heavy) {
+          e._maimedMove = heavy.name;
+          this._log(`（绝杀入髓！${e.name} 的筋骨被这一记自死角的重击废去一截——「${heavy.name}」从此再难使出！）`);
+        } else {
+          e.dmgBonus = (e.dmgBonus || 1) * 0.75;
+          this._log(`（绝杀入髓！${e.name} 的爪牙被废去三分——往后的撕咬都软了下来。）`);
+        }
+      } else {
+        // 毁器：法修的本钱在器——护身法器应声而裂
+        e.dmgBonus = (e.dmgBonus || 1) * 0.75;
+        e.armor = Math.max(0, (e.armor || 0) - 2);
+        this._log(`（绝杀入髓！${e.name} 贴身的护道法器应声而裂——气势与防护一并塌了下去。）`);
+      }
+      this._emitFx(`enemy:${this.enemies.indexOf(e)}`, "crit", "重创！");
+    }
+
     _firstAliveEnemy() { return this.enemies.findIndex(e => e.alive); }
 
     /* ----- 结束回合：侧位行动 → 敌方（移动+出招）→ 结算 ----- */
     endRound() {
       if (this.status !== "ongoing") return;
+      // —— 统帅令结算（T2.5）：听话有糖，抗令无罚（她不是你娘）——
+      const ld = this._leadBy;
+      if (this._leadPlan && this._leadPlan.kind === "hold" && !this._pAttacked) {
+        this._holdReward = true;
+        this._log(`（你收住了刀锋——${ld ? ld.name : "她"}眼中闪过一丝赞许。）`);
+      }
+      if (this._leadPlan && this._leadPlan.kind === "regroup" && ld && ld.hp > 0
+        && this.dist(this.player, ld) <= 1) {
+        const got = 16;
+        this.player.shield = Math.min(this.player._shieldCap || 999, (this.player.shield || 0) + got);
+        this._log(`你退至 ${ld.name} 身侧——她广袖一拂，月华化盾罩定你周身（护体+${got}）。`);
+      }
+      this._pAttacked = false;
       this._tickStatus(this.player);
       this._sideAct();
       if (this.status !== "ongoing") return;
@@ -1076,9 +1460,16 @@
      * 人格=背景+境界+功法（persona 权重：aggr 求战/prot 护主/kite 风筝），不是脚本；
      * 简令四档（随/攻/守/撤）；黑板=玩家焦点(_pFocus)+破绽窗口+玩家血危。
      * 协同三式落地：集火（打你打的）/接力（抓你定住的那一拍）/挡线（血危时挪身代刀）。 */
+    /* T4 多侧位：全部侧位依序行动（同道/灵宠/傀儡各打各的——多组对位的我方端） */
     _sideAct() {
-      const s = this.side;
-      if (!s || s.hp <= 0) return;
+      for (let i = 0; i < this.sides.length; i++) {
+        if (this.status !== "ongoing") return;
+        const s = this.sides[i];
+        if (s.hp > 0) this._sideActOne(s, i);
+      }
+    }
+    _sideActOne(s, sideIdx) {
+      this._actorRef = this._refOf(s);   // 切镜（T6）：谁行动，镜头看谁
       const stance = s.stance || "follow";
       const persona = (s.sideRef && s.sideRef.persona) || { aggr: 5, prot: 5, kite: 0 };
       const isMelee = !s.moves || s.moves.every(m => !m.range || m.range[1] <= 1);
@@ -1091,10 +1482,11 @@
         if ((s.alt || 0) === 0 && (s.mp || 0) >= 6
           && (meleeThreat && persona.kite >= 4 || ((s.mastery || 0) >= 2 && this.round >= 2 && persona.kite >= 4))) {
           s.alt = 1;
+          this._say(s, "fly");
           this._log(meleeThreat
             ? `${s.name} 袖袂一振拔身而起——脱开爪牙，凌空再战！`
             : `${s.name} 足尖轻点、遁光托身而起——居高临下，俯瞰全局。`);
-          this._emitFx("side", "move", null);
+          this._emitFx(this._refOf(s), "move", null);
           return;
         }
         // 落地：威胁已无且灵力见底——收遁光省灵（消耗战的自觉：不为排场白烧灵力）
@@ -1118,15 +1510,30 @@
         return;
       }
 
-      // —— 集火黑板：客随=打自己点的将；随令跟玩家焦点；攻令补刀血最少的 ——
+      // —— 选敌评分（T5 流动战团）：就近接战是天性——你把对手拉到她身边，
+      //    她顺手就接；正缠着她的、你点名的、破绽大开的各有权重。
+      //    统帅令（focus/spread）依然说到做到：点了谁就缠谁 ——
       let ti = -1;
-      if (this._leadPlan && this.enemies[this._leadPlan.target] && this.enemies[this._leadPlan.target].alive) {
-        ti = this._leadPlan.target;   // 统帅说到做到：点了谁就缠谁
-      } else if (stance !== "attack" && this._pFocus != null && this.enemies[this._pFocus] && this.enemies[this._pFocus].alive) {
-        ti = this._pFocus;
-      } else if (stance === "attack") {
-        let best = Infinity;
-        this.enemies.forEach((e, i) => { if (e.alive && e.hp < best) { best = e.hp; ti = i; } });
+      if (this._leadPlan && this._leadPlan.target != null
+        && this.enemies[this._leadPlan.target] && this.enemies[this._leadPlan.target].alive) {
+        ti = this._leadPlan.target;
+      } else {
+        let bestScore = -Infinity;
+        this.enemies.forEach((e, i) => {
+          if (!e.alive) return;
+          let sc = 4 - Math.min(4, this.dist(s, e));                       // 近水楼台：送到面前的先打
+          if (this._pFocus === i && stance !== "attack") sc += 2.5;        // 你点名的
+          if (this.aggroTarget(e) === s) sc += 2;                          // 正咬着她的
+          if (e._charging || e._whiffed || (e.status && e.status.dingshen > 0)) sc += 1.5;   // 破绽
+          if (stance === "attack") sc += (1 - e.hp / e.hpMax) * 3;         // 攻令：补刀血少的
+          if (sc > bestScore) { bestScore = sc; ti = i; }
+        });
+        // 顺手接战的开口（嘴上清冷，手底利落）——离她 1 格内且不是你点的目标
+        if (ti >= 0 && this._pFocus !== ti && this.dist(s, this.enemies[ti]) <= 1
+          && s._lastTi !== ti) {
+          this._say(s, "assist");
+        }
+        s._lastTi = ti;
       }
       if (ti < 0) ti = this._firstAliveEnemy();
       if (ti < 0) return;
@@ -1153,7 +1560,7 @@
             this._log(s.kind === "ally"
               ? `${s.name} 瞥见你气血翻涌，身形一错挡在你身前——"这一刀，我替你接。"`
               : `${s.name} 轰然横移，铁壁般挡在你与 ${melee.name} 之间。`);
-            this._emitFx("side", "miss", "挡线");
+            this._emitFx(this._refOf(s), "miss", "挡线");
             return;
           }
         }
@@ -1214,10 +1621,12 @@
       if (target.soulOnly && !s.soulTouch) { this._log(`${s.name} 攻向 ${target.name}，却如击虚空——元神无形，此路不通。`); return; }
       const r = target.takeDamage(dmg, { soul: !!s.soulTouch, pierce: mv && mv.pierce });
       this._stat(s.name, r.dealt);
+      // 侧位也记仇恨（T0 同规则）：她打的，敌人也记她的账
+      this.addAggro(target, this.sideKey(s), r.dealt);
       const moveName = mv ? mv.name : (s.atkName || "扑击");
       // 侧位出手特效：月华绫=白绫光带（波形），其余按行属弹道/贴身爪弧
       this._emitFx(`enemy:${ti}`, "fxcast", null, {
-        elem, from: "side", melee: d <= 1 && isMelee, wave: /月华|绫|素女/.test(moveName) ? 1 : 0,
+        elem, from: this._refOf(s), melee: d <= 1 && isMelee, wave: /月华|绫|素女/.test(moveName) ? 1 : 0,
       });
       if (s.kind === "ally") {
         const act = `${mv && mv.line ? mv.line : `祭出「${moveName}」`} ${target.name}，造成 ${r.dealt} 伤害！` + (eMul > 1 ? "（克制）" : "");
@@ -1231,6 +1640,9 @@
         this._log(`${s.name} 使「${moveName}」${exploit ? "（趁虚）" : ""}，对 ${target.name} 造成 ${r.dealt} 伤害` + (eMul > 1 ? "（克制）" : ""));
       }
       this._emitFx(`enemy:${ti}`, "dmg", r.dealt);
+      // 击杀/灵力告急的开口（T2）
+      if (!target.alive) this._say(s, "kill");
+      else if ((s.mp || 0) < (s.mpMax || 30) * 0.25) this._say(s, "lowMp");
       this._checkEnd();
     }
 
@@ -1241,6 +1653,8 @@
       for (let i = 1; i <= n; i++) {
         const p = unit.pos + dir * i;
         if (p < 0 || p >= this.W) break;
+        // 钉桩（T3 anchor）：守位者寸步不离岗（±1 格）——拉不走的，绕过或强攻
+        if (unit.formation === "anchor" && unit.homePos != null && Math.abs(p - unit.homePos) > 1) break;
         const o = this.unitAt(p, unit.alt || 0, unit.lane || 0);
         if (o) { if (o.team !== unit.team) break; else continue; }   // 敌挡停步；友方穿过但不能落脚同格
         const z = this.zoneAt(p, "kunzu");
@@ -1280,11 +1694,30 @@
       this._checkEnd();
     }
 
-    /* ----- 敌方行动：先按意图调位（突进/拉距/遁走），再出招 ----- */
+    /* ----- 敌方行动：先按意图调位（突进/拉距/遁走），再出招。
+     * T0 起：追谁打谁由仇恨账本决定（prey）——傀儡引怪/钓离/换仇恨全在这一口 ----- */
     _enemyAct(e) {
       e._whiffed = false;   // 趁虚窗口关闭：收招硬直只持续到它再次出手
       e._backTurned = false;   // 它转过身来了——绕后窗口关闭
+      this._actorRef = "enemy:" + this.enemies.indexOf(e);   // 切镜：行动者镜头（T6）
+      const prey = this.aggroTarget(e);
       const a = e.intent || { name: e.atkName || "攻击", dmg: e.atk || 8, soul: e.soulAtk, pierce: e.pierceAtk, kind: "normal", mp: 0, range: [1, 3] };
+      // —— 阵型纪律（T3 pack）：从者离领队太远先归队（队形带 ±2 格）——
+      //    领队在世，狼群是一张网；领队一死，网就散了
+      if (e.formation === "pack" && !e.leader && a.kind !== "flee") {
+        const lead = this.enemies.find(x => x.alive && x.leader && x.formation === "pack");
+        if (lead && Math.abs(e.pos - lead.pos) > 2 && this.dist(e, prey) > 1) {
+          const step = this._stepToward(e, lead, this.moveCap(e));
+          if (step != null && Math.abs(step - lead.pos) < Math.abs(e.pos - lead.pos)) {
+            e.pos = step;
+            this._checkMine(e); if (!e.alive) return;
+            this._log(`${e.name} 收势靠拢头领——阵形不乱。`);
+            return;
+          }
+        }
+      }
+      // anchor 钉桩：守位者绝不离岗（拉不走的，绕过或强攻）
+      if (e.formation === "anchor" && e.homePos == null) e.homePos = e.pos;
 
       // —— 空层机动：腾空追击 / 俯冲落地（升降占整个行动——天地之间没有白来的路）——
       if (a.kind === "rise") {
@@ -1300,10 +1733,10 @@
         return;
       }
 
-      // —— 逼近：这回合赶路（够不着玩家——老实跑路，不虚张声势）。
+      // —— 逼近：这回合赶路（够不着猎物——老实跑路，不虚张声势）。
       //    去路被挡线者拦住时，近战系顺势撕咬挡路者（挡线的代价照旧）——
       if (a.kind === "approach") {
-        const step = this._stepToward(e, this.player, this.moveCap(e));
+        const step = this._stepToward(e, prey, this.moveCap(e));
         if (step != null) { e.pos = step; this._checkMine(e); if (!e.alive) return; }
         if (e._zoneDodged) {
           e._zoneDodged = null;
@@ -1325,7 +1758,9 @@
             return;
           }
         }
-        this._log(`${e.name} 向你逼近（距${this.dist(e, this.player)}格）。`);
+        this._log(prey === this.player
+          ? `${e.name} 向你逼近（距${this.dist(e, this.player)}格）。`
+          : `${e.name} 的杀意锁向 ${prey.name}，步步紧逼（距${this.dist(e, prey)}格）。`);
         return;
       }
 
@@ -1348,6 +1783,7 @@
         }
         e.pos = p;
         this._checkMine(e); if (!e.alive) return;
+        this._say(e, "flee");
         this._log(`${e.name} 且战且退，向阵外遁去（再不拦就走脱了）！`);
         return;
       }
@@ -1363,11 +1799,11 @@
 
       // —— 蓄力：原地蓄势（破绽毕露，可被打断）——
       if (a.kind === "charge" && !e._charging) {
-        // 蓄力技须先到位（贴身技先突进）
+        // 蓄力技须先到位（贴身技先突进）——盯着的是它的仇恨目标
         const need = a.range || [1, 1];
-        const dHere = this.dist(e, this.player);
+        const dHere = this.dist(e, prey);
         if (dHere > need[1]) {
-          const step = this._stepToward(e, this.player, this.moveCap(e));
+          const step = this._stepToward(e, prey, this.moveCap(e));
           if (step != null) { e.pos = step; this._checkMine(e); if (!e.alive) return; }
         }
         e._charging = { name: a.name, dmg: Math.round((a.dmg || 8) * 2), pierce: a.pierce, range: need, aim: a.aim, zoneSpan: a.zoneSpan };
@@ -1387,11 +1823,11 @@
         e.exposed = false;
       }
       const range = atkDef.range || [1, 3];
-      let d = this.dist(e, this.player);
-      // 调位：太远→突进；太近（狙击被贴）→ 拉距
+      let d = this.dist(e, prey);
+      // 调位：太远→突进；太近（狙击被贴）→ 拉距——一切以仇恨目标为准
       if (d > range[1]) {
-        const step = this._stepToward(e, this.player, this.moveCap(e));
-        if (step != null) { e.pos = step; this._checkMine(e); if (!e.alive) return; d = this.dist(e, this.player); }
+        const step = this._stepToward(e, prey, this.moveCap(e));
+        if (step != null) { e.pos = step; this._checkMine(e); if (!e.alive) return; d = this.dist(e, prey); }
         if (e._zoneDodged) {
           e._zoneDodged = null;
           this._log(`${e.name} 在阵纹前堪堪收脚，绕不过去便不踏——老辣得很。`);
@@ -1410,12 +1846,12 @@
             this._strikeSideUnit(e, atkDef, blocker);
             return;
           }
-          this._log(`${e.name} 向你逼近（距${d}格）。`);
+          this._log(prey === this.player ? `${e.name} 向你逼近（距${d}格）。` : `${e.name} 紧追 ${prey.name}（距${d}格）。`);
           return;   // 这回合只能赶路
         }
       } else if (d < range[0]) {
         // 后撤拉距（远程系被贴身）
-        const dir = e.pos > this.player.pos ? 1 : -1;
+        const dir = e.pos > prey.pos ? 1 : -1;
         let p = e.pos;
         for (let i = 1; i <= this.moveCap(e); i++) {
           const np = e.pos + dir * i;
@@ -1423,13 +1859,19 @@
           if (this.unitAt(np, null, e.lane || 0)) break;
           p = np;
         }
-        if (p !== e.pos) { e.pos = p; this._checkMine(e); if (!e.alive) return; d = this.dist(e, this.player); this._log(`${e.name} 急退拉开距离！`); }
+        if (p !== e.pos) { e.pos = p; this._checkMine(e); if (!e.alive) return; d = this.dist(e, prey); this._log(`${e.name} 急退拉开距离！`); }
         if (d < range[0]) { this._log(`${e.name} 被贴得太近，招式施展不开！`); return; }
       }
 
       // 扣蓝（修士技耗蓝；蓝不够时这招放空——_rollEnemyIntents 已尽量避免）
       if ((atkDef.mp || 0) > e.mp) { this._log(`${e.name} 灵力不济，一招落空！`); return; }
       e.mp -= (atkDef.mp || 0);
+      // 扣特色资源（敌我同规则）：它的神雷/煞气也是打一道少一道
+      if (atkDef.chargeCost) {
+        this._spendCharge(e, atkDef);
+        const ch = e.charges && e.charges[atkDef.chargeCost.id];
+        if (ch && ch.cur <= 0) this._log(`（${e.name} 的${ch.name}已尽——这一手是它最后的本钱！）`);
+      }
 
       // —— 打格子（cell）：砸意图时亮出的那个格——你移开了就是空（身法的胜利）——
       if (atkDef.targetCell != null) {
@@ -1505,8 +1947,9 @@
         return;
       }
 
-      // 攻击目标判定：贴身系先打挡线者（近战必须打相邻——傀儡/侧位的真墙价值）
-      let victim = this.player;
+      // 攻击目标判定（T0 仇恨消费）：杀意流向仇恨目标；贴身系仍先打挡线者
+      // （近战必须打相邻——傀儡/侧位的真墙价值不因仇恨而失效）
+      let victim = prey;
       // 排间贴身兜底（2.5 排制）：僚位敌真要近咬（拼死一搏类）——先欺身扑出战位排
       if (range[1] <= 1 && (e.lane || 0) !== 0) {
         e.lane = 0;
@@ -1515,22 +1958,30 @@
       if (range[1] <= 1 && !atkDef.antiAir) {
         // 空层错位：贴身手段够不到不同高度的目标——爪牙落空（地面单位优先转打同层挡线者）
         // antiAir 例外：腾身扑杀本就是跳起来咬的，低空拦不住兽王
-        if ((this.player.alt || 0) !== (e.alt || 0)) {
+        if ((victim.alt || 0) !== (e.alt || 0)) {
           const adjSame = [this.unitAt(e.pos - 1, e.alt || 0, e.lane || 0), this.unitAt(e.pos + 1, e.alt || 0, e.lane || 0)]
-            .find(u => u && u.team === "player" && u !== this.player);
+            .find(u => u && u.team === "player" && u !== victim);
           if (adjSame) { this._strikeSideUnit(e, atkDef, adjSame); return; }
-          this._log(`${e.name} 的「${atkDef.name}」对着${(this.player.alt || 0) === 1 ? "半空" : "地面"}徒劳挥落——够不着你！`);
+          this._log(`${e.name} 的「${atkDef.name}」对着${(victim.alt || 0) === 1 ? "半空" : "地面"}徒劳挥落——够不着${victim === this.player ? "你" : "目标"}！`);
           e._whiffed = true;
           return;
         }
-        const adj = this.unitAt(e.pos - 1) || this.unitAt(e.pos + 1);
-        if (adj && adj.team === "player") victim = adj;
-        else if (this.dist(e, this.player) > 1) { this._log(`${e.name} 扑了个空——无人在其爪牙之内。`); return; }
+        // 近战只咬得到嘴边的：仇恨目标不相邻时，先撕相邻的我方单位
+        if (this.dist(e, victim) > 1) {
+          const adj = [this.unitAt(e.pos - 1), this.unitAt(e.pos + 1)].find(u => u && u.team === "player");
+          if (adj) victim = adj;
+          else { this._log(`${e.name} 扑了个空——无人在其爪牙之内。`); return; }
+        }
       }
-      // 远程攻击仍可被侧位掷骰挡刀（侧位的护卫本能）
-      if (victim === this.player && this.side && this.side.hp > 0 && this.rng() < (this.side.guard || 0)) {
-        victim = this.side;
-        this._log(`${this.side.name} ${this.side.kind === "ally" ? "侧身替你接下这一击" : "横身挡在你身前"}！`);
+      // 远程攻击仍可被侧位掷骰挡刀（侧位的护卫本能——只挡飞向你的；多侧位依序掷）
+      if (victim === this.player) {
+        for (const s of this.sides) {
+          if (s.hp > 0 && this.rng() < (s.guard || 0)) {
+            victim = s;
+            this._log(`${s.name} ${s.kind === "ally" ? "侧身替你接下这一击" : "横身挡在你身前"}！`);
+            break;
+          }
+        }
       }
 
       if (victim !== this.player) { this._strikeSideUnit(e, atkDef, victim); return; }
@@ -1557,6 +2008,11 @@
         if (this.player.hp <= 0) this.deathCause = { by: e.name, move: atkDef.name };
         this._log(`${e.name} 使「${atkDef.name}」，你受到 ${r.dealt} 伤害${r.exposed ? "（破绽+30%）" : ""}（${Math.max(0, Math.round(this.player.hp))}/${this.player.hpMax}）`);
         this._emitFx("player", "hurt", r.dealt);
+        // 同道的关切（T2）：你血线垮半时她开口（账本保证一场只说一次）
+        if (this.player.hp > 0 && this.player.hp < this.player.hpMax * 0.5) {
+          const av = this._allyVoice();
+          if (av) this._say(av, "playerHurt");
+        }
         this._maybeBreakPlayerCharge(r.dealt);
         // 击落（玩家侧）：凌空挨重击——遁光散落坠地，下回合身法尽失
         if ((this.player.alt || 0) === 1 && r.dealt >= 16 && this.player.hp > 0) {
@@ -1598,7 +2054,28 @@
     }
 
     _checkEnd() {
-      if (this.player.hp <= 0) { this.status = "lose"; this._log(`${this.player.name} 气血耗尽，败。`); return; }
+      if (this.player.hp <= 0) {
+        this.status = "lose";
+        { const av = this._allyVoice(); if (av) this._say(av, "playerDown"); }
+        this._log(`${this.player.name} 气血耗尽，败。`);
+        return;
+      }
+      // 阵型崩溃（T3）：领队殒命，群势立溃——阵散为各自为战，爪牙皆软三分
+      if (!this._packBroken) {
+        const deadLead = this.enemies.find(x => x.leader && x.formation === "pack" && !x.alive);
+        if (deadLead) {
+          this._packBroken = true;
+          let n = 0;
+          this.enemies.forEach(x => {
+            if (x.alive && x.formation === "pack" && !x.leader) {
+              x.formation = "loose";
+              x.dmgBonus = (x.dmgBonus || 1) * 0.85;
+              n++;
+            }
+          });
+          if (n) this._log(`（${deadLead.name} 既殒，群势立溃——余下爪牙乱了章法，凶性弱了三分！）`);
+        }
+      }
       // 阵脚补位（2.5 排制）：战位排清空而僚位还有人——缩在后头的被逼上前来
       //（没有"永远缩在僚位躲贴身"的无解龟壳；近战 build 杀穿前排即可触及全员）
       if (this.enemies.some(e => e.alive) && !this.enemies.some(e => e.alive && (e.lane || 0) === 0)) {
@@ -1611,6 +2088,7 @@
         const fledAny = this.enemies.some(e => e.escaped);
         this.status = "win";
         this._log(fledAny && this.enemies.every(e => e.escaped) ? `敌人尽数遁走——战场是你的了。` : `敌人尽灭，胜！`);
+        { const av = this._allyVoice(); if (av) this._say(av, "win"); }
       }
     }
 
