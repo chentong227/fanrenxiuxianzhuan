@@ -63,6 +63,8 @@ const Engine = {
     }
     // 世界不会因你停步：推进世间修士的命途
     this._tickWorld(months);
+    // 异闻链：身在彩霞山一带，山野风声随月份酝酿（听闻→寻踪→相遇）
+    this._tickBeastRumor(months);
     // 时间推进后检查到期的任务与预定事件
     this._checkSchedule();
   },
@@ -1158,8 +1160,8 @@ const Engine = {
     this.log(`你${reachedExit ? "寻到出口，离开了" : "退出了"}「${st.siteName}」，探索耗时约 ${months} 月。${summary}`, gained.length ? "good" : "sys");
     s.explore = null;
 
-    // 异闻投放：山里走动，总会听到些风声（无活跃异闻且尚有未伏诛的妖王时）
-    this._maybeBeastRumor(0.3);
+    // 异闻投放：深入后山探索，最易撞见风声（无活跃异闻且尚有未伏诛的妖王时）
+    this._maybeBeastRumor(0.5);
 
     this.checkLifespan();
     this.checkStory();
@@ -2078,8 +2080,36 @@ const Engine = {
     if (!pool.length || Math.random() > chance) return;
     const r = pool[Math.floor(Math.random() * pool.length)];
     s.beastRumor = r.id;
-    this.log(`【异闻】${r.rumor}　——若再入后山深处，或可遇上这桩"机缘"。`, "event");
+    s.beastRumorClue = 0;
+    this.log(`【异闻】${r.rumor}`, "event");
     this.toast("听到一桩异闻（见际遇栏）");
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
+  },
+  // 当前是否身处彩霞山一带（后山可及）——异闻只在此处的山野风声里酝酿
+  _nearHoushan() {
+    const s = State.data;
+    if (typeof WORLD === "undefined" || !WORLD.continent) return false;
+    const caixia = (WORLD.continent.nodes.find(n => n.id === "caixia") || {}).locs || [];
+    return caixia.includes(s.location);
+  },
+  // 异闻链 · 随时间渐起（听闻→寻踪→相遇）：山里的风声会自己找上门，不必非要深入后山才撞见
+  _tickBeastRumor(months) {
+    const s = State.data;
+    if (typeof WORLD === "undefined" || !WORLD.beastRumors) return;
+    if (!this._nearHoushan()) return;
+    if (!s.beastRumor) {
+      // 听闻：身在彩霞山，约 18%/月 听到一桩新异闻（比"深入后山30%"更易撞上）
+      this._maybeBeastRumor(clamp(0.18 * months, 0, 0.4));
+      return;
+    }
+    // 寻踪：身负异闻时，随月份逐条浮现线索——把"突然弹一条"拉成有铺垫的逼近
+    const r = WORLD.beastRumors.find(x => x.id === s.beastRumor);
+    if (!r || !r.clues || !r.clues.length) return;
+    s.beastRumorClue = s.beastRumorClue || 0;
+    if (s.beastRumorClue >= r.clues.length) return;
+    if (Math.random() > clamp(0.34 * months, 0, 0.6)) return;
+    this.log(`【异闻】${r.clues[s.beastRumorClue]}`, "event");
+    s.beastRumorClue++;
     if (typeof Sfx !== "undefined") Sfx.play("chime");
   },
 
