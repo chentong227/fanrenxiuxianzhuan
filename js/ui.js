@@ -641,7 +641,7 @@ const UI = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
-      liandan: "地火炼丹 🔥",
+      liandan: "地火炼丹 🔥", stroll: "城中走走 🏙",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
@@ -3759,7 +3759,9 @@ const UI = {
     const s = State.data;
     if (!s.exmap) return;
     this.el("exmap-overlay").hidden = false;
-    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm("tense");
+    // 据点和平·市声鼎沸（town）；险境（血色禁地等）·弦绷紧（tense）
+    const peaceful = ExploreMap.mapOf(ExploreMap.cur(s.exmap)).peaceful;
+    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(peaceful ? "town" : "tense");
     this._exmapNoteQueue = [];
     this.renderExmap();
   },
@@ -3788,7 +3790,66 @@ const UI = {
     this.el("exmap-field").style.display = isCave ? "none" : "";
     this.el("exmap-scene").hidden = !isCave;
     if (isCave) { this._renderExmapScene(x, f); return; }
+    const map = ExploreMap.mapOf(f);
+    if (map && map.peaceful) { this._renderStrongholdField(x, f); return; }  // 据点：和平节点图（不动血色路径）
     this._renderExmapField(x, f);
+  },
+
+  /* ---------- 据点节点图渲染（和平：地标全亮·无钟无巡逻·复访变迁） ----------
+   * 与血色禁地 _renderExmapField 完全隔离，零回归风险。 */
+  _renderStrongholdField(x, f) {
+    const map = ExploreMap.mapOf(f);
+    const bg = this.el("exmap-bg");
+    const bgUrl = Art.sceneUrl(map.bg, { landscape: true });
+    if (bgUrl && bg.dataset.cur !== bgUrl) { bg.style.backgroundImage = `url('${bgUrl}')`; bg.dataset.cur = bgUrl; }
+
+    this.el("exmap-title").textContent = map.name;
+    // 钟盘位：据点无灾厄钟，换成一行风物副标（"信步城中·随时离城"）
+    this.el("exmap-clock").innerHTML = `<span class="exclk-peace">${map.subtitle || "信步城中"}</span>`;
+
+    const opts = ExploreMap.options(x);
+    const optMap = {};
+    opts.forEach(o => { optMap[o.id] = o; });
+
+    // 连线：据点已知，全画；当前可去的高亮
+    const svg = this.el("exmap-edges");
+    let lines = "";
+    (map.edges || []).forEach(([a, b]) => {
+      const na = map.nodes[a], nb = map.nodes[b];
+      const isOpt = (a === f.node && optMap[b]) || (b === f.node && optMap[a]);
+      lines += `<line x1="${na.x}" y1="${na.y}" x2="${nb.x}" y2="${nb.y}" class="exedge${isOpt ? " reach" : ""}"/>`;
+    });
+    svg.innerHTML = lines;
+
+    // 地标：城里地方都认得，全部显形（无雾影）
+    const box = this.el("exmap-nodes");
+    let html = "";
+    Object.entries(map.nodes).forEach(([id, n]) => {
+      const here = id === f.node;
+      const opt = optMap[id];
+      let cls = "exnode peace";
+      if (here) cls += " here";
+      if (opt && !here) cls += " reach";
+      const click = (opt && !here) ? `onclick="Engine.strongholdTravel('${id}')"` : "";
+      html += `<div class="${cls}" style="left:${n.x}%;top:${n.y}%" ${click}>
+        <span class="exicon">${n.icon || "·"}</span>
+        <span class="exname">${n.name}</span>
+      </div>`;
+    });
+    const cn = map.nodes[f.node];
+    html += `<div class="expawn" style="left:${cn.x}%;top:${cn.y}%"><img src="${Art.url("hanli") || ""}" alt=""></div>`;
+    box.innerHTML = html;
+
+    // 行动条：当前地标的一段交互 + 离城
+    const node = map.nodes[f.node];
+    const acts = [];
+    if (node.act === "rest" || node.act === "market" || node.act === "cultivate") {
+      acts.push(`<button class="btn" onclick="Engine.strongholdDo('${node.act}')">${node.actLabel || "进去看看"}</button>`);
+    } else if (node.act === "board" || node.act === "rumor") {
+      acts.push(`<button class="btn" onclick="Engine.strongholdRead('${f.node}')">${node.actLabel || "细看"}</button>`);
+    }
+    acts.push(`<button class="btn btn-ghost" onclick="Engine.finishStronghold()">离开此地</button>`);
+    this.el("exmap-actions").innerHTML = acts.join("");
   },
 
   /* ---------- L1 舆图渲染 ---------- */

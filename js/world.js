@@ -112,7 +112,7 @@ WORLD.locations = [
     travelCost: 1,
     map: { x: 50, y: 60 },
     home: true,   // 旅居：可调息休整（墨府客房）
-    actions: ["rest", "market", "cultivate"],
+    actions: ["stroll", "rest", "market", "cultivate"],
     encounters: [],
   },
 

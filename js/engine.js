@@ -553,6 +553,7 @@ const Engine = {
     else if (action === "alchemy") this.alchemy();
     else if (action === "investigate") this.investigate();
     else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
+    else if (action === "stroll") { this.enterStronghold("jiayuan_city_l1"); return; }
     else if (action === "travel") { UI.openTravel(); return; }
     else if (action === "wujian") { this.doWujian(); return; }
     else if (action === "liandan") { this.lianZhujiDan(); return; }
@@ -1273,6 +1274,76 @@ const Engine = {
     this.log("入禁那日，三十人鱼贯踏入血幕。赤红的雾气吞掉每个人的身影——五日之内，生死各安天命。", "event");
     if (typeof UI !== "undefined" && UI.openExmap) UI.openExmap();
     State.save();
+  },
+
+  /* ===========================================================
+   *  据点节点图（和平·复用箱庭 L1 引擎，无灾厄钟/无巡逻）
+   *  打样＝嘉元城（cutscene-design §五 / explore-redesign §P3.5）：
+   *  地标+风物给"到了另一座城"的地方感；复访见变迁（既有 flag 投影）。
+   *  "城中走走"是免费看一圈——走格不耗月；歇脚/采买/突破才走正常流程。
+   * =========================================================== */
+  enterStronghold(mapId) {
+    const s = State.data;
+    if (s.combat) { this.toast("酣战之中，无暇他顾"); return; }
+    s.exmap = ExploreMap.start(mapId, { flags: s.flags });
+    if (!s.exmap) return;
+    if (typeof UI !== "undefined" && UI.openExmap) UI.openExmap();
+    this._strongholdArrive();   // 入城落脚点的风物（复访变迁）
+    State.save();
+  },
+
+  // 据点移动：相邻地标信步（不耗月、永无强战）。路途见闻+抵达风物走字幕。
+  strongholdTravel(nodeId) {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const r = ExploreMap.travel(x, nodeId);
+    if (!r.ok) { this.toast(r.reason, true); return; }
+    for (const ev of (r.events || [])) {
+      if (ev.type === "note" && UI.exmapNote) UI.exmapNote(ev.text);
+    }
+    this._strongholdArrive();
+    if (UI.renderExmap) UI.renderExmap();
+    State.save();
+  },
+
+  // 抵达地标：按当前 flags 取风物变体（复访变迁），底部字幕呈现。
+  _strongholdArrive() {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const f = ExploreMap.cur(x);
+    const node = ExploreMap.mapOf(f).nodes[f.node];
+    if (!node) return;
+    const fl = ExploreMap.flavor(node, s.flags);
+    const desc = (fl && fl.desc) || node.desc;
+    if (desc && UI.exmapNote) UI.exmapNote(desc, "desc");
+  },
+
+  // 地标交互·歇脚/采买/修炼：退出节点图，回正常地点流程（既有系统不重写、不叠浮层）。
+  strongholdDo(action) {
+    this.finishStronghold();
+    this.doAction(action);
+  },
+
+  // 地标交互·告示/风声：复访变迁的"活感"——按 flags 念一段当前风闻（不离图、零负担）。
+  strongholdRead(nodeId) {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const node = ExploreMap.mapOf(ExploreMap.cur(x)).nodes[nodeId];
+    if (!node) return;
+    const fl = ExploreMap.flavor(node, s.flags);
+    const txt = (fl && fl.read) || node.read || (fl && fl.desc) || node.desc;
+    if (txt && UI.exmapNote) UI.exmapNote(txt, "desc");
+  },
+
+  // 离开据点节点图：只是收起这一层看一圈的视图，回到城中地点屏（无耗时、无结算）。
+  finishStronghold() {
+    const s = State.data;
+    if (!s.exmap) return;
+    s.exmap = null;
+    if (UI.closeExmap) UI.closeExmap();
+    this.checkStory();
+    State.save();
+    if (UI.renderAll) UI.renderAll();
   },
 
   // 统一解释舆图事件（travel/stay/gather/readLore 共用）
