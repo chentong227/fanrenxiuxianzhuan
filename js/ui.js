@@ -318,28 +318,36 @@ const UI = {
     const s = State.data;
     const n = WORLD.npcById(npcId);
     if (!n) return;
-    const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, npcId) : 0;
-    const relTxt = rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : rel <= -8 ? "心存芥蒂" : "相识";
-    const heart = rel >= 8 ? "♥" : rel <= -8 ? "✖" : "·";
+    const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
+    const rel = I ? I.relationOf(s, npcId) : 0;
+    const onCd = I ? I.onCooldown(s, npcId) : false;
+    const severed = rel <= -24;           // 割席：恩断义绝，不再以礼相待
+    const hostile = rel <= -8;
+    const relTxt = severed ? "恩断义绝" : rel >= 20 ? "交情深厚" : rel >= 8 ? "相熟" : hostile ? "心存芥蒂" : "相识";
+    const heart = rel >= 8 ? "♥" : hostile ? "✖" : "·";
     const url = (typeof Art !== "undefined") ? Art.url(npcId) : null;
     const portrait = url ? `<img src="${url}" alt="${n.name}" />` : `<span class="nw-emoji">${(s.metNpcs||[]).includes(npcId) ? "🧑" : "❓"}</span>`;
 
+    // cd:true 的动作受「月度拜会」节律约束（每人每月一次实质交往）；lock 为关系状态封禁。
     // 善意侧（左，绿）
     const good = [
-      { k: "talk",  label: "交谈", icon: "💬", on: true },
-      { k: "ask",   label: "请教", icon: "📖", on: true },
-      { k: "spar",  label: "切磋", icon: "⚔", on: true },
-      { k: "gift",  label: "赠礼", icon: "🎁", on: true },
+      { k: "talk",  label: "交谈", icon: "💬" },
+      { k: "ask",   label: "请教", icon: "📖" },
+      { k: "spar",  label: "切磋", icon: "⚔", cd: true, lock: severed ? "已割席" : hostile ? "心存芥蒂" : "" },
+      { k: "gift",  label: "赠礼", icon: "🎁", cd: true, lock: severed ? "已割席" : "" },
     ];
     // 敌对侧（右，红）
     const bad = [
-      { k: "probe",  label: "探查", icon: "🔍", on: true },
-      { k: "threat", label: "威胁", icon: "💢", on: true },
+      { k: "probe",  label: "探查", icon: "🔍", cd: true },
+      { k: "threat", label: "威胁", icon: "💢", cd: true },
     ];
-    const btn = (a, side) =>
-      `<button class="nw-act ${side}" onclick="UI.npcWheelAct('${npcId}','${a.k}')">
-        <span class="nw-ic">${a.icon}</span><span class="nw-lb">${a.label}</span>
+    const btn = (a, side) => {
+      const why = a.lock || (a.cd && onCd ? "本月已叙" : "");
+      const blocked = !!why;
+      return `<button class="nw-act ${side}${blocked ? ' disabled' : ''}" onclick="${blocked ? `UI.toast('${why}')` : `UI.npcWheelAct('${npcId}','${a.k}')`}">
+        <span class="nw-ic">${a.icon}</span><span class="nw-lb">${a.label}${why ? `<i class="nw-cd">${why}</i>` : ''}</span>
       </button>`;
+    };
     this.openModal(`
       <div class="npc-wheel">
         <div class="nw-side left">${good.map(a=>btn(a,"good")).join("")}</div>
@@ -347,8 +355,9 @@ const UI = {
           <div class="nw-portrait">${portrait}</div>
           <div class="nw-name">${n.name}</div>
           <div class="nw-role">${n.role}</div>
-          <div class="nw-rel ${rel>=8?'good':rel<=-8?'bad':''}">${heart} ${relTxt}</div>
+          <div class="nw-rel ${rel>=8?'good':hostile?'bad':''}">${heart} ${relTxt}（${rel>=0?'+':''}${rel}）</div>
           <div class="nw-rel" style="color:var(--gold)">称你：${this.honorific()}</div>
+          ${onCd ? `<div class="nw-rel" style="color:var(--ink-faint)">本月已叙——下月再访</div>` : ''}
         </div>
         <div class="nw-side right">${bad.map(a=>btn(a,"bad")).join("")}</div>
       </div>
@@ -359,34 +368,61 @@ const UI = {
   // 轮盘动作分发
   npcWheelAct(npcId, kind) {
     const s = State.data;
+    const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
+    const n = WORLD.npcById(npcId);
+    const nm = n ? n.name : "";
+    const rel = I ? I.relationOf(s, npcId) : 0;
+
+    // 交谈/请教：纯内容路径，不计入拜会节律
     if (kind === "talk") {
       if (typeof LLM !== "undefined" && LLM.enabled()) { this.openLiveTalk(npcId); return; }
       this._openTopics(npcId); return;
     }
     if (kind === "ask") { this._openTopics(npcId); return; }
-    if (kind === "gift") { this._npcGift(npcId); return; }
+
+    // 切磋/赠礼/探查/威胁：每人每月一次实质交往（机制咬合：社交并入「回合=月份」）
+    if (I && I.onCooldown(s, npcId)) { this.toast("本月已与其叙过，来日再访"); return; }
+
+    if (kind === "gift") {
+      if (rel <= -24) { this.toast(`「${nm}」已与你割席，不受你的礼`); return; }
+      this._npcGift(npcId); return;
+    }
     if (kind === "spar") {
       if (s.pendingEvent || s.combat) { this.toast("先处理眼前之事"); return; }
-      Engine.passTime(1);
-      if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, 4);
+      if (rel <= -8) { this.toast(`「${nm}」对你心存芥蒂，不愿与你切磋`); return; }
+      if (I) { I.markInteract(s, npcId); I.favor(s, npcId, I.favorGain(s, npcId, 4)); }
       s.body += 1; s.mood = clamp(s.mood + 3, 0, s.moodMax);
-      const n = WORLD.npcById(npcId);
-      Engine.log(`你与「${n?n.name:''}」切磋了一场，点到即止，体魄+1，交情见长。`, "good");
+      // 与剑道链咬合：未大成前，切磋磨砺剑意（呼应演武厅 spar）
+      let extra = "";
+      if (!s.swordMastery && s.spells && s.spells.includes("zhayan")) {
+        s.swordIntent = clamp((s.swordIntent || 0) + 2, 0, 100);
+        extra = "，剑意亦有所进";
+      }
+      Engine.passTime(1);
+      Engine.log(`你与「${nm}」切磋了一场，点到即止，体魄+1，交情见长${extra}。`, "good");
       this.closeModal(); Engine.checkLifespan(); State.save(); this.renderAll();
       return;
     }
     if (kind === "probe") {
-      if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, -1);
-      const n = WORLD.npcById(npcId);
-      Engine.log(`你暗中打量「${n?n.name:''}」，揣摩其底细。${n?n.bio:''}`, "sys");
+      if (I) { I.markInteract(s, npcId); I.favor(s, npcId, -1); }
+      Engine.log(`你暗中打量「${nm}」，揣摩其底细。${n?n.bio:''}`, "sys");
       this.closeModal(); State.save(); this.renderAll();
       return;
     }
     if (kind === "threat") {
-      if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, -8);
+      if (I) { I.markInteract(s, npcId); I.favor(s, npcId, -8); }
       s.demon = clamp(s.demon + 3, 0, 100);
-      const n = WORLD.npcById(npcId);
-      Engine.log(`你出言恐吓「${n?n.name:''}」，对方面色一变，记恨在心。修仙人的恶名，就是这么攒下的。`, "bad");
+      // 威胁的实益：以势压人，逼出其底细（与情报面纱/料敌系统咬合）——代价是恶名与仇怨。
+      const info = (typeof WORLD !== "undefined" && WORLD.intel) ? WORLD.intel[npcId] : null;
+      let gained = "";
+      if (info && info.l2) {
+        s.intel = s.intel || {};
+        if ((s.intel[npcId] || 0) < 2) { s.intel[npcId] = 2; gained = `　你以威势相逼，逼出了几分底细：${info.l2}（交手时你将料敌于先）`; }
+      }
+      const nowRel = I ? I.relationOf(s, npcId) : rel - 8;
+      const sever = nowRel <= -24 ? `　${nm}自此与你恩断义绝，再不愿以礼相待。` : "";
+      Engine.log(`你出言恐吓「${nm}」，对方面色一变，记恨在心。修仙人的恶名，就是这么攒下的。${gained}${sever}`, "bad");
+      this.toast(gained ? "威逼之下，套出了底细" : "恶名又添一笔");
       this.closeModal(); State.save(); this.renderAll();
       return;
     }
@@ -412,11 +448,14 @@ const UI = {
   _giveGift(npcId, itemId) {
     const s = State.data;
     if (State.count(itemId) < 1) { this.toast("没有此物", true); return; }
+    const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
+    if (I && I.onCooldown(s, npcId)) { this.toast("本月已与其叙过，来日再访"); return; }
     State.take(itemId, 1);
     const it = DATA.items[itemId];
-    // 稀有度越高交情越多
-    const gain = it && it.rarity === "epic" ? 14 : it && it.rarity === "rare" ? 9 : 5;
-    if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, gain);
+    // 稀有度越高交情越多；交情越深，单礼增益递减（favorGain）——投其所好胜过堆砌。
+    const base = it && it.rarity === "epic" ? 14 : it && it.rarity === "rare" ? 9 : 5;
+    const gain = I ? I.favorGain(s, npcId, base) : base;
+    if (I) { I.markInteract(s, npcId); I.favor(s, npcId, gain); }
     const n = WORLD.npcById(npcId);
     Engine.log(`你将「${it?it.name:itemId}」赠予${n?n.name:''}，对方欣然收下，交情+${gain}。`, "good");
     this.closeModal(); State.save(); this.renderAll();

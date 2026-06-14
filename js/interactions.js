@@ -194,6 +194,28 @@ const INTERACTIONS = {
     s.relations[npcId] = (s.relations[npcId] || 0) + delta;
   },
   relationOf(s, npcId) { return (s.relations && s.relations[npcId]) || 0; },
+
+  // —— 拜会节律（E3 社交机制咬合）——
+  // 月度拜会：每名修士每月只应一次实质交往（切磋/赠礼/威胁/探查），把社交并入「回合=月份」的经济。
+  _absMonth(s) {
+    if (typeof State !== "undefined" && State.absMonth) return State.absMonth();
+    return (s.year || 0) * 12 + (s.month || 0);
+  },
+  onCooldown(s, npcId) {
+    const last = s.npcCd && s.npcCd[npcId];
+    return last != null && last >= this._absMonth(s);
+  },
+  markInteract(s, npcId) {
+    if (!s.npcCd) s.npcCd = {};
+    s.npcCd[npcId] = this._absMonth(s);
+  },
+  // 收益随交情递减：交情越深，单次好感增益越小——不能无限刷满。
+  favorGain(s, npcId, base) {
+    const rel = this.relationOf(s, npcId);
+    if (rel >= 40) return Math.max(1, Math.round(base * 0.34));
+    if (rel >= 20) return Math.max(1, Math.round(base * 0.6));
+    return base;
+  },
 };
 
 if (typeof window !== "undefined") window.INTERACTIONS = INTERACTIONS;

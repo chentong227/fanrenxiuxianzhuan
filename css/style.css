@@ -3130,6 +3130,9 @@ html, body { touch-action: manipulation; }
 .nw-act.good:hover { background: rgba(95,184,154,.14); border-color: var(--jade); color: var(--jade-bright); }
 .nw-act.bad { border-left: 3px solid var(--red); flex-direction: row-reverse; text-align: right; }
 .nw-act.bad:hover { background: rgba(201,95,95,.14); border-color: var(--red); color: #f0a0a0; }
+.nw-act.disabled { opacity: .42; cursor: default; filter: grayscale(.5); }
+.nw-act.disabled:hover { background: var(--bg-panel-2); border-color: var(--border); color: var(--ink); }
+.nw-act .nw-cd { display: block; font-size: 10px; letter-spacing: 0; color: var(--ink-faint); margin-top: 1px; font-style: normal; }
 .nw-center { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .nw-portrait {
   width: 130px; height: 130px; border-radius: 50%; overflow: hidden;
