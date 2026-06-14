@@ -1727,6 +1727,16 @@ const UI = {
       </div>`;
     }).join("");
 
+    // 远行直达（E2）：已解锁但尚未抵达的大陆节点，给云游一个一跳直达入口——
+    // 如七玄门篇通关后的嘉元城/越京/太南谷，免去「远眺天下→翻地图找节点」的层层点按。
+    const farNodes = C ? C.nodes.filter(n =>
+      !n.silhouette && n.gate && n.gate(State.data) === null &&
+      !(n.locs || []).includes(cur) && !(State.data.visitedNodes || []).includes(n.id)) : [];
+    const farRow = farNodes.length
+      ? `<div class="far-jump"><span class="far-jump-key">远行新途</span>${farNodes.map(n =>
+          `<button class="btn btn-secondary btn-mini" onclick="UI.openContinent(); UI._contPick('${n.id}')">${n.name} ▶</button>`).join("")}</div>`
+      : "";
+
     this.openModal(`
       <h2>云游何处</h2>
       <p style="color:var(--ink-dim);font-size:12px">七玄门内外，点击地图上的地点即可前往。遁速越高，赶路越省光阴。</p>
@@ -1741,6 +1751,7 @@ const UI = {
         ${pins}
       </div>
       <div id="map-detail" class="map-detail">${curLoc ? `<b>${curLoc.name}</b>　${curLoc.desc}` : ''}</div>
+      ${farRow}
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="UI.openContinent()">远眺天下 ▲</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">不去了</button>

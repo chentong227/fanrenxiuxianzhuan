@@ -2585,6 +2585,10 @@ html, body { touch-action: manipulation; }
   min-height: 40px; padding: 8px 10px; background: rgba(0,0,0,0.2); border-radius: 8px;
 }
 .map-detail b { color: var(--ink); }
+/* 远行直达（E2）：新解锁的大陆节点在云游里一跳直达 */
+.far-jump { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.far-jump-key { font-size: 12px; color: var(--gold); letter-spacing: 1px; margin-right: 2px; }
+.far-jump .btn-mini { border-color: var(--gold); color: var(--gold); }
 
 /* 大陆层（天南舆图）：全图早见——远方是惦记，不是迷雾 */
 .worldmap.continent {
