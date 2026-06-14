@@ -697,7 +697,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
  * 地面只有一条淡墨地平线+步位墨点；可走=青涟漪、锁格=红雾柱、范围=红雾带、阵法=阵纹。 */
 .axis-field {
   position: relative; flex-shrink: 0;
-  height: clamp(240px, 40vh, 380px);
+  height: clamp(252px, 43vh, 412px);
   margin-bottom: 6px;
   /* ⚓ 相对坐标系（v91 架构修正——用户实锤"缩放页面人物跑天上"）：
    * 战场内所有纵深参数（地线/排距/脚位/飞高/立绘高）一律用 cqh（战场高度百分比），
@@ -706,6 +706,8 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
    * 走 var() 默认 px 值，互不干扰 */
   container-type: size;
   --ground0: 9.3cqh;     /* 战位排地线（离画底）：战场高的 9.3% */
+  /* v108 战场加高（用户：战场要明显浩大）：scene 高一档=天地撑得更开；
+   * 人物按 cqh 走，加高后同 cqh 占屏更克制，天空/地面留白都更足 */
   --lane-gap: 12cqh;     /* 排距：每深一排地线抬高一档（34px@283 → 12%） */
   --feet: 14.3cqh;       /* 单位脚底距容器底 */
   --lanes: 2;            /* 排数（JS 注入：场景定 2~4） */
@@ -730,7 +732,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
     /* 地面明暗（v90 二改方向反转）：近亮远暗才是地面的透视明暗——
      * 上沿（深处）压暗、脚前（下沿）不压——之前底部最暗是反的 */
     linear-gradient(180deg, rgba(8,6,4,.34) 0%, rgba(14,11,8,.14) 52%, rgba(8,6,4,0) 100%);
-  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+  clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
   filter: drop-shadow(0 0 1px rgba(190,170,140,.18));
 }
 .axis-field::before {
@@ -925,9 +927,11 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 /* v91 相对坐标系（仅战斗轴）：身高=战场高的百分比（cqh）——任何屏幕/缩放下与
  * 底图地面带比例恒定。⚠ 只限 #axis-field（size 容器）内：洞窟 cave-track 无容器，
  * cqh 会回退视口单位把人放成巨人——洞窟沿用上面的 clamp 默认。
- * v95 大战场小人物（用户审美总纲）：人物 52→42cqh——气势来自天地大，不来自人物大 */
-#axis-field .axis-unit .au-img { height: 45cqh; }
-#axis-field .axis-unit .au-img.battler { height: 42cqh; }
+ * v95 大战场小人物（用户审美总纲）：人物 52→42cqh——气势来自天地大，不来自人物大。
+ * v108 再降一档（45/42→35/33cqh）：用户实锤“明显太大”——人更小、天地更浩大、
+ *   多人同屏自然不挤；战场同步加高，留白更足 */
+#axis-field .axis-unit .au-img { height: 35cqh; }
+#axis-field .axis-unit .au-img.battler { height: 33cqh; }
 /* 站位错落：奇数格整体退后半步（上移+微缩+微暗）——同一条轴读出"路有宽度" */
 /* —— 2.5 排制：纵深=真实单位站位（lane 偏移）× 高度（alt 偏移）——CSS 变量叠加合成。
  * 排偏移统一吃 --lane-gap（脚锚到自己那排的地线上=踩地）；off-row=半档深度。
@@ -937,15 +941,15 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .axis-unit { translate: calc(var(--lx, 0px) + var(--ax, 0px)) calc(var(--ly, 0px) + var(--ay, 0px)); scale: var(--ls, 1); transform-origin: 50% 100%; z-index: 10; }
 /* 玩家=最近景（主角微放大一档——镜头离你最近；v95 收敛：人小天地大） */
 .axis-unit.self { --ls: 1.04; }
-.axis-unit.off-row { --ly: calc(-.5 * var(--lane-gap, 20px)); --lx: 7px; --ls: .94; z-index: 9; }
+.axis-unit.off-row { --ly: calc(-.5 * var(--lane-gap, 20px)); --lx: 9px; --ls: .94; z-index: 9; }
 .axis-unit.off-row .au-img { filter: drop-shadow(0 12px 18px rgba(0,0,0,.66)) brightness(.94); }
 /* 僚位排（v90 档差加大：近大远小一眼可辨）：每深一排 上移一档+右斜一档+
  * 缩一大档+空气透视一档（暗+灰+微失焦——远处色淡形虚，画师的标准空气透视）。
  * ⚠ z 序铁律：战位排(10) > off-row(9) > lane-1(8) > lane-2(6) > lane-3(4)——
  * 后排永远画在前排身后（v90 修：之前战位排无 z，深排灵狼的尾巴盖在狼王脸上） */
-.axis-unit.lane-1 { --ly: calc(-1 * var(--lane-gap, 20px)); --lx: 24px; --ls: .84; z-index: 8; }
-.axis-unit.lane-2 { --ly: calc(-2 * var(--lane-gap, 20px)); --lx: 44px; --ls: .72; z-index: 6; }
-.axis-unit.lane-3 { --ly: calc(-3 * var(--lane-gap, 20px)); --lx: 62px; --ls: .63; z-index: 4; }
+.axis-unit.lane-1 { --ly: calc(-1 * var(--lane-gap, 20px)); --lx: 30px; --ls: .84; z-index: 8; }
+.axis-unit.lane-2 { --ly: calc(-2 * var(--lane-gap, 20px)); --lx: 54px; --ls: .72; z-index: 6; }
+.axis-unit.lane-3 { --ly: calc(-3 * var(--lane-gap, 20px)); --lx: 74px; --ls: .63; z-index: 4; }
 .axis-unit.lane-1 .au-img { filter: drop-shadow(0 10px 15px rgba(0,0,0,.6)) brightness(.93) saturate(.88); }
 .axis-unit.lane-2 .au-img { filter: drop-shadow(0 8px 12px rgba(0,0,0,.55)) brightness(.88) saturate(.8) blur(.3px); }
 .axis-unit.lane-3 .au-img { filter: drop-shadow(0 7px 10px rgba(0,0,0,.5)) brightness(.84) saturate(.74) blur(.4px); }
@@ -2163,7 +2167,7 @@ html, body { touch-action: manipulation; }
   .combat-box { width: 100vw; padding: 8px 8px 12px; }
   .combat-title { font-size: 16px; letter-spacing: 5px; margin: 2px 0 4px; }
   .combat-tophud { gap: 8px; }
-  .axis-field { height: clamp(220px, 38vh, 320px); margin-bottom: 4px; }
+  .axis-field { height: clamp(232px, 41vh, 352px); margin-bottom: 4px; }
   .axis-lane { height: 44px; }
   .axis-cell .dot { bottom: 17px; }
   .axis-cell.can-move::before { bottom: 9px; width: 26px; height: 10px; }
@@ -2174,10 +2178,10 @@ html, body { touch-action: manipulation; }
   .axis-unit { width: clamp(52px, 12vw, 86px); }
   /* v91 相对坐标系：立绘高/地线/排距/飞高全部 cqh（随战场自适应）——
    * 移动端不再需要 px 覆盖（曾经的"改了等于没改"高发区），只留横向斜移微调 */
-  .axis-unit.off-row { --lx: 5px; }
-  .axis-unit.lane-1 { --lx: 17px; }
-  .axis-unit.lane-2 { --lx: 32px; }
-  .axis-unit.lane-3 { --lx: 45px; }
+  .axis-unit.off-row { --lx: 7px; }
+  .axis-unit.lane-1 { --lx: 22px; }
+  .axis-unit.lane-2 { --lx: 40px; }
+  .axis-unit.lane-3 { --lx: 56px; }
   .au-blades { scale: .8; }
   .axis-unit .au-glyph { width: clamp(44px, 11vw, 64px); }
   .axis-unit .au-name { font-size: 10px; }
