@@ -51,12 +51,14 @@ const UI = {
     const u = State.data && State.data.sideUnit;
     if (!u) return "";
     const broken = u.status === "broken";
+    const lv = u.enhLv || 0;
     const st = broken ? `<span style="color:var(--red)">损毁</span>`
       : `${u.hp}/${u.hpMax}${u.carry === false ? "（留守）" : "（随行）"}`;
+    const lvTag = lv ? `<span class="ss-lv">Lv.${lv}</span>` : "";
     const btn = broken || u.hp < u.hpMax
-      ? `<button class="btn btn-mini" onclick="event.stopPropagation();Engine.repairSide()">修缮（毒草×2·1月）</button>`
-      : `<button class="btn btn-mini" onclick="event.stopPropagation();Engine.toggleSide()">${u.carry === false ? "携行" : "留守"}</button>`;
-    return `<div class="side-strip"><span class="ss-name">⚰ ${u.name}</span><span class="ss-st">${st}</span>${btn}</div>`;
+      ? `<button class="btn btn-mini" onclick="event.stopPropagation();UI.openSideUnit()">修缮 ›</button>`
+      : `<button class="btn btn-mini" onclick="event.stopPropagation();UI.openSideUnit()">驭物 ›</button>`;
+    return `<div class="side-strip" onclick="event.stopPropagation();UI.openSideUnit()"><span class="ss-name">⚰ ${u.name}</span>${lvTag}<span class="ss-st">${st}</span>${btn}</div>`;
   },
 
   // 手机分页：切换显示哪一栏（stage=界面 / hero=韩立+储物）
@@ -1330,6 +1332,66 @@ const UI = {
     else { const r = Loadout.equipSkill(s, sk); if (!r.ok) return this.toast(r.reason, true); this.toast("已装备出战"); }
     State.save(); this.openTechniques(); this.renderAll();
   },
+
+  /* -------- 侧位·驭物（张铁尸傀强化；通用界面，灵宠/傀儡后续复用）-------- */
+  openSideUnit() {
+    const s = State.data;
+    const u = s.sideUnit;
+    if (!u) return;
+    const spec = Engine.sideEnhSpec(u);
+    const lv = u.enhLv || 0;
+    const maxed = lv >= spec.maxLv;
+    const broken = u.status === "broken";
+    const per = u.persona || { aggr: 3, prot: 9, kite: 0 };
+    const personaTxt = per.prot >= per.aggr ? "护主为先——挡在你身前，不抢攻、不惜残躯" : "悍勇当先——扑入敌阵撕咬厮杀";
+
+    let enhBox;
+    if (maxed) {
+      enhBox = `<div class="side-enh maxed"><div class="se-row"><b>${spec.track} Lv.${lv}</b><span style="color:var(--gold)">已至极限</span></div>
+        <div class="se-cost">${spec.capNote}</div></div>`;
+    } else {
+      const next = lv + 1;
+      const cost = spec.cost(next), gain = spec.gain(next);
+      const affordable = Object.keys(cost).every(k => State.count(k) >= cost[k]);
+      const costTxt = Object.keys(cost).map(k => {
+        const have = State.count(k), need = cost[k];
+        return `<span class="${have >= need ? '' : 'lack'}">${(DATA.items[k] || {}).name || k} ${have}/${need}</span>`;
+      }).join("　");
+      const gtxt = `气血上限+${gain.hpMax || 0}、攻+${gain.atk || 0}${gain.guard ? `、御+${Math.round(gain.guard * 100)}%` : ""}`;
+      const ready = affordable && !broken;
+      enhBox = `<div class="side-enh">
+        <div class="se-row"><b>${spec.track}</b><span style="color:var(--ink-dim)">Lv.${lv} → Lv.${next} （上限 ${spec.maxLv}）</span></div>
+        <div class="se-gain">本次精进：${gtxt}</div>
+        <div class="se-cost">耗 ${costTxt}　·　历时一月</div>
+        <button class="btn ${ready ? 'btn-primary' : ''}" ${ready ? '' : 'disabled'} onclick="UI._sideEnhance()">${broken ? '须先修缮' : spec.track}</button>
+      </div>`;
+    }
+    const stat = broken ? `<span style="color:var(--red)">损毁待修</span>` : `${u.hp}/${u.hpMax}`;
+    const repairBtn = (broken || u.hp < u.hpMax) ? `<button class="btn btn-secondary" onclick="UI._sideRepair()">修缮（毒草×2 · 一月）</button>` : "";
+    const carryBtn = `<button class="btn btn-ghost" onclick="UI._sideToggle()">${u.carry === false ? "令其随行出战" : "留守药庐"}</button>`;
+
+    this.openModal(`
+      <h2>⚰ ${u.name}</h2>
+      <p style="color:var(--ink-dim);font-size:12px">曲魂幡所御——挚友之蜕，随你出战。逐月温养可固其躯、增其力（历练与遭遇战自动随行）。</p>
+      <div class="status-strip">
+        <span>气血 <b>${stat}</b></span>
+        <span>攻 <b>${u.atk}</b></span>
+        <span>御 <b>${Math.round((u.guard || 0.3) * 100)}%</b></span>
+        <span>状态 <b>${u.carry === false ? "留守" : "随行"}</b></span>
+      </div>
+      <p style="color:var(--ink-faint);font-size:12px;margin:6px 0">招式：${u.atkName || "挥击"}　·　性情：${personaTxt}</p>
+      ${enhBox}
+      <div class="modal-actions">${repairBtn}${carryBtn}<button class="btn btn-ghost" onclick="UI.closeModal()">收起</button></div>
+    `);
+  },
+  _reopenSideUnit() {
+    const s = State.data;
+    if (s.sideUnit && !s.combat && !s.pendingEvent) this.openSideUnit();
+    else this.closeModal();
+  },
+  _sideEnhance() { Engine.enhanceSideUnit(); this._reopenSideUnit(); },
+  _sideRepair() { Engine.repairSide(); this._reopenSideUnit(); },
+  _sideToggle() { Engine.toggleSide(); this._reopenSideUnit(); },
 
   // 弹窗内当前状态摘要条（闭关/服药时数值可见，治"体验割裂"）
   _statusStrip() {

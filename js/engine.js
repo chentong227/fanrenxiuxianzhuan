@@ -1015,6 +1015,48 @@ const Engine = {
     UI.renderAll();
   },
 
+  /* -------- 侧位强化（通用·驭物）：按种类温养/饲育——尸傀今用，灵宠/傀儡后续复用同一界面 --------
+     红线⑦：侧位是可选帮手非主线数值，逐级有上限、耗稀缺料；改后照跑 encounter/elem.bal 验基线未动。 */
+  SIDE_ENH: {
+    corpse: { track: "温养淬体", verb: "以阴毒之物温养尸躯、灵石淬其筋骨", maxLv: 5,
+              cost: (lv) => ({ duyao_cao: 2 + lv, lingshi: lv }),
+              gain: (lv) => ({ hpMax: 12, atk: 4, guard: lv % 2 === 0 ? 0.02 : 0 }),
+              capNote: "凡俗之躯，温养有尽——再难逾越" },
+    beast:  { track: "饲灵育性", verb: "以灵草、兽核饲育灵性", maxLv: 6,
+              cost: (lv) => ({ lingcao: 3 + lv, lingshi: 1 + lv }),
+              gain: (lv) => ({ hpMax: 14, atk: 5, guard: lv % 3 === 0 ? 0.03 : 0 }),
+              capNote: "此兽灵慧已开至极，难再拔苗" },
+  },
+  sideEnhSpec(u) { return this.SIDE_ENH[(u && u.kind) || "corpse"] || this.SIDE_ENH.corpse; },
+  _costText(cost) { return Object.keys(cost).map(k => `${(DATA.items[k] || {}).name || k}×${cost[k]}`).join("、"); },
+  enhanceSideUnit() {
+    const s = State.data;
+    const u = s.sideUnit;
+    if (!u) return;
+    if (s.combat || s.pendingEvent) { this.toast("此刻无暇打理", true); return; }
+    if (u.status === "broken") { this.toast("它已损毁，须先修缮", true); return; }
+    const spec = this.sideEnhSpec(u);
+    const lv = u.enhLv || 0;
+    if (lv >= spec.maxLv) { this.toast(`${u.name}：${spec.capNote}`, true); return; }
+    const next = lv + 1;
+    const cost = spec.cost(next);
+    for (const k in cost) { if (State.count(k) < cost[k]) { this.toast(`${spec.track}需 ${this._costText(cost)}`, true); return; } }
+    for (const k in cost) State.take(k, cost[k]);
+    const gain = spec.gain(next);
+    u.enhLv = next;
+    if (gain.hpMax) u.hpMax += gain.hpMax;
+    if (gain.atk) u.atk += gain.atk;
+    if (gain.guard) u.guard = Math.min(0.6, (u.guard || 0.3) + gain.guard);
+    u.hp = u.hpMax;   // 温养既毕，躯体补满
+    this.passTime(spec.months || 1);
+    const gtxt = `气血上限+${gain.hpMax || 0}、攻+${gain.atk || 0}${gain.guard ? `、御+${Math.round(gain.guard * 100)}%` : ""}`;
+    this.log(`你${spec.verb}，亲手温养「${u.name}」月余——其躯愈固、力道更沉（${spec.track} Lv.${next}：${gtxt}）。`, "good");
+    this.toast(`${u.name}：${spec.track}至 Lv.${next}`);
+    this.checkLifespan();
+    State.save();
+    UI.renderAll();
+  },
+
   /* -------- 炼药（药庐）：药理熟练度——炼得越多手越稳，偶得双丹 -------- */
   alchemy() {
     const s = State.data;

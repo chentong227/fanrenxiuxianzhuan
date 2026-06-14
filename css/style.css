@@ -746,8 +746,20 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   padding: 4px 0 6px; margin-bottom: 4px; border-bottom: 1px dashed rgba(120,100,70,.25);
   font-size: 12px;
 }
+.side-strip { cursor: pointer; }
 .side-strip .ss-name { color: #b8a98c; font-weight: 600; }
 .side-strip .ss-st { color: var(--ink-dim); flex: 1; }
+.side-strip .ss-lv { color: var(--jade-bright); font-size: 11px; border: 1px solid rgba(111,174,147,.4); border-radius: 3px; padding: 0 4px; }
+
+/* 侧位·驭物：强化面板 */
+.side-enh { background: rgba(0,0,0,.22); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 12px; margin: 10px 0; }
+.side-enh.maxed { border-style: dashed; opacity: .85; }
+.side-enh .se-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.side-enh .se-row b { color: var(--gold-bright); }
+.side-enh .se-gain { color: var(--jade); font-size: 13px; margin-bottom: 4px; }
+.side-enh .se-cost { color: var(--ink-faint); font-size: 12px; margin-bottom: 8px; }
+.side-enh .se-cost .lack { color: var(--red); }
+.side-enh .btn { width: 100%; }
 
 /* ===== 对话演出：立绘的"活"（震动/弹跳/呼吸顶起）===== */
 .story-portrait.quake { animation: portraitQuake .42s cubic-bezier(.36,.07,.19,.97); }
