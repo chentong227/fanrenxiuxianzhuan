@@ -69,6 +69,7 @@ const State = {
       npcCd: {},              // 拜会节律：{ npcId: 上次实质交往的绝对月 }（每人每月一次切磋/赠礼/探查/威胁）
       npcGifts: {},           // 羁绊回赠节点：{ npcId: 已回赠到的最高交情段位 }（升段一次性，不可刷）
       keepsakes: [],          // 已得唯一信物 [{ id, from, fromName, t }]（入图鉴/年表）
+      aidCd: -99,             // 羁绊战斗支援冷却：上次故人来援的绝对月（难忘的一笔，非常驻拐杖）
       metNpcs: [],            // 已相识 NPC 的 id（人物图鉴）
       pendingEvent: null,     // 当前待处理的选择事件 id
       explore: null,          // 箱庭探索会话（旧网格，进入副本时生成）
@@ -140,6 +141,7 @@ const State = {
     if (!d.npcCd) d.npcCd = {};
     if (!d.npcGifts) d.npcGifts = {};
     if (!d.keepsakes) d.keepsakes = [];
+    if (d.aidCd == null) d.aidCd = -99;
     if (!d.metNpcs) d.metNpcs = [];
     if (!d.npcFates || !d.npcFates.length) { if (typeof NPCSIM !== "undefined") NPCSIM.init(d); }
     if (d.explore === undefined) d.explore = null;

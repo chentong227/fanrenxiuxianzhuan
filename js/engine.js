@@ -2792,6 +2792,113 @@ const Engine = {
     UI.renderAll();
   },
 
+  // —— 羁绊·战斗支援（社交深化③）——
+  // 交情深厚的具名故人，在你陷战时挺身相助。考据红线：忠于动漫——只让那人来他真会管的仗，
+  // 形态按「援者境界 ÷ 这场仗的份量」分三档（用户钦定，world-design 背景强者三态）：
+  //   同阶 → 真参战（注入 sides[]，是个能打的帮手）
+  //   低阶 → 只辅助（疗伤/护身/递把伞，绝不喧宾夺主——练气帮不上结丹的输出）
+  //   高阶 → 只庇护/威压（挡一击、震慑对手露怯，按物理学不白送胜）
+  // realm=战力档（凡武1 / 练气初2 中3 后4 / 筑基初6 中7 / 结丹10）；art 仅同阶真参战需要（有战斗立绘者方可上场）。
+  _COMBAT_AIDERS: {
+    wanxiaoshan:  { realm: 3, art: "wanxiaoshan", elem: "jin", ledger: "wan_hunt_together",
+      onField: "「韩兄！这等恶客也敢拦你——算我万小山一个！」他按剑掠到你身侧，背靠了背。",
+      atkName: "并肩一剑", atkLine: "斜身一剑递向" },
+    nangongwan:   { realm: 7, art: "nangongwan", elem: "shui",
+      onField: "一道白衣身影不知何时已立在侧——南宫婉眸光微冷：「韩师弟的符宝，用得很准。这一场，我陪你。」" },
+    chenqiaoqian: { realm: 4, elem: "mu", ledger: "met_chen",
+      support: "暗处一缕清冷剑光替你逼退了杀招——陈巧倩终究还是循着踪迹来了，只是仍不肯现身。「……那年的债，先还你一点。」" },
+    lifeiyu:      { realm: 3, elem: "jin",
+      support: "「韩立！你的架我替你抬住！」厉飞雨大笑着抢上半步，硬替你格开一记。" },
+    mashibo:      { realm: 3,
+      support: "「臭小子别逞强！」马师伯隔空掷来一只温养的药瓶，正落你手里。" },
+    xiaosuanpan:  { realm: 2,
+      support: "「韩师兄先撑住！」小算盘手忙脚乱甩出几张护身符，倒也解了燃眉。" },
+    zhangtie:     { realm: 1, mortalOnly: true,
+      support: "「韩立！我来给你搭把手！」张铁抡起象甲功的拳头，憨实地挡在你身前。" },
+    wushishu:     { realm: 6,
+      protect: "「住手。」吴师叔不疾不徐踏前一步，一身筑基气机如山压来——对方矮了三分。" },
+    xiangzhili:   { realm: 8,
+      protect: "向之礼眯眼晒着太阳，似笑非笑看了一眼。那股扑面的杀气，竟莫名散了大半。" },
+    lihuayuan:    { realm: 10,
+      protect: "李化元大长老的一缕神识扫过此地，结丹之威如九天垂落——对手骇得几乎握不住兵刃。" },
+  },
+  // 仅这两位友方有战斗立绘，可真上场；其余具名故人以辅助/庇护形态相助（无须立绘）。
+  _AID_BATTLERS: { wanxiaoshan: 1, nangongwan: 1 },
+  // 在场或在附近：同据点节点（continent node）算"附近"——他循着动静赶得过来
+  _npcNearby(npcId, s) {
+    const n = (typeof WORLD !== "undefined") ? WORLD.npcById(npcId) : null;
+    if (!n || (n.cond && !n.cond(s))) return false;
+    if (WORLD.localsAt(s.location, s).some(x => x.id === npcId)) return "here";
+    const node = (WORLD.continent.nodes || []).find(nd => (nd.locs || []).includes(s.location));
+    const nearLocs = node ? (node.locs || []) : [];
+    return (n.where || []).some(w => nearLocs.includes(w)) ? "near" : false;
+  },
+  // 同阶援者的侧位配置：能打，但不喧宾夺主（战力对标这场仗的份量）
+  _aidAlly(npcId) {
+    if (npcId === "nangongwan") return this._nangongwanAlly();
+    const A = this._COMBAT_AIDERS[npcId] || {};
+    const nm = ((WORLD.npcById(npcId)) || {}).name || npcId;
+    const hp = 56 + (A.realm || 3) * 8;
+    const dmg = 8 + (A.realm || 3) * 2;
+    return {
+      id: "aid_" + npcId, name: nm, kind: "ally", art: A.art || null,
+      hp, hpMax: hp, guard: 0.22, elem: A.elem || "jin", move: 1, mp: 40,
+      persona: { aggr: 6, prot: 4, kite: 2 },
+      moves: [
+        { name: A.atkName || "并肩一击", dmg, weight: 10, elem: A.elem || "jin", range: [1, 2], mp: 0, line: A.atkLine || "并肩斫向" },
+        { name: "掩护", dmg: Math.round(dmg * 0.5), weight: 5, elem: A.elem || "jin", range: [1, 1], mp: 0, line: "侧身一档，替你挡向" },
+      ],
+    };
+  },
+  // 战前判定：是否有深交故人挺身相助（机制咬合：羁绊→战场回报；难忘的一笔，非常驻拐杖）
+  // 返回 true=已安排支援（已设 _sideOverride 或 _pendingAidBuff）。门槛层层咬合，触发稀有。
+  _maybeCombatAid(enemyId, tmpl) {
+    const s = State.data;
+    if (this._sideOverride) return false;            // 已有剧情同道（如禁地南宫婉）——不重复
+    if ((enemyId || "").indexOf("rogue_cultivator") === 0) return false;  // 副本内讧：同道反目，无人来援
+    const abs = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS._absMonth(s) : ((s.year || 0) * 12 + (s.month || 0));
+    if (s.aidCd != null && abs - s.aidCd < 3) return false;   // 冷却：是难忘的一笔，不是每仗都有
+    const boss = !!tmpl.boss || (enemyId || "").indexOf("beast_") === 0;
+    const fightWeight = (tmpl.qiLayer || Math.ceil((tmpl.hp || 60) / 30)) + (boss ? 2 : 0);
+    // 候选：交情深厚(≥20)、在场或在附近、在世且条件满足的具名故人
+    const cands = [];
+    for (const id in this._COMBAT_AIDERS) {
+      const rel = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS.relationOf(s, id) : ((s.relations && s.relations[id]) || 0);
+      if (rel < 20) continue;
+      const A = this._COMBAT_AIDERS[id];
+      if (A.mortalOnly && (tmpl.qiLayer || 0) > 1) continue;   // 凡人张铁：只搭得上凡俗打手
+      const prox = this._npcNearby(id, s);
+      if (!prox) continue;
+      cands.push({ id, A, rel, prox, repaid: !!(A.ledger && this.readLedger(A.ledger)) });
+    }
+    if (!cands.length) return false;
+    if (Math.random() > 0.5) return false;            // 是机缘，不是必然
+    // 择援：因果有亏者优先(还债)，其次交情深、在场胜在附近
+    cands.sort((a, b) => (b.repaid - a.repaid) || (b.rel - a.rel) || ((a.prox === "here" ? 0 : 1) - (b.prox === "here" ? 0 : 1)));
+    const pick = cands[0], A = pick.A, gap = (A.realm || 3) - fightWeight;
+    const nm = (WORLD.npcById(pick.id) || {}).name || pick.id;
+    const echo = pick.repaid ? "——当年那桩因果，今日有了回响。" : "";
+    let form;
+    if (gap >= 3) form = "protect";          // 高阶：只庇护/威压，不白送胜
+    else if (gap <= -2) form = "support";    // 低阶：只辅助，递把伞
+    else form = this._AID_BATTLERS[pick.id] ? "fight" : "support";  // 同阶真参战（需战斗立绘），否则暗助
+    const myHpMax = (s.hpMax || 100);
+    if (form === "fight") {
+      this._sideOverride = this._aidAlly(pick.id);
+      this._pendingAidBuff = { line: `【并肩·${this._tierName(pick.rel)}】${A.onField || nm + "赶来助阵。"}${echo}`, news: `${nm}与你并肩斩敌`, kind: "good" };
+    } else if (form === "protect") {
+      this._pendingAidBuff = { shield: Math.round(myHpMax * 0.35), cowEnemy: true,
+        line: `【庇护·${this._tierName(pick.rel)}】${A.protect || nm + "出手震慑了对手。"}${echo}`, news: `${nm}出手为你护场`, kind: "event" };
+    } else {
+      s.hp = Math.min(myHpMax, (s.hp || 0) + Math.round(myHpMax * 0.25));   // 疗伤：战前先补一口（playerFighter 读 s.hp）
+      this._pendingAidBuff = { shield: Math.round(myHpMax * 0.18),
+        line: `【相助·${this._tierName(pick.rel)}】${A.support || nm + "递来一份相助。"}${echo}`, news: `${nm}暗中助你一臂之力`, kind: "good" };
+    }
+    s.aidCd = abs;
+    return true;
+  },
+  _tierName(rel) { return rel >= 40 ? "挚交" : "交情深厚"; },
+
   // 南宫婉（同道侧位卡）：血色禁地并肩战——压制修为至炼气期的掩月宗天骄
   // 人格=背景：掩月宗水法天骄，战斗经验远在你之上——冷静拉距、专抓破绽窗口（接力打法）
   _nangongwanAlly() {
@@ -2945,6 +3052,8 @@ const Engine = {
     const tmpl = WORLD.enemies[enemyId];
     if (!tmpl) { this.log("虚惊一场，并无敌踪。", "sys"); return; }
     const enemy = this._applyFameWariness(this._applyDossier(Object.assign({}, tmpl)));
+    // 羁绊·战斗支援（社交深化③）：深交故人或挺身并肩、或暗中相助、或以威压庇护——可能设 _sideOverride/_pendingAidBuff
+    this._maybeCombatAid(enemyId, tmpl);
     // 侧位（T4 多侧位）：剧情同道（_sideOverride，可单可数组）与常驻随行（尸傀）同场
     const ov = this._sideOverride;
     const sidesArr = (Array.isArray(ov) ? ov.slice() : ov ? [ov] : []);
@@ -2969,6 +3078,18 @@ const Engine = {
     if (enemy._wary) {
       this._combat.enemies[0].shield = 12;
       this.log(`「${tmpl.name}」眯起眼："彩霞山那位……久闻大名。"——你的名声在外，对方早有防备（开局护体12）。`, "sys");
+    }
+    // 羁绊·战斗支援兑现：护体/疗伤已在 _maybeCombatAid 安排，此处落地到战场单位 + 见闻/风云录留痕
+    if (this._pendingAidBuff) {
+      const b = this._pendingAidBuff; this._pendingAidBuff = null;
+      if (b.cowEnemy && this._combat.enemies[0]) this._combat.enemies[0].shield = 0;
+      if (b.shield) this._combat.player.shield = (this._combat.player.shield || 0) + b.shield;
+      if (b.line) this.log(b.line, b.kind || "event");
+      if (b.news) {
+        s.worldNews = s.worldNews || [];
+        s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "fortune", text: `【羁绊】${b.news}。` });
+        if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      }
     }
     // 速决资格：境界压人一头的寻常遭遇（异闻妖王与剧情 boss 除外——有名有姓的仗值得亲手打）
     const myLayer = (State.realm() || {}).layer || 1;
