@@ -519,6 +519,50 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
     radial-gradient(ellipse at 50% 36%, transparent 46%, rgba(8,6,4,.5) 100%),
     linear-gradient(180deg, rgba(8,6,4,.58) 0%, rgba(8,6,4,.14) 20%, rgba(8,6,4,.1) 48%, rgba(8,6,4,.84) 84%);
 }
+/* ===== 升空天幕（v110「真有飞在天上的感觉」核心）=====
+ * 用户痛点：升空时画面只是人物略微抬起，文案说"天地倏然开阔"，画面却几乎没开阔——远景底图
+ * 超采样(farScale 1.10+)只下沉 ~1%，顶部根本没让出"天"。这里补上那片缺席的天：一张只盖场景区
+ * (top:0→bottom:--bg-cut，绝不漫进下方操作台)的高空大气层，平时全透明（贴地战斗完全不显），
+ * 升空(.sky)时 .9s 淡入——顶端最亮、向地平线散开，人物(box z:2)正飞进这片天的前方。
+ * 层序 z:1：压在背景(0)/中景/帷幕之上、人物(2)之下；仍在 v109 统一调色(grade z:7)身后——
+ * 天与地同吃一套色温＝不破"融为一体"。色板与 .combat-grade 同源，随场景色温走。
+ * 性能：纯渐变、无 blur/无 backdrop、仅 opacity 过渡——升空才显，零常驻开销。 */
+.combat-sky {
+  position: absolute; left: 0; right: 0; top: 0; bottom: var(--bg-cut, 0px);
+  z-index: 1; pointer-events: none; opacity: 0;
+  transition: opacity .9s cubic-bezier(.3, .7, .3, 1);
+  background:
+    radial-gradient(135% 86% at 50% -16%, rgba(212,228,234,.46), rgba(196,214,224,.18) 36%, transparent 62%),
+    linear-gradient(180deg, rgba(190,210,222,.34) 0%, rgba(178,198,212,.13) 42%, transparent 72%);
+}
+.combat-overlay.sky .combat-sky { opacity: 1; }
+/* 地平线霞光：天地交界一线提亮＝"开阔"的视觉锚（soft-light 只染中间调，不糊景物轮廓） */
+.combat-sky::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 30%; height: 24%; pointer-events: none;
+  mix-blend-mode: soft-light;
+  background: linear-gradient(180deg, transparent, rgba(224,234,238,.2) 58%, transparent);
+}
+/* 天色随场景色温（与 v109 融合层同源：森林冷青／官道暖沙／夜战幽蓝／心战墨紫） */
+.combat-overlay.bg-forest .combat-sky {
+  background:
+    radial-gradient(135% 86% at 50% -16%, rgba(200,224,220,.46), rgba(180,210,204,.18) 36%, transparent 62%),
+    linear-gradient(180deg, rgba(176,206,196,.32) 0%, rgba(166,196,188,.12) 42%, transparent 72%);
+}
+.combat-overlay.bg-road .combat-sky {
+  background:
+    radial-gradient(135% 86% at 50% -16%, rgba(228,216,188,.46), rgba(214,200,168,.18) 36%, transparent 62%),
+    linear-gradient(180deg, rgba(216,200,166,.32) 0%, rgba(204,188,156,.12) 42%, transparent 72%);
+}
+.combat-overlay.bg-night .combat-sky {
+  background:
+    radial-gradient(135% 86% at 50% -14%, rgba(150,176,222,.42), rgba(120,148,196,.18) 38%, transparent 64%),
+    linear-gradient(180deg, rgba(96,124,176,.34) 0%, rgba(78,104,156,.13) 44%, transparent 74%);
+}
+.combat-overlay.mind .combat-sky {
+  background:
+    radial-gradient(135% 86% at 50% -14%, rgba(176,150,210,.42), rgba(150,124,188,.18) 38%, transparent 64%),
+    linear-gradient(180deg, rgba(140,112,178,.32) 0%, rgba(120,94,160,.13) 44%, transparent 74%);
+}
 /* ===== 场景融合层（v109「融为一体」核心）=====
  * 用户痛点：人物比水墨背景过亮过饱、边缘过锐，像贴纸贴在画上（手机尤甚）。觅长生那种
  * "自然融为一体"靠的是一套作用于"整幅画面"的统一后处理——不是把人物搬进引擎。
@@ -1012,9 +1056,11 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 /* 凌空投影=高度计：飞得越高，地上的影子越小越淡（+ay 反向补偿=影子永远钉在地线，
  * 影与人的距离就是高度读数） */
-.axis-unit.airborne::before { bottom: calc(var(--feet, 40px) + var(--ay, 0px)); width: 46%; opacity: .55; }
-.axis-unit.airborne.air-2::before { width: 38%; opacity: .42; }
-.axis-unit.airborne.air-3::before { width: 30%; opacity: .3; }
+/* 升空影：影留地线（::before 吃 +--ay 自动归地），并随高度"越高越散越淡"——
+ * v110 加微弱 blur + 再收窄/降透：高空俯看自己的影只是地上一团淡晕＝真飞在天上的距离感 */
+.axis-unit.airborne::before { bottom: calc(var(--feet, 40px) + var(--ay, 0px)); width: 44%; opacity: .5; filter: blur(1px); }
+.axis-unit.airborne.air-2::before { width: 36%; opacity: .38; filter: blur(2px); }
+.axis-unit.airborne.air-3::before { width: 28%; opacity: .28; filter: blur(3px); }
 @keyframes shadowBreath { 0%,100% { transform: translateX(-50%) scale(1); opacity: 1; } 50% { transform: translateX(-50%) scale(.94); opacity: .85; } }
 .axis-unit.dead::before { opacity: .25; animation: none; }
 /* 锁定/我方的脚下色圈：贴着接触影、正在脚底（觅长生式选中圈——圈即站位） */
@@ -3227,12 +3273,12 @@ html, body { touch-action: manipulation; }
 /* 凌空（纵深语言 v3——depth-design D2）：高度=境界档（airGrade），与"远"（排）彻底分家。
  * 三件套：遁光踏足 + 影子留在地线上（基础 ::after 吃 --ay 自动归地）+ 垂直光柱（高度的脐带）。
  * "韩立飞得比南陇侯高"——档位差同屏可见，高度即境界的俯视 */
-/* 高度档（v91 相对坐标系+抬高）：飞高=战场高的百分比（cqh）——任何屏幕下高度感恒定。
- * air-1 抬 30%（zoom 后拉配合下，头顶不出画框）——用户实锤"飞太低踩在同道头上"，
- * 高度必须一眼读出"在她上空"而不是"站她头顶" */
-.axis-unit.airborne { --ay: -30cqh; z-index: 11; }
-.axis-unit.airborne.air-2 { --ay: -40cqh; }
-.axis-unit.airborne.air-3 { --ay: -50cqh; }
+/* 高度档（v91 相对坐标系+抬高；v110 再抬一档）：飞高=战场高的百分比（cqh）——任何屏幕下高度感恒定。
+ * v110 配合新增「升空天幕」(.combat-sky)把天让出来，抬升幅度同步加大（30/40/50→36/48/60cqh），
+ * 让"飞在天上"一眼读出而非"站她头顶"；air-1 在 zoom 后拉配合下头顶仍不出画框（已在演武场实测）。 */
+.axis-unit.airborne { --ay: -36cqh; z-index: 11; }
+.axis-unit.airborne.air-2 { --ay: -48cqh; }
+.axis-unit.airborne.air-3 { --ay: -60cqh; }
 /* ⚠ z 序铁律（v92 修，用户实锤"她升空盖住我"）：升空不改变排深主序——
  * 深排单位飞上天也仍在前排身后（各排内 +1 压过本排地面单位即可）。
  * 同时升空横向错位（--ax）：深排飞行单位再斜退一步，"她在我斜后上方"而非正上叠脸 */
@@ -3240,7 +3286,8 @@ html, body { touch-action: manipulation; }
 .axis-unit.lane-2.airborne { z-index: 7; --ax: 22px; }
 .axis-unit.lane-3.airborne { z-index: 5; --ax: 30px; }
 .axis-unit.airborne .au-img {
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)) drop-shadow(0 0 16px rgba(140,210,250,.22));
+  /* v110：升空高空灵光描边略增（.22→.3）——飞入天幕后人物"吃到天光"，与 .combat-sky 呼应 */
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)) drop-shadow(0 0 18px rgba(150,214,252,.3));
   animation: portraitIn .4s ease, hoverFloat 2.6s ease-in-out .4s infinite;
 }
 /* 升空不丢空气透视（v92 修——airborne 滤镜曾整条覆盖排深暗化，深排单位一升空
