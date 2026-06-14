@@ -907,6 +907,17 @@ const UI = {
     if (rb) { rb.innerHTML = ""; rb.className = "story-portrait right"; rb.dataset.set = ""; }
     // 场景背景：优先该阶段声明的 CG，否则用当前地点的场景图
     this._storySetScene(stage);
+    // 演出地基（cutscene.js）：清旧镜头/计时；含演出原语则挂 FX 叠层、关 kenBurns 改由镜头 op 驱动
+    const bg = this.el("story-bg");
+    const skip = this.el("story-skip");
+    if (typeof Cutscene !== "undefined") {
+      Cutscene.clear();
+      Cutscene.resetCam(this._storyCtx());
+      const staged = Cutscene.hasStaging(stage);
+      if (bg) bg.classList.toggle("story-cam", staged);
+      if (staged && typeof Fx !== "undefined" && Fx.ensure) Fx.ensure(overlay);
+    } else if (bg) { bg.classList.remove("story-cam"); }
+    if (skip) skip.hidden = false;
     // 败北重试：剧情已看过，跳过题字与正文直达抉择（免重复演出之扰）
     if (typeof Engine !== "undefined" && Engine._retryStage) {
       Engine._retryStage = false;
@@ -968,8 +979,10 @@ const UI = {
     }
   },
 
-  // 把 text[]（字符串/对象混排）拍平成节拍：{ kind:'narr'|'say'|'scene', who, text, tone, showWho }
+  // 把 text[]（字符串/对象混排）拍平成节拍。演出原语（cam/actor/fx/sfx/wait/beat）的
+  // 编译统一委托 cutscene.js（纯函数、可无头测试）；缺该模块则退回内置兼容解析（旧剧情卡）。
   _buildStoryBeats(stage) {
+    if (typeof Cutscene !== "undefined" && Cutscene.compile) return Cutscene.compile(stage);
     const beats = [];
     (stage.text || []).forEach(seg => {
       if (typeof seg === "string") { beats.push({ kind: "narr", text: seg }); return; }
@@ -1038,16 +1051,53 @@ const UI = {
     }
   },
 
-  // 逐句推进：每次轻触显示下一节拍；打字中则先补完；到末尾给出选项
+  // 逐句推进：每次轻触显示下一节拍；打字中则先补完；到末尾给出选项。
+  // 演出原语（cam/actor/fx/sfx/bgm）是舞台指令，自动连演不阻塞；撞上台词/交互/wait 才停。
   storyAdvance() {
     const st = this._story; if (!st) return;
     if (st.titling) return;           // 题字卡期间由卡自己处理
+    if (st.beatActive) return;        // 交互 beat 进行中：轻触无效（由 beat 自己结算）
     if (st.typing) { this._typeFinish(); return; }
-    // 已到结尾：不再推进（选项已显示）
-    if (st.done) return;
+    if (st.done) return;              // 已到结尾：不再推进（选项已显示）
+    this._storyPlayNext();
+  },
+
+  // 演出调度循环：连演舞台指令，遇台词/交互 beat/wait(click) 停下等玩家
+  _storyPlayNext() {
+    const st = this._story; if (!st) return;
+    if (this._cutTimer) { clearTimeout(this._cutTimer); this._cutTimer = null; }
     st.idx++;
-    if (st.idx >= st.beats.length) { this._storyShowChoices(); return; }
-    const b = st.beats[st.idx];
+    while (st.idx < st.beats.length) {
+      const b = st.beats[st.idx];
+      if (b.kind === "op") {
+        const r = (typeof Cutscene !== "undefined") ? Cutscene.run(b, this._storyCtx()) : null;
+        if (b.op === "wait" && b.wait === "click") { this._storyCue("▽ 轻触继续"); return; }
+        if (r && r.auto) { this._cutTimer = setTimeout(() => this._storyPlayNext(), r.auto); return; }
+        st.idx++;
+        continue;                     // 非阻塞舞台指令：立即连演下一拍
+      }
+      if (b.kind === "beat") {
+        st.beatActive = true;
+        if (typeof Cutscene !== "undefined" && Cutscene.runBeat) {
+          Cutscene.runBeat(b, this._storyCtx(), (res) => {
+            st.beatActive = false;
+            // 结算反应台词：作为下一拍旁白插入，无缝接演
+            if (res && res.line) st.beats.splice(st.idx + 1, 0, { kind: "narr", text: res.line });
+            this._storyPlayNext();
+          });
+          return;
+        }
+        st.beatActive = false; st.idx++; continue;   // 无演出模块：跳过交互
+      }
+      this._renderTextBeat(b);        // 台词层：渲染并等轻触
+      return;
+    }
+    this._storyShowChoices();
+  },
+
+  // 渲染一条台词层节拍（narr/say/aside/scene）：打字机出字 + 立绘
+  _renderTextBeat(b) {
+    const st = this._story;
     const stageName = this.el("story-stage-name");
     if (stageName) stageName.textContent = st.stage.title || "";
     if (typeof Sfx !== "undefined") Sfx.play("page");
@@ -1075,9 +1125,41 @@ const UI = {
       this._storySetPortrait(b.showWho || (isNarr ? null : who), b.emo, b.tone);
     }
 
-    const last = (st.idx === st.beats.length - 1);
+    const last = (st.idx >= st.beats.length - 1);
     if (cue) cue.textContent = last ? "▽ 轻触，到此抉择" : "▽ 轻触继续";
     this.el("story-choices").innerHTML = "";
+  },
+
+  // 演出 ctx：把舞台 DOM 元素与锚点解析交给 cutscene.js（本文件不碰特效像素）
+  _storyCtx() {
+    return {
+      bg: this.el("story-bg"),
+      left: this.el("story-portrait-left"),
+      right: this.el("story-portrait-right"),
+      host: this.el("story-overlay"),
+      fxHost: this.el("story-overlay"),
+      beatHost: this.el("story-choices"),
+      anchor: (at) => this._storyAnchor(at),
+    };
+  },
+  _storyAnchor(at) {
+    if (at === "left") return this.el("story-portrait-left");
+    if (at === "right") return this.el("story-portrait-right");
+    return this.el("story-bg");       // center/缺省=场景中心
+  },
+  _storyCue(text) { const cue = this.el("story-cue"); if (cue) cue.textContent = text; },
+
+  // 随时可跳：清演出计时/镜头，直达本幕抉择
+  storySkip() {
+    const st = this._story; if (!st || st.done) return;
+    if (this._titleTimer) { clearTimeout(this._titleTimer); this._titleTimer = null; }
+    if (this._cutTimer) { clearTimeout(this._cutTimer); this._cutTimer = null; }
+    if (this._typeTimer) { clearInterval(this._typeTimer); this._typeTimer = null; }
+    if (typeof Cutscene !== "undefined") { Cutscene.clear(); Cutscene.resetCam(this._storyCtx()); }
+    const card = this.el("story-titlecard"); if (card) card.classList.remove("show");
+    st.titling = false; st.typing = false; st.beatActive = false;
+    st.idx = st.beats.length;
+    this._storyShowChoices();
   },
 
   // 双人相对立绘：韩立固定在右，对话 NPC 在左；说话者高亮，另一人暗淡。
@@ -1145,9 +1227,14 @@ const UI = {
   _storyShowChoices() {
     const st = this._story; if (!st) return;
     st.done = true;
+    // 收束演出层：停计时、退跳过键、清交互 beat 残留
+    if (this._cutTimer) { clearTimeout(this._cutTimer); this._cutTimer = null; }
+    if (typeof Cutscene !== "undefined") Cutscene.clear();
+    const skip = this.el("story-skip"); if (skip) skip.hidden = true;
     const stage = st.stage;
     const cue = this.el("story-cue"); if (cue) cue.textContent = "";
     const box = this.el("story-choices");
+    box.classList.remove("cut-beat-on");
     // 战斗类抉择前的「临战准备」一览
     const isFight = (stage.choices || []).some(c => c.resolve);
     let prepHtml = "";
@@ -1175,6 +1262,11 @@ const UI = {
     const stage = st.stage;
     if (this._titleTimer) { clearTimeout(this._titleTimer); this._titleTimer = null; }
     if (this._typeTimer) { clearInterval(this._typeTimer); this._typeTimer = null; }
+    if (this._cutTimer) { clearTimeout(this._cutTimer); this._cutTimer = null; }
+    // 收束演出：清计时、复位镜头、退跳过键（演出瞬态不入存档）
+    if (typeof Cutscene !== "undefined") { Cutscene.clear(); Cutscene.resetCam(this._storyCtx()); }
+    const skip = this.el("story-skip"); if (skip) skip.hidden = true;
+    const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
     this._archiveStory(stage);
     this.el("story-overlay").hidden = true;
     document.body.classList.remove("story-on");
@@ -1196,7 +1288,8 @@ const UI = {
     if (typeof seg === "string") return `<p class="seg-narr">${seg}</p>`;
     if (seg.scene) return `<div class="seg-scene">· ${seg.scene} ·</div>`;
     if (seg.aside) return `<p class="seg-aside">${seg.aside}</p>`;       // 心理独白
-    if (seg.beat) return `<div class="seg-beat">${seg.beat || "……"}</div>`; // 停顿/留白
+    if (typeof seg.beat === "string") return `<div class="seg-beat">${seg.beat || "……"}</div>`; // 停顿/留白
+    if (seg.cam || seg.actor || seg.fx || seg.sfx || seg.bgm || seg.wait || (seg.beat && typeof seg.beat === "object")) return ""; // 演出原语不入日志
     if (seg.say) {
       const who = seg.say;
       const self = (who === State.data.name || who === "韩立");

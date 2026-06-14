@@ -3123,6 +3123,30 @@ html, body { touch-action: manipulation; }
 .story-choices:empty { display: none; }
 .story-choices .choice { animation: choiceIn .3s ease backwards; }
 
+/* ---- 演出层（cutscene.js 阶段1）---- */
+/* 含演出原语时关掉 kenBurns，改由镜头 op 的 inline transform 驱动 */
+.story-bg.story-cam { animation: none !important; }
+/* 立绘进退场（cutscene _actor）：在既有立绘位上做一次性入/出场 */
+.story-portrait.portrait-in img  { animation: portraitIn .42s cubic-bezier(.22,1,.36,1); }
+.story-portrait.left.portrait-in img { animation-name: portraitInL; }
+.story-portrait.portrait-out { opacity: 0; transform: translateY(10px); transition: opacity .34s ease, transform .34s ease; }
+.story-portrait.left.portrait-out { transform: scaleX(-1) translateY(10px); }
+/* 随时可跳：右上角常驻跳过键 */
+.story-skip {
+  position: absolute; top: 18px; right: 18px; z-index: 8;
+  color: var(--ink-dim); font-size: 12px; letter-spacing: 1px;
+  padding: 5px 12px; border: 1px solid rgba(212,176,106,.32); border-radius: 14px;
+  background: rgba(14,11,9,.7); cursor: pointer; user-select: none;
+}
+.story-skip:hover { color: var(--gold); border-color: rgba(212,176,106,.6); }
+/* 交互 beat：把"操作"嵌进演出（伺机出手 / 限信息抉择）*/
+.story-choices.cut-beat-on { background: transparent; }
+.cut-prompt { color: var(--ink); font-size: 15px; line-height: 1.7; margin-bottom: 6px; text-align: center; }
+.cut-strike { position: relative; overflow: hidden; }
+.cut-gauge { position: absolute; left: 0; bottom: 0; width: 100%; height: 3px; background: rgba(255,255,255,.12); }
+.cut-gauge i { display: block; height: 100%; width: 100%; background: var(--gold-bright); }
+.cut-choice { animation: choiceIn .3s ease backwards; }
+
 @media (max-width: 760px) {
   /* 手机：整屏可滚动，对话框与抉择按钮始终能点到（不被浏览器栏/底部安全区盖住）*/
   .story-overlay {
