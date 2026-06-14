@@ -57,6 +57,14 @@ const Engine = {
     s.month += months;
     while (s.month > 12) { s.month -= 12; s.year += 1; s.age += 1; }
     s.mood = clamp(s.mood + 1, 0, s.moodMax);
+    // B1 战外恢复（世界层）：气血/灵力随时间吐纳自养，逐月回复。
+    // 「战斗内灵力不自动回」是刻意设定——此处只动战斗外世界层；
+    // 闭关的灵力抽干在 secludeCultivate 内单独结算（耗 14/月），足以盖过此处回复。
+    const _rRecover = State.realm();
+    s.hp = clamp(s.hp + Math.round(s.hpMax * 0.12 * months), 0, s.hpMax);
+    if (_rRecover && _rRecover.spMax) {
+      s.spirit = clamp(s.spirit + Math.round(_rRecover.spMax * 0.08 * months), 0, _rRecover.spMax);
+    }
     // 墨府客居计时：住下些时日，独霸山庄才会找上门（离门远行·嘉元城）
     if (s.location === "jiayuan_city" && s.flags.mo_met && !s.flags.ouyang_dead) {
       s.flags.mo_months = (s.flags.mo_months || 0) + months;
@@ -1264,6 +1272,9 @@ const Engine = {
     if (!s.exmap) return;
     const r = ExploreMap.travel(s.exmap, nodeId);
     if (!r.ok) { this.toast(r.reason, true); return; }
+    // B1 走格回灵：跋涉间吐纳，灵力随脚程缓回（气血的回复走月度，见 passTime）
+    const _rTravel = State.realm();
+    if (_rTravel && _rTravel.spMax) s.spirit = clamp(s.spirit + Math.round(_rTravel.spMax * 0.05), 0, _rTravel.spMax);
     this._exmapEvents(r.events);
   },
 
@@ -1452,6 +1463,9 @@ const Engine = {
     if (!x) return;
     const r = ExploreMap.caveMove(x, pos);
     if (!r.ok) { this.toast(r.reason || "走不得", true); return; }
+    // B1 走格回灵：洞窟潜行屏息凝神，灵力小幅缓回（幅度小于明路跋涉）
+    const _rCave = State.realm();
+    if (_rCave && _rCave.spMax) s.spirit = clamp(s.spirit + Math.round(_rCave.spMax * 0.03), 0, _rCave.spMax);
     for (const ev of (r.events || [])) {
       if (ev.type === "intel") {
         this.log(`【观战】${ev.text}`, "good");
