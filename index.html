@@ -3,37 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="build" content="112" />
+  <meta name="build" content="113" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <script>
-  /* 自动更新：服务器 ver.txt 为最新版本号；若本页过旧，自动跳到带新版本号的地址(强制取新HTML)，无需手动刷新 */
+  /* 自动更新（v113 增强）：服务器 ver.txt 为最新版本号。
+   * 旧版只在首屏检查一次——iOS 把 PWA/标签页切后台再回来、或从主屏图标恢复时是「resume 旧上下文」，
+   * 那次检查不重跑，于是一直停在旧版、要手动强刷。本版改为「每次页面重新可见就复查」
+   * （visibilitychange 转可见 + pageshow 的 bfcache 恢复），并保留原有 query（不丢 ?demo=1），
+   * 再用 sessionStorage 计数兜住 GitHub Pages CDN 滞后窗口、防重载死循环。 */
   (function () {
-    try {
+    function targetURL(latest) {
+      try {
+        var u = new URL(location.href);
+        u.searchParams.set("b", String(latest)); // set 而非 append：保留 ?demo=1 等其余参数，b 只更新不堆叠
+        return u.pathname + u.search + u.hash;
+      } catch (e) { return location.pathname + "?b=" + latest; }
+    }
+    function curBuild() {
       var meta = document.querySelector('meta[name="build"]');
-      var cur = parseInt((meta && meta.content) || "0", 10);
+      return parseInt((meta && meta.content) || "0", 10);
+    }
+    function check() {
+      if (document.visibilityState === "hidden") return; // 不可见不查，省电
       fetch("ver.txt?t=" + Date.now(), { cache: "no-store" })
         .then(function (r) { return r.text(); })
         .then(function (t) {
           var latest = parseInt(String(t).trim(), 10);
-          if (latest && latest > cur) {
-            location.replace(location.pathname + "?b=" + latest);
-          }
+          if (!latest || latest <= curBuild()) return;
+          // 防死循环：同一目标版本本会话最多自动跳 3 次（兜 Pages CDN 仍发旧 HTML 的滞后期）
+          var key = "__updTries_" + latest;
+          var tries = parseInt(sessionStorage.getItem(key) || "0", 10);
+          if (tries >= 3) return;
+          try { sessionStorage.setItem(key, String(tries + 1)); } catch (e) {}
+          location.replace(targetURL(latest));
         }).catch(function () {});
+    }
+    try {
+      check(); // 首屏
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") check();
+      });
+      window.addEventListener("pageshow", function (e) {
+        if (e && e.persisted) check(); // 从 bfcache 恢复（iOS 返回/前进缓存）
+      });
     } catch (e) {}
   })();
   </script>
   <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=112" />
+  <link rel="stylesheet" href="css/style.css?v=113" />
   <!-- PWA：可装主屏 / 离线可玩 / 全屏（v105 起） -->
-  <link rel="manifest" href="manifest.webmanifest?v=112" />
+  <link rel="manifest" href="manifest.webmanifest?v=113" />
   <meta name="theme-color" content="#14110b" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="凡人修仙传" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=112" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=113" />
 </head>
 <body>
   <div id="app">
@@ -65,7 +92,7 @@
 
         <button id="btn-start" class="btn btn-primary" disabled>踏 入 此 界</button>
         <button id="btn-load" class="btn btn-ghost">读取存档</button>
-        <div class="build-tag">build v112</div>
+        <div class="build-tag">build v113</div>
       </div>
     </section>
 
@@ -304,34 +331,34 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=112"></script>
-  <script src="js/state.js?v=112"></script>
-  <script src="js/chapters.js?v=112"></script>
-  <script src="js/balance.js?v=112"></script>
-  <script src="js/world.js?v=112"></script>
-  <script src="js/npcsim.js?v=112"></script>
-  <script src="js/interactions.js?v=112"></script>
-  <script src="js/warlines.js?v=112"></script>
-  <script src="js/combat.js?v=112"></script>
-  <script src="js/explore.js?v=112"></script>
-  <script src="js/exploremap.js?v=112"></script>
-  <script src="js/loadout.js?v=112"></script>
-  <script src="js/dialogue.js?v=112"></script>
-  <script src="js/llm.js?v=112"></script>
-  <script src="js/audio.js?v=112"></script>
-  <script src="js/fx.js?v=112"></script>
-  <script src="js/art.js?v=112"></script>
-  <script src="js/fortunes.js?v=112"></script>
-  <script src="js/quests.js?v=112"></script>
-  <script src="js/story.js?v=112"></script>
-  <script src="js/engine.js?v=112"></script>
-  <script src="js/ui.js?v=112"></script>
-  <script src="js/main.js?v=112"></script>
+  <script src="js/data.js?v=113"></script>
+  <script src="js/state.js?v=113"></script>
+  <script src="js/chapters.js?v=113"></script>
+  <script src="js/balance.js?v=113"></script>
+  <script src="js/world.js?v=113"></script>
+  <script src="js/npcsim.js?v=113"></script>
+  <script src="js/interactions.js?v=113"></script>
+  <script src="js/warlines.js?v=113"></script>
+  <script src="js/combat.js?v=113"></script>
+  <script src="js/explore.js?v=113"></script>
+  <script src="js/exploremap.js?v=113"></script>
+  <script src="js/loadout.js?v=113"></script>
+  <script src="js/dialogue.js?v=113"></script>
+  <script src="js/llm.js?v=113"></script>
+  <script src="js/audio.js?v=113"></script>
+  <script src="js/fx.js?v=113"></script>
+  <script src="js/art.js?v=113"></script>
+  <script src="js/fortunes.js?v=113"></script>
+  <script src="js/quests.js?v=113"></script>
+  <script src="js/story.js?v=113"></script>
+  <script src="js/engine.js?v=113"></script>
+  <script src="js/ui.js?v=113"></script>
+  <script src="js/main.js?v=113"></script>
   <script>
   /* 注册 Service Worker（离线/装主屏）。注册 URL 带 ?v=，每次发版自动更新 SW。 */
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js?v=112", { scope: "./" }).catch(function () {});
+      navigator.serviceWorker.register("sw.js?v=113", { scope: "./" }).catch(function () {});
     });
   }
   </script>
