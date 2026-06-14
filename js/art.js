@@ -59,6 +59,7 @@
   const BATTLERS = {
     bt_wolf: { face: "r" }, bt_chimu: { face: "r" }, bt_baihu: { face: "r" }, bt_wugong: { face: "r" },
     bt_bandit: { face: "c" }, bt_wuren: { face: "l" }, bt_sanxiu: { face: "c" },
+    bt_yelang: { face: "r" }, bt_yuzitong: { face: "c" },   // 野狼帮打手头偏画右(r)；余子童元神正面对称(c)永不镜像
     bt_hanli: { face: "r" }, bt_hanli_fly: { face: "r" },
     bt_luyunfeng: { face: "c" }, bt_jinguang: { face: "c" },
     bt_modafu: { face: "c" }, bt_tienu: { face: "c" }, bt_wanxiaoshan: { face: "c" },

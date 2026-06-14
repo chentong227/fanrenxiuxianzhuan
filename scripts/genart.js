@@ -20,7 +20,9 @@ if (!KEY) { console.error("用法: node scripts/genart.js <OPENROUTER_KEY> [only
 const MODEL = "google/gemini-2.5-flash-image";
 // 高质量模型（战斗立绘/战斗场景等长期资产——质量优先，按条目 hq:true 启用，不滥用）
 const MODEL_HQ = process.env.GEN_HQ_MODEL || "google/gemini-3-pro-image-preview";
-const PROXY = process.env.GEN_PROXY || "http://127.0.0.1:7890";
+// 代理：默认走本机 clash(7890)；无代理环境（CI/云机）显式传 GEN_PROXY="" 或 GEN_PROXY=none 直连
+const PROXY = (process.env.GEN_PROXY != null) ? process.env.GEN_PROXY : "http://127.0.0.1:7890";
+const USE_PROXY = PROXY && PROXY !== "none";
 const OUT = path.join(__dirname, "..", "assets");
 const TMP = path.join(__dirname, "..", "test");
 if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
@@ -160,6 +162,7 @@ const BATTLE_DEFS = {
   bt_bandit:  { kind: "battler", hq: true, prompt: "凡俗山贼，三十多岁的精悍匪徒，乱发束巾，满脸横肉短须，身着打补丁的深褐色短打、缠布绑腿，双手握一柄环首砍刀斜指，咧嘴狞笑，匪气十足" },
   bt_wuren:   { kind: "battler", hq: true, prompt: "凡俗武林弟子，二十出头的精壮青年武人，短打劲装束腰、袖口扎紧，马步沉稳、双拳抱式蓄劲，眼神剽悍专注，江湖武人的利落杀气" },
   bt_sanxiu:  { kind: "battler", hq: true, prompt: "落魄散修，三十多岁面色风霜的修士，半旧青灰道袍下摆磨损，束发简陋，单手掐诀、另一手悬着一枚泛土黄色灵光的小石剑法器，眼神警惕桀骜，野路子修士的狠劲" },
+  bt_yelang:  { kind: "battler", hq: true, prompt: "野狼帮打手喽啰，横行乡里的凡俗壮年匪徒，乱发束布巾、满脸横肉留短须、眼神蛮横凶悍，身披一件粗硬兽皮坎肩、内着杂乱的深褐色短打缠布绑腿，双手抡起一根钉满铁刺的狰狞狼牙棒作劈砸姿态，山贼帮派打手的粗野凶蛮杀气" },
   // —— 剧情人物战斗立绘（ref=各自半身像：锁脸出全身战斗姿态——参考图编辑保一致性）——
   bt_hanli:   { kind: "battler", hq: true, ref: "portraits/hanli.png",
                 prompt: "同一人物的完整全身像：少年韩立全身战斗姿态，侧身而立、一手扬起两指并剑准备御使法器，另一手收于腰侧扣着符纸，眼神冷静专注，橄榄黄绿色交领道袍下摆随气劲微扬，腰悬储物袋，沉稳蓄势" },
@@ -178,6 +181,9 @@ const BATTLE_DEFS = {
                 prompt: "同一人物的完整全身像：尸傀铁奴全身战斗姿态，铁青肤色的少年尸傀僵直前倾站立，双臂垂坠指节泛黑，双目空洞浊白，破败灰色短打，周身淡淡阴气缠绕，悲凉诡异" },
   bt_wanxiaoshan: { kind: "battler", hq: true, ref: "portraits/wanxiaoshan.png",
                 prompt: "同一人物的完整全身像：万小山全身战斗姿态，圆脸憨厚的年轻散修紧张地双手搓出一团小火球，半旧靛青色道袍，鼓囊行囊仍背在背上，神情认真又微微发慌，可爱的同道" },
+  // 余子童元神：受损残魂出窍夺舍——通体半透明、泛幽冷青白光的修士虚影（魂体非血肉），守红线⑤纯白底好抠
+  bt_yuzitong: { kind: "battler", hq: true, guard: true,
+                prompt: "结丹修士余子童的元神虚影（受损残魂出窍夺舍）：一道通体半透明、泛着幽冷青白色魂光的清癯中年修士虚影全身像，面容枯槁阴鸷、双目空洞冷光怨毒，残破的深色道袍无风自动，魂体边缘缕缕散逸如青烟、周身缠绕受损残魂的幽光裂纹，双手前伸如攫取之状，凄厉森然，整体呈幽灵般的半透明发光质感而非实体血肉" },
   // —— 战斗场景底图（scenes/bt_*.png）——竞技场构图 v2（踩地感的根：地面是"近景台面"不是远眺）：
   //    底部三分之一必须是延伸到画外的平整近地（纹理为脚边尺度：碎石草茎清晰可辨），
   //    低机位平视微俯、地面横向开阔无遮挡（站位带），中景立物收两翼，远景给层次——人物将直接站在这块地上
@@ -262,9 +268,11 @@ function genOne(id, def, opts = {}) {
   const bodyFile = path.join(TMP, "_genart.body.json");
   const respFile = path.join(TMP, "_genart.resp.json");
   fs.writeFileSync(bodyFile, body);
-  // 用 curl.exe 走代理（本机已验证可直出图）
+  // 用 curl.exe 出图（本机走代理；无代理环境 GEN_PROXY="" 直连）
   execFileSync("curl.exe", [
-    "-s", "-x", PROXY, "-X", "POST", "https://openrouter.ai/api/v1/chat/completions",
+    "-s",
+    ...(USE_PROXY ? ["-x", PROXY] : []),
+    "-X", "POST", "https://openrouter.ai/api/v1/chat/completions",
     "-H", "Authorization: Bearer " + KEY,
     "-H", "Content-Type: application/json",
     "-H", "X-Title: FanrenXiuxian",
