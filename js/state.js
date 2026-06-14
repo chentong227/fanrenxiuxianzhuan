@@ -189,6 +189,12 @@ const State = {
       if (!d.knownSkills.includes("lianhuan")) d.knownSkills.push("lianhuan");
       d.spells = (d.spells || []).filter(id => id !== "zhayan_lian");
       if (!d.spells.includes("lianhuan")) d.spells.push("lianhuan");
+    } else {
+      // C3 修正：眨眼连击在当前进程不可得（眨眼剑法本体经剑意大成直接进化为连环眨眼，无独立连击档）。
+      // 老档若残留 zhayan_lian（C1 配装重构前的遗留），剥离回基础眨眼剑法——
+      // 免得早期（如夺舍之夜）越权使出与彼时能力不符的连击。
+      d.knownSkills = (d.knownSkills || []).filter(id => id !== "zhayan_lian");
+      d.spells = (d.spells || []).filter(id => id !== "zhayan_lian");
     }
     if (typeof Loadout !== "undefined") Loadout.migrate(d);
   },

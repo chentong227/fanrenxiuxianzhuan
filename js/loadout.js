@@ -23,8 +23,11 @@
   const Balance = (typeof require !== "undefined") ? require("./balance.js") : root.Balance;
 
   const Loadout = {
-    // 凡人武学（与功法无关，习得后恒在技能池中）
-    INNATE_MARTIAL: ["zhayan", "zhayan_lian", "weidu", "feizhen"],
+    // 凡人武学「标记表」：仅用于战斗折算判定（武学不吃辅修折扣），不参与技能授予。
+    // 可用招式一律以 s.spells（已装备）为准——此表不会把招式塞进技能池。
+    // 眨眼连击(zhayan_lian) 刻意不列此：正常进程不可得——眨眼剑法本体(zhayan)经「剑意」
+    // 大成直接进化为连环眨眼(lianhuan)，无独立"连击"中间档（详见 docs/retention-design.md 剑意修行链）。
+    INNATE_MARTIAL: ["zhayan", "weidu", "feizhen"],
     // 底牌（消耗性手段）：独立体系，不占技能槽。
     // 符箓/符宝/丹药/阵旗也是底牌（combat-arsenal-design.md 轴3）：有实物即可用，无需研习。
     TRUMPS: ["weidu", "feizhen", "huoshe_fu", "hanbing_fu", "jinguang_zhuan",
