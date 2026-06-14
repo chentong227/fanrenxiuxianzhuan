@@ -259,7 +259,8 @@ const FORTUNES = [
     title: "野狼帮设卡",
     text: "进镇的路口被几条野狼帮的汉子拦住，横着狼牙棒：「此路是我开。识相的，留下五两买路钱。」",
     where: ["town"],
-    weight: 14,
+    weight: 9,
+    cooldown: 4,   // 同一伙拦路不会月月来堵——隔几月才重设关卡
     cond: (s) => !s.flags.jinguang_dead,
     choices: [
       {

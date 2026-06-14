@@ -586,7 +586,7 @@ WORLD.npcs = [
     id: "langhao", name: "野狼帮喽啰", role: "野狼帮帮众",
     bio: "野狼帮中横行乡里的凡俗打手，仗着帮派势大，时常滋扰集镇商旅。",
     lines: ["这条道是我们野狼帮的，留下买路钱！", "七玄门？哼，迟早是我们帮主的囊中之物。"],
-    where: ["town", "houshan"], cond: (s) => s.flags.gang_war,
+    where: ["town", "houshan"], cond: (s) => s.flags.gang_war && !s.flags.jinguang_dead,
   },
   {
     id: "mocaihuan", name: "墨彩环", role: "墨府小姐 · 故人之女",

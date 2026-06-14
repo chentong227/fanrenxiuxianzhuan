@@ -81,7 +81,7 @@ const Engine = {
   _AMBIENT_EVENTS: [
     { cond: (s) => !s.flags.jinguang_dead, text: "听闻野狼帮又吞了一家镖局，山下商旅背地里骂声载道。" },
     { cond: (s) => !s.flags.jinguang_dead, text: "集镇酒肆里有人压低声音说，野狼帮在招揽亡命之徒，开的价钱不低。" },
-    { cond: (s) => s.flags.gang_war, text: "七玄门与野狼帮的梁子越结越深，山下行人入夜便不敢出门。" },
+    { cond: (s) => s.flags.gang_war && !s.flags.jinguang_dead, text: "七玄门与野狼帮的梁子越结越深，山下行人入夜便不敢出门。" },
     { cond: () => true, text: "门中贴出告示：后山深处近来有凶兽伤人，弟子结伴方可入山。" },
     { cond: () => true, text: "几名外门弟子因私斗被罚去担水三月，门规面前没人讲情面。" },
     { cond: () => true, text: "市集上新到了一批南边的药材，价钱压得很低，药铺掌柜们脸色难看。" },
@@ -2475,10 +2475,13 @@ const Engine = {
     if (typeof FORTUNES === "undefined") return false;
     const loc = s.location;
     s.firedFortunes = s.firedFortunes || [];
-    // 候选：地点匹配、未触发过的 once、满足 cond
+    s.fortuneCooldowns = s.fortuneCooldowns || {};   // id -> 可再触发的绝对月份（冷却中的际遇不入候选）
+    const nowAbs = State.absMonth();
+    // 候选：地点匹配、未触发过的 once、未在冷却、满足 cond
     const pool = FORTUNES.filter(f => {
       if (f.where && !f.where.includes(loc)) return false;
       if (f.once && s.firedFortunes.includes(f.id)) return false;
+      if (f.cooldown && s.fortuneCooldowns[f.id] && nowAbs < s.fortuneCooldowns[f.id]) return false;
       if (f.cond && !f.cond(s)) return false;
       return true;
     });
@@ -2490,6 +2493,7 @@ const Engine = {
     const f = weightedPick(pool);
     this._pendingFortune = f;
     if (f.once) s.firedFortunes.push(f.id);
+    if (f.cooldown) s.fortuneCooldowns[f.id] = nowAbs + f.cooldown;
     UI.openFortune(f);
     State.save();
     return true;
