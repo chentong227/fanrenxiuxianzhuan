@@ -2656,6 +2656,51 @@ html, body { touch-action: manipulation; }
 .worldmap.continent.inked .map-pin.cont.silhouette .pin-label { color: rgba(70,90,120,.8); }
 .cont-gate { margin-top: 8px; font-size: 12px; color: var(--ink-faint); }
 
+/* 舆图面包屑：人界 ▸ 天南 ▸ 越国 —— 点上一级即可上卷 */
+.atlas-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; margin: -2px 0 4px; }
+.atlas-crumbs .crumb {
+  background: transparent; border: none; color: var(--jade); cursor: pointer;
+  padding: 2px 5px; font-size: 13px; border-radius: 5px; line-height: 1.4;
+}
+.atlas-crumbs .crumb:hover { background: rgba(111,174,147,.16); color: var(--jade-bright); }
+.atlas-crumbs .crumb.active { color: var(--gold); font-weight: 600; cursor: default; }
+.atlas-crumbs .crumb-sep { color: var(--ink-faint); font-size: 11px; }
+.atlas-title { margin: 2px 0; }
+
+/* 上层舆图（人界 / 大区）：暂无水墨底图，用墨青云水渐变 + 云雾，远方=惦记 */
+.worldmap.continent.atlas-world,
+.worldmap.continent.atlas-region {
+  aspect-ratio: 4 / 3;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(106,160,212,0.14), transparent 42%),
+    radial-gradient(circle at 22% 78%, rgba(127,227,192,0.10), transparent 44%),
+    radial-gradient(circle at 80% 70%, rgba(154,127,212,0.10), transparent 40%),
+    linear-gradient(155deg, #12202a, #0b1116);
+}
+.worldmap.continent.atlas-world .map-mist,
+.worldmap.continent.atlas-region .map-mist {
+  display: block; position: absolute; inset: -20%; pointer-events: none; z-index: 1;
+  background:
+    radial-gradient(ellipse 40% 16% at 28% 30%, rgba(180,210,235,.20), transparent 70%),
+    radial-gradient(ellipse 46% 14% at 70% 22%, rgba(180,210,235,.16), transparent 70%),
+    radial-gradient(ellipse 40% 15% at 55% 70%, rgba(180,210,235,.12), transparent 70%);
+  animation: mistDrift 46s linear infinite alternate; filter: blur(7px);
+}
+.worldmap.continent.atlas-world .map-mist.far,
+.worldmap.continent.atlas-region .map-mist.far {
+  background:
+    radial-gradient(ellipse 50% 18% at 82% 52%, rgba(160,195,225,.16), transparent 70%),
+    radial-gradient(ellipse 36% 12% at 12% 62%, rgba(160,195,225,.14), transparent 70%);
+  animation-duration: 64s; animation-direction: alternate-reverse;
+}
+/* 上层可达节点（天南 / 越国）：青玉钉，醒目可点 */
+.worldmap.continent.atlas-world .map-pin:not(.silhouette):not(.gated) .pin-dot,
+.worldmap.continent.atlas-region .map-pin:not(.silhouette):not(.gated) .pin-dot {
+  background: radial-gradient(circle at 35% 35%, var(--jade-bright), var(--jade));
+  border-color: rgba(8,16,12,.85); box-shadow: 0 0 10px rgba(127,227,192,.7);
+  animation: pinBreath 3.4s ease-in-out infinite;
+}
+
 /* 宽幅弹窗（舆图）*/
 .modal.modal-wide { max-width: 720px; width: 94vw; }
 

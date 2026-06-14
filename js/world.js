@@ -176,7 +176,9 @@ WORLD.locations = [
  * 广贵城=岚州最南（三面环山一面靠湖），太南山在广贵城西四十里；越京=越国京城（郊外白菊山）。
  * 节点 pos 与 assets/maps/tiannan_map.png 地貌对位（西北五色峰=彩霞山）。 */
 WORLD.continent = {
-  name: "天南 · 越国",
+  name: "越国",
+  atlasId: "yueguo",   // 舆图叶层：越国十三州（水墨舆图）属「天南」大区
+  parent: "tiannan",
   map: "tiannan_map",
   nodes: [
     { id: "caixia",   name: "彩霞山",  pos: { x: 17, y: 19 }, locs: ["yaolu", "houshan", "wuting", "town", "miju"],
@@ -209,6 +211,61 @@ WORLD.continent = {
     { from: "jiayuan", to: "tainangu" },
     { from: "caixia", to: "yuejing" },
   ],
+};
+
+/* ============================================================
+ * 舆图（分层大地图）——人界 ▸ 大区 ▸ 国别/联盟 ▸ 据点
+ * 参考 docs/ref-renjie-worldmap.png + world-architecture.md L0a/L0b/L0c。
+ * 上层（人界/大区/国别）由 UI.openAtlas 通用渲染；越国(国别)叶层复用 WORLD.continent
+ * 的水墨舆图与据点节点（UI.openContinent）。当前可达=越国，余皆「远眺」剪影
+ * （考据红线：未实装大区只标名远观、不杜撰可达细节；信息面纱亦如是）。
+ * 升级到一级，上一级缩为「远眺」入口——逐级下钻/上卷，永远知道身在何处、可往何方。
+ * ============================================================ */
+WORLD.atlas = {
+  root: "renjie",
+  levels: {
+    // —— L0a 人界全图 ——
+    renjie: {
+      name: "人界", kind: "world", crumb: "人界",
+      blurb: "你脚下这方天地。天南一隅是起点，乱星海、大晋、慕兰、天荒……皆在云水之外。",
+      nodes: [
+        { id: "tiannan", name: "天南", to: "tiannan", pos: { x: 22, y: 76 }, reach: true,
+          desc: "人界西南一隅。越国、元武、紫金诸国与正魔两道犬牙交错——你的修行，从这里启程。" },
+        { id: "luanxinghai", name: "乱星海", pos: { x: 60, y: 34 }, silhouette: true,
+          desc: "天南以东的无尽海域，星罗万岛。古传送阵与天星城藏于其间——金雷竹、青竹蜂云剑的所在。" },
+        { id: "dajin", name: "大晋", pos: { x: 82, y: 60 }, silhouette: true,
+          desc: "人界东部巨陆，疆域万里、昆吾山高耸。元婴之后，方有资格踏足。" },
+        { id: "mulan", name: "慕兰草原", pos: { x: 70, y: 86 }, silhouette: true,
+          desc: "大晋以西的辽阔草原，慕兰异族游牧其上，与人族修士争锋不休。" },
+        { id: "tianhuang", name: "天荒大陆", pos: { x: 14, y: 22 }, silhouette: true,
+          desc: "西北极远的荒漠绝陆，灵族、妖族盘踞，乃渡劫飞升之地。路远得连舆图都画不全。" },
+        { id: "jibei", name: "极北冰原", pos: { x: 42, y: 9 }, silhouette: true,
+          desc: "人界最北的万里冰原，小极宫隐于风雪。" },
+      ],
+    },
+    // —— L0b 大区图：天南多国格局 ——
+    tiannan: {
+      name: "天南", kind: "region", parent: "renjie", crumb: "天南",
+      blurb: "天南多国格局——越国只是其中一隅。诸国并立，正魔两道犬牙交错。",
+      nodes: [
+        { id: "yueguo", name: "越国", to: "yueguo", pos: { x: 24, y: 30 }, reach: true,
+          desc: "七玄门、黄枫谷所在之国。十三州山河，是你前半生的舞台。" },
+        { id: "yuanwuguo", name: "元武国", pos: { x: 30, y: 14 }, silhouette: true,
+          desc: "越国之北的大国，太岳山脉北麓与之接壤。" },
+        { id: "zijinguo", name: "紫金国", pos: { x: 52, y: 40 }, silhouette: true,
+          desc: "天南中部强国，亦修仙世家林立之地。" },
+        { id: "chejiguo", name: "车骑国", pos: { x: 64, y: 22 }, silhouette: true,
+          desc: "边境妖兽横行之国——练气士只身赴此，多半葬身兽口。看得见、去不了。" },
+        { id: "jiuguomeng", name: "九国盟", pos: { x: 72, y: 58 }, silhouette: true,
+          desc: "天南数国结成的修仙联盟，以御外侮、共抗魔道。" },
+        { id: "zhengdaomeng", name: "正道盟", pos: { x: 46, y: 72 }, silhouette: true,
+          desc: "魔道争锋之际，天南正道诸派结成的联盟。" },
+        { id: "modao", name: "魔道六宗", pos: { x: 62, y: 84 }, silhouette: true,
+          desc: "长生、合欢诸宗盘踞之地——魔道入侵的源头。" },
+      ],
+    },
+    // —— L0c 国别图：越国 —— 复用 WORLD.continent（水墨舆图），由 UI.openContinent 渲染
+  },
 };
 
 /* ---------- 历练遭遇用的敌人模板（战斗 Fighter 配置，数据驱动攻击）----------

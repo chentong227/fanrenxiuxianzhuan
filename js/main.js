@@ -28,6 +28,8 @@ const Main = {
     if (btnLlm) btnLlm.addEventListener("click", () => UI.openLLMSettings());
     UI.el("btn-chronicle").addEventListener("click", () => UI.openChronicle());
     UI.el("btn-codex").addEventListener("click", () => UI.openCodex());
+    const btnAtlas = UI.el("btn-atlas");
+    if (btnAtlas) btnAtlas.addEventListener("click", () => UI.openAtlas());
 
     // —— 系统菜单（手机端 ☰）——
     const btnMore = UI.el("btn-more");

@@ -3852,7 +3852,7 @@ const Engine = {
       <h2>七玄门篇 · 通关</h2>
       <p>韩立以四灵根之资，靠苦修、算计与小绿瓶，反杀墨大夫、暗算金光上人，夺升仙令离开七玄门。</p>
       <p>这正是《凡人修仙传》的底色——凡人无天资，唯以谨慎与万全准备，步步为营，逆天改命。</p>
-      <p style="color:var(--gold)">离门远行 · 启——寒毒在身，先南下嘉元城墨府（云游 → 远眺天下 → 启程）。</p>
+      <p style="color:var(--gold)">离门远行 · 启——寒毒在身，先南下嘉元城墨府（点顶栏「舆图」→ 越国 → 嘉元城 → 启程）。</p>
       <p style="color:var(--ink-dim);font-size:13px">行装清点：升仙令、灵石十块、墨大夫的遗信。江湖路远，备好毒草暗器再上路。</p>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="UI.closeModal()">上路</button>

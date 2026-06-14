@@ -1794,8 +1794,9 @@ const UI = {
     }).join("");
     const mapUrl = (typeof Art !== "undefined" && C.map) ? Art.url(C.map) : null;
     this.openModal(`
-      <h2>天下 · ${C.name}</h2>
-      <p style="color:var(--ink-dim);font-size:12px">天地之大，远超彩霞山一隅。看得见的远方，未必是去得了的远方——道阻且长，修为、盘缠、机缘，缺一不可。</p>
+      ${this._atlasCrumbs("yueguo")}
+      <h2 class="atlas-title">${C.name} · 十三州</h2>
+      <p style="color:var(--ink-dim);font-size:12px">看得见的远方，未必是去得了的远方——道阻且长，修为、盘缠、机缘，缺一不可。点据点查看，可启程前往。</p>
       <div class="worldmap continent${mapUrl ? ' inked' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
@@ -1804,7 +1805,6 @@ const UI = {
       </div>
       <div id="cont-detail" class="map-detail"><b>${curNode.name}</b>　${curNode.desc}</div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="UI.openTravel()">回到近处</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
       </div>
     `, "wide");
@@ -1822,6 +1822,84 @@ const UI = {
     else action = `<div class="cont-gate">旅途约 ${n.months || 2} 月 · 险度${n.danger || "未知"}　
       <button class="btn btn-primary btn-mini" onclick="Engine.startJourney('${n.id}')">启程</button></div>`;
     this.el("cont-detail").innerHTML = `<b>${n.name}</b>　${n.desc}${action}`;
+  },
+
+  /* ============================================================
+   * 舆图（分层大地图）——常驻入口，逐级下钻/上卷：人界 ▸ 大区 ▸ 国别/联盟 ▸ 据点
+   * 上层（人界/大区）由 openAtlas 通用渲染；越国(国别)叶层 = openContinent（水墨舆图）。
+   * 不传 levelId = 从当前所在的国别层打开（先看到「我在哪」，再决定「去哪」）。
+   * ============================================================ */
+  openAtlas(levelId) {
+    levelId = levelId || this._atlasCurrentLevel();
+    if (levelId === "yueguo") return this.openContinent();
+    const L = WORLD.atlas && WORLD.atlas.levels[levelId];
+    if (!L) return this.openContinent();
+    const pins = L.nodes.map(n => {
+      const cls = n.silhouette ? "silhouette" : (n.reach ? "" : "gated");
+      return `<div class="map-pin cont ${cls}" style="left:${n.pos.x}%;top:${n.pos.y}%"
+        onclick="UI._atlasPick('${levelId}','${n.id}')">
+        <span class="pin-dot"></span>
+        <span class="pin-label">${n.name}</span>
+      </div>`;
+    }).join("");
+    const first = L.nodes[0];
+    this.openModal(`
+      ${this._atlasCrumbs(levelId)}
+      <h2 class="atlas-title">${L.name}</h2>
+      <p style="color:var(--ink-dim);font-size:12px">${L.blurb}</p>
+      <div class="worldmap continent atlas-${L.kind}">
+        <div class="map-mist"></div>
+        <div class="map-mist far"></div>
+        ${pins}
+      </div>
+      <div id="cont-detail" class="map-detail"><b>${first.name}</b>　${first.desc}${this._atlasNodeAction(first)}</div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
+      </div>
+    `, "wide");
+  },
+  _atlasPick(levelId, nodeId) {
+    const L = WORLD.atlas && WORLD.atlas.levels[levelId];
+    const n = L && L.nodes.find(x => x.id === nodeId);
+    if (!n) return;
+    this.el("cont-detail").innerHTML = `<b>${n.name}</b>　${n.desc}${this._atlasNodeAction(n)}`;
+  },
+  _atlasNodeAction(n) {
+    if (n.to) return `<div class="cont-gate"><button class="btn btn-primary btn-mini" onclick="UI._atlasGoto('${n.to}')">进入${n.name} ▸</button></div>`;
+    if (n.silhouette) return `<div class="cont-gate">远观之地——尚不可至，且记在心头。</div>`;
+    return "";
+  },
+  // 跳到某一层（叶层越国 = 水墨舆图；上层 = 通用渲染）
+  _atlasGoto(id) { return id === "yueguo" ? this.openContinent() : this.openAtlas(id); },
+  // 单层的元信息（统一处理 atlas 上层 与 越国叶层）
+  _atlasLevel(id) {
+    if (id === "yueguo") {
+      const C = WORLD.continent;
+      return { id: "yueguo", crumb: (C && C.name) || "越国", parent: (C && C.parent) || "tiannan" };
+    }
+    const L = WORLD.atlas && WORLD.atlas.levels[id];
+    return L ? { id, crumb: L.crumb || L.name, parent: L.parent || null } : null;
+  },
+  // 当前所在的国别层（目前只实装越国；将来按节点反查所属国）
+  _atlasCurrentLevel() {
+    const C = WORLD.continent;
+    return (C && C.atlasId) || "yueguo";
+  },
+  // 面包屑：人界 ▸ 天南 ▸ 越国，除当前层外皆可点击上卷
+  _atlasCrumbs(levelId) {
+    const path = [];
+    let cur = this._atlasLevel(levelId);
+    let guard = 0;
+    while (cur && guard++ < 8) {
+      path.unshift(cur);
+      cur = cur.parent ? this._atlasLevel(cur.parent) : null;
+    }
+    return `<div class="atlas-crumbs">${path.map((c, i) => {
+      const last = i === path.length - 1;
+      return last
+        ? `<span class="crumb active">${c.crumb}</span>`
+        : `<button class="crumb" onclick="UI._atlasGoto('${c.id}')">${c.crumb}</button><span class="crumb-sep">▸</span>`;
+    }).join("")}</div>`;
   },
 
   /* -------- 集镇采买 -------- */
