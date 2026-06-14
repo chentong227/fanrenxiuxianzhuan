@@ -80,13 +80,16 @@
 > 青元剑诀 7 层·黄枫谷篇内可达=不排太后，technique-tiers §7）、**绿煌剑·第三主战法宝**
 > （阶段 7，再别天南篇内容，**※考据待核实**，combat-arsenal §3.9）。
 
-### 阶段 1（头号·B 演出地基）docs/cutscene-design.md
-- 新建 `js/cutscene.js` 演出推进器：解释 `text:[]` 演出原语（cam/actor/fx/sfx/wait/beat），
+### 阶段 1（头号·B 演出地基）docs/cutscene-design.md ✓ 已落 v134（PR #5）
+- [x] 新建 `js/cutscene.js` 演出推进器：解释 `text:[]` 演出原语（cam/actor/fx/sfx/bgm/wait/beat），
   特效委托 FX、声委托 audio、立绘委托 Art、镜头复用箱庭 L3——**不另起炉灶**，向后兼容旧剧情卡。
-- **嘉元城打样**：据点节点图（exploremap 引擎据点风味配置）+ 首次抵达定场演出 + 一段交互 beat。
-- **验收**：嘉元城与七玄门一眼不同；一个高潮幕跑通镜头+立绘入退场+特效+交互 beat；journey E2E 全绿、可跳、单屏。
+- [x] **嘉元城打样**：首次抵达定场演出（mo_arrive）+ 一段交互 beat（mo_crisis 袖中飞针·破空）。
+  - 据点节点图（exploremap 引擎据点风味配置）→ **并入阶段2 F 据点回填**（全图迁移随阶段2 一并做，避免一阶段过大过险）。
+- **验收** ✓：嘉元城与七玄门一眼不同（定场演出已验）；高潮幕跑通镜头+立绘入退场+特效+交互 beat（onHit/onMiss 浏览器已验）；
+  journey E2E 全绿、可跳、单屏；新增 test/cutscene.test.js（39 断言）EXIT=0；全测试套绿。
 
 ### 阶段 2（F 据点回填）explore-redesign §P3.5
+- **含（自阶段1 折入）：嘉元城据点节点图迁移**（exploremap 引擎据点风味配置）。
 - 嘉元城跑顺后回填七玄门据点（地标/风物/抵达演出）；旧扁平 explore.js 据点逐步退役。
 - **验收**：早期据点都有"到了另一座城"的地方感；复访见变迁（告示板/物价/残部）。
 
