@@ -77,6 +77,24 @@
       return { x: a.left + a.width / 2 - this._rect.left, y: a.top + a.height * ry - this._rect.top };
     },
 
+    /* 冷启动预热（开局第一次施法卡 0.x 秒的根治）：开战瞬间就建好画布、
+     * 生成辉光精灵图，并空跑一次 drawImage 把它上传成 GPU 纹理，再 clearRect 抹掉——
+     * 把"首次施法才触发的纹理上传"提前到开战，玩家无感。零视觉、零存档、无 RAF。 */
+    warm(host) {
+      try {
+        const ctx = this.ensure(host);
+        if (!this._glow) this._glow = makeGlowSprite();
+        if (!ctx || !this._cv) return;
+        if (!this._cv.width || !this._cv.height) { this._cv.width = 32; this._cv.height = 32; }
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.01;                      // 近乎不可见——即便抢在 clear 前刷出也无感
+        ctx.drawImage(this._glow, 0, 0, 32, 32);     // 强制辉光精灵上传为 GPU 纹理
+        ctx.restore();
+        ctx.clearRect(0, 0, this._cv.width, this._cv.height);
+      } catch (e) {}
+    },
+
     /* ---------- 发射器原语（全部走预算闸） ---------- */
     _push(p) {
       if (this._parts.length >= this._budget) return;

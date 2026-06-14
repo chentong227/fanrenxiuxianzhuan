@@ -1987,6 +1987,10 @@ const UI = {
         Sfx.bgm(bossFight ? "boss" : meta.type === "breakthrough" ? "tense" : "combat");
       }
     }
+    // 冷启动预热（v106）：建好特效画布并上传辉光纹理 + 预解码本局战斗立绘——
+    // 把"第一次施法"才触发的 GPU 纹理上传/立绘解码提前到开战瞬间，根治开局卡顿。
+    if (typeof Fx !== "undefined" && Fx.warm) Fx.warm(this.el("axis-field"));
+    this._warmCombatArt(combat, meta);
     this.renderCombat(combat, meta);
     this._flashCombatBanner(meta, combat);
   },
@@ -2030,6 +2034,27 @@ const UI = {
     ];
     for (const [re, id] of MAP) { if (re.test(name) && Art.hasBattler(id)) return id; }
     return null;
+  },
+
+  // 冷启动预热（v106）：开战即把本局会用到的战斗立绘提前 decode——
+  // 否则"第一次施法"那拍才解码立绘=主线程卡顿。纯预解码、无视觉副作用。
+  _warmCombatArt(combat, meta) {
+    if (!combat || typeof Image === "undefined" || typeof Art === "undefined" || !Art.battlerUrl) return;
+    const ids = new Set();
+    const add = id => { if (id && Art.hasBattler(id)) ids.add(id); };
+    add("bt_hanli"); add("bt_hanli_fly");                              // 玩家（含飞姿变体）
+    (combat.enemies || []).forEach(e => e && add(this._battlerByName(e.name)));
+    (combat.sides || (combat.side ? [combat.side] : [])).forEach(u => {
+      if (!u) return;
+      add(u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name));
+    });
+    ids.forEach(id => {
+      const url = Art.battlerUrl(id);
+      if (!url) return;
+      const img = new Image();
+      img.src = url;
+      if (img.decode) img.decode().catch(() => {});
+    });
   },
 
   // 地点/战斗类型 → 战场底图基名（三层制：基名+_far/_mid 取层；单图回退用基名本身）
