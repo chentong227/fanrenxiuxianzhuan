@@ -61,9 +61,9 @@ const Engine = {
     // 「战斗内灵力不自动回」是刻意设定——此处只动战斗外世界层；
     // 闭关的灵力抽干在 secludeCultivate 内单独结算（耗 14/月），足以盖过此处回复。
     const _rRecover = State.realm();
-    s.hp = clamp(s.hp + Math.round(s.hpMax * 0.12 * months), 0, s.hpMax);
+    s.hp = clamp(s.hp + Math.round(s.hpMax * 0.30 * months), 0, s.hpMax);
     if (_rRecover && _rRecover.spMax) {
-      s.spirit = clamp(s.spirit + Math.round(_rRecover.spMax * 0.08 * months), 0, _rRecover.spMax);
+      s.spirit = clamp(s.spirit + Math.round(_rRecover.spMax * 0.20 * months), 0, _rRecover.spMax);
     }
     // 墨府客居计时：住下些时日，独霸山庄才会找上门（离门远行·嘉元城）
     if (s.location === "jiayuan_city" && s.flags.mo_met && !s.flags.ouyang_dead) {
@@ -1316,7 +1316,7 @@ const Engine = {
     if (!r.ok) { this.toast(r.reason, true); return; }
     // B1 走格回灵：跋涉间吐纳，灵力随脚程缓回（气血的回复走月度，见 passTime）
     const _rTravel = State.realm();
-    if (_rTravel && _rTravel.spMax) s.spirit = clamp(s.spirit + Math.round(_rTravel.spMax * 0.05), 0, _rTravel.spMax);
+    if (_rTravel && _rTravel.spMax) s.spirit = clamp(s.spirit + Math.round(_rTravel.spMax * 0.10), 0, _rTravel.spMax);
     this._exmapEvents(r.events);
   },
 
@@ -1507,7 +1507,7 @@ const Engine = {
     if (!r.ok) { this.toast(r.reason || "走不得", true); return; }
     // B1 走格回灵：洞窟潜行屏息凝神，灵力小幅缓回（幅度小于明路跋涉）
     const _rCave = State.realm();
-    if (_rCave && _rCave.spMax) s.spirit = clamp(s.spirit + Math.round(_rCave.spMax * 0.03), 0, _rCave.spMax);
+    if (_rCave && _rCave.spMax) s.spirit = clamp(s.spirit + Math.round(_rCave.spMax * 0.06), 0, _rCave.spMax);
     for (const ev of (r.events || [])) {
       if (ev.type === "intel") {
         this.log(`【观战】${ev.text}`, "good");
@@ -3536,6 +3536,13 @@ const Engine = {
       const spMax = (State.realm() || {}).spMax || s.spirit || 1;
       const ratio = c.player.mpMax > 0 ? clamp(c.player.mp / c.player.mpMax, 0, 1) : 1;
       s.spirit = clamp(Math.round(spMax * ratio), 0, spMax);
+      // B1 战外恢复·战后整备（仅存活离场=胜/遁；真败另有败局结算，不在此回满）：
+      // 只「气血」整顿回满——探索连战不再被迫带伤硬走。
+      // 灵力刻意不在战后自动补：它是探索里的资源，靠走格(exmapTravel/CaveMove)、过月(passTime)、
+      // 打坐、丹药回——如此走格回灵才有用、血色禁地/深潜才存资源张力（上面 ratio 即战中真实消耗）。
+      if (win || fled) {
+        s.hp = s.hpMax;
+      }
     }
 
     UI.closeCombat();
