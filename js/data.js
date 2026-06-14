@@ -360,6 +360,7 @@ DATA.flightTreasures = {
   // —— 乱星海篇：风雷翅（贴身飞遁，极速且灵活）——
   feng_lei_chi: {
     name: "风雷翅", speedBonus: 70, grade: "宝品·极速", arc: "luanxinghai", locked: true,
+    traits: [{ id: "fenglei", desc: "御风雷翅——可施「雷遁」穿亚空间瞬移（无视挡线困足，遁程极远）。" }, { id: "fly" }],
     desc: "以金雷竹等天材炼成的稀世飞遁至宝，振翅风雷相生，遁速奇快且贴身灵动。韩立纵横乱星海、屡屡险中脱身的依仗之一。",
     origin: "乱星海篇：金雷竹机缘炼成。",
   },

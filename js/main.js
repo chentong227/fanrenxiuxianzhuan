@@ -238,6 +238,7 @@ const Main = {
           if (Engine._combat) {
             const hp0 = Engine._combat.player;
             hp0.charges = { shenlei: { name: "辟邪神雷", cur: 9, max: 9 } };
+            hp0.blink = true;   // 演武场解锁雷遁穿空（正典随风雷翅开放）——便于验收遁的瞬移特效
             ["shenlei_pi", "shenlei_fujian", "leidun"].forEach(id => {
               if (!hp0.spells.includes(id)) hp0.spells.push(id);
             });

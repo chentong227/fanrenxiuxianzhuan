@@ -2671,6 +2671,8 @@ const Engine = {
       qiLayer: realm.layer,                  // 灵气底蕴随练气层数成长
       // 腾空之能（空层 2.5D）：御器飞行（筑基）/风雷翅（后期）/调试旗——有翼方上天
       canFly: !!(s.flags.fly_unlocked || State.gearTrait("fly")),
+      // 雷遁穿空（风雷翅时代）：御「风雷翅」方可施雷遁瞬移——未解锁则神雷·遁置灰
+      blink: !!State.gearTrait("fenglei"),
       // 飞行档（depth-design D2/D3）：境界即高度——升空高度/视野/凌空身法三联动。
       // 练气·乘器=1（勉强离地），筑基·御器=1，结丹·御空=2，元婴·遁光=3（分档细调归 flight-ladder F0）
       airGrade: Math.max(1, Math.min(3, Chapters.realmTier())),
@@ -3212,7 +3214,7 @@ const Engine = {
       const box = UI.el("axis-units"), pl = box && box.querySelector('[data-uid="player"]');
       if (pl && Fx.ensure(UI.el("axis-field")) && Fx.RECIPES.leidun) {
         const at = Fx.at(pl);
-        if (at) Fx.RECIPES.leidun(Fx, at);
+        if (at) { Fx.RECIPES.leidun(Fx, at); UI._blinkFrom = at; }   // 记下消失点——落定后画穿空金弧轨迹
       }
     }
     const r = c.playerMove(toPos);

@@ -112,15 +112,16 @@
     /* —— 辟邪神雷三用途（v96 用户裁决：72 剑 72 雷=独立资源，取舍即战术）——
      * chargeCost: { id, n }——特色资源消耗（战斗内不回充——池制同源）。
      * ⚠ 正典获得=星海飞驰篇青竹蜂云剑炼成（结丹）；演武先行验证编排 */
-    shenlei_pi: { name: "辟邪神雷·劈", mp: 6, range: [1, 4], type: "atk", dmg: 34, source: "treasure", elem: "mu",
+    shenlei_pi: { name: "辟邪神雷·劈", mp: 6, range: [1, 10], type: "atk", dmg: 34, source: "treasure", elem: "mu",
+                aoe: true, aoeSpan: 10,
                 chargeCost: { id: "shenlei", n: 1 }, slays: { ghost: 1.8, demon: 1.8 },
-                desc: "自剑身引一道辟邪神雷凌空劈落——专克邪魔鬼物（×1.8）。耗神雷一道，雷尽则止。" },
+                desc: "自身畔引爆辟邪神雷、左右十格横扫——金雷自人而发（非法宝飞袭），近处之敌尽数笼罩（专克邪魔鬼物×1.8）。耗神雷一道，雷尽则止。" },
     shenlei_fujian: { name: "神雷附剑", mp: 4, range: [0, 0], type: "buff", source: "treasure", elem: "mu",
                 chargeCost: { id: "shenlei", n: 3 }, leiEnchant: 3,
                 desc: "三道神雷缠上本命飞剑——三回合内主攻法宝带金雷（伤害+8、克邪×1.5）。耗神雷三道。" },
     leidun:     { name: "雷遁", mp: 5, range: [0, 0], type: "buff", quick: true, source: "treasure", elem: "mu",
-                chargeCost: { id: "shenlei", n: 1 }, blinkMove: true,
-                desc: "化一道银弧穿亚空间而行——本回合移动无视挡线困足、身法+2（瞬发）。耗神雷一道。韩跑跑的本钱。" },
+                chargeCost: { id: "shenlei", n: 1 }, blinkMove: true, needTrait: "fenglei",
+                desc: "化一道银弧穿亚空间而行——本回合移动无视挡线困足、身法+4（瞬发）。需御「风雷翅」方可施展。耗神雷一道。韩跑跑的本钱。" },
   };
 
   function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -1005,6 +1006,7 @@
       if (sp.quick && this._pQuickUsed) return { ok: false, reason: "本回合瞬发牌已用" };
       if (!sp.quick && this._pActsUsed >= this._pActsMax) return { ok: false, reason: "本回合主行动已用——可打瞬发牌或结束回合" };
       if ((sp.mp || 0) > this.player.mp) return { ok: false, reason: "灵力不济，催动不了" };
+      if (sp.blinkMove && !this.player.blink) return { ok: false, reason: "需御「风雷翅」方能雷遁穿空（尚未解锁）" };
       const target = this.enemies[targetIndex];
       if (sp.type === "zone" && !sp.selfZone && opts.cell != null) {
         // 择地布阵：射程量到所点之格，不看敌人站哪
@@ -1082,9 +1084,22 @@
       }
       if (sp.blinkMove) {
         this.player._blinkTurn = true;
-        this._pMoved = Math.max(0, (this._pMoved || 0) - 2);   // 身法+2（亚空间不走寻常路）
-        this._log(`你周身银光一闪、半步踏入亚空间——本回合行走无视挡线困足（身法+2）！`);
+        this._pMoved = Math.max(0, (this._pMoved || 0) - 4);   // 身法+4（亚空间不走寻常路，风雷翅遁程远）
+        this._log(`你周身银光一闪、整个人没入亚空间——本回合行走无视挡线困足（身法+4）！`);
         this._emitFx("player", "miss", "雷遁");
+        this._checkEnd();
+        return { ok: true };
+      }
+
+      // 横扫型攻击（辟邪神雷·劈）：自身畔为心、左右 aoeSpan 格内之敌尽数受击——金雷自人而发
+      if (sp.aoe && sp.type === "atk") {
+        const span = sp.aoeSpan || (sp.range ? sp.range[1] : this.W);
+        const center = this.player.pos;
+        let victims = this.enemies.filter(e => e && e.alive && Math.abs((e.pos || 0) - center) <= span);
+        if (target && target.alive && victims.indexOf(target) < 0) victims.unshift(target);
+        if (!victims.length && target) victims = [target];
+        this._log(`${this.player.name}引动辟邪神雷——左右十格金雷自身畔轰然炸开、横扫诸敌！`);
+        victims.forEach(v => { if (this.status === "ongoing" && v && v.alive) this._applySpell(this.player, sp, v, spellId, opts); });
         this._checkEnd();
         return { ok: true };
       }

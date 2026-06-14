@@ -2111,15 +2111,26 @@ const UI = {
     }
     // 催动绕身法宝阵列出袭（通用闭环协议）：青竹剑阵/子母刃等绕身阵列攻击时，飞行体各自汇聚
     // 射向目标 → 拖尾暴涨 → 命中 → 回归。取代额外配方光效（真实剑/刃出动，不再叠独立光块）
-    const useOrbit = !!(sp && sp.source === "treasure" && sp.type === "atk" && me && tgt
+    // ⚠ 横扫型(sp.aoe，辟邪神雷·劈)不走法宝出袭——它是"金雷自人而发"，区别于法宝飞袭，单独走 shenleiSweep
+    const useOrbit = !!(sp && sp.source === "treasure" && sp.type === "atk" && !sp.aoe && me && tgt
       && this._launchOrbit(me, tgt, sp));
     if (useOrbit) {
       if (typeof Sfx !== "undefined") Sfx.play("swordWhoosh");   // 群剑出袭·破空锐啸
       // 命中那拍（出袭飞达目标≈40%×0.92s≈0.37s）目标震动
       setTimeout(() => { if (tgt) { tgt.classList.remove("shake"); void tgt.offsetWidth; tgt.classList.add("shake"); } }, 370);
     }
-    // 御使飞行：攻击类且非贴身武学——一道法器印划过战场 + fx 流光弹道（出袭法宝已用真实阵列代替，跳过）
-    if (!useOrbit && sp && me && tgt && sp.type === "atk" && sp.range && sp.range[1] >= 2) {
+    // 辟邪神雷·劈·横扫（problem 5）：金雷自人物身畔轰发→左右贯场雷幕→所及诸敌天降金雷劈落
+    const useSweep = !!(sp && sp.aoe && sp.type === "atk" && me && typeof Fx !== "undefined");
+    if (useSweep) {
+      const field = this.el("axis-field");
+      const box = this.el("axis-units");
+      const foes = box ? [...box.querySelectorAll('[data-uid^="enemy:"]')] : [];
+      if (Fx.ensure(field)) Fx.shenleiSweep(me, foes.length ? foes : (tgt ? [tgt] : []));
+      // 横扫命中：所及诸敌依次震（错相，配合逐敌雷击节奏）
+      foes.forEach((f, i) => setTimeout(() => { f.classList.remove("shake"); void f.offsetWidth; f.classList.add("shake"); }, 180 + i * 90));
+    }
+    // 御使飞行：攻击类且非贴身武学——一道法器印划过战场 + fx 流光弹道（出袭法宝/横扫已自有演出，跳过）
+    if (!useOrbit && !useSweep && sp && me && tgt && sp.type === "atk" && sp.range && sp.range[1] >= 2) {
       const field = this.el("axis-field");
       const fr = field.getBoundingClientRect();
       const a = me.getBoundingClientRect(), b = tgt.getBoundingClientRect();
@@ -2140,14 +2151,14 @@ const UI = {
       if (typeof Fx !== "undefined" && Fx.ensure(field)) {
         Fx.castSpell(spellId, me, tgt, sp);
       }
-    } else if (!useOrbit && tgt) {
+    } else if (!useOrbit && !useSweep && tgt) {
       tgt.classList.remove("shake"); void tgt.offsetWidth; tgt.classList.add("shake");
       // 贴身武学/自身术：同走配方分发
       if (typeof Fx !== "undefined" && sp) {
         const field = this.el("axis-field");
         if (Fx.ensure(field)) Fx.castSpell(spellId, me, tgt, sp);
       }
-    } else if (!useOrbit && sp && me && typeof Fx !== "undefined") {
+    } else if (!useOrbit && !useSweep && sp && me && typeof Fx !== "undefined") {
       const field = this.el("axis-field");
       if (Fx.ensure(field)) Fx.castSpell(spellId, me, null, sp);
     }
@@ -2189,21 +2200,32 @@ const UI = {
     const tr = tgt.getBoundingClientRect();
     const tgtX = tr.left + tr.width / 2;
     const tgtY = tr.top + tr.height * 0.46;   // 命中点≈躯干中心
+    const spanX = tr.width * 0.42, spanY = tr.height * 0.34;   // 穿透点撒布范围（敌身各处）
     orbits.forEach(orbit => {
       const or = orbit.getBoundingClientRect();
-      orbit.querySelectorAll(".sw, .bld").forEach(f => {
+      orbit.querySelectorAll(".sw, .bld").forEach((f, i) => {
         // 用 offset 布局位置（不含浮游 transform 抖动）求飞行体静止中心
         const fx = or.left + f.offsetLeft + f.offsetWidth / 2;
         const fy = or.top + f.offsetTop + f.offsetHeight / 2;
-        const dx = tgtX - fx, dy = tgtY - fy;
+        // 乱舞劈砍：每把剑各自的穿透点=敌身中心 + 随机撒布（不再汇聚同一点）
+        const px = tgtX + (Math.random() * 2 - 1) * spanX;
+        const py = tgtY + (Math.random() * 2 - 1) * spanY;
+        const dx = px - fx, dy = py - fy;
         f.style.setProperty("--strike-x", dx.toFixed(1) + "px");
         f.style.setProperty("--strike-y", dy.toFixed(1) + "px");
-        // 剑尖朝目标：剑形剑尖朝下(=屏幕 +90°)，转到 atan2 方向需 -90°
+        // 剑尖朝穿透点：剑形剑尖朝下(=屏幕 +90°)，转到 atan2 方向需 -90°
         f.style.setProperty("--strike-r", (Math.atan2(dy, dx) * 180 / Math.PI - 90).toFixed(1) + "deg");
+        // 错相·乱舞不齐射（40~300ms 随机错开）；backwards 填充令延迟期间保持朝敌姿态
+        const delay = Math.round(40 + Math.random() * 260);
+        f.style.setProperty("--strike-delay", delay + "ms");
+        // ±兜弧方向交替=左右各划弧、交叉乱舞（幅度略随机）
+        const bow = (i % 2 ? 1 : -1) * (0.38 + Math.random() * 0.26);
+        f.style.setProperty("--bow", bow.toFixed(3));
       });
       orbit.classList.remove("launch"); void orbit.offsetWidth;
       orbit.classList.add("launch");
-      setTimeout(() => orbit.classList.remove("launch"), 960);
+      // 持续 = 动画 920ms + 最大错相 300ms 留余
+      setTimeout(() => orbit.classList.remove("launch"), 1300);
     });
     return true;
   },
@@ -2539,8 +2561,8 @@ const UI = {
         // 青竹蜂云剑·剑阵（12 把，持续绕身）：常态=剑身缠普通蓝色小电流；
         // 神雷附剑生效（_leiEnchant>0）→升级为金色大电流+周身金雷光环
         const lei = (u._leiEnchant || 0) > 0;
-        // 神雷附剑态额外渲染：lei-aura(周身金雷光环) + 4 道 lei-bolt(周身环境雷弧，此起彼伏窜现)
-        const leiExtra = lei ? '<i class="lei-aura"></i>' + '<i class="lei-bolt"></i>'.repeat(4) : '';
+        // 神雷附剑态额外渲染：lei-aura(周身金雷光环) + 6 道 lei-bolt(周身环境雷弧，此起彼伏窜现·量多为辅)
+        const leiExtra = lei ? '<i class="lei-aura"></i>' + '<i class="lei-bolt"></i>'.repeat(6) : '';
         orbit = `<div class="au-swords ${lei ? "lei" : "arc"}">${'<i class="sw"><b></b></i>'.repeat(10)}${leiExtra}</div>`;
       } else if (hasMainTre) {
         orbit = `<div class="au-blades">${'<i class="bld"></i>'.repeat(9)}</div>`;
@@ -2633,6 +2655,36 @@ const UI = {
    * 旧版整层 innerHTML 重建=入场动画重播+朝向闪回+left/translate 过渡全失效（"全是刷新"）。
    * 现在：外壳类与位置变更交给 CSS transition（滑步/升空/换排/缩放全过渡）；
    * img 持久（src/类只在真变化时碰——转身只在真变向时播）；血条宽度过渡保留。 */
+  // problem 1：附剑 arc↔lei 切态时不重建剑阵 DOM——只要剑阵仍在、.sw 数一致、且剑阵以外的
+  // 兄弟节点(au-orbit/au-floats)不变，就原地 toggle arc/lei 类 + 增删金雷子节点，10 把 .sw 一律保活
+  // （swHover 不断帧、不“竖一下”重生）。结构性变化（剑阵首现/消失/换法宝/floats 变）才回退整块重建。
+  _reconcileSwords(ex, html) {
+    if (ex._h === html) return;
+    const cur = ex.querySelector(".au-swords");
+    if (cur && ex._h != null) {
+      const tmp = document.createElement("span");
+      tmp.innerHTML = html || "";
+      const nxt = tmp.querySelector(".au-swords");
+      if (nxt && cur.querySelectorAll(".sw").length === nxt.querySelectorAll(".sw").length) {
+        // 比“剑阵以外”的兄弟节点是否一致（抽走 au-swords 后比 innerHTML）
+        const sibSig = node => { const cl = node.cloneNode(true); const s = cl.querySelector(".au-swords"); if (s) s.remove(); return cl.innerHTML; };
+        if (sibSig(ex) === sibSig(tmp)) {
+          const willLei = nxt.classList.contains("lei");
+          if (cur.classList.contains("lei") !== willLei) {
+            cur.classList.toggle("lei", willLei);
+            cur.classList.toggle("arc", !willLei);
+            cur.querySelectorAll(".lei-aura, .lei-bolt").forEach(n => n.remove());
+            if (willLei) nxt.querySelectorAll(".lei-aura, .lei-bolt").forEach(n => cur.appendChild(n.cloneNode(true)));
+          }
+          ex._h = html;
+          return;
+        }
+      }
+    }
+    ex.innerHTML = html || "";
+    ex._h = html;
+  },
+
   _syncUnits(c, list) {
     const box = this.el("axis-units");
     if (!box) return;
@@ -2666,7 +2718,7 @@ const UI = {
       if (bd._h !== d.badges) { bd.innerHTML = d.badges; bd._h = d.badges; }
       // 伴身（装备战斗内不变，初建一次）
       const ex = el.querySelector(".au-extra");
-      if (ex._h !== d.extra) { ex.innerHTML = d.extra || ""; ex._h = d.extra; }
+      this._reconcileSwords(ex, d.extra);   // problem 1：arc↔lei 不重建剑阵(防“竖一下”)，仅结构变才重建
       // 立绘：img 持久——src/类仅真变化时更新（飞姿切换/转身才动，杜绝重建闪烁）
       const figBox = el.querySelector(".au-fig");
       if (d.figSrc) {
@@ -2705,8 +2757,13 @@ const UI = {
       const pl = box.querySelector('[data-uid="player"]');
       if (pl && typeof Fx !== "undefined" && Fx.ensure(this.el("axis-field")) && Fx.RECIPES.leidun_out) {
         const at = Fx.at(pl);
-        if (at) Fx.RECIPES.leidun_out(Fx, at);
+        if (at) {
+          // 穿空轨迹：消失点→落点画一道金色残迹（problem 5：穿越空间的瞬移感）
+          if (this._blinkFrom && Fx.blinkTrace) Fx.blinkTrace(this._blinkFrom, at);
+          Fx.RECIPES.leidun_out(Fx, at);
+        }
       }
+      this._blinkFrom = null;
     }
     // 临时探针（?dbgpos=1）：单位几何快照——查"卡进地底"
     if (location.search.indexOf("dbgpos=1") >= 0) {
@@ -3133,15 +3190,20 @@ const UI = {
     if (slCh) {
       const can = m => {
         const sp2 = SP[m];
-        return sp2 && slCh.cur >= sp2.chargeCost.n && (sp2.mp || 0) <= p.mp
+        if (!sp2) return false;
+        if (sp2.blinkMove && !p.blink) return false;   // 雷遁需御「风雷翅」——未解锁则置灰（problem 5）
+        return slCh.cur >= sp2.chargeCost.n && (sp2.mp || 0) <= p.mp
           && (sp2.quick ? !c._pQuickUsed : c._pActsUsed < c._pActsMax);
       };
       const opt = (m, ch, tip) => `<i class="sl-opt ${can(m) ? "" : "off"}" onclick="event.stopPropagation();${can(m) ? `Engine.combatShenlei('${m}')` : ""}" title="${tip}">${ch}</i>`;
+      const dunTip = p.blink
+        ? "雷遁：耗雷1灵5（瞬发）——穿亚空间瞬移，本回合移动无视挡线+4步"
+        : "雷遁：需御「风雷翅」方可穿空遁走（乱星海篇机缘，尚未解锁）";
       shenleiStrip = `<div class="shenlei-strip ${slCh.cur <= 0 ? "off" : ""}" title="辟邪神雷：${slCh.cur}/${slCh.max} 道——打一道少一道（青竹蜂云剑所蕴）">
         <span class="sl-name">辟邪神雷 <b>⚡×${slCh.cur}</b></span>
-        ${opt("shenlei_pi", "劈", "辟邪神雷·劈：耗雷1灵6——自天而降一道金雷（克邪魔×1.8）")}
+        ${opt("shenlei_pi", "劈", "辟邪神雷·劈：耗雷1灵6——金雷自身畔轰发、左右十格横扫（克邪魔×1.8）")}
         ${opt("shenlei_fujian", "附", "神雷附剑：耗雷3灵4——青竹云剑绕身缠金雷，三回合主攻法宝带雷+8克邪")}
-        ${opt("leidun", "遁", "雷遁：耗雷1灵5（瞬发）——穿亚空间瞬移，本回合移动无视挡线+2步")}
+        ${opt("leidun", "遁", dunTip)}
       </div>`;
     }
     // 本命法宝单元（v98）：神雷条贴主攻卡头顶——竖向堆叠成一个"本命法宝列"，

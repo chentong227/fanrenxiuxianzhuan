@@ -272,6 +272,84 @@
       this._run();
     },
 
+    /* 横向金雷折线（神雷·劈横扫的"雷幕"零件）：自人物向左右各拉一道贯场金雷 */
+    _horizBolt(x0, y0, x1, y1, o = {}) {
+      if (!this._ctx) return;
+      const n = 18, pts = [[x0, y0]];
+      for (let i = 1; i < n; i++) {
+        const t = i / n;
+        const jag = rnd(-1, 1) * 24 * Math.sin(t * Math.PI);   // 中段抖动大、两头收
+        pts.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t + jag]);
+      }
+      pts.push([x1, y1]);
+      const branches = [];
+      for (let b = 0; b < 3; b++) {
+        const k = 3 + Math.floor(Math.random() * (n - 5));
+        const [bx, by] = pts[k];
+        branches.push([[bx, by], [bx + rnd(-40, 40), by + rnd(36, 90)]]);
+      }
+      this._bolts.push({
+        pts, branches, life: o.life || 420, t: 0, w: o.w || 3,
+        bolt: o.bolt || ["255,176,30", "255,214,90", "255,248,210"],
+      });
+    },
+
+    /* 辟邪神雷·劈·横扫：金雷自人物身畔轰发→左右贯场雷幕→逐敌天降金雷劈落（区别于法宝飞袭）。
+     * fromAnchor=施法者；toAnchors=横扫所及诸敌锚点数组 */
+    shenleiSweep(fromAnchor, toAnchors) {
+      if (!this._ctx) return;
+      const from = this.at(fromAnchor, 0.5);
+      if (!from) return;
+      const tos = (toAnchors || []).map(a => this.at(a, 0.5)).filter(Boolean);
+      // ① 起手·人物聚雷：天幕金闪 + 上冲金光柱 + 脚下金环（雷"自人而发"的发力点）
+      this.flash("#fff2c8", 90, .34);
+      this.ring(from.x, from.y + 10, { c: "#ffd970", vr: 5.2, life: 440, lw: 3.6 });
+      this.ring(from.x, from.y + 10, { c: "#fff", vr: 3.0, life: 320, lw: 1.8 });
+      for (let i = 0; i < 16 * this._degraded; i++) this.spark(from.x + rnd(-10, 10), from.y, { vy: rnd(-8.5, -3), c: i % 2 ? "#ffe39a" : "#fff7d6", life: 320 });
+      this.burst(from.x, from.y, "jinlei", 22, { power: 5.2 });
+      this.shake(10);
+      // ② 横扫雷幕：自人物向左右各拉一道贯场金雷（"左右十格"的具象）
+      const allX = [from.x, ...tos.map(t => t.x)];
+      const sweepY = tos.length ? tos.reduce((s, t) => s + t.y, 0) / tos.length : from.y;
+      this._horizBolt(from.x, from.y, Math.max(...allX) + 60, sweepY, { life: 460, w: 3.2 });
+      this._horizBolt(from.x, from.y, Math.min(...allX) - 60, sweepY, { life: 460, w: 3.2 });
+      // ③ 逐敌雷击（错相 90ms）：每敌一道金雷劈落 + 命中金环冲击 + 金雷迸散
+      tos.forEach((t, i) => setTimeout(() => {
+        if (!this._ctx) return;
+        this.lightning(t.x, t.y, { gold: true, life: 520 });
+        this.ring(t.x, t.y + 8, { c: "#ffd970", vr: 4.8, life: 340, lw: 3 });
+        this.ring(t.x, t.y + 8, { c: "#fff", vr: 2.8, life: 260, lw: 1.6 });
+        this.burst(t.x, t.y, "jinlei", 24, { power: 5.6 });
+        this._run();
+      }, 120 + i * 90));
+      if (typeof Sfx !== "undefined") Sfx.play("thunder");
+      this._run();
+    },
+
+    /* 雷遁·穿空轨迹：消失点→落点画一道金色穿空残迹（亚空间被撕开的余光）。
+     * 由 UI 在瞬移落定后调用——from/to 为画布坐标 */
+    blinkTrace(from, to) {
+      if (!this._ctx || !from || !to) return;
+      const dx = to.x - from.x, dy = to.y - from.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const lift = dist * 0.18 + 14;   // 穿空弧略拱起的高度
+      // 金色光带主轨（拱形）+ 白炽内芯
+      this.ribbon(from, to, { core: "#ffd970", glowC: "#ffb01e", width: 5, flyMs: 180, tail: 0.9, hold: 90, curve: lift });
+      this.ribbon(from, to, { core: "#fff", glowC: "#fff7d6", width: 1.8, flyMs: 180, tail: 0.7, hold: 80, curve: lift });
+      // 沿途短金弧（空间裂口的电蛇）
+      for (let i = 0; i < 4; i++) {
+        const t = (i + 1) / 5;
+        const px = from.x + dx * t, py = from.y + dy * t - Math.sin(t * Math.PI) * lift;
+        this.arc(px - rnd(8, 18), py - rnd(6, 14), px + rnd(8, 18), py + rnd(6, 14), { c: "255,214,90", w: 1.6, life: 200 });
+      }
+      // 穿空残粒：沿弧洒一串金芒
+      for (let i = 0; i < 12 * this._degraded; i++) {
+        const t = rnd(0.05, 0.95);
+        this.mote(from.x + dx * t, from.y + dy * t - Math.sin(t * Math.PI) * lift, { vy: rnd(-.6, .4), life: 360, delay: t * 160, size: rnd(2, 3.4), c: i % 3 ? "#ffe39a" : "#fff" });
+      }
+      this._run();
+    },
+
     /* ============================================================
      * 分功法配方（FX_MAP）——动漫调研对照表见 docs/fx-design.md
      * 每条：cast(from, to) —— from/to 为画布坐标（to 可为 null=自身术）
@@ -627,8 +705,8 @@
         for (let i = 0; i < s.n; i++) {
           const a = base + (i / s.n) * TAU;
           const x = s.cx + Math.cos(a) * rr;
-          const y = s.cy + Math.sin(a) * rr * 0.5;       // 0.5=俯视椭圆（透视绕身）
-          const depth = 0.55 + 0.45 * ((Math.sin(a) + 1) / 2);   // 前明后暗（绕到背面变淡）
+          const y = s.cy + Math.sin(a) * rr * 0.5;       // 0.5=斜侧椭圆（透视绕身）
+          const depth = 0.55 + 0.45 * ((1 - Math.cos(a)) / 2);   // problem 3：左前(亮)右后(暗)——纵深锚定水平方向
           this._drawSword(ctx, x, y, a + Math.PI / 2, s.len, s.blade, s.core, alpha * depth);
           pos.push([x, y]);
         }
