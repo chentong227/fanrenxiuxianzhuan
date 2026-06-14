@@ -519,6 +519,31 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
     radial-gradient(ellipse at 50% 36%, transparent 46%, rgba(8,6,4,.5) 100%),
     linear-gradient(180deg, rgba(8,6,4,.58) 0%, rgba(8,6,4,.14) 20%, rgba(8,6,4,.1) 48%, rgba(8,6,4,.84) 84%);
 }
+/* ===== 场景融合层（v109「融为一体」核心）=====
+ * 用户痛点：人物比水墨背景过亮过饱、边缘过锐，像贴纸贴在画上（手机尤甚）。觅长生那种
+ * "自然融为一体"靠的是一套作用于"整幅画面"的统一后处理——不是把人物搬进引擎。
+ * 这里钉一张只盖场景区(top:0→bottom:--bg-cut，绝不盖下方操作台)的 backdrop 层，对其身后
+ * 的一切（背景+中景+前景+人物+特效）统一去饱和/压亮/提对比——一笔把过曝过饱的人物拉回
+ * 背景的水墨色域。⚠ 红线：绝不给 .au-img/.au-swords 加 filter（会冲掉既有
+ * drop-shadow/受击/蓄力/魔化滤镜、建堆叠上下文坏剑层级）——只在 overlay 级合成层做。
+ * 性能：只用色彩矩阵（saturate/brightness/contrast）、不含 blur（最贵那项），单合成层手机可担。
+ * 层序：z:7 在前景(6)之上、招式名(165)之下——背景与人物一同入调，招式大字与操作台不受影响。 */
+.combat-grade {
+  position: absolute; left: 0; right: 0; top: 0; bottom: var(--bg-cut, 0px);
+  z-index: 7; pointer-events: none;
+  -webkit-backdrop-filter: saturate(.84) brightness(.95) contrast(1.05);
+  backdrop-filter: saturate(.84) brightness(.95) contrast(1.05);
+}
+/* 大气景深雾：地平线一带最浓、近脚处散开（远虚近实的空气透视）——把人物往雾里"退"半步，
+ * 灭"边缘硬切贴在画上"。soft-light=薄空气光，只染中间调、不糊高光暗部，雾色随场景色温走。 */
+.combat-grade::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light;
+  background: linear-gradient(180deg, rgba(150,160,166,.16) 0%, rgba(140,150,156,.08) 34%, transparent 66%);
+}
+.combat-overlay.bg-forest .combat-grade::after { background: linear-gradient(180deg, rgba(96,126,82,.18) 0%, rgba(96,126,82,.08) 36%, transparent 66%); }
+.combat-overlay.bg-road .combat-grade::after { background: linear-gradient(180deg, rgba(150,124,76,.18) 0%, rgba(150,124,76,.08) 36%, transparent 66%); }
+.combat-overlay.bg-night .combat-grade::after { background: linear-gradient(180deg, rgba(70,92,140,.20) 0%, rgba(70,92,140,.09) 38%, transparent 66%); }
+.combat-overlay.mind .combat-grade::after { background: linear-gradient(180deg, rgba(108,74,150,.20) 0%, rgba(108,74,150,.09) 38%, transparent 66%); }
 /* 心战（突破/心魔劫）：墨紫色调 */
 .combat-overlay.mind { background: #0a0710; }
 .combat-overlay.mind .combat-veil {
