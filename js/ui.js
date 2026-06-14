@@ -409,6 +409,7 @@ const UI = {
       }
       Engine.passTime(1);
       Engine.log(`你与「${nm}」切磋了一场，点到即止，体魄+1，交情见长${extra}。`, "good");
+      Engine.flushNpcGifts();
       this.closeModal(); Engine.checkLifespan(); State.save(); this.renderAll();
       return;
     }
@@ -440,7 +441,7 @@ const UI = {
   // 赠礼：从背包挑一件相赠，换交情
   _npcGift(npcId) {
     const s = State.data;
-    const inv = Object.keys(s.inventory).filter(k => s.inventory[k] > 0);
+    const inv = Object.keys(s.inventory).filter(k => s.inventory[k] > 0 && !(DATA.items[k] && DATA.items[k].bound));
     if (!inv.length) { this.toast("储物袋空空，无礼可赠", true); return; }
     const n = WORLD.npcById(npcId);
     const rows = inv.map(k => {
@@ -467,6 +468,7 @@ const UI = {
     if (I) { I.markInteract(s, npcId); I.favor(s, npcId, gain); }
     const n = WORLD.npcById(npcId);
     Engine.log(`你将「${it?it.name:itemId}」赠予${n?n.name:''}，对方欣然收下，交情+${gain}。`, "good");
+    Engine.flushNpcGifts();
     this.closeModal(); State.save(); this.renderAll();
   },
 
@@ -1686,10 +1688,15 @@ const UI = {
           <div class="iv-row"><span class="iv-tag">底细</span>${lv >= 2 ? `<span style="color:var(--gold-bright)">${info.l2}</span>` : `<span style="color:var(--ink-faint)">？？？（小算盘或有门路）</span>`}</div>
         </div>`;
       }
+      const ks = (s.keepsakes || []).filter(k => k.from === n.id);
+      const ksHtml = ks.length
+        ? `<div class="codex-keepsake">信物：${ks.map(k => (DATA.items[k.id] ? DATA.items[k.id].name : k.id)).join("、")}<span class="ks-from">（${n.name}所赠）</span></div>`
+        : "";
       return `<div class="codex-card tappable">
         <div class="codex-head"><b>${n.name}</b><span class="codex-role">${n.role}</span></div>
         <div class="codex-bio">${n.bio}</div>
         ${intelHtml}
+        ${ksHtml}
         <div class="codex-rel ${relCls}">关系：${relTxt}</div>
       </div>`;
     };

@@ -242,6 +242,7 @@ const Engine = {
     const r = choice.effect ? choice.effect(s) : { text: "", kind: "event" };
     s._pendingInteraction = null;
     this.log(`【${built.title}·${inter.npcName}】${r.text}`, r.kind || "event");
+    this.flushNpcGifts();
     UI.closeModal();
     this.checkLifespan();
     this.checkStory();
@@ -610,6 +611,46 @@ const Engine = {
     if (!s.milestones) s.milestones = [];
     s.milestones.push({ t: `第${s.year}年${s.month}月 · ${s.age}岁`, title, kind: kind || "deed" });
     this.toast("道途留痕：" + title);
+  },
+
+  /* -------- 羁绊回赠结算：好感升段时，具名故人按身份一次性回赠（社交深化 ①②）-------- */
+  flushNpcGifts() {
+    const s = State.data;
+    const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
+    if (!I || !I.claimGifts) return false;
+    const q = I.claimGifts(s);
+    if (!q || !q.length) return false;
+    const TIER = ["", "相熟", "交情深厚", "挚交"];
+    let any = false;
+    for (const g of q) {
+      const gift = I.giftFor(g.npcId, g.tier);
+      if (!gift) continue;
+      const n = (typeof WORLD !== "undefined") ? WORLD.npcById(g.npcId) : null;
+      const nm = n ? n.name : g.npcId;
+      const names = [];
+      Object.entries(gift.items || {}).forEach(([k, v]) => {
+        State.give(k, v);
+        const it = DATA.items[k];
+        names.push(`${it ? it.name : k}${v > 1 ? "×" + v : ""}`);
+      });
+      this.log(`【羁绊·${TIER[g.tier] || ""}】${gift.line}（${nm}赠你：${names.join("、")}）`, "good");
+      s.worldNews = s.worldNews || [];
+      s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "fortune", text: `你与${nm}的交情更进一层（${TIER[g.tier] || ""}）。` });
+      if (gift.keepsake) {
+        const kid = Object.keys(gift.items || {})[0];
+        s.keepsakes = s.keepsakes || [];
+        if (kid && !s.keepsakes.some(x => x.id === kid)) {
+          s.keepsakes.push({ id: kid, from: g.npcId, fromName: nm, t: `第${s.year}年${s.month}月` });
+        }
+        this.addMilestone(`${nm}赠你信物「${(kid && DATA.items[kid]) ? DATA.items[kid].name : kid}」`, "deed");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+      } else if (typeof Sfx !== "undefined") {
+        Sfx.play("chime");
+      }
+      any = true;
+    }
+    if (any) State.save();
+    return any;
   },
 
   /* -------- 悟剑（剑意圆满后，于洞府闭关参悟眨眼剑法至大成）-------- */

@@ -166,6 +166,22 @@ DATA.items = {
     desc: "微缩阵旗，掷地即布两步困足之阵（持续数回合）：敌踏入阵中，脚下如陷泥沼、寸步难行。挡突进的硬墙（瞬发）。" },
   zhenqi_juling: { name: "聚灵阵旗", rarity: "rare", type: "consumable",
     desc: "微缩阵旗，掷于自家阵脚布两步聚灵之阵（持续数回合）：立于阵中，每回合灵力自回。久战续航的根本（瞬发）。" },
+
+  /* —— 羁绊信物（社交深化：好感深交时，具名故人按身份回赠的唯一之物）——
+   * keepsake: 入「人物图鉴」并于道途年表留痕；bound: 不可转赠、不可贩卖；全局只此一件。
+   * 严守考据：只给那人真有、合身份之物——宁缺毋滥，不凭空生造法宝。 */
+  ks_zhangtie: { name: "桃木平安牌", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "zhangtie",
+    desc: "青牛镇老桃木雕的平安牌，边角是张铁亲手磨的。「带在身上挡灾——咱俩好歹一块儿出来的，你可别有事。」凡物一件，却是同乡少年攒了半月的心意。" },
+  ks_lifeiyu: { name: "练武札记", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "lifeiyu",
+    desc: "厉飞雨的随身札记，密密麻麻全是切磋心得与招式拆解。「你这记性，看一遍就够了——拿去，省得每回都缠着我问。」字里行间，都是拿你当自己人。" },
+  ks_mashibo: { name: "辨药旧刀", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "mashibo",
+    desc: "马师伯用了几十年的辨药刀，刀背磨得发亮。「拿去——别糟蹋了药材。」嘴上嫌弃，到底是把心尖子的家伙什，交到了你手里。" },
+  ks_chenqiaoqian: { name: "陈家药引", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "chenqiaoqian",
+    desc: "陈巧倩从陈家药圃匀来的稀罕药引，寻常炼丹师有价无市。她只淡淡说一句「顺路」，绝口不提坊市归途那一夜的相欠。" },
+  ks_wanxiaoshan: { name: "护身符袋", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "wanxiaoshan",
+    desc: "万小山缝的粗布符袋，里头塞着几张他亲挑的真符。「韩兄行走在外，这个你拿着——修仙界凉薄，别再被人当雏儿宰了。」" },
+  ks_wushishu: { name: "护身青玉佩", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "wushishu",
+    desc: "吴师叔贴身多年的青玉小佩，温润养神。「丹田里的气走岔了，就攥着它定神——出了这道谷门，师叔便护不到你身边了。」" },
 };
 
 /* ---------- 法器装备体系（v1）：大多做属性+特性（被动），少数做战斗装备（主动技）----------

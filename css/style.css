@@ -2486,6 +2486,14 @@ html, body { touch-action: manipulation; }
 .codex-rel.rel-warm { color: var(--jade-bright); }
 .codex-rel.rel-cold { color: var(--red); }
 
+/* 羁绊信物：故人所赠的唯一之物（金线底衬，留痕图鉴） */
+.codex-keepsake {
+  margin: 6px 0 2px; padding: 4px 9px; border-radius: var(--radius);
+  background: rgba(201, 169, 106, 0.08); border: 1px solid rgba(201, 169, 106, 0.4);
+  color: var(--gold-bright); font-size: 12px; line-height: 1.5;
+}
+.codex-keepsake .ks-from { color: var(--ink-dim); font-size: 11px; }
+
 /* 情报面纱：图鉴内的逐层底细 */
 .codex-intel {
   margin: 7px 0 4px; padding: 7px 9px; border-radius: var(--radius);

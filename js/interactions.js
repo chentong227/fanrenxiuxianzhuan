@@ -12,6 +12,56 @@
  * ============================================================ */
 
 const INTERACTIONS = {
+  /* —— 羁绊回赠表（社交深化 ①②）——
+   * 交情升段（相熟≥8 / 交情深厚≥20 / 挚交≥40）那一刻，具名故人按身份一次性回赠。
+   * 升段才给、每段只给一次（s.npcGifts 记录），叠加月度拜会冷却 + 收益递减 → 刷不出来。
+   * keepsake:true 为唯一信物（全局只此一件，入图鉴/年表）；严守考据：只给那人真有、合身份之物。 */
+  TIER_GIFTS: {
+    zhangtie: {
+      1: { items: { huixue_dan: 2 }, line: "张铁把自己习武跌打用的金疮药一股脑塞给你：「省着点用，疼起来真要命。」" },
+      2: { items: { ks_zhangtie: 1 }, keepsake: true, line: "张铁挠着头，递来一块亲手磨的桃木平安牌——同乡少年的笨拙心意。" },
+    },
+    lifeiyu: {
+      1: { items: { ningshen_dan: 1 }, line: "厉飞雨抛来一枚凝神丹：「闭关走火可别硬扛，记着寻我。」" },
+      2: { items: { ks_lifeiyu: 1 }, keepsake: true, line: "厉飞雨把贴身的练武札记拍进你怀里：「你这记性，看一遍就够了——拿去！」" },
+    },
+    modafu: {
+      1: { items: { qingyuan_dan: 2 }, line: "墨大夫眯眼看你半晌，丢来两枚养元丹：「丹炉看好了，火候差一分都不成。」" },
+    },
+    xiaosuanpan: {
+      1: { items: { lingshi: 1 }, line: "小算盘破天荒没提灵石，反塞给你一块：「韩师兄是自己人，这点意思——消息我也给你留着。」" },
+      2: { items: { lingshi: 2 }, line: "小算盘压低声音：「门里门外的风声，往后你先知道。」顺手又匀了两块灵石给你。" },
+    },
+    mashibo: {
+      1: { items: { lingcao: 2 }, line: "马师伯哼了一声，把两株灵草往你筐里一扔：「手脚麻利点，别盖坏了草帘。」" },
+      2: { items: { ks_mashibo: 1 }, keepsake: true, line: "马师伯把用了几十年的辨药旧刀塞给你：「拿去——别糟蹋了药材。」" },
+    },
+    chenqiaoqian: {
+      1: { items: { lingcao: 2 }, line: "陈巧倩匀给你两株药圃灵草，只道一句「顺路」，便别过脸去。" },
+      2: { items: { ks_chenqiaoqian: 1 }, keepsake: true, line: "陈巧倩递来一份陈家药圃的稀罕药引，眉目清冷：「……欠你的，先还一点。」" },
+    },
+    wanxiaoshan: {
+      1: { items: { huoshe_fu: 1 }, line: "万小山挑了张真火蛇符给你：「这才是真货，那摊的可千万别碰！」" },
+      2: { items: { ks_wanxiaoshan: 1 }, keepsake: true, line: "万小山把亲手缝的护身符袋塞给你：「韩兄行走在外，别再被人当雏儿宰了。」" },
+    },
+    wushishu: {
+      1: { items: { qingyuan_dan: 2 }, line: "吴师叔温言递来两枚养元丹：「本分修行，谁也难为不了你。」" },
+      2: { items: { ks_wushishu: 1 }, keepsake: true, line: "吴师叔解下贴身的青玉佩按进你手心：「丹田气乱时攥着它定神。」" },
+    },
+  },
+  // 交情段位：0 相识 / 1 相熟 / 2 交情深厚（深交）/ 3 挚交
+  tierOf(rel) { return rel >= 40 ? 3 : rel >= 20 ? 2 : rel >= 8 ? 1 : 0; },
+  giftFor(npcId, tier) {
+    const t = this.TIER_GIFTS[npcId];
+    return (t && t[tier]) ? t[tier] : null;
+  },
+  // 取出并清空待发的升段回赠队列（由 Engine.flushNpcGifts 结算）
+  claimGifts(s) {
+    const q = s._giftQueue || [];
+    s._giftQueue = [];
+    return q;
+  },
+
   // 是否触发一次主动交互（在历练/行动后按概率）
   shouldTrigger(s, rng) {
     rng = rng || Math.random;
@@ -191,7 +241,21 @@ const INTERACTIONS = {
   // 关系值（好感/仇怨）记录在存档
   favor(s, npcId, delta) {
     if (!s.relations) s.relations = {};
-    s.relations[npcId] = (s.relations[npcId] || 0) + delta;
+    const before = s.relations[npcId] || 0;
+    s.relations[npcId] = before + delta;
+    // 好感升段 → 具名故人按身份回赠（升段一次性、每段只给一次；背景修士 npcFates 不触发）
+    if (delta > 0 && typeof WORLD !== "undefined" && WORLD.npcById && WORLD.npcById(npcId)) {
+      const prevTier = (s.npcGifts && s.npcGifts[npcId]) || 0;
+      const newTier = this.tierOf(s.relations[npcId]);
+      if (newTier > prevTier) {
+        for (let t = prevTier + 1; t <= newTier; t++) {
+          if (this.giftFor(npcId, t)) (s._giftQueue = s._giftQueue || []).push({ npcId, tier: t });
+        }
+        if (!s.npcGifts) s.npcGifts = {};
+        s.npcGifts[npcId] = newTier;
+      }
+    }
+    return s.relations[npcId];
   },
   relationOf(s, npcId) { return (s.relations && s.relations[npcId]) || 0; },
 
