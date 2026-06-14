@@ -1051,6 +1051,22 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 .axis-unit.self .au-glyph { border-color: rgba(126,185,142,.55); background: radial-gradient(circle at 50% 36%, rgba(96,150,110,.22), rgba(10,12,8,.85) 75%); }
 .axis-unit .au-glyph span { font-size: clamp(26px, 4.4vw, 40px); color: #e0c9a4; text-shadow: 0 2px 10px rgba(0,0,0,.85); }
+/* D2 元神/残魂占位：人形黑色剪影。mask 取人形 alpha，暗色底填出剪影；
+ * 滤镜/绕身光都做在本 .au-shade 层（非 .au-img），不触"绝不给 .au-img 加 filter"红线。 */
+.axis-unit .au-shade {
+  height: clamp(104px, 21vh, 180px); aspect-ratio: 1 / 2;
+  -webkit-mask-size: contain; mask-size: contain;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center bottom; mask-position: center bottom;
+  background: linear-gradient(180deg, rgba(40,44,66,.94) 0%, rgba(10,11,18,.99) 72%);
+  filter: drop-shadow(0 0 13px rgba(150,162,228,.5)) drop-shadow(0 6px 10px rgba(0,0,0,.6));
+  animation: ghostShadeFloat 3.4s ease-in-out infinite;
+}
+#axis-field .axis-unit .au-shade { height: 33cqh; }
+@keyframes ghostShadeFloat { 0%, 100% { opacity: .8; } 50% { opacity: .98; } }
+.axis-unit.strike-melee .au-shade { animation: strikeMelee .48s cubic-bezier(.2,.9,.3,1); }
+.axis-unit.strike-cast .au-shade { animation: strikeCast .42s ease; }
+.axis-unit.hitflash .au-shade { filter: brightness(2.4) drop-shadow(0 0 14px rgba(210,220,255,.85)) !important; }
 /* 阵亡退场（v87）：水墨溅散演出（~0.9s）放完后彻底淡出——尸体不再半透明赖在场上
  * （引擎侧 _deadShown 保证只渲染"咽气那一拍"，之后不再入 DOM） */
 .axis-unit.dead { opacity: .35; filter: grayscale(1); pointer-events: none; animation: deadFade 1.2s ease .9s forwards; }

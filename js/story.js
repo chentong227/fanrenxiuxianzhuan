@@ -204,9 +204,8 @@ const STORY = [
       State.setFlag("showdown_ready");
       if (!s.spells.includes("zhenhun")) s.spells.push("zhenhun");
       if (!s.spells.includes("feizhen")) s.spells.push("feizhen");
-      if (!s.spells.includes("zhayan_lian")) s.spells.push("zhayan_lian");
       State.give("anqi", 3);
-      Engine.toast("习得运功镇魂、暗器飞针、眨眼连击；得暗器×3。去小绿瓶催熟毒草备战");
+      Engine.toast("习得运功镇魂、暗器飞针；得暗器×3。去小绿瓶催熟毒草备战");
     },
     choices: [
       { text: "布下死局，静待夺舍之夜", hint: "进入决战", next: true },
@@ -306,7 +305,6 @@ const STORY = [
     onArrive(s) {
       State.setFlag("jinguang_appeared");
       Engine.meetNpc("jinguang", "贾天龙重金请来的修仙杀手。");
-      if (!s.spells.includes("zhayan_lian")) s.spells.push("zhayan_lian");
       if (!s.spells.includes("feizhen")) s.spells.push("feizhen");
       State.give("anqi", 4);
       State.give("duyao_cao", 2);

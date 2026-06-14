@@ -625,8 +625,8 @@ const Engine = {
       s.knownSkills = s.knownSkills.filter(id => id !== "zhayan_lian");
       if (s.spells.includes("zhayan_lian")) s.spells = s.spells.map(id => id === "zhayan_lian" ? "lianhuan" : id);
       else if (!s.spells.includes("lianhuan") && typeof Loadout !== "undefined") Loadout.equipSkill(s, "lianhuan");
-      this.log("【剑法大成】三月闭关，你将千百次出剑的体悟尽数咀嚼——某夜剑光一闪，你忽然懂了：剑快不在手，在心。眨眼剑法至此大成：「眨眼连击」蜕变为「连环眨眼」——剑势所至，一剑化数剑！剑势上限+2。", "good");
-      this.addMilestone("《眨眼剑法》大成，连击蜕变连环", "bigitem");
+      this.log("【剑法大成】三月闭关，你将千百次出剑的体悟尽数咀嚼——某夜剑光一闪，你忽然懂了：剑快不在手，在心。眨眼剑法至此大成，解锁绝技「连环眨眼」——剑势所至，一剑化数剑！剑势上限+2。", "good");
+      this.addMilestone("《眨眼剑法》臻于大成，得连环眨眼", "bigitem");
       if (typeof Sfx !== "undefined") Sfx.play("bell");
     } else {
       s.swordIntent = 88;
@@ -2946,10 +2946,9 @@ const Engine = {
     const hidden = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
     if (hidden >= 1) {
       const realRealm = State.realm().name;
-      this._combat.player.momentum = Math.min(this._combat.player.momentumCap, hidden * 2);
       this._combat.enemies.forEach(e => { e.dodgeBuff = (e.dodgeBuff || 0) - 0.1; });
       this._combat._log(`墨大夫瞳孔骤缩，声音都变了调："什么？！你……你竟然已是${realRealm}——这不可能！！"`);
-      this._combat._log(`【扮猪吃虎】深藏 ${hidden} 层修为今夜尽数亮出——你开局即蓄剑势 ${this._combat.player.momentum}，敌方心神大乱（首回合更易命中）！`);
+      this._combat._log(`【扮猪吃虎】深藏 ${hidden} 层修为今夜尽数亮出——敌方心神大乱、破绽尽显（首回合更易命中）！`);
       this.log(`你周身气机轰然炸开——深藏 ${hidden} 层的修为，今夜终于不必再藏！`, "good");
       this.addMilestone(`扮猪吃虎：夺舍之夜亮出${realRealm}`, "medal");
       if (typeof Sfx !== "undefined") Sfx.play("danger");

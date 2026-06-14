@@ -2027,13 +2027,26 @@ const UI = {
       [/赤目狼王|血煞兽/, "bt_chimu"],
       [/虎/, "bt_baihu"],
       [/蜈蚣/, "bt_wugong"],
-      [/狼/, "bt_wolf"],               // 灵狼/狼群（狼王规则在前已截获）
+      [/狼(?!帮)/, "bt_wolf"],         // 灵狼/狼群（狼王规则在前已截获）；"野狼帮"含"狼"故排除→走人形
       [/山贼|贼|匪|流寇/, "bt_bandit"],
-      [/弟子|武师|喽啰|打手|蛮修/, "bt_wuren"],
+      [/弟子|武师|喽啰|打手|蛮修|野狼帮/, "bt_wuren"],
       [/散修|修士|枯修/, "bt_sanxiu"],
     ];
     for (const [re, id] of MAP) { if (re.test(name) && Art.hasBattler(id)) return id; }
     return null;
+  },
+
+  // D2：无专属立绘的元神/残魂 → 借现成人形轮廓做「黑色剪影」占位。
+  // 剪影靠 .au-shade 的 mask-image（取人形 alpha）+ 暗色底，不动 .au-img/滤镜（守红线）。
+  _ghostShade(u) {
+    if (!u || typeof Art === "undefined" || !Art.battlerUrl || !Art.hasBattler) return null;
+    const ghost = u.nature === "ghost" || /元神|残魂|幽魂|魂魄|怨灵|阴影/.test(u.name || "");
+    if (!ghost) return null;
+    const shapeId = ["bt_sanxiu", "bt_wuren", "bt_hanli"].find(id => Art.hasBattler(id));
+    if (!shapeId) return null;
+    const url = Art.battlerUrl(shapeId);
+    if (!url) return null;
+    return `<div class="au-shade" style="-webkit-mask-image:url('${url}');mask-image:url('${url}')"></div>`;
   },
 
   // 冷启动预热（v106）：开战即把本局会用到的战斗立绘提前 decode——
@@ -2043,7 +2056,11 @@ const UI = {
     const ids = new Set();
     const add = id => { if (id && Art.hasBattler(id)) ids.add(id); };
     add("bt_hanli"); add("bt_hanli_fly");                              // 玩家（含飞姿变体）
-    (combat.enemies || []).forEach(e => e && add(this._battlerByName(e.name)));
+    (combat.enemies || []).forEach(e => {
+      if (!e) return;
+      add(this._battlerByName(e.name));
+      if (this._ghostShade(e)) ["bt_sanxiu", "bt_wuren", "bt_hanli"].some(id => Art.hasBattler(id) && (add(id), true)); // D2 剪影形状
+    });
     (combat.sides || (combat.side ? [combat.side] : [])).forEach(u => {
       if (!u) return;
       add(u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name));
@@ -2538,7 +2555,9 @@ const UI = {
       if (aid && typeof Art !== "undefined" && Art.has && Art.has(aid)) {
         figSrc = Art.url(aid); figCls = demonized ? " demonized" : "";
       } else {
-        figGlyph = `<div class="au-glyph"><span>${isPlayer ? "韩" : isSide ? "傀" : this._enemyGlyph(u.name)}</span></div>`;
+        // D2：无专属立绘的元神/残魂——人形黑色剪影占位（遮罩做在独立 .au-shade 层，不碰 .au-img 滤镜红线）
+        figGlyph = (!isPlayer && !isSide && this._ghostShade(u))
+          || `<div class="au-glyph"><span>${isPlayer ? "韩" : isSide ? "傀" : this._enemyGlyph(u.name)}</span></div>`;
       }
     }
     const hpPct = Math.max(0, u.hp / u.hpMax * 100);
