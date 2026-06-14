@@ -1985,7 +1985,11 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .ceremony-overlay {
   position: fixed; inset: 0; z-index: 300;
   display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(ellipse at 50% 38%, rgba(64, 52, 28, .5), #060504 70%);
+  /* A2：必须是真·黑场——暖芒只作覆层叠在不透明底色上，否则弹层文字会与下方
+   * 场景标题/地点名/见闻文字透叠相撞（半透明 radial 中心曾漏底）。 */
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(70, 56, 30, .55) 0%, rgba(70, 56, 30, 0) 60%),
+    #070504;
   opacity: 0; pointer-events: none; transition: opacity .6s ease;
 }
 .ceremony-overlay.show { opacity: 1; pointer-events: auto; }
@@ -2260,7 +2264,7 @@ html, body { touch-action: manipulation; }
   /* HUD：场景带下方，分页滚动 */
   .layout {
     position: relative; inset: auto; flex: 1; min-height: 0; z-index: 2;
-    display: block; padding: 8px 8px calc(64px + env(safe-area-inset-bottom, 0px));
+    display: block; padding: 13px 8px calc(64px + env(safe-area-inset-bottom, 0px));
     overflow-y: auto; pointer-events: auto;
   }
   .panel { overflow: visible; margin-bottom: 0; backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--paper-solid); }
@@ -3726,6 +3730,15 @@ html, body { touch-action: manipulation; }
 @media (max-width: 760px) {
   /* 场景：顶部常驻横带（保留空间感与图钉导航）*/
   .scene-stage { position: relative; inset: auto; flex: 0 0 37vh; min-height: 218px; z-index: 1; }
+  /* A1 渐隐过渡：场景带底缘溶入下方内容色，消除场景图与文字区的"硬切"接缝。
+   * z-index:2 只压在背景图(z1)/受光层之上，仍低于 地点名(z3)/图钉(z4)/在场立绘(z5)——
+   * 故底衬变暗、前景人物与导航依旧清晰。 */
+  .scene-stage::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 82px;
+    pointer-events: none; z-index: 2;
+    background: linear-gradient(180deg,
+      rgba(12,10,8,0) 0%, rgba(12,10,8,.34) 44%, rgba(12,10,8,.8) 78%, var(--bg) 100%);
+  }
   .scene-head { left: 12px; top: auto; bottom: 10px; max-width: 70%; }
   .scene-head .loc-name { font-size: 17px; letter-spacing: 2px; }
   .scene-head .loc-desc-inline { display: none; }
