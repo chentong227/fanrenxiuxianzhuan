@@ -2289,6 +2289,7 @@ const Engine = {
   // 闭关研习功法：习得一卷已持有的功法典籍（耗时）
   studyTechnique(techId) {
     const s = State.data;
+    if (s.combat || s.pendingEvent) { this.toast("此刻分身乏术，难以静心研习", true); return; }
     if (typeof Loadout === "undefined") return;
     const def = DATA.techniques[techId];
     const r = Loadout.learnTechnique(s, techId);

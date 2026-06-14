@@ -824,12 +824,34 @@ const UI = {
         <div style="color:var(--ink-faint);font-size:11px;margin-top:4px">驱使门槛：练气${gdef.minLayer || 1}层 · 槽位：${gdef.slot === "weapon" ? "武器" : gdef.slot === "armor" ? "护身" : "饰物"}</div>
       </div>`;
     }
+    // 功法典籍：从背包直达「研习→配装」闭环（治“取得了典籍却不知如何学/用”）
+    let techHtml = "";
+    const techId = Object.keys(DATA.techniques).find(id => DATA.techniques[id].book === itemId);
+    if (techId) {
+      const tdef = DATA.techniques[techId];
+      const L = (typeof Loadout !== "undefined") ? Loadout : null;
+      const learned = L && L.isLearned(State.data, techId);
+      const grant = (tdef.grantSpells || []).map(id => {
+        const sp = (typeof CombatAPI !== "undefined") ? CombatAPI.SPELLS[id] : null;
+        return sp ? `「${sp.name}」` : id;
+      }).join(" ");
+      techHtml = `<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:13px">
+        <div style="color:var(--gold)">功法典籍 · ${gradeLabel(tdef.grade)}　授技：${grant || "—"}</div>
+        <div style="color:var(--ink-faint);font-size:11px;margin-top:4px">${learned ? "已习得——可在「功法 · 配装」设为主修/辅修、装配出战。" : "闭关静心研习方能习得（耗时三月）；习得后于「功法 · 配装」装配出战。"}</div>
+      </div>`;
+      if (learned) {
+        actions += `<button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTechniques();">前往配装</button>`;
+      } else if (!tdef.locked) {
+        actions += `<button class="btn btn-primary" onclick="UI.closeModal(); Engine.studyTechnique('${techId}');">闭关研习（3月）</button>`;
+      }
+    }
     this.openModal(`
       <h2>${item.name}</h2>
       ${this._statusStrip()}
       <p style="color:var(--ink-dim)">${rarityLabel(item.rarity)} · ${typeLabel(item.type)}　持有 ×${State.count(itemId)}</p>
       <p>${item.desc}</p>
       ${gearHtml}
+      ${techHtml}
       ${item.effect && Object.keys(item.effect).length ? `<p style="color:var(--jade-bright)">服用：${effectText(item.effect)}</p>` : ""}
       <div class="modal-actions">
         ${actions}
@@ -1274,8 +1296,9 @@ const UI = {
       const sp = SP[sk]; if (!sp) return "";
       const equipped = L.isEquipped(s, sk);
       const aux = L.isAuxSkill(s, sk);
-      const wx = Object.keys(sp.cost || {})[0] || "jin";
-      const cost = Object.entries(sp.cost).map(([e, n]) => `${CombatAPI.ELEM_NAME[e]}${n}`).join(" ") || "无耗";
+      const wx = sp.elem || sp.school || "jin";
+      const consumeName = sp.consume && DATA.items[sp.consume] ? DATA.items[sp.consume].name : null;
+      const cost = (sp.mp ? `灵 ${sp.mp}` : "零耗") + (consumeName ? ` · 耗${consumeName}` : "");
       return `<div class="skill-chip ${equipped ? 'on' : ''}" onclick="UI._loadoutToggleSkill('${sk}')">
         <div class="sk-top"><span class="seal sm wx-${wx}">${sealChar(sp.name)}</span><b>${sp.name}</b>${aux ? '<span class="sk-aux">辅</span>' : ''}${equipped ? '<span class="sk-on">✓出战</span>' : ''}</div>
         <div class="sk-meta"><span class="qcost">${cost}</span> ${spellEffectText(sp)}</div>
@@ -4201,7 +4224,7 @@ const UI = {
 
 function rarityLabel(r) { return { common: "凡品", rare: "灵品", epic: "宝品" }[r] || "凡品"; }
 function gradeLabel(g) { return { 1: "黄阶", 2: "玄阶", 3: "地阶", 4: "天阶" }[g] || "黄阶"; }
-function typeLabel(t) { return { pill: "丹药", material: "材料", currency: "通货", skill: "功法" }[t] || "杂物"; }
+function typeLabel(t) { return { pill: "丹药", material: "材料", currency: "通货", skill: "功法", book: "典籍", treasure: "法宝", gear: "法器", consumable: "符器", key: "令物" }[t] || "杂物"; }
 // 印章字：法术/功法/物品名 → 单字方章（图标语言：道藏印章，详见 art-direction.md）
 const SEAL_CHARS = {
   "长春吐纳": "吐", "长春护体": "护", "凝神静气": "凝", "眨眼剑法": "剑", "眨眼连击": "连",
