@@ -2562,7 +2562,11 @@ const UI = {
         // 神雷附剑生效（_leiEnchant>0）→升级为金色大电流+周身金雷光环
         const lei = (u._leiEnchant || 0) > 0;
         // 神雷附剑态额外渲染：lei-aura(周身金雷光环) + 6 道 lei-bolt(周身环境雷弧，此起彼伏窜现·量多为辅)
-        const leiExtra = lei ? '<i class="lei-aura"></i>' + '<i class="lei-bolt"></i>'.repeat(6) : '';
+        //   + 2 道 lei-orbit(R4：金/蓝电弧沿椭圆轨绕身旋掠=周身环绕，参考图1)。
+        // ⚠ lei-orbit 必须追加在 lei-bolt 之后——否则会顶掉 lei-bolt:nth-child(12..17) 的定位选择器。
+        const leiExtra = lei
+          ? '<i class="lei-aura"></i>' + '<i class="lei-bolt"></i>'.repeat(6) + '<i class="lei-orbit"></i><i class="lei-orbit lo2"></i>'
+          : '';
         orbit = `<div class="au-swords ${lei ? "lei" : "arc"}">${'<i class="sw"><b></b></i>'.repeat(10)}${leiExtra}</div>`;
       } else if (hasMainTre) {
         orbit = `<div class="au-blades">${'<i class="bld"></i>'.repeat(9)}</div>`;
@@ -2673,8 +2677,8 @@ const UI = {
           if (cur.classList.contains("lei") !== willLei) {
             cur.classList.toggle("lei", willLei);
             cur.classList.toggle("arc", !willLei);
-            cur.querySelectorAll(".lei-aura, .lei-bolt").forEach(n => n.remove());
-            if (willLei) nxt.querySelectorAll(".lei-aura, .lei-bolt").forEach(n => cur.appendChild(n.cloneNode(true)));
+            cur.querySelectorAll(".lei-aura, .lei-bolt, .lei-orbit").forEach(n => n.remove());
+            if (willLei) nxt.querySelectorAll(".lei-aura, .lei-bolt, .lei-orbit").forEach(n => cur.appendChild(n.cloneNode(true)));
           }
           ex._h = html;
           return;
@@ -2758,8 +2762,8 @@ const UI = {
       if (pl && typeof Fx !== "undefined" && Fx.ensure(this.el("axis-field")) && Fx.RECIPES.leidun_out) {
         const at = Fx.at(pl);
         if (at) {
-          // 穿空轨迹：消失点→落点画一道金色残迹（problem 5：穿越空间的瞬移感）
-          if (this._blinkFrom && Fx.blinkTrace) Fx.blinkTrace(this._blinkFrom, at);
+          // R5/R6：落点穿出金色空间洞（portalEmerge）+ 金雷放射炸开（leiLandBurst）。
+          // 不再画"消失点→落点"的连线残迹（用户：光效太丑）——改"进一个洞、从另一个洞穿出"。
           Fx.RECIPES.leidun_out(Fx, at);
         }
       }
@@ -3151,38 +3155,24 @@ const UI = {
         </span>
       </button>`;
     };
-    // —— 手牌四区制（combat-arsenal-design 四·五）：同一张双排同滑网格内分区，单屏不竖涨 ——
-    //    法宝法器区：催动外物（source=treasure，练气法器→筑基上品→结丹法宝同区换代）
-    //    法术区：功法法术+武学（主行动的主体）
-    //    瞬发区：符箓/阵法/丹药（不占主行动的底牌）
-    //    灵傀区：灵宠/傀儡/同道（侧位单位随身牌：血量+简令）
+    // —— 手牌排版（用户裁决 L1-L5）：法宝=左详细(主攻/主防) + 右图标(特效型/悬浮，两排)；
+    //    法术锁死 8 格、4×2 对齐；瞬发/助战各自独立窄行；回合结束与手牌同屏（combat-console 紧凑）。
+    //    装备型(只加属性的伴身法宝)不入手牌——在洞府装备界面吃属性(L3)，故此处不再渲染 side-seal。
     // 神雷类特色资源技（chargeCost）一律不入法宝/法术/瞬发栏——统一走辟邪神雷单卡三选
-    let treasures = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source === "treasure" && !SP[id].chargeCost);
+    const treasures = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source === "treasure" && !SP[id].chargeCost);
     const mains = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source !== "treasure");
     const quicks = p.spells.filter(id => SP[id] && SP[id].quick && !SP[id].chargeCost);
-    // 主攻/防御位（用户裁决）：法宝区有主次之分——主攻法宝（装备武器所授，余者首张攻击法宝
-    // 兜底）排第一标"主"；护体类法宝标"御"；其余为次位。主攻法宝另有伴身演出（au-blades）
+    // 主攻法宝=兵器(gear weapon)所授攻击法宝，余者首张攻击法宝兜底；主防法宝=首张护体法宝。
+    // 此二者占左侧详细卡(靠左、写全)；其余法宝(子母刃等特效型/悬浮祭出位)一律走右侧图标两排(L1/L2)。
     const wGear = (typeof State !== "undefined" && State.gearOf) ? State.gearOf("weapon") : null;
     const mainTre = (wGear && wGear.grantSpells && wGear.grantSpells.find(id => treasures.includes(id)))
       || treasures.find(id => SP[id].type === "atk") || null;
-    // 三位制排序：主→御→悬浮（祭出位）——主与御各一，余者皆走悬浮（combat-arsenal 二·五）
-    if (mainTre) treasures = [mainTre].concat(treasures.filter(id => id !== mainTre));
-    const treRole = id => id === mainTre ? "main" : (SP[id].type === "def" ? "def" : "");
-    // 法术恒 6（v96 用户裁决：14PM 单屏 3×2 不滑屏——超出部分不渲染并提示去编排）
-    // 神雷类特色资源技不进法术格（走辟邪神雷单卡三选——像灵虫一样点选生效）
-    const mains6 = mains.filter(id => !SP[id].chargeCost).slice(0, 6);
+    const mainDef = treasures.find(id => SP[id].type === "def") || null;
+    const leftTre = [mainTre, mainDef].filter(Boolean);
+    const iconTre = treasures.filter(id => !leftTre.includes(id));   // 子母刃/花篮等 → 右侧图标卡
+    // 法术锁死 8（v103 用户裁决；Balance.skillSlots 同步为 8）：4×2 对齐格，超出去洞府编排
+    const mains8 = mains.filter(id => !SP[id].chargeCost).slice(0, 8);
     const mainsAll = mains.filter(id => !SP[id].chargeCost);
-    // 伴身法宝印鉴（v96 三类法宝制）：被动件挂法宝栏尾——只展示不可点（效果常驻面板）
-    const sideTre = (typeof State !== "undefined" && State.sideTreasures) ? State.sideTreasures() : [];
-    const sideSeals = sideTre.map(g => {
-      const it = DATA.items[g.id];
-      const fx = g.bonus ? Object.entries(g.bonus).map(([k, v]) => {
-        const names = { hpMax: "血", mpMax: "灵", sense: "识", armor: "甲", speed: "速", regenBoost: "息" };
-        return `${names[k] || k}+${v}`;
-      }).join(" ") : "";
-      return `<span class="side-seal" title="${it ? it.name : g.id}（伴身）：${(g.traits || []).map(t => t.desc).join("；")}">
-        <i class="seal">${sealChar(it ? it.name : g.id)}</i><b>${fx}</b></span>`;
-    }).join("");
     // 辟邪神雷三选（v98 用户裁决：条状叠在本命法宝卡【正上方】，不占格——
     // 点击→选择→生效：打/附/遁。神雷=本命法宝（青竹蜂云剑）所蕴的手段，故贴本命卡头）
     let shenleiStrip = "";
@@ -3206,19 +3196,44 @@ const UI = {
         ${opt("leidun", "遁", dunTip)}
       </div>`;
     }
-    // 本命法宝单元（v98）：神雷条贴主攻卡头顶——竖向堆叠成一个"本命法宝列"，
-    // 整体占位不变（主攻卡内排紧凑一档让出条位）；无神雷则退化为普通主攻卡
-    const mainCell = (mainTre && shenleiStrip)
-      ? `<div class="treasure-main">${shenleiStrip}${spellBtn(mainTre, "treasure compact", "main")}</div>`
-      : (mainTre ? spellBtn(mainTre, "treasure", "main") : "");
-    const restTre = treasures.filter(id => id !== mainTre);
-    // 法宝行与法术行分排（v97 用户裁决：法术在法宝正下方独立一排）
+    // 法宝图标卡（右侧·特效型/悬浮，L2）：攻防点击上膛、悬浮点击祭起/收回——只露印章+短名+角色章。
+    const treIcon = (id) => {
+      const sp = SP[id];
+      const wx = sp.elem || sp.school || "jin";
+      if (sp.type === "float") {
+        const up = (p.floats || []).includes(id);
+        const slots = c.floatSlots ? c.floatSlots(p) : 1;
+        const can = up || (c.canAfford(id) && (p.floats || []).length < slots);
+        return `<button class="tre-icon ${up ? "floating" : ""} ${can ? "" : "off"}" ${can ? "" : "disabled"} onclick="event.stopPropagation();Engine.combatFloat('${id}')" title="${sp.name}：${sp.desc || spellEffectText(sp)}${sp.mp ? "（灵力" + sp.mp + "）" : ""}">
+          <i class="seal wx-${wx}">${sealChar(sp.name)}</i><span class="ti-name">${sp.name}</span><i class="ti-tag float">${up ? "运" : "悬"}</i></button>`;
+      }
+      const afford = c.canAfford(id);
+      const inR = c.enemies.some((e2, i2) => e2.alive && c.castableAt(id, i2));
+      const usable = afford && inR;
+      const armedCls = (this._armed && this._armed.id === id) ? "armed" : "";
+      const why = !afford
+        ? ((c.cooldownLeft && c.cooldownLeft(id) > 0) ? "回气" + c.cooldownLeft(id) : ((sp.mp || 0) > p.mp ? "灵力不足" : "行动已尽"))
+        : (!inR ? "射程外" : "");
+      return `<button class="tre-icon ${armedCls} ${usable ? "" : "off"}" ${usable ? "" : "disabled"} onclick="UI.armSpell('${id}')" title="${sp.name}：${spellEffectText(sp)}（${rangeTxt(sp)}${sp.mp ? "·灵力" + sp.mp : ""}）${why ? "——" + why : ""}">
+        <i class="seal wx-${wx}">${sealChar(sp.name)}</i><span class="ti-name">${sp.name}</span><i class="ti-tag ${sp.type === "def" ? "def" : "atk"}">${sp.type === "def" ? "御" : "攻"}</i></button>`;
+    };
+    // 本命法宝列（左·详细，L1）：主攻卡（神雷条贴头顶）+ 主防卡，竖向堆叠靠左；无主攻则退化
+    const mainCell = mainTre
+      ? (shenleiStrip
+          ? `<div class="treasure-main">${shenleiStrip}${spellBtn(mainTre, "treasure compact", "main")}</div>`
+          : spellBtn(mainTre, "treasure", "main"))
+      : (shenleiStrip ? `<div class="treasure-main">${shenleiStrip}</div>` : "");
+    const defCell = mainDef ? spellBtn(mainDef, "treasure", "def") : "";
+    const hasArsenal = mainTre || mainDef || shenleiStrip || iconTre.length;
+    // 法宝（左详细 + 右图标两排）/ 法术（锁死 8、4×2 对齐）分排（L1/L2/L4）
     this.el("combat-spells").innerHTML =
-      `<div class="spell-grid treasure-row">`
-      + (treasures.length || sideSeals || shenleiStrip ? `<span class="zone-tag zt-treasure">法宝</span>${mainCell}${restTre.map(id => spellBtn(id, "treasure", treRole(id))).join("")}${sideSeals}` : "")
-      + `</div><div class="spell-grid">`
-      + `<span class="zone-tag">法术</span>${mains6.map(id => spellBtn(id)).join("")}`
-      + (mainsAll.length > 6 ? `<span class="zone-overflow" title="出战法术上限 6——洞府中重新编排">+${mainsAll.length - 6} 未出战</span>` : "")
+      (hasArsenal
+        ? `<div class="arsenal"><div class="arsenal-main"><span class="zone-tag zt-treasure">法宝</span><div class="tre-col">${mainCell}${defCell}</div></div>`
+          + (iconTre.length ? `<div class="arsenal-side">${iconTre.map(treIcon).join("")}</div>` : "")
+          + `</div>`
+        : "")
+      + `<div class="spell-grid spell8"><span class="zone-tag">法术</span>${mains8.map(id => spellBtn(id)).join("")}`
+      + (mainsAll.length > 8 ? `<span class="zone-overflow" title="出战法术上限 8——洞府中重新编排">+${mainsAll.length - 8} 未出战</span>` : "")
       + `</div>`;
     // 瞬发 + 助战：同一条窄排（瞬发牌横滑；助战卡点击换简令）。
     // 客随例外（用户裁决）：境界远高于你的同道（mastery≥2）全自动——她指挥你（点将），

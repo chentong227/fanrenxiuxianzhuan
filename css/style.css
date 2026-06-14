@@ -1139,6 +1139,37 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 @keyframes leiAuraPulse { 0%,100% { opacity: .5; scale: .96; } 50% { opacity: 1; scale: 1.05; } }
 
+/* ===== R4 神雷附剑·周身环绕雷弧（lei-orbit，参考图1 蓝金雷电缠身）=====
+ * conic 渐变切出一段亮电弧，radial 遮罩抠成绕身环带；@property 动 --lei-ang 让亮弧沿环周巡游
+ * （椭圆本体固定不翻滚=真"绕身旋掠"，而非整体打转）。两道错相、一前(z7)一后(z-2)=缠身纵深；
+ * 主道金、辅道蓝白（金为主·蓝白点缀=神雷金色身份不破）。纯角度动画、无 RAF、不触性能红线；
+ * 旧浏览器不支持 @property 时 --lei-ang 退回静态亮弧（仍是发光电弧·优雅降级）。 */
+@property --lei-ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.au-swords.lei .lei-orbit {
+  position: absolute; left: 50%; top: 44%;
+  width: 108px; height: 132px; margin: -66px 0 0 -54px;
+  border-radius: 50%; pointer-events: none; z-index: 7;
+  background: conic-gradient(from var(--lei-ang, 0deg),
+    transparent 0deg, transparent 232deg,
+    rgba(255,247,214,0) 252deg, #fff7d6 286deg, #fff 300deg, #ffd970 312deg,
+    rgba(255,176,30,0) 336deg, transparent 360deg);
+  -webkit-mask: radial-gradient(closest-side at 50% 50%, transparent 58%, #000 64%, #000 74%, transparent 81%);
+          mask: radial-gradient(closest-side at 50% 50%, transparent 58%, #000 64%, #000 74%, transparent 81%);
+  filter: drop-shadow(0 0 4px #ffe39a) drop-shadow(0 0 9px rgba(255,176,30,.6));
+  animation: leiOrbit 1.05s linear infinite;
+}
+/* 辅道：更瘦高(纵向缠绕错位)、藏身后(z-2)、逆向慢转、冷蓝白点缀 */
+.au-swords.lei .lei-orbit.lo2 {
+  width: 86px; height: 152px; margin: -76px 0 0 -43px; z-index: -2;
+  animation-duration: 1.5s; animation-direction: reverse;
+  filter: drop-shadow(0 0 3px #bfe0ff) drop-shadow(0 0 8px rgba(120,180,255,.55));
+  background: conic-gradient(from var(--lei-ang, 0deg),
+    transparent 0deg, transparent 232deg,
+    rgba(223,240,255,0) 252deg, #eaf4ff 288deg, #fff 302deg, #86b4ff 314deg,
+    rgba(120,180,255,0) 338deg, transparent 360deg);
+}
+@keyframes leiOrbit { from { --lei-ang: 0deg; } to { --lei-ang: 360deg; } }
+
 /* ===== 剑身缠雷（电弧层 <b>）：沿剑身游走跳动的之字闪电 =====
  * 伪元素已被剑身(::before)+拖尾(::after)占满，故缠雷另起真实子层 <b>。
  * clip-path 切出闪电折线带，drop-shadow 令电弧发光；swBolt 以 steps 瞬跳=电流"窜动"的真实
@@ -1147,7 +1178,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   position: absolute; left: 50%; top: 11%; width: 15px; height: 74%; margin-left: -7.5px;
   clip-path: polygon(42% 0%, 56% 14%, 36% 30%, 62% 46%, 38% 60%, 60% 76%, 44% 100%, 58% 100%, 72% 76%, 50% 60%, 76% 46%, 50% 30%, 70% 14%, 56% 0%);
   pointer-events: none; z-index: 2;
-  animation: swBolt .22s steps(1) var(--hdelay, 0s) infinite;
+  animation: swBolt .22s steps(1) var(--boltd, 0s) infinite;
 }
 .au-swords.arc .sw b {
   width: 9px; margin-left: -4.5px; top: 24%; height: 54%;   /* 常态=细·短·淡的普通小蓝电 */
@@ -1205,7 +1236,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
  * 容器加 transform/filter——那会建堆叠上下文、毁掉剑与立绘的 z 较量纵深（容器注释红线）。 */
 /* problem 1：柔和单峰涌现（不再 1.4→.8 暴张暴缩="竖一下"硬跳），始终带 --r 旋转(绝不转竖)，
  * 首尾都落在 swHover 0%(translate(0,-2px))=与常态浮游无缝衔接。配合 _reconcileSwords 不重建剑阵。 */
-.au-swords.lei.lei-cast .sw { animation: leiCastPulse .55s ease-out; }
+.au-swords.lei.lei-cast .sw { animation: leiCastPulse .55s ease-out forwards; }
 @keyframes leiCastPulse {
   0%   { transform: rotate(var(--r,0deg)) translate(0,-2px) scale(1);    }
   35%  { transform: rotate(var(--r,0deg)) translate(0,-5px) scale(1.12); }   /* 应雷柔涌 */
@@ -1221,24 +1252,26 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
  * 左侧剑=身前(大·亮·z6，压在立绘前)、右侧剑=身后(小·暗·z-1，钻到立绘后)，
  * 而非旧版上小下大的俯视椭圆。10 柄仍均布成环绕人身的椭圆，剑锋统一朝敌(右·--r≈-90)。 */
 /* 身前·左半 5 柄（近：大·亮·z6） */
-.au-swords .sw:nth-child(1)  { left: 12%; top: 42%; --r: -90deg; scale: 1.18; opacity: 1;   --hd: 6.6s; --hdelay: 0s;    z-index: 6; }
-.au-swords .sw:nth-child(2)  { left: 20%; top: 17%; --r: -92deg; scale: 1.04; opacity: .95; --hd: 5.8s; --hdelay: -1.4s; z-index: 6; }
-.au-swords .sw:nth-child(3)  { left: 23%; top: 67%; --r: -88deg; scale: 1.08; opacity: .96; --hd: 6.2s; --hdelay: -3.1s; z-index: 6; }
-.au-swords .sw:nth-child(4)  { left: 35%; top: 6%;  --r: -91deg; scale: .96;  opacity: .9;  --hd: 6s;   --hdelay: -2s;   z-index: 6; }
-.au-swords .sw:nth-child(5)  { left: 37%; top: 89%; --r: -89deg; scale: .98;  opacity: .9;  --hd: 5.4s; --hdelay: -0.7s; z-index: 6; }
+/* R1：全阵共用同一 --hd/--hdelay=0 → 十柄呼吸(swHover/swMist/swArc)完全同步、齐起齐落；
+ * 缠雷电弧(swBolt)另走 --boltd 错相，保留电流游走的活气(呼吸同步≠电弧也齐闪)。 */
+.au-swords .sw:nth-child(1)  { left: 12%; top: 42%; --r: -90deg; scale: 1.18; opacity: 1;   --hd: 5.5s; --hdelay: 0s; --boltd: 0s;    z-index: 6; }
+.au-swords .sw:nth-child(2)  { left: 20%; top: 17%; --r: -92deg; scale: 1.04; opacity: .95; --hd: 5.5s; --hdelay: 0s; --boltd: -.05s; z-index: 6; }
+.au-swords .sw:nth-child(3)  { left: 23%; top: 67%; --r: -88deg; scale: 1.08; opacity: .96; --hd: 5.5s; --hdelay: 0s; --boltd: -.1s;  z-index: 6; }
+.au-swords .sw:nth-child(4)  { left: 35%; top: 6%;  --r: -91deg; scale: .96;  opacity: .9;  --hd: 5.5s; --hdelay: 0s; --boltd: -.15s; z-index: 6; }
+.au-swords .sw:nth-child(5)  { left: 37%; top: 89%; --r: -89deg; scale: .98;  opacity: .9;  --hd: 5.5s; --hdelay: 0s; --boltd: -.08s; z-index: 6; }
 /* 身后·右半 5 柄（远：小·暗·z-1） */
-.au-swords .sw:nth-child(6)  { left: 65%; top: 7%;  --r: -91deg; scale: .8;   opacity: .82; --hd: 6.8s; --hdelay: -3.6s; z-index: -1; }
-.au-swords .sw:nth-child(7)  { left: 63%; top: 90%; --r: -89deg; scale: .82;  opacity: .82; --hd: 5.9s; --hdelay: -1.1s; z-index: -1; }
-.au-swords .sw:nth-child(8)  { left: 80%; top: 20%; --r: -91deg; scale: .68;  opacity: .76; --hd: 6.1s; --hdelay: -3.3s; z-index: -1; }
-.au-swords .sw:nth-child(9)  { left: 82%; top: 64%; --r: -89deg; scale: .7;   opacity: .78; --hd: 5.5s; --hdelay: -2.4s; z-index: -1; }
-.au-swords .sw:nth-child(10) { left: 90%; top: 42%; --r: -91deg; scale: .62;  opacity: .72; --hd: 6.4s; --hdelay: -4.2s; z-index: -1; }
+.au-swords .sw:nth-child(6)  { left: 65%; top: 7%;  --r: -91deg; scale: .8;   opacity: .82; --hd: 5.5s; --hdelay: 0s; --boltd: -.12s; z-index: -1; }
+.au-swords .sw:nth-child(7)  { left: 63%; top: 90%; --r: -89deg; scale: .82;  opacity: .82; --hd: 5.5s; --hdelay: 0s; --boltd: -.03s; z-index: -1; }
+.au-swords .sw:nth-child(8)  { left: 80%; top: 20%; --r: -91deg; scale: .68;  opacity: .76; --hd: 5.5s; --hdelay: 0s; --boltd: -.18s; z-index: -1; }
+.au-swords .sw:nth-child(9)  { left: 82%; top: 64%; --r: -89deg; scale: .7;   opacity: .78; --hd: 5.5s; --hdelay: 0s; --boltd: -.07s; z-index: -1; }
+.au-swords .sw:nth-child(10) { left: 90%; top: 42%; --r: -91deg; scale: .62;  opacity: .72; --hd: 5.5s; --hdelay: 0s; --boltd: -.14s; z-index: -1; }
 
 /* ===== 剑刃乱舞·劈砍闭环（problem 4）：每把剑沿"各自的弧线"穿透敌身→过冲到敌后→划大弧绕回 =====
  * JS _launchOrbit 给每把剑注入：--strike-x/y（自身中心→各自穿透点的位移，撒在敌身各处）、
  * --strike-r（剑尖朝穿透点的角度）、--strike-delay（错相·乱舞不齐射）、--bow（±兜弧方向·交叉乱舞）。
  * backwards 填充=错相延迟期间保持朝敌姿态(不竖)。任何绕身阵列复用这套协议变量即可。 */
-.au-swords.launch .sw { animation: swStrike .92s cubic-bezier(.34,0,.28,1) var(--strike-delay,0s) backwards; z-index: 9; }
-.au-swords.launch .sw::after { animation: swTrailStrike .92s ease-out var(--strike-delay,0s) backwards; }
+.au-swords.launch .sw { animation: swStrike .92s cubic-bezier(.34,0,.28,1) var(--strike-delay,0s) both; z-index: 9; }
+.au-swords.launch .sw::after { animation: swTrailStrike .92s ease-out var(--strike-delay,0s) both; }
 @keyframes swStrike {
   0%   { transform: translate(0,-2px) rotate(var(--r,0deg)); }
   12%  { transform: translate(calc(var(--strike-x,0px) * -.08), calc(var(--strike-y,0px) * -.08)) rotate(var(--strike-r,-90deg)); }   /* 蓄势·后撤 */
@@ -1532,7 +1565,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 
 /* 法力池行：横条 + 行动经济筹码 */
-.combat-mprow { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.combat-mprow { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
 .mp-pool { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px; }
 .mp-label { font-size: 12px; color: #9fb8d8; letter-spacing: 2px; }
 .mp-bar {
@@ -1557,10 +1590,10 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 .cost-dot.mp-dot { color: #a8c4e0; border-color: rgba(111,159,200,.45); background: rgba(30,46,66,.4); }
 
-/* 操作台：半透明墨底 */
+/* 操作台：半透明墨底（v103 L5：上下极紧凑——回合结束与手牌同屏不滚动） */
 .combat-console {
   background: var(--paper); border: 1px solid var(--border-soft); border-radius: var(--radius-lg);
-  padding: 12px; backdrop-filter: blur(6px);
+  padding: 9px 10px; backdrop-filter: blur(6px);
 }
 
 /* 五行灵气珠池 */
@@ -1596,7 +1629,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 /* 招式按钮：印章 + 名 + 消耗 */
 /* 手牌：紧凑双排同滑网格（一次手势两排齐动）——四区制：法宝法器｜法术｜瞬发｜灵傀。
  * 单屏铁律：格子小而密、字贴框，划的是排内，页面永不竖涨 */
-.combat-spells { display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
+.combat-spells { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
 .spell-grid {
   display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 3px 4px; overflow-x: auto; padding: 1px 1px 2px;
@@ -1646,6 +1679,43 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .shenlei-strip .sl-opt:hover { background: rgba(226,194,119,.34); box-shadow: 0 0 8px rgba(226,194,119,.55); }
 .shenlei-strip .sl-opt.off { opacity: .3; cursor: not-allowed; }
 .spell-grid .spell-btn.treasure .sname { font-size: 12px; }
+
+/* ===== 法宝排版（v103 用户裁决 L1/L2）：左详细(主攻/主防) + 右图标(特效型/悬浮，两排) ===== */
+.arsenal { display: flex; align-items: stretch; gap: 6px; }
+.arsenal-main { display: flex; align-items: stretch; gap: 4px; flex: 0 0 auto; }
+.arsenal-main .tre-col { display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+/* 右侧法宝图标：定两排、按列铺开（数量多则排内横滑，绝不竖涨撑爆 UI——L2"分两排平均分布"） */
+.arsenal-side {
+  flex: 1 1 auto; min-width: 0; display: grid;
+  grid-auto-flow: column; grid-template-rows: repeat(2, 1fr);
+  gap: 4px; align-content: center; justify-content: start;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 1px;
+}
+.arsenal-side::-webkit-scrollbar { display: none; }
+.tre-icon {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 52px; min-width: 52px; height: 37px; gap: 1px; padding: 2px 3px;
+  border-radius: 6px; cursor: pointer; font-family: inherit; color: #f2dfae;
+  border: 1px solid rgba(226,194,119,.5);
+  background: linear-gradient(180deg, rgba(226,194,119,.1), rgba(226,194,119,.03));
+  box-shadow: inset 0 0 10px rgba(226,194,119,.06); transition: all .15s;
+}
+.tre-icon .seal { width: 19px; height: 19px; font-size: 11px; border-width: 1px; border-radius: 2px; box-shadow: 0 0 8px rgba(226,194,119,.45); font-style: normal; }
+.tre-icon .ti-name { font-size: 8.5px; line-height: 1; max-width: 48px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; letter-spacing: 0; }
+.tre-icon .ti-tag {
+  position: absolute; top: -4px; right: -3px; z-index: 2; font-style: normal;
+  width: 13px; height: 13px; line-height: 13px; text-align: center; font-size: 8.5px; font-weight: 700; border-radius: 3px; rotate: 6deg;
+}
+.tre-icon .ti-tag.atk { color: #2a1f10; background: linear-gradient(160deg, #f0dca0, #cfae62); }
+.tre-icon .ti-tag.def { color: #cfe2f0; background: linear-gradient(160deg, #2c4a66, #1b2e42); border: 1px solid rgba(111,159,200,.55); }
+.tre-icon .ti-tag.float { color: #2a1f10; background: linear-gradient(160deg, #bfe0ff, #79a8e0); }
+.tre-icon:hover:not(:disabled) { border-color: #e2c277; box-shadow: 0 0 12px rgba(226,194,119,.3); }
+.tre-icon.off { filter: grayscale(.6); opacity: .5; cursor: not-allowed; }
+.tre-icon.armed { border-color: var(--gold-bright); box-shadow: 0 0 13px rgba(236,217,168,.6); }
+.tre-icon.floating { border-color: var(--gold-bright); box-shadow: 0 0 11px rgba(236,217,168,.5); animation: floatGlow 2.2s ease-in-out infinite; }
+/* 法术锁死 8（L4）：4 列 × 2 排定格对齐——列宽均分、绝不横滑 */
+.spell-grid.spell8 { grid-template-columns: 14px repeat(4, minmax(0, 1fr)); grid-auto-flow: column; overflow-x: visible; }
+.spell-grid.spell8 .spell-btn { width: auto; min-width: 0; }
 .zone-tag {
   writing-mode: vertical-rl; text-orientation: upright; flex-shrink: 0;
   font-size: 10px; letter-spacing: 1px; color: var(--ink-faint);

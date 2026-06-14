@@ -121,7 +121,7 @@
                 desc: "三道神雷缠上本命飞剑——三回合内主攻法宝带金雷（伤害+8、克邪×1.5）。耗神雷三道。" },
     leidun:     { name: "雷遁", mp: 5, range: [0, 0], type: "buff", quick: true, source: "treasure", elem: "mu",
                 chargeCost: { id: "shenlei", n: 1 }, blinkMove: true, needTrait: "fenglei",
-                desc: "化一道银弧穿亚空间而行——本回合移动无视挡线困足、身法+4（瞬发）。需御「风雷翅」方可施展。耗神雷一道。韩跑跑的本钱。" },
+                desc: "化一道银弧穿亚空间而行——本回合可瞬移到场上任意空位、无视挡线困足（瞬发）。需御「风雷翅」方可施展。耗神雷一道。韩跑跑的本钱。" },
   };
 
   function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -530,8 +530,9 @@
     }
     movableCells(unit) {
       // 玩家中途盘点：只亮"剩余步数"够得着的格（凌空步程大，亮的格也随之多——视野与可动同扩）
+      // 雷遁本回合(_blinkTurn)：穿亚空间——可达范围放大到全场（只看落点空否，长距离瞬移）
       const cap = unit === this.player
-        ? Math.max(0, this.moveCap(unit) - (this._pMoved || 0))
+        ? (this.player._blinkTurn ? this.W : Math.max(0, this.moveCap(unit) - (this._pMoved || 0)))
         : this.moveCap(unit);
       const cells = [];
       for (let p = 0; p < this.W; p++) if (this.canMoveTo(unit, p, cap)) cells.push(p);
@@ -548,10 +549,12 @@
       this._pQuickUsed = false;  // 瞬发已用
     }
     get _pActed() { return this._pActsUsed >= this._pActsMax; }   // 兼容旧判定
-    playerCanMove() { return this.status === "ongoing" && this._pMoved < this.moveCap(this.player); }
+    playerCanMove() { return this.status === "ongoing" && this._pMoved < (this.player._blinkTurn ? this.W : this.moveCap(this.player)); }
     playerMove(toPos) {
       if (this.status !== "ongoing") return { ok: false, reason: "战斗已结束" };
-      const left = this.moveCap(this.player) - this._pMoved;
+      // 雷遁本回合：穿亚空间——移动上限放大到全场（只看落点，长距离瞬移）
+      const cap = this.player._blinkTurn ? this.W : this.moveCap(this.player);
+      const left = cap - this._pMoved;
       if (left <= 0) return { ok: false, reason: "本回合身法已尽" };
       const d = Math.abs(toPos - this.player.pos);
       if (d > left) return { ok: false, reason: "脚程不够" };
@@ -561,7 +564,7 @@
       // 雷遁不踩地：亚空间穿行，困足阵奈何不得
       const dir0 = toPos > this.player.pos ? 1 : -1;
       let finalPos = toPos, trapped = false;
-      if (!this.player.blink && (this.player.alt || 0) === 0) {   // 雷遁/凌空不踩地，困足阵奈何不得
+      if (!this.player.blink && !this.player._blinkTurn && (this.player.alt || 0) === 0) {   // 雷遁/凌空不踩地，困足阵奈何不得
         for (let p = this.player.pos + dir0; ; p += dir0) {
           const z = this.zoneAt(p, "kunzu");
           if (z && z.team !== "player") { finalPos = p; trapped = true; break; }
@@ -1084,8 +1087,8 @@
       }
       if (sp.blinkMove) {
         this.player._blinkTurn = true;
-        this._pMoved = Math.max(0, (this._pMoved || 0) - 4);   // 身法+4（亚空间不走寻常路，风雷翅遁程远）
-        this._log(`你周身银光一闪、整个人没入亚空间——本回合行走无视挡线困足（身法+4）！`);
+        this._pMoved = 0;   // 穿亚空间：本回合移动上限放大到全场（落点随心、长距离瞬移——只看落点空否）
+        this._log(`你周身银光一闪、整个人没入亚空间——本回合穿空遁走、无视挡线困足，落点随心（移动范围大增）！`);
         this._emitFx("player", "miss", "雷遁");
         this._checkEnd();
         return { ok: true };

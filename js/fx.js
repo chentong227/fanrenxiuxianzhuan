@@ -326,27 +326,87 @@
       this._run();
     },
 
-    /* 雷遁·穿空轨迹：消失点→落点画一道金色穿空残迹（亚空间被撕开的余光）。
-     * 由 UI 在瞬移落定后调用——from/to 为画布坐标 */
-    blinkTrace(from, to) {
-      if (!this._ctx || !from || !to) return;
-      const dx = to.x - from.x, dy = to.y - from.y;
-      const dist = Math.hypot(dx, dy) || 1;
-      const lift = dist * 0.18 + 14;   // 穿空弧略拱起的高度
-      // 金色光带主轨（拱形）+ 白炽内芯
-      this.ribbon(from, to, { core: "#ffd970", glowC: "#ffb01e", width: 5, flyMs: 180, tail: 0.9, hold: 90, curve: lift });
-      this.ribbon(from, to, { core: "#fff", glowC: "#fff7d6", width: 1.8, flyMs: 180, tail: 0.7, hold: 80, curve: lift });
-      // 沿途短金弧（空间裂口的电蛇）
-      for (let i = 0; i < 4; i++) {
-        const t = (i + 1) / 5;
-        const px = from.x + dx * t, py = from.y + dy * t - Math.sin(t * Math.PI) * lift;
-        this.arc(px - rnd(8, 18), py - rnd(6, 14), px + rnd(8, 18), py + rnd(6, 14), { c: "255,214,90", w: 1.6, life: 200 });
+    /* 放射状金雷（落地炸开的零件）：自中心向 ang 方向射出一道之字闪电 */
+    _radialBolt(cx, cy, ang, len, o = {}) {
+      if (!this._ctx) return;
+      const n = 7, pts = [[cx, cy]];
+      const dx = Math.cos(ang), dy = Math.sin(ang);
+      const nx = -dy, ny = dx;
+      for (let i = 1; i < n; i++) {
+        const t = i / n, jag = rnd(-1, 1) * 9 * (1 - t * 0.3);
+        pts.push([cx + dx * len * t + nx * jag, cy + dy * len * t + ny * jag]);
       }
-      // 穿空残粒：沿弧洒一串金芒
-      for (let i = 0; i < 12 * this._degraded; i++) {
-        const t = rnd(0.05, 0.95);
-        this.mote(from.x + dx * t, from.y + dy * t - Math.sin(t * Math.PI) * lift, { vy: rnd(-.6, .4), life: 360, delay: t * 160, size: rnd(2, 3.4), c: i % 3 ? "#ffe39a" : "#fff" });
+      pts.push([cx + dx * len, cy + dy * len]);
+      this._bolts.push({
+        pts, branches: [], life: o.life || 340, t: 0, w: o.w || 2.2,
+        bolt: o.bolt || ["255,176,30", "255,214,90", "255,248,210"],
+      });
+    },
+
+    /* 雷遁·传送门·吞入（R5 消失帧）：原地撕开金色空间洞→周身金芒向心汇拢被吸入→
+     * 大环向内收缩湮灭。配合落点 portalEmerge=“进一个洞、从另一个洞穿出”（参考图1金色环洞）。 */
+    portalSwallow(at) {
+      if (!this._ctx || !at) return;
+      const cx = at.x, cy = at.y - 6;
+      // 空间洞张开：金白双环先涨，再加一道大环向内收=被空间吞没
+      this.ring(cx, cy, { r: 8, vr: 7.0, life: 230, lw: 3.2, c: "#ffd970" });
+      this.ring(cx, cy, { r: 6, vr: 5.2, life: 210, lw: 1.8, c: "#fff7d6" });
+      this._push({ ringFx: true, x: cx, y: cy, r: 46, vr: -4.4, life: 300, t: 0, c: "#ffe39a", lw: 3 });
+      // 洞口电蛇：绕口一圈短金弧（亚空间裂口）
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * TAU, r = 30;
+        this.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.7,
+          cx + Math.cos(a + 0.7) * r, cy + Math.sin(a + 0.7) * r * 0.7, { c: "255,214,90", w: 1.6, life: 240 });
       }
+      // 被吸入：周身金芒向心汇拢
+      for (let i = 0; i < 14 * this._degraded; i++) {
+        const a = rnd(0, TAU), r = rnd(28, 52);
+        const px = cx + Math.cos(a) * r, py = cy + Math.sin(a) * r * 0.8;
+        this.mote(px, py, { vx: (cx - px) * 0.05, vy: (cy - py) * 0.05, life: 300, size: rnd(2, 3.6), c: i % 3 ? "#ffe39a" : "#fff", delay: rnd(0, 60) });
+      }
+      // 竖直金光柱（破空遁入的瞬间）
+      for (let i = 0; i < 8 * this._degraded; i++) this.spark(cx + rnd(-5, 5), cy + 6, { vy: rnd(-7, -3), c: "#ffe39a", life: 240 });
+      this.flash("#fff2c8", 90, .32);
+      this.shake(6);
+      this._run();
+    },
+
+    /* 雷遁·传送门·穿出（R5 出现帧）：落点金色空间洞乍现→炸开（金白环爆张+洞口电蛇）。 */
+    portalEmerge(at) {
+      if (!this._ctx || !at) return;
+      const cx = at.x, cy = at.y - 6;
+      this.ring(cx, cy, { r: 10, vr: 8.5, life: 300, lw: 3.6, c: "#ffd970" });
+      this.ring(cx, cy, { r: 6, vr: 6.0, life: 240, lw: 2, c: "#fff" });
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * TAU, r = 26;
+        this.arc(cx, cy, cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.7, { c: "255,214,90", w: 1.7, life: 220 });
+      }
+      this.flash("#fff2c8", 70, .26);
+      this._run();
+    },
+
+    /* 雷遁·落地炸开（R6，参考图2 风雷翅展开+金雷放射）：落点为心，金雷向四周放射状炸开
+     * （偏水平更长=风雷翅左右展开）+左右两道大横弧（翅展意象）+金爆+双冲击环+闪+震。 */
+    leiLandBurst(at) {
+      if (!this._ctx || !at) return;
+      const cx = at.x, cy = at.y - 6;
+      // ① 放射金雷：自落点向四周射出 N 道之字金雷（偏水平的更长=翅展）
+      const N = this._degraded < 1 ? 8 : 11;
+      for (let i = 0; i < N; i++) {
+        const a = (i / N) * TAU + rnd(-0.12, 0.12);
+        const len = Math.abs(Math.cos(a)) > 0.5 ? rnd(70, 110) : rnd(40, 70);
+        this._radialBolt(cx, cy, a, len, { w: 2.4, life: 360 });
+      }
+      // ② 风雷翅意象：左右两道大横弧扫出
+      this.arc(cx, cy, cx - 96, cy - rnd(6, 22), { c: "255,214,90", w: 2.6, life: 320 });
+      this.arc(cx, cy, cx + 96, cy - rnd(6, 22), { c: "255,214,90", w: 2.6, life: 320 });
+      // ③ 金爆 + 冲击环 + 闪 + 震
+      this.burst(cx, cy, "jinlei", 28, { power: 6 });
+      this.ring(cx, cy + 6, { c: "#ffd970", vr: 6.2, life: 360, lw: 3.4 });
+      this.ring(cx, cy + 6, { c: "#fff", vr: 3.6, life: 280, lw: 1.8 });
+      this.flash("#ffe39a", 150, .46);
+      this.shake(11);
+      if (typeof Sfx !== "undefined") Sfx.play("thunder");
       this._run();
     },
 
@@ -421,25 +481,16 @@
         }, 220);
         F._run();
       },
-      /* 雷遁：瞬移不是快，是"换了个空间"——原地金弧吞身（消失帧），不在此画"出现"
-       * （出现帧由 UI 在落点再放一次 leidun_out——两段式瞬移） */
+      /* 雷遁·消失帧（R5）：瞬移不是快、是"换了个空间"——原地撕开金色空间洞、人被吸入
+       * （portalSwallow）。出现帧由 UI 在落点再放一次 leidun_out=从另一个洞穿出（两段式·长距离）。 */
       leidun(F, from) {
-        F.lightning(from.x, from.y - 8, { gold: true, small: true, life: 220 });
-        F.burst(from.x, from.y - 12, "jinlei", 20, { power: 4.4 });
-        F.ring(from.x, from.y - 10, { r: 44, vr: -3.6, life: 240, lw: 2.8, c: "#ffd970" });   // 大金环向内收缩=被空间吞没
-        // 竖直金光柱（破空遁入的瞬间）
-        for (let i = 0; i < 10 * F._degraded; i++) F.spark(from.x + rnd(-6, 6), from.y - 4, { vy: rnd(-7, -3), c: "#ffe39a", life: 260 });
-        F.flash("#fff2c8", 90, .36);
-        F._run();
+        F.portalSwallow(from);
       },
-      /* 雷遁·出现帧：落点金光炸出（亚空间破口乍现） */
+      /* 雷遁·出现帧（R5+R6）：落点金色空间洞穿出（portalEmerge）+ 金雷放射状落地炸开
+       * （leiLandBurst，参考图2 风雷翅+金雷放射）。 */
       leidun_out(F, from) {
-        F.lightning(from.x, from.y - 8, { gold: true, small: true, life: 200 });
-        F.burst(from.x, from.y - 12, "jinlei", 16, { power: 3.8 });
-        F.ring(from.x, from.y - 10, { c: "#fff", vr: 3.8, life: 240, lw: 2 });
-        F.ring(from.x, from.y - 10, { c: "#ffd970", vr: 2.4, life: 320, lw: 2.6 });
-        F.flash("#fff2c8", 70, .26);
-        F._run();
+        F.portalEmerge(from);
+        F.leiLandBurst(from);
       },
       /* 眨眼剑法：两道交叉钢色快斩（武学：快、白、利） */
       zhayan(F, from, to) {
