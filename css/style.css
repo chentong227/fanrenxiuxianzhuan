@@ -3356,10 +3356,16 @@ html, body { touch-action: manipulation; }
 }
 
 /* ===== 特效画布（fx.js）：铺满战场、永不挡点击 ===== */
+/* v111 身后/身前双层：单块 z:26 会让护体光环/地纹也"飘在表面"。拆成——
+ *   .fx-canvas-back  z:1  画在 .axis-units(z:2) 之下＝贴着所有人物身后（护体/光环/地纹/吐纳）
+ *   .fx-canvas-front z:26 仍盖在所有人物之上＝命中火花/冲击/剑出袭/天雷
+ * z 铁律不破：身后层只在"人物整体之下、场景背景之上"，不介入人物之间的深排序。 */
 .fx-canvas {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  z-index: 26; pointer-events: none;
+  pointer-events: none;
 }
+.fx-canvas-back  { z-index: 1; }
+.fx-canvas-front { z-index: 26; }
 /* 震屏：天雷/重击的物理反馈（位移量由 --fx-shake 注入） */
 @keyframes fxShake {
   0%, 100% { translate: 0 0; }

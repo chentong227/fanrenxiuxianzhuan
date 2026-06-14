@@ -7,8 +7,12 @@
  *    长春功=木灵绿芒回环；定身符=金箓锁环……不是"换个颜色的同一团粒子"。
  * 2. 手机优先（iPhone 14PM 量级）：辉光用预渲染精灵图（offscreen 一次画好，
  *    drawImage 缩放复用——比每粒子径向渐变快一个量级）；粒子全场预算封顶；
- *    连续两帧 >34ms 自动降档（出粒减半 + 画布 DPR 降到 1.5，纯过程式辉光对分辨率不敏感，
- *    几乎无可见画质损失，却是手机填充率最大的一笔省）；回稳即恢复；无活物时 RAF 即停。
+ *    连续两帧 >34ms 自动降档（v111 顺序：先出粒减半，仍卡才把画布 DPR 降到 1.75——
+ *    先减粒子是因为填充率第一笔省、且 DPR 降幅收窄到 1.75 可避免"特效比人物糊一层"；
+ *    纯过程式辉光对分辨率不敏感，几乎无可见画质损失）；回稳即恢复 DPR=2；无活物时 RAF 即停。
+ * 4. 身后/身前双层（v111）：单块 .fx-canvas 永远 z:26 盖在人物上＝光环/护体也"飘在表面"。
+ *    拆成 .fx-canvas-back(z:1，画在人物之后)＋.fx-canvas-front(z:26)：护体光环/地面阵纹/
+ *    吐纳绿芒进身后层"贴着身后"，命中火花/冲击/剑出袭/天雷留身前层——景深归位。
  * 3. 纯过程式：不吃美术资产、不进存档，纯演出层——逻辑帧无依赖。
  * ============================================================ */
 (function () {
@@ -41,24 +45,36 @@
   }
 
   const Fx = {
-    _cv: null, _ctx: null, _host: null, _glow: null,
+    // _cv/_ctx 恒指"身前层"(z:26)——沿用旧字段名，所有既有 if(!this._ctx) 守卫不动；
+    // _cvBack/_ctxBack 是 v111 新增的"身后层"(z:1，画在人物之后)。
+    _cv: null, _ctx: null, _cvBack: null, _ctxBack: null, _host: null, _glow: null,
     _parts: [], _bolts: [], _strokes: [], _swords: [], _arcs: [], _raf: 0,
     _budget: 420,           // 粒子全场封顶（手机红线）
     _degraded: 1,           // 降档系数：帧难看时减半出粒
-    _dprCap: 2,             // 画布分辨率上限：帧难看时降到 1.5（填充率最大省，回稳复原）
+    _dprCap: 2,             // 画布分辨率上限：帧难看时降到 1.75（v111 收窄降幅，回稳复原 2）
     _slowFrames: 0,
+    _emitLayer: "front",    // 当前发射层：front=身前(命中/弹道/天雷)，back=身后(光环/护体/地纹)
+
 
     /* ---------- 装配 ---------- */
     ensure(host) {
       if (!host) return null;
       if (this._cv && this._host === host && this._cv.isConnected) { this._fit(); return this._ctx; }
+      if (this._cvBack && this._cvBack.parentNode) this._cvBack.parentNode.removeChild(this._cvBack);
       if (this._cv && this._cv.parentNode) this._cv.parentNode.removeChild(this._cv);
       this._host = host;
-      const cv = document.createElement("canvas");
-      cv.className = "fx-canvas";
-      host.appendChild(cv);
-      this._cv = cv;
-      this._ctx = cv.getContext("2d");
+      // 身后层先建（z:1，画在人物之后）——光环/护体/地纹贴着身后，不再浮于表面
+      const cb = document.createElement("canvas");
+      cb.className = "fx-canvas fx-canvas-back";
+      host.appendChild(cb);
+      this._cvBack = cb;
+      this._ctxBack = cb.getContext("2d");
+      // 身前层后建（z:26）——命中火花/冲击/剑出袭/天雷，沿用旧 .fx-canvas 层级
+      const cf = document.createElement("canvas");
+      cf.className = "fx-canvas fx-canvas-front";
+      host.appendChild(cf);
+      this._cv = cf;
+      this._ctx = cf.getContext("2d");
       if (!this._glow) this._glow = makeGlowSprite();
       this._fit();
       return this._ctx;
@@ -68,7 +84,9 @@
       const dpr = Math.min(this._dprCap || 2, window.devicePixelRatio || 1);
       this._dpr = dpr;
       const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
-      if (this._cv.width !== w || this._cv.height !== h) { this._cv.width = w; this._cv.height = h; }
+      for (const cv of [this._cvBack, this._cv]) {
+        if (cv && (cv.width !== w || cv.height !== h)) { cv.width = w; cv.height = h; }
+      }
       this._w = r.width; this._h = r.height; this._rect = r;
     },
     at(anchor, ry = 0.42) {
@@ -82,23 +100,36 @@
      * 把"首次施法才触发的纹理上传"提前到开战，玩家无感。零视觉、零存档、无 RAF。 */
     warm(host) {
       try {
-        const ctx = this.ensure(host);
+        this.ensure(host);
         if (!this._glow) this._glow = makeGlowSprite();
-        if (!ctx || !this._cv) return;
-        if (!this._cv.width || !this._cv.height) { this._cv.width = 32; this._cv.height = 32; }
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-        ctx.globalAlpha = 0.01;                      // 近乎不可见——即便抢在 clear 前刷出也无感
-        ctx.drawImage(this._glow, 0, 0, 32, 32);     // 强制辉光精灵上传为 GPU 纹理
-        ctx.restore();
-        ctx.clearRect(0, 0, this._cv.width, this._cv.height);
+        // v111：两层画布各预热一次——各自是独立 2D 上下文，纹理上传互不共享
+        for (const cv of [this._cvBack, this._cv]) {
+          if (!cv) continue;
+          const ctx = cv.getContext("2d");
+          if (!cv.width || !cv.height) { cv.width = 32; cv.height = 32; }
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          ctx.globalAlpha = 0.01;                    // 近乎不可见——即便抢在 clear 前刷出也无感
+          ctx.drawImage(this._glow, 0, 0, 32, 32);   // 强制辉光精灵上传为 GPU 纹理
+          ctx.restore();
+          ctx.clearRect(0, 0, cv.width, cv.height);
+        }
       } catch (e) {}
     },
 
     /* ---------- 发射器原语（全部走预算闸） ---------- */
     _push(p) {
       if (this._parts.length >= this._budget) return;
+      p._layer = this._emitLayer;   // v111：粒子继承当前发射层（身后/身前）
       this._parts.push(p);
+    },
+    /* 发射层切换（v111 身后/身前双层）：在回调内发射的实体打 layer 标记——
+     * 护体光环/地面阵纹/吐纳绿芒走"身后层"(z:1，画在人物之后，不再浮于表面)，
+     * 命中/弹道/天雷默认"身前层"(z:26)。用 prev 还原以支持嵌套（如 huti→tuna）。 */
+    _emit(layer, fn) {
+      const prev = this._emitLayer;
+      this._emitLayer = layer;
+      try { fn(); } finally { this._emitLayer = prev; }
     },
     /* 软光粒子 */
     mote(x, y, o = {}) {
@@ -450,13 +481,15 @@
       },
       /* 青元剑诀·剑盾：青色剑环护体 */
       qingyuan_jiandun(F, from) {
-        F.ring(from.x, from.y - 8, { c: "#7fe5d2", vr: 2.2, life: 620, lw: 3 });
-        F.ring(from.x, from.y - 8, { c: "#bff3e8", vr: 1.4, life: 760, lw: 1.6 });
-        for (let i = 0; i < 12 * F._degraded; i++) {
-          const a = (i / 12) * TAU;
-          F.mote(from.x + Math.cos(a) * 30, from.y - 8 + Math.sin(a) * 38, { vy: -.5, life: 700, size: 2.6, c: "#a8f0e0", delay: i * 28 });
-        }
-        F._run();
+        F._emit("back", () => {   // 剑盾护体：青环＋绕身青芒走身后层（贴着人物身后＝护体halo）
+          F.ring(from.x, from.y - 8, { c: "#7fe5d2", vr: 2.2, life: 620, lw: 3 });
+          F.ring(from.x, from.y - 8, { c: "#bff3e8", vr: 1.4, life: 760, lw: 1.6 });
+          for (let i = 0; i < 12 * F._degraded; i++) {
+            const a = (i / 12) * TAU;
+            F.mote(from.x + Math.cos(a) * 30, from.y - 8 + Math.sin(a) * 38, { vy: -.5, life: 700, size: 2.6, c: "#a8f0e0", delay: i * 28 });
+          }
+          F._run();
+        });
       },
       /* ============================================================
        * 辟邪神雷三连（v98 用户点名"做最好看的金色雷"）——金芯白炽，雷者天威
@@ -625,51 +658,65 @@
       },
       /* 长春吐纳/护体：木灵绿芒自下而上回环（生生不息） */
       tuna(F, from) {
-        for (let i = 0; i < 14 * F._degraded; i++) {
-          const a = rnd(0, TAU);
-          F.mote(from.x + Math.cos(a) * rnd(12, 30), from.y + 26, {
-            vy: rnd(-1.4, -0.8), wob: 8, life: 900, size: rnd(2.6, 4.2),
-            c: i % 3 ? "#9fe3ae" : "#dcffe2", delay: i * 40,
-          });
-        }
-        F._run();
+        F._emit("back", () => {   // 长春吐纳：木灵绿芒自下而上回环＝身后层（绕身而非贴脸）
+          for (let i = 0; i < 14 * F._degraded; i++) {
+            const a = rnd(0, TAU);
+            F.mote(from.x + Math.cos(a) * rnd(12, 30), from.y + 26, {
+              vy: rnd(-1.4, -0.8), wob: 8, life: 900, size: rnd(2.6, 4.2),
+              c: i % 3 ? "#9fe3ae" : "#dcffe2", delay: i * 40,
+            });
+          }
+          F._run();
+        });
       },
       huti(F, from) {
-        F.ring(from.x, from.y - 6, { c: "#7fd99a", vr: 2, life: 600, lw: 2.6 });
-        F.RECIPES.tuna(F, from);
+        F._emit("back", () => {   // 护体：绿环＋吐纳绿芒全在身后层（tuna 内层 _emit 会以 prev 还原）
+          F.ring(from.x, from.y - 6, { c: "#7fd99a", vr: 2, life: 600, lw: 2.6 });
+          F.RECIPES.tuna(F, from);
+        });
       },
       ningshen(F, from) {
-        for (let i = 0; i < 10 * F._degraded; i++) {
-          const a = (i / 10) * TAU;
-          F.mote(from.x + Math.cos(a) * 40, from.y - 6 + Math.sin(a) * 40, {
-            vx: -Math.cos(a) * 1.1, vy: -Math.sin(a) * 1.1, life: 620, size: 3, c: "#cfe3ff", delay: i * 30,
-          });
-        }
-        F._run();
+        F._emit("back", () => {   // 凝神：灵光向身体内收＝身后层（聚气于身后，不糊脸）
+          for (let i = 0; i < 10 * F._degraded; i++) {
+            const a = (i / 10) * TAU;
+            F.mote(from.x + Math.cos(a) * 40, from.y - 6 + Math.sin(a) * 40, {
+              vx: -Math.cos(a) * 1.1, vy: -Math.sin(a) * 1.1, life: 620, size: 3, c: "#cfe3ff", delay: i * 30,
+            });
+          }
+          F._run();
+        });
       },
       /* 阵旗：地面灵纹环亮起（铺设感） */
       zhenqi_kunzu(F, from, to) {
-        const p = to || from;
-        F.ring(p.x, p.y + 18, { c: "#d9a8ff", vr: 3.2, life: 540, lw: 2.6 });
-        F.ring(p.x, p.y + 18, { c: "#a8c8ff", vr: 2.1, life: 700, lw: 1.4 });
-        F._run();
+        F._emit("back", () => {   // 阵旗地纹：灵纹环在脚下地面＝身后层（铺在地、压在人物身后）
+          const p = to || from;
+          F.ring(p.x, p.y + 18, { c: "#d9a8ff", vr: 3.2, life: 540, lw: 2.6 });
+          F.ring(p.x, p.y + 18, { c: "#a8c8ff", vr: 2.1, life: 700, lw: 1.4 });
+          F._run();
+        });
       },
       zhenqi_juling(F, from, to) {
-        const p = to || from;
-        F.ring(p.x, p.y + 18, { c: "#9fe3ae", vr: 2.6, life: 620, lw: 2.4 });
-        for (let i = 0; i < 8 * F._degraded; i++) {
-          F.mote(p.x + rnd(-30, 30), p.y + 16, { vy: -1, life: 800, size: 3, c: "#dcffe2", delay: i * 60 });
-        }
-        F._run();
+        F._emit("back", () => {   // 聚灵地纹：地面绿环＋上浮灵气＝身后层
+          const p = to || from;
+          F.ring(p.x, p.y + 18, { c: "#9fe3ae", vr: 2.6, life: 620, lw: 2.4 });
+          for (let i = 0; i < 8 * F._degraded; i++) {
+            F.mote(p.x + rnd(-30, 30), p.y + 16, { vy: -1, life: 800, size: 3, c: "#dcffe2", delay: i * 60 });
+          }
+          F._run();
+        });
       },
       /* 回血/回灵丹药：暖光上浮 */
       huixue_dan(F, from) {
-        for (let i = 0; i < 8 * F._degraded; i++) F.mote(from.x + rnd(-12, 12), from.y + rnd(-4, 10), { vy: -1, life: 700, size: 3.4, c: "#ffd9a8", delay: i * 50 });
-        F._run();
+        F._emit("back", () => {   // 丹药暖光上浮＝身后层（自体疗愈光晕，绕身后升腾）
+          for (let i = 0; i < 8 * F._degraded; i++) F.mote(from.x + rnd(-12, 12), from.y + rnd(-4, 10), { vy: -1, life: 700, size: 3.4, c: "#ffd9a8", delay: i * 50 });
+          F._run();
+        });
       },
       huiyuan_dan(F, from) {
-        for (let i = 0; i < 8 * F._degraded; i++) F.mote(from.x + rnd(-12, 12), from.y + rnd(-4, 10), { vy: -1, life: 700, size: 3.4, c: "#a8c8ff", delay: i * 50 });
-        F._run();
+        F._emit("back", () => {   // 回灵丹冷光上浮＝身后层
+          for (let i = 0; i < 8 * F._degraded; i++) F.mote(from.x + rnd(-12, 12), from.y + rnd(-4, 10), { vy: -1, life: 700, size: 3.4, c: "#a8c8ff", delay: i * 50 });
+          F._run();
+        });
       },
     },
 
@@ -716,28 +763,42 @@
       const step = (now) => {
         const dt = Math.min(40, now - last); last = now;
         // 性能降档：连续两帧超 34ms → 出粒减半（手机兜底）；回稳则恢复
-        if (dt > 34) { if (++this._slowFrames >= 2) { this._degraded = 0.5; this._dprCap = 1.5; } }
-        else if (this._slowFrames) { this._slowFrames = 0; this._degraded = Math.min(1, this._degraded + 0.1); this._dprCap = 2; }
+        // v111 降档顺序：先减粒子（填充率第一笔省），仍持续卡顿才降 DPR，且只降到 1.75
+        // （避免特效层比人物贴图"糊一层"）；任一帧回稳即恢复出粒并复原 DPR=2。
+        if (dt > 34) {
+          if (++this._slowFrames >= 2) this._degraded = 0.5;
+          if (this._slowFrames >= 5) this._dprCap = 1.75;
+        } else if (this._slowFrames) {
+          this._slowFrames = 0; this._degraded = Math.min(1, this._degraded + 0.1); this._dprCap = 2;
+        }
         if (!this._frame(dt)) { this._raf = 0; return; }
         this._raf = requestAnimationFrame(step);
       };
       this._raf = requestAnimationFrame(step);
     },
     _frame(dt) {
-      const ctx = this._ctx;
-      if (!ctx || (!this._parts.length && !this._bolts.length && !this._strokes.length && !this._swords.length && !this._arcs.length)) {
-        if (ctx) ctx.clearRect(0, 0, this._cv.width, this._cv.height);
+      const ctxF = this._ctx, ctxB = this._ctxBack;
+      if (!ctxF || (!this._parts.length && !this._bolts.length && !this._strokes.length && !this._swords.length && !this._arcs.length)) {
+        if (ctxF && this._cv) ctxF.clearRect(0, 0, this._cv.width, this._cv.height);
+        if (ctxB && this._cvBack) ctxB.clearRect(0, 0, this._cvBack.width, this._cvBack.height);
         return false;
       }
       this._fit();
       const dpr = this._dpr, glow = this._glow;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, this._w, this._h);
-      ctx.globalCompositeOperation = "lighter";
+      // v111：两层各自重置坐标系并清屏（lighter 混合）；按实体 _layer 路由到身后/身前
+      for (const c of [ctxB, ctxF]) {
+        if (!c) continue;
+        c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        c.clearRect(0, 0, this._w, this._h);
+        c.globalCompositeOperation = "lighter";
+      }
+      // 身后层(z:1)画在人物之后；无标记/标记 front 的实体走身前层(z:26)
+      const pick = e => (e && e._layer === "back" && ctxB) ? ctxB : ctxF;
 
       // 连续光带（draw-on：头部推进、尾部熄灭、到点后短驻再散）
       this._strokes = this._strokes.filter(s => (s.t += dt) < s.flyMs + s.hold + 240);
       for (const s of this._strokes) {
+        const ctx = pick(s);
         const n = s.pts.length - 1;
         const prog = Math.min(1, s.t / s.flyMs);
         const head = Math.max(1, Math.round(prog * n));
@@ -767,6 +828,7 @@
       // 飞剑环阵（青竹云剑绕身：椭圆透视轨道+剑身缠金雷）
       this._swords = this._swords.filter(s => (s.t += dt) < s.life);
       for (const s of this._swords) {
+        const ctx = pick(s);
         const introK = Math.min(1, s.t / s.intro);
         const outK = s.t > s.life - s.outro ? Math.max(0, (s.life - s.t) / s.outro) : 1;
         const alpha = introK * outK;
@@ -791,6 +853,7 @@
       // 短金弧
       this._arcs = this._arcs.filter(a => (a.t += dt) < a.life);
       for (const a of this._arcs) {
+        const ctx = pick(a);
         const k = 1 - a.t / a.life;
         ctx.lineCap = "round"; ctx.lineJoin = "round";
         ctx.strokeStyle = `rgba(${a.c},${(.9 * k).toFixed(3)})`; ctx.lineWidth = a.w;
@@ -802,6 +865,7 @@
       // 闪电折线
       this._bolts = this._bolts.filter(b => (b.t += dt) < b.life);
       for (const b of this._bolts) {
+        const ctx = pick(b);
         const k = 1 - b.t / b.life;
         const flick = (Math.sin(b.t * 0.09) + 1.6) / 2.6;
         const draw = (pts, w) => {
@@ -823,15 +887,17 @@
       // 粒子
       this._parts = this._parts.filter(p => (p.t += dt) < p.life);
       for (const p of this._parts) {
+        const ctx = pick(p);
         if (p.t < 0) continue;
         const k = 1 - p.t / p.life;
         if (p.rect) {
-          ctx.globalCompositeOperation = "source-over";
-          ctx.globalAlpha = (p.a != null ? p.a : .5) * k;
-          ctx.fillStyle = p.c;
-          ctx.fillRect(0, 0, this._w, this._h);
-          ctx.globalAlpha = 1;
-          ctx.globalCompositeOperation = "lighter";
+          // 全屏调色闪光：始终走身前层（盖全画面，不能只染背景）
+          ctxF.globalCompositeOperation = "source-over";
+          ctxF.globalAlpha = (p.a != null ? p.a : .5) * k;
+          ctxF.fillStyle = p.c;
+          ctxF.fillRect(0, 0, this._w, this._h);
+          ctxF.globalAlpha = 1;
+          ctxF.globalCompositeOperation = "lighter";
           continue;
         }
         if (p.ringFx) {
@@ -896,6 +962,7 @@
       this._parts.length = 0; this._bolts.length = 0; this._strokes.length = 0;
       this._swords.length = 0; this._arcs.length = 0;
       if (this._ctx && this._cv) this._ctx.clearRect(0, 0, this._cv.width, this._cv.height);
+      if (this._ctxBack && this._cvBack) this._ctxBack.clearRect(0, 0, this._cvBack.width, this._cvBack.height);
     },
   };
 
