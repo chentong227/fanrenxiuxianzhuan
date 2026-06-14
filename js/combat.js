@@ -374,6 +374,23 @@
     }
     dist(a, b) { return Math.abs(a.pos - b.pos); }
     zoneAt(pos, type) { return this.zones.find(z => z.type === type && pos >= z.from && pos <= z.to) || null; }
+    /* D1 玩家本格不容他人驻足：除「境界比你高」的单位外，谁都不能停在你脚下那一格；
+     * 你亲手操控的傀儡/灵宠（非「同道」侧位）更是绝无例外。可借道穿过、不得落脚。 */
+    _mayShareCell(unit) {
+      if (unit === this.player) return true;
+      if (unit.isSide && unit.kind !== "ally") return false;   // 我驭使的尸傀/灵宠：永不占我格
+      return (unit.realmTier || 0) > (this.player.realmTier || 0);   // 余者唯高我一境者可越次
+    }
+    /* 兜底：某单位行动结束若仍立于玩家本格（且无权如此），就近挪开半步——你脚下不站旁人 */
+    _ejectFromPlayerCell(u) {
+      if (this._mayShareCell(u) || u.pos !== this.player.pos) return;
+      for (const dp of [1, -1, 2, -2]) {
+        const np = u.pos + dp;
+        if (np < 0 || np >= this.W || np === this.player.pos) continue;
+        if (this.unitAt(np, u.alt || 0, u.lane || 0)) continue;
+        u.pos = np; return;
+      }
+    }
     /* 身法上限：凌空+airMove（御空本就比脚程快——视野与可动范围随升空同步扩大；
      * airMove 随 airGrade 境界分档：筑基+2/结丹+3/元婴+4……敌我同规则） */
     moveCap(u) { return (u.move || 1) + ((u.alt || 0) === 1 ? (u.airMove != null ? u.airMove : 2) : 0); }
@@ -1483,7 +1500,7 @@
       for (let i = 0; i < this.sides.length; i++) {
         if (this.status !== "ongoing") return;
         const s = this.sides[i];
-        if (s.hp > 0) this._sideActOne(s, i);
+        if (s.hp > 0) { this._sideActOne(s, i); this._ejectFromPlayerCell(s); }
       }
     }
     _sideActOne(s, sideIdx) {
@@ -1593,7 +1610,7 @@
       } else if (!isMelee && persona.kite > 0 && d <= 1) {
         const dir = s.pos >= target.pos ? 1 : -1;
         const back = clampNum(s.pos + dir, 0, this.W - 1);
-        if (!this.unitAt(back, s.alt || 0, s.lane || 0) && this.rng() < persona.kite * 0.12) {
+        if (!this.unitAt(back, s.alt || 0, s.lane || 0) && !(back === this.player.pos && !this._mayShareCell(s)) && this.rng() < persona.kite * 0.12) {
           s.pos = back; d = this.dist(s, target);
           this._log(`${s.name} 袖风一卷飘然后掠，拉开了身位。`);
         }
@@ -1673,6 +1690,12 @@
         if (p < 0 || p >= this.W) break;
         // 钉桩（T3 anchor）：守位者寸步不离岗（±1 格）——拉不走的，绕过或强攻
         if (unit.formation === "anchor" && unit.homePos != null && Math.abs(p - unit.homePos) > 1) break;
+        // D1：玩家本格不容驻足——唯境界高于你者可越次而立（你操控的傀儡/灵宠绝无此例外）。
+        //     可借道穿过、不得停步：玩家格若已贴着目标则停在前一格，否则穿过玩家继续逼近。
+        if (p === this.player.pos && !this._mayShareCell(unit)) {
+          if (Math.abs(p - target.pos) <= 1) break;
+          continue;
+        }
         const o = this.unitAt(p, unit.alt || 0, unit.lane || 0);
         if (o) { if (o.team !== unit.team) break; else continue; }   // 敌挡停步；友方穿过但不能落脚同格
         const z = this.zoneAt(p, "kunzu");
