@@ -578,6 +578,16 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   -webkit-backdrop-filter: saturate(.84) brightness(.95) contrast(1.05);
   backdrop-filter: saturate(.84) brightness(.95) contrast(1.05);
 }
+/* v114 手机优先流畅：backdrop-filter 会在每帧重采样它身后那张「正在动」的特效身后层画布(z:1)，
+ * 这是 iOS Safari 著名的性能悬崖（背景每帧变→整块重栅格化+重过滤），也是 14PM 也卡顿的主因之一。
+ * 触摸端改用一张「静态」色罩近似「压暗+微冷」的融合观感——纯叠加层、不读取动态背景、零每帧重合成；
+ * 雾层(::after, soft-light)保留维持空气透视（普通混合，远比 backdrop-filter 便宜）。桌面不受影响、保持满质量。 */
+@media (hover: none), (pointer: coarse) {
+  .combat-grade {
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    background: linear-gradient(180deg, rgba(18,22,28,.16) 0%, rgba(16,20,26,.10) 48%, rgba(14,18,24,.18) 100%);
+  }
+}
 /* 大气景深雾：地平线一带最浓、近脚处散开（远虚近实的空气透视）——把人物往雾里"退"半步，
  * 灭"边缘硬切贴在画上"。soft-light=薄空气光，只染中间调、不糊高光暗部，雾色随场景色温走。 */
 .combat-grade::after {

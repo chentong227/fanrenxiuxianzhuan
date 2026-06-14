@@ -60,12 +60,18 @@
     _slowFrames: 0,
     _emitLayer: "front",    // 当前发射层：front=身前(命中/弹道/天雷)，back=身后(光环/护体/地纹)
     _bloom: 1,              // v112 柔光泛光总开关；持续卡顿(连两帧>34ms)置 0，回稳复原
+    // v114 设备能力上限：触摸/手机端默认关泛光。实测每帧降采样(_bloomPass 满屏 4 次 drawImage/层×2 层)
+    // 是手机每帧主开销——DPR=1 的 VM 上就占帧时 +307%，手机 DPR=2 像素翻番更甚。桌面保持开。
+    // 降档回稳时只复原到此上限（见 _run），手机永不把泛光开回来，杜绝临界设备反复开关频闪。
+    _bloomCap: (typeof window !== "undefined" && window.matchMedia &&
+      window.matchMedia("(hover: none), (pointer: coarse)").matches) ? 0 : 1,
     _bxa: null, _bxb: null, // v112 离屏降采样缓冲（1/4、1/8 尺寸）——双线性放大近似高斯
 
 
     /* ---------- 装配 ---------- */
     ensure(host) {
       if (!host) return null;
+      this._bloom = this._bloomCap;   // v114：每次进战按设备能力定泛光初值（手机=0，桌面=1）
       if (this._cv && this._host === host && this._cv.isConnected) { this._fit(); return this._ctx; }
       if (this._cvBack && this._cvBack.parentNode) this._cvBack.parentNode.removeChild(this._cvBack);
       if (this._cv && this._cv.parentNode) this._cv.parentNode.removeChild(this._cv);
@@ -778,7 +784,7 @@
           if (++this._slowFrames >= 2) { this._degraded = 0.5; this._bloom = 0; }
           if (this._slowFrames >= 5) this._dprCap = 1.75;
         } else if (this._slowFrames) {
-          this._slowFrames = 0; this._bloom = 1; this._degraded = Math.min(1, this._degraded + 0.1); this._dprCap = 2;
+          this._slowFrames = 0; this._bloom = this._bloomCap; this._degraded = Math.min(1, this._degraded + 0.1); this._dprCap = 2;
         }
         if (!this._frame(dt)) { this._raf = 0; return; }
         this._raf = requestAnimationFrame(step);
