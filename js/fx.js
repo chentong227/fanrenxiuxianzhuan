@@ -14,6 +14,11 @@
  *    拆成 .fx-canvas-back(z:1，画在人物之后)＋.fx-canvas-front(z:26)：护体光环/地面阵纹/
  *    吐纳绿芒进身后层"贴着身后"，命中火花/冲击/剑出袭/天雷留身前层——景深归位。
  * 3. 纯过程式：不吃美术资产、不进存档，纯演出层——逻辑帧无依赖。
+ * 5. 柔光泛光（v112）：每帧把特效两层各自降采样到 1/4、再 1/8 的离屏小画布，
+ *    用双线性放大叠回（globalCompositeOperation=lighter）——纯 drawImage 缩放近似高斯模糊，
+ *    严守"禁 ctx.shadowBlur"红线。只作用于特效层（人物/背景是 DOM，不被它糊）；
+ *    身后层的泛光会从人物身后柔柔漫出＝随特效色的"受光"光晕。持续卡顿（连两帧>34ms）
+ *    即撤泛光（纯观感层最先降），不与粒子/DPR 抢手机预算，回稳即复原。
  * ============================================================ */
 (function () {
   "use strict";
@@ -54,6 +59,8 @@
     _dprCap: 2,             // 画布分辨率上限：帧难看时降到 1.75（v111 收窄降幅，回稳复原 2）
     _slowFrames: 0,
     _emitLayer: "front",    // 当前发射层：front=身前(命中/弹道/天雷)，back=身后(光环/护体/地纹)
+    _bloom: 1,              // v112 柔光泛光总开关；持续卡顿(连两帧>34ms)置 0，回稳复原
+    _bxa: null, _bxb: null, // v112 离屏降采样缓冲（1/4、1/8 尺寸）——双线性放大近似高斯
 
 
     /* ---------- 装配 ---------- */
@@ -763,13 +770,15 @@
       const step = (now) => {
         const dt = Math.min(40, now - last); last = now;
         // 性能降档：连续两帧超 34ms → 出粒减半（手机兜底）；回稳则恢复
-        // v111 降档顺序：先减粒子（填充率第一笔省），仍持续卡顿才降 DPR，且只降到 1.75
-        // （避免特效层比人物贴图"糊一层"）；任一帧回稳即恢复出粒并复原 DPR=2。
+        // 降档顺序（手机预算）：v112 持续卡顿（连两帧>34ms）先撤泛光（最便宜的纯观感层）并同步减
+        // 粒子（v111 填充率第一笔省）→ 仍持续卡顿才把 DPR 降到 1.75（避免特效层比人物"糊一层"）；
+        // 任一帧回稳即恢复泛光+出粒并复原 DPR=2。门槛用"连两帧"而非单帧——临界设备(33/35ms 抖动)
+        // 每遇一个快帧即清零计数，泛光保持常亮不频闪；只有真·持续慢(每帧都>34)才稳定撤掉。
         if (dt > 34) {
-          if (++this._slowFrames >= 2) this._degraded = 0.5;
+          if (++this._slowFrames >= 2) { this._degraded = 0.5; this._bloom = 0; }
           if (this._slowFrames >= 5) this._dprCap = 1.75;
         } else if (this._slowFrames) {
-          this._slowFrames = 0; this._degraded = Math.min(1, this._degraded + 0.1); this._dprCap = 2;
+          this._slowFrames = 0; this._bloom = 1; this._degraded = Math.min(1, this._degraded + 0.1); this._dprCap = 2;
         }
         if (!this._frame(dt)) { this._raf = 0; return; }
         this._raf = requestAnimationFrame(step);
@@ -955,7 +964,41 @@
         }
         ctx.globalAlpha = 1;
       }
+      this._bloomPass();
       return true;
+    },
+
+    /* 柔光泛光（v112）：离屏降采样＋双线性放大叠回，近似高斯泛光（严守禁 shadowBlur 红线）。
+     * 只对特效两层做——人物/背景是 DOM，不被它糊；身后层泛光从人物身后柔柔漫出＝随特效色的受光晕。
+     * 卡顿任一帧 _bloom 置 0 即整体跳过（最先被舍弃的纯观感层），回稳复原。 */
+    _bloomPass() {
+      if (!this._bloom) return;
+      for (const cv of [this._cvBack, this._cv]) {
+        if (!cv || !cv.width || !cv.height) continue;
+        const w = cv.width, h = cv.height;
+        const sw = Math.max(1, w >> 2), sh = Math.max(1, h >> 2);     // 1/4 尺寸
+        const sw2 = Math.max(1, sw >> 1), sh2 = Math.max(1, sh >> 1); // 1/8 尺寸（更宽的晕）
+        let a = this._bxa, b = this._bxb;
+        if (!a) a = this._bxa = document.createElement("canvas");
+        if (!b) b = this._bxb = document.createElement("canvas");
+        if (a.width !== sw || a.height !== sh) { a.width = sw; a.height = sh; }
+        if (b.width !== sw2 || b.height !== sh2) { b.width = sw2; b.height = sh2; }
+        const actx = a.getContext("2d"), bctx = b.getContext("2d");
+        actx.imageSmoothingEnabled = true; bctx.imageSmoothingEnabled = true;
+        // 降采样：全层→a(1/4)→b(1/8)，drawImage 缩小即盒式预滤波
+        actx.globalCompositeOperation = "copy"; actx.globalAlpha = 1;
+        actx.drawImage(cv, 0, 0, sw, sh);
+        bctx.globalCompositeOperation = "copy"; bctx.globalAlpha = 1;
+        bctx.drawImage(a, 0, 0, sw2, sh2);
+        // 放大叠回本层（lighter 加亮＝泛光）：b 宽晕打底、a 紧芯晕收口
+        const ctx = (cv === this._cv) ? this._ctx : this._ctxBack;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);   // 用画布像素坐标，避开 dpr 变换
+        ctx.imageSmoothingEnabled = true;
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.34; ctx.drawImage(b, 0, 0, w, h);
+        ctx.globalAlpha = 0.30; ctx.drawImage(a, 0, 0, w, h);
+        ctx.globalAlpha = 1;
+      }
     },
 
     clear() {
