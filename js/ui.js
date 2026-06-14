@@ -64,6 +64,9 @@ const UI = {
     const layout = document.querySelector(".layout");
     if (!layout) return;
     layout.setAttribute("data-mtab", tab);
+    // 同步到 #screen-game：CSS 据此在「韩立」页隐藏场景带（A4 道具界面不显示地图）
+    const sg = document.getElementById("screen-game");
+    if (sg) sg.setAttribute("data-mtab", tab);
     document.querySelectorAll(".mtab").forEach(t =>
       t.classList.toggle("active", t.dataset.tab === tab));
     // 切到见闻页时定位到最新一条
@@ -720,11 +723,47 @@ const UI = {
     if (txt) txt.textContent = (key === "cul" || key === "sp") ? `${Math.round(val)} / ${max}` : Math.round(val);
   },
 
+  // 背包分类（A4：道具/材料/丹药/法宝）——keepsake 唯一信物不入此处，归大件图鉴
+  INV_CATS: [
+    { key: "misc", label: "道具" },
+    { key: "mat", label: "材料" },
+    { key: "pill", label: "丹药" },
+    { key: "art", label: "法宝" },
+  ],
+  _itemCat(item) {
+    if (!item) return "misc";
+    if (item.type === "material") return "mat";
+    if (item.type === "treasure" || item.type === "gear") return "art";
+    if (item.type === "pill" || /丹$|丹药|药$/.test(item.name || "")) return "pill";
+    return "misc";   // 消耗(符/暗器/阵旗)、令牌、功法、典籍、灵石……
+  },
+  setInvCat(key) { this._invCat = key; this.renderInventory(); },
+  _renderInvCats(counts) {
+    const box = this.el("inv-cats");
+    if (!box) return;
+    box.innerHTML = this.INV_CATS.map(c =>
+      `<button class="inv-cat${this._invCat === c.key ? " active" : ""}" onclick="UI.setInvCat('${c.key}')">${c.label}<span class="ic-n">${counts[c.key] || 0}</span></button>`
+    ).join("");
+  },
+
   renderInventory() {
     const inv = State.data.inventory;
     const box = this.el("inventory");
-    const keys = Object.keys(inv).filter(k => inv[k] > 0);
-    if (!keys.length) { box.innerHTML = `<div class="inv-empty">储物袋空空如也</div>`; return; }
+    // 剔除信物：keepsake 唯一信物归「大件图鉴·羁绊·信物」，不入普通背包
+    const all = Object.keys(inv).filter(k => inv[k] > 0 && DATA.items[k] && !DATA.items[k].keepsake);
+    // 分类计数
+    const counts = {};
+    this.INV_CATS.forEach(c => counts[c.key] = 0);
+    all.forEach(k => { const c = this._itemCat(DATA.items[k]); if (counts[c] != null) counts[c]++; });
+    // 默认落在第一个有物的分类
+    if (!this._invCat) {
+      const first = this.INV_CATS.find(c => counts[c.key] > 0);
+      this._invCat = first ? first.key : this.INV_CATS[0].key;
+    }
+    this._renderInvCats(counts);
+    if (!all.length) { box.innerHTML = `<div class="inv-empty">储物袋空空如也</div>`; return; }
+    const keys = all.filter(k => this._itemCat(DATA.items[k]) === this._invCat);
+    if (!keys.length) { box.innerHTML = `<div class="inv-empty">此类暂无</div>`; return; }
     box.innerHTML = keys.map(k => {
       const item = DATA.items[k];
       const sl = itemSeal(item);
@@ -787,7 +826,7 @@ const UI = {
     }
     this.openModal(`
       <h2>${item.name}</h2>
-      ${isPill ? this._statusStrip() : ""}
+      ${this._statusStrip()}
       <p style="color:var(--ink-dim)">${rarityLabel(item.rarity)} · ${typeLabel(item.type)}　持有 ×${State.count(itemId)}</p>
       <p>${item.desc}</p>
       ${gearHtml}

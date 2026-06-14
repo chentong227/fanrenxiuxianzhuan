@@ -377,6 +377,19 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .inv-item .icount { color: var(--ink-dim); }
 .inv-empty { color: var(--ink-dim); font-size: 13px; text-align: center; padding: 10px; }
 
+/* 背包分类页签（A4：道具/材料/丹药/法宝）*/
+.inv-cats { display: flex; gap: 4px; margin: 0 0 8px; }
+.inv-cat {
+  flex: 1 1 0; min-width: 0; padding: 5px 2px; cursor: pointer;
+  background: var(--bg-panel-2); border: 1px solid var(--border-soft);
+  border-radius: var(--radius); color: var(--ink-dim);
+  font-family: inherit; font-size: 12.5px; letter-spacing: 1px; white-space: nowrap;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.inv-cat.active { color: var(--gold-bright); border-color: var(--gold); background: rgba(201, 169, 106, .08); }
+.inv-cat .ic-n { color: var(--ink-faint); font-size: 11px; margin-left: 3px; }
+.inv-cat.active .ic-n { color: var(--gold); }
+
 /* ===== 弹窗 ===== */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.7);
@@ -3748,4 +3761,20 @@ html, body { touch-action: manipulation; }
   .ln-plate { font-size: 10.5px; padding: 1px 7px; }
   .ln-plate .lr { display: none; }
   .scene-confirm { left: 50%; transform: translateX(-50%); width: 92vw; bottom: 8px; }
+
+  /* A3/A4 韩立页：道具界面不显示地图（隐藏场景带），状态与储物袋左右并排。
+   * 场景带隐去后顶栏(absolute)浮于 .layout 之上，故补足上留白避开顶栏。*/
+  #screen-game[data-mtab="hero"] .scene-stage { display: none; }
+  #screen-game[data-mtab="hero"] .layout { padding-top: 52px; }
+  .layout[data-mtab="hero"] .side-rail { display: flex; gap: 10px; align-items: flex-start; }
+  /* 左：人物状态（粘顶——浏览/取用道具时数值始终在侧）*/
+  .side-rail .sr-status { flex: 0 0 43%; min-width: 0; position: sticky; top: 0; align-self: flex-start; }
+  .side-rail .sr-status .hero-card { padding: 9px 10px; gap: 8px; }
+  .side-rail .sr-status .hero-portrait { width: 46px; height: 46px; font-size: 22px; }
+  .side-rail .sr-status .hero-name { font-size: 16px; }
+  .side-rail .sr-status .bar-group { margin-bottom: 6px; }
+  .side-rail .sr-status .attr-grid { grid-template-columns: 1fr 1fr; gap: 5px; }
+  .side-rail .sr-status .attr-cell { padding: 5px 7px; font-size: 12px; }
+  /* 右：储物袋（分类页签 + 条目）*/
+  .side-rail .sr-bag { flex: 1; min-width: 0; }
 }

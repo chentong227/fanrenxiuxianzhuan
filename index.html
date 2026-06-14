@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="build" content="124" />
+  <meta name="build" content="125" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -52,15 +52,15 @@
   })();
   </script>
   <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=124" />
+  <link rel="stylesheet" href="css/style.css?v=125" />
   <!-- PWA：可装主屏 / 离线可玩 / 全屏（v105 起） -->
-  <link rel="manifest" href="manifest.webmanifest?v=124" />
+  <link rel="manifest" href="manifest.webmanifest?v=125" />
   <meta name="theme-color" content="#14110b" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="凡人修仙传" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=124" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=125" />
 </head>
 <body>
   <div id="app">
@@ -92,7 +92,7 @@
 
         <button id="btn-start" class="btn btn-primary" disabled>踏 入 此 界</button>
         <button id="btn-load" class="btn btn-ghost">读取存档</button>
-        <div class="build-tag">build v124</div>
+        <div class="build-tag">build v125</div>
       </div>
     </section>
 
@@ -135,6 +135,7 @@
       <main class="layout">
         <!-- 左：韩立卷轴（角色卡 + 状态 + 储物袋）-->
         <aside class="panel side-rail">
+          <div class="sr-status">
           <div class="hero-card">
             <div class="hero-portrait" id="hero-portrait">🧙</div>
             <div class="hero-meta">
@@ -177,8 +178,13 @@
             <div class="attr-cell" data-tip="名声：事迹换来的江湖座次。够高便能登上风云榜（见风云录）。"><span>名声</span><b id="st-fame">0</b></div>
           </div>
 
-          <h3 class="panel-title">储物袋</h3>
-          <div id="inventory" class="inventory"></div>
+          </div><!-- /.sr-status -->
+
+          <div class="sr-bag">
+            <h3 class="panel-title">储物袋</h3>
+            <div id="inv-cats" class="inv-cats"></div>
+            <div id="inventory" class="inventory"></div>
+          </div>
         </aside>
 
         <!-- 中下：行动栏（际遇 + 刚刚发生 + 当前可做）-->
@@ -332,34 +338,34 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=124"></script>
-  <script src="js/state.js?v=124"></script>
-  <script src="js/chapters.js?v=124"></script>
-  <script src="js/balance.js?v=124"></script>
-  <script src="js/world.js?v=124"></script>
-  <script src="js/npcsim.js?v=124"></script>
-  <script src="js/interactions.js?v=124"></script>
-  <script src="js/warlines.js?v=124"></script>
-  <script src="js/combat.js?v=124"></script>
-  <script src="js/explore.js?v=124"></script>
-  <script src="js/exploremap.js?v=124"></script>
-  <script src="js/loadout.js?v=124"></script>
-  <script src="js/dialogue.js?v=124"></script>
-  <script src="js/llm.js?v=124"></script>
-  <script src="js/audio.js?v=124"></script>
-  <script src="js/fx.js?v=124"></script>
-  <script src="js/art.js?v=124"></script>
-  <script src="js/fortunes.js?v=124"></script>
-  <script src="js/quests.js?v=124"></script>
-  <script src="js/story.js?v=124"></script>
-  <script src="js/engine.js?v=124"></script>
-  <script src="js/ui.js?v=124"></script>
-  <script src="js/main.js?v=124"></script>
+  <script src="js/data.js?v=125"></script>
+  <script src="js/state.js?v=125"></script>
+  <script src="js/chapters.js?v=125"></script>
+  <script src="js/balance.js?v=125"></script>
+  <script src="js/world.js?v=125"></script>
+  <script src="js/npcsim.js?v=125"></script>
+  <script src="js/interactions.js?v=125"></script>
+  <script src="js/warlines.js?v=125"></script>
+  <script src="js/combat.js?v=125"></script>
+  <script src="js/explore.js?v=125"></script>
+  <script src="js/exploremap.js?v=125"></script>
+  <script src="js/loadout.js?v=125"></script>
+  <script src="js/dialogue.js?v=125"></script>
+  <script src="js/llm.js?v=125"></script>
+  <script src="js/audio.js?v=125"></script>
+  <script src="js/fx.js?v=125"></script>
+  <script src="js/art.js?v=125"></script>
+  <script src="js/fortunes.js?v=125"></script>
+  <script src="js/quests.js?v=125"></script>
+  <script src="js/story.js?v=125"></script>
+  <script src="js/engine.js?v=125"></script>
+  <script src="js/ui.js?v=125"></script>
+  <script src="js/main.js?v=125"></script>
   <script>
   /* 注册 Service Worker（离线/装主屏）。注册 URL 带 ?v=，每次发版自动更新 SW。 */
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js?v=124", { scope: "./" }).catch(function () {});
+      navigator.serviceWorker.register("sw.js?v=125", { scope: "./" }).catch(function () {});
     });
   }
   </script>
