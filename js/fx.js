@@ -7,7 +7,8 @@
  *    长春功=木灵绿芒回环；定身符=金箓锁环……不是"换个颜色的同一团粒子"。
  * 2. 手机优先（iPhone 14PM 量级）：辉光用预渲染精灵图（offscreen 一次画好，
  *    drawImage 缩放复用——比每粒子径向渐变快一个量级）；粒子全场预算封顶；
- *    连续两帧 >34ms 自动降档一半出粒量；无活物时 RAF 即停。
+ *    连续两帧 >34ms 自动降档（出粒减半 + 画布 DPR 降到 1.5，纯过程式辉光对分辨率不敏感，
+ *    几乎无可见画质损失，却是手机填充率最大的一笔省）；回稳即恢复；无活物时 RAF 即停。
  * 3. 纯过程式：不吃美术资产、不进存档，纯演出层——逻辑帧无依赖。
  * ============================================================ */
 (function () {
@@ -44,6 +45,7 @@
     _parts: [], _bolts: [], _strokes: [], _swords: [], _arcs: [], _raf: 0,
     _budget: 420,           // 粒子全场封顶（手机红线）
     _degraded: 1,           // 降档系数：帧难看时减半出粒
+    _dprCap: 2,             // 画布分辨率上限：帧难看时降到 1.5（填充率最大省，回稳复原）
     _slowFrames: 0,
 
     /* ---------- 装配 ---------- */
@@ -63,7 +65,7 @@
     },
     _fit() {
       const r = this._host.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = Math.min(this._dprCap || 2, window.devicePixelRatio || 1);
       this._dpr = dpr;
       const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
       if (this._cv.width !== w || this._cv.height !== h) { this._cv.width = w; this._cv.height = h; }
@@ -696,8 +698,8 @@
       const step = (now) => {
         const dt = Math.min(40, now - last); last = now;
         // 性能降档：连续两帧超 34ms → 出粒减半（手机兜底）；回稳则恢复
-        if (dt > 34) { if (++this._slowFrames >= 2) this._degraded = 0.5; }
-        else if (this._slowFrames) { this._slowFrames = 0; this._degraded = Math.min(1, this._degraded + 0.1); }
+        if (dt > 34) { if (++this._slowFrames >= 2) { this._degraded = 0.5; this._dprCap = 1.5; } }
+        else if (this._slowFrames) { this._slowFrames = 0; this._degraded = Math.min(1, this._degraded + 0.1); this._dprCap = 2; }
         if (!this._frame(dt)) { this._raf = 0; return; }
         this._raf = requestAnimationFrame(step);
       };

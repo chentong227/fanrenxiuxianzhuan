@@ -1140,35 +1140,44 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 @keyframes leiAuraPulse { 0%,100% { opacity: .5; scale: .96; } 50% { opacity: 1; scale: 1.05; } }
 
 /* ===== R4 神雷附剑·周身环绕雷弧（lei-orbit，参考图1 蓝金雷电缠身）=====
- * conic 渐变切出一段亮电弧，radial 遮罩抠成绕身环带；@property 动 --lei-ang 让亮弧沿环周巡游
+ * conic 渐变切出一段亮电弧，radial 遮罩抠成绕身环带；亮弧沿环周巡游
  * （椭圆本体固定不翻滚=真"绕身旋掠"，而非整体打转）。两道错相、一前(z7)一后(z-2)=缠身纵深；
- * 主道金、辅道蓝白（金为主·蓝白点缀=神雷金色身份不破）。纯角度动画、无 RAF、不触性能红线；
- * 旧浏览器不支持 @property 时 --lei-ang 退回静态亮弧（仍是发光电弧·优雅降级）。 */
-@property --lei-ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+ * 主道金、辅道蓝白（金为主·蓝白点缀=神雷金色身份不破）。无 RAF、不触性能红线。 */
+/* 性能优化(v104)：环带本体(::before)画**静态** conic 亮弧 + radial 遮罩抠成环，只用
+ * transform:rotate 让亮弧绕圈巡游——旋转走合成器层(GPU)，不再每帧在主线程重绘整张 conic 渐变，
+ * 手机帧率大幅回升而视觉不变。外层 .lei-orbit 用静态 scaleY 把圆环拉成纵向椭圆=绕身缠绕感。
+ * ⚠ transform 只加在 .lei-orbit / 其 ::before 这种叶子上(自带 z-index)，绝不上 .au-swords 容器。 */
 .au-swords.lei .lei-orbit {
   position: absolute; left: 50%; top: 44%;
-  width: 108px; height: 132px; margin: -66px 0 0 -54px;
-  border-radius: 50%; pointer-events: none; z-index: 7;
-  background: conic-gradient(from var(--lei-ang, 0deg),
+  width: 108px; height: 108px; margin: -54px 0 0 -54px;
+  transform: scaleY(1.22); pointer-events: none; z-index: 7;
+}
+.au-swords.lei .lei-orbit::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 0deg,
     transparent 0deg, transparent 232deg,
     rgba(255,247,214,0) 252deg, #fff7d6 286deg, #fff 300deg, #ffd970 312deg,
     rgba(255,176,30,0) 336deg, transparent 360deg);
   -webkit-mask: radial-gradient(closest-side at 50% 50%, transparent 58%, #000 64%, #000 74%, transparent 81%);
           mask: radial-gradient(closest-side at 50% 50%, transparent 58%, #000 64%, #000 74%, transparent 81%);
   filter: drop-shadow(0 0 4px #ffe39a) drop-shadow(0 0 9px rgba(255,176,30,.6));
-  animation: leiOrbit 1.05s linear infinite;
+  will-change: transform;
+  animation: leiOrbitSpin 1.05s linear infinite;
 }
 /* 辅道：更瘦高(纵向缠绕错位)、藏身后(z-2)、逆向慢转、冷蓝白点缀 */
 .au-swords.lei .lei-orbit.lo2 {
-  width: 86px; height: 152px; margin: -76px 0 0 -43px; z-index: -2;
+  width: 86px; height: 86px; margin: -43px 0 0 -43px; z-index: -2;
+  transform: scaleY(1.77);
+}
+.au-swords.lei .lei-orbit.lo2::before {
   animation-duration: 1.5s; animation-direction: reverse;
   filter: drop-shadow(0 0 3px #bfe0ff) drop-shadow(0 0 8px rgba(120,180,255,.55));
-  background: conic-gradient(from var(--lei-ang, 0deg),
+  background: conic-gradient(from 0deg,
     transparent 0deg, transparent 232deg,
     rgba(223,240,255,0) 252deg, #eaf4ff 288deg, #fff 302deg, #86b4ff 314deg,
     rgba(120,180,255,0) 338deg, transparent 360deg);
 }
-@keyframes leiOrbit { from { --lei-ang: 0deg; } to { --lei-ang: 360deg; } }
+@keyframes leiOrbitSpin { to { transform: rotate(360deg); } }
 
 /* ===== 剑身缠雷（电弧层 <b>）：沿剑身游走跳动的之字闪电 =====
  * 伪元素已被剑身(::before)+拖尾(::after)占满，故缠雷另起真实子层 <b>。
@@ -1289,7 +1298,16 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   74%  { opacity: .95; transform: scaleY(2.4); }   /* 兜弧返回·再涨残影 */
   100% { opacity: .5;  transform: scaleY(.8);  }
 }
-@media (max-width: 640px) { .au-swords { scale: .82; } }
+/* 手机端缩小剑阵：**只**改剑本体内禀尺寸(width/height/margin/拖尾/电弧)，绝不在 .au-swords
+ * 容器上加 scale/transform——那会在容器建堆叠上下文，把十柄剑压成一层、毁掉身前(z6)/身后(z-1)
+ * 的前后纵深(桌面正常、手机"全跑到身后"正是此坑)。光环/周身环绕(锚定身体)保持原尺寸不缩。 */
+@media (max-width: 640px) {
+  .au-swords .sw { width: 16px; height: 54px; margin: -27px 0 0 -8px; }
+  .au-swords .sw::after { left: 2px; width: 11px; top: -41px; height: 79px; }
+  .au-swords .sw b { width: 12px; margin-left: -6px; }
+  .au-swords.arc .sw b { width: 7px; margin-left: -3.5px; }
+  .au-swords.lei .sw b { width: 14px; margin-left: -7px; }
+}
 
 /* 身侧悬浮法器（拥有感）：装备化作灵光绕身 */
 .axis-unit .au-orbit { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
@@ -2160,14 +2178,16 @@ html, body { touch-action: manipulation; }
   .au-orbit .orb-w { left: -9px; }
   .au-orbit .orb-a { right: -9px; }
   .combat-floats { top: 2px; }
-  .log-float { font-size: 11.5px; padding: 3px 10px; }
+  .log-float { font-size: 11.5px; padding: 3px 10px; backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(12,9,7,.9); }
   .fx-global.fxg-exploit .fxg-text { letter-spacing: 6px; }
-  .combat-intent { font-size: 11px; padding: 6px 9px; margin-bottom: 6px; }
+  .combat-intent { font-size: 11px; padding: 6px 9px; margin-bottom: 6px; backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(14,11,8,.95); }
   .combat-mprow { gap: 8px; margin-bottom: 8px; }
   .mp-pool { min-width: 150px; }
   .mp-num { font-size: 11.5px; min-width: 48px; }
   .act-chip { font-size: 10px; padding: 2px 6px; }
-  .combat-console { padding: 9px; }
+  /* 手机性能：战斗期常驻面板不走 backdrop-filter（每帧重模糊背景=特效卡顿主因之一），
+   * 改不透明底，视觉近乎不变。 */
+  .combat-console { padding: 9px; backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--paper-solid); }
   /* 手机档：手牌沿用桌面紧凑值（勿在此放大——曾因此“紧凑改了等于没改”） */
   .sname .srange { font-size: 9px; }
   .combat-log { height: 118px; font-size: 12.5px; }
