@@ -88,10 +88,16 @@
 - **验收** ✓：嘉元城与七玄门一眼不同（定场演出已验）；高潮幕跑通镜头+立绘入退场+特效+交互 beat（onHit/onMiss 浏览器已验）；
   journey E2E 全绿、可跳、单屏；新增 test/cutscene.test.js（39 断言）EXIT=0；全测试套绿。
 
-### 阶段 2（F 据点回填）explore-redesign §P3.5
-- **含（自阶段1 折入）：嘉元城据点节点图迁移**（exploremap 引擎据点风味配置）。
-- 嘉元城跑顺后回填七玄门据点（地标/风物/抵达演出）；旧扁平 explore.js 据点逐步退役。
-- **验收**：早期据点都有"到了另一座城"的地方感；复访见变迁（告示板/物价/残部）。
+### 阶段 2（F 据点回填）explore-redesign §P3.5 ✓ 已落 v135（PR #7）
+- [x] **嘉元城据点节点图迁移**（exploremap 引擎和平据点配置 `peaceful:true`，无灾厄钟/无巡逻）：
+  地标=墨府/长街坊市/城门告示/城南堂口，朱门高墙+市集喧腾+帮派暗桩，一眼分得出在哪座城。
+  入口=「城中走走 🏙」行动（doAction `stroll`→`Engine.enterStronghold`）；与血色禁地 `_renderExmapField` 完全隔离、零回归。
+- [x] **据点是活的（复访变迁）**：`ExploreMap.flavor(node, flags)` 纯函数把既有剧情 flag 投影到界面——
+  门庭冷落 → `mo_warned` 豺狗缩爪/商铺易主 → `han_du_cured` 寒毒解·曲魂留府·太南小会榜文。**不另起新系统**。
+- [ ] 七玄门据点风味回填（地标/风物/抵达演出）——打样跑顺，留待后续与黄枫谷据点一并铺（**自阶段2 延后项**）。
+- **验收** ✓：嘉元城节点图给"到了另一座城"的地方感（朱门高墙+长街坊市+城南堂口，浏览器已验）；
+  复访三段变迁（告示板/堂口/墨府随 mo_met→mo_warned→han_du_cured 改写，已验）；
+  新增 test/stronghold.test.js（36 断言）EXIT=0；6 套必测+cutscene 全绿；血色禁地节点图零回归（钟盘/巡逻/耗钟已验）。
 
 ### 阶段 3（E 功法层数轴 + 初入/巅峰）technique-tiers §5
 - `s.techLayers[techId]`（惰性初始化）；`grantSpells`→`layerUnlocks` 按层解锁（青元剑诀 3 剑芒/5 剑盾…）；

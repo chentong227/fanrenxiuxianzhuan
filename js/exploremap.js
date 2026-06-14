@@ -91,6 +91,63 @@
       ],
     },
 
+    /* ====== 嘉元城 · 据点节点图（和平·无灾厄钟/无巡逻——地标+风物+复访变迁） ======
+     * 据点风味打样（docs/cutscene-design.md §五；explore-redesign §P3.5）：
+     *  解决"嘉元城和七玄门没区别"——朱门高墙/市集喧腾/帮派暗桩，一眼分得出在哪座城。
+     *  peaceful:true → 引擎无钟无巡逻；据点是活的：node.flavors 把既有剧情 flag 投影到界面
+     *  （门庭冷落→豺狗暗桩→退敌缩爪→寒毒解·曲魂留府），复访见变迁，不另起新系统。 */
+    jiayuan_city_l1: {
+      id: "jiayuan_city_l1", kind: "field", peaceful: true,
+      name: "嘉元城 · 城东",
+      subtitle: "岚州第一大城 · 信步城中",
+      bg: "jiayuan_city",
+      entry: "mofu",
+      nodes: {
+        mofu: { name: "墨府", kind: "rest", act: "rest", x: 24, y: 58, icon: "🏯",
+          actLabel: "回墨府客房·调息",
+          desc: "墨府坐落城东，朱门高墙，匾上漆色已剥落——岚州名医的宅院，如今门庭冷落。",
+          flavors: [
+            { flag: "han_du_cured", desc: "寒毒已解，墨府夜夜安生。檐角的阴影里仿佛多了一道沉默的身影，府里格外安心。" },
+            { flag: "mo_warned", desc: "退了几拨探子后，墨府总算清净了些。可门里依旧只剩孤儿寡母——这点安宁，像借来的。" },
+          ] },
+        changjie: { name: "长街坊市", kind: "npc", act: "market", x: 52, y: 36, icon: "🏮",
+          actLabel: "逛长街坊市·采买",
+          desc: "城中长街市声鼎沸，车马如流——比山下集镇繁华十倍不止。药铺、绸庄、酒肆鳞次栉比。",
+          flavors: [
+            { flag: "mo_warned", desc: "长街依旧喧腾。可你如今走过，总觉得有几道目光黏在背上——眼线混在挑夫货郎里。" },
+          ] },
+        chengmen: { name: "城门告示", kind: "lore", act: "board", x: 50, y: 80, icon: "📜",
+          actLabel: "细读城门告示",
+          desc: "城门内侧立着一面斑驳的告示板，贴满悬赏、商旅榜文与城防告示。",
+          read: "告示板上：『岚州府征募护院教头』『城西绸庄寻失窃货物线索，重金酬谢』——市井气息扑面。一角还贴着褪色的旧榜，墨府医馆早已不再应诊。",
+          flavors: [
+            { flag: "han_du_cured", read: "角落新贴一张陌生榜文：岚州最南的太南山，『太南小会』将启——修仙人的集市。算日子，快开了。" },
+            { flag: "mo_warned", read: "告示板新换了几张：城南几家商铺『易主』的红榜挨在一处，落款都是同一个堂口。岚州的地面，正悄悄换主人。" },
+          ] },
+        tangkou: { name: "城南堂口", kind: "lore", act: "rumor", x: 78, y: 62, icon: "🗡",
+          actLabel: "暗处探听风声",
+          desc: "城南一带几处挂着帮派幌子的堂口。墨大夫在时，岚州这些豺狗没一个敢正眼看墨府。",
+          read: "茶肆里压低的闲话：墨大夫一去，城里几个帮派都盯上了墨府那点家底。『孤儿寡母，守得住么？』",
+          flavors: [
+            { flag: "han_du_cured", read: "风声里说，墨府近来夜夜安生，连最胆大的贼也绕着走——没人说得清那宅子里多了什么。" },
+            { flag: "mo_warned", read: "堂口里的人这几日老实了不少：『墨府那位姓韩的，邪门得很，碰不得。』豺狗缩了爪子，却没走远，都在等你离城。" },
+          ] },
+      },
+      edges: [
+        ["mofu", "changjie", 1], ["mofu", "chengmen", 1],
+        ["changjie", "chengmen", 1], ["changjie", "tangkou", 1],
+        ["chengmen", "tangkou", 1],
+      ],
+      // 城中信步见闻（移动一行字——纯氛围，据点永无强战）
+      notes: [
+        "卖炊饼的吆喝穿过长街，热气混着远处的药香。",
+        "几个孩童追着糖人跑过，险些撞到你。",
+        "墙根下，瞎眼的说书人正讲着某位散修的旧事。",
+        "一队披甲的城卫列队走过，行人纷纷避让。",
+        "茶楼二层传来拨弦声，半阕小调散在风里。",
+      ],
+    },
+
     /* ====== 墨蛟山洞 · L3 轴式洞窟（与对阵轴同构——探索/布阵/战斗同一条轴） ====== */
     mojiao_cave: {
       id: "mojiao_cave", kind: "cave",
@@ -189,6 +246,17 @@
 
     cur(x) { return x.stack[x.stack.length - 1]; },
     mapOf(f) { return MAPS[f.mapId]; },
+
+    // 据点风味·复访变迁：按 flags 选节点的风物变体（最进展者列在前=优先命中）。
+    // 纯函数、无 DOM/无 State——可无头测；返回命中的 flavor 对象或 null（用 node 基础风物）。
+    flavor(node, flags) {
+      if (!node || !node.flavors) return null;
+      flags = flags || {};
+      for (const fv of node.flavors) {
+        if (fv.flag && flags[fv.flag]) return fv;
+      }
+      return null;
+    },
 
     /* ---------- 钟与日 ---------- */
     clockInfo(x) {
