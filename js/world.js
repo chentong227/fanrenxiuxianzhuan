@@ -456,6 +456,97 @@ WORLD.beastRumors = [
     ] },
 ];
 
+/* ---------- 大件图鉴（第一公民系统总表，docs/bigitem-design.md）----------
+ * 大件=节点非奖品：听闻→获取→开轴→里程碑→下一个入口。此处收拢散落各篇的大件，
+ * 一表看全、明牌惦记、附「如何开启·获取」引导——治"机制间割裂"，不漏任何一件。
+ * 每条 stat(s) 返回 { state:"got"|"track"|"unheard", prog?:{cur,max}, note? }；
+ * far:true = 后续篇章的前路剪影（明牌惦记，尚不可得）。考据红线：忠于动漫版。
+ */
+WORLD.bigitemCats = [
+  { id: "gongfa", name: "功法 · 剑意" },
+  { id: "dan",    name: "丹道 · 药" },
+  { id: "fabao",  name: "法宝 · 飞剑" },
+  { id: "kuilei", name: "傀儡 · 灵宠" },
+  { id: "jiban",  name: "羁绊 · 信物" },
+  { id: "shijie", name: "世界 · 际遇" },
+];
+WORLD.bigitems = [
+  // —— 七玄门篇（现行可得）——
+  { id: "changchun", cat: "gongfa", name: "《长春功》",
+    blurb: "立身之本。前篇止于练气七层，后篇兼载火弹御风诸般小法术，暗开「过目不忘」之效。",
+    guide: "前篇——拜入七玄门、墨大夫授业即修；后篇全本——练气七层后，于太南小会以丹药换购。",
+    stat: (s) => ({ state: "got", note: State.count("changchun_houpian") > 0 ? "已得后篇 · 八层之路已开" : "后篇待于太南小会换购" }) },
+  { id: "zhayan", cat: "gongfa", name: "眨眼剑法 · 剑意",
+    blurb: "七玄门篇的成长主轴。实战出剑磨砺剑意，圆满「悟剑」，大成解锁绝技「连环眨眼」。",
+    guide: "厉飞雨一脉剑法（开局已习）——演武厅切磋、遭遇战出剑皆可累积剑意；满100回药庐闭关「悟剑」。",
+    stat: (s) => s.swordMastery
+      ? ({ state: "got", note: "已大成 · 连环眨眼（剑势上限+2）" })
+      : ({ state: "track", prog: { cur: s.swordIntent || 0, max: 100 },
+           note: (s.swordIntent || 0) >= 100 ? "剑意圆满 · 可回药庐悟剑" : "剑意 " + (s.swordIntent || 0) + "/100 · 出剑可磨" }) },
+  { id: "bottle", cat: "dan", name: "小绿瓶",
+    blurb: "催熟灵植的机缘至宝，自炼丹药的一切根基——开「催熟」轴（药圃经营）。",
+    guide: "机缘获得——七玄门篇剧情中偶得的神秘小瓶，滴水可催熟灵植。",
+    stat: (s) => (s.bottle && s.bottle.unlocked) ? ({ state: "got", note: "催熟轴已开 · 药圃可经营" }) : ({ state: "unheard", note: "机缘未至" }) },
+  { id: "quhun", cat: "kuilei", name: "曲魂 · 铁奴",
+    blurb: "你的第一具尸傀底牌，傀儡之路的原型——尸无血脉、百毒不侵，坏而不死可温养修缮。",
+    guide: "夺舍之夜后，以秘法收服张铁尸身，炼成尸傀「铁奴」（墨大夫线收尾）。",
+    stat: (s) => s.sideUnit ? ({ state: "got", note: s.sideUnit.name + (s.sideUnit.status === "broken" ? " · 损毁待修" : " · 随行听用") }) : ({ state: "unheard", note: "尚未收服" }) },
+  { id: "keepsake", cat: "jiban", name: "唯一信物",
+    blurb: "故人相赠、全局唯一的羁绊凭证——入图鉴留痕，不可转赠贩卖。养羁绊的有形回报。",
+    guide: "与具名故人养到「交情深厚(≥20)」乃至「挚交(≥40)」，对方按身份一次性回赠贴身之物。",
+    stat: (s) => {
+      const max = Object.values(DATA.items).filter(i => i.keepsake).length || 6;
+      const cur = (s.keepsakes || []).length;
+      const names = (s.keepsakes || []).map(k => (DATA.items[k.id] ? DATA.items[k.id].name : k.id) + "（" + (k.fromName || "") + "）");
+      return { state: cur >= max ? "got" : cur > 0 ? "track" : "unheard", prog: { cur, max },
+        note: cur ? "已得：" + names.join("、") : "尚无故人以信物相托" };
+    } },
+  { id: "yiwen", cat: "shijie", name: "异闻妖王",
+    blurb: "传闻→寻踪→伏诛的妖王猎杀链，伏诛掉落具名稀材——稀材即下一段大件链的入口。",
+    guide: "身在彩霞山一带每月或有听闻；深入后山探索寻踪，踪迹了然后入深处与之一战。",
+    stat: (s) => {
+      const max = (WORLD.beastRumors || []).length || 3;
+      const cur = (s.slainBeasts || []).length;
+      const active = s.beastRumor && WORLD.enemies[s.beastRumor] ? WORLD.enemies[s.beastRumor].name : null;
+      return { state: cur > 0 ? "got" : active ? "track" : "unheard", prog: { cur, max },
+        note: active ? "正在追猎：" + active : cur ? "已伏诛 " + cur + " 头妖王" : "静待后山风声" };
+    } },
+  { id: "atlas", cat: "shijie", name: "舆图远行",
+    blurb: "人界分层舆图——人界▸大区▸国别·联盟▸据点，一图到底，永远知道自己在何处、能去何方。",
+    guide: "顶栏「舆图」常驻可览；通关七玄门篇后解锁跨城远行（嘉元城/越京/太南谷）。",
+    stat: (s) => s.flags.arc1_complete
+      ? ({ state: "got", note: "远行已开 · 行迹遍及 " + ((s.visitedNodes || []).length) + " 地" })
+      : ({ state: "track", note: "舆图可览 · 跨城远行待通关本篇" }) },
+  // —— 前路：后续篇章的大件剪影（明牌惦记，尚不可得）——
+  { id: "qingyuanjian", cat: "gongfa", name: "《青元剑诀》", far: true,
+    blurb: "黄枫谷剑修主轴——筑基之后真正的飞剑根基。",
+    guide: "黄枫谷篇——筑基大成后，李化元大长老亲授。", stat: () => ({ state: "unheard" }) },
+  { id: "zhujidan", cat: "dan", name: "筑基丹链", far: true,
+    blurb: "三段式突破的超大件——从让丹的屈辱起点，到自炼成丹的扬眉一刻。",
+    guide: "黄枫谷篇——让丹屈辱→血色禁地取药→地火之屋自炼，三段缺一不可。", stat: () => ({ state: "unheard" }) },
+  { id: "yuzhizhu", cat: "kuilei", name: "灵宠之缘", far: true,
+    blurb: "可养成的灵宠（玉蜘蛛之属），开灵宠成长轴。",
+    guide: "黄枫谷篇——灵宠之缘（名称·获取以动漫版为准）。", stat: () => ({ state: "unheard" }) },
+  { id: "fengyunjian", cat: "fabao", name: "青竹蜂云剑", far: true,
+    blurb: "大件范式原型——神识驭剑 1→9→36→72，轴尽头亮出大庚剑阵的路子。",
+    guide: "黄枫谷取炼制之法→分步收集材料(每步有剧情)→乱星海炼成。", stat: () => ({ state: "unheard" }) },
+  { id: "pixieshenlei", cat: "fabao", name: "辟邪神雷", far: true,
+    blurb: "特攻区大件·克魔功——与蜂云剑双底牌，以下克上的杀手锏。",
+    guide: "乱星海篇——机缘所得，克魔利器。", stat: () => ({ state: "unheard" }) },
+  { id: "shenfengzhou", cat: "fabao", name: "乌龙夺 · 神风舟", far: true,
+    blurb: "墨蛟之材炼成：乌龙夺(重击法宝)、神风舟(飞行载具，与空层战斗咬合)。",
+    guide: "伏诛墨蛟得角·皮·鳞→魔道争锋篇燕家堡代工炼制。", stat: () => ({ state: "unheard" }) },
+  { id: "fengleichi", cat: "fabao", name: "风雷翅", far: true,
+    blurb: "速度均势区至宝——遁速翻倍的飞行至宝。",
+    guide: "乱星海篇——金雷竹炼制（协助紫灵九死一生的任务线）。", stat: () => ({ state: "unheard" }) },
+  { id: "dageng", cat: "fabao", name: "大庚剑阵", far: true,
+    blurb: "控剑轴尽头的兑现——七十二剑齐御，方能催动的杀阵。",
+    guide: "重返天南篇——青竹蜂云剑控剑轴走到尽头后解锁。", stat: () => ({ state: "unheard" }) },
+  { id: "yufengche", cat: "fabao", name: "御风车", far: true,
+    blurb: "元婴期速度区至宝。",
+    guide: "重返天南篇——元婴大战穆兰之后所得。", stat: () => ({ state: "unheard" }) },
+];
+
 /* ---------- 人物名册（忠于动漫的过场/关键人物）----------
  * 不影响主线，纯增世界氛围与代入感；遇见后录入"人物图鉴"。
  * id 唯一；bio 为图鉴简介；lines 为随机搭话（数组）；where 出现地点；cond 出现条件。

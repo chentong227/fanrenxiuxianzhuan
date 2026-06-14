@@ -1703,12 +1703,57 @@ const UI = {
     const lockedCard = `<div class="codex-card locked"><b>？？？</b><div class="codex-bio">尚未相识——行走江湖，自有相逢时。</div></div>`;
 
     this.openModal(`
+      ${this._compTabs("npc")}
       <h2>人物图鉴 <span class="codex-count">${known.length}/${total}</span></h2>
       <p style="color:var(--ink-dim);font-size:12px">行走江湖所遇之人，结识后录入此册。大道无情，有羁绊者，终有离散之时。</p>
       <div class="codex">
         ${known.map(cardOf).join("")}
         ${unknown.map(() => lockedCard).join("")}
       </div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">合上</button></div>
+    `);
+  },
+
+  // 图鉴页签：人物 | 大件（复用同一套图鉴 UI 的独立栏位）
+  _compTabs(active) {
+    const t = (id, label, fn) => `<button class="comp-tab ${active === id ? 'on' : ''}" onclick="UI.${fn}()">${label}</button>`;
+    return `<div class="comp-tabs">${t("npc", "人物图鉴", "openCodex")}${t("big", "大件图鉴", "openBigitems")}</div>`;
+  },
+
+  /* -------- 大件图鉴（第一公民系统总表：明牌惦记 + 如何开启·获取）-------- */
+  openBigitems() {
+    const s = State.data;
+    const cats = (typeof WORLD !== "undefined" && WORLD.bigitemCats) ? WORLD.bigitemCats : [];
+    const all = (typeof WORLD !== "undefined" && WORLD.bigitems) ? WORLD.bigitems : [];
+    const META = { got: { cls: "bi-got", badge: "已得" }, track: { cls: "bi-track", badge: "在途" }, unheard: { cls: "bi-unheard", badge: "未闻" } };
+    const reachable = all.filter(b => !b.far);
+    const gotCount = reachable.filter(b => { try { return b.stat(s).state === "got"; } catch (e) { return false; } }).length;
+    const cardOf = (b) => {
+      let st; try { st = b.stat(s) || {}; } catch (e) { st = {}; }
+      if (!st.state) st.state = "unheard";
+      const meta = META[st.state] || META.unheard;
+      const badge = b.far ? "前路" : meta.badge;
+      const prog = st.prog
+        ? `<div class="bi-prog"><div class="bi-prog-bar"><i style="width:${Math.min(100, Math.round((st.prog.cur / Math.max(1, st.prog.max)) * 100))}%"></i></div><span>${st.prog.cur}/${st.prog.max}</span></div>`
+        : "";
+      const note = st.note ? `<div class="bi-note">${st.note}</div>` : "";
+      return `<div class="bi-card ${meta.cls}${b.far ? ' bi-far' : ''}">
+        <div class="bi-head"><b>${b.name}</b><span class="bi-badge">${badge}</span></div>
+        <div class="bi-blurb">${b.blurb}</div>
+        ${prog}${note}
+        <div class="bi-guide"><span class="bi-guide-key">引导</span>${b.guide}</div>
+      </div>`;
+    };
+    const sections = cats.map(c => {
+      const items = all.filter(b => b.cat === c.id);
+      if (!items.length) return "";
+      return `<h3 class="panel-title">${c.name}</h3><div class="bi-list">${items.map(cardOf).join("")}</div>`;
+    }).join("");
+    this.openModal(`
+      ${this._compTabs("big")}
+      <h2>大件图鉴 <span class="codex-count">${gotCount}/${reachable.length}</span></h2>
+      <p style="color:var(--ink-dim);font-size:12px">大件＝节点非奖品：每一件都开一条轴、通向下一件。明牌惦记，照「引导」一步步挣来——不漏任何一件。</p>
+      <div class="bigitems">${sections}</div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">合上</button></div>
     `);
   },
