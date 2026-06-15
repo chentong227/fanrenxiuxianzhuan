@@ -380,6 +380,9 @@
     }
     dist(a, b) { return Math.abs(a.pos - b.pos); }
     zoneAt(pos, type) { return this.zones.find(z => z.type === type && pos >= z.from && pos <= z.to) || null; }
+    /* 己方单位（韩立本体 / 同道 / 我驭使的尸傀·灵宠）——封逃口判定（阶段8 堵口=封逃）用 */
+    _isAlly(u) { return u === this.player || !!(u && u.isSide); }
+
     /* D1 玩家本格不容他人驻足：除「境界比你高」的单位外，谁都不能停在你脚下那一格；
      * 你亲手操控的傀儡/灵宠（非「同道」侧位）更是绝无例外。可借道穿过、不得落脚。 */
     _mayShareCell(unit) {
@@ -707,10 +710,12 @@
             zoneTo: e._charging.aim === "zone" ? Math.min(this.W - 1, prey.pos + 1) : undefined };
           return;
         }
-        // —— 遁走判定：真到了死生一线（血只剩一成）才起遁意，且非必逃——
-        //    兽性危急时更可能拼命（feral 蓄力权重激增），别动辄就跑（用户裁决）
-        if (e.canFlee && e.hp < e.hpMax * 0.1 && this.mode !== "breakthrough" && !e._desperate
-          && this.rng() < 0.55) {
+        // —— 遁走判定（阶段8 参数化·逃遁→击杀闭环）：重伤即倾向遁逃，境界越高/越级越想跑
+        //    （元婴尤甚）；练气沿旧值"别动辄就跑"（用户裁决）。阈值按境界差加权（Balance.fleeProfile）。
+        //    兽性危急时更可能拼命（feral 蓄力权重激增）由后续分支承接。
+        const fp = Balance.fleeProfile(e.realmTier || 0, this.player.realmTier || 0);
+        if (e.canFlee && e.hp < e.hpMax * fp.hpThresh && this.mode !== "breakthrough" && !e._desperate
+          && this.rng() < fp.prob) {
           e.intent = { name: "遁走", kind: "flee" };
           return;
         }
@@ -1813,27 +1818,40 @@
         return;
       }
 
-      // —— 遁走：向右缘退，到达即离场 ——
+      // —— 遁走（阶段8 逃遁→击杀闭环）：撤离口收窄=只能从最前排(lane0)最右那一格离场；
+      //    该格被己方占住（韩立站/控）→ 无合法撤离格 → 遁走失败、滞留受死（堵口=封逃）。
+      //    雷遁抢占此格或够狠够快补刀，即"元婴难杀"的破局点。——
       if (a.kind === "flee") {
-        const toward = this.W - 1;
-        if (e.pos >= toward) {
-          e.escaped = true;
-          this._log(`${e.name} 化作一道遁光夺路而走——逃了！`);
-          this._emitFx(`enemy:${this.enemies.indexOf(e)}`, "miss", "遁走");
+        const exitPos = this.W - 1;                       // 撤离口：最前排(lane0)最右格
+        const ei = this.enemies.indexOf(e);
+        const blocker = this.unitAt(exitPos, null, 0);    // 谁占着撤离口（战位排）
+        // 撤离口被己方占住 → 退路已封，遁走失败、滞留受死
+        if (blocker && blocker !== e && this._isAlly(blocker)) {
+          this._say(e, "flee");
+          this._log(`${e.name} 夺路欲遁，撤离口却被你死死封住——退无可退，只得滞留待死！`);
+          this._emitFx(`enemy:${ei}`, "miss", "退路已封");
           return;
         }
-        const dir = 1;
+        // 已抵撤离口（最前排最右格）→ 脱离战斗
+        if ((e.lane || 0) === 0 && e.pos >= exitPos) {
+          e.escaped = true;
+          this._log(`${e.name} 化作一道遁光夺路而走——逃了！`);
+          this._emitFx(`enemy:${ei}`, "miss", "遁走");
+          return;
+        }
+        // 僚位先并回战位排，再向撤离口疾退（逃命脚程+1；战位排被占即堵路，含韩立封口）
+        if ((e.lane || 0) !== 0) e.lane = 0;
         let p = e.pos;
-        for (let i = 1; i <= this.moveCap(e) + 1; i++) {   // 逃命脚程+1
-          const np = e.pos + dir * i;
+        for (let i = 1; i <= this.moveCap(e) + 1; i++) {
+          const np = e.pos + i;
           if (np >= this.W) break;
-          if (this.unitAt(np, null, e.lane || 0)) break;
+          if (this.unitAt(np, null, 0)) break;
           p = np;
         }
         e.pos = p;
         this._checkMine(e); if (!e.alive) return;
         this._say(e, "flee");
-        this._log(`${e.name} 且战且退，向阵外遁去（再不拦就走脱了）！`);
+        this._log(`${e.name} 且战且退，向最前排的撤离口奔逃（再不拦就走脱了）！`);
         return;
       }
 

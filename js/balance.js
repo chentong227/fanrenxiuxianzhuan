@@ -67,6 +67,23 @@
       return { common: 0.6, strong: 0.9, boss: 1.3 }[name] || 0.6;
     },
 
+    /* ---- 遁意权重：重伤起遁的血阈与概率，按境界 + 越阶加权（阶段8 逃遁→击杀闭环）----
+     * 用户裁决：强者（元婴/同级）难杀不靠堆血墙，而靠"会逃 + 高机动"——
+     *   境界越高越惜命、起遁越早越果断（元婴尤甚）；练气(tier0)沿用旧值"别动辄就跑"。
+     *   越阶（敌大境界高于玩家）再加权——主线大敌恒高阶，遇之即知"杀掉=需谋划的成就"。
+     * 返回 { hpThresh, prob }：血低于 hpMax×hpThresh 时，以 prob 起遁意。
+     * 纯数值=设计可动点（balance-master §九），不涉动漫考据。 */
+    fleeProfile(enemyTier, playerTier) {
+      const t = clamp(Math.round(enemyTier || 0), 0, 4);
+      const diff = Math.max(0, (enemyTier || 0) - (playerTier || 0));   // 敌高我几个大境界
+      const baseHp = [0.10, 0.14, 0.20, 0.30, 0.40][t];                 // 练气一成起 → 元婴四成即遁
+      const baseProb = [0.55, 0.62, 0.72, 0.84, 0.92][t];               // 高阶起遁更果断
+      return {
+        hpThresh: clamp(baseHp + Math.min(diff, 3) * 0.05, 0.08, 0.5),
+        prob: clamp(baseProb + Math.min(diff, 3) * 0.05, 0.3, 0.97),
+      };
+    },
+
     /* ---- 灵气回合结转上限：只有高阶修士才囤得住灵气 ----
      * 练气(tier0)几乎"用不完即散"，仅能存一两点接续连招；
      * 境界越高，越能蓄养灵气、酝酿大招。
