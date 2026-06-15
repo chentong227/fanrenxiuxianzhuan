@@ -125,5 +125,28 @@ console.log("\n=== 7. 研习功法消耗时间并入库 ===");
   DATA.techniques.qingyuan_sword.locked = true; delete DATA.techniques.qingyuan_sword.book;
 }
 
+console.log("\n=== 8. 跨境界法器驱使门槛：筑基后仍能驭练气十一层顶阶法器 ===");
+{
+  State.create("韩立", "si");
+  const s = State.data;
+  const qiTop = DATA.realms.findIndex(r => r.tier === "qi" && r.layer === 11);
+  const fdIdx = DATA.realms.findIndex(r => r.tier && r.tier !== "qi");
+  assert(qiTop >= 0 && fdIdx >= 0, "存在练气十一层与筑基境界节点");
+  // 练气十一层：gateLayer = 该层层数，可驭 minLayer 11 法器
+  s.realmIndex = qiTop;
+  assert(State.gateLayer() === 11, `练气十一层 gateLayer=层数（${State.gateLayer()}）`);
+  State.give("jinfuzi_ren", 1);
+  Engine.equipGear("jinfuzi_ren");
+  assert(s.gear.weapon === "jinfuzi_ren", "练气十一层可装备万宝楼顶阶法器");
+  // 筑基初期：layer 归 1，但 gateLayer 视作远超练气全层，法器不应失效
+  s.realmIndex = fdIdx;
+  assert((DATA.realms[fdIdx].layer || 1) < 11, "筑基节点 layer 已归 1（正是历史误判之源）");
+  assert(State.gateLayer() >= 11, `筑基 gateLayer 远超练气门槛（${State.gateLayer()}）`);
+  assert(!!State.gearOf("weapon"), "筑基后已装法器仍可驱使（gearOf 不返回 null）");
+  Engine.unequipGear("weapon", true);
+  Engine.equipGear("jinfuzi_ren");
+  assert(s.gear.weapon === "jinfuzi_ren", "筑基后亦可重新装备练气十一层法器");
+}
+
 console.log(`\n========== 功法配装：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);
 process.exit(failures === 0 ? 0 : 1);

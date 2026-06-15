@@ -823,7 +823,7 @@ const UI = {
     const gdef = DATA.gear && DATA.gear[itemId];
     if (gdef) {
       const equipped = State.data.gear && State.data.gear[gdef.slot] === itemId;
-      const layer = (DATA.realms[State.data.realmIndex] || {}).layer || 1;
+      const layer = State.gateLayer();
       const can = !gdef.minLayer || layer >= gdef.minLayer;
       if (equipped) {
         actions += `<button class="btn btn-secondary" onclick="Engine.unequipGear('${gdef.slot}'); UI.closeModal();">卸下</button>`;
@@ -1475,7 +1475,7 @@ const UI = {
   openTreasury() {
     const s = State.data;
     const SP = (typeof CombatAPI !== "undefined") ? CombatAPI.SPELLS : {};
-    const playerLayer = (DATA.realms[s.realmIndex] || {}).layer || 1;
+    const playerLayer = State.gateLayer();
     const NAMES = { hpMax: "气血上限", moodMax: "心境上限", sense: "神识", body: "体魄",
                     speed: "遁速", armor: "护体", regenBoost: "回灵", mpMax: "灵力上限" };
     const ownedOfSlot = (slot) => Object.keys(DATA.gear)
