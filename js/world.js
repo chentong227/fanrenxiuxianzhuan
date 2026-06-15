@@ -176,19 +176,20 @@ WORLD.locations = [
   },
 ];
 
-/* ---------- 大陆层（world-architecture L0）：天南 · 越国一带 ----------
+/* ---------- 大陆层（world-architecture L0）：天南 · 胥国一带 ----------
  * 铁律：全图早见（远方=惦记），限制可达的不是迷雾是旅途成本。
  * 节点的 locs 指向地区层 locations 组；gate 为道途门槛（未达则只可远望）。
  * 旅途卷轴实装前，未解锁节点点击仅展示"道途未通"与门槛说明。 */
 /* 地理考据（凡人手册/原文，2026-06-11 核定）：
- * 镜州=越国西北部（贫困）；彩霞山=镜州第二大山，原名落凤山（五色彩凤化山传说）；
+ * （动画将越国改称胥国，本作从之——以下「胥国」即原著越国；越京等地名不改）
+ * 镜州=胥国西北部（贫困）；彩霞山=镜州第二大山，原名落凤山（五色彩凤化山传说）；
  * 建州=北部第二大州（多山丘陵人口稀少，北接元武国），西部太岳山脉连绵数千里，黄枫谷在焉，
  * 血色禁地在建州北部；岚州=南部产粮大州（第二富足），嘉元城=岚州第一城（岚州中部），
- * 广贵城=岚州最南（三面环山一面靠湖），太南山在广贵城西四十里；越京=越国京城（郊外白菊山）。
+ * 广贵城=岚州最南（三面环山一面靠湖），太南山在广贵城西四十里；越京=胥国京城（郊外白菊山）。
  * 节点 pos 与 assets/maps/tiannan_map.png 地貌对位（西北五色峰=彩霞山）。 */
 WORLD.continent = {
-  name: "越国",
-  atlasId: "yueguo",   // 舆图叶层：越国十三州（水墨舆图）属「天南」大区
+  name: "胥国",
+  atlasId: "yueguo",   // 舆图叶层：胥国（动画即原著越国）十三州（水墨舆图）属「天南」大区
   parent: "tiannan",
   map: "tiannan_map",
   nodes: [
@@ -197,19 +198,42 @@ WORLD.continent = {
     { id: "qingniu",  name: "青牛镇",  pos: { x: 26, y: 31 }, locs: [],
       desc: "七玄门治下的小镇，你的家乡就在镇郊五里沟。爹娘的白发，几亩薄田。", months: 1, danger: "低", visit: "home" },
     { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate", "baiyao_yuan", "fangshi"],
-      desc: "越国七大仙门之一，居建州太岳山脉深处——此山脉连绵数千里，北接元武国。升仙令在手，此处便是你的去处。", months: 3, danger: "高",
+      faction: "qipai", factionByEpoch: { 1: "neutral" },
+      nameByEpoch: { 1: "黄枫谷旧址" }, ruinByEpoch: { 1: true },
+      descByEpoch: { 1: "黄枫谷旧址——魔道入侵后，黄枫谷携门人远遁南方北凉国重立山门，太岳山脉深处只余断壁颓垣。" },
+      desc: "胥国七大仙门之一，居建州太岳山脉深处——此山脉连绵数千里，北接元武国。升仙令在手，此处便是你的去处。", months: 3, danger: "高",
       gate: (s) => State.count("shengxian_ling") > 0
         ? (s.flags.departure_complete ? null : (s.flags.arc1_complete ? "升仙大会未了（太南谷）——仙门入谷自有章程" : "七玄门之事未了"))
         : "无升仙令者，仙门不纳" },
     { id: "yuejing",  name: "越京",    pos: { x: 34, y: 50 }, locs: [],
-      desc: "越国京城，凡俗繁华之极。郊外白菊山是赏景名胜。", months: 2, danger: "低",
+      desc: "胥国京城，凡俗繁华之极。郊外白菊山是赏景名胜。", months: 2, danger: "低",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
     { id: "jiayuan",  name: "嘉元城",  pos: { x: 44, y: 60 }, locs: ["jiayuan_city"],
-      desc: "岚州第一大城。岚州居越国之南，沃野产粮，富庶仅次京畿——城中鱼龙混杂，传闻有修仙者出没。", months: 3, danger: "中",
+      desc: "岚州第一大城。岚州居胥国之南，沃野产粮，富庶仅次京畿——城中鱼龙混杂，传闻有修仙者出没。", months: 3, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
     { id: "tainangu", name: "太南谷",  pos: { x: 28, y: 80 }, locs: ["tainan_fair"],
       desc: "岚州最南端，广贵城西四十里的太南山中。修仙者的集市「太南小会」每隔数年在此举办，凡人勿近。", months: 4, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
+    // —— 胥国七派（L3 宗门级势力，§9）：黄枫谷之外六派——远观剪影（未到访不造假据点），
+    //   开「势力」时按宗门势力染色；魔道入侵（纪元1）灵兽山/天阙堡叛变归魔道，黄枫谷战败远遁北凉（旧址），余派坚守仍属七派。
+    { id: "yanyue",  name: "掩月宗", pos: { x: 67, y: 30 }, locs: [], silhouette: true,
+      faction: "qipai",
+      desc: "胥国七派之首，脱胎于魔道合欢宗，七派中最强——远观之地，且记在心头。" },
+    { id: "lingshou", name: "灵兽山", pos: { x: 76, y: 53 }, locs: [], silhouette: true,
+      faction: "qipai", factionByEpoch: { 1: "modao" },
+      desc: "胥国七派之一。法宝兽之道第一——据传乃魔道御灵宗埋下的千年暗桩，魔道入侵时反水。远观之地，且记在心头。" },
+    { id: "tianque", name: "天阙堡", pos: { x: 60, y: 44 }, locs: [], silhouette: true,
+      faction: "qipai", factionByEpoch: { 1: "modao" },
+      desc: "胥国七派之一。动画中魔道入侵时亦随之投敌——远观之地，且记在心头。" },
+    { id: "qingxu",  name: "清虚门", pos: { x: 49, y: 35 }, locs: [], silhouette: true,
+      faction: "qipai",
+      desc: "胥国七派之一——远观之地，且记在心头。" },
+    { id: "huadao",  name: "化刀坞", pos: { x: 40, y: 24 }, locs: [], silhouette: true,
+      faction: "qipai",
+      desc: "胥国七派之一——远观之地，且记在心头。" },
+    { id: "jujian",  name: "巨剑门", pos: { x: 52, y: 71 }, locs: [], silhouette: true,
+      faction: "qipai",
+      desc: "胥国七派之一——远观之地，且记在心头。" },
     { id: "farsea",   name: "乱星海（极远）", pos: { x: 86, y: 42 }, locs: [], silhouette: true,
       desc: "天南以东的无尽海域，星罗万岛，妖修横行。路远得连舆图都画不全。" },
   ],
@@ -227,8 +251,8 @@ WORLD.continent = {
 /* ============================================================
  * 舆图（分层大地图）——人界 ▸ 大区 ▸ 国别/联盟 ▸ 据点
  * 参考 docs/ref-renjie-worldmap.png + world-architecture.md L0a/L0b/L0c。
- * 上层（人界/大区/国别）由 UI.openAtlas 通用渲染；越国(国别)叶层复用 WORLD.continent
- * 的水墨舆图与据点节点（UI.openContinent）。当前可达=越国，余皆「远眺」剪影
+ * 上层（人界/大区/国别）由 UI.openAtlas 通用渲染；胥国(国别)叶层复用 WORLD.continent
+ * 的水墨舆图与据点节点（UI.openContinent）。当前可达=胥国，余皆「远眺」剪影
  * （考据红线：未实装大区只标名远观、不杜撰可达细节；信息面纱亦如是）。
  * 升级到一级，上一级缩为「远眺」入口——逐级下钻/上卷，永远知道身在何处、可往何方。
  * ============================================================ */
@@ -238,22 +262,66 @@ WORLD.continent = {
  *   poly?     区块多边形（SVG points "x,y x,y…"，% 坐标）；缺省由 UI._atlasPoly 据 pos 生成占位六边形（v144 描准）
  *   label?    题字锚点 {x,y}；缺省取 pos（块中心）
  *   unlock(s) 解锁判定 → 三态（暗/雾·亮起·在此，§3.2）；复用 s.flags / s.visitedNodes，不新开存档字段
- *   faction?  势力归属标签（叠加层，§8，非第6级）：qipai|zhengdao|modao|jiuguo|mulan…
+ *   faction?         势力归属标签（势力叠加层，§9 多级 toggle，非第6级）：qipai|zhengdao|modao|jiuguo|tiandao|mulan
+ *   factionByEpoch?  动态归属 {纪元→势力}，取 ≤当前纪元的最近一档（"neutral"=显式原色）；缺省用恒定 faction
+ *   nameByEpoch?/descByEpoch?/ruinByEpoch?  随纪元改名/改述/废墟态（如黄枫谷→黄枫谷旧址）
  *   silhouette/desc  远眺剪影 / 描述（保留）
  * L4/L5 不加 poly（保持点状/单屏）。朝向＝§7.4 方案①（大晋在南；海北/慕兰南/魔道东/正道西）。 */
 WORLD.atlas = {
   root: "renjie",
+  /* —— 势力注册表（v146 动态多级势力叠加层 §9）：id→图例文案；实际染色见 css .faction-<id> —— */
+  factions: {
+    qipai:    { name: "胥国七派", short: "七派",   blurb: "胥国（动画即原著越国）七大仙门联盟" },
+    zhengdao: { name: "正道盟",   short: "正道盟", blurb: "天南西境·风都国正道诸派" },
+    modao:    { name: "魔道六宗", short: "魔道",   blurb: "天南东境·天罗国合欢/御灵/魔焰等六宗" },
+    jiuguo:   { name: "九国盟",   short: "九国盟", blurb: "天南最南·抗慕兰的松散九国之盟" },
+    tiandao:  { name: "天道盟",   short: "天道盟", blurb: "天南北境·十几中小国抗正魔之盟（韩立赴乱星海后方兴）" },
+    mulan:    { name: "慕兰",     short: "慕兰",   blurb: "天南之外·慕兰草原法士，屡屡南侵" },
+  },
+  /* 当前剧情纪元：0 七玄门篇 / 1 魔道入侵 / 2 四分天下 / 3 慕兰大举入侵·天南联盟——读 s.flags，默认 0。
+     纪元由章节/剧情自动推进（红线：魔道·慕兰篇内容待 John 修订，此处只留 flag 钩子）。 */
+  factionEpoch(s) {
+    const f = (s && s.flags) || {};
+    if (f.mulan_invasion || f.tiannan_alliance) return 3;
+    if (f.tiandao_formed) return 2;
+    if (f.modao_invasion || f.huangfeng_relocated) return 1;
+    return 0;
+  },
+  /* 节点在某纪元的势力归属：factionByEpoch 取 ≤epoch 的最近一档（"neutral"=显式原色不染），
+     否则恒定 faction，否则 null（原色）。 */
+  factionAt(node, epoch) {
+    if (!node) return null;
+    const fbe = node.factionByEpoch;
+    if (fbe) {
+      for (let e = epoch; e >= 0; e--) if (fbe[e] !== undefined) return fbe[e] === "neutral" ? null : fbe[e];
+    }
+    return node.faction || null;
+  },
+  /* 某纪元「存在」的大势力（L1 概览图例用；不留虚影——天道盟纪元2 起才列）。 */
+  factionsAtEpoch(epoch) {
+    const base = ["qipai", "zhengdao", "modao", "jiuguo", "mulan"];
+    if (epoch >= 2) base.splice(4, 0, "tiandao");
+    return base;
+  },
+  /* 通用「按纪元取值」：name/desc/ruin 等 *ByEpoch 字段——取 ≤epoch 的最近一档。 */
+  epochPick(map, epoch) {
+    if (!map) return undefined;
+    for (let e = epoch; e >= 0; e--) if (map[e] !== undefined) return map[e];
+    return undefined;
+  },
   levels: {
     // —— L0a 人界全图 ——
     renjie: {
       name: "人界", kind: "world", crumb: "人界", map: "renjie_map",
       blurb: "你脚下这方天地。天南一隅是起点，乱星海、大晋、慕兰、天沙……皆在云水之外。",
+      // 势力概览（L1）：开「势力」时于图例处给一句天南割据概述（§9，不留虚影——纪元0 不提天道盟）。
+      factionOverview: "天南——七派据中（胥国），正道盟在西、魔道六宗在东、九国盟偏南，慕兰屡屡南侵。下钻天南，可览各国主导势力。",
       nodes: [
         // 天南＝本图东北角，起点常亮，下钻 L2（§6.1）
         { id: "tiannan", name: "天南", to: "tiannan", pos: { x: 88, y: 30 }, label: { x: 88, y: 30 }, reach: true,
           poly: "74,21 82,17 92,18 100,20 100,43 93,45 86,41 72,39",
           unlock: () => true,
-          desc: "人界东北一隅。越国、元武诸国与正魔两道犬牙交错——你的修行，从这里启程。" },
+          desc: "人界东北一隅。胥国、元武诸国与正魔两道犬牙交错——你的修行，从这里启程。" },
         // 慕兰草原＝天南正下方（南），慕兰篇点亮（§6.0/§7.4）
         { id: "mulan", name: "慕兰草原", pos: { x: 88, y: 51 }, label: { x: 88, y: 51 }, silhouette: true,
           poly: "72,39 86,41 93,45 100,43 100,66 93,67 84,63 74,58",
@@ -289,33 +357,41 @@ WORLD.atlas = {
     // —— L0b 大区图：天南多国格局 ——
     tiannan: {
       name: "天南", kind: "region", parent: "renjie", crumb: "天南", map: "tiannan_atlas",
-      blurb: "天南多国格局——越国只是其中一隅。诸国并立，海北、慕兰南、魔道东、正道西。",
+      blurb: "天南多国格局——胥国（韩立出身）只是其中一隅。诸国并立，海北、慕兰南、魔道东、正道西。",
+      // 势力概览（L2 国级）：开「势力」时给一句「整国主导势力」概述（非「国内每宗皆属此」，宗门级见 L3）。
+      factionOverview: "国级图层标的是各国「主导势力」——七派（中·胥国）、正道盟（西·风都）、魔道六宗（东·天罗）、九国盟（南）、慕兰（最南）；中北诸国纪元0 多为独立小国（原色），随剧情渐次归并。",
       // 国别格子（v145）：相邻切片铺满天南大区图，共享边界严丝合缝（poly 由 Voronoi 剖分算得，
-      // 按 canon 罗盘 + 边城玖女天南图 + v2 实际地势落位）。解锁三态：越国·在此/可下钻，余压雾。
+      // 按 canon 罗盘 + 边城玖女天南图 + v2 实际地势落位）。解锁三态：胥国·在此/可下钻，余压雾。
       nodes: [
-        // —— 中：越国（七派；下钻 L3 越国·州）——
-        { id: "yueguo", name: "越国", to: "yueguo", pos: { x: 42, y: 44 }, reach: true,
-          faction: "qipai", unlock: () => true,
+        // —— 中：胥国（动画即原著越国，韩立出身；七派；下钻 L3）——
+        //   节点 id 仍为 yueguo（不动下钻/存档逻辑），仅显示名改胥国；魔道入侵后胥国陷落魔道。
+        { id: "yueguo", name: "胥国", to: "yueguo", pos: { x: 42, y: 44 }, reach: true,
+          faction: "qipai", factionByEpoch: { 1: "modao" }, unlock: () => true,
           poly: "36.10,56.66 32.57,55.29 28.17,49.35 27.99,44.13 47.38,32.82 51.60,36.16 55.11,45.80",
-          desc: "天南中部之国，七派分立。十三州山河，是你前半生的舞台。" },
+          desc: "天南中部之国，七派分立——韩立出身于此。十三州山河，是你前半生的舞台。" },
         // —— 北 ——
         { id: "wubianhai", name: "无边海", pos: { x: 48, y: 4 }, silhouette: true, unlock: () => false,
           poly: "62.33,5.54 40.34,10.42 34.21,0.00 64.46,0.00",
           desc: "天南最北的无尽之海，自古无人穿越，传与别处大陆隔绝。" },
         { id: "huayuguo", name: "花雨国", pos: { x: 31, y: 14 }, silhouette: true, unlock: () => false,
+          factionByEpoch: { 2: "tiandao" },
           poly: "40.34,10.42 40.91,21.24 30.45,23.57 11.60,0.00 34.21,0.00",
           desc: "天南北陲小国，凡修寥寥——远观之地，且记在心头。" },
         { id: "xiguo", name: "溪国", pos: { x: 50, y: 13 }, silhouette: true, unlock: () => false,
+          factionByEpoch: { 2: "tiandao" },
           poly: "61.98,14.06 44.62,24.18 40.91,21.24 40.34,10.42 62.33,5.54",
-          desc: "天南北境小国——远观之地，且记在心头。" },
+          desc: "天南北境小国——后为天道盟核心地之一（云梦山）。远观之地，且记在心头。" },
         { id: "yuanwuguo", name: "元武国", pos: { x: 57, y: 25 }, silhouette: true, unlock: () => false,
+          factionByEpoch: { 1: "modao" },
           poly: "51.60,36.16 47.38,32.82 44.62,24.18 61.98,14.06 69.08,25.04",
-          desc: "越国之北的大国，黄枫谷北面太岳山脉与之接壤。" },
+          desc: "胥国之北的大国，黄枫谷北面太岳山脉与之接壤——从金鼓原赴京城必经之地。" },
         { id: "tianluguo", name: "天卢国", pos: { x: 74, y: 14 }, silhouette: true, unlock: () => false,
+          factionByEpoch: { 2: "tiandao" },
           poly: "73.58,27.08 69.08,25.04 61.98,14.06 62.33,5.54 64.46,0.00 100.00,0.00 100.00,14.50",
           desc: "天南东北之国——远观之地，且记在心头。" },
         // —— 西北 ——
         { id: "shayunguo", name: "刹云国", pos: { x: 21, y: 22 }, silhouette: true, unlock: () => false,
+          factionByEpoch: { 2: "tiandao" },
           poly: "30.45,23.57 22.31,34.96 0.00,28.17 0.00,0.00 11.60,0.00",
           desc: "天南西北之国——远观之地，且记在心头。" },
         { id: "dongyuguo", name: "东裕国", pos: { x: 35, y: 32 }, silhouette: true, unlock: () => false,
@@ -331,13 +407,15 @@ WORLD.atlas = {
           desc: "天南西南之国——远观之地，且记在心头。" },
         // —— 东：魔道·天罗国 ——
         { id: "jiangguo", name: "姜国", pos: { x: 64, y: 36 }, silhouette: true, unlock: () => false,
+          factionByEpoch: { 1: "modao" },
           poly: "61.40,49.80 55.11,45.80 51.60,36.16 69.08,25.04 73.58,27.08 74.39,43.30",
-          desc: "天南东境之国——越国与魔道天罗，正隔着姜国、车骑国相望。" },
+          desc: "天南东境之国——胥国与魔道天罗，正隔着姜国、车骑国相望。" },
         { id: "tianluoguo", name: "天罗国", pos: { x: 84, y: 35 }, silhouette: true,
           faction: "modao", unlock: () => false,
           poly: "74.39,43.30 73.58,27.08 100.00,14.50 100.00,55.50",
           desc: "天南最东之国，魔道六宗老巢——长生、合欢诸宗盘踞，魔道入侵的源头。" },
         { id: "chejiguo", name: "车骑国", pos: { x: 74, y: 56 }, silhouette: true, unlock: () => false,
+          factionByEpoch: { 1: "modao" },
           poly: "84.88,91.34 62.36,61.31 61.40,49.80 74.39,43.30 100.00,55.50 100.00,100.00 97.54,100.00",
           desc: "边境妖兽横行之国——练气士只身赴此，多半葬身兽口。看得见、去不了。" },
         // —— 中南 ——
@@ -349,10 +427,12 @@ WORLD.atlas = {
           faction: "jiuguo", unlock: (s) => !!(s.flags && s.flags.huangfeng_relocated),
           poly: "32.57,55.29 36.10,56.66 43.15,67.22 42.93,71.95 12.54,100.00 1.62,100.00",
           desc: "天南之南、九国盟一国，紧邻慕兰草原。魔道入侵后，黄枫谷携门人远遁至此重立山门。" },
-        { id: "xuguo", name: "胥国", pos: { x: 54, y: 71 }, silhouette: true, unlock: () => false,
+        // 越/胥对调（John 定）：此节点 id 仍 xuguo，显示名改「越国」——不可访问的远观剪影（原色不染）。
+        { id: "xuguo", name: "越国", pos: { x: 54, y: 71 }, silhouette: true, unlock: () => false,
           poly: "57.70,84.25 42.93,71.95 43.15,67.22 62.36,61.31 84.88,91.34",
-          desc: "天南南境之国，九国盟之一——远观之地，且记在心头。" },
+          desc: "天南极南一隅，偏处九国盟之外——远观之地，无由得至。" },
         { id: "fengyuanguo", name: "丰原国", pos: { x: 44, y: 83 }, silhouette: true, unlock: () => false,
+          faction: "jiuguo",
           poly: "42.93,71.95 57.70,84.25 14.38,100.00 12.54,100.00",
           desc: "天南南境之国，九国盟之一——远观之地，且记在心头。" },
         // —— 最南：慕兰·天澜草原 ——
@@ -362,7 +442,7 @@ WORLD.atlas = {
           desc: "天南最南的辽阔草原。慕兰法士游牧其北，突兀族·天澜圣殿据其南，与人族修士争锋不休。" },
       ],
     },
-    // —— L0c 国别图：越国 —— 复用 WORLD.continent（水墨舆图），由 UI.openContinent 渲染
+    // —— L0c 国别图：胥国 —— 复用 WORLD.continent（水墨舆图），由 UI.openContinent 渲染
   },
 };
 

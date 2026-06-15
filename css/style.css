@@ -2872,12 +2872,90 @@ html, body { touch-action: manipulation; }
   text-shadow: 0 1px 0 rgba(255,246,205,.95), 0 0 8px rgba(255,226,96,.92), 0 2px 5px rgba(95,60,0,.5);
 }
 .block-label .here-tag { color: var(--gold); font-size: 12px; }
-/* 势力叠加层（§8）：v143 只落 faction 标签，染色待 v145 toggle(.show-factions) 启用 */
-.show-factions .region-block.faction-qipai   { stroke: #7fe3c0; }
-.show-factions .region-block.faction-zhengdao { stroke: #6aa0d4; }
-.show-factions .region-block.faction-modao    { stroke: #cc7777; }
-.show-factions .region-block.faction-jiuguo   { stroke: #d4af54; }
-.show-factions .region-block.faction-mulan    { stroke: #cc99aa; }
+
+/* ============================================================
+   v146 势力叠加层（§9）：贯穿 L1/L2/L3 的可开关「政治概览」染色层。
+   低饱和水墨六色——既作 L2 区块填充，也作 L3 宗门钉与图例色样。
+   红线：动态/纪元驱动（class 由 UI.factionAt(node,epoch) 投影），不留虚影。
+   ============================================================ */
+:root {
+  --fac-qipai:    #4f9a7c;  /* 七派·青绿 */
+  --fac-zhengdao: #b89a52;  /* 正道盟·金 */
+  --fac-modao:    #944f80;  /* 魔道·绛紫 */
+  --fac-jiuguo:   #a86838;  /* 九国盟·赭橙 */
+  --fac-tiandao:  #4f7c9c;  /* 天道盟·天青 */
+  --fac-mulan:    #8a925a;  /* 慕兰·草黄绿 */
+}
+/* 开启政治概览：薄雾/云罩让位于色块，未解锁块也显色（看清「谁控制哪」）*/
+.worldmap.show-factions .cloud-shroud { display: none; }
+.worldmap.show-factions .map-mist { opacity: .3; }
+/* 中性化三态填充——让势力色主导；无归属（原色）国显出地形（原色），不再压暗成剪影。
+   注：须叠 .atlas-painted 以盖过 .worldmap.atlas-painted .region-block.locked/.lit/.here（同 (0,4,0)，靠后取胜）。*/
+.worldmap.atlas-painted.show-factions .region-block,
+.worldmap.show-factions .region-block {
+  fill: rgba(150,165,180,.05); stroke: rgba(184,200,214,.34);
+  stroke-dasharray: none; opacity: 1; filter: none;
+}
+.worldmap.atlas-painted.show-factions .region-block.faction-qipai,
+.worldmap.show-factions .region-block.faction-qipai    { fill: rgba(79,154,124,.34); stroke: var(--fac-qipai); }
+.worldmap.atlas-painted.show-factions .region-block.faction-zhengdao,
+.worldmap.show-factions .region-block.faction-zhengdao { fill: rgba(184,154,82,.42); stroke: var(--fac-zhengdao); }
+.worldmap.atlas-painted.show-factions .region-block.faction-modao,
+.worldmap.show-factions .region-block.faction-modao    { fill: rgba(148,79,128,.34); stroke: var(--fac-modao); }
+.worldmap.atlas-painted.show-factions .region-block.faction-jiuguo,
+.worldmap.show-factions .region-block.faction-jiuguo   { fill: rgba(168,104,56,.42); stroke: var(--fac-jiuguo); }
+.worldmap.atlas-painted.show-factions .region-block.faction-tiandao,
+.worldmap.show-factions .region-block.faction-tiandao  { fill: rgba(79,124,156,.36); stroke: var(--fac-tiandao); }
+.worldmap.atlas-painted.show-factions .region-block.faction-mulan,
+.worldmap.show-factions .region-block.faction-mulan    { fill: rgba(138,146,90,.42); stroke: var(--fac-mulan); }
+/* 势力块都加粗色描边，在低饱和水墨填充上仍能清晰划出领地界线 */
+.worldmap.atlas-painted.show-factions .region-block[class*="faction-"],
+.worldmap.show-factions .region-block[class*="faction-"] { stroke-width: 1.9; }
+.worldmap.show-factions .region-block:hover { filter: drop-shadow(0 0 4px rgba(255,255,255,.35)); }
+/* 仍标出「我在此」：金描边覆于势力色之上（置于势力规则之后，同 (0,5,0) 靠后取胜）*/
+.worldmap.atlas-painted.show-factions .region-block.here,
+.worldmap.show-factions .region-block.here {
+  stroke: var(--gold); stroke-width: 1.8;
+  filter: drop-shadow(0 0 6px rgba(212,175,84,.7));
+}
+
+/* —— L3 宗门级：水墨钉染色（宗门=可访问/远观节点，按七派六宗归属着色）——
+   须达 (0,8,0) 以盖过 .worldmap.continent.inked .map-pin.cont.silhouette/.gated .pin-dot (0,7,0)；
+   填实色钉 + 实描边（覆盖 silhouette 的虚线），开关关闭即恢复远观虚钉。*/
+.worldmap.continent.inked.show-factions .map-pin.cont.faction-qipai    .pin-dot { background: var(--fac-qipai);    box-shadow: 0 0 8px var(--fac-qipai);    border: 2px solid rgba(244,232,208,.85); opacity: 1; animation: none; }
+.worldmap.continent.inked.show-factions .map-pin.cont.faction-zhengdao .pin-dot { background: var(--fac-zhengdao); box-shadow: 0 0 8px var(--fac-zhengdao); border: 2px solid rgba(244,232,208,.85); opacity: 1; animation: none; }
+.worldmap.continent.inked.show-factions .map-pin.cont.faction-modao    .pin-dot { background: var(--fac-modao);    box-shadow: 0 0 8px var(--fac-modao);    border: 2px solid rgba(244,232,208,.85); opacity: 1; animation: none; }
+.worldmap.continent.inked.show-factions .map-pin.cont.faction-jiuguo   .pin-dot { background: var(--fac-jiuguo);   box-shadow: 0 0 8px var(--fac-jiuguo);   border: 2px solid rgba(244,232,208,.85); opacity: 1; animation: none; }
+.worldmap.continent.inked.show-factions .map-pin.cont.faction-tiandao  .pin-dot { background: var(--fac-tiandao);  box-shadow: 0 0 8px var(--fac-tiandao);  border: 2px solid rgba(244,232,208,.85); opacity: 1; animation: none; }
+.worldmap.continent.inked.show-factions .map-pin.cont.faction-mulan    .pin-dot { background: var(--fac-mulan);    box-shadow: 0 0 8px var(--fac-mulan);    border: 2px solid rgba(244,232,208,.85); opacity: 1; animation: none; }
+/* 旧址/废墟态（黄枫谷旧址等）：灰白虚框、删除线，盖过势力色 */
+.map-pin.cont.ruin .pin-dot {
+  background: transparent !important; border: 2px dotted rgba(176,166,154,.75) !important;
+  box-shadow: none !important; animation: none !important;
+}
+.map-pin.cont.ruin .pin-label { color: rgba(176,166,154,.85); font-style: italic; text-decoration: line-through; }
+
+/* —— 势力图例（图下方）—— */
+.faction-legend {
+  margin: 8px 0 4px; padding: 8px 11px; font-size: 12px;
+  background: rgba(0,0,0,.24); border: 1px solid var(--border); border-radius: 8px;
+}
+.fac-epoch { color: var(--gold); letter-spacing: 1px; margin-bottom: 6px; }
+.fac-items { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.fac-item { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); }
+.fac-swatch {
+  display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+  border: 1px solid rgba(255,255,255,.25);
+}
+.fac-swatch.faction-qipai    { background: var(--fac-qipai); }
+.fac-swatch.faction-zhengdao { background: var(--fac-zhengdao); }
+.fac-swatch.faction-modao    { background: var(--fac-modao); }
+.fac-swatch.faction-jiuguo   { background: var(--fac-jiuguo); }
+.fac-swatch.faction-tiandao  { background: var(--fac-tiandao); }
+.fac-swatch.faction-mulan    { background: var(--fac-mulan); }
+.fac-note { margin-top: 6px; color: var(--ink-dim); line-height: 1.55; }
+/* 「势力」开关按钮（开=金高亮）*/
+.btn.fac-toggle.on { color: var(--gold); border-color: var(--gold); box-shadow: 0 0 6px rgba(212,175,84,.4); }
 
 /* —— v145 未解锁薄雾：两层分形噪声雾裁进未解锁块并集，缓缓反向漂移（动效）—— */
 .cloud-shroud { pointer-events: none; }
