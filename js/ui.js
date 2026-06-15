@@ -199,7 +199,18 @@ const UI = {
     const loc = State.location();
     if (!loc) return;
     const nm = this.el("loc-name"); if (nm) nm.textContent = loc.name;
-    const ds = this.el("loc-desc-inline"); if (ds) ds.textContent = loc.desc;
+    const ds = this.el("loc-desc-inline");
+    if (ds) {
+      let desc = loc.desc;
+      // 复访变迁：地点描述随剧情 flag 改写（风味取自据点风味库 ExploreMap.MAPS）
+      if (loc.flavorRef && typeof ExploreMap !== "undefined") {
+        const fmap = ExploreMap.MAPS[loc.flavorRef.map];
+        const node = fmap && fmap.nodes[loc.flavorRef.node];
+        const fl = node && ExploreMap.flavor(node, State.data.flags);
+        if (fl && fl.desc) desc = fl.desc;
+      }
+      ds.textContent = desc;
+    }
     this.renderSceneStage(loc);
     this.renderLocals(loc);
     // 战斗/剧情演出中不抢轨（由各自的演出管理）
@@ -641,7 +652,7 @@ const UI = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
-      liandan: "地火炼丹 🔥", stroll: "城中走走 🏙",
+      liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
@@ -667,7 +678,7 @@ const UI = {
     }
 
     box.innerHTML = (acts.length || windowBtn)
-      ? windowBtn + acts.map(a => `<button class="btn btn-action" data-action="${a}">${labels[a] || a}</button>`).join("")
+      ? windowBtn + acts.map(a => `<button class="btn btn-action" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
       : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>` : "");
     box.querySelectorAll("[data-action]").forEach(btn => {
       btn.addEventListener("click", () => Engine.doAction(btn.dataset.action));

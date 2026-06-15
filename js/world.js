@@ -102,8 +102,8 @@ WORLD.locations = [
     encounters: [],
   },
 
-  /* —— 离门远行章 · 嘉元城（岚州第一城）——
-   * 制作度：活感优先——一个落脚地点+采买+休整即可，繁华由文本与风闻撑起。 */
+  /* —— 离门远行章 · 嘉元城（岚州第一城）—— 地点屏（非箱庭）：专属背景＋城味行动＋复访变迁拉区分度。
+   * 箱庭只留战斗探索区（John 裁决）；复访风味单一数据源＝据点风味 ExploreMap.MAPS.jiayuan_city_l1。 */
   {
     id: "jiayuan_city",
     arc: "huangfeng",
@@ -112,7 +112,18 @@ WORLD.locations = [
     travelCost: 1,
     map: { x: 50, y: 60 },
     home: true,   // 旅居：可调息休整（墨府客房）
-    actions: ["stroll", "rest", "market", "cultivate"],
+    actions: ["market", "board", "rumor", "rest", "cultivate"],
+    // 城味行动名（一眼区别七玄门）：长街/告示/风声 把繁华与暗流用市井语写活
+    actionLabels: {
+      market: "逛长街坊市 · 采买 🏮",
+      board: "细读城门告示 📜",
+      rumor: "城南堂口 · 探风声 🗡",
+      rest: "回墨府客房 · 调息",
+      cultivate: "客房打坐 · 潜修",
+    },
+    // 复访变迁：地点描述随剧情 flag 改写（取墨府风味）；告示/风声各引一据点节点的 read 文
+    flavorRef: { map: "jiayuan_city_l1", node: "mofu" },
+    reads: { board: "chengmen", rumor: "tangkou" },
     encounters: [],
   },
 

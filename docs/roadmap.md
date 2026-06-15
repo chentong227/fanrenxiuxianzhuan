@@ -99,6 +99,13 @@
   复访三段变迁（告示板/堂口/墨府随 mo_met→mo_warned→han_du_cured 改写，已验）；
   新增 test/stronghold.test.js（36 断言）EXIT=0；6 套必测+cutscene 全绿；血色禁地节点图零回归（钟盘/巡逻/耗钟已验）。
 
+> **阶段 2 修订（John 裁决·v137）**：城镇只有寥寥几个点，节点图（箱庭）太重——**嘉元城改回标准地点屏**（七玄门同款 UI），
+> 靠「专属背景＋城味行动（逛长街坊市/细读城门告示/城南堂口探风声/回墨府客房·调息）＋复访变迁」拉区分度。
+> **箱庭只留给战斗/探索区**（血色禁地等），和平据点引擎（`enterStronghold`/`MAPS.jiayuan_city_l1`/`_renderStrongholdField`）退役为**风味数据源**——
+> 地点屏的描述/告示/风声仍由 `ExploreMap.flavor` 读 `MAPS.jiayuan_city_l1.nodes` 投影 flag（单一数据源，stronghold.test 不动）。
+> 顺手修复：`#loc-desc` id 笔误（应为 `#loc-desc-inline`，地点描述此前从未在场景头渲染）。`?citydemo=1` 同步改为展示地点屏 + 三段复访切换。
+> 延后项「七玄门据点风味回填」框架随之调整：七玄门同样走地点屏风味，不再走据点节点图。
+
 ### 阶段 3（E 功法层数轴 + 初入/巅峰）technique-tiers §5
 - `s.techLayers[techId]`（惰性初始化）；`grantSpells`→`layerUnlocks` 按层解锁（青元剑诀 3 剑芒/5 剑盾…）；
   `balance.spellPower` 加 `layerMul`；`State.realmStage` 派生初入/中坚/巅峰标签。升层=闭关肝条（大件范式）。

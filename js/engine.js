@@ -553,7 +553,8 @@ const Engine = {
     else if (action === "alchemy") this.alchemy();
     else if (action === "investigate") this.investigate();
     else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
-    else if (action === "stroll") { this.enterStronghold("jiayuan_city_l1"); return; }
+    else if (action === "board") { this.cityRead("board"); return; }
+    else if (action === "rumor") { this.cityRead("rumor"); return; }
     else if (action === "travel") { UI.openTravel(); return; }
     else if (action === "wujian") { this.doWujian(); return; }
     else if (action === "liandan") { this.lianZhujiDan(); return; }
@@ -580,6 +581,22 @@ const Engine = {
     this._resolveLeadsAt(locId);
     this.checkLifespan();
     this.checkStory();
+    State.save();
+    UI.renderAll();
+  },
+
+  /* -------- 城味·复访变迁：细读告示 / 城南探风声 -------- */
+  /* 把既有剧情 flag 投影成市井见闻（门庭冷落→豺狗缩爪→寒毒解·太南榜文）。
+   * 驻足一瞬不耗月；文案单一数据源＝据点风味 ExploreMap.MAPS（箱庭退役为风味库，只留战斗探索）。 */
+  cityRead(kind) {
+    const s = State.data;
+    const loc = State.location();
+    if (!loc || !loc.reads || !loc.flavorRef || typeof ExploreMap === "undefined") return;
+    const map = ExploreMap.MAPS[loc.flavorRef.map];
+    const node = map && map.nodes[loc.reads[kind]];
+    if (!node) return;
+    const fl = ExploreMap.flavor(node, s.flags);
+    this.log((fl && fl.read) || node.read, "event");
     State.save();
     UI.renderAll();
   },
