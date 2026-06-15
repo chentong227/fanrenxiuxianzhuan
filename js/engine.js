@@ -829,7 +829,7 @@ const Engine = {
     const def = DATA.gear[itemId];
     if (!def) { this.toast("此物不可装备"); return; }
     if (!State.count(itemId)) return;
-    const layer = (DATA.realms[s.realmIndex] || {}).layer || 1;
+    const layer = State.gateLayer();
     if (def.minLayer && layer < def.minLayer) {
       this.toast(`修为不足（需练气${def.minLayer}层方可驱使）`, true);
       return;

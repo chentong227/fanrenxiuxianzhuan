@@ -256,13 +256,21 @@ const State = {
     }
     return bonus;
   },
+  // 法器「驱使门槛」用的等效练气层：筑基及以上已超练气全层，统一视作远超任何练气门槛
+  // （否则筑基后 layer 归 1，会把练气十一层购入的顶阶法器误判为驱使不动）。
+  gateLayer(s) {
+    s = s || this.data;
+    const realm = DATA.realms[s.realmIndex] || {};
+    if (realm.tier && realm.tier !== "qi") return 999;
+    return realm.layer || 1;
+  },
   // 装备的法器（按槽取 DATA.gear 定义；未达驱使门槛视为未装备）
   gearOf(slot) {
     const id = this.data.gear && this.data.gear[slot];
     if (!id) return null;
     const def = DATA.gear && DATA.gear[id];
     if (!def) return null;
-    const layer = (DATA.realms[this.data.realmIndex] || {}).layer || 1;
+    const layer = this.gateLayer();
     if (def.minLayer && layer < def.minLayer) return null;   // 修为不够，驱使不动
     return Object.assign({ id }, def);
   },
@@ -280,7 +288,7 @@ const State = {
     if (!id) return null;
     const def = DATA.gear && DATA.gear[id];
     if (!def) return null;
-    const layer = (DATA.realms[this.data.realmIndex] || {}).layer || 1;
+    const layer = this.gateLayer();
     if (def.minLayer && layer > 0 && layer < def.minLayer) return null;
     return Object.assign({ id }, def);
   },

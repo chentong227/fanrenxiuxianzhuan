@@ -24,6 +24,8 @@ const Main = {
     });
     UI.el("btn-menu").addEventListener("click", () => this.toCreate());
     UI.el("btn-techniques").addEventListener("click", () => UI.openTechniques());
+    const btnTreasury = UI.el("btn-treasury");
+    if (btnTreasury) btnTreasury.addEventListener("click", () => UI.openTreasury());
     const btnLlm = UI.el("btn-llm");
     if (btnLlm) btnLlm.addEventListener("click", () => UI.openLLMSettings());
     UI.el("btn-chronicle").addEventListener("click", () => UI.openChronicle());
