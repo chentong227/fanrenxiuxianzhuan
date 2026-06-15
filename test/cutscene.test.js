@@ -78,6 +78,24 @@ console.log("== 4. isBlocking：舞台指令不阻塞，台词/交互/待点阻�
   assert(CS.isBlocking({ kind: "op", op: "wait", wait: "click" }) === true, "wait(待点) 阻塞");
   assert(CS.isBlocking({ kind: "narr", text: "x" }) === true, "台词阻塞");
   assert(CS.isBlocking({ kind: "beat", beat: {} }) === true, "交互 beat 阻塞");
+  assert(CS.isBlocking({ kind: "guide", guide: {} }) === true, "引导 beat 阻塞（等确认）");
+}
+
+console.log("== 4b. 演出即引导 guide：编译为引导节拍 + runGuide 落幕指路 ==");
+{
+  const stage = { text: [
+    "抵达",
+    { guide: { tag: "初来乍到", title: "下一步", hint: "调息度月", focus: "rest", cta: "我记下了" } },
+  ] };
+  const b = CS.compile(stage);
+  assert(b[1].kind === "guide", "对象 guide→引导节拍");
+  assert(b[1].guide.focus === "rest" && b[1].guide.title === "下一步", "guide 载 focus/title/hint");
+  // guide 不算"舞台特效"，独有 guide 时不强制挂 FX 镜头层
+  assert(CS.hasStaging({ text: [{ guide: { title: "x" } }] }) === false, "仅 guide hasStaging=false（不挂特效层）");
+  // runGuide 无 host：同步 done({focus}) 不抛
+  let got = null;
+  CS.runGuide({ guide: { focus: "rest" } }, {}, (res) => { got = res; });
+  assert(got && got.focus === "rest", "runGuide 无 host→同步 done({focus})");
 }
 
 console.log("== 5. 边界：空/异常输入不抛 ==");

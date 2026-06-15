@@ -677,8 +677,10 @@ const UI = {
       }
     }
 
+    // 演出即引导：落幕时指定的行动按钮脉冲高亮一次（指明"该点哪个"），消费即清
+    const focus = this._pendingFocus; this._pendingFocus = null;
     box.innerHTML = (acts.length || windowBtn)
-      ? windowBtn + acts.map(a => `<button class="btn btn-action" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
+      ? windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
       : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>` : "");
     box.querySelectorAll("[data-action]").forEach(btn => {
       btn.addEventListener("click", () => Engine.doAction(btn.dataset.action));
@@ -1100,6 +1102,18 @@ const UI = {
         }
         st.beatActive = false; st.idx++; continue;   // 无演出模块：跳过交互
       }
+      if (b.kind === "guide") {       // 演出即引导：落幕指路卡，玩家确认后续演／落幕
+        st.beatActive = true;
+        if (typeof Cutscene !== "undefined" && Cutscene.runGuide) {
+          Cutscene.runGuide(b, this._storyCtx(), (res) => {
+            st.beatActive = false;
+            if (res && res.focus) this._pendingFocus = res.focus;   // 落幕后在地点屏脉冲高亮
+            this._storyPlayNext();
+          });
+          return;
+        }
+        st.beatActive = false; st.idx++; continue;
+      }
       this._renderTextBeat(b);        // 台词层：渲染并等轻触
       return;
     }
@@ -1300,7 +1314,7 @@ const UI = {
     if (seg.scene) return `<div class="seg-scene">· ${seg.scene} ·</div>`;
     if (seg.aside) return `<p class="seg-aside">${seg.aside}</p>`;       // 心理独白
     if (typeof seg.beat === "string") return `<div class="seg-beat">${seg.beat || "……"}</div>`; // 停顿/留白
-    if (seg.cam || seg.actor || seg.fx || seg.sfx || seg.bgm || seg.wait || (seg.beat && typeof seg.beat === "object")) return ""; // 演出原语不入日志
+    if (seg.cam || seg.actor || seg.fx || seg.sfx || seg.bgm || seg.wait || seg.guide || (seg.beat && typeof seg.beat === "object")) return ""; // 演出原语/引导不入日志
     if (seg.say) {
       const who = seg.say;
       const self = (who === State.data.name || who === "韩立");
