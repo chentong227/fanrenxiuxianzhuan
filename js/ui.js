@@ -2269,13 +2269,22 @@ const UI = {
     // 保证相邻块严丝合缝、无重叠无空隙地拼满全图。
     const pinSet = this._atlasPinSet(L);
     // 区块：沿真实轮廓描的多边形 + 解锁三态 + 势力标签
-    const blocks = L.nodes.map(n => {
+    const rendered = L.nodes.map(n => {
       const st = this._atlasNodeState(n, s, pathSet);
+      const d = this._atlasPath(n, pinSet);
       const drill = (st !== "locked" && n.to) ? `UI._atlasGoto('${n.to}')` : "";
       const fac = n.faction ? ` faction-${n.faction}` : "";
-      return `<path class="region-block ${st}${fac}" d="${this._atlasPath(n, pinSet)}"
-        onclick="UI._atlasPick('${levelId}','${n.id}')" ondblclick="${drill}"></path>`;
-    }).join("");
+      return { st, d, block: `<path class="region-block ${st}${fac}" d="${d}"
+        onclick="UI._atlasPick('${levelId}','${n.id}')" ondblclick="${drill}"></path>` };
+    });
+    const blocks = rendered.map(r => r.block).join("");
+    // 未解锁区域并集（v145）：压成暗色剪影、只透出轮廓，其上裁一层缓缓漂浮的云罩（动效）。
+    // 已解锁/在此块不在此集——保持明亮、无云。全解锁后云罩自然散尽，天朗气清。
+    const lockedClip = rendered.filter(r => r.st === "locked").map(r => `<path d="${r.d}"/>`).join("");
+    const defs = lockedClip
+      ? `<defs><clipPath id="atlasLockedClip" clipPathUnits="userSpaceOnUse">${lockedClip}</clipPath></defs>`
+      : "";
+    const shroud = lockedClip ? this._atlasCloudShroud() : "";
     const labels = L.nodes.map(n => {
       const st = this._atlasNodeState(n, s, pathSet);
       const lab = n.label || n.pos;
@@ -2294,7 +2303,7 @@ const UI = {
       <div class="worldmap continent atlas-${L.kind}${mapUrl ? ' atlas-painted' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
-        <svg class="region-blocks" viewBox="0 0 100 100" preserveAspectRatio="none">${blocks}</svg>
+        <svg class="region-blocks" viewBox="0 0 100 100" preserveAspectRatio="none">${defs}${blocks}${shroud}</svg>
         ${labels}
       </div>
       <div id="cont-detail" class="map-detail"><b>${cur.name}${curTag}</b>　${cur.desc}${this._atlasNodeAction(cur, curSt)}</div>
@@ -2326,11 +2335,26 @@ const UI = {
         const tok = ring.trim().split(/\s+/);
         const pts = tok.map(p => p.split(",").map(Number));
         return pinSet
-          ? this._smoothPinnedPath(pts, tok.map(p => pinSet.has(p)))
+          ? this._smoothOrganicPath(pts, tok.map(p => pinSet.has(p)))
           : this._smoothClosedPath(pts);
       }).join("");
     }
     return this._smoothClosedPath(this._atlasIslandPoints(n));
+  },
+  /* 未解锁区域的漂浮云罩（v145）：两层分形噪声雾（feTurbulence）——柔边、不规则、半透的薄云气，
+     缓缓反向漂移，只裁进「未解锁块并集」内显形。暗罩压低、轮廓透出，已解锁块无云、明亮。 */
+  _atlasCloudShroud() {
+    // 一层雾：分形噪声 → 经 feColorMatrix 取阈值，生成破碎的白色云絮（RGB 恒为冷白，A=噪声过阈）。
+    const filt = (id, freq, aMul, aOff) =>
+      `<filter id="${id}" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">` +
+      `<feTurbulence type="fractalNoise" baseFrequency="${freq}" numOctaves="3" seed="${id.length * 7}" stitchTiles="stitch" result="n"/>` +
+      `<feColorMatrix in="n" type="matrix" values="0 0 0 0 0.84  0 0 0 0 0.88  0 0 0 0 0.95  0 0 0 ${aMul} ${aOff}"/>` +
+      `</filter>`;
+    const layer = (cls, id) =>
+      `<g class="fog-drift ${cls}"><rect x="-45" y="-45" width="190" height="190" filter="url(#${id})"/></g>`;
+    return `<g class="cloud-shroud" clip-path="url(#atlasLockedClip)">` +
+      `<defs>${filt("atlasFogA", "0.016 0.023", 1.05, -0.5)}${filt("atlasFogB", "0.010 0.015", 0.8, -0.55)}</defs>` +
+      layer("a", "atlasFogA") + layer("b", "atlasFogB") + `</g>`;
   },
   /* 相邻大域切片的「钉点」集：被 ≥3 块共用的交界点、或落在图框边上的点——这些必须钉死成锐角，
      才能让相邻块在交界处精确对齐；其余（仅两块共用的）海岸点柔化。返回 "x,y" 字符串集合。 */
@@ -2366,6 +2390,47 @@ const UI = {
         : `Q${f(cur[0])},${f(cur[1])} ${f(mOut[0])},${f(mOut[1])}`;
     }
     return d + "Z";
+  },
+  /* 有机边界（v145）：把僵硬的直线 Voronoi 边换成自然蜿蜒的国界/海岸线。每条「非图框」边按两端点
+     插入确定性「中点位移」抖动点，再交给 _smoothPinnedPath 柔化。几何只由两端点决定——相邻块共用
+     同一条边时两侧逐字节相同，故仍无缝；贴外框的边保持笔直，外轮廓不乱。 */
+  _smoothOrganicPath(pts, pinned) {
+    const n = pts.length;
+    if (n < 2) return this._smoothClosedPath(pts);
+    const frameEdge = (a, b) =>
+      (a[0] === 0 && b[0] === 0) || (a[0] === 100 && b[0] === 100) ||
+      (a[1] === 0 && b[1] === 0) || (a[1] === 100 && b[1] === 100);
+    const dense = [], corner = [];
+    for (let i = 0; i < n; i++) {
+      const a = pts[i], b = pts[(i + 1) % n];
+      dense.push(a); corner.push(!!pinned[i]);
+      if (!frameEdge(a, b)) {
+        for (const m of this._organicEdgePoints(a, b)) { dense.push(m); corner.push(false); }
+      }
+    }
+    return this._smoothPinnedPath(dense, corner);
+  },
+  /* 一条边的确定性抖动点（中点位移 / fractal）：沿边轴做一维高度场位移（恒沿同一法向，不会自交），
+     按「排序后的两端点」定种 + 计算法向，故 a→b 与 b→a 得到同一批点（仅顺序相反），保证相邻块共线。 */
+  _organicEdgePoints(a, b) {
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (len < 3) return [];
+    let p = a, q = b, rev = false;
+    if (a[0] > b[0] || (a[0] === b[0] && a[1] > b[1])) { p = b; q = a; rev = true; }
+    const rng = this._rng(`${p[0]},${p[1]}|${q[0]},${q[1]}`);
+    const nx = -(q[1] - p[1]) / len, ny = (q[0] - p[0]) / len;   // 单位法向
+    const amp = Math.min(len * 0.14, 2.6);
+    const out = [];
+    const recur = (p0, p1, a0, depth) => {
+      if (depth === 0) return;
+      const off = (rng() * 2 - 1) * a0;
+      const m = [(p0[0] + p1[0]) / 2 + nx * off, (p0[1] + p1[1]) / 2 + ny * off];
+      recur(p0, m, a0 * 0.5, depth - 1);
+      out.push(m);
+      recur(m, p1, a0 * 0.5, depth - 1);
+    };
+    recur(p, q, amp, 3);
+    return rev ? out.reverse() : out;
   },
   _atlasIslandPoints(n) {
     const cx = n.pos.x, cy = n.pos.y, base = n.r || 5.8;
