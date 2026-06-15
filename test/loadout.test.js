@@ -148,5 +148,38 @@ console.log("\n=== 8. 跨境界法器驱使门槛：筑基后仍能驭练气十�
   assert(s.gear.weapon === "jinfuzi_ren", "筑基后亦可重新装备练气十一层法器");
 }
 
+console.log("\n=== 9. 黄枫谷入谷起步法器：外门铁剑（练气即可驭 + grantSpell 入战斗手牌）===");
+{
+  // 9a. 数据完整性
+  const gear = DATA.gear.waimen_tiejian;
+  assert(!!gear && gear.slot === "weapon", "DATA.gear.waimen_tiejian 存在且为主攻位");
+  assert(gear && gear.minLayer === 1, `外门铁剑 minLayer=1（练气期即可驭，实为 ${gear && gear.minLayer}）`);
+  assert(gear && (gear.grantSpells || []).includes("tiejian_ci"), "外门铁剑 grantSpells 含「御剑刺」tiejian_ci");
+  assert(!!DATA.items.waimen_tiejian, "DATA.items.waimen_tiejian 道具条目存在");
+  assert(!!CombatAPI.SPELLS.tiejian_ci, "combat.js SPELLS 定义了「御剑刺」tiejian_ci");
+
+  // 9b. 练气七层装备 → grantSpell 进战斗手牌
+  State.create("韩立", "si");
+  const s = State.data;
+  const qi7 = DATA.realms.findIndex(r => r.tier === "qi" && r.layer === 7);
+  assert(qi7 >= 0, "存在练气七层境界节点");
+  s.realmIndex = qi7;
+  assert(State.gateLayer() >= 1, `练气七层 gateLayer≥1，足以驭 minLayer-1 法器（${State.gateLayer()}）`);
+  State.give("waimen_tiejian", 1);
+  Engine.equipGear("waimen_tiejian");
+  assert(s.gear.weapon === "waimen_tiejian", "练气七层可装备外门铁剑");
+  assert(Engine.playerFighter().spells.includes("tiejian_ci"), "外门铁剑授予的「御剑刺」进入战斗手牌");
+
+  // 9c. 入谷剧情点 hf_arrive 自动发放：青叶法器(flight) + 外门铁剑(战斗) 一并到手并装备
+  State.create("韩立", "si");
+  const s2 = State.data;
+  const hf = sandbox.STORY.find(p => p.id === "hf_arrive");
+  assert(!!hf && typeof hf.onArrive === "function", "story.js 存在 hf_arrive 且有 onArrive");
+  hf.onArrive(s2);
+  assert(s2.flightId === "qingye_fazhan", "入谷自动发放飞行法器·青叶法器（s.flightId）");
+  assert(State.count("waimen_tiejian") > 0, "入谷自动发放战斗法器·外门铁剑（入库）");
+  assert(s2.gear.weapon === "waimen_tiejian", "外门铁剑入谷自动装上空置的主攻位");
+}
+
 console.log(`\n========== 功法配装：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);
 process.exit(failures === 0 ? 0 : 1);

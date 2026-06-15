@@ -94,6 +94,8 @@
 
     /* —— 法器战斗技（装备授予，gear grantSpells）——
      * source:"treasure"（御物）：威力随境界成长最陡（威力=注入灵力）；贴身-30%。 */
+    tiejian_ci:  { name: "御剑刺", mp: 5, range: [1, 3], type: "atk", dmg: 10, source: "treasure", elem: "jin",
+                desc: "御使外门铁剑凌空飞刺——黄枫谷入门下品法器的本分一击，威力寻常却胜在练气期便可催动。贴身施展不开（-30%）。" },
     zimu_ren:    { name: "金蚨子母刃", mp: 8, range: [1, 3], type: "atk", dmg: 15, fixedSegs: 2, source: "treasure", elem: "jin",
                 desc: "万宝楼千年药草换得的顶阶法器：一柄母刃居中驭使，八柄子刃随神识分袭（动漫官设一母八子）。子刃两段连斩、每段独立结算，威力随灵力雄厚而涨。贴身施展不开（-30%）。" },
     jujian_zhan: { name: "巨剑斩", mp: 14, range: [1, 3], type: "atk", dmg: 40, pierce: true, source: "treasure", elem: "jin", cd: 2,
