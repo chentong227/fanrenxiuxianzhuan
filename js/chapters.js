@@ -28,11 +28,11 @@ const Chapters = {
       locked: true,             // 由七玄门篇收尾解锁
       realmTier: 0,             // 主体仍练气（篇末筑基质变才入 tier 1）
       realmCapIndex: 13,        // 练气十三层 + 筑基初期（DATA.realms 已扩）
-      startLocation: null,      // 入谷剧情设定（升仙大会后）
+      startLocation: null,      // 入谷剧情设定（升仙大会后由 warline/旅途落点）
       completeFlag: "arc2_complete",
-      nextChapter: null,
+      nextChapter: null,        // 魔道争锋篇尚未建——留空待后续
       currencyName: "灵石",
-      stub: true,               // 主线尚未完工（离门远行章先行实装中）
+      // 主线已实装：入谷四连/百药园/坊市归途杀陆云风/筑基/青元剑诀。后续（血色禁地深入·出谷）随版本续填。
     },
   ],
 

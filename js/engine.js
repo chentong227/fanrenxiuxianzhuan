@@ -2030,7 +2030,7 @@ const Engine = {
       if (node.id === "huangfeng" && !s.flags.huangfeng_entered) {
         State.setFlag("huangfeng_entered");
         if (typeof Chapters !== "undefined") { Chapters.unlock("huangfeng"); s.activeChapter = "huangfeng"; }
-        this.log("【黄枫谷篇 · 启】青石阶尽头，仙鹤掠过山门。接引修士领你登记名册、发放青衫与居所腰牌——「外门弟子韩立，先去百药园报到吧。」（本篇主线：百药园三年/筑基丹恩怨/血色禁地——后续版本陆续开放。当下练气八层之路已开，洞府诸事可自由经营。）", "event");
+        this.log("【黄枫谷篇 · 启】青石阶尽头，仙鹤掠过山门。接引修士领你登记名册、发放青衫与居所腰牌——「外门弟子韩立，先去百药园报到吧。」（本篇主线：百药园三年、筑基丹恩怨、坊市归途、血色禁地——拾级而上。练气上限已放开至十三层，洞府诸事可自由经营。）", "event");
         this.addMilestone("入黄枫谷：外门弟子", "breakthrough");
         this.toast("黄枫谷篇 · 启（练气上限已放开至十三层）");
       }
