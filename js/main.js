@@ -261,6 +261,29 @@ const Main = {
       }
     } catch (e) { console.error("demo 失败", e); }
 
+    // —— 据点可操作 demo：?citydemo=1 直接进嘉元城节点图（仿演武场，免跑剧情）——
+    //    一键进城自由逛 + 底部切换条在三段剧情态间来回切，亲手看复访变迁。
+    //    [&stage=warn|cured] 可直链定态；不带则从「初见·门庭冷落」起。
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get("citydemo")) {
+        State.create("韩立", DATA.fixedRootId);
+        const s = State.data;
+        s.realmIndex = 10; s.hpMax = 250; s.hp = 250;
+        s.spirit = (DATA.realms[10] || {}).spMax || 200;
+        s.technique = "changchun"; s.name = "韩立";
+        State.give("lingshi", 20);
+        s.storyStage = STORY.length;        // demo 不跑剧情
+        s.location = "jiayuan_city";
+        s.flags.arc1_complete = true; s.flags.mo_met = true;   // 抵城前置（直入据点）
+        const stage = q.get("stage");
+        if (stage === "warn") s.flags.mo_warned = true;
+        else if (stage === "cured") { s.flags.mo_warned = true; s.flags.han_du_cured = true; }
+        this.enterGame();
+        setTimeout(() => { Engine.enterStronghold("jiayuan_city_l1"); this._cityDemoBar(stage); }, 300);
+      }
+    } catch (e) { console.error("citydemo 失败", e); }
+
     // —— 调试入口：?debugmap=1 直接进血色禁地舆图（探索 v3 调试免跑剧情）——
     try {
       const q = new URLSearchParams(location.search);
@@ -356,6 +379,46 @@ const Main = {
     if (Engine.resumeJourney) setTimeout(() => Engine.resumeJourney(), 400);
     // 入世即起乐（按所在地点选轨）
     if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(UI._bgmForLocation(State.location()));
+  },
+
+  /* -------- 嘉元城 demo 切换条（仅 ?citydemo 注入；不入正式流程）--------
+   * 三段剧情态来回切——每切一次重入城，落脚字幕＋告示/风声随 flag 改写。 */
+  _cityDemoBar(initStage) {
+    if (document.getElementById("citydemo-bar")) return;
+    const stages = [
+      { key: "init", name: "① 初见 · 门庭冷落", flags: {} },
+      { key: "warn", name: "② 夜变退敌 · 豺狗缩爪", flags: { mo_warned: true } },
+      { key: "cured", name: "③ 寒毒解 · 太南榜文", flags: { mo_warned: true, han_du_cured: true } },
+    ];
+    const bar = document.createElement("div");
+    bar.id = "citydemo-bar";
+    bar.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9999;background:rgba(20,16,12,.94);border:1px solid #b9975b;border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:94vw;box-shadow:0 6px 22px rgba(0,0,0,.55);font-family:inherit";
+    const label = document.createElement("span");
+    label.textContent = "嘉元城 Demo · 复访变迁：";
+    label.style.cssText = "color:#b9975b;font-weight:600;font-size:13px";
+    bar.appendChild(label);
+    const btns = [];
+    const setActive = (b) => btns.forEach(x => { x.style.borderColor = x === b ? "#e6c478" : "#6b5836"; x.style.color = x === b ? "#fff4d6" : "#e8dcc0"; });
+    stages.forEach(st => {
+      const b = document.createElement("button");
+      b.textContent = st.name;
+      b.style.cssText = "cursor:pointer;background:#2a221a;color:#e8dcc0;border:1px solid #6b5836;border-radius:6px;padding:5px 10px;font-size:12px;white-space:nowrap";
+      b.addEventListener("click", () => {
+        const s = State.data;
+        delete s.flags.mo_warned; delete s.flags.han_du_cured;   // 先清空再设，保证可来回切
+        Object.assign(s.flags, st.flags);
+        setActive(b);
+        Engine.enterStronghold("jiayuan_city_l1");   // 重入城＝按新 flag 重渲染＋落脚字幕
+      });
+      btns.push(b); bar.appendChild(b);
+    });
+    const tip = document.createElement("span");
+    tip.textContent = "切换后点地标走动，再看「细读告示 / 探听风声」随剧情态改写";
+    tip.style.cssText = "color:#9a8c70;font-size:11px;flex-basis:100%;text-align:center;margin-top:2px";
+    bar.appendChild(tip);
+    document.body.appendChild(bar);
+    const idx = initStage === "warn" ? 1 : initStage === "cured" ? 2 : 0;
+    setActive(btns[idx]);
   },
 
   toCreate() {
