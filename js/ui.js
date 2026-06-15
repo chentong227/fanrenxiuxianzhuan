@@ -2223,11 +2223,10 @@ const UI = {
     }).join("");
     const on = !!this._factionsOn;
     const epoch = WORLD.atlas.factionEpoch(s);
-    // L3 州块（v147）：选中一州→其城·宗 pin 强调、余者退淡，详情列本州城宗
+    // L3 州（v147→v148 去格子）：州只作分组——州名轻量楷体题字（点题字看本州城·宗），无几何州块、无 pin 高亮
     const prefList = C.prefectures || [];
     const selPref = this._selPref || null;
     const sel = prefList.find(p => p.id === selPref) || null;
-    const inPref = new Set(sel ? (sel.nodes || []) : []);
     const pins = C.nodes.map(n => {
       const here = n.id === curNode.id;
       const gateMsg = n.gate ? n.gate(s) : null;
@@ -2236,19 +2235,13 @@ const UI = {
       const facCls = fac ? ` faction-${fac}` : "";
       const ruin = WORLD.atlas.epochPick(n.ruinByEpoch, epoch) ? " ruin" : "";
       const nm = WORLD.atlas.epochPick(n.nameByEpoch, epoch) || n.name;
-      const prefCls = sel ? (inPref.has(n.id) ? " inpref" : " offpref") : "";
-      return `<div class="map-pin cont ${here ? 'here' : ''} ${cls}${facCls}${ruin}${prefCls}" style="left:${n.pos.x}%;top:${n.pos.y}%"
+      return `<div class="map-pin cont ${here ? 'here' : ''} ${cls}${facCls}${ruin}" style="left:${n.pos.x}%;top:${n.pos.y}%"
         onclick="UI._contPick('${n.id}')">
         <span class="pin-dot"></span>
         <span class="pin-label">${nm}${here ? ' ·在此' : ''}</span>
       </div>`;
     }).join("");
-    // 州界区块（凡俗政区·块状）——单独可点图层（.map-lines 不收点击）；题字楷体锚在州中心
-    const prefBlocks = prefList.map(p =>
-      `<path class="pref-block${p.id === selPref ? ' sel' : ''}" d="${this._polyToPath(p.poly)}"
-        onclick="UI._prefPick('${p.id}')"></path>`).join("");
-    const prefSvg = prefBlocks
-      ? `<svg class="pref-layer" viewBox="0 0 100 100" preserveAspectRatio="none">${prefBlocks}</svg>` : "";
+    // 州名题字（楷体，锚在州中心）：点州名→详情列其城·宗（分组导航），不叠几何块、不染地图
     const prefLabels = prefList.map(p => {
       const L = p.label || { x: 50, y: 50 };
       return `<div class="pref-label${p.id === selPref ? ' sel' : ''}" style="left:${L.x}%;top:${L.y}%"
@@ -2275,11 +2268,10 @@ const UI = {
     this.openModal(`
       ${this._atlasCrumbs("yueguo")}
       <h2 class="atlas-title">${C.name} · 十三州</h2>
-      <p style="color:var(--ink-dim);font-size:12px">点州界看一州城·宗，点据点可启程——看得见的远方，未必去得了：修为、盘缠、机缘，缺一不可。</p>
-      <div class="worldmap continent${mapUrl ? ' inked' : ''}${on ? ' show-factions' : ''}${selPref ? ' pref-sel' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
+      <p style="color:var(--ink-dim);font-size:12px">点州名看一州城·宗，点据点可启程——看得见的远方，未必去得了：修为、盘缠、机缘，缺一不可。</p>
+      <div class="worldmap continent${mapUrl ? ' inked' : ''}${on ? ' show-factions' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
-        ${prefSvg}
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
         ${prefLabels}
         ${pins}
@@ -2292,9 +2284,7 @@ const UI = {
       </div>
     `, "wide");
   },
-  // 多边形 points("x,y x,y…") → SVG path（直线州界，闭合）
-  _polyToPath(poly) { return poly ? "M" + poly.trim().replace(/\s+/g, " L") + "Z" : ""; },
-  // 点州块：切换选中（再点取消）→ 就地重绘（高亮该州、列其城宗）
+  // 点州名：切换选中（再点取消）→ 就地重绘（仅在详情列本州城·宗，不染地图、不高亮钉）
   _prefPick(id) {
     this._selPref = (this._selPref === id) ? null : id;
     this.openContinent();
