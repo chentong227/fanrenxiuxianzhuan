@@ -2166,16 +2166,26 @@ const UI = {
           `<button class="btn btn-secondary btn-mini" onclick="UI.openContinent(); UI._contPick('${n.id}')">${n.name} ▶</button>`).join("")}</div>`
       : "";
 
+    // L4 宗门城·局部图（§10.5）：当前城/宗有局部底图则铺为氛围底，据点点状叠其上；题头作 L3▸L4 面包屑。
+    const epoch = (WORLD.atlas && WORLD.atlas.factionEpoch) ? WORLD.atlas.factionEpoch(State.data) : 0;
+    const localeName = curNode ? ((WORLD.atlas && WORLD.atlas.epochPick && WORLD.atlas.epochPick(curNode.nameByEpoch, epoch)) || curNode.name) : "";
+    const localBg = (curNode && curNode.localMap && typeof Art !== "undefined" && Art.has(curNode.localMap)) ? Art.url(curNode.localMap) : null;
+    const crumb = curNode
+      ? `<div class="travel-crumb">${C ? C.name : "胥国"} ▸ <span class="tc-here">${localeName}</span><span class="tc-tag">局部图 · ${locs.length} 处去处</span></div>`
+      : "";
+
     this.openModal(`
       <h2>云游何处</h2>
       <p style="color:var(--ink-dim);font-size:12px">七玄门内外，点击地图上的地点即可前往。遁速越高，赶路越省光阴。</p>
+      ${crumb}
       <div class="speed-bar">
         <span class="speed-key">移动速度</span>
         <span class="speed-val">${State.effectiveSpeed()}</span>
         <span class="speed-breakdown">基础${State.data.speed}${State.realmSpeedBonus() ? `＋境界${State.realmSpeedBonus()}` : ''}${State.movementArtBonus() ? `＋身法${State.movementArtBonus()}` : ''}${State.flightTreasure().speedBonus ? `＋${State.flightTreasure().name}${State.flightTreasure().speedBonus}` : ''}</span>
         <span class="speed-mount">${State.flightTreasure().name}</span>
       </div>
-      <div class="worldmap">
+      <div class="worldmap${localBg ? ' localmap' : ''}">
+        ${localBg ? `<div class="localmap-bg" style="background-image:url('${localBg}')"></div><div class="localmap-veil"></div>` : ''}
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
         ${pins}
       </div>
@@ -2301,7 +2311,7 @@ const UI = {
     let action = "";
     if (n.silhouette) action = `<div class="cont-gate">传说之地——此生若能至，方不负修行。</div>`;
     else if (gateMsg) action = `<div class="cont-gate">道途未通：${gateMsg}</div>`;
-    else if ((n.locs || []).includes(s.location)) action = `<div class="cont-gate" style="color:var(--jade-bright)">你正在此地。</div>`;
+    else if ((n.locs || []).includes(s.location)) action = `<div class="cont-gate" style="color:var(--jade-bright)">你正在此地。${n.localMap ? `　<button class="btn btn-secondary btn-mini" onclick="UI.openTravel()">入内 · 云游 ▸</button>` : ""}</div>`;
     else action = `<div class="cont-gate">旅途约 ${n.months || 2} 月 · 险度${n.danger || "未知"}　
       <button class="btn btn-primary btn-mini" onclick="Engine.startJourney('${n.id}')">启程</button></div>`;
     this.el("cont-detail").innerHTML = `<b>${nm}</b>　${desc}${action}`;

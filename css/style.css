@@ -2672,6 +2672,28 @@ html, body { touch-action: manipulation; }
 .far-jump-key { font-size: 12px; color: var(--gold); letter-spacing: 1px; margin-right: 2px; }
 .far-jump .btn-mini { border-color: var(--gold); color: var(--gold); }
 
+/* —— L4 宗门城·局部图（map-redesign-design.md §10.5）——
+ * 云游=城/宗内据点点状图：复用据点场景作氛围底（saturate/暗压），墨 veil 罩压保钉清晰；
+ * 据点 pin 点状（不加 poly，与 L3 块状/L5 单屏区分）。题头作 胥国 ▸ 七玄门 面包屑。 */
+.travel-crumb { font-size: 12px; color: var(--ink-dim); letter-spacing: 1px; margin: 8px 0 -2px; }
+.travel-crumb .tc-here { color: var(--gold); font-weight: 600; }
+.travel-crumb .tc-tag { color: var(--ink-faint); margin-left: 8px; letter-spacing: 0; }
+.worldmap.localmap { background: #0e151a; }
+.worldmap.localmap .localmap-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: cover; background-position: center;
+  filter: saturate(.68) brightness(.6) contrast(1.02);
+}
+.worldmap.localmap .localmap-veil {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(10,14,18,.16), rgba(8,12,16,.62) 78%),
+    linear-gradient(180deg, rgba(8,12,16,.30), rgba(8,12,16,.5));
+}
+.worldmap.localmap .map-lines { z-index: 1; }
+.worldmap.localmap .map-line { stroke: rgba(232,224,205,.34); }
+.worldmap.localmap .map-pin { z-index: 2; }
+
 /* 大陆层（天南舆图）：全图早见——远方是惦记，不是迷雾 */
 .worldmap.continent {
   background:
