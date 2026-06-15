@@ -107,6 +107,12 @@ DATA.items = {
   zheling_canbao: { name: "遮灵残宝", rarity: "rare", type: "treasure",
     desc: "一面残缺的青铜小镜，能遮掩周身灵气波动。配合那只神秘小瓶使用，足以瞒过大多数修士的耳目——藏拙者的至宝。" },
 
+  /* —— 黄枫谷入门发放（入谷·吴师叔）：外门弟子制式低阶物品（多源核定：升仙令入谷，
+   * 门派发放黄丝衫/青叶飞行法器/一柄下品战斗法器/储物袋等——详见 combat-arsenal §3.8。
+   * 「烈阳剑」系坊间讹传，非正典：烈阳乃烈阳花（材料），故不取此名，落实为一柄制式铁剑）—— */
+  waimen_tiejian: { name: "外门铁剑", rarity: "common", type: "gear",
+    desc: "黄枫谷外门弟子制式下品法器：一柄寻常铁铸飞剑，灵力催动可御使飞刺。寒酸归寒酸——却是你头一件正经战斗法器，从此御剑有了凭依。" },
+
   /* —— 万宝楼二层：顶阶法器（练气十一层方可驱使——韩立血色禁地的底气）—— */
   jinfuzi_ren: { name: "金蚨子母刃", rarity: "epic", type: "gear",
     desc: "顶阶攻击法器：一大一小双刃如金蚨子母相随，可分进合击。练气十一层方可驱使。" },
@@ -190,6 +196,12 @@ DATA.items = {
  * grantSpells: 主动战斗技（仅战斗装备类有）。
  */
 DATA.gear = {
+  // —— 黄枫谷入门发放的下品战斗法器（练气即可驱使——韩立头一件正经战斗法器）——
+  waimen_tiejian: {
+    slot: "weapon", minLayer: 1,
+    grantSpells: ["tiejian_ci"],
+    traits: [{ id: "starter_sword", desc: "御剑入门：催动灵力御使铁剑凌空飞刺（战斗技「御剑刺」）——下品法器，威力寻常，胜在练气期便可驱使" }],
+  },
   // —— 战斗装备类（主动技）——
   jinfuzi_ren: {
     slot: "weapon", minLayer: 11,
