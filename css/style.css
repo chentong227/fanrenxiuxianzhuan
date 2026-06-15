@@ -2827,12 +2827,13 @@ html, body { touch-action: manipulation; }
   animation: blockBreath 3.6s ease-in-out infinite;
 }
 .worldmap.atlas-painted .region-block { stroke-width: 1.35; }
+/* 未解锁：整体压暗成剪影，只透出轮廓（其上再覆一层漂浮薄雾，见 .cloud-shroud）*/
 .worldmap.atlas-painted .region-block.locked {
-  fill: rgba(22,77,108,.16); stroke: rgba(28,83,113,.52); opacity: .66;
-  stroke-dasharray: 1.2 2.2; filter: drop-shadow(0 2px 4px rgba(0,44,65,.18));
+  fill: rgba(7,12,20,.82); stroke: rgba(176,200,221,.62); opacity: 1;
+  stroke-dasharray: none; filter: none;
 }
 .worldmap.atlas-painted .region-block.locked:hover {
-  fill: rgba(48,160,190,.18); stroke: rgba(67,153,192,.86); opacity: .92;
+  fill: rgba(16,38,55,.46); stroke: rgba(124,182,216,.95);
 }
 .worldmap.atlas-painted .region-block.lit {
   fill: rgba(61,215,178,.16); stroke: rgba(28,188,145,.90);
@@ -2862,7 +2863,10 @@ html, body { touch-action: manipulation; }
   z-index: 5; font-size: 15px; color: rgba(31,63,78,.82);
   text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 0 6px rgba(255,255,255,.78), 0 2px 5px rgba(18,58,75,.45);
 }
-.worldmap.atlas-painted .block-label.locked { color: rgba(31,70,90,.62); }
+.worldmap.atlas-painted .block-label.locked {
+  color: rgba(198,212,228,.5); font-size: 13px;
+  text-shadow: 0 1px 3px rgba(0,0,0,.85), 0 0 5px rgba(0,0,0,.7);
+}
 .worldmap.atlas-painted .block-label.here {
   color: #8a5f00; font-weight: 700;
   text-shadow: 0 1px 0 rgba(255,246,205,.95), 0 0 8px rgba(255,226,96,.92), 0 2px 5px rgba(95,60,0,.5);
@@ -2874,6 +2878,23 @@ html, body { touch-action: manipulation; }
 .show-factions .region-block.faction-modao    { stroke: #cc7777; }
 .show-factions .region-block.faction-jiuguo   { stroke: #d4af54; }
 .show-factions .region-block.faction-mulan    { stroke: #cc99aa; }
+
+/* —— v145 未解锁薄雾：两层分形噪声雾裁进未解锁块并集，缓缓反向漂移（动效）—— */
+.cloud-shroud { pointer-events: none; }
+.cloud-shroud .fog-drift { will-change: transform; transform-box: view-box; }
+.cloud-shroud .fog-drift.a { animation: atlasFogDriftA 42s ease-in-out infinite; opacity: .85; }
+.cloud-shroud .fog-drift.b { animation: atlasFogDriftB 60s ease-in-out infinite; opacity: .62; }
+@keyframes atlasFogDriftA {
+  0%,100% { transform: translate(-6px, 2px); }
+  50%     { transform: translate(6px, -3px); }
+}
+@keyframes atlasFogDriftB {
+  0%,100% { transform: translate(5px, -2px); }
+  50%     { transform: translate(-7px, 3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cloud-shroud .fog-drift { animation: none !important; }
+}
 
 /* 宽幅弹窗（舆图）*/
 .modal.modal-wide { max-width: 720px; width: 94vw; }
