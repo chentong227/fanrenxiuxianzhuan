@@ -3068,7 +3068,8 @@ const UI = {
       // 出手音（T7 行属分系）：金石有锋、火有轰势、冰有澈、木有破空——招式听得出是什么
       if (typeof Sfx !== "undefined") {
         const castSnd = { jin: "castJin", mu: "castMu", shui: "castShui", huo: "castHuo", tu: "castTu" };
-        Sfx.play(sp.type === "heal" ? "heal" : sp.type === "def" ? "shield"
+        Sfx.play(spellId === "qingyuan_jianying" ? "swordSplit"   // 剑影分光术·群剑分影破空（专属）
+          : sp.type === "heal" ? "heal" : sp.type === "def" ? "shield"
           : sp.source === "martial" ? "meleeWhoosh"
           : castSnd[sp.elem] || (sp.source === "treasure" ? "castJin" : "sword"));
         if (sp.source === "treasure") Sfx.play("bell");   // 法宝催动叠一记钟鸣（仪式感）

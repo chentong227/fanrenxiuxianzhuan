@@ -188,6 +188,15 @@
       noise(c, { dur: 0.18, gain: 0.03, band: 4200 });
       tone(c, { freq: 2400, slideTo: 620, type: "sawtooth", dur: 0.16, gain: 0.02 });
     },
+    // 剑影分光术：群剑分影破空（青元剑诀七层·形A分影多段）——三道错拍掠空 + 群剑共鸣的细吟尾
+    swordSplit(c) {
+      [0, 0.07, 0.14].forEach((d, i) => {
+        noise(c, { dur: 0.14, gain: 0.024 - i * 0.004, band: 4200 - i * 500, delay: d });
+        tone(c, { freq: 2500 - i * 280, slideTo: 640 - i * 80, type: "sawtooth", dur: 0.15, gain: 0.018, delay: d });
+      });
+      tone(c, { freq: 1568, type: "triangle", dur: 0.4, gain: 0.012, delay: 0.1 });   // 群剑共鸣·细吟
+      tone(c, { freq: 2352, dur: 0.3, gain: 0.007, delay: 0.16 });                     // 高泛音
+    },
   };
 
   let lastPlay = {};
@@ -267,6 +276,21 @@
   const FALLBACK = { town: "daily", journey: "daily", fair: "daily", boss: "combat", sorrow: "tense", triumph: null };
   let curTrack = null;
 
+  // 渐变某 <audio> 的音量到目标值（切轨 crossfade 用）：定步进，结束回调收尾
+  function fadeVol(el, to, ms, onDone) {
+    if (!el) { if (onDone) onDone(); return; }
+    try { if (el._fadeTimer) { clearInterval(el._fadeTimer); el._fadeTimer = null; } } catch (e) {}
+    const from = typeof el.volume === "number" ? el.volume : 0;
+    const steps = Math.max(1, Math.round(ms / 40));
+    let i = 0;
+    el._fadeTimer = setInterval(() => {
+      i++;
+      const v = from + (to - from) * (i / steps);
+      try { el.volume = Math.max(0, Math.min(1, v)); } catch (e) {}
+      if (i >= steps) { clearInterval(el._fadeTimer); el._fadeTimer = null; if (onDone) onDone(); }
+    }, 40);
+  }
+
   const Sfx = {
     enabled() { return !muted; },
     toggle() {
@@ -285,17 +309,19 @@
       lastPlay[name] = now;
       try { const c = ac(); if (c) RECIPES[name](c); } catch (e) {}
     },
-    // 主入口：换 BGM 轨（文件优先，合成兜底；同轨幂等）
+    // 主入口：换 BGM 轨（文件优先，合成兜底；同轨幂等；切轨 ~600ms crossfade）
     bgm(track, opts = {}) {
       if (curTrack === track && !opts.force) return;
       curTrack = track;
+      const xf = opts.fade != null ? opts.fade : 600;   // 交叉淡化时长（ms）
       if (BGM_FILES.includes(track)) {
         const url = `assets/audio/bgm_${track}.mp3`;
         try {
-          this.stopBgm();
-          BGM.stop();   // 合成轨让位
+          BGM.stop();   // 合成轨让位（合成轨无淡出，直接停）
+          const target = opts.vol != null ? opts.vol : 0.3;
+          const prev = bgmEl;   // 旧文件轨：淡出
           const el = new window.Audio(url);
-          el._src = url; el.loop = track !== "triumph"; el.volume = opts.vol != null ? opts.vol : 0.3;
+          el._src = url; el.loop = track !== "triumph"; el.volume = 0;
           el.onerror = () => {   // 文件缺失：回退合成
             if (bgmEl === el) bgmEl = null;
             const fb = FALLBACK[track] !== undefined ? FALLBACK[track] : track;
@@ -303,11 +329,20 @@
           };
           if (track === "triumph") el.onended = () => { if (bgmEl === el) { bgmEl = null; curTrack = null; } };
           bgmEl = el;
-          if (!muted) el.play().catch(() => {});
+          if (muted) {   // 静音：记轨不出声，音量预置好，解除静音由 toggle 起播
+            el.volume = target;
+            if (prev && prev !== el) { try { prev.pause(); } catch (e) {} }
+            return;
+          }
+          el.play().catch(() => {});
+          fadeVol(el, target, xf);                                         // 新轨淡入
+          if (prev && prev !== el) fadeVol(prev, 0, xf, () => { try { prev.pause(); } catch (e) {} });  // 旧轨淡出
           return;
         } catch (e) {}
       }
-      // 非文件轨：直接合成
+      // 非文件轨：淡出旧文件轨后转合成
+      const prev = bgmEl;
+      if (prev) { bgmEl = null; fadeVol(prev, 0, xf, () => { try { prev.pause(); } catch (e) {} }); }
       try { BGM.start(track); } catch (e) {}
     },
     bgmStop() { this.stopBgm(); try { BGM.stop(); } catch (e) {} curTrack = null; },
