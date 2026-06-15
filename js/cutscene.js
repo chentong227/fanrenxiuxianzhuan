@@ -16,6 +16,8 @@
  *        at:"left|right|center", from, to, elem, color, n, ...}
  *   {sfx:"name"}  {bgm:"track"}  {wait: ms | "click"}
  *   {beat:{kind:"window|choice", prompt, action, ms, onHit, onMiss, choices}}  ← 交互
+ *   {guide:{tag, title, hint, focus, cta}}  ← 演出即引导：切章/切图落幕时顺势告诉玩家"下一步去干嘛"
+ *        focus=落幕后高亮的行动 id（在地点屏脉冲一下，指明该点哪个按钮）。
  *
  * 节奏：演出 op（cam/actor/fx/sfx/bgm）是"舞台指令"，自动连演不阻塞，直到撞上
  *   一句台词/场景，或显式 {wait} / 交互 beat 才停下等玩家。可随时跳过（Cutscene.clear()）。
@@ -63,6 +65,9 @@
         if (has(seg, "sfx")) { beats.push({ kind: "op", op: "sfx", sfx: seg.sfx }); continue; }
         if (has(seg, "bgm")) { beats.push({ kind: "op", op: "bgm", bgm: seg.bgm }); continue; }
         if (has(seg, "wait")) { beats.push({ kind: "op", op: "wait", wait: seg.wait }); continue; }
+
+        // —— 演出即引导（落幕指路；阻塞，等玩家确认）——
+        if (seg.guide && typeof seg.guide === "object") { beats.push({ kind: "guide", guide: seg.guide }); continue; }
 
         // —— 交互 beat（对象形式；阻塞，等玩家操作）——
         if (seg.beat && typeof seg.beat === "object") { beats.push({ kind: "beat", beat: seg.beat }); continue; }
@@ -214,6 +219,28 @@
       const btn = host.querySelector(".cut-strike");
       if (btn) btn.onclick = () => { const c = spec.onHit || {}; this._react(c, ctx); finish({ hit: true, line: c.line }); };
       this._after(ms, () => { const c = spec.onMiss || {}; this._react(c, ctx); finish({ hit: false, line: c.line }); });
+    },
+
+    /* —— 演出即引导：落幕指路卡（切章/切图时顺势告诉玩家"下一步去干嘛"）——
+     * 渲染进 beatHost；玩家确认后 done({focus}) 交回 ui，由地点屏脉冲高亮该行动按钮。
+     * 内容由剧情卡作者就地写好（单一来源；不与天命栏重复，二者一显眼一常驻、互补）。*/
+    runGuide(beat, ctx, done) {
+      const g = (beat && beat.guide) || {};
+      const host = ctx && ctx.beatHost;
+      if (!host) { if (done) done({ focus: g.focus }); return; }
+      host.classList.add("cut-beat-on");
+      host.innerHTML =
+        `<div class="cut-guide">` +
+          `<div class="cg-tag">${g.tag || "接下来"}</div>` +
+          (g.title ? `<div class="cg-title">${g.title}</div>` : "") +
+          (g.hint ? `<div class="cg-hint">${g.hint}</div>` : "") +
+          `<button class="choice cut-guide-go">${g.cta || "我知道了"}</button>` +
+        `</div>`;
+      const btn = host.querySelector(".cut-guide-go");
+      if (btn) btn.onclick = () => {
+        host.innerHTML = ""; host.classList.remove("cut-beat-on");
+        if (done) done({ focus: g.focus });
+      };
     },
     // beat 结算时的即时反馈（特效/声）——台词反应由 done(line) 交回 ui 接演
     _react(c, ctx) {
