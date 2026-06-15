@@ -71,7 +71,7 @@
   const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 }, mojiao: {} };
 
   // 舆图
-  const MAPS = { tiannan_map: 1 };
+  const MAPS = { tiannan_map: 1, renjie_map: 1 };
 
   // 竖用图判定：视口高>宽（真机竖屏）或窄视口（桌面窄窗）——决定因素是画幅而非设备方向
   const isPortraitScreen = () =>
@@ -81,7 +81,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 15,
+    ASSET_VER: 16,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 

@@ -246,35 +246,42 @@ WORLD.atlas = {
   levels: {
     // —— L0a 人界全图 ——
     renjie: {
-      name: "人界", kind: "world", crumb: "人界",
+      name: "人界", kind: "world", crumb: "人界", map: "renjie_map",
       blurb: "你脚下这方天地。天南一隅是起点，乱星海、大晋、慕兰、天沙……皆在云水之外。",
       nodes: [
         // 天南＝本图东北角，起点常亮，下钻 L2（§6.1）
-        { id: "tiannan", name: "天南", to: "tiannan", pos: { x: 82, y: 22 }, label: { x: 82, y: 22 }, reach: true,
+        { id: "tiannan", name: "天南", to: "tiannan", pos: { x: 88, y: 30 }, label: { x: 88, y: 30 }, reach: true,
+          poly: "74,21 82,17 92,18 100,20 100,43 93,45 86,41 72,39",
           unlock: () => true,
           desc: "人界东北一隅。越国、元武诸国与正魔两道犬牙交错——你的修行，从这里启程。" },
         // 慕兰草原＝天南正下方（南），慕兰篇点亮（§6.0/§7.4）
-        { id: "mulan", name: "慕兰草原", pos: { x: 86, y: 42 }, silhouette: true,
+        { id: "mulan", name: "慕兰草原", pos: { x: 88, y: 51 }, label: { x: 88, y: 51 }, silhouette: true,
+          poly: "72,39 86,41 93,45 100,43 100,66 93,67 84,63 74,58",
           unlock: (s) => !!(s.flags && s.flags.mulan_arc),
           desc: "紧挨天南南侧的辽阔草原，慕兰法士游牧其上，屡屡南侵天南九国。" },
         // 天澜草原＝慕兰之下（更南），突兀族·天澜圣殿（§6.0）
-        { id: "tianlan", name: "天澜草原", pos: { x: 90, y: 56 }, silhouette: true,
+        { id: "tianlan", name: "天澜草原", pos: { x: 90, y: 78 }, label: { x: 90, y: 78 }, silhouette: true,
+          poly: "74,58 84,63 93,67 100,66 100,100 78,100 72,89 76,74",
           unlock: () => false,
           desc: "慕兰之外更南的草原，突兀族与天澜圣殿据之，与慕兰法士争锋不休。" },
         // 大晋＝中央偏南、最大陆，元婴后方可游历（§6.0c 韩立路线）
-        { id: "dajin", name: "大晋", pos: { x: 50, y: 72 }, silhouette: true,
+        { id: "dajin", name: "大晋", pos: { x: 49, y: 75 }, label: { x: 50, y: 75 }, silhouette: true,
+          poly: "12,56 22,48 34,43 48,41 60,45 72,39 74,58 76,74 72,89 78,100 14,100 13,90 18,78",
           unlock: (s) => !!(s.flags && s.flags.yuanying_complete),
           desc: "面积胜过整个天南的修仙圣地，隔慕兰、天澜草原与天南相望。元婴之后，方有资格踏足。" },
         // 乱星海＝西北，结丹篇离天南而往（§6.0c）
-        { id: "luanxinghai", name: "乱星海", pos: { x: 24, y: 22 }, silhouette: true,
+        { id: "luanxinghai", name: "乱星海", pos: { x: 32, y: 21 }, label: { x: 32, y: 20 }, silhouette: true,
+          poly: "0,0 74,0 74,21 72,39 60,45 48,41 34,43 22,48 12,56 0,61",
           unlock: (s) => !!(s.flags && s.flags.jiedan_complete),
           desc: "人界西北的无尽海域，内星海人修、外星海妖修。韩立于此结丹、得虚天鼎。" },
         // 天沙大陆＝西南角（原著一笔带过）
-        { id: "tiansha", name: "天沙大陆", pos: { x: 12, y: 84 }, silhouette: true,
+        { id: "tiansha", name: "天沙大陆", pos: { x: 6, y: 86 }, label: { x: 8, y: 84 }, silhouette: true,
+          poly: "0,61 12,56 18,78 13,90 14,100 0,100",
           unlock: () => false,
           desc: "人界西南的莽荒之陆，原著一笔带过，所知不详——且记在心头。" },
         // 极西之地（千竹教）＝天南以西、隔飓风沙漠（§6.0）
-        { id: "jixi", name: "极西之地", pos: { x: 64, y: 16 }, silhouette: true,
+        { id: "jixi", name: "极西之地", pos: { x: 82, y: 16 }, label: { x: 82, y: 15 }, silhouette: true,
+          poly: "74,0 100,0 100,20 92,18 82,17 74,21",
           unlock: () => false,
           desc: "天南正道盟以西、隔万里飓风沙漠的飞地。大衍神君于此创千竹教，精擅傀儡之道。" },
       ],
