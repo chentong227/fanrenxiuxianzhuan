@@ -232,47 +232,107 @@ WORLD.continent = {
  * （考据红线：未实装大区只标名远观、不杜撰可达细节；信息面纱亦如是）。
  * 升级到一级，上一级缩为「远眺」入口——逐级下钻/上卷，永远知道身在何处、可往何方。
  * ============================================================ */
+/* —— 区块数据模型（v143 F舆图骨架，map-redesign-design.md §2.2）——
+ * 每个 atlas 节点（L1/L2/L3 区块）扩展字段：
+ *   to?       可下钻的子层 id（衔接，§9）
+ *   poly?     区块多边形（SVG points "x,y x,y…"，% 坐标）；缺省由 UI._atlasPoly 据 pos 生成占位六边形（v144 描准）
+ *   label?    题字锚点 {x,y}；缺省取 pos（块中心）
+ *   unlock(s) 解锁判定 → 三态（暗/雾·亮起·在此，§3.2）；复用 s.flags / s.visitedNodes，不新开存档字段
+ *   faction?  势力归属标签（叠加层，§8，非第6级）：qipai|zhengdao|modao|jiuguo|mulan…
+ *   silhouette/desc  远眺剪影 / 描述（保留）
+ * L4/L5 不加 poly（保持点状/单屏）。朝向＝§7.4 方案①（大晋在南；海北/慕兰南/魔道东/正道西）。 */
 WORLD.atlas = {
   root: "renjie",
   levels: {
     // —— L0a 人界全图 ——
     renjie: {
       name: "人界", kind: "world", crumb: "人界",
-      blurb: "你脚下这方天地。天南一隅是起点，乱星海、大晋、慕兰、天荒……皆在云水之外。",
+      blurb: "你脚下这方天地。天南一隅是起点，乱星海、大晋、慕兰、天沙……皆在云水之外。",
       nodes: [
-        { id: "tiannan", name: "天南", to: "tiannan", pos: { x: 22, y: 76 }, reach: true,
-          desc: "人界西南一隅。越国、元武、紫金诸国与正魔两道犬牙交错——你的修行，从这里启程。" },
-        { id: "luanxinghai", name: "乱星海", pos: { x: 60, y: 34 }, silhouette: true,
-          desc: "天南以东的无尽海域，星罗万岛。古传送阵与天星城藏于其间——金雷竹、青竹蜂云剑的所在。" },
-        { id: "dajin", name: "大晋", pos: { x: 82, y: 60 }, silhouette: true,
-          desc: "人界东部巨陆，疆域万里、昆吾山高耸。元婴之后，方有资格踏足。" },
-        { id: "mulan", name: "慕兰草原", pos: { x: 70, y: 86 }, silhouette: true,
-          desc: "大晋以西的辽阔草原，慕兰异族游牧其上，与人族修士争锋不休。" },
-        { id: "tianhuang", name: "天荒大陆", pos: { x: 14, y: 22 }, silhouette: true,
-          desc: "西北极远的荒漠绝陆，灵族、妖族盘踞，乃渡劫飞升之地。路远得连舆图都画不全。" },
-        { id: "jibei", name: "极北冰原", pos: { x: 42, y: 9 }, silhouette: true,
-          desc: "人界最北的万里冰原，小极宫隐于风雪。" },
+        // 天南＝本图东北角，起点常亮，下钻 L2（§6.1）
+        { id: "tiannan", name: "天南", to: "tiannan", pos: { x: 82, y: 22 }, label: { x: 82, y: 22 }, reach: true,
+          unlock: () => true,
+          desc: "人界东北一隅。越国、元武诸国与正魔两道犬牙交错——你的修行，从这里启程。" },
+        // 慕兰草原＝天南正下方（南），慕兰篇点亮（§6.0/§7.4）
+        { id: "mulan", name: "慕兰草原", pos: { x: 86, y: 42 }, silhouette: true,
+          unlock: (s) => !!(s.flags && s.flags.mulan_arc),
+          desc: "紧挨天南南侧的辽阔草原，慕兰法士游牧其上，屡屡南侵天南九国。" },
+        // 天澜草原＝慕兰之下（更南），突兀族·天澜圣殿（§6.0）
+        { id: "tianlan", name: "天澜草原", pos: { x: 90, y: 56 }, silhouette: true,
+          unlock: () => false,
+          desc: "慕兰之外更南的草原，突兀族与天澜圣殿据之，与慕兰法士争锋不休。" },
+        // 大晋＝中央偏南、最大陆，元婴后方可游历（§6.0c 韩立路线）
+        { id: "dajin", name: "大晋", pos: { x: 50, y: 72 }, silhouette: true,
+          unlock: (s) => !!(s.flags && s.flags.yuanying_complete),
+          desc: "面积胜过整个天南的修仙圣地，隔慕兰、天澜草原与天南相望。元婴之后，方有资格踏足。" },
+        // 乱星海＝西北，结丹篇离天南而往（§6.0c）
+        { id: "luanxinghai", name: "乱星海", pos: { x: 24, y: 22 }, silhouette: true,
+          unlock: (s) => !!(s.flags && s.flags.jiedan_complete),
+          desc: "人界西北的无尽海域，内星海人修、外星海妖修。韩立于此结丹、得虚天鼎。" },
+        // 天沙大陆＝西南角（原著一笔带过）
+        { id: "tiansha", name: "天沙大陆", pos: { x: 12, y: 84 }, silhouette: true,
+          unlock: () => false,
+          desc: "人界西南的莽荒之陆，原著一笔带过，所知不详——且记在心头。" },
+        // 极西之地（千竹教）＝天南以西、隔飓风沙漠（§6.0）
+        { id: "jixi", name: "极西之地", pos: { x: 64, y: 16 }, silhouette: true,
+          unlock: () => false,
+          desc: "天南正道盟以西、隔万里飓风沙漠的飞地。大衍神君于此创千竹教，精擅傀儡之道。" },
       ],
     },
     // —— L0b 大区图：天南多国格局 ——
     tiannan: {
       name: "天南", kind: "region", parent: "renjie", crumb: "天南",
-      blurb: "天南多国格局——越国只是其中一隅。诸国并立，正魔两道犬牙交错。",
+      blurb: "天南多国格局——越国只是其中一隅。诸国并立，海北、慕兰南、魔道东、正道西。",
       nodes: [
-        { id: "yueguo", name: "越国", to: "yueguo", pos: { x: 24, y: 30 }, reach: true,
-          desc: "七玄门、黄枫谷所在之国。十三州山河，是你前半生的舞台。" },
-        { id: "yuanwuguo", name: "元武国", pos: { x: 30, y: 14 }, silhouette: true,
-          desc: "越国之北的大国，太岳山脉北麓与之接壤。" },
-        { id: "zijinguo", name: "紫金国", pos: { x: 52, y: 40 }, silhouette: true,
-          desc: "天南中部强国，亦修仙世家林立之地。" },
-        { id: "chejiguo", name: "车骑国", pos: { x: 64, y: 22 }, silhouette: true,
+        // —— 中：越国（七派；下钻 L3 越国·州）——
+        { id: "yueguo", name: "越国", to: "yueguo", pos: { x: 44, y: 40 }, label: { x: 44, y: 40 }, reach: true,
+          faction: "qipai", unlock: () => true,
+          desc: "天南中部之国，七派分立。十三州山河，是你前半生的舞台。" },
+        // —— 北 ——
+        { id: "wubianhai", name: "无边海", pos: { x: 50, y: 4 }, silhouette: true, unlock: () => false,
+          desc: "天南最北的无尽之海，自古无人穿越，传与别处大陆隔绝。" },
+        { id: "huayuguo", name: "花雨国", pos: { x: 38, y: 16 }, silhouette: true, unlock: () => false,
+          desc: "天南北陲小国，凡修寥寥——远观之地，且记在心头。" },
+        { id: "xiguo", name: "溪国", pos: { x: 50, y: 14 }, silhouette: true, unlock: () => false,
+          desc: "天南北境小国——远观之地，且记在心头。" },
+        { id: "yuanwuguo", name: "元武国", pos: { x: 52, y: 22 }, silhouette: true, unlock: () => false,
+          desc: "越国之北的大国，黄枫谷北面太岳山脉与之接壤。" },
+        { id: "tianluguo", name: "天卢国", pos: { x: 74, y: 16 }, silhouette: true, unlock: () => false,
+          desc: "天南东北之国——远观之地，且记在心头。" },
+        // —— 西北 ——
+        { id: "shayunguo", name: "刹云国", pos: { x: 30, y: 20 }, silhouette: true, unlock: () => false,
+          desc: "天南西北之国——远观之地，且记在心头。" },
+        { id: "dongyuguo", name: "东裕国", pos: { x: 36, y: 28 }, silhouette: true, unlock: () => false,
+          desc: "天南西北之国——远观之地，且记在心头。" },
+        // —— 西：正道盟·风都国 ——
+        { id: "fengduguo", name: "风都国", pos: { x: 22, y: 40 }, silhouette: true,
+          faction: "zhengdao", unlock: () => false,
+          desc: "天南正道盟祭酒之国，居天南之西；再西即飓风沙漠与极西之地。" },
+        { id: "hanshuiguo", name: "寒水国", pos: { x: 26, y: 52 }, silhouette: true, unlock: () => false,
+          desc: "天南西南之国——远观之地，且记在心头。" },
+        // —— 东：魔道·天罗国 ——
+        { id: "jiangguo", name: "姜国", pos: { x: 66, y: 36 }, silhouette: true, unlock: () => false,
+          desc: "天南东境之国——越国与魔道天罗，正隔着姜国、车骑国相望。" },
+        { id: "tianluoguo", name: "天罗国", pos: { x: 78, y: 38 }, silhouette: true,
+          faction: "modao", unlock: () => false,
+          desc: "天南最东之国，魔道六宗老巢——长生、合欢诸宗盘踞，魔道入侵的源头。" },
+        { id: "chejiguo", name: "车骑国", pos: { x: 70, y: 52 }, silhouette: true, unlock: () => false,
           desc: "边境妖兽横行之国——练气士只身赴此，多半葬身兽口。看得见、去不了。" },
-        { id: "jiuguomeng", name: "九国盟", pos: { x: 72, y: 58 }, silhouette: true,
-          desc: "天南数国结成的修仙联盟，以御外侮、共抗魔道。" },
-        { id: "zhengdaomeng", name: "正道盟", pos: { x: 46, y: 72 }, silhouette: true,
-          desc: "魔道争锋之际，天南正道诸派结成的联盟。" },
-        { id: "modao", name: "魔道六宗", pos: { x: 62, y: 84 }, silhouette: true,
-          desc: "长生、合欢诸宗盘踞之地——魔道入侵的源头。" },
+        // —— 中南 ——
+        { id: "zijinguo", name: "紫金国", pos: { x: 48, y: 58 }, silhouette: true, unlock: () => false,
+          desc: "天南中部强国，修仙世家林立之地。" },
+        // —— 南：九国盟（黄枫谷南迁扎根地）——
+        { id: "beiliangguo", name: "北凉国", pos: { x: 34, y: 66 }, silhouette: true,
+          faction: "jiuguo", unlock: (s) => !!(s.flags && s.flags.huangfeng_relocated),
+          desc: "天南之南、九国盟一国，紧邻慕兰草原。魔道入侵后，黄枫谷携门人远遁至此重立山门。" },
+        { id: "xuguo", name: "胥国", pos: { x: 50, y: 66 }, silhouette: true, unlock: () => false,
+          desc: "天南南境之国，九国盟之一——远观之地，且记在心头。" },
+        { id: "fengyuanguo", name: "丰原国", pos: { x: 46, y: 78 }, silhouette: true, unlock: () => false,
+          desc: "天南南境之国，九国盟之一——远观之地，且记在心头。" },
+        // —— 最南：慕兰·天澜草原 ——
+        { id: "mulan_tianlan", name: "慕兰·天澜草原", pos: { x: 46, y: 90 }, silhouette: true,
+          faction: "mulan", unlock: (s) => !!(s.flags && s.flags.mulan_arc),
+          desc: "天南最南的辽阔草原。慕兰法士游牧其北，突兀族·天澜圣殿据其南，与人族修士争锋不休。" },
       ],
     },
     // —— L0c 国别图：越国 —— 复用 WORLD.continent（水墨舆图），由 UI.openContinent 渲染

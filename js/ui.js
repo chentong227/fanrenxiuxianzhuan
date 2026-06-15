@@ -2263,15 +2263,26 @@ const UI = {
     if (levelId === "yueguo") return this.openContinent();
     const L = WORLD.atlas && WORLD.atlas.levels[levelId];
     if (!L) return this.openContinent();
-    const pins = L.nodes.map(n => {
-      const cls = n.silhouette ? "silhouette" : (n.reach ? "" : "gated");
-      return `<div class="map-pin cont ${cls}" style="left:${n.pos.x}%;top:${n.pos.y}%"
-        onclick="UI._atlasPick('${levelId}','${n.id}')">
-        <span class="pin-dot"></span>
-        <span class="pin-label">${n.name}</span>
-      </div>`;
+    const s = State.data;
+    const pathSet = this._atlasPathSet();
+    // 区块：占位多边形（缺 poly 时据 pos 生成六边形）+ 解锁三态 + 势力标签
+    const blocks = L.nodes.map(n => {
+      const st = this._atlasNodeState(n, s, pathSet);
+      const drill = (st !== "locked" && n.to) ? `UI._atlasGoto('${n.to}')` : "";
+      const fac = n.faction ? ` faction-${n.faction}` : "";
+      return `<polygon class="region-block ${st}${fac}" points="${this._atlasPoly(n)}"
+        onclick="UI._atlasPick('${levelId}','${n.id}')" ondblclick="${drill}"></polygon>`;
     }).join("");
-    const first = L.nodes[0];
+    const labels = L.nodes.map(n => {
+      const st = this._atlasNodeState(n, s, pathSet);
+      const lab = n.label || n.pos;
+      const tag = st === "here" ? '<span class="here-tag"> ·在此</span>' : "";
+      return `<div class="block-label ${st}" style="left:${lab.x}%;top:${lab.y}%"
+        onclick="UI._atlasPick('${levelId}','${n.id}')">${n.name}${tag}</div>`;
+    }).join("");
+    const cur = L.nodes.find(n => this._atlasNodeState(n, s, pathSet) === "here") || L.nodes[0];
+    const curSt = this._atlasNodeState(cur, s, pathSet);
+    const curTag = curSt === "here" ? " ·在此" : "";
     this.openModal(`
       ${this._atlasCrumbs(levelId)}
       <h2 class="atlas-title">${L.name}</h2>
@@ -2279,9 +2290,10 @@ const UI = {
       <div class="worldmap continent atlas-${L.kind}">
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
-        ${pins}
+        <svg class="region-blocks" viewBox="0 0 100 100" preserveAspectRatio="none">${blocks}</svg>
+        ${labels}
       </div>
-      <div id="cont-detail" class="map-detail"><b>${first.name}</b>　${first.desc}${this._atlasNodeAction(first)}</div>
+      <div id="cont-detail" class="map-detail"><b>${cur.name}${curTag}</b>　${cur.desc}${this._atlasNodeAction(cur, curSt)}</div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
       </div>
@@ -2291,12 +2303,38 @@ const UI = {
     const L = WORLD.atlas && WORLD.atlas.levels[levelId];
     const n = L && L.nodes.find(x => x.id === nodeId);
     if (!n) return;
-    this.el("cont-detail").innerHTML = `<b>${n.name}</b>　${n.desc}${this._atlasNodeAction(n)}`;
+    const st = this._atlasNodeState(n, State.data, this._atlasPathSet());
+    const tag = st === "here" ? " ·在此" : "";
+    this.el("cont-detail").innerHTML = `<b>${n.name}${tag}</b>　${n.desc}${this._atlasNodeAction(n, st)}`;
   },
-  _atlasNodeAction(n) {
-    if (n.to) return `<div class="cont-gate"><button class="btn btn-primary btn-mini" onclick="UI._atlasGoto('${n.to}')">进入${n.name} ▸</button></div>`;
-    if (n.silhouette) return `<div class="cont-gate">远观之地——尚不可至，且记在心头。</div>`;
+  _atlasNodeAction(n, state) {
+    if (state !== "locked" && n.to)
+      return `<div class="cont-gate"><button class="btn btn-primary btn-mini" onclick="UI._atlasGoto('${n.to}')">进入${n.name} ▸</button></div>`;
+    if (state === "locked")
+      return `<div class="cont-gate">${n.silhouette ? "远观之地——尚不可至" : "道途未通——暂不可往"}，且记在心头。</div>`;
     return "";
+  },
+  /* 占位多边形：有 poly 用 poly，否则据 pos 生成六边形（v143 骨架，v144 描准）。SVG points，0-100 同 viewBox。 */
+  _atlasPoly(n) {
+    if (n.poly) return n.poly;
+    const cx = n.pos.x, cy = n.pos.y, rx = 11, ry = 13;
+    return [[cx, cy - ry], [cx + rx, cy - ry * 0.5], [cx + rx, cy + ry * 0.5],
+            [cx, cy + ry], [cx - rx, cy + ry * 0.5], [cx - rx, cy - ry * 0.5]]
+      .map(p => `${(+p[0]).toFixed(1)},${(+p[1]).toFixed(1)}`).join(" ");
+  },
+  /* 当前所在层到根的层 id 集合（用于判定区块「在此」）。 */
+  _atlasPathSet() {
+    const set = new Set();
+    let cur = this._atlasLevel(this._atlasCurrentLevel());
+    let guard = 0;
+    while (cur && guard++ < 8) { set.add(cur.id); cur = cur.parent ? this._atlasLevel(cur.parent) : null; }
+    return set;
+  },
+  /* 区块三态：here(当前·在此) / lit(已点亮·可下钻) / locked(暗雾·远观)。 */
+  _atlasNodeState(n, s, pathSet) {
+    if (n.to && pathSet && pathSet.has(n.to)) return "here";
+    const lit = n.unlock ? !!n.unlock(s) : !!n.reach;
+    return lit ? "lit" : "locked";
   },
   // 跳到某一层（叶层越国 = 水墨舆图；上层 = 通用渲染）
   _atlasGoto(id) { return id === "yueguo" ? this.openContinent() : this.openAtlas(id); },
@@ -2314,7 +2352,8 @@ const UI = {
     const C = WORLD.continent;
     return (C && C.atlasId) || "yueguo";
   },
-  // 面包屑：人界 ▸ 天南 ▸ 越国，除当前层外皆可点击上卷
+  // 面包屑（支持5级：人界 ▸ 天南 ▸ 越国 ▸ 州 ▸ 城，§9）——沿 parent 链通用回溯到根，除当前层外皆可点击上卷。
+  // 当前数据深度=3（人界/天南/越国）；州·城层将于 v146/v147 接入，面包屑机制已就绪、无需再改。
   _atlasCrumbs(levelId) {
     const path = [];
     let cur = this._atlasLevel(levelId);
