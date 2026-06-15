@@ -291,6 +291,47 @@
     }, 40);
   }
 
+  // 文件 BGM 默认音量（源已 -20 LUFS 归一，故不必高；克制基调，降「吵闹」）
+  const BGM_VOL = 0.26;
+
+  // 循环交叉淡化：循环轨结尾 ~lxf 与开头交叉，消除 <audio>.loop 硬跳回开头的接缝突兀。
+  // 自管循环（loop=false）：临近结尾时启同轨新实例淡入、旧实例淡出，无缝衔接。
+  function clearLoop(el) { try { if (el && el._loopTimer) { clearInterval(el._loopTimer); el._loopTimer = null; } } catch (e) {} }
+  function startLoopXfade(el, track, target, lxf) {
+    clearLoop(el);
+    const xfSec = lxf / 1000;
+    el._loopTimer = setInterval(() => {
+      try {
+        if (bgmEl !== el) { clearLoop(el); return; }   // 已换轨/被接管：停表
+        if (muted || el._handoff) return;               // 静音 / 本轮已交叉：不推进
+        const dur = el.duration;
+        if (!dur || !isFinite(dur) || dur <= xfSec * 2) return;
+        if (el.currentTime >= dur - xfSec) {
+          el._handoff = true;
+          const nb = new window.Audio(el._src);
+          nb._src = el._src; nb.onerror = el.onerror;
+          bgmEl = nb;                                   // 新实例接管为当前轨
+          setupLoopEl(nb, track, target, lxf);          // 链上下一轮（含兜底）
+          nb.volume = 0; nb.play().catch(() => {});
+          fadeVol(nb, target, lxf);                     // 新实例淡入
+          fadeVol(el, 0, lxf, () => { try { el.pause(); } catch (e) {} });   // 旧实例淡出收声
+          clearLoop(el);
+        }
+      } catch (e) { clearLoop(el); }
+    }, 60);
+  }
+  // 给循环文件轨挂：loop=false（自管）+ onended 兜底（交叉没接上时硬重启不留静音）+ 循环监视
+  function setupLoopEl(el, track, target, lxf) {
+    el.loop = false;
+    el._handoff = false;
+    el.onended = () => {
+      if (bgmEl !== el || el._handoff) return;
+      try { el.currentTime = 0; el.volume = muted ? 0 : target; if (!muted) el.play().catch(() => {}); } catch (e) {}
+      startLoopXfade(el, track, target, lxf);
+    };
+    startLoopXfade(el, track, target, lxf);
+  }
+
   const Sfx = {
     enabled() { return !muted; },
     toggle() {
@@ -318,17 +359,24 @@
         const url = `assets/audio/bgm_${track}.mp3`;
         try {
           BGM.stop();   // 合成轨让位（合成轨无淡出，直接停）
-          const target = opts.vol != null ? opts.vol : 0.3;
+          const target = opts.vol != null ? opts.vol : BGM_VOL;
+          const lxf = opts.loopFade != null ? opts.loopFade : 1100;   // 循环交叉时长（ms）
           const prev = bgmEl;   // 旧文件轨：淡出
+          if (prev) { prev._handoff = true; clearLoop(prev); }        // 旧轨停循环监视，免淡出途中误重启
           const el = new window.Audio(url);
-          el._src = url; el.loop = track !== "triumph"; el.volume = 0;
+          el._src = url; el.volume = 0;
           el.onerror = () => {   // 文件缺失：回退合成
             if (bgmEl === el) bgmEl = null;
             const fb = FALLBACK[track] !== undefined ? FALLBACK[track] : track;
             if (fb) try { BGM.start(fb); } catch (e) {}
           };
-          if (track === "triumph") el.onended = () => { if (bgmEl === el) { bgmEl = null; curTrack = null; } };
           bgmEl = el;
+          if (track === "triumph") {   // 凯旋单次不循环
+            el.loop = false;
+            el.onended = () => { if (bgmEl === el) { bgmEl = null; curTrack = null; } };
+          } else {
+            setupLoopEl(el, track, target, lxf);   // 循环交叉淡化（消接缝突兀）
+          }
           if (muted) {   // 静音：记轨不出声，音量预置好，解除静音由 toggle 起播
             el.volume = target;
             if (prev && prev !== el) { try { prev.pause(); } catch (e) {} }
@@ -342,7 +390,7 @@
       }
       // 非文件轨：淡出旧文件轨后转合成
       const prev = bgmEl;
-      if (prev) { bgmEl = null; fadeVol(prev, 0, xf, () => { try { prev.pause(); } catch (e) {} }); }
+      if (prev) { prev._handoff = true; clearLoop(prev); bgmEl = null; fadeVol(prev, 0, xf, () => { try { prev.pause(); } catch (e) {} }); }
       try { BGM.start(track); } catch (e) {}
     },
     bgmStop() { this.stopBgm(); try { BGM.stop(); } catch (e) {} curTrack = null; },
@@ -358,7 +406,7 @@
         if (!muted) el.play().catch(() => {});
       } catch (e) {}
     },
-    stopBgm() { if (bgmEl) { try { bgmEl.pause(); } catch (e) {} bgmEl = null; } },
+    stopBgm() { if (bgmEl) { clearLoop(bgmEl); try { bgmEl.pause(); } catch (e) {} bgmEl = null; } },
   };
 
   // 通用点击音：按钮/选项等（委托监听，轻量）

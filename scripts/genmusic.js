@@ -5,6 +5,7 @@
  *   生成（需 KEY）：node scripts/genmusic.js <OPENROUTER_KEY> [--only daily,combat] [--n 3] [--force]
  *   仅质量门（免 KEY）：node scripts/genmusic.js --gate [--only daily]
  *   转正某候选（免 KEY）：node scripts/genmusic.js --promote <id> <k>   （归一化响度后落 assets/audio/bgm_<id>.mp3）
+ *   就地重制响度（免 KEY）：node scripts/genmusic.js --remaster [--only ids]   （现有轨归一到 -20 LUFS/不削波，治「吵闹」；原始备份到 _cand/_orig/）
  *
  * 选项：
  *   --only ids    只处理这些轨（逗号分隔）；亦兼容旧式：第二个裸参数当单轨 id
@@ -23,11 +24,12 @@ const { execFileSync, spawnSync } = require("child_process");
 
 // ---------- 参数解析 ----------
 const argv = process.argv.slice(2);
-const opts = { n: 3, force: false, gate: false, promote: null, only: null, targetLufs: -20, proxy: process.env.GEN_PROXY || "" };
+const opts = { n: 3, force: false, gate: false, promote: null, remaster: false, only: null, targetLufs: -20, proxy: process.env.GEN_PROXY || "" };
 let KEY = null;
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === "--gate") opts.gate = true;
+  else if (a === "--remaster") opts.remaster = true;
   else if (a === "--force") opts.force = true;
   else if (a === "--n") opts.n = Math.max(1, parseInt(argv[++i], 10) || 3);
   else if (a === "--only") opts.only = (argv[++i] || "").split(",").map(s => s.trim()).filter(Boolean);
@@ -40,6 +42,7 @@ for (let i = 0; i < argv.length; i++) {
 const MODEL = "google/lyria-3-clip-preview";
 const OUT = path.join(__dirname, "..", "assets", "audio");
 const CAND = path.join(OUT, "_cand");
+const ORIG = path.join(CAND, "_orig");   // --remaster 原始备份（保真，便于回退/重归一）
 const TMP = path.join(__dirname, "..", "test");
 [OUT, CAND].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
@@ -237,6 +240,22 @@ function promote(id, k) {
   console.log(`✓ 转正 ${path.basename(src)} → ${path.basename(dst)}  [时长 ${fmt(m.dur)}s · 响度 ${fmt(m.lufs)} LUFS · 真峰 ${fmt(m.tp)} dBFS]`);
 }
 
+// ---------- 就地响度重制：现有轨归一到目标 LUFS / 不削波（治「吵闹」），从原始备份归一以保幂等 ----------
+function remaster(id) {
+  const dst = path.join(OUT, `bgm_${id}.mp3`);
+  if (!fs.existsSync(dst)) { console.log(`  ${id.padEnd(9)} —（无现有轨，跳过）`); return; }
+  if (!fs.existsSync(ORIG)) fs.mkdirSync(ORIG, { recursive: true });
+  const bak = path.join(ORIG, `bgm_${id}.mp3`);
+  if (!fs.existsSync(bak)) fs.copyFileSync(dst, bak);   // 只备一次，永远从真原归一（重跑不累积劣化）
+  const before = measure(bak);
+  const tmp = path.join(CAND, `_rm_${id}.mp3`);
+  const r = spawnSync("ffmpeg", ["-hide_banner", "-y", "-i", bak, "-af", `loudnorm=I=${opts.targetLufs}:TP=-1.0:LRA=11`, "-ar", "48000", "-b:a", "192k", tmp], { encoding: "utf8" });
+  if (r.status !== 0) { console.error(`  ${id}: ffmpeg 归一化失败\n` + (r.stderr || "").slice(-400)); return; }
+  fs.copyFileSync(tmp, dst); try { fs.unlinkSync(tmp); } catch (e) {}
+  const after = measure(dst);
+  console.log(`  ${id.padEnd(9)} 响度 ${fmt(before.lufs).padStart(6)}→${fmt(after.lufs).padStart(6)} LUFS · 真峰 ${fmt(before.tp).padStart(5)}→${fmt(after.tp).padStart(5)} dBFS · 时长 ${fmt(after.dur)}s`);
+}
+
 // ---------- 主流程 ----------
 const ids = (opts.only && opts.only.length ? opts.only : Object.keys(TRACKS)).filter(id => {
   if (!TRACKS[id]) { console.log(`跳过未知轨 ${id}`); return false; }
@@ -267,6 +286,12 @@ function runGate() {
 
 (function main() {
   if (opts.promote) { promote(opts.promote.id, opts.promote.k); return; }
+  if (opts.remaster) {
+    console.log(`就地响度重制 → ${opts.targetLufs} LUFS / 真峰 -1dBFS（原始备份到 _cand/_orig/）：`);
+    for (const id of ids) remaster(id);
+    console.log("\n完成。如需回退：把 _cand/_orig/ 下文件拷回 assets/audio/。");
+    return;
+  }
   if (opts.gate) { runGate(); return; }
   if (!KEY) { console.error("生成需 KEY：node scripts/genmusic.js <OPENROUTER_KEY> [--only ids] [--n N] [--force]\n或仅质量门：node scripts/genmusic.js --gate"); process.exit(1); }
 
