@@ -261,8 +261,8 @@ const Main = {
       }
     } catch (e) { console.error("demo 失败", e); }
 
-    // —— 据点可操作 demo：?citydemo=1 直接进嘉元城节点图（仿演武场，免跑剧情）——
-    //    一键进城自由逛 + 底部切换条在三段剧情态间来回切，亲手看复访变迁。
+    // —— 嘉元城可操作 demo：?citydemo=1 直接进嘉元城地点屏（仿演武场，免跑剧情）——
+    //    一键进城；底部切换条在三段剧情态间来回切，亲手看复访变迁（描述/告示/风声随 flag 改写）。
     //    [&stage=warn|cured] 可直链定态；不带则从「初见·门庭冷落」起。
     try {
       const q = new URLSearchParams(location.search);
@@ -274,13 +274,14 @@ const Main = {
         s.technique = "changchun"; s.name = "韩立";
         State.give("lingshi", 20);
         s.storyStage = STORY.length;        // demo 不跑剧情
+        s.activeChapter = "huangfeng";       // 离门远行章：旅行点过滤到黄枫谷一带（非七玄门）
         s.location = "jiayuan_city";
         s.flags.arc1_complete = true; s.flags.mo_met = true;   // 抵城前置（直入据点）
         const stage = q.get("stage");
         if (stage === "warn") s.flags.mo_warned = true;
         else if (stage === "cured") { s.flags.mo_warned = true; s.flags.han_du_cured = true; }
-        this.enterGame();
-        setTimeout(() => { Engine.enterStronghold("jiayuan_city_l1"); this._cityDemoBar(stage); }, 300);
+        this.enterGame();   // s.location=jiayuan_city → 直接落在嘉元城地点屏
+        setTimeout(() => { this._cityDemoBar(stage); }, 300);
       }
     } catch (e) { console.error("citydemo 失败", e); }
 
@@ -382,7 +383,7 @@ const Main = {
   },
 
   /* -------- 嘉元城 demo 切换条（仅 ?citydemo 注入；不入正式流程）--------
-   * 三段剧情态来回切——每切一次重入城，落脚字幕＋告示/风声随 flag 改写。 */
+   * 三段剧情态来回切——每切一次重渲染地点屏，描述＋告示/风声随 flag 改写。 */
   _cityDemoBar(initStage) {
     if (document.getElementById("citydemo-bar")) return;
     const stages = [
@@ -408,12 +409,12 @@ const Main = {
         delete s.flags.mo_warned; delete s.flags.han_du_cured;   // 先清空再设，保证可来回切
         Object.assign(s.flags, st.flags);
         setActive(b);
-        Engine.enterStronghold("jiayuan_city_l1");   // 重入城＝按新 flag 重渲染＋落脚字幕
+        UI.renderAll();   // 重渲染地点屏＝描述/告示/风声随新 flag 改写
       });
       btns.push(b); bar.appendChild(b);
     });
     const tip = document.createElement("span");
-    tip.textContent = "切换后点地标走动，再看「细读告示 / 探听风声」随剧情态改写";
+    tip.textContent = "切换后看城景描述，再点「细读城门告示 / 城南探风声」随剧情态改写";
     tip.style.cssText = "color:#9a8c70;font-size:11px;flex-basis:100%;text-align:center;margin-top:2px";
     bar.appendChild(tip);
     document.body.appendChild(bar);
