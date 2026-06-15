@@ -272,8 +272,8 @@
    * fair 集市筝铃 / combat 战鼓急弦 / boss 太鼓号角 / tense 阴冷悬疑 /
    * sorrow 二胡离殇 / triumph 钟磬凯旋（单次不循环）。
    * 文件缺失/加载失败 → 回退合成轨（FALLBACK 映射）。 */
-  const BGM_FILES = ["daily", "town", "journey", "fair", "combat", "boss", "tense", "sorrow", "triumph"];
-  const FALLBACK = { town: "daily", journey: "daily", fair: "daily", boss: "combat", sorrow: "tense", triumph: null };
+  const BGM_FILES = ["daily", "town", "journey", "fair", "combat", "combat_wild", "combat_secret", "boss", "tense", "sorrow", "triumph"];
+  const FALLBACK = { town: "daily", journey: "daily", fair: "daily", combat_wild: "combat", combat_secret: "combat", boss: "combat", sorrow: "tense", triumph: null };
   let curTrack = null;
 
   // 渐变某 <audio> 的音量到目标值（切轨 crossfade 用）：定步进，结束回调收尾

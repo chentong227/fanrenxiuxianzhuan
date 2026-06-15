@@ -209,6 +209,24 @@ const UI = {
     return "daily";   // 药庐/洞府/演武厅/后山等
   },
 
+  // 战斗 → BGM 轨：危险/紧张度分级 × 场景调色。越级(≥2层)/妖王/决战 → boss 压迫轨；
+  // 心魔 → tense 阴冷；其余「普通斗法」按场景换轨（与该场景环境乐配套，不同地方打架听感不同——不腻）。
+  _combatBgm(meta, combat) {
+    const myLayer = (State.realm() || {}).layer || 1;
+    const overTier = combat.enemies.some(e => e.alive && (e.qiLayer || 0) - myLayer >= 2);
+    if (meta.type === "showdown" || meta.type === "jinguang" || meta.namedBeast || overTier) return "boss";
+    if (meta.type === "breakthrough") return "tense";
+    const s = State.data;
+    // 秘境/险境（探索非和平区）：诡谲凶险
+    if (s && s.exmap && typeof ExploreMap !== "undefined") {
+      try { if (!ExploreMap.mapOf(ExploreMap.cur(s.exmap)).peaceful) return "combat_secret"; } catch (e) {}
+    }
+    const loc = State.location();
+    if (loc && loc.id === "miju") return "combat_secret";
+    if (s && s.journey) return "combat_wild";   // 路上/云游遭遇：野外
+    return "combat";   // 演武/据点/默认
+  },
+
   renderLocation() {
     const loc = State.location();
     if (!loc) return;
@@ -2819,15 +2837,9 @@ const UI = {
     this._combatLogLen = combat.log.length;
     if (typeof Sfx !== "undefined") {
       Sfx.play("danger");
-      // BGM 换轨：激昂只留给配得上的仗——决战/妖王/越级=boss 压迫轨；
-      // 心魔=阴冷轨；寻常斗法=低强度对峙轨（用户裁决：日常战斗不轰轰烈烈）
-      if (Sfx.bgm) {
-        const myLayer = (State.realm() || {}).layer || 1;
-        const overTier = combat.enemies.some(e => e.alive && (e.qiLayer || 0) - myLayer >= 2);
-        const bossFight = meta.type === "showdown" || meta.type === "jinguang"
-          || meta.namedBeast || overTier;
-        Sfx.bgm(bossFight ? "boss" : meta.type === "breakthrough" ? "tense" : "combat");
-      }
+      // BGM 换轨：危险/紧张度分级 × 场景调色（详见 _combatBgm）——
+      // 决战/妖王/越级=boss 压迫轨；心魔=tense；普通斗法按场景换轨（秘境/野外/默认）
+      if (Sfx.bgm) Sfx.bgm(this._combatBgm(meta, combat));
     }
     // 冷启动预热（v106）：建好特效画布并上传辉光纹理 + 预解码本局战斗立绘——
     // 把"第一次施法"才触发的 GPU 纹理上传/立绘解码提前到开战瞬间，根治开局卡顿。
