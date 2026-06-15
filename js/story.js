@@ -1043,11 +1043,12 @@ const STORY = [
       State.setFlag("qingyuan_given");
       DATA.techniques.qingyuan_sword.locked = false;
       if (typeof Loadout !== "undefined") {
-        Loadout.learnTechnique(s, "qingyuan_sword");
+        // 李化元赠九层版：筑基初即第三层（剑芒即出）；五层剑盾、七层剑影分光须日后闭关参研逐层精进。
+        Loadout.learnTechnique(s, "qingyuan_sword", { layer: 3 });
         Loadout.setMain(s, "qingyuan_sword");
-        ["qingyuan_jianmang", "qingyuan_jiandun"].forEach(id => Loadout.equipSkill(s, id));
+        Loadout.equipSkill(s, "qingyuan_jianmang");   // 三层·剑芒（剑盾/剑影分光未达层，暂入不了技能池）
       }
-      Engine.addMilestone("主修换代：《青元剑诀》", "bigitem");
+      Engine.addMilestone("主修换代：《青元剑诀》（三层·剑芒）", "bigitem");
       Engine.settleLedger("zhuji_dan_grudge", "入谷那日被夺走的东西，你用二十颗丹与一个境界，彻底讨了回来");
     },
     choices: [

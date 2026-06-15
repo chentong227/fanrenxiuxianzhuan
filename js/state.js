@@ -45,6 +45,7 @@ const State = {
       technique: DATA.startingTechnique, // 主修功法（本篇恒为长春功）
       auxTechniques: [],      // 辅修功法
       learnedTechniques: [DATA.startingTechnique], // 已习得功法
+      techLayers: { [DATA.startingTechnique]: 1 }, // 功法层数轴（§5.3）：主修起始入门层（与 Loadout.migrate 兜底一致）
       knownSkills: ["tuna", "huti", "ningshen", "zhayan", "weidu"], // 已掌握技能池
       activeChapter: "qixuan",   // 当前篇章
       unlockedChapters: ["qixuan"], // 已解锁篇章
@@ -202,6 +203,31 @@ const State = {
 
   // ---- 便捷访问 ----
   realm() { return DATA.realms[this.data.realmIndex]; },
+
+  // 主修功法层进度信息（technique-tiers §5.3）。无层数轴功法返回 null。
+  mainTechLayerInfo(s) {
+    s = s || this.data;
+    const def = DATA.techniques[s.technique];
+    if (!def || !def.maxLayers) return null;
+    const layer = (typeof Loadout !== "undefined")
+      ? Loadout.techLayer(s, s.technique)
+      : ((s.techLayers && s.techLayers[s.technique]) || 1);
+    return { name: def.name, layer, max: def.maxLayers };
+  },
+  // 大境界内部 初入↔中坚↔巅峰（由主修功法层进度派生，不污染 DATA.realms）。
+  // 练气期用本身离散层数（练气N层），不派生 → null。
+  realmStage(s) {
+    s = s || this.data;
+    const realm = DATA.realms[s.realmIndex];
+    if (!realm || realm.tier === "qi") return null;
+    const info = this.mainTechLayerInfo(s);
+    if (!info || !info.max || info.max <= 1) return null;
+    const t = Math.max(0, Math.min(1, (info.layer - 1) / (info.max - 1)));
+    if (t < 0.34) return { key: "early", name: "初入" };
+    if (t < 0.67) return { key: "mid", name: "中坚" };
+    return { key: "peak", name: "巅峰" };
+  },
+
   root() { return DATA.spiritRoots.find(r => r.id === this.data.rootId); },
   location() { return WORLD.locations.find(l => l.id === this.data.location); },
   absMonth() { return this.data.year * 12 + this.data.month; },

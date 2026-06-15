@@ -89,6 +89,8 @@
                 desc: "青元剑诀三层之技：灵力凝成三尺青芒，隔空斩落。玄阶功法的锋锐，远非黄阶小术可比。" },
     qingyuan_jiandun: { name: "青元剑盾", mp: 12, range: [0, 0], type: "def", shield: 24, school: "mu", source: "art",
                 desc: "青元剑诀五层之技：剑芒环身结盾，密不透风。比长春护体坚实得多——筑基修士的防御底气。" },
+    qingyuan_jianying: { name: "剑影分光", mp: 20, range: [1, 3], type: "atk", dmg: 16, fixedSegs: 3, cd: 2, minLayer: 7, school: "mu", source: "art", elem: "mu",
+                desc: "青元剑诀七层之技·形态A分影多段：青芒一分为三、各自扑敌，每道分影独立结算克制与破甲。修为愈深、法宝相佐，分影愈众（更高层与绿煌剑解锁分光扫敌）。催动后须回气两回合。" },
 
     /* —— 法器战斗技（装备授予，gear grantSpells）——
      * source:"treasure"（御物）：威力随境界成长最陡（威力=注入灵力）；贴身-30%。 */
@@ -199,6 +201,8 @@
       this.grade = cfg.grade || 1;
       this.auxSkills = cfg.auxSkills || [];
       this.realmTier = cfg.realmTier || 0;
+      this.layerMul = cfg.layerMul != null ? cfg.layerMul : 1;   // 主修功法层进度乘子（technique-tiers §5.4）
+      this.techSpells = cfg.techSpells || [];                    // 吃 layerMul 的主修招式 id（仅主修当前层所授）
       this.exposed = false;          // 破绽（凝息/蓄势中受击+30%）
       this.floats = [];              // 悬浮中的法宝（驭物特例——绕身自动运转）
       // 特色资源（v96 用户裁决"一定要有取舍/耗尽"）：神雷/煞气/符力……
@@ -1163,6 +1167,8 @@
       const adv = (caster === this.player) ? this.senseVs(target) : { hitBonus: 0, critBonus: 0 };
       const tref = (caster === this.player && target) ? `enemy:${this.enemies.indexOf(target)}` : "player";
       const auxMul = (spellId && caster.auxSkills && caster.auxSkills.includes(spellId)) ? Balance.auxiliaryMul() : 1;
+      // 功法层进度乘子：仅作用于"主修当前层所授"的功法法术（techSpells），武学/法器/辅修不吃（technique-tiers §5.4）
+      const lm = (sp.source === "art" && spellId && caster.techSpells && caster.techSpells.includes(spellId)) ? (caster.layerMul || 1) : 1;
 
       if (sp.type === "atk" && target) {
         let dodge = (target.dodgeBuff || 0) + (target.agility || 0) / 100;
@@ -1176,7 +1182,7 @@
         const segs = sp.multiSeg ? 1 + Math.floor(spentMomentum / (sp.segPer || 2)) : (sp.fixedSegs || 1);
         let baseDmg = sp.dmg;
         if (sp.spendMomentum && !sp.multiSeg) { baseDmg += spentMomentum * (sp.momentumDmg || 0); }
-        baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier);
+        baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier, lm);
         baseDmg = Math.max(1, Math.round(baseDmg * auxMul * (caster.dmgBonus || 1)));
         // 贴身惩罚：御物/法术类远程攻击在距离1施展不开（-30%）——武学的主场
         let closeSqueeze = false;
@@ -1349,12 +1355,12 @@
         }
       } else if (sp.type === "heal") {
         const boost = ((caster.technique === "changchun" || caster.technique === "changchun_full") && sp.school === "mu") ? 1.4 : 1;
-        const heal = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.heal * boost), sp.source, caster.grade, caster.realmTier) * auxMul));
+        const heal = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.heal * boost), sp.source, caster.grade, caster.realmTier, lm) * auxMul));
         caster.hp = clampNum(caster.hp + heal, 0, caster.hpMax);
         this._log(`${caster.name} 施「${sp.name}」，回气血 ${heal}（${Math.round(caster.hp)}/${caster.hpMax}）`);
       } else if (sp.type === "def") {
         const boost = ((caster.technique === "changchun" || caster.technique === "changchun_full") && sp.school === "mu") ? 1.4 : 1;
-        const shield = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.shield * boost), sp.source, caster.grade, caster.realmTier) * auxMul));
+        const shield = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.shield * boost), sp.source, caster.grade, caster.realmTier, lm) * auxMul));
         const cap = caster._shieldCap || 0;
         if (cap > 0 && caster.shield >= cap) {
           this._log(`${caster.name} 周身护体已至极限，再难叠加（护体${caster.shield}）。`);

@@ -128,10 +128,19 @@
       if (source === "treasure") return 1 + (realmTier || 0) * 0.5;
       return 1 + (realmTier || 0) * 0.35;
     },
-    spellPower(base, source, grade, realmTier) {
+    // 功法层数轴：同一门功法逐层精进的"温和"乘子（入门 1.0 → 满层 1.3）。
+    // 平缓单调，保证同境界同品阶巅峰>初入，但峰值刻意低于"高一大境界"的跨度（realmScale 一档≥0.35），不喧宾夺主。
+    layerMul(layer, maxLayers) {
+      if (!maxLayers || maxLayers <= 1) return 1;
+      const t = clamp(((layer || 1) - 1) / (maxLayers - 1), 0, 1);
+      return 1 + 0.3 * t;
+    },
+    spellPower(base, source, grade, realmTier, layerMul) {
       let mul = this.sourceMul(source) * this.realmScale(source, realmTier);
       // 品阶加成只作用于功法法术；法器威力看的是法器本身与注入法力，不吃功法品阶
       if (source !== "martial" && source !== "treasure") mul *= this.gradeMul(grade);
+      // 功法层进度乘子（仅功法法术；武学/法器不吃）；默认 1 不影响既有四参调用
+      if (layerMul && layerMul !== 1 && source !== "martial" && source !== "treasure") mul *= layerMul;
       return Math.max(1, Math.round(base * mul));
     },
   };

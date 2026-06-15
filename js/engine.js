@@ -2432,6 +2432,56 @@ const Engine = {
     UI.renderAll();
   },
 
+  // —— 功法升层（technique-tiers §5.2）：闭关肝条，成本＝时间(月)＋修为消耗，门槛＝须筑基方可推进剑系高层 ——
+  // 返回 { ok, reason?, techId, name, cur, next, max, months, cultCost }
+  canRefineLayer(techId) {
+    const s = State.data;
+    if (typeof Loadout === "undefined") return { ok: false, reason: "尚不可参研功法层" };
+    techId = techId || s.technique;
+    const def = DATA.techniques[techId];
+    if (!def) return { ok: false, reason: "无此功法" };
+    if (!Loadout.isLearned(s, techId)) return { ok: false, reason: "尚未习得此功法" };
+    if (!def.maxLayers || def.maxLayers <= 1) return { ok: false, reason: "此功法无层数可进" };
+    const cur = Loadout.techLayer(s, techId);
+    const max = Loadout.maxLayer(techId);
+    if (cur >= max) return { ok: false, reason: `${def.name}已至此版顶层（${max}层）` };
+    const next = cur + 1;
+    const realmTier = (typeof Chapters !== "undefined") ? Chapters.realmTier() : 0;
+    // 境界门槛：剑系高层须筑基之后方可精进（剑芒三层即筑基初，再上须真元渐厚）
+    if (realmTier < 1) return { ok: false, reason: "修为尚浅，须筑基之后方能参研更高层" };
+    const months = 3 + next;                                   // 第4层7月 … 第9层12月，逐层递增
+    const cultCost = Math.round(next * 200 * (1 + realmTier * 0.5));
+    return { ok: true, techId, name: def.name, cur, next, max, months, cultCost };
+  },
+  refineLayer(techId) {
+    const s = State.data;
+    if (s.combat || s.pendingEvent) { this.toast("此刻分身乏术，难以静心参研", true); return; }
+    const c = this.canRefineLayer(techId);
+    if (!c.ok) { this.toast(c.reason, true); return; }
+    if ((s.cultivation || 0) < c.cultCost) { this.toast(`修为积淀不足（需 ${c.cultCost}），尚不足以推进下一层`, true); return; }
+    this.passTime(c.months);
+    s.cultivation = Math.max(0, (s.cultivation || 0) - c.cultCost);
+    s.spirit = clamp(s.spirit - 15, 0, State.realm().spMax);
+    const r = Loadout.raiseLayer(s, c.techId);
+    if (!r.ok) { this.toast(r.reason, true); State.save(); UI.renderAll(); return; }
+    const newNames = (r.newSkills || []).map(id => (CombatAPI.SPELLS[id] || {}).name || id).filter(Boolean);
+    if (newNames.length) {
+      this.log(`【功法精进】${c.months}月闭关参研，《${c.name}》臻至第 ${r.layer} 层——新得战技：${newNames.join("、")}！可在「功法／技能」中装备。`, "good");
+      this.addMilestone(`《${c.name}》进至第${r.layer}层，得「${newNames.join("、")}」`, "bigitem");
+      if (typeof Sfx !== "undefined") Sfx.play("bell");
+    } else {
+      this.log(`【功法精进】${c.months}月闭关参研，《${c.name}》臻至第 ${r.layer} 层，根基更厚（同系法术威力随层渐涨）。`, "good");
+      this.addMilestone(`《${c.name}》进至第${r.layer}层`, "minor");
+    }
+    this.checkLifespan(); State.save(); UI.renderAll();
+  },
+  // 当前可升层的主修功法（供 UI「参研功法层」入口判断）
+  refinableMain() {
+    const s = State.data;
+    const c = this.canRefineLayer(s.technique);
+    return c.ok ? c : null;
+  },
+
   // 当前可研习的功法（持有典籍、未习得、未锁）
   studyableTechniques() {
     const s = State.data;
@@ -2883,6 +2933,12 @@ const Engine = {
       technique: s.technique,     // 主修功法（影响同系招式）
       grade: (DATA.techniques[s.technique] || {}).grade || 1,  // 主修功法品阶
       realmTier: Chapters.realmTier(),   // 本章大境界序（影响法术成长）
+      // 功法层数轴（technique-tiers §5.4）：主修当前层的温和增益，只作用于主修当前层所授招式
+      layerMul: (() => {
+        const info = State.mainTechLayerInfo(s);
+        return info ? Balance.layerMul(info.layer, info.max) : 1;
+      })(),
+      techSpells: (typeof Loadout !== "undefined") ? Loadout.mainScaledSpells(s) : [],
       momentumCap: s.swordMastery ? 7 : 5,   // 眨眼剑法大成：剑势上限+2
       swordMastery: !!s.swordMastery,        // 大成：眨眼剑法本体蜕变（攒势翻倍）
       // 回灵效率（v96 伴身件管线）：不破"池制不自动回灵"铁律——只加成主动回灵动作

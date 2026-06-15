@@ -67,5 +67,27 @@ for (const g of [1, 2, 3]) {
 assert(rates[1] < rates[2] && rates[2] <= rates[3] + 0.0001, "品阶越高胜率越高（地≥玄>黄）");
 delete SPELLS._gptest;
 
+// 功法层数轴（technique-tiers §5.4）：同境界同品阶，巅峰>初入，但温和、不盖品阶/境界差
+console.log("\n=== 功法层进度乘子（layerMul）梯度 ===");
+{
+  const base = 20;
+  const early = Balance.layerMul(3, 9);   // 青元剑诀初授层（剑芒，初入）
+  const peak = Balance.layerMul(9, 9);    // 九层版顶层（巅峰）
+  assert(Balance.layerMul(1, 9) === 1, "入门层（第1层）无层增益（layerMul=1）");
+  assert(peak > early, `巅峰层乘子>初入层（${peak.toFixed(3)}>${early.toFixed(3)}）`);
+  assert(peak <= 1.3 + 1e-9, `层乘子温和封顶（峰值${peak.toFixed(3)}≤1.30）`);
+  const sEarly = Balance.spellPower(base, "art", 3, 0, early);
+  const sPeak = Balance.spellPower(base, "art", 3, 0, peak);
+  assert(sPeak > sEarly, `同境界同品阶：巅峰输出>初入（${sPeak}>${sEarly}）`);
+  // 不喧宾夺主：满层进度（1→巅峰）的增幅 < 升一个大境界的增幅
+  const samRealmPeak = Balance.spellPower(base, "art", 3, 0, peak);
+  const upRealmFlat = Balance.spellPower(base, "art", 3, 1, 1);
+  assert(samRealmPeak < upRealmFlat, `层满进度不盖境界（本境巅峰${samRealmPeak} < 升一境初入${upRealmFlat}）`);
+  // 武学不吃 layerMul
+  const mFlat = Balance.spellPower(base, "martial", 1, 0, 1);
+  const mPeak = Balance.spellPower(base, "martial", 1, 0, peak);
+  assert(mFlat === mPeak, `武学不吃层乘子（${mFlat}==${mPeak}）`);
+}
+
 console.log(`\n========== 品阶平衡：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);
 process.exit(failures === 0 ? 0 : 1);

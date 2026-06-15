@@ -165,6 +165,20 @@ const UI = {
         <span class="obj-hint">${full ? "圆满！回药庐闭关「悟剑」" : "切磋、实战出剑可磨剑意"}</span>
       </div>`;
     }
+    // 主修功法层进度：明牌"还能升几层"——肝条范式（嗑瓜子轴），可去闭关「参研功法层」逐层精进
+    const tli = sd ? State.mainTechLayerInfo(sd) : null;
+    if (tli && tli.max > 1) {
+      const stage = State.realmStage(sd);
+      const can = (typeof Engine !== "undefined") ? Engine.canRefineLayer(sd.technique) : { ok: false };
+      const atTop = tli.layer >= tli.max;
+      const hint = atTop ? "已臻此版顶层" : (can.ok ? `可回洞府闭关「参研功法层」精进（约${can.months}月）` : (can.reason || "尚不可精进"));
+      luck += `<div class="obj-task">
+        <span class="obj-key" style="background:#2fae9b;color:#0c1a16">功法</span>
+        <b>${tli.name}${stage ? ` · ${stage.name}` : ""}</b>
+        <span class="obj-prog">${tli.layer}/${tli.max} 层</span>
+        <span class="obj-hint">${hint}</span>
+      </div>`;
+    }
     // 涟漪窗口：限时机会（错过即逝——世界不等人）
     if (sd && sd.rippleWindow) {
       const rw = sd.rippleWindow;
@@ -709,11 +723,13 @@ const UI = {
     const root = State.root();
     this.el("st-root").textContent = root.name;
     this.el("st-root").style.color = root.color;
-    // 藏拙：真实境界 +（示人境界）
+    // 藏拙：真实境界 +（示人境界）；大境界内显示 初入/中坚/巅峰（由主修功法层派生）
     const hid = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
+    const stage = State.realmStage(s);
+    const stageTxt = stage ? `·${stage.name}` : "";
     this.el("st-realm").textContent = hid > 0
-      ? `${realm.name}（示人：${DATA.realms[s.revealedRealm].name}）`
-      : realm.name;
+      ? `${realm.name}${stageTxt}（示人：${DATA.realms[s.revealedRealm].name}）`
+      : `${realm.name}${stageTxt}`;
     this.el("st-sense").textContent = s.sense;
     this.el("st-speed").textContent = s.speed;
     this.el("st-insight").textContent = s.insight;
@@ -1567,6 +1583,18 @@ const UI = {
         }).join("")}
       </div>` : "";
 
+    // 参研功法层（升层肝条）：主修功法可推进下一层时显示——逐层解锁新战技（technique-tiers §5.2）
+    const ref = Engine.refinableMain ? Engine.refinableMain() : null;
+    const refineHtml = ref ? `
+      <h3 class="panel-title" style="margin-top:10px">参研功法层</h3>
+      <div class="study-list">
+        <div class="study-item">
+          <div><div class="si-name">${ref.name} · 第 ${ref.cur} → ${ref.next} 层 <span style="color:var(--gold);font-size:11px">上限 ${ref.max} 层</span></div>
+          <div class="si-meta">闭关参研、将功法推进一层；达标层数解锁新战技，同系法术威力随层渐涨。耗修为 ${ref.cultCost}。</div></div>
+          <button class="btn btn-mini" onclick="UI.closeModal(); Engine.refineLayer('${ref.techId}');">参研（${ref.months}月）</button>
+        </div>
+      </div>` : "";
+
     this.openModal(`
       <h2>闭关修炼</h2>
       ${this._statusStrip()}
@@ -1577,6 +1605,7 @@ const UI = {
         ${optHtml}
         <button class="btn btn-ghost" onclick="UI.closeModal()">再想想</button>
       </div>
+      ${refineHtml}
       ${studyHtml}
     `);
   },

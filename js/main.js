@@ -152,7 +152,7 @@ const Main = {
             Fx._budget = 4000;   // 验收台放开预算
             const ids = (q.get("fxset") === "jinlei")
               ? ["shenlei_pi", "shenlei_fujian", "leidun", "leidun_out", "GOLDLIGHTNING", "GOLDLIGHTNING"]
-              : ["qingyuan_jianmang", "huoshe_fu", "hanbing_fu", "jinguang_zhuan", "dingshen_fu", "feizhen", "zhayan_lian", "tuna", "LIGHTNING"];
+              : ["qingyuan_jianmang", "qingyuan_jianying", "hanbing_fu", "jinguang_zhuan", "dingshen_fu", "feizhen", "zhayan_lian", "tuna", "LIGHTNING"];
             ids.forEach((id, i) => {
               const cx = (i % 3) * 0.33, cy = Math.floor(i / 3) * 0.3;
               const from = { x: r.width * (cx + 0.04), y: r.height * (cy + 0.24) };
@@ -171,7 +171,7 @@ const Main = {
             const from = { x: r.width * 0.22, y: r.height * 0.62 };
             const to = { x: r.width * 0.74, y: r.height * 0.6 };
             const seq = fxq === "all"
-              ? ["qingyuan_jianmang", "huoshe_fu", "hanbing_fu", "jinguang_zhuan", "dingshen_fu", "feizhen", "zhayan_lian", "tuna", "LIGHTNING"]
+              ? ["qingyuan_jianmang", "qingyuan_jianying", "hanbing_fu", "jinguang_zhuan", "dingshen_fu", "feizhen", "zhayan_lian", "tuna", "LIGHTNING"]
               : [fxq];
             seq.forEach((id, i) => setTimeout(() => {
               if (id === "LIGHTNING") Fx.lightning(to.x, to.y, { life: 900 });

@@ -504,6 +504,22 @@
           F._run();
         });
       },
+      /* 青元剑诀·剑影分光（七层）：一道青芒分作三影，错落扑敌，每影各自迸碎（动漫：分光化影） */
+      qingyuan_jianying(F, from, to) {
+        if (!to) return;
+        const offs = [-22, 0, 22];
+        offs.forEach((dy, i) => {
+          setTimeout(() => {
+            F._blade({ x: from.x, y: from.y + dy }, { x: to.x, y: to.y + dy * 0.4 }, "#bff3e8", "#2fae9b");
+            for (let k = 0; k < 6 * F._degraded; k++) {
+              const a = rnd(-1.2, 1.2);
+              F.shard(to.x, to.y + dy * 0.4, { vx: Math.cos(a) * rnd(2, 5), vy: Math.sin(a) * rnd(2, 5) - 2, c: k % 2 ? "#bff3e8" : "#fff", size: rnd(2, 4.5) });
+            }
+            if (i === offs.length - 1) F.flash("#bdf2e6", 110, .26);
+          }, i * 130);
+        });
+        F._run();
+      },
       /* ============================================================
        * 辟邪神雷三连（v98 用户点名"做最好看的金色雷"）——金芯白炽，雷者天威
        * 金色雷：辟邪神雷克鬼魅邪魔（青竹蜂云剑·七十二雷）

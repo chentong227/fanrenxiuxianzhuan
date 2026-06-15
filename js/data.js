@@ -278,7 +278,14 @@ DATA.techniques = {
   },
   qingyuan_sword: {
     name: "青元剑诀", arc: "huangfeng", attr: "mu", locked: true, grade: 3,
-    grantSpells: ["tuna", "huti", "ningshen", "qingyuan_jianmang", "qingyuan_jiandun"],
+    // 入门即授的基础内功（吐纳/护体/凝神）；剑系战技按"功法层数轴"逐层解锁（layerUnlocks）。
+    grantSpells: ["tuna", "huti", "ningshen"],
+    maxLayers: 9,                                  // 黄枫谷流传的九层版（完整十三层另藏于金色书页，后期）
+    layerUnlocks: {
+      3: ["qingyuan_jianmang"],                    // 三层·青元剑芒（筑基初即可发）
+      5: ["qingyuan_jiandun"],                     // 五层·护体剑盾
+      7: ["qingyuan_jianying"],                    // 七层·剑影分光（分影多段）
+    },
     desc: "青元子所创的木属性剑修功法。黄枫谷流传的只有九层（弟子多止步三层作辅修），韩立筑基后以此为主修——三层可发青元剑芒，五层护体剑盾，七层剑影分光。传闻完整剑诀共十三层，可修至化神。",
     origin: "黄枫谷篇：筑基后李化元所赠；金色书页中藏着完整十三层法诀与青竹蜂云剑炼制之法。",
     acquireArc: "黄枫谷篇（筑基之后）",
