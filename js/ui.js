@@ -2265,13 +2265,16 @@ const UI = {
     if (!L) return this.openContinent();
     const s = State.data;
     const pathSet = this._atlasPathSet();
-    // 区块：占位多边形（缺 poly 时据 pos 生成六边形）+ 解锁三态 + 势力标签
+    // 相邻大域切片（v144）：共享边界的顶点集——交界处/边框点钉死(锐角对齐)，其余海岸柔化成曲线，
+    // 保证相邻块严丝合缝、无重叠无空隙地拼满全图。
+    const pinSet = this._atlasPinSet(L);
+    // 区块：沿真实轮廓描的多边形 + 解锁三态 + 势力标签
     const blocks = L.nodes.map(n => {
       const st = this._atlasNodeState(n, s, pathSet);
       const drill = (st !== "locked" && n.to) ? `UI._atlasGoto('${n.to}')` : "";
       const fac = n.faction ? ` faction-${n.faction}` : "";
-      return `<polygon class="region-block ${st}${fac}" points="${this._atlasPoly(n)}"
-        onclick="UI._atlasPick('${levelId}','${n.id}')" ondblclick="${drill}"></polygon>`;
+      return `<path class="region-block ${st}${fac}" d="${this._atlasPath(n, pinSet)}"
+        onclick="UI._atlasPick('${levelId}','${n.id}')" ondblclick="${drill}"></path>`;
     }).join("");
     const labels = L.nodes.map(n => {
       const st = this._atlasNodeState(n, s, pathSet);
@@ -2283,11 +2286,12 @@ const UI = {
     const cur = L.nodes.find(n => this._atlasNodeState(n, s, pathSet) === "here") || L.nodes[0];
     const curSt = this._atlasNodeState(cur, s, pathSet);
     const curTag = curSt === "here" ? " ·在此" : "";
+    const mapUrl = (typeof Art !== "undefined" && L.map) ? Art.url(L.map) : null;
     this.openModal(`
       ${this._atlasCrumbs(levelId)}
       <h2 class="atlas-title">${L.name}</h2>
       <p style="color:var(--ink-dim);font-size:12px">${L.blurb}</p>
-      <div class="worldmap continent atlas-${L.kind}">
+      <div class="worldmap continent atlas-${L.kind}${mapUrl ? ' atlas-painted' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
         <svg class="region-blocks" viewBox="0 0 100 100" preserveAspectRatio="none">${blocks}</svg>
@@ -2314,13 +2318,88 @@ const UI = {
       return `<div class="cont-gate">${n.silhouette ? "远观之地——尚不可至" : "道途未通——暂不可往"}，且记在心头。</div>`;
     return "";
   },
-  /* 占位多边形：有 poly 用 poly，否则据 pos 生成六边形（v143 骨架，v144 描准）。SVG points，0-100 同 viewBox。 */
-  _atlasPoly(n) {
-    if (n.poly) return n.poly;
-    const cx = n.pos.x, cy = n.pos.y, rx = 11, ry = 13;
-    return [[cx, cy - ry], [cx + rx, cy - ry * 0.5], [cx + rx, cy + ry * 0.5],
-            [cx, cy + ry], [cx - rx, cy + ry * 0.5], [cx - rx, cy - ry * 0.5]]
-      .map(p => `${(+p[0]).toFixed(1)},${(+p[1]).toFixed(1)}`).join(" ");
+  /* 区块轮廓（v144）：把节点画成「云水间的一块陆域」——据 id 生成确定性有机岛形，平滑成曲线海岸线，
+     去掉 v143 等大六边形的叠压感。有 n.poly（显式描的点串）则用之，否则自动生成。SVG 坐标 0-100 同 viewBox。 */
+  _atlasPath(n, pinSet) {
+    if (n.poly) {
+      return n.poly.trim().split(/\s*;\s*/).map(ring => {
+        const tok = ring.trim().split(/\s+/);
+        const pts = tok.map(p => p.split(",").map(Number));
+        return pinSet
+          ? this._smoothPinnedPath(pts, tok.map(p => pinSet.has(p)))
+          : this._smoothClosedPath(pts);
+      }).join("");
+    }
+    return this._smoothClosedPath(this._atlasIslandPoints(n));
+  },
+  /* 相邻大域切片的「钉点」集：被 ≥3 块共用的交界点、或落在图框边上的点——这些必须钉死成锐角，
+     才能让相邻块在交界处精确对齐；其余（仅两块共用的）海岸点柔化。返回 "x,y" 字符串集合。 */
+  _atlasPinSet(L) {
+    const cnt = new Map();
+    for (const n of L.nodes) {
+      if (!n.poly) continue;
+      n.poly.trim().split(/\s*;\s*/).forEach(ring =>
+        new Set(ring.trim().split(/\s+/)).forEach(p => cnt.set(p, (cnt.get(p) || 0) + 1))
+      );
+    }
+    const pin = new Set();
+    for (const [p, c] of cnt) {
+      const xy = p.split(",").map(Number);
+      if (c >= 3 || xy[0] === 0 || xy[0] === 100 || xy[1] === 0 || xy[1] === 100) pin.add(p);
+    }
+    return pin;
+  },
+  /* 共享边界平滑：过各边中点的二次贝塞尔。钉点处走直线穿过顶点(锐角)，其余顶点圆弧柔化。
+     所有几何只由「边中点 + 顶点」决定——相邻块共用同一条边时两侧算出的曲线逐字节相同，故无缝。 */
+  _smoothPinnedPath(pts, pinned) {
+    const n = pts.length;
+    if (n < 2) return this._smoothClosedPath(pts);
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const f = v => v.toFixed(2);
+    const start = mid(pts[n - 1], pts[0]);
+    let d = `M${f(start[0])},${f(start[1])}`;
+    for (let i = 0; i < n; i++) {
+      const cur = pts[i], next = pts[(i + 1) % n];
+      const mOut = mid(cur, next);
+      d += pinned[i]
+        ? `L${f(cur[0])},${f(cur[1])}L${f(mOut[0])},${f(mOut[1])}`
+        : `Q${f(cur[0])},${f(cur[1])} ${f(mOut[0])},${f(mOut[1])}`;
+    }
+    return d + "Z";
+  },
+  _atlasIslandPoints(n) {
+    const cx = n.pos.x, cy = n.pos.y, base = n.r || 5.8;
+    const rng = this._rng(n.id), N = 11, pts = [];
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      const j = 0.76 + rng() * 0.42;            // 0.76~1.18 起伏，海岸自然
+      pts.push([cx + Math.cos(a) * base * 1.12 * j, cy + Math.sin(a) * base * j]);
+    }
+    return pts;
+  },
+  // 闭合 Catmull-Rom → 三次贝塞尔，柔化成海岸曲线
+  _smoothClosedPath(pts) {
+    const n = pts.length;
+    let d = `M${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)}`;
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += `C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)}`;
+    }
+    return d + "Z";
+  },
+  // 确定性小随机（mulberry32，按节点 id 取种）——每次形状一致，存档/刷新不抖动
+  _rng(id) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); }
+    let a = h >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
   },
   /* 当前所在层到根的层 id 集合（用于判定区块「在此」）。 */
   _atlasPathSet() {

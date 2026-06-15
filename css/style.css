@@ -2749,15 +2749,30 @@ html, body { touch-action: manipulation; }
 .atlas-crumbs .crumb-sep { color: var(--ink-faint); font-size: 11px; }
 .atlas-title { margin: 2px 0; }
 
-/* 上层舆图（人界 / 大区）：暂无水墨底图，用墨青云水渐变 + 云雾，远方=惦记 */
+/* 上层舆图（人界 / 大区）：水墨云水底——暖光天际 + 云青海色 + 内阴影聚焦，远方=惦记 */
 .worldmap.continent.atlas-world,
 .worldmap.continent.atlas-region {
   aspect-ratio: 4 / 3;
   background:
-    radial-gradient(circle at 50% 18%, rgba(106,160,212,0.14), transparent 42%),
-    radial-gradient(circle at 22% 78%, rgba(127,227,192,0.10), transparent 44%),
-    radial-gradient(circle at 80% 70%, rgba(154,127,212,0.10), transparent 40%),
-    linear-gradient(155deg, #12202a, #0b1116);
+    radial-gradient(ellipse 64% 42% at 50% 116%, rgba(212,180,131,0.11), transparent 60%),
+    radial-gradient(circle at 50% 15%, rgba(106,160,212,0.17), transparent 46%),
+    radial-gradient(circle at 20% 76%, rgba(127,227,192,0.09), transparent 46%),
+    radial-gradient(circle at 82% 66%, rgba(154,127,212,0.10), transparent 42%),
+    linear-gradient(155deg, #0f1d27, #0a1015);
+  box-shadow: inset 0 0 70px rgba(0,0,0,0.5);
+}
+.worldmap.continent.atlas-painted {
+  aspect-ratio: 3 / 2;
+  background-size: cover; background-position: center;
+  border-color: rgba(202,176,96,.62);
+  box-shadow: inset 0 0 34px rgba(28,64,80,.24), inset 0 0 68px rgba(255,245,190,.16), 0 2px 18px rgba(0,0,0,.42);
+}
+.worldmap.continent.atlas-painted::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 36% 22% at 88% 30%, rgba(255,236,165,.18), transparent 68%),
+    radial-gradient(ellipse 40% 24% at 50% 76%, rgba(35,82,91,.16), transparent 72%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(30,80,95,.08));
 }
 .worldmap.continent.atlas-world .map-mist,
 .worldmap.continent.atlas-region .map-mist {
@@ -2786,33 +2801,51 @@ html, body { touch-action: manipulation; }
 /* —— v143 区块化舆图：占位多边形 + 解锁三态（map-redesign-design.md §3）—— */
 .worldmap .region-blocks {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  z-index: 2; pointer-events: none; overflow: visible;
+  z-index: 3; pointer-events: none; overflow: visible;
 }
 .region-block {
   pointer-events: auto; cursor: pointer;
-  vector-effect: non-scaling-stroke; stroke-width: 1.4;
-  transition: fill .5s ease, stroke .5s ease, filter .4s ease;
+  vector-effect: non-scaling-stroke; stroke-width: 1.1; stroke-linejoin: round;
+  transition: fill .5s ease, stroke .5s ease, filter .4s ease, opacity .4s ease;
 }
-/* 暗/雾：道途未通，灰雾剪影、虚线，不醒目 */
+/* 暗/雾：道途未通——远岛沉雾，淡而虚，自然隐退（去叠压感）*/
 .region-block.locked {
-  fill: rgba(120,140,155,0.05); stroke: rgba(150,170,185,0.28);
-  stroke-dasharray: 2 2;
+  fill: rgba(150,170,185,0.045); stroke: rgba(150,170,185,0.22);
+  stroke-dasharray: 1.4 2.2; opacity: .68;
 }
-.region-block.locked:hover { fill: rgba(150,170,185,0.10); stroke: rgba(170,190,205,0.45); }
-/* 亮起：已点亮·可下钻，青玉色 */
+.region-block.locked:hover { fill: rgba(160,180,195,0.10); stroke: rgba(175,195,210,0.42); opacity: .92; }
+/* 亮起：已点亮·可下钻——青玉陆域，温润透光 */
 .region-block.lit {
-  fill: rgba(127,227,192,0.10); stroke: rgba(127,227,192,0.6); stroke-dasharray: none;
+  fill: rgba(127,227,192,0.13); stroke: rgba(127,227,192,0.62); stroke-dasharray: none;
+  filter: drop-shadow(0 0 3px rgba(127,227,192,0.35));
 }
-.region-block.lit:hover { fill: rgba(127,227,192,0.20); stroke: var(--jade-bright); }
-/* 当前·在此：描金边 + 呼吸光晕 */
+.region-block.lit:hover { fill: rgba(127,227,192,0.22); stroke: var(--jade-bright); }
+/* 当前·在此：金陆，描金海岸 + 呼吸光晕 */
 .region-block.here {
-  fill: rgba(212,175,84,0.12); stroke: var(--gold); stroke-dasharray: none;
-  filter: drop-shadow(0 0 4px rgba(212,175,84,0.7));
-  animation: blockBreath 3.4s ease-in-out infinite;
+  fill: rgba(212,175,84,0.16); stroke: var(--gold); stroke-width: 1.5; stroke-dasharray: none;
+  filter: drop-shadow(0 0 5px rgba(212,175,84,0.75));
+  animation: blockBreath 3.6s ease-in-out infinite;
+}
+.worldmap.atlas-painted .region-block { stroke-width: 1.35; }
+.worldmap.atlas-painted .region-block.locked {
+  fill: rgba(22,77,108,.16); stroke: rgba(28,83,113,.52); opacity: .66;
+  stroke-dasharray: 1.2 2.2; filter: drop-shadow(0 2px 4px rgba(0,44,65,.18));
+}
+.worldmap.atlas-painted .region-block.locked:hover {
+  fill: rgba(48,160,190,.18); stroke: rgba(67,153,192,.86); opacity: .92;
+}
+.worldmap.atlas-painted .region-block.lit {
+  fill: rgba(61,215,178,.16); stroke: rgba(28,188,145,.90);
+  filter: drop-shadow(0 0 7px rgba(38,212,170,.55)) drop-shadow(0 2px 5px rgba(0,70,85,.22));
+}
+.worldmap.atlas-painted .region-block.lit:hover { fill: rgba(61,215,178,.24); stroke: #4af0c4; }
+.worldmap.atlas-painted .region-block.here {
+  fill: rgba(255,215,80,.20); stroke: #ffe79c; stroke-width: 1.75;
+  filter: drop-shadow(0 0 8px rgba(255,217,74,.92)) drop-shadow(0 4px 8px rgba(88,58,0,.32));
 }
 @keyframes blockBreath {
-  0%,100% { filter: drop-shadow(0 0 3px rgba(212,175,84,0.5)); }
-  50%     { filter: drop-shadow(0 0 7px rgba(212,175,84,0.95)); }
+  0%,100% { filter: drop-shadow(0 0 4px rgba(212,175,84,0.58)); }
+  50%     { filter: drop-shadow(0 0 12px rgba(255,219,86,1)); }
 }
 /* 题字：块中心锚点，退化系统楷体（§4；v144 接 webfont）*/
 .block-label {
@@ -2825,6 +2858,15 @@ html, body { touch-action: manipulation; }
 .block-label.locked { color: rgba(176,192,205,0.55); font-style: italic; font-size: 13px; }
 .block-label.lit    { color: var(--ink); }
 .block-label.here   { color: var(--gold-bright); font-weight: 600; }
+.worldmap.atlas-painted .block-label {
+  z-index: 5; font-size: 15px; color: rgba(31,63,78,.82);
+  text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 0 6px rgba(255,255,255,.78), 0 2px 5px rgba(18,58,75,.45);
+}
+.worldmap.atlas-painted .block-label.locked { color: rgba(31,70,90,.62); }
+.worldmap.atlas-painted .block-label.here {
+  color: #8a5f00; font-weight: 700;
+  text-shadow: 0 1px 0 rgba(255,246,205,.95), 0 0 8px rgba(255,226,96,.92), 0 2px 5px rgba(95,60,0,.5);
+}
 .block-label .here-tag { color: var(--gold); font-size: 12px; }
 /* 势力叠加层（§8）：v143 只落 faction 标签，染色待 v145 toggle(.show-factions) 启用 */
 .show-factions .region-block.faction-qipai   { stroke: #7fe3c0; }
