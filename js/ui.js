@@ -2213,6 +2213,11 @@ const UI = {
     }).join("");
     const on = !!this._factionsOn;
     const epoch = WORLD.atlas.factionEpoch(s);
+    // L3 州块（v147）：选中一州→其城·宗 pin 强调、余者退淡，详情列本州城宗
+    const prefList = C.prefectures || [];
+    const selPref = this._selPref || null;
+    const sel = prefList.find(p => p.id === selPref) || null;
+    const inPref = new Set(sel ? (sel.nodes || []) : []);
     const pins = C.nodes.map(n => {
       const here = n.id === curNode.id;
       const gateMsg = n.gate ? n.gate(s) : null;
@@ -2221,35 +2226,68 @@ const UI = {
       const facCls = fac ? ` faction-${fac}` : "";
       const ruin = WORLD.atlas.epochPick(n.ruinByEpoch, epoch) ? " ruin" : "";
       const nm = WORLD.atlas.epochPick(n.nameByEpoch, epoch) || n.name;
-      return `<div class="map-pin cont ${here ? 'here' : ''} ${cls}${facCls}${ruin}" style="left:${n.pos.x}%;top:${n.pos.y}%"
+      const prefCls = sel ? (inPref.has(n.id) ? " inpref" : " offpref") : "";
+      return `<div class="map-pin cont ${here ? 'here' : ''} ${cls}${facCls}${ruin}${prefCls}" style="left:${n.pos.x}%;top:${n.pos.y}%"
         onclick="UI._contPick('${n.id}')">
         <span class="pin-dot"></span>
         <span class="pin-label">${nm}${here ? ' ·在此' : ''}</span>
       </div>`;
     }).join("");
+    // 州界区块（凡俗政区·块状）——单独可点图层（.map-lines 不收点击）；题字楷体锚在州中心
+    const prefBlocks = prefList.map(p =>
+      `<path class="pref-block${p.id === selPref ? ' sel' : ''}" d="${this._polyToPath(p.poly)}"
+        onclick="UI._prefPick('${p.id}')"></path>`).join("");
+    const prefSvg = prefBlocks
+      ? `<svg class="pref-layer" viewBox="0 0 100 100" preserveAspectRatio="none">${prefBlocks}</svg>` : "";
+    const prefLabels = prefList.map(p => {
+      const L = p.label || { x: 50, y: 50 };
+      return `<div class="pref-label${p.id === selPref ? ' sel' : ''}" style="left:${L.x}%;top:${L.y}%"
+        onclick="UI._prefPick('${p.id}')">${p.name}</div>`;
+    }).join("");
     const mapUrl = (typeof Art !== "undefined" && C.map) ? Art.url(C.map) : null;
     const facIds = this._factionsInView(C.nodes, epoch);
     const legend = on ? this._factionLegend(facIds, epoch, "宗门级势力——七派各据，黄枫谷之外余派远观；魔道入侵后灵兽山/天阙堡叛归魔道、黄枫谷南迁留旧址。") : "";
-    const curNm = WORLD.atlas.epochPick(curNode.nameByEpoch, epoch) || curNode.name;
-    const curDesc = WORLD.atlas.epochPick(curNode.descByEpoch, epoch) || curNode.desc;
+    let detailHtml;
+    if (sel) {
+      const members = (sel.nodes || []).map(id => {
+        const nn = C.nodes.find(x => x.id === id);
+        if (!nn) return "";
+        const nm2 = WORLD.atlas.epochPick(nn.nameByEpoch, epoch) || nn.name;
+        return `<button class="pref-city" onclick="UI._contPick('${id}')">${nm2}</button>`;
+      }).join("");
+      detailHtml = `<b>${sel.name}</b>　${sel.desc}<div class="pref-cities">本州城·宗：${members || "—"}</div>`;
+    } else {
+      const curNm = WORLD.atlas.epochPick(curNode.nameByEpoch, epoch) || curNode.name;
+      const curDesc = WORLD.atlas.epochPick(curNode.descByEpoch, epoch) || curNode.desc;
+      detailHtml = `<b>${curNm}</b>　${curDesc}`;
+    }
     this._atlasReopen = () => this.openContinent();
     this.openModal(`
       ${this._atlasCrumbs("yueguo")}
       <h2 class="atlas-title">${C.name} · 十三州</h2>
-      <p style="color:var(--ink-dim);font-size:12px">看得见的远方，未必是去得了的远方——道阻且长，修为、盘缠、机缘，缺一不可。点据点查看，可启程前往。</p>
-      <div class="worldmap continent${mapUrl ? ' inked' : ''}${on ? ' show-factions' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
+      <p style="color:var(--ink-dim);font-size:12px">点州界看一州城·宗，点据点可启程——看得见的远方，未必去得了：修为、盘缠、机缘，缺一不可。</p>
+      <div class="worldmap continent${mapUrl ? ' inked' : ''}${on ? ' show-factions' : ''}${selPref ? ' pref-sel' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
+        ${prefSvg}
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
+        ${prefLabels}
         ${pins}
       </div>
       ${legend}
-      <div id="cont-detail" class="map-detail"><b>${curNm}</b>　${curDesc}</div>
+      <div id="cont-detail" class="map-detail">${detailHtml}</div>
       <div class="modal-actions">
         ${this._factionToggleBtn()}
         <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
       </div>
     `, "wide");
+  },
+  // 多边形 points("x,y x,y…") → SVG path（直线州界，闭合）
+  _polyToPath(poly) { return poly ? "M" + poly.trim().replace(/\s+/g, " L") + "Z" : ""; },
+  // 点州块：切换选中（再点取消）→ 就地重绘（高亮该州、列其城宗）
+  _prefPick(id) {
+    this._selPref = (this._selPref === id) ? null : id;
+    this.openContinent();
   },
   _contPick(nodeId) {
     const C = WORLD.continent;
@@ -2506,7 +2544,7 @@ const UI = {
     return lit ? "lit" : "locked";
   },
   // 跳到某一层（叶层胥国 = 水墨舆图；上层 = 通用渲染）
-  _atlasGoto(id) { return id === "yueguo" ? this.openContinent() : this.openAtlas(id); },
+  _atlasGoto(id) { if (id === "yueguo") { this._selPref = null; return this.openContinent(); } return this.openAtlas(id); },
   // 单层的元信息（统一处理 atlas 上层 与 胥国叶层）
   _atlasLevel(id) {
     if (id === "yueguo") {
@@ -4827,7 +4865,7 @@ const UI = {
     m.className = "modal" + (variant ? " modal-" + variant : "");
     this.el("modal-overlay").hidden = false;
   },
-  closeModal() { this.el("modal-overlay").hidden = true; },
+  closeModal() { this._selPref = null; this.el("modal-overlay").hidden = true; },
 
   toast(msg, bad = false) {
     const t = this.el("toast");
