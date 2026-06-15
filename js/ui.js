@@ -2211,29 +2211,42 @@ const UI = {
       const trod = visited.includes(a.id) && visited.includes(b.id);
       return `<line x1="${a.pos.x}" y1="${a.pos.y}" x2="${b.pos.x}" y2="${b.pos.y}" class="map-line${trod ? ' trod' : ''}"/>`;
     }).join("");
+    const on = !!this._factionsOn;
+    const epoch = WORLD.atlas.factionEpoch(s);
     const pins = C.nodes.map(n => {
       const here = n.id === curNode.id;
       const gateMsg = n.gate ? n.gate(s) : null;
       const cls = n.silhouette ? "silhouette" : gateMsg ? "gated" : "";
-      return `<div class="map-pin cont ${here ? 'here' : ''} ${cls}" style="left:${n.pos.x}%;top:${n.pos.y}%"
+      const fac = WORLD.atlas.factionAt(n, epoch);
+      const facCls = fac ? ` faction-${fac}` : "";
+      const ruin = WORLD.atlas.epochPick(n.ruinByEpoch, epoch) ? " ruin" : "";
+      const nm = WORLD.atlas.epochPick(n.nameByEpoch, epoch) || n.name;
+      return `<div class="map-pin cont ${here ? 'here' : ''} ${cls}${facCls}${ruin}" style="left:${n.pos.x}%;top:${n.pos.y}%"
         onclick="UI._contPick('${n.id}')">
         <span class="pin-dot"></span>
-        <span class="pin-label">${n.name}${here ? ' ·在此' : ''}</span>
+        <span class="pin-label">${nm}${here ? ' ·在此' : ''}</span>
       </div>`;
     }).join("");
     const mapUrl = (typeof Art !== "undefined" && C.map) ? Art.url(C.map) : null;
+    const facIds = this._factionsInView(C.nodes, epoch);
+    const legend = on ? this._factionLegend(facIds, epoch, "宗门级势力——七派各据，黄枫谷之外余派远观；魔道入侵后灵兽山/天阙堡叛归魔道、黄枫谷南迁留旧址。") : "";
+    const curNm = WORLD.atlas.epochPick(curNode.nameByEpoch, epoch) || curNode.name;
+    const curDesc = WORLD.atlas.epochPick(curNode.descByEpoch, epoch) || curNode.desc;
+    this._atlasReopen = () => this.openContinent();
     this.openModal(`
       ${this._atlasCrumbs("yueguo")}
       <h2 class="atlas-title">${C.name} · 十三州</h2>
       <p style="color:var(--ink-dim);font-size:12px">看得见的远方，未必是去得了的远方——道阻且长，修为、盘缠、机缘，缺一不可。点据点查看，可启程前往。</p>
-      <div class="worldmap continent${mapUrl ? ' inked' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
+      <div class="worldmap continent${mapUrl ? ' inked' : ''}${on ? ' show-factions' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
         ${pins}
       </div>
-      <div id="cont-detail" class="map-detail"><b>${curNode.name}</b>　${curNode.desc}</div>
+      ${legend}
+      <div id="cont-detail" class="map-detail"><b>${curNm}</b>　${curDesc}</div>
       <div class="modal-actions">
+        ${this._factionToggleBtn()}
         <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
       </div>
     `, "wide");
@@ -2243,6 +2256,9 @@ const UI = {
     const n = C.nodes.find(x => x.id === nodeId);
     if (!n) return;
     const s = State.data;
+    const epoch = WORLD.atlas.factionEpoch(s);
+    const nm = WORLD.atlas.epochPick(n.nameByEpoch, epoch) || n.name;
+    const desc = WORLD.atlas.epochPick(n.descByEpoch, epoch) || n.desc;
     const gateMsg = n.gate ? n.gate(s) : null;
     let action = "";
     if (n.silhouette) action = `<div class="cont-gate">传说之地——此生若能至，方不负修行。</div>`;
@@ -2250,12 +2266,12 @@ const UI = {
     else if ((n.locs || []).includes(s.location)) action = `<div class="cont-gate" style="color:var(--jade-bright)">你正在此地。</div>`;
     else action = `<div class="cont-gate">旅途约 ${n.months || 2} 月 · 险度${n.danger || "未知"}　
       <button class="btn btn-primary btn-mini" onclick="Engine.startJourney('${n.id}')">启程</button></div>`;
-    this.el("cont-detail").innerHTML = `<b>${n.name}</b>　${n.desc}${action}`;
+    this.el("cont-detail").innerHTML = `<b>${nm}</b>　${desc}${action}`;
   },
 
   /* ============================================================
    * 舆图（分层大地图）——常驻入口，逐级下钻/上卷：人界 ▸ 大区 ▸ 国别/联盟 ▸ 据点
-   * 上层（人界/大区）由 openAtlas 通用渲染；越国(国别)叶层 = openContinent（水墨舆图）。
+   * 上层（人界/大区）由 openAtlas 通用渲染；胥国(国别)叶层 = openContinent（水墨舆图）。
    * 不传 levelId = 从当前所在的国别层打开（先看到「我在哪」，再决定「去哪」）。
    * ============================================================ */
   openAtlas(levelId) {
@@ -2264,16 +2280,19 @@ const UI = {
     const L = WORLD.atlas && WORLD.atlas.levels[levelId];
     if (!L) return this.openContinent();
     const s = State.data;
+    const on = !!this._factionsOn;
+    const epoch = WORLD.atlas.factionEpoch(s);
     const pathSet = this._atlasPathSet();
     // 相邻大域切片（v144）：共享边界的顶点集——交界处/边框点钉死(锐角对齐)，其余海岸柔化成曲线，
     // 保证相邻块严丝合缝、无重叠无空隙地拼满全图。
     const pinSet = this._atlasPinSet(L);
-    // 区块：沿真实轮廓描的多边形 + 解锁三态 + 势力标签
+    // 区块：沿真实轮廓描的多边形 + 解锁三态 + 势力标签（按纪元投影）
     const rendered = L.nodes.map(n => {
       const st = this._atlasNodeState(n, s, pathSet);
       const d = this._atlasPath(n, pinSet);
       const drill = (st !== "locked" && n.to) ? `UI._atlasGoto('${n.to}')` : "";
-      const fac = n.faction ? ` faction-${n.faction}` : "";
+      const facId = WORLD.atlas.factionAt(n, epoch);
+      const fac = facId ? ` faction-${facId}` : "";
       return { st, d, block: `<path class="region-block ${st}${fac}" d="${d}"
         onclick="UI._atlasPick('${levelId}','${n.id}')" ondblclick="${drill}"></path>` };
     });
@@ -2296,18 +2315,24 @@ const UI = {
     const curSt = this._atlasNodeState(cur, s, pathSet);
     const curTag = curSt === "here" ? " ·在此" : "";
     const mapUrl = (typeof Art !== "undefined" && L.map) ? Art.url(L.map) : null;
+    // 图例：L1 人界用「该纪元存在的大势力」概览（不留虚影）；L2 用「视野内实际出现的势力」。
+    const facIds = L.kind === "world" ? WORLD.atlas.factionsAtEpoch(epoch) : this._factionsInView(L.nodes, epoch);
+    const legend = on ? this._factionLegend(facIds, epoch, L.factionOverview) : "";
+    this._atlasReopen = () => this.openAtlas(levelId);
     this.openModal(`
       ${this._atlasCrumbs(levelId)}
       <h2 class="atlas-title">${L.name}</h2>
       <p style="color:var(--ink-dim);font-size:12px">${L.blurb}</p>
-      <div class="worldmap continent atlas-${L.kind}${mapUrl ? ' atlas-painted' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
+      <div class="worldmap continent atlas-${L.kind}${mapUrl ? ' atlas-painted' : ''}${on ? ' show-factions' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
         <svg class="region-blocks" viewBox="0 0 100 100" preserveAspectRatio="none">${defs}${blocks}${shroud}</svg>
         ${labels}
       </div>
+      ${legend}
       <div id="cont-detail" class="map-detail"><b>${cur.name}${curTag}</b>　${cur.desc}${this._atlasNodeAction(cur, curSt)}</div>
       <div class="modal-actions">
+        ${this._factionToggleBtn()}
         <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
       </div>
     `, "wide");
@@ -2480,24 +2505,24 @@ const UI = {
     const lit = n.unlock ? !!n.unlock(s) : !!n.reach;
     return lit ? "lit" : "locked";
   },
-  // 跳到某一层（叶层越国 = 水墨舆图；上层 = 通用渲染）
+  // 跳到某一层（叶层胥国 = 水墨舆图；上层 = 通用渲染）
   _atlasGoto(id) { return id === "yueguo" ? this.openContinent() : this.openAtlas(id); },
-  // 单层的元信息（统一处理 atlas 上层 与 越国叶层）
+  // 单层的元信息（统一处理 atlas 上层 与 胥国叶层）
   _atlasLevel(id) {
     if (id === "yueguo") {
       const C = WORLD.continent;
-      return { id: "yueguo", crumb: (C && C.name) || "越国", parent: (C && C.parent) || "tiannan" };
+      return { id: "yueguo", crumb: (C && C.name) || "胥国", parent: (C && C.parent) || "tiannan" };
     }
     const L = WORLD.atlas && WORLD.atlas.levels[id];
     return L ? { id, crumb: L.crumb || L.name, parent: L.parent || null } : null;
   },
-  // 当前所在的国别层（目前只实装越国；将来按节点反查所属国）
+  // 当前所在的国别层（目前只实装胥国；将来按节点反查所属国）
   _atlasCurrentLevel() {
     const C = WORLD.continent;
     return (C && C.atlasId) || "yueguo";
   },
-  // 面包屑（支持5级：人界 ▸ 天南 ▸ 越国 ▸ 州 ▸ 城，§9）——沿 parent 链通用回溯到根，除当前层外皆可点击上卷。
-  // 当前数据深度=3（人界/天南/越国）；州·城层将于 v146/v147 接入，面包屑机制已就绪、无需再改。
+  // 面包屑（支持5级：人界 ▸ 天南 ▸ 胥国 ▸ 州 ▸ 城，§9）——沿 parent 链通用回溯到根，除当前层外皆可点击上卷。
+  // 当前数据深度=3（人界/天南/胥国）；州·城层将于 v146/v147 接入，面包屑机制已就绪、无需再改。
   _atlasCrumbs(levelId) {
     const path = [];
     let cur = this._atlasLevel(levelId);
@@ -2512,6 +2537,45 @@ const UI = {
         ? `<span class="crumb active">${c.crumb}</span>`
         : `<button class="crumb" onclick="UI._atlasGoto('${c.id}')">${c.crumb}</button><span class="crumb-sep">▸</span>`;
     }).join("")}</div>`;
+  },
+
+  /* -------- 势力叠加层（v146 §9）：贯穿 L1/L2/L3 的「势力」toggle，层级越深粒度越细 -------- */
+  // 切换势力图层：翻转开关并就地重绘当前舆图层（_atlasReopen 由 openAtlas/openContinent 设定）。
+  toggleFactions() {
+    this._factionsOn = !this._factionsOn;
+    if (this._atlasReopen) this._atlasReopen();
+  },
+  // 当前剧情纪元名（图例顶部标注；红线：魔道/慕兰篇默认停在纪元0）。
+  _factionEpochName(epoch) {
+    return ["七玄门篇", "魔道入侵篇", "四分天下·天道盟立", "慕兰大举入侵·天南联盟"][epoch] || "七玄门篇";
+  },
+  // 「势力」开关按钮（开=高亮）。
+  _factionToggleBtn() {
+    const on = !!this._factionsOn;
+    return `<button class="btn btn-mini fac-toggle${on ? ' on' : ''}" onclick="UI.toggleFactions()">${on ? '势力 ·开' : '势力'}</button>`;
+  },
+  // 视野内某纪元实际出现的势力（按 canon 顺序去重）——L2/L3 图例用。
+  _factionsInView(nodes, epoch) {
+    const order = ["qipai", "zhengdao", "modao", "jiuguo", "tiandao", "mulan"];
+    const present = new Set();
+    for (const n of nodes) {
+      const f = WORLD.atlas.factionAt(n, epoch);
+      if (f) present.add(f);
+    }
+    return order.filter(id => present.has(id));
+  },
+  // 势力图例：纪元标注 + 色块清单 + 一句概览（L1=人界概述/L2=国级主导/L3=宗门级）。
+  _factionLegend(facIds, epoch, overview) {
+    const F = (WORLD.atlas && WORLD.atlas.factions) || {};
+    const items = (facIds || []).map(id => {
+      const f = F[id] || {};
+      return `<span class="fac-item"><i class="fac-swatch faction-${id}"></i>${f.short || f.name || id}</span>`;
+    }).join("");
+    return `<div class="faction-legend">
+      <div class="fac-epoch">势力图层 · ${this._factionEpochName(epoch)}</div>
+      <div class="fac-items">${items}</div>
+      ${overview ? `<div class="fac-note">${overview}</div>` : ""}
+    </div>`;
   },
 
   /* -------- 集镇采买 -------- */
