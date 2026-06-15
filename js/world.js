@@ -715,6 +715,17 @@ WORLD.bigitems = [
     stat: (s) => s.flags.arc1_complete
       ? ({ state: "got", note: "远行已开 · 行迹遍及 " + ((s.visitedNodes || []).length) + " 地" })
       : ({ state: "track", note: "舆图可览 · 跨城远行待通关本篇" }) },
+  // —— 黄枫谷篇·妖材→法宝链首件落地（血色禁地出即可炼）——
+  { id: "wulongduo", cat: "fabao", name: "乌龙夺",
+    blurb: "妖材→法宝链·首件落地：墨蛟双角炼成的四爪短法宝，御空连抓、攻击带毒，缠斗愈久愈致命。",
+    guide: "黄枫谷篇·血色禁地斩墨蛟得「墨蛟之角」→拖元武国巧匠齐云霄代炼乌龙夺。",
+    stat: (s) => State.count("wulong_duo") > 0
+      ? ({ state: "got", note: "已炼成 · 主攻位四爪毒法宝（攻击带毒）" })
+      : State.count("mojiao_jiao") > 0
+        ? ({ state: "track", note: "墨蛟之角在手 · 可托齐云霄炼成乌龙夺" })
+        : s.flags.mojiao_slain
+          ? ({ state: "track", note: "墨蛟已伏诛 · 蛟角已入炼器" })
+          : ({ state: "unheard", note: "妖王之材，未见其踪" }) },
   // —— 前路：后续篇章的大件剪影（明牌惦记，尚不可得）——
   { id: "qingyuanjian", cat: "gongfa", name: "《青元剑诀》", far: true,
     blurb: "黄枫谷剑修主轴——筑基之后真正的飞剑根基。",
@@ -731,9 +742,9 @@ WORLD.bigitems = [
   { id: "pixieshenlei", cat: "fabao", name: "辟邪神雷", far: true,
     blurb: "特攻区大件·克魔功——与蜂云剑双底牌，以下克上的杀手锏。",
     guide: "乱星海篇——机缘所得，克魔利器。", stat: () => ({ state: "unheard" }) },
-  { id: "shenfengzhou", cat: "fabao", name: "乌龙夺 · 神风舟", far: true,
-    blurb: "墨蛟之材炼成：乌龙夺(重击法宝)、神风舟(飞行载具，与空层战斗咬合)。",
-    guide: "伏诛墨蛟得角·皮·鳞→魔道争锋篇燕家堡代工炼制。", stat: () => ({ state: "unheard" }) },
+  { id: "shenfengzhou", cat: "fabao", name: "神风舟", far: true,
+    blurb: "墨蛟皮·鳞炼成的飞行法器，乘风破浪、与空层战斗咬合——乌龙夺的姊妹件，同出墨蛟一身。",
+    guide: "黄枫谷篇·斩墨蛟得皮·鳞→托元武国齐云霄炼制（炼制落地待后续篇章）。", stat: () => ({ state: "unheard" }) },
   { id: "fengleichi", cat: "fabao", name: "风雷翅", far: true,
     blurb: "速度均势区至宝——遁速翻倍的飞行至宝。",
     guide: "乱星海篇——金雷竹炼制（协助紫灵九死一生的任务线）。", stat: () => ({ state: "unheard" }) },

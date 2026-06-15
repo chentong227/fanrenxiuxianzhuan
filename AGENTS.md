@@ -39,7 +39,7 @@
 - 数值平衡：`combat-balance-design.md`、`attributes-and-balance.md`、`element-design.md`、`power-design.md`
 - 系统设计：`bigitem-design.md`（大件四问）、`retention-design.md`（爽文契约）、
   `authenticity-design.md`（一致感/世界之真）、`world-design.md`、`randomness-plan.md`、
-  `technique-tiers.md`、`chapter-template.md`、`ui-reference.md`
+  `technique-tiers.md`、`chapter-template.md`、`fabao-design-template.md`（法宝设计四要素＋落地五件套）、`ui-reference.md`
 - **进行中**：`combat-redesign.md`（战斗 v2 调研报告）+ `combat-axis-rules.md`
   （对阵轴规则书+纸面推演——待用户拍板，未拍板前不实装）
 - **舆图五级重制**：`map-redesign-design.md`（区块解锁点亮 + 真实地理锁定 + AI 洗图 +
@@ -49,6 +49,7 @@
 
 - **爽文契约**：玩家可以输在准备，不能输得莫名其妙；fail-forward（败有所得）。
 - **大件四问**：想要/准备苦/过程险/到手蜕变——所有大件立项必过（bigitem-design.md）。
+- **法宝设计四要素**：设计任何法宝/法器，先按 `fabao-design-template.md` 填「来历考据/形制/特效怎么做/特点」＋落地五件套（data items+gear / combat SPELLS / fx RECIPES / world bigitem / story 节点），全程复用旧系统、不立新引擎。范例：青竹蜂云剑×辟邪神雷、乌龙夺×四爪带毒。
 - **一致感**：剧情强=数值强；背景强者三态（传说/在场/际遇），永不进风云榜赛道。
 - **乘法设计**：优先让既有系统相乘出新玩法，拒绝堆新系统。
 - **嗑瓜子**：每回合都有小正反馈；杂学熟练度；不做签到焦虑、不做体力条。

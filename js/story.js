@@ -1026,6 +1026,35 @@ const STORY = [
     ],
   },
 
+  {
+    id: "wulong_forge",
+    // 妖材→法宝链·首件落地：墨蛟之角在手 → 元武国巧匠齐云霄代炼乌龙夺
+    // 兜底：已炼成 / 没斩墨蛟 / 蛟角已不在手 → 跳过（与 cond 互补，绝不卡主线）
+    skipIf: (s) => s.flags.wulong_forged || !s.flags.mojiao_slain || State.count("mojiao_jiao") < 1,
+    cond: (s) => s.flags.mojiao_slain && !s.flags.wulong_forged && State.count("mojiao_jiao") >= 1,
+    title: "蛟角成器 · 乌龙夺",
+    text: [
+      { scene: "黄枫谷 · 丹房偏院" },
+      "记名拜师后未几，李化元唤你到丹房偏院。院中地火幽幽，一名青衫老者正就着炉火翻看你那对墨蛟之角，眼里精光闪烁。",
+      { say: "李化元", text: "这位是齐云霄，元武国姓齐的炼器巧匠，与老夫是多年旧识。你这对蛟角内蕴水行妖力，寻常炉火炼它不动——正该他出手。" },
+      { say: "齐云霄", emo: "smile", text: "双角质胜精铁，毒性犹存。小子，要老夫给你炼把称手的？依这角的脾性，做成短法宝最是凶毒——四爪攥握、御空连抓，爪尖带着蛟毒，缠上谁都难受。" },
+      "老者袖中飞出一具小巧法器雏形，四道墨绿如四枚蛟爪攥成一握。地火轰然窜起，蛟角入炉，缕缕毒雾被逼回器身。",
+      { aside: "三日后开炉——四爪墨绿、爪尖泛着幽幽青芒，正是那墨蛟未散的毒。「乌龙夺」。" },
+      { say: "齐云霄", text: "记着，它的厉害不在一击之力，在那口毒——抓得越久，敌人烂得越透。拿去吧。" },
+    ],
+    onArrive(s) {
+      State.take("mojiao_jiao", 1);
+      State.give("wulong_duo", 1);
+      State.setFlag("wulong_forged");
+      Engine.writeLedger("wulong_forged", "墨蛟双角托元武国巧匠齐云霄炼成四爪毒法宝「乌龙夺」——妖材成器，攻击带毒");
+      Engine.addMilestone("妖材成器：乌龙夺（四爪毒法宝）", "bigitem");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      { text: "接过乌龙夺，四爪在掌心一收。「多谢齐前辈。」", resolve: "advance" },
+    ],
+  },
+
   /* ============================================================
    * 黄枫谷篇 · 第四幕「筑基」：地火炼丹 → 狂嗑筑基 → 青元剑诀 → 洞府 → 叶师叔之报
    * ============================================================ */
