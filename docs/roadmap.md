@@ -106,6 +106,13 @@
 > 顺手修复：`#loc-desc` id 笔误（应为 `#loc-desc-inline`，地点描述此前从未在场景头渲染）。`?citydemo=1` 同步改为展示地点屏 + 三段复访切换。
 > 延后项「七玄门据点风味回填」框架随之调整：七玄门同样走地点屏风味，不再走据点节点图。
 
+### 演出即引导（John 新增·v138 ✓ 已落 PR #10）—— 复用阶段1 B 演出地基
+> 缘由：让没玩过同类游戏的新玩家不再"到嘉元城后不知干啥"。把切大章节/切地图本就有的演出（抵城见墨彩环现身）顺势做成"下一步去干嘛"的引导。
+- [x] **新演出原语 `{guide:{tag,title,hint,focus,cta}}`**（cutscene.js）：作者就地写在剧情卡 text[] 末尾；`compile`→阻塞型 `kind:"guide"` 节拍；`runGuide` 渲染落幕指路卡，确认后 `done({focus})`（无 host fail-soft）。
+- [x] **落地点屏脉冲指路**（ui.js）：确认后 `_pendingFocus=focus`，`renderActions` 消费即清，给对应行动按钮加 `.btn-guide-focus` 脉冲一次；guide 不入见闻日志。
+- [x] **嘉元城打样**（story.js `mo_arrive`）：落幕引导卡「初来乍到·指路 / 接下来：让日子往前走」focus=`rest`（回墨府客房·调息，度月推进，静极生变）。与常驻「天命」栏互补、不重复。
+- **验收** ✓：cutscene.test.js 增 4b 段（guide 编译/isBlocking/hasStaging/runGuide fail-soft）；8 套全绿；浏览器端到端已验（落幕指路卡→「我记下了」→调息按钮脉冲，天命栏并存）。零教学（复用演出）、不另起新系统（乘法三律）。
+
 ### 阶段 3（E 功法层数轴 + 初入/巅峰）technique-tiers §5
 - `s.techLayers[techId]`（惰性初始化）；`grantSpells`→`layerUnlocks` 按层解锁（青元剑诀 3 剑芒/5 剑盾…）；
   `balance.spellPower` 加 `layerMul`；`State.realmStage` 派生初入/中坚/巅峰标签。升层=闭关肝条（大件范式）。
