@@ -838,6 +838,7 @@ const UI = {
       } else {
         actions += `<span style="color:var(--ink-faint);font-size:12px;align-self:center">需练气${gdef.minLayer}层方可驱使</span>`;
       }
+      actions += `<button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTreasury();">法宝位一览</button>`;
     }
     // 法器属性/特性明细（提升感写在脸上）
     let gearHtml = "";
@@ -1466,6 +1467,102 @@ const UI = {
     else { const r = Loadout.equipSkill(s, sk); if (!r.ok) return this.toast(r.reason, true); this.toast("已装备出战"); }
     State.save(); this.openTechniques(); this.renderAll();
   },
+
+  /* -------- 法宝阁（装备位一览：主攻/护身/饰物 三槽 + 伴身N + 悬浮）--------
+   * 法宝三位制（v96）的一站式管理面板：原先只能在背包逐件穿戴、伴身件无处卸、
+   * 悬浮位无处看——此处一眼看全各位所驭、所授战技、槽数上限，就地装/卸。
+   * 复用现成 Engine.equipGear/unequipGear/unequipSideTreasure/toggleBenchTreasure，零新机制。 */
+  openTreasury() {
+    const s = State.data;
+    const SP = (typeof CombatAPI !== "undefined") ? CombatAPI.SPELLS : {};
+    const playerLayer = (DATA.realms[s.realmIndex] || {}).layer || 1;
+    const NAMES = { hpMax: "气血上限", moodMax: "心境上限", sense: "神识", body: "体魄",
+                    speed: "遁速", armor: "护体", regenBoost: "回灵", mpMax: "灵力上限" };
+    const ownedOfSlot = (slot) => Object.keys(DATA.gear)
+      .filter(id => DATA.gear[id].slot === slot && State.count(id) > 0);
+
+    const gearCard = (id, equipped) => {
+      const g = DATA.gear[id]; if (!g) return "";
+      const item = DATA.items[id];
+      const name = item ? item.name : id;
+      const wx = { weapon: "jin", armor: "tu", accessory: "shui", side: "mu" }[g.slot] || "jin";
+      const can = !g.minLayer || playerLayer >= g.minLayer;
+      const bonusTxt = g.bonus ? Object.entries(g.bonus).map(([k, v]) => `${NAMES[k] || k}+${v}`).join("　") : "";
+      const spellsTxt = (g.grantSpells || []).map(sk => SP[sk] ? SP[sk].name : sk).join("、");
+      let btns = "";
+      if (equipped) {
+        if (g.slot === "side") btns += `<button class="btn btn-mini ghost" onclick="UI._treasuryUnequipSide('${id}')">收起</button>`;
+        else btns += `<button class="btn btn-mini ghost" onclick="UI._treasuryUnequip('${g.slot}')">卸下</button>`;
+        (g.grantSpells || []).forEach(sk => {
+          const benched = (s.benchTreasures || []).includes(sk);
+          const skName = SP[sk] ? SP[sk].name : sk;
+          btns += `<button class="btn btn-mini" onclick="UI._treasuryBench('${sk}')">${benched ? `「${skName}」复出战` : `收起「${skName}」`}</button>`;
+        });
+      } else if (can) {
+        btns += `<button class="btn btn-mini" onclick="UI._treasuryEquip('${id}')">装备</button>`;
+      } else {
+        btns += `<span style="color:var(--ink-faint);font-size:12px">需练气${g.minLayer}层方可驱使</span>`;
+      }
+      return `<div class="tech-item ${equipped ? 'current' : ''}">
+        <div class="tech-head"><span class="seal wx-${wx}">${sealChar(name)}</span><b>${name}</b>${equipped ? '<span class="tech-cur">已驭</span>' : ''}</div>
+        ${bonusTxt ? `<div class="tech-skills">属性：${bonusTxt}</div>` : ""}
+        ${spellsTxt ? `<div class="tech-skills" style="color:var(--gold)">战斗技：${spellsTxt}</div>` : ""}
+        ${(g.traits || []).map(t => `<div class="tech-desc" style="color:var(--ink-dim)">特性：${t.desc}</div>`).join("")}
+        <div class="tech-btns">${btns}</div>
+      </div>`;
+    };
+    const emptyRow = (txt) => `<div class="tech-item"><div class="tech-desc" style="color:var(--ink-faint)">${txt}</div></div>`;
+
+    // 三固定槽：主攻(weapon)/护身(armor)/饰物(accessory)
+    const fixedSlot = (slot, label, sub, emptyHint) => {
+      const equippedId = s.gear ? s.gear[slot] : null;
+      const owned = ownedOfSlot(slot);
+      let body = "";
+      if (equippedId) body += gearCard(equippedId, true);
+      owned.filter(id => id !== equippedId).forEach(id => { body += gearCard(id, false); });
+      if (!equippedId && owned.length === 0) body += emptyRow(`此位空置${emptyHint ? `——${emptyHint}` : ""}`);
+      return `<h3 class="panel-title">${label}<span style="color:var(--ink-faint);font-size:12px;font-weight:400">　${sub}</span></h3>${body}`;
+    };
+
+    // 伴身位（被动·零操作）：槽数=神识档
+    const sideCap = State.sideTreasureSlots();
+    const sideEquipped = (s.sideTreasures || []);
+    const ownedSide = ownedOfSlot("side");
+    let sideBody = "";
+    sideEquipped.forEach(id => { sideBody += gearCard(id, true); });
+    ownedSide.filter(id => !sideEquipped.includes(id)).forEach(id => { sideBody += gearCard(id, false); });
+    if (sideEquipped.length === 0 && ownedSide.length === 0) sideBody += emptyRow("尚无伴身法宝");
+
+    // 悬浮位（战斗内祭起·自动运转·抽灵力）：上限随神识（境界）增
+    const tier = (typeof Chapters !== "undefined" && Chapters.realmTier) ? Chapters.realmTier() : 0;
+    const floatCap = 1 + Math.max(0, tier - 1);
+    const floatGear = Object.keys(DATA.gear).filter(id => State.count(id) > 0
+      && (DATA.gear[id].grantSpells || []).some(sk => SP[sk] && SP[sk].type === "float"));
+    let floatBody = "";
+    floatGear.forEach(id => { floatBody += gearCard(id, s.gear && Object.values(s.gear).includes(id)); });
+    if (floatGear.length === 0) floatBody += emptyRow("尚无可祭起的悬浮法宝——驭物类法宝得自后续篇章");
+
+    this.openModal(`
+      <h2>法宝 · 装备位</h2>
+      <p style="color:var(--ink-dim);font-size:12px">法宝分位而驭：主攻、护身贴身随役，授你战斗手段；饰物温养己身；伴身法宝悬于周身、被动生效不必分神；悬浮法宝则于战中祭起、自行运转。神识越宏，能并驭的伴身/悬浮越多。</p>
+
+      ${fixedSlot("weapon", "主攻位", "兵器·授战斗法宝技", "万宝楼二层有售")}
+      ${fixedSlot("armor", "护身位", "御·护体法宝", "")}
+      ${fixedSlot("accessory", "饰物位", "随身·被动温养", "")}
+
+      <h3 class="panel-title">伴身位<span style="color:var(--ink-faint);font-size:12px;font-weight:400">　${sideEquipped.length}/${sideCap} · 被动·零操作（槽数随神识/大衍诀）</span></h3>
+      ${sideBody}
+
+      <h3 class="panel-title">悬浮位<span style="color:var(--ink-faint);font-size:12px;font-weight:400">　上限 ${floatCap} · 战斗内点卡祭起、可随时收回</span></h3>
+      ${floatBody}
+
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">收起</button></div>
+    `);
+  },
+  _treasuryEquip(id) { Engine.equipGear(id); this.openTreasury(); },
+  _treasuryUnequip(slot) { Engine.unequipGear(slot); this.openTreasury(); },
+  _treasuryUnequipSide(id) { Engine.unequipSideTreasure(id); this.openTreasury(); },
+  _treasuryBench(sk) { Engine.toggleBenchTreasure(sk); this.renderAll(); this.openTreasury(); },
 
   /* -------- 侧位·驭物（张铁尸傀强化；通用界面，灵宠/傀儡后续复用）-------- */
   openSideUnit() {
@@ -4466,6 +4563,7 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openCodex()">人物图鉴</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openChronicle()">风云录</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTechniques()">功法 · 配装</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTreasury()">法宝 · 装备位</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openLLMSettings()">活世界（实时对谈）</button>
         <button class="btn btn-secondary" onclick="if(typeof Sfx!=='undefined'){Sfx.toggle();} UI.openSystemMenu();">音效：${soundOn ? "开" : "关"}（点击切换）</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); State.save() ? UI.toast('已存档') : UI.toast('存档失败', true)">存档</button>

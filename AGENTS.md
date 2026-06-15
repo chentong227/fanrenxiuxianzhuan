@@ -245,9 +245,11 @@
 - **法宝三位制 + 伴身法宝（v96，combat-arsenal §二·五 必读）**：主攻位（主）/护身位（御）/
   **伴身位**——伴身法宝=被动面板件（`State.sideTreasures[]`，槽数=神识档 `Balance.sideTreasureSlots`：
   境界+大衍诀），装备即生效、战斗零操作（蕴灵珠+回灵/护根软甲+血甲/凝神玉环+神识灵力，
-  data.js gear `slot:"side"`；State.sideBonus 动态算、`_migrate` 同步）。出战法术槽**恒 6**
-  （`skillSlots()`，取舍即构筑、不随境界膨胀；法宝法器技不占槽）。悬浮祭出（其余法宝祭起·
-  每回合自动运转+抽灵力）=纸面案待实装。
+  data.js gear `slot:"side"`；State.sideBonus 动态算、`_migrate` 同步）。出战法术槽**恒 8**
+  （`skillSlots()`，v103 用户锁 8——取舍即构筑、不随境界膨胀；法宝法器技不占槽）。悬浮祭出（其余法宝祭起·
+  每回合自动运转+抽灵力）**已实装**（combat.js `floatSlots`/`playerFloat`、engine.js `combatFloat`；
+  UI 战斗悬浮法宝卡 + 「法宝阁」`UI.openTreasury` 悬浮位）。**一站式装备总览=法宝阁**（v140，
+  主攻/护身/饰物三槽 + 伴身N + 悬浮位，就地装/卸；逐件穿戴亦可走背包 item-modal）。
 - **辟邪神雷 + 青竹蜂云剑剑阵特效（v98 重点，fx-design.md §六必读）**：青竹蜂云剑=结丹本命
   法宝·主攻位（`swordOrbit`→DOM `.au-swords` 绕身剑阵 + canvas `swordRing` 真画剑形引子）；
   **辟邪神雷=金色雷**（用户点名"最好看的金色雷"）——`jinlei` 金芯白炽色板 + `lightning({gold})`
