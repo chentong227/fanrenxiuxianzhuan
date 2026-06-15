@@ -666,7 +666,7 @@ const UI = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
-      liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声",
+      liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", lianfu: "闭关制符 ✎",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
@@ -675,6 +675,8 @@ const UI = {
       acts = acts.filter(a => a !== "bottle" || State.data.bottle.unlocked);
       // 剑意圆满：洞府出现「悟剑」（大件链攻坚入口）
       if (loc.home && (State.data.swordIntent || 0) >= 100 && !State.data.swordMastery) acts.unshift("wujian");
+      // 制符 v2：洞府备制符笔 + 已解锁≥1 符箓方案，方现「制符」（有方案+符纸+灵力即成）
+      if (loc.home && State.count("zhifu_bi") > 0 && (State.data.fuluPlans || []).length) acts.unshift("lianfu");
       // 血色主药在手：地火之屋炼筑基丹（筑基丹链的"造"环节）
       if (loc.home && loc.id === "huangfeng_gate" && State.data.flags.mojiao_resolved
         && State.count("xueshi_zhuyao") >= 4 && !State.data.flags.zhuji_lian_done) acts.unshift("liandan");
@@ -715,6 +717,9 @@ const UI = {
       const url = Art.url("hanli");
       if (url && !hp.dataset.img) { hp.innerHTML = `<img src="${url}" alt="${s.name}" />`; hp.dataset.img = "1"; }
     }
+    // 随身灵圃：小绿瓶解锁后，顶栏「小瓶」常驻——任意据点/洞府/旅途皆可随身唤出
+    const bb = this.el("btn-bottle");
+    if (bb) bb.hidden = !(s.bottle && s.bottle.unlocked);
   },
 
   renderStats() {
@@ -1785,24 +1790,39 @@ const UI = {
     `);
   },
 
-  /* -------- 小绿瓶弹窗 -------- */
-  showBottleButton() { this.renderActions(); },
+  /* -------- 小绿瓶弹窗（随身灵圃 v2：随身唤出 + 多灵草谱） -------- */
+  showBottleButton() { this.renderTopbar(); this.renderActions(); },
   openBottle() {
+    // 随身可唤，但催熟要耗时——战斗/秘境/待决剧情中不开（与 tendBottle 的 passTime 一致）
+    const s = State.data;
+    if (s.combat) { this.toast("激战正酣，无暇打理小瓶"); return; }
+    if (s.exmap) { this.toast("秘境之中，且先脱身再说"); return; }
+    if (s.pendingEvent) { this.toast("眼下有要事待决，无心摆弄小瓶"); return; }
+    if (!(s.bottle && s.bottle.unlocked)) return;
     this.renderBottleModal();
   },
   renderBottleModal() {
     const s = State.data;
+    const realmIdx = s.realmIndex || 0;
     const plotsHtml = s.bottle.plots.map((p, i) => {
       if (!p.crop) {
         const seeds = [];
-        if (State.count("lingcao")) seeds.push(`<button class="btn btn-mini" onclick="Engine.plantCrop(${i},'lingcao'); UI.renderBottleModal();">种灵草</button>`);
-        if (State.count("duyao_cao")) seeds.push(`<button class="btn btn-mini" onclick="Engine.plantCrop(${i},'duyao_cao'); UI.renderBottleModal();">种毒草</button>`);
-        return `<div class="plot"><div class="pinfo"><div class="pname">空地块</div><div class="pstat">可投入原料培育</div></div><div style="display:flex;gap:6px">${seeds.join("") || '<span class="pstat">无可种原料</span>'}</div></div>`;
+        let lockedNote = "";
+        Object.keys(DATA.bottle.crops).forEach(cid => {
+          const c = DATA.bottle.crops[cid];
+          if (!State.count(c.seed)) return;            // 无种子原料：不列
+          if (realmIdx < (c.minRealmIdx || 0)) {        // 有原料但境界未到：列为待解锁提示
+            lockedNote = `<div class="pstat">境界既高，更多灵草谱自现</div>`;
+            return;
+          }
+          seeds.push(`<button class="btn btn-mini" title="${c.use || ""}" onclick="Engine.plantCrop(${i},'${cid}'); UI.renderBottleModal();">种：${c.name}</button>`);
+        });
+        return `<div class="plot"><div class="pinfo"><div class="pname">空地块</div><div class="pstat">可投入原料培育</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${seeds.join("") || '<span class="pstat">无可种原料</span>'}${lockedNote}</div></div>`;
       }
       const crop = DATA.bottle.crops[p.crop];
       const ready = p.growth >= 100;
       return `<div class="plot">
-        <div class="pinfo"><div class="pname">${crop.name}</div><div class="pstat">成熟度 ${Math.round(p.growth)}%</div></div>
+        <div class="pinfo"><div class="pname">${crop.name}</div><div class="pstat">成熟度 ${Math.round(p.growth)}%${crop.use ? ` · ${crop.use}` : ""}</div></div>
         ${ready
           ? `<button class="btn btn-mini" onclick="Engine.harvestCrop(${i}); UI.renderBottleModal();">收获</button>`
           : `<span class="pstat">培育中…</span>`}
@@ -1810,8 +1830,8 @@ const UI = {
     }).join("");
 
     this.openModal(`
-      <h2>神秘小绿瓶</h2>
-      <p style="color:var(--ink-dim)">滴入神秘绿液，可催熟瓶中草木。灵草可成灵药（服食大补修为），毒草催熟则毒性剧增。此乃你逆天改命的本钱，切莫示人。</p>
+      <h2>神秘小绿瓶 · 随身灵圃</h2>
+      <p style="color:var(--ink-dim)">随身可唤，何处皆可打理。滴入神秘绿液催熟瓶中草木——同一株灵草，循不同谱法可育出灵药、凝神丹乃至千年灵草；境界既高，更有灵石难求之物自现。此乃你逆天改命的本钱，切莫示人。</p>
       <div class="bottle-plots">${plotsHtml}</div>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="Engine.tendBottle(); UI.renderBottleModal();">滴绿液催熟（耗时）</button>
@@ -1820,6 +1840,40 @@ const UI = {
     `);
   },
   renderBottle() { /* 兼容入口：弹窗开启时刷新 */ if (!this.el("modal-overlay").hidden) this.renderBottleModal(); },
+
+  /* -------- 制符台弹窗（符箓自制 v2：有方案 + 符纸 + 灵力即成） -------- */
+  openFuluCraft() {
+    const s = State.data;
+    if (!Engine.hasFuluTable()) { this.toast("尚无制符笔，开不得制符台"); return; }
+    const realm = State.realm();
+    const spMax = realm ? realm.spMax : 0;
+    const fulu = (s.skills && s.skills.fulu) || 0;
+    const paper = State.count("fu_zhi");
+    const rate = Math.round(Math.min(0.97, 0.6 + fulu * 0.02 + (s.insight || 0) * 0.01) * 100);
+    const plans = (s.fuluPlans || []).filter(id => DATA.fuluPlans[id]);
+    const rows = plans.map(id => {
+      const plan = DATA.fuluPlans[id];
+      const paperN = plan.paperN || 1;
+      const can = paper >= paperN && s.spirit >= plan.spirit;
+      const item = DATA.items[plan.result];
+      return `<div class="plot">
+        <div class="pinfo"><div class="pname">${plan.name}</div>
+          <div class="pstat">产「${item.name}」 · 耗 符纸×${paperN} + 灵力 ${plan.spirit}</div>
+          <div class="pstat" style="color:var(--ink-dim)">${plan.blurb}</div></div>
+        <button class="btn btn-mini${can ? " btn-primary" : ""}" ${can ? "" : "disabled"} onclick="Engine.makeFulu('${id}')">运笔成符</button>
+      </div>`;
+    }).join("");
+
+    this.openModal(`
+      <h2>制符台 ✎</h2>
+      <p style="color:var(--ink-dim)">有方案、有符纸、有灵力，便可运笔成符——制符术越精，成符愈稳、偶得双张。符纸于太南小会购置。</p>
+      <div class="pstat" style="margin:4px 0 8px">符纸 ×${paper} · 灵力 ${Math.round(s.spirit)}/${spMax} · 制符术 ${fulu}（约 ${rate}% 成）</div>
+      <div class="bottle-plots">${rows || '<div class="plot"><span class="pstat">尚未参透任何符箓方案——可于太南小会购符谱，或寻故人相授。</span></div>'}</div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="UI.closeModal()">收笔</button>
+      </div>
+    `);
+  },
 
   /* -------- 奇遇弹窗 -------- */
   openFortune(f) {
@@ -2647,8 +2701,21 @@ const UI = {
   openFair() {
     const s = State.data;
     const goods = Engine.FAIR_GOODS.map(g => {
-      const item = DATA.items[g.id];
-      const owned = g.once && State.count(g.id) > 0;
+      // 符箓方案（购谱解锁，非入袋）：名取方案名，已购则置灰
+      if (g.plan) {
+        const plan = DATA.fuluPlans[g.plan];
+        const owned = (s.fuluPlans || []).includes(g.plan);
+        return `<div class="market-item">
+          <span><span class="iname rare">${plan.name}</span>
+            <span style="color:var(--gold);font-size:11px">　${g.note || ""}</span>
+            <span style="color:var(--ink-dim);font-size:12px">　${plan.blurb}</span></span>
+          ${owned ? `<span style="color:var(--ink-faint);font-size:12px">已购得</span>`
+                  : `<button class="btn btn-mini" onclick="Engine.fairBuy('${g.id}')"><span class="mprice">灵石${g.price}</span></button>`}
+        </div>`;
+      }
+      const buyId = g.buy || g.id;       // 现成符等：实际入袋道具 id 与摊位 id 可不同
+      const item = DATA.items[buyId];
+      const owned = g.once && State.count(buyId) > 0;
       return `<div class="market-item">
         <span><span class="iname ${item.rarity === 'rare' ? 'rare' : item.rarity === 'epic' ? 'epic' : ''}">${item.name}</span>${g.n > 1 ? `×${g.n}` : ""}
           <span style="color:var(--gold);font-size:11px">　${g.note || ""}</span>

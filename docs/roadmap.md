@@ -133,10 +133,13 @@
 - **v141 收尾**（线上自测发现并修）：①跨境界驱使门槛 bug——筑基后 `DATA.realms[].layer` 归 1，把练气十一层购入的顶阶法器误判为"驱使不动"（`equipGear`/`gearOf`/`sideTreasureOf` 及两处 UI 全踩同一坑）。修法：抽 `State.gateLayer()`——筑基及以上视作远超练气全层（999），练气期仍取本层；五处门槛统一改走它。loadout.test 增第 8 节回归（练气11可驭、筑基后不失效且可重装）。②法宝阁补桌面顶栏「法宝」按钮（与「功法」并列），不再只藏在 ⋯ 系统菜单。
 - **v142 收尾·入谷起步装备**（用户裁决 canon，考据≥2 源：红袖读书问答 + QQ阅读《凡人》衍生文等多源一致——入谷门派发黄丝衫/青叶飞行法器/一柄下品战斗法器/精炼工具/十倍储物袋）：飞行法器 `qingye_fazhan`「青叶法器」早已在 `hf_arrive` 发放（`s.flightId`）；新增战斗法器 `waimen_tiejian`「外门铁剑」（`DATA.items` common gear + `DATA.gear` weapon 位 minLayer 1 + `grantSpells:[tiejian_ci]`「御剑刺」combat.js，下品御剑技 dmg 10/mp 5），入谷 `hf_arrive` 自动 `State.give`+装备（空 weapon 位时），narration/吴师叔台词补两件法器。loadout.test 增起步装备节（练气七层即可驭、grantSpell 入战斗手牌）。**补练气7~10 法宝轴空窗**，名称取生活化下品生法、不臆造具名侠器。
 
-### 阶段 5（C 符箓方案 + D 随身灵圃）combat-arsenal §3.7 / bigitem §小绿瓶v2
-- C：符纸可买 + 符箓方案并入大件图鉴（沟通/购买/战胜解锁）+ 有方案+符纸+灵力即成（无绘画/无 grind）。
-- D：小绿瓶"随身唤出"入口 + 多灵草谱 + 催熟产物价值随境界迁移。两者皆复用现成系统、不立新系统。
-- **验收**：能自产已解锁方案的符；任意地点可唤出灵圃打理；图鉴点亮节奏成立。
+### 阶段 5（C 符箓方案 + D 随身灵圃）combat-arsenal §3.7 / bigitem §小绿瓶v2 —— 代码已落（待 bump 发版）✓
+- [x] **D 随身灵圃 v2**（bigitem §小绿瓶v2）：顶栏「小瓶」常驻按钮 `btn-bottle`（随 `s.bottle.unlocked` 显隐）→ `UI.openBottle()` 任意地点唤出打理，**不再绑黄枫谷地点**；战斗/秘境/待决剧情时拒开（守卫 `s.combat`/`s.exmap`/`s.pendingEvent`）。沿用 `bottle:{unlocked,plots[]}` schema、`plantCrop` 签名、`lingcao` 谱（autopilot 依赖不变）。
+- [x] **多灵草谱 + 境界迁移**：`DATA.bottle.crops` 每谱加 `minRealmIdx`；新增 `anshen`（灵草→凝神丹）、`huiyuan`（灵草→回元丹，练气七层 idx6 解）——皆复用既有丹，无凭空造物；`plantCrop` 加境界门（未到只提示、不扣料）；`renderBottleModal` 泛化为列「有种子 + 境界达标」的全部谱。
+- [x] **C 符箓自制**（combat-arsenal §3.7）：`DATA.fuluPlans`（火蛇/寒冰/定身符方案，产既有底牌符）；`Engine.makeFulu`「有方案 + 符纸 + 灵力即成」（无绘画/无 grind，成功率随 `s.skills.fulu` 制符术熟练度涨、+2/次）；家中行动「闭关制符 ✎」（持 `zhifu_bi` 制符笔 + ≥1 方案才现）+ `UI.openFuluCraft` 弹窗。
+- [x] **方案三解锁源 + 图鉴**：大件图鉴新增「符箓·方案」类（制符台锚点 + 每方案一条目，随解锁点亮）；解锁=购买（太南小会符谱·火蛇/寒冰）/ 沟通（菡云芝烈阳花圃相授定身符方案）/ 既有买符照旧。复用 fu_zhi 符纸 + pouch + codex + 杂学熟练度 + 战斗底牌（成符自动入战），**不立新系统**。
+- [x] **不破存档**：`create()` + `_migrate()` 惰性兜底 `fuluPlans:[]`/`skills.fulu`/`bottle`；新增 `test/lingpu_fulu.test.js`（48 断言：多草谱/境界门/种催收/制符成败/购谱/图鉴点亮/老档迁移）全绿，既有 15 套测试无回归。
+- **验收** ✓：能自产已解锁方案的符（makeFulu）；任意地点唤出灵圃打理（顶栏小瓶）；图鉴方案条目随解锁点亮。ui.js 渲染无测试覆盖 → 待浏览器目验灵圃/制符弹窗。**未 bump（用户未示意发版）。**
 
 ### 阶段 6（H 音频重制）docs/audio-design.md ★用户点名、可与上面阶段并行
 - 不扒动漫原声（版权红线）→ 重写 genmusic.js 九轨结构化 prompt + 多候选择优 + 质量门（响度/循环接缝/试听）；

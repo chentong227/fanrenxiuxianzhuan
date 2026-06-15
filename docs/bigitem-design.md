@@ -58,6 +58,13 @@
   ③随身=月行动随时有可见进度（节拍器三规之"月行动必有进度"）。
 - **存档**：`bottle` 字段已存在，v2 仅加"随身唤出"入口与多灵草谱数据，**惰性初始化**（`s.bottle = s.bottle || {...}`），免动 `_migrate`。
 
+**实装状态（周期7 阶段5，代码已落·待 bump 发版）**：
+- **随身唤出**：顶栏常驻按钮 `btn-bottle`「小瓶」（`index.html` + `main.js` 绑定），随 `s.bottle.unlocked` 显隐（`UI.renderTopbar`）→ `UI.openBottle()`，任意地点可开；战斗/秘境/待决剧情时拒开（守卫 `s.combat`/`s.exmap`/`s.pendingEvent`）。解锁时 `UI.showBottleButton()` 刷新顶栏+行动。
+- **系统不变**：`bottle:{unlocked,plots:[{crop,growth}]}` schema、`plantCrop(plotIndex,cropId)` 签名、`lingcao` 谱原样保留（autopilot 依赖）。`_migrate` 仅补 `if(!d.bottle) d.bottle={unlocked:false,plots:[]}` 惰性兜底。
+- **多灵草谱 + 境界迁移**：`DATA.bottle.crops` 每谱加 `minRealmIdx`；现有灵草/毒草/千年灵草谱照旧，新增 `anshen`（灵草→凝神丹·稳心境）、`huiyuan`（灵草→回元丹·战内速回灵力，练气七层 idx6 解）——皆复用既有丹（无凭空造物）。`plantCrop` 加境界门（未到只提示、不扣料）；`renderBottleModal` 泛化为列「有种子 + 境界达标」的全部谱，境界未到但有种子时提示"境界既高，更多灵草谱自现"。
+- **价值随境界迁移**：低境界种千年灵草换灵石/法器；练气七层后灵圃自产战内底牌回元丹——"境界既高，灵圃所出愈贵"。
+- 测试：`test/lingpu_fulu.test.js` 覆盖多草谱/境界门/种催收全链/老档迁移。**ui.js 渲染（顶栏小瓶/灵圃弹窗）待浏览器目验。**
+
 ### 黄枫谷篇
 - 筑基丹 ×N（让丹屈辱起点 → 血色禁地取药 → 地火之屋自炼）→ 三段式突破超大件
 - 《青元剑诀》（筑基后李化元授）→ 剑修主轴开启

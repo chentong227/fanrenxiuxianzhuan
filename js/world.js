@@ -664,6 +664,7 @@ WORLD.bigitemCats = [
   { id: "gongfa", name: "功法 · 剑意" },
   { id: "dan",    name: "丹道 · 药" },
   { id: "fabao",  name: "法宝 · 飞剑" },
+  { id: "fulu",   name: "符箓 · 方案" },
   { id: "kuilei", name: "傀儡 · 灵宠" },
   { id: "jiban",  name: "羁绊 · 信物" },
   { id: "shijie", name: "世界 · 际遇" },
@@ -684,7 +685,18 @@ WORLD.bigitems = [
   { id: "bottle", cat: "dan", name: "小绿瓶",
     blurb: "催熟灵植的机缘至宝，自炼丹药的一切根基——开「催熟」轴（药圃经营）。",
     guide: "机缘获得——七玄门篇剧情中偶得的神秘小瓶，滴水可催熟灵植。",
-    stat: (s) => (s.bottle && s.bottle.unlocked) ? ({ state: "got", note: "催熟轴已开 · 药圃可经营" }) : ({ state: "unheard", note: "机缘未至" }) },
+    stat: (s) => (s.bottle && s.bottle.unlocked) ? ({ state: "got", note: "催熟轴已开 · 随身灵圃可经营" }) : ({ state: "unheard", note: "机缘未至" }) },
+  { id: "zhifu", cat: "fulu", name: "制符台 · 制符笔",
+    blurb: "符箓自制的总开关——有方案 + 符纸 + 灵力，闭关一步成符（不收材料、无绘画）。",
+    guide: "太南小会购得「制符笔」（御灵宗女修菡云芝旧物）即开制符台；符纸于小会购置，方案另行解锁。",
+    stat: (s) => {
+      const total = (typeof DATA !== "undefined" && DATA.fuluPlans) ? Object.keys(DATA.fuluPlans).length : 0;
+      const cur = (s.fuluPlans || []).length;
+      const hasPen = State.count("zhifu_bi") > 0;
+      return hasPen
+        ? { state: cur > 0 ? "got" : "track", prog: { cur, max: total }, note: cur ? `制符台已开 · 已得方案 ${cur}/${total}` : "制符台已开 · 待解锁符箓方案" }
+        : { state: "unheard", note: "制符笔未得 · 太南小会可购" };
+    } },
   { id: "quhun", cat: "kuilei", name: "曲魂 · 铁奴",
     blurb: "你的第一具尸傀底牌，傀儡之路的原型——尸无血脉、百毒不侵，坏而不死可温养修缮。",
     guide: "夺舍之夜后，以秘法收服张铁尸身，炼成尸傀「铁奴」（墨大夫线收尾）。",
@@ -744,6 +756,22 @@ WORLD.bigitems = [
     blurb: "元婴期速度区至宝。",
     guide: "重返天南篇——元婴大战穆兰之后所得。", stat: () => ({ state: "unheard" }) },
 ];
+
+// 符箓方案（制符 v2）：每张方案＝大件图鉴一条目，解锁=点亮（购买/沟通/战胜）
+// 由 DATA.fuluPlans 自动生成，data.js 先于 world.js 载入。
+if (typeof DATA !== "undefined" && DATA.fuluPlans) {
+  Object.keys(DATA.fuluPlans).forEach(planId => {
+    const plan = DATA.fuluPlans[planId];
+    WORLD.bigitems.push({
+      id: "plan_" + planId, cat: "fulu", name: plan.name,
+      blurb: plan.blurb,
+      guide: `解锁——${plan.src} 此后有制符笔 + 符纸 + 灵力，闭关即可自画。`,
+      stat: (s) => (s.fuluPlans || []).includes(planId)
+        ? { state: "got", note: "方案已参 · 可自制此符" }
+        : { state: "unheard", note: "方案未得" },
+    });
+  });
+}
 
 /* ---------- 人物名册（忠于动漫的过场/关键人物）----------
  * 不影响主线，纯增世界氛围与代入感；遇见后录入"人物图鉴"。

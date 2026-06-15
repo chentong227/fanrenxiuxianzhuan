@@ -419,19 +419,49 @@ DATA.movementArts = {
   },
 };
 
-/* ---------- 神秘小绿瓶（掌天瓶前身） ----------
+/* ---------- 神秘小绿瓶（掌天瓶前身）· 随身灵圃 v2 ----------
  * 韩立逆袭核心：催熟灵草→灵药（服食大补修为），催熟毒草→杀招。
- * seed 为投入的种子/原材料，matureItem 为成熟收获物。
+ * 入口为「随身唤出」（不绑地点，任意据点/洞府/旅途可打理，见 ui.js openBottle）。
+ * 多灵草谱：同一株灵草，可循不同谱法育出不同产物（同 seed 多 crop）；
+ *   minRealmIdx＝该谱法解锁所需境界下标（DATA.realms 序号），价值随境界迁移
+ *   （前期换修为/灵石，境界既高则育出灵石买不到的战略物资）。
+ * seed 为投入的种子/原材料，matureItem 为成熟收获物，use 为用途说明。
  */
 DATA.bottle = {
   plotCount: 2,           // 初始可种植地块
   catalyzePerAction: 34,  // 每次"打理"推进的成熟度
   crops: {
-    lingcao:   { seed: "lingcao",   matureItem: "lingyao_dan", yield: 1, growth: 100, name: "灵草→灵药" },
-    duyao_cao: { seed: "duyao_cao", matureItem: "duyao_cao",   yield: 2, growth: 100, name: "毒草（催熟）" },
+    lingcao:   { seed: "lingcao",   matureItem: "lingyao_dan", yield: 1, growth: 100, minRealmIdx: 0,
+                 name: "灵草 → 灵乳灵药", use: "服食大补修为——瞒着旁人精进的本钱" },
+    anshen:    { seed: "lingcao",   matureItem: "ningshen_dan", yield: 1, growth: 120, minRealmIdx: 0,
+                 name: "灵草 → 凝神丹", use: "安神压魔，冲关前先稳住心境" },
+    duyao_cao: { seed: "duyao_cao", matureItem: "duyao_cao",   yield: 2, growth: 100, minRealmIdx: 0,
+                 name: "毒草（催熟增殖）", use: "淬毒杀招的本钱，越催越烈" },
     // 千年灵草：小绿瓶的真正奇迹——岁月可以催熟（考据：韩立换购万宝楼法器的本钱）
-    qiannian:  { seed: "lingcao",   matureItem: "qiannian_lingcao", yield: 1, growth: 300, name: "灵草→千年灵草（耗时极长）" },
+    qiannian:  { seed: "lingcao",   matureItem: "qiannian_lingcao", yield: 1, growth: 300, minRealmIdx: 0,
+                 name: "灵草 → 千年灵草（耗时极长）", use: "换灵石、换法器的财路——一两棵便够换楼上一件法器" },
+    // 价值随境界迁移：练气七层后方解此谱，育出灵石难求的战内续命底牌
+    huiyuan:   { seed: "lingcao",   matureItem: "huiyuan_dan", yield: 1, growth: 160, minRealmIdx: 6,
+                 name: "灵草 → 回元丹", use: "战内速回灵力的底牌；境界既高，灵圃所出愈贵" },
   },
+};
+
+/* ---------- 符箓方案系统（制符 v2，combat-arsenal-design.md §3.7）----------
+ * 复用既有系统：符纸＝可买消耗品(fu_zhi)；方案＝可解锁配方（沟通/购买/战胜，并入大件图鉴）；
+ *   制作＝有方案 + 符纸 + 灵力 → 成（闭关/洞府一步成符，无绘画、无材料 grind）。
+ * 解锁后「自产」既有方案的符；制符台＝持制符笔(zhifu_bi)方可开（考据：太南小会·菡云芝）。
+ * result 为产出符（既有底牌道具），paper 为符纸，spirit 为每张耗灵力，src 为解锁来源说明。
+ */
+DATA.fuluPlans = {
+  huoshe_fu:  { result: "huoshe_fu",  paper: "fu_zhi", paperN: 1, spirit: 30, name: "火蛇符方案",
+                blurb: "封火蛇之术于符——火克金，破金钟罩、金行妖王的现成手段。",
+                src: "购买：太南小会购得符谱。" },
+  hanbing_fu: { result: "hanbing_fu", paper: "fu_zhi", paperN: 1, spirit: 30, name: "寒冰符方案",
+                blurb: "封寒冰锥击于符——水克火，火行凶兽的对策。",
+                src: "购买：太南小会购得符谱。" },
+  dingshen_fu:{ result: "dingshen_fu",paper: "fu_zhi", paperN: 1, spirit: 40, name: "定身符方案",
+                blurb: "封禁锢之术于符——拆大招、保蓄势、断追击的控制底牌。",
+                src: "沟通：御灵宗女修菡云芝（烈阳花圃故人）相授。" },
 };
 
 /* ---------- 探索点 / 副本（箱庭式网格探索，见 js/explore.js）----------
