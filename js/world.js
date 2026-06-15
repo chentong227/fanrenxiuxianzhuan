@@ -742,9 +742,17 @@ WORLD.bigitems = [
   { id: "pixieshenlei", cat: "fabao", name: "辟邪神雷", far: true,
     blurb: "特攻区大件·克魔功——与蜂云剑双底牌，以下克上的杀手锏。",
     guide: "乱星海篇——机缘所得，克魔利器。", stat: () => ({ state: "unheard" }) },
-  { id: "shenfengzhou", cat: "fabao", name: "神风舟", far: true,
-    blurb: "墨蛟皮·鳞炼成的飞行法器，乘风破浪、与空层战斗咬合——乌龙夺的姊妹件，同出墨蛟一身。",
-    guide: "黄枫谷篇·斩墨蛟得皮·鳞→托元武国齐云霄炼制（炼制落地待后续篇章）。", stat: () => ({ state: "unheard" }) },
+  // —— 黄枫谷篇·妖材→法宝链姊妹件落地（与乌龙夺同出墨蛟一身，共齐云霄代炼）——
+  { id: "shenfengzhou", cat: "fabao", name: "神风舟",
+    blurb: "妖材→法宝链·姊妹件：墨蛟皮·鳞炼成的飞行法器，乘风破浪、御风疾驰（练气期仅旅途载具、不参战）——乌龙夺的姊妹件，同出墨蛟一身。",
+    guide: "黄枫谷篇·血色禁地斩墨蛟得「墨蛟之皮·鳞甲」→拖元武国巧匠齐云霄代炼神风舟（与乌龙夺共用这场结识）。",
+    stat: (s) => (s.flags.shenfengzhou_forged || s.flightId === "shen_feng_zhou")
+      ? ({ state: "got", note: "已炼成 · 飞行法器（遁速+30；练气期仅旅途、不参战）" })
+      : (State.count("mojiao_pi") > 0 && State.count("mojiao_lin") > 0)
+        ? ({ state: "track", note: "墨蛟皮·鳞在手 · 可托齐云霄炼成神风舟" })
+        : s.flags.mojiao_slain
+          ? ({ state: "track", note: "墨蛟已伏诛 · 蛟皮鳞已入炼器" })
+          : ({ state: "unheard", note: "妖王之材，未见其踪" }) },
   { id: "fengleichi", cat: "fabao", name: "风雷翅", far: true,
     blurb: "速度均势区至宝——遁速翻倍的飞行至宝。",
     guide: "乱星海篇——金雷竹炼制（协助紫灵九死一生的任务线）。", stat: () => ({ state: "unheard" }) },
