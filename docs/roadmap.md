@@ -151,9 +151,15 @@
   - **数据**：`DATA.items.wulong_duo`（epic gear）+ `DATA.gear.wulong_duo`（weapon 位 / minLayer 11 / `grantSpells:[wulong_zhua]` / 特性 `venom_claw`）。
   - **战斗**：`SPELLS.wulong_zhua`（御物 atk / `fixedSegs:4` 四爪连抓 / `poison:{dmg:8,turns:3}` 攻击带毒 / elem shui / cd 1）；抽出通用 `_applyPoison` rider 令任意攻击技皆可挂毒；死物（corpse）百毒不侵、元神（ghost/soulOnly）无形免疫。
   - **特效**：`fx.RECIPES.wulong_zhua`（四道墨绿蛟爪交错连抓 + 水行迸溅 + 青紫毒雾上浮）。
-  - **大件链**：图鉴非 far 条目 `wulongduo`（血色禁地即可炼）；姊妹件 `shenfengzhou`「神风舟」拆为 far 占位（同出墨蛟一身，炼制待后续篇章）。
+  - **大件链**：图鉴非 far 条目 `wulongduo`（血色禁地即可炼）；姊妹件 `shenfengzhou`「神风舟」本周期同期落地（见下）。
   - **验收** ✓：新增 test/wulong_duo.test.js（物品/法器/战斗技/攻击带毒/四段/毒免疫/大件链/炼器节点非阻塞/装备授技）+ journey.test.js 集成段；全测 21/21 绿。UI（法宝阁/装备/四爪特效）浏览器目验。
-- [x] **法宝设计模板** `docs/fabao-design-template.md`：四要素（来历考据 / 形制 / 特效怎么做 / 特点），范例青竹蜂云剑×辟邪神雷 + 乌龙夺。
+- [x] **神风舟 · 御风飞行法器**（妖材→法宝链姊妹件落地，与乌龙夺同出墨蛟一身）：
+  - **来历**：黄枫谷篇·血色禁地斩墨蛟得「墨蛟之皮·鳞甲」→ 元武国巧匠齐云霄代炼（story 节点 `shenfengzhou_forge`：消皮·鳞、置 `s.flightId="shen_feng_zhou"` 与 `shenfengzhou_forged`、入年表 milestone）。**与乌龙夺共用这场结识齐云霄的演出**（`met_qiyunxiao` 埋线·后续剧情推手；两件法宝皆带墨蛟材料赴元武国找齐云霄代炼）。
+  - **数据**：`DATA.flightTreasures.shen_feng_zhou`（黄阶法器 / 遁速 +30）；走 `s.flightId` 而非 gear 槽。
+  - **flight-ladder**：遵 `docs/flight-ladder-design`——**练气期仅作旅途载具（overworld 遁速加成）、不参战**；战斗飞行另由筑基后 `s.flags.fly_unlocked`/`State.gearTrait('fly')` 闸门把守，神风舟不带 `fly` 特性 → 自动只作赶路。
+  - **大件链**：图鉴 `shenfengzhou` 由 far 转**非 far 可炼**，附可达性 stat 追踪器（unheard→track→got）。
+  - **验收** ✓：test/wulong_duo.test.js 扩测（大件链非 far / 炼器节点 `shenfengzhou_forge` 非阻塞 skipIf≡!cond / 消皮鳞授舟·结识齐云霄 / flight-ladder 不参战）；全测 21/21 绿；node --check 全过。
+- [x] **法宝设计模板** `docs/fabao-design-template.md`：四要素（来历考据 / 形制 / 特效怎么做 / 特点），范例青竹蜂云剑×辟邪神雷 + 乌龙夺 + 神风舟。
 - [ ] **绿煌剑 → 待办（Backlog）**：日后跟「再别天南篇」剧情一起做（夺剑 cutscene → 主攻位剑形法宝 → `weaponSynergyMul` 放大剑影分光：分影数+/威力×/碧光演出）。考据待核实（名字/来历/品阶/属性/主战序）原样存 §3.9，本周期不实装。
 
 ### 阶段 8（数值平衡总纲）docs/balance-master-design.md ——※用户点名、**排周期末**（承重墙，独立设计）

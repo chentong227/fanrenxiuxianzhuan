@@ -1041,17 +1041,51 @@ const STORY = [
       "老者袖中飞出一具小巧法器雏形，四道墨绿如四枚蛟爪攥成一握。地火轰然窜起，蛟角入炉，缕缕毒雾被逼回器身。",
       { aside: "三日后开炉——四爪墨绿、爪尖泛着幽幽青芒，正是那墨蛟未散的毒。「乌龙夺」。" },
       { say: "齐云霄", text: "记着，它的厉害不在一击之力，在那口毒——抓得越久，敌人烂得越透。拿去吧。" },
+      { say: "齐云霄", emo: "smile", text: "对了——你那张蛟皮、那捧鳞甲可还在？皮韧遇水不沉，鳞可作龙骨贴片，正好再给你炼条乘风的小舟。改日带来，老夫一并料理。" },
+      { aside: "你记下了这位元武国的炼器巧匠。蛟身一物两器，往后还要再叨扰他——这条线，结得不算亏。" },
     ],
     onArrive(s) {
       State.take("mojiao_jiao", 1);
       State.give("wulong_duo", 1);
       State.setFlag("wulong_forged");
+      State.setFlag("met_qiyunxiao");   // 结识齐云霄（元武国炼器巧匠·后续剧情推手·埋线）：两件法宝共用这场结识演出
       Engine.writeLedger("wulong_forged", "墨蛟双角托元武国巧匠齐云霄炼成四爪毒法宝「乌龙夺」——妖材成器，攻击带毒");
       Engine.addMilestone("妖材成器：乌龙夺（四爪毒法宝）", "bigitem");
       if (typeof Sfx !== "undefined") Sfx.play("success");
     },
     choices: [
       { text: "接过乌龙夺，四爪在掌心一收。「多谢齐前辈。」", resolve: "advance" },
+    ],
+  },
+
+  {
+    id: "shenfengzhou_forge",
+    // 妖材→法宝链·姊妹件：墨蛟皮+鳞在手 → 已结识的齐云霄再代炼飞行法器神风舟（与乌龙夺共用这场结识）
+    // 兜底：已炼成 / 没斩墨蛟 / 皮鳞不足 → 跳过（与 cond 互补，绝不卡顺序流）
+    skipIf: (s) => s.flags.shenfengzhou_forged || !s.flags.mojiao_slain || State.count("mojiao_pi") < 1 || State.count("mojiao_lin") < 1,
+    cond: (s) => s.flags.mojiao_slain && !s.flags.shenfengzhou_forged && State.count("mojiao_pi") >= 1 && State.count("mojiao_lin") >= 1,
+    title: "蛟皮成舟 · 神风舟",
+    text: [
+      { scene: "黄枫谷 · 丹房偏院" },
+      "乌龙夺出炉那日，齐云霄留过话。你揣着整张墨蛟之皮与一捧乌黑鳞甲再访偏院——青衫老者一见那张皮，眼底又燃起炼器人的火。",
+      { say: "齐云霄", emo: "smile", text: "来得好。这皮韧逾百炼软甲、遇水不沉，鳞甲做龙骨贴片正合用。给你炼条乘风破浪的小舟如何？练气修士赶路，全凭两条腿与粗浅遁术——有了它，山海便不再远。" },
+      { say: "齐云霄", tone: "正色", text: "只一桩要你记牢：你如今道行尚浅，这舟只载你赶路、避不得敌。御空厮杀的本事，得等你筑了基、驭得动真飞遁再说——莫拿它逞强斗法。" },
+      "地火再起，蛟皮为帆、鳞甲为骨，缕缕水行妖力被逼入舟身。三日后开炉——一叶墨色小舟悬于半空，迎风微胀，竟似活物。「神风舟」。",
+      { aside: "韩立赶路从此快了数倍。而这位元武国的炼器巧匠，也成了他日后屡屡叨扰的旧识——埋下的线，要很久以后才收。" },
+    ],
+    onArrive(s) {
+      State.take("mojiao_pi", 1);
+      State.take("mojiao_lin", 1);
+      s.flightId = "shen_feng_zhou";   // 给/换乘神风舟（飞行法器·遁速+30；遵 flight-ladder：练气期仅旅途、不参战）
+      if (DATA.flightTreasures && DATA.flightTreasures.shen_feng_zhou) DATA.flightTreasures.shen_feng_zhou.locked = false;
+      State.setFlag("shenfengzhou_forged");
+      State.setFlag("met_qiyunxiao");
+      Engine.writeLedger("shenfengzhou_forged", "墨蛟皮·鳞托元武国巧匠齐云霄炼成飞行法器「神风舟」——乘风破浪、赶路快上数倍（练气期仅旅途、不参战）");
+      Engine.addMilestone("妖材成器：神风舟（飞行法器·遁速+30）", "bigitem");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      { text: "登上神风舟，迎风一掠。「多谢齐前辈。」", resolve: "advance" },
     ],
   },
 

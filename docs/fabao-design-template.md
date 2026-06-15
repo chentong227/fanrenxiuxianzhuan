@@ -72,7 +72,7 @@ DATA.gear[id] = {
               : s.flags.mojiao_slain      ? { state: "track" }
               :                             { state: "unheard" } }
 ```
-同一来源的「后续篇章才炼得成」的姊妹件，拆成独立条目并标 `far: true`（前路剪影，不进当前可炼清单）。例：神风舟 `shenfengzhou`（与乌龙夺同出墨蛟一身）。
+同一来源的「后续篇章才炼得成」的姊妹件，拆成独立条目并标 `far: true`（前路剪影，不进当前可炼清单）。例：大庚剑阵 `dageng`（青竹蜂云剑控剑轴尽头方解锁）。注：神风舟 `shenfengzhou` 与乌龙夺同出墨蛟一身，原为 far 占位，本周期已同期落地转可炼（见范例 C）。
 
 ### E · 获取/炼制节点（`js/story.js`）
 **红线：`skipIf` 必须是 `cond` 的逻辑反（`skipIf ≡ !cond`），否则会卡住 `checkStory` 的顺序遍历。**
@@ -136,7 +136,14 @@ DATA.gear[id] = {
 - **② 形制**：墨蛟双角炼成的**四爪短法宝**；墨绿主色；练气十一层方可驭（`minLayer:11`）。
 - **③ 特效**：`RECIPES.wulong_zhua`——四道墨绿蛟爪扇形错落连抓（`setTimeout(i*60)` 错峰 `F.trail` core `#86e6a0`）→ 命中 `F.burst("shui")`＋墨绿碎芒 `F.shard`＋青紫毒雾 `F.mote`（与喂毒同色谱），把「四爪带毒」演在脸上。
 - **④ 特点（招牌）**：**四爪带毒**——`SPELLS.wulong_zhua`（`type:"atk"`、`fixedSegs:4` 四爪连抓、`poison:{dmg:8,turns:3}` 命中挂毒、`elem:"shui"`、`cd:1`）。配套抽出的通用 `_applyPoison` rider 让攻击技也能挂毒；死物百毒不侵、元神无形免疫。
-- **⑤ 落地五件套**：`DATA.items/gear.wulong_duo`（A）/ `SPELLS.wulong_zhua`（B）/ `RECIPES.wulong_zhua`（C）/ 图鉴 `wulongduo` 非 far、姊妹件 `shenfengzhou` far（D）/ 节点 `wulong_forge`（E）。
+- **⑤ 落地五件套**：`DATA.items/gear.wulong_duo`（A）/ `SPELLS.wulong_zhua`（B）/ `RECIPES.wulong_zhua`（C）/ 图鉴 `wulongduo` 非 far、姊妹件 `shenfengzhou` 本周期同期落地·非 far（D）/ 节点 `wulong_forge`（E）。
+
+### 范例 C：神风舟 —— 特点＝御风载具（本周期落地·墨蛟→法宝链姊妹件）
+- **① 来历**：黄枫谷篇·**血色禁地斩墨蛟**得「墨蛟之皮·鳞甲」→ 元武国巧匠**齐云霄**代炼（用户 2026-06-15 裁定）。与乌龙夺**共用这场结识齐云霄的演出**——`met_qiyunxiao` 埋线、后续剧情推手；乌龙夺出炉时齐云霄即留话要这皮鳞，神风舟节点承接之。
+- **② 形制**：蛟皮为帆、鳞甲为骨的**小舟形飞行法器**；墨色主色；遁速 +30（`DATA.flightTreasures.shen_feng_zhou`，黄阶法器）。遵 flight-ladder：**练气期仅旅途载具、不参战**（战斗飞行另由筑基后 `s.flags.fly_unlocked`/`State.gearTrait('fly')` 闸门，神风舟不带 `fly` 特性 → 自动只作赶路）。
+- **③ 特效**：飞行法宝走 overworld 遁速加成，**无战斗 RECIPES**（不在战斗里施放）。
+- **④ 特点（招牌）**：**御风载具·世界变小的体感**——遁速翻倍折减旅途月数、险度降档，是「到手蜕变」型大件（非战斗 signature；与乌龙夺的「四爪带毒」一物两器、各管一摊）。
+- **⑤ 落地五件套**：`DATA.flightTreasures.shen_feng_zhou`（A·飞行法器走 `s.flightId` 而非 gear 槽）/ 无战斗技（B·不参战）/ 无 RECIPES（C）/ 图鉴 `shenfengzhou` 非 far + 可达性 stat 追踪器（D）/ 节点 `shenfengzhou_forge`：消「墨蛟之皮·鳞」→ 置 `s.flightId="shen_feng_zhou"`、`shenfengzhou_forged`/`met_qiyunxiao` flag → 入年表 milestone（E）。
 
 ---
 
