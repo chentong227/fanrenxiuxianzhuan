@@ -33,9 +33,9 @@ console.log("\n=== 1. 起始配装：主修长春功，技能已装备 ===");
   assert(Loadout.knownPool(s).includes("zhayan"), "技能池含眨眼剑法");
 }
 
-console.log("\n=== 2. 法术槽恒6 / 辅修槽随境界增多 ===");
+console.log("\n=== 2. 法术槽恒8 / 辅修槽随境界增多 ===");
 {
-  assert(Balance.skillSlots() === 6, `出战法术槽恒 6（${Balance.skillSlots()}）——v96 取舍即构筑、不随境界膨胀`);
+  assert(Balance.skillSlots() === 8, `出战法术槽恒 8（${Balance.skillSlots()}）——v103 用户裁决：单屏 4×2、取舍即构筑、不随境界膨胀`);
   assert(Balance.secondaryTechniqueSlots(0) < Balance.secondaryTechniqueSlots(2), "辅修槽随境界增多");
 }
 

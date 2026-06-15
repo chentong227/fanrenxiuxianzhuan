@@ -113,13 +113,15 @@
 - [x] **嘉元城打样**（story.js `mo_arrive`）：落幕引导卡「初来乍到·指路 / 接下来：让日子往前走」focus=`rest`（回墨府客房·调息，度月推进，静极生变）。与常驻「天命」栏互补、不重复。
 - **验收** ✓：cutscene.test.js 增 4b 段（guide 编译/isBlocking/hasStaging/runGuide fail-soft）；8 套全绿；浏览器端到端已验（落幕指路卡→「我记下了」→调息按钮脉冲，天命栏并存）。零教学（复用演出）、不另起新系统（乘法三律）。
 
-### 阶段 3（E 功法层数轴 + 初入/巅峰）technique-tiers §5
-- `s.techLayers[techId]`（惰性初始化）；`grantSpells`→`layerUnlocks` 按层解锁（青元剑诀 3 剑芒/5 剑盾…）；
-  `balance.spellPower` 加 `layerMul`；`State.realmStage` 派生初入/中坚/巅峰标签。升层=闭关肝条（大件范式）。
-- **剑影分光术（青元剑诀 7 层·不排太后）**：`layerUnlocks{7:[剑影分光]}`——黄枫谷篇内（九层版）即可解锁；
-  机制=分影多段(单体)/分光扫敌(群体)，分影数吃 `layerMul`，挂剑形法宝再放大（technique-tiers §7）。
-  此处只接"7 层解锁 + 基础形态"；绿煌剑加成留阶段 7。
-- **验收**：升层才出剑芒/剑盾/剑影分光；同境界巅峰>初入（tier.bal.js 增校验，梯度温和）；年表/天命栏显示层进度。
+### 阶段 3（E 功法层数轴 + 初入/巅峰 + 剑影分光术）technique-tiers §5/§7 —— v139 ✓ 已落
+- [x] **功法层数轴 `s.techLayers[techId]`**（惰性初始化；create 起手主修=入门层，`Loadout.migrate` 老存档兜底到能保留已装备招式的最低达标层，存读 roundtrip 一致）。
+- [x] **`grantSpells`→`layerUnlocks` 按层解锁**（data.js 青元剑诀 maxLayers:9 + `{3:剑芒,5:剑盾,7:剑影分光}`）；`Loadout.knownPool/isAuxSkill/learnTechnique(opts.layer)/raiseLayer/mainScaledSpells` 全部按层授技——未达层学会也入不了池。
+- [x] **`balance.layerMul(layer,max)`** = `1+0.3·clamp((layer-1)/(max-1))`（入门 1.0→满层 1.3，温和封顶）；`spellPower` 加第 5 参 `layerMul`，仅作用功法法术（武学/法器不吃）；combat 仅"主修当前层所授"`techSpells` 吃 layerMul。
+- [x] **`State.realmStage` 派生初入/中坚/巅峰**（由主修功法层进度派生，练气期用本身离散层→null，不污染 DATA.realms）；天命栏显示「功法·X/9 层」+ renderStats 大境界附「·初入/中坚/巅峰」。
+- [x] **升层=闭关肝条**（`Engine.canRefineLayer/refineLayer`：耗闭关月数+修为，门槛=筑基方可推进剑系高层；UI 闭关弹窗「参研功法层」入口；达标层解锁新战技并入年表）。
+- [x] **剑影分光术（青元剑诀 7 层）**：`layerUnlocks{7:[qingyuan_jianying]}`——黄枫谷篇九层版即可解锁；combat 落地形态A·分影多段（fixedSegs:3、每段独立结算克制/破甲、minLayer:7、mp20/cd2、吃 layerMul）；fx.js 分影破空特效；分光扫敌(群体)+绿煌剑加成留阶段 7（§7.3）。
+- [x] **story.js 青元剑诀改授**：李化元赠九层版=筑基初即第 3 层（剑芒即出、设主修、装备剑芒）；剑盾(5)/剑影分光(7)须日后闭关参研逐层精进。
+- **验收** ✓：tier.bal.js 增 layerMul 梯度校验（巅峰>初入、温和封顶≤1.3、满层进度<升一大境界=不盖境界、武学不吃层）；全测绿（20 套+balance MC，存读 roundtrip 一致；顺手修正 loadout.test 陈旧 skillSlots 6→8 对齐 v103 裁决）。剑影分光的精确数值（每段伤/mp/cd/分影数）落地后待蒙特卡洛校准（§7.2）。
 
 ### 阶段 4（G 装备位·黄枫谷）combat-arsenal §3.8
 - 接 E：黄枫谷剧情触发 → 发入门法器（烈阳剑等 treasure 招式）→ 装进法宝三位制（主/御/悬浮 UI）→ 招式按层解锁。
@@ -151,6 +153,13 @@
   ④平铺加成乘性化（治"+8"诅咒）；⑤补敌我血量·伤害锚点表（combat-balance §三·1 久欠）。
 - **承重墙·独立设计**：纯数值=设计可动点（authenticity §5.2），动漫考据不涉；落点全在 balance.js 纯函数，存档 schema 不变。
 - **验收**：同招随境界缩放、本命法宝达标境界体感主战、越阶底牌咬得动高血敌；蒙特卡洛"好招÷敌血"轴内恒定+越级胜率带达标；演武场数字可解释。
+
+## Backlog（周期7 之后·独立工程）
+- **地图分级重制（5 级空间下钻 + 势力叠加层）** — 2026-06-15 用户裁决，框架已写入 `docs/world-architecture.md §四·五·补`。
+  L1 世界图 / L2 大陆·大域 / L3 国·州域（与势力区域平级）/ L4 宗门驻地·城 / L5 据点单屏，逐级做出辨识度；
+  正道七派·魔道六宗·散修盟·慕兰=势力**叠加层**（归属标签+染色，非第 6 级）；未解锁节点 ？？迷雾占位，随篇章填充；
+  动态势力范围复用 `flag→投影`/`ExploreMap.flavor`（黄枫谷灭门南迁→散修盟·慕兰=魔道篇后剧情态，※去向待调研）。
+  施工顺序：骨架+？？占位+势力字段先行 → 每篇填那篇节点 → 动态改写挂 flag。**不混当前阶段。**
 
 ## 节奏纪律
 - 每周期结束：全测试绿 + bump ver.txt + push，用户手机即时可验。
