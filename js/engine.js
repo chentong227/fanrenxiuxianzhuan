@@ -4100,8 +4100,9 @@ const Engine = {
     this.passTime(1);
     let any = false;
     s.bottle.plots.forEach(p => {
-      if (p.crop && p.growth < 100) {
-        p.growth = clamp(p.growth + DATA.bottle.catalyzePerAction, 0, 100);
+      const maxG = (p.crop && DATA.bottle.crops[p.crop] && DATA.bottle.crops[p.crop].growth) || 100;
+      if (p.crop && p.growth < maxG) {
+        p.growth = clamp(p.growth + DATA.bottle.catalyzePerAction, 0, maxG);
         any = true;
       }
     });
@@ -4115,8 +4116,9 @@ const Engine = {
   harvestCrop(plotIndex) {
     const s = State.data;
     const p = s.bottle.plots[plotIndex];
-    if (!p.crop || p.growth < 100) return;
+    if (!p.crop) return;
     const crop = DATA.bottle.crops[p.crop];
+    if (!crop || p.growth < (crop.growth || 100)) return;
     State.give(crop.matureItem, crop.yield);
     this.log(`小绿瓶催熟之物已成，你收获「${DATA.items[crop.matureItem].name}」×${crop.yield}。`, "good");
     s.bottle.plots[plotIndex] = { crop: null, growth: 0 };

@@ -1820,9 +1820,10 @@ const UI = {
         return `<div class="plot"><div class="pinfo"><div class="pname">空地块</div><div class="pstat">可投入原料培育</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${seeds.join("") || '<span class="pstat">无可种原料</span>'}${lockedNote}</div></div>`;
       }
       const crop = DATA.bottle.crops[p.crop];
-      const ready = p.growth >= 100;
+      const maxG = crop.growth || 100;
+      const ready = p.growth >= maxG;
       return `<div class="plot">
-        <div class="pinfo"><div class="pname">${crop.name}</div><div class="pstat">成熟度 ${Math.round(p.growth)}%${crop.use ? ` · ${crop.use}` : ""}</div></div>
+        <div class="pinfo"><div class="pname">${crop.name}</div><div class="pstat">成熟度 ${Math.round(p.growth / maxG * 100)}%${crop.use ? ` · ${crop.use}` : ""}</div></div>
         ${ready
           ? `<button class="btn btn-mini" onclick="Engine.harvestCrop(${i}); UI.renderBottleModal();">收获</button>`
           : `<span class="pstat">培育中…</span>`}

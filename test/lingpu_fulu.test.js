@@ -60,7 +60,7 @@ console.log("\n=== D 随身灵圃 v2：多灵草谱 + 境界迁移 ===");
   s.bottle.unlocked = true;
   State.give("lingcao", 3);
   Engine.plantCrop(0, "lingcao");
-  for (let i = 0; i < 5 && s.bottle.plots[0].growth < 100; i++) Engine.tendBottle();
+  for (let i = 0; i < 8 && s.bottle.plots[0].growth < DATA.bottle.crops.lingcao.growth; i++) Engine.tendBottle();
   const yao0 = State.count("lingyao_dan");
   Engine.harvestCrop(0);
   assert(State.count("lingyao_dan") === yao0 + DATA.bottle.crops.lingcao.yield, "灵草谱：催熟满后收获灵乳灵药");
@@ -75,10 +75,30 @@ console.log("\n=== D 随身灵圃 v2：多灵草谱 + 境界迁移 ===");
   s.bottle.unlocked = true;
   State.give("lingcao", 2);
   Engine.plantCrop(0, "anshen");
-  for (let i = 0; i < 6 && s.bottle.plots[0].growth < 100; i++) Engine.tendBottle();
+  for (let i = 0; i < 8 && s.bottle.plots[0].growth < DATA.bottle.crops.anshen.growth; i++) Engine.tendBottle();
   const dan0 = State.count("ningshen_dan");
   Engine.harvestCrop(0);
   assert(State.count("ningshen_dan") === dan0 + 1, "凝神谱：催熟满后收获凝神丹");
+}
+
+// 成熟度按谱差异化（千年灵草 growth 300 远慢于灵草 100——价值随耗时迁移，非死字段）
+{
+  State.create("韩立", "si");
+  const s = State.data;
+  Engine.unlockBottle();
+  s.bottle.unlocked = true;
+  State.give("lingcao", 2);
+  Engine.plantCrop(0, "qiannian");
+  const per = DATA.bottle.catalyzePerAction;
+  const needLingcao = Math.ceil(DATA.bottle.crops.lingcao.growth / per);
+  for (let i = 0; i < needLingcao; i++) Engine.tendBottle();
+  assert(s.bottle.plots[0].growth < DATA.bottle.crops.qiannian.growth, "千年灵草：灵草早该熟的打理次数后仍未熟（耗时显著更长）");
+  const before = State.count("qiannian_lingcao");
+  Engine.harvestCrop(0);
+  assert(State.count("qiannian_lingcao") === before && s.bottle.plots[0].crop === "qiannian", "未熟不可收：千年灵草未达 growth 前收获无效、地块不清");
+  for (let i = 0; i < Math.ceil(DATA.bottle.crops.qiannian.growth / per); i++) Engine.tendBottle();
+  Engine.harvestCrop(0);
+  assert(State.count("qiannian_lingcao") === before + 1 && !s.bottle.plots[0].crop, "催足 growth 后方可收获千年灵草");
 }
 
 console.log("\n=== C 符箓自制：方案 + 制符台 ===");
