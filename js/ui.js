@@ -2082,10 +2082,10 @@ const UI = {
     `);
   },
 
-  // 图鉴页签：人物 | 大件（复用同一套图鉴 UI 的独立栏位）
+  // 图鉴页签：人物 | 大件 | 异闻录（复用同一套图鉴 UI 的独立栏位）
   _compTabs(active) {
     const t = (id, label, fn) => `<button class="comp-tab ${active === id ? 'on' : ''}" onclick="UI.${fn}()">${label}</button>`;
-    return `<div class="comp-tabs">${t("npc", "人物图鉴", "openCodex")}${t("big", "大件图鉴", "openBigitems")}</div>`;
+    return `<div class="comp-tabs">${t("npc", "人物图鉴", "openCodex")}${t("big", "大件图鉴", "openBigitems")}${t("yiwen", "异闻录", "openYiwen")}</div>`;
   },
 
   /* -------- 大件图鉴（第一公民系统总表：明牌惦记 + 如何开启·获取）-------- */
@@ -2121,6 +2121,60 @@ const UI = {
       ${this._compTabs("big")}
       <h2>大件图鉴 <span class="codex-count">${gotCount}/${reachable.length}</span></h2>
       <p style="color:var(--ink-dim);font-size:12px">大件＝节点非奖品：每一件都开一条轴、通向下一件。明牌惦记，照「引导」一步步挣来——不漏任何一件。</p>
+      <div class="bigitems">${sections}</div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">合上</button></div>
+    `);
+  },
+
+  /* -------- 异闻录（图鉴形式：触发留痕·未触发给引导。恒在原则——所有怪/材/情报客观存在）-------- */
+  openYiwen() {
+    const s = State.data;
+    const all = (typeof WORLD !== "undefined" && WORLD.yiwen) ? WORLD.yiwen : [];
+    const TYPE = { beast: "妖王异闻", material: "特殊材料", intel: "重要情报" };
+    const DONE_BADGE = { beast: "已伏诛", material: "已得", intel: "已了" };
+    const FXNUM = { "指路": "①", "识弱": "②", "召援": "③", "悬赏": "④", "备战": "⑤", "避坑": "⑥", "借物": "⑦" };
+    const STATE_CLS = { done: "bi-got", active: "bi-track", unseen: "bi-unheard" };
+    const stOf = (e) => (typeof Engine !== "undefined" && Engine._yiwenState) ? Engine._yiwenState(e, s) : "unseen";
+    const recorded = all.filter(e => stOf(e) !== "unseen").length;
+
+    const fxRow = (e) => {
+      const fx = (e.effects || []).map(x => `<span style="display:inline-block;font-size:11px;padding:1px 7px;margin:3px 5px 0 0;border:1px solid var(--gold-dim,#a7842f);border-radius:9px;color:var(--gold-bright,#d8b24a)">${FXNUM[x] || ""}${x}</span>`).join("");
+      return fx ? `<div style="margin-top:4px">${fx}</div>` : "";
+    };
+    const clueBar = (e) => {
+      if (!e.link || e.link.kind !== "beastRumor") return "";
+      const r = (WORLD.beastRumors || []).find(x => x.id === e.link.id);
+      if (!r || !r.clues || !r.clues.length) return "";
+      const cur = (s.beastRumor === e.link.id) ? Math.min(s.beastRumorClue || 0, r.clues.length) : 0;
+      return `<div class="bi-prog"><div class="bi-prog-bar"><i style="width:${Math.round(cur / r.clues.length * 100)}%"></i></div><span>线索 ${cur}/${r.clues.length}</span></div>`;
+    };
+    const cardOf = (e) => {
+      const stt = stOf(e);
+      if (stt === "unseen") {
+        return `<div class="bi-card bi-unheard">
+          <div class="bi-head"><b>？？？ · ${TYPE[e.type] || "异闻"}</b><span class="bi-badge">未闻</span></div>
+          <div class="bi-blurb" style="color:var(--ink-faint)">尚无风声入耳——但它客观存在于此世，或在某次探索里与你不期而遇。</div>
+          <div class="bi-guide"><span class="bi-guide-key">引导</span>${e.guide}</div>
+        </div>`;
+      }
+      const badge = stt === "done" ? (DONE_BADGE[e.type] || "已录") : "风声在耳";
+      return `<div class="bi-card ${STATE_CLS[stt]}">
+        <div class="bi-head"><b>${e.title}</b><span class="bi-badge">${badge}</span></div>
+        <div class="bi-blurb">${e.exist}</div>
+        ${clueBar(e)}${fxRow(e)}
+        <div class="bi-guide"><span class="bi-guide-key">引导</span>${e.guide}</div>
+      </div>`;
+    };
+    const order = ["beast", "material", "intel"];
+    const sections = order.map(ty => {
+      const items = all.filter(e => e.type === ty);
+      if (!items.length) return "";
+      return `<h3 class="panel-title">${TYPE[ty]}</h3><div class="bi-list">${items.map(cardOf).join("")}</div>`;
+    }).join("");
+    this.openModal(`
+      ${this._compTabs("yiwen")}
+      <h2>异闻录 <span class="codex-count">已录 ${recorded}/${all.length}</span></h2>
+      <p style="color:var(--ink-dim);font-size:12px">江湖风声、妖王威名、稀材所在——皆客观恒在。听闻则入录知其弱、得其引；未闻者亦在那里等你撞见。异闻只予「预知与助力」，从非门槛。</p>
       <div class="bigitems">${sections}</div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">合上</button></div>
     `);

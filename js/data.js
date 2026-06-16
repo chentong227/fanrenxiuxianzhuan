@@ -130,6 +130,8 @@ DATA.items = {
     desc: "伴身法宝：悬于眉心的青玉小环，凝神聚识——神识+2、灵力池+8。练气十一层方可伴身。" },
   qiannian_lingcao: { name: "千年灵草", rarity: "epic", type: "material",
     desc: "经小绿瓶以浓缩岁月之力催熟的灵草，药龄堪比千年野生之物。万宝楼见之眼开——一两棵，便够换楼上一件法器。" },
+  hanyancao: { name: "寒烟草", rarity: "rare", type: "material", sell: 12,
+    desc: "乌龙潭阴寒水汽里自生的至阴灵草，叶面常凝一层薄烟似的白霜——解热定神之妙材。采之需运功御寒，否则寒气侵体、神识发滞。" },
 
   /* —— 血色禁地 · 筑基丹链（huangfeng-design 第三/四幕）—— */
   xueshi_zhuyao: { name: "血色主药", rarity: "epic", type: "material",
@@ -446,8 +448,43 @@ DATA.exploreSites = {
     beastEnemy: "wild_wolf",
     beastHabitat: true,        // 妖王栖地：异闻里的妖王客观盘踞此地——纵未听闻，深处亦可能与之相遇（只是事先不知）
     beastHabitatChance: 0.3,   // 无异闻时，深处 boss 为一头未伏诛妖王的概率（其余仍是寻常散修）
+    beastPool: ["beast_baihu", "beast_wugong", "beast_chimu"],   // 本地栖地妖王池（区域限定：彩霞山一带，不串黄枫谷）
     companions: [],   // 七玄门篇暂独行；可由剧情/交互加入同伴
     arc: "qixuan",
+  },
+  // —— 黄枫谷外 · 乌龙潭（自由探索·银甲角蟒栖地；寒烟草自生）——
+  wulong_tan: {
+    id: "wulong_tan", name: "黄枫谷 · 乌龙潭",
+    w: 10, h: 10, stepCost: 0.4, sightRadius: 1,
+    density: { herb: 5, duherb: 5, ore: 2, chest: 1, beast: 5 },
+    beastEnemy: "rogue_cultivator",
+    beastHabitat: true,
+    beastHabitatChance: 0.3,
+    beastPool: ["yinjia_jiaomang"],   // 栖地妖王：蜕甲的银甲角蟒（客观盘踞潭底）
+    specialHerb: "hanyancao", specialHerbN: 3,   // 阴寒水汽里的寒烟草（部分灵草格替换）
+    companions: [],
+    arc: "huangfeng",
+  },
+  // —— 黄枫谷外 · 谷外山林（自由探索·无名妖王栖地）——
+  guwai_lin: {
+    id: "guwai_lin", name: "黄枫谷 · 谷外山林",
+    w: 11, h: 11, stepCost: 0.42, sightRadius: 1,
+    density: { herb: 4, duherb: 3, ore: 3, chest: 2, beast: 6 },
+    beastEnemy: "rogue_cultivator",
+    beastHabitat: true,
+    beastHabitatChance: 0.3,
+    beastPool: ["guwai_yaowang"],   // 栖地妖王：来历不明的山林妖王（其名待考据）
+    companions: [],
+    arc: "huangfeng",
+  },
+  // —— 太南谷 · 野林（自由探索·散修匪类出没；考据红线：暂不安置具名妖王）——
+  tainan_yelin: {
+    id: "tainan_yelin", name: "太南谷 · 野林",
+    w: 10, h: 10, stepCost: 0.38, sightRadius: 1,
+    density: { herb: 5, duherb: 3, ore: 3, chest: 2, beast: 4 },
+    beastEnemy: "rogue_cultivator",   // 莽莽野林多散修匪类，无具名妖王（不凭记忆杜撰）
+    companions: [],
+    arc: "huangfeng",
   },
   // —— 血色禁地（黄枫谷篇第三幕：五日限时深探索，死亡=真死的硬仗）——
   // 主药=筑基丹的根本；深处水潭=墨蛟（南宫婉并肩战）；中层游弋着狙杀者封岳。
