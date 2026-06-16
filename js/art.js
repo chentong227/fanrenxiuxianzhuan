@@ -123,6 +123,63 @@
       return this._v(`assets/cg/cg_${id}.png`);
     },
 
+    // —— 预加载（v149）：消除「新人物/新地图刚出现时慢慢浮现、像手机卡了」的观感 ——
+    // 根因＝立绘/场景/舆图都是按需 fetch+decode，首次显示要等网络+解码；淡入动画又把这段
+    // 延迟显形成「慢慢出现」。解法：进游戏后趁空闲把全部静态资产逐张预取并 decode 进缓存，
+    // 之后任何立绘/场景/舆图都是「秒显」，淡入只是锦上添花而非遮丑。
+    // 手机性能红线：逐张串行（不并发轰带宽）、用 requestIdleCallback 让位主线程、decode 异步。
+    _preloaded: false,
+    preloadAll() {
+      if (this._preloaded || typeof window === "undefined" || typeof Image === "undefined") return;
+      this._preloaded = true;
+      const urls = [];
+      // 1) 舆图最先（直接治「地图加载缓慢」）
+      Object.keys(MAPS).forEach(id => urls.push(this._v(`assets/maps/${id}.png`)));
+      // 2) 人物立绘 + 表情变体（治「新人物慢慢出现」）
+      Object.keys(PORTRAITS).forEach(id => {
+        urls.push(this._v(`assets/portraits/${id}.png`));
+        const e = EMOS[id];
+        if (e) Object.keys(e).forEach(emo => urls.push(this._v(`assets/portraits/${id}_${emo}.png`)));
+      });
+      // 3) 场景（按当前画幅优先取要用到的那一版，竖屏先竖版）
+      const portraitScreen = isPortraitScreen();
+      Object.keys(SCENES).forEach(id => {
+        const def = SCENES[id];
+        if (def && def.p && portraitScreen) {
+          urls.push(this._v(`assets/scenes/${id}_p.png`));
+        } else {
+          urls.push(this._v(`assets/scenes/${id}.png`));
+        }
+      });
+      // 4) 剧情 CG
+      Object.keys(CG).forEach(id => {
+        const def = CG[id];
+        if (def && def.p && portraitScreen) urls.push(this._v(`assets/cg/cg_${id}_p.png`));
+        else urls.push(this._v(`assets/cg/cg_${id}.png`));
+      });
+      // 5) 战斗立绘（最重，放最后——战斗另有自己的临战预热，这里只是兜底暖缓存）
+      Object.keys(BATTLERS).forEach(id => urls.push(this._v(`assets/battlers/${id}.png`)));
+      this._warm(urls);
+    },
+    // 串行暖缓存：逐张 new Image()+decode，每张完成后让位空闲再取下一张（不阻塞交互）。
+    _warm(urls) {
+      const idle = window.requestIdleCallback
+        ? (cb) => window.requestIdleCallback(cb, { timeout: 1500 })
+        : (cb) => setTimeout(cb, 180);
+      let i = 0;
+      const step = () => {
+        if (i >= urls.length) return;
+        const url = urls[i++];
+        const img = new Image();
+        img.decoding = "async";
+        try { img.src = url; } catch (e) { return idle(step); }
+        const next = () => idle(step);
+        if (img.decode) img.decode().then(next).catch(next);
+        else { img.onload = next; img.onerror = next; }
+      };
+      idle(step);
+    },
+
     // —— 以下为兼容旧调用的空操作（已无实时生成）——
     genEnabled() { return false; },
     ensure() {},

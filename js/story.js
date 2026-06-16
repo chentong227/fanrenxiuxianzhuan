@@ -640,6 +640,12 @@ const STORY = [
         hint: "同阶之争，你无敌（毒、暗器、剑——全用上）",
         resolve: "revenge_fight",
       },
+      {
+        text: "（强压杀意——先退去后山，备足毒草暗器，再回来取这三条命）",
+        hint: "韩立的道是万全准备：调息满血、底牌在手，再回此地。仇等得起。",
+        resolve: "revenge_prep",
+        calm: true,
+      },
     ],
   },
   {
@@ -1039,7 +1045,7 @@ const STORY = [
       "筑基的消息传开那日，整个百药园都炸了——四灵根伪灵根筑基，黄枫谷立谷以来，数得出几个？",
       "李化元把你唤去丹房，案上摊着一卷泛黄的剑诀。",
       { say: "李化元", text: "长春功到头了。筑基之后主修须换——这卷《青元剑诀》，谷中流传九层，弟子多止步三层。以你的心性，不止于此。" },
-      "你双手接过。卷册入手微沉，翻开第一页，一缕青芒自纸面流过。",
+      "你双手接过。卷册入手微沉，翻开第一页，一缕青芒自纸面流过——青芒可凝成三尺剑芒，亦可聚作丈余巨剑，自天倾斩。",
       { say: "李化元", tone: "soft", text: "去吧。把它练出名堂来——别辜负你那二十颗丹。" },
       { aside: "十九颗碎在丹田里，最后一颗成了。筑基这条路，是拿命堆出来的——往后的路，更是。" },
     ],
@@ -1051,8 +1057,9 @@ const STORY = [
         Loadout.learnTechnique(s, "qingyuan_sword", { layer: 3 });
         Loadout.setMain(s, "qingyuan_sword");
         Loadout.equipSkill(s, "qingyuan_jianmang");   // 三层·剑芒（剑盾/剑影分光未达层，暂入不了技能池）
+        Loadout.equipSkill(s, "jujian_shu");          // 巨剑术：随诀直授的大杀招（用户裁决·v149）——聚芒成剑、倾天斩落
       }
-      Engine.addMilestone("主修换代：《青元剑诀》（三层·剑芒）", "bigitem");
+      Engine.addMilestone("主修换代：《青元剑诀》（三层·剑芒＋巨剑术）", "bigitem");
       Engine.settleLedger("zhuji_dan_grudge", "入谷那日被夺走的东西，你用二十颗丹与一个境界，彻底讨了回来");
     },
     choices: [

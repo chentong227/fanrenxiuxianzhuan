@@ -382,6 +382,13 @@ const Main = {
     if (Engine.resumeJourney) setTimeout(() => Engine.resumeJourney(), 400);
     // 入世即起乐（按所在地点选轨）
     if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(UI._bgmForLocation(State.location()));
+    // 进游戏后趁空闲预热全部静态资产（立绘/场景/舆图/CG）——之后新人物·新地图秒显，
+    // 消除「慢慢浮现、以为手机卡了」的观感（详 art.js preloadAll）。延时起步，先让首屏渲染完。
+    if (typeof Art !== "undefined" && Art.preloadAll) {
+      const kick = () => Art.preloadAll();
+      if (window.requestIdleCallback) window.requestIdleCallback(kick, { timeout: 2500 });
+      else setTimeout(kick, 800);
+    }
   },
 
   /* -------- 嘉元城 demo 切换条（仅 ?citydemo 注入；不入正式流程）--------

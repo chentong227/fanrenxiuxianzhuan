@@ -520,6 +520,40 @@
         });
         F._run();
       },
+      /* 巨剑术（青元剑诀直授·大杀招·v149 用户裁决·重特效演出）：聚周身青芒凝铸丈余巨剑→
+       * 自高天倾斩而下→落点重震破甲裂阵。无 shadowBlur；粒子吃 _degraded；剑体＝加宽光带摞白芯。 */
+      jujian_shu(F, from, to) {
+        const p = to || from;
+        // ① 聚芒：施法者周身青芒上旋汇聚（蓄力的仪式感）
+        F.flash("#bdf2e6", 90, .16);
+        for (let i = 0; i < 12 * F._degraded; i++) {
+          const a = (i / 12) * TAU;
+          F.mote(from.x + Math.cos(a) * 26, from.y - 8 + Math.sin(a) * 30,
+            { vx: -Math.cos(a) * 1.4, vy: -Math.sin(a) * 1.0 - 0.6, life: 240, size: 3, c: i % 3 ? "#a8f0e0" : "#fff", delay: i * 10 });
+        }
+        // ② 自天倾斩：丈余巨剑自高天落于目标——加宽青芒光带摞白芯成剑体，剑脊一线白芒
+        const top = { x: p.x + 14, y: p.y - 168 };
+        setTimeout(() => {
+          F.ribbon(top, { x: p.x, y: p.y }, { core: "#7fe5d2", glowC: "#2fae9b", width: 17, flyMs: 150, tail: 0.95, hold: 150 });
+          F.ribbon(top, { x: p.x, y: p.y }, { core: "#ffffff", glowC: "#bff3e8", width: 6, flyMs: 150, tail: 0.85, hold: 130 });
+          F.ribbon({ x: top.x - 4, y: top.y }, { x: p.x - 3, y: p.y }, { core: "#eafff8", glowC: "#7fe5d2", width: 2.4, flyMs: 150, tail: 0.7, hold: 110 });
+        }, 170);
+        // ③ 倾斩落地：重震＋破甲冲击环×2＋裂地横弧＋青芒迸碎
+        setTimeout(() => {
+          F.shake(15);
+          F.ring(p.x, p.y + 8, { c: "#bff3e8", vr: 5.8, life: 360, lw: 4 });
+          setTimeout(() => F.ring(p.x, p.y + 8, { c: "#fff", vr: 3.6, life: 300, lw: 2 }), 70);
+          F.burst(p.x, p.y, "mu", 30, { power: 6.4 });
+          F.material(p.x, p.y, "mu");
+          F.flash("#d6fff2", 200, .42);
+          F._slashArc({ x: p.x, y: p.y + 6 }, 0, "#bff3e8");   // 裂地横弧（破甲裂阵）
+          for (let i = 0; i < 10 * F._degraded; i++) {
+            const a = rnd(-2.4, -0.7);
+            F.shard(p.x, p.y, { vx: Math.cos(a) * rnd(3, 7), vy: Math.sin(a) * rnd(3, 7), c: i % 2 ? "#bff3e8" : "#fff", size: rnd(3, 6) });
+          }
+        }, 340);
+        F._run();
+      },
       /* ============================================================
        * 辟邪神雷三连（v98 用户点名"做最好看的金色雷"）——金芯白炽，雷者天威
        * 金色雷：辟邪神雷克鬼魅邪魔（青竹蜂云剑·七十二雷）
