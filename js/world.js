@@ -641,6 +641,42 @@ WORLD.enemies = {
     reward: null, namedLoot: null,
   },
 
+  /* 宣乐（增量E·魔道争锋第一幕）——阴手敌型首演。掩月宗潜伏征军的阴人修士。
+   * 数值参照同为筑基初刺客的封岳(hp235)：淬毒(jin)/破甲(pierce)/循气追击(charge·track) 俱全，护甲薄、身法快，
+   * 阴诡偷袭起手——这是一场比拼"识破与底牌"的恶斗（败则浴血暂退·再战+伤，fail-forward）。 */
+  xuanle: {
+    name: "宣乐", hp: 245, sense: 14, speed: 16, agility: 14, move: 2, mp: 95, qiLayer: 13, elem: "jin", armor: 3,
+    tactics: "cunning", stubborn: true, canFlee: false,
+    introNote: "阴手敌型首演——掩月宗潜伏在征军里的阴人。惯于敛息匿形、趁乱下杀手，专挑落单与背身者。淬毒匕首又快又阴，「附骨索命」循着你的气息折转追击，一步躲不开。识破他的偷袭，破甲与毒方能反制这条毒蛇。",
+    attacks: [
+      { name: "淬毒匕首", dmg: 22, kind: "normal", weight: 12, elem: "jin", range: [1, 1], mp: 6 },
+      { name: "阴风穿喉", dmg: 20, kind: "pierce", weight: 8, range: [1, 2], mp: 8 },
+      { name: "附骨索命", dmg: 28, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12 },
+      { name: "袖底淬毒针", dmg: 14, kind: "normal", weight: 6, elem: "jin", range: [2, 4], mp: 5 },
+    ],
+    reward: { lingshi: 5 }, namedLoot: { yinling_sha: 1 },
+  },
+
+  /* 血玉蜘蛛（增量E·矿洞最深处的四级蛛妖）——封印松脱→狂化（叙事；机制单形态，
+   * 多形态轮换随乱星海篇噬金虫实装，见 engine.cycleSideForm 注）。数值参照墨蛟(hp270)上抬半档至筑基初期 boss：
+   * 破甲(pierce)/吐丝罩排(zone)/狂噬追击(charge·track) 俱全，甲坚(armor6)。行土(岩穴血玉甲)——
+   * 主修木系的韩立占着木克土的一线相克之利，是一场"可凭相克+底牌啃下"的硬 boss（败则 fail-forward）。 */
+  xueyu_zhizhu: {
+    name: "血玉蜘蛛", hp: 300, sense: 10, speed: 12, agility: 8, move: 2, mp: 95, elem: "tu", nature: "beast",
+    tactics: "feral", stubborn: true, canFlee: false, boss: true,
+    introNote: "矿洞最深处镇压的四级蛛妖——封印松脱，狂化在即！血玉甲壳刀剑难透，「血丝缚」吐丝罩战阵、「狂噬」循着你的气息猛扑，一步躲不开。它越受伤越狂。破甲、火攻与相克方是正解——你那身木行道基，正克它岩穴血玉的土煞。",
+    attacks: [
+      { name: "毒牙撕咬", dmg: 26, kind: "normal", weight: 12, range: [1, 1] },
+      // 血丝缚=吐丝罩战位前排（depth:front——僚位躲得掉）；血玉刺破甲
+      { name: "血丝缚", dmg: 16, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 3], depth: "front", mp: 6 },
+      { name: "血玉刺", dmg: 24, kind: "pierce", weight: 7, range: [1, 2] },
+      { name: "狂噬", dmg: 34, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12 },
+      { name: "血雾喷吐", dmg: 16, kind: "normal", weight: 6, elem: "tu", aim: "zone", zoneSpan: 1, range: [2, 5], mp: 8 },
+    ],
+    armor: 6,
+    reward: { lingshi: 6 }, namedLoot: { zhuluan: 2, xueyu_sijin: 1 },
+  },
+
   beast_chimu: {
     name: "赤目狼王", hp: 185, sense: 9, speed: 19, agility: 16, move: 2, mp: 60, tactics: "feral", elem: "huo", nature: "beast",
     introNote: "赤目狼王——一身火煞，身法鬼魅快得只剩残影，稍有不慎便是连袭两击！水克火，寒冰符是它的克星。它越是受伤越疯，看准蓄力回合全力压制。",
@@ -941,6 +977,24 @@ WORLD.npcs = [
     bio: "魔道争锋中威名赫赫的巨擘，甲胄如铁、双镰开阖，振翅裂石分风。燕家堡一战你力挫其锋，却未能诛之——它带伤遁空，结下不死不休之仇。再见之日，必在更凶险的杀场（再别天南）。",
     lines: ["（甲叶摩擦的森然声响，自黑暗里步步逼近）", "蝼蚁……也敢挡我的路。", "记住这口气息——下次，我啃碎你的骨头。"],
     where: [],   // 纯图鉴宿敌：燕家堡力挫后由 meetNpc("zhanwangchan") 录入「人物图鉴」
+  },
+  {
+    id: "lvtianmeng", name: "吕天蒙", role: "魔道争锋 · 矿场队官",
+    bio: "把守前线矿场的征军小队官，筑基初期修为。沉默寡言，待麾下被强征来的征卒尚存几分照拂，是这片冷硬矿场里少有的一点暖意。矿洞黑吃黑的塌方中被同袍宣乐暗算重伤，临死把贴身保命的平天尺塞进你手里——「替我……带出去。」话没说完，人就凉了。",
+    lines: ["新来的？记住——矿场里活下去，比立功要紧。", "宣乐那种人的笑脸，别信。", "（他望着矿洞深处，眉头锁得死紧）"],
+    where: [],   // 纯图鉴：矿场守备节点 meetNpc 录入
+  },
+  {
+    id: "xuanle", name: "宣乐", role: "掩月宗 · 潜伏阴手",
+    bio: "混在征军里的掩月宗阴手，平日扮作沉默的征卒，惯于敛息匿形、专挑落单与背身者下手。矿洞塌方的黑吃黑里，他借乱暗算队官吕天蒙、欲独吞矿脉机缘——却被你识破反杀。这是你头一回正面撞上「阴手」这一路阴诡难缠的魔道敌型。",
+    lines: ["（他冲你笑了笑，那笑意却没到眼底）", "矿洞底下的东西，见者有份……可惜你见得太多了。", "一个伪灵根，也配坏我的事？"],
+    where: [],
+  },
+  {
+    id: "xueyu_zhizhu", name: "血玉蜘蛛", role: "矿洞 · 四级蛛妖",
+    bio: "镇压在前线矿洞最深处的四级蛛妖，通体血玉甲壳、八足如戟。不知被封印了多少年，封印一朝松脱便狂化噬人。你以木行剑光将其诛杀，剖腹得白玉蛛卵两枚——一条「灵宠」的长线，自此埋下。",
+    lines: ["（幽深矿洞里，八只猩红的眼睛次第亮起）", "（血玉甲壳摩擦岩壁，发出令人牙酸的声响）"],
+    where: [],
   },
 ];
 

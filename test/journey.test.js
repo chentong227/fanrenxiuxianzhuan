@@ -543,6 +543,62 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(s.ledger.modao_conscript, "强征入伍入账本（增量E·烽火征调的钩子）");
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "yanjia_escape"), 0);
   assert(!s.pendingEvent, "燕家堡之战·完（主线挂在待命营·候增量E）");
+  assert(s.flags.modao_call_due > sandbox.State.absMonth(), "征调时锚已埋（modao_call_due=absMonth+2，未到不弹）");
+
+  // —— 5.7 魔道争锋·第一幕·烽火征调（增量E·矿道箱庭：征调→黑吃黑·阴手宣乐→血玉蜘蛛 boss→机缘房→陈巧倩读档分支）——
+  // 强制征调时锚到期（玩家闭关度月的等效），主线链式自动演出
+  s.flags.modao_call_due = 0;
+  Engine.checkStory();
+  assert(s.pendingEvent === "modao_e1_conscript", `征调令下·矿场守备（${s.pendingEvent}）`);
+  assert(s.metNpcs.includes("lvtianmeng"), "初识队官吕天蒙（入图鉴）");
+  assert(s.ledger.modao_conscript_post, "拨守黑风岭矿场入账本（亲见弃子战术）");
+  // 征调 → 矿洞黑吃黑（阴手宣乐现形，吕天蒙临死塞来平天尺）
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e1_conscript"), 0);
+  assert(s.pendingEvent === "modao_e1_betray", `矿洞黑吃黑·阴手现形（${s.pendingEvent}）`);
+  assert(State.count("pingtian_chi") === 1, "吕天蒙遗物·平天尺入手（×1，遗物长线）");
+  // 黑吃黑 → 反杀宣乐（阴手敌型首演）
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e1_betray"), 0);
+  const xc = Engine._combat;
+  assert(xc && xc.enemies[0].name === "宣乐", "宣乐入战（阴手敌型首演）");
+  assert(WORLD.enemies.xuanle.tactics === "cunning" && WORLD.enemies.xuanle.canFlee === false, "宣乐·阴诡战术·不可逃（识破偷袭→反杀）");
+  Engine._combat.enemies.forEach(e => { e.hp = 0; });
+  Engine._combat._checkEnd();
+  Engine._finishCombat();
+  assert(s.flags.xuanle_slain && s.flags.modao_e1_betray_done, "诛杀宣乐（xuanle_slain + 节点收口）");
+  assert(State.count("yinling_sha") === 1, "宣乐遗物·隐灵纱自动入袋（namedLoot ×1）");
+  assert(s.metNpcs.includes("xuanle"), "宣乐入「人物图鉴」（阴手codex）");
+  assert(s.ledger.xuanle_slain, "黑吃黑·反杀阴手入账本");
+  // 反杀宣乐 → 血玉蜘蛛 boss（矿洞最深处·封印松脱狂化·单形态）
+  assert(s.pendingEvent === "modao_e1_spider", `矿洞最深处·血玉蜘蛛（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e1_spider"), 0);
+  const sc = Engine._combat;
+  assert(sc && sc.enemies[0].name === "血玉蜘蛛", "血玉蜘蛛入战");
+  assert(sc.enemies[0].boss && !sc.enemies[0].canFlee, "血玉蜘蛛·boss·不可逃（单形态正面硬战）");
+  assert(WORLD.enemies.xueyu_zhizhu.elem === "tu", "血玉蜘蛛·土属（韩立木行克之，可胜）");
+  Engine._combat.enemies.forEach(e => { e.hp = 0; });
+  Engine._combat._checkEnd();
+  Engine._finishCombat();
+  assert(s.flags.xueyu_zhizhu_slain && s.flags.modao_e1_spider_done, "诛杀血玉蜘蛛（xueyu_zhizhu_slain + 节点收口）");
+  assert(State.count("zhuluan") === 2, "剖腹得白玉蛛卵×2（namedLoot·开灵宠长线）");
+  assert(State.count("xueyu_sijin") === 1, "血玉蛛丝入袋（namedLoot ×1）");
+  assert(s.metNpcs.includes("xueyu_zhizhu"), "血玉蜘蛛入「人物图鉴」");
+  assert(s.ledger.xueyu_slain, "矿洞伏诛四级妖入账本");
+  // 血玉蜘蛛 → 机缘房（机缘 onArrive 已结算：大挪移令+补天丹+开灵宠线）
+  assert(s.pendingEvent === "modao_e1_fortune", `矿洞密室·机缘（${s.pendingEvent}）`);
+  assert(State.count("dayi_ling") === 1, "大挪移令入手（×1·乱星海长线钥匙）");
+  assert(s.flags.butian_used, "补天丹·服下（butian_used→修炼速度乘性永久+10%）");
+  assert(s.flags.lingchong_line_open, "灵宠长线立项（lingchong_line_open）");
+  assert(s.ledger.dayi_ling_got && s.ledger.lingchong_line, "大挪移令+灵宠线入账本");
+  // 机缘 → 陈巧倩读档分支（喂过忘尘丹=她不识你；force chen_wangchen 锁定「故人不识」线）
+  s.ledger.chen_wangchen = "（测试·喂过忘尘丹·她已不识）";
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e1_fortune"), 0);
+  assert(s.pendingEvent === "modao_e1_chen_forgot", `读档分支·故人不识（${s.pendingEvent}）`);
+  assert(s.flags.modao_act1_done, "魔道争锋·第一幕收口（modao_act1_done）");
+  assert(s.ledger.chen_qiaoqian_forgot, "前线再遇陈巧倩·平淡道别入账本");
+  // 两条陈巧倩节点都须存在（未喂线为占位草稿·待用户亲笔，结构先就位）
+  assert(sandbox.STORY.find(x => x.id === "modao_e1_chen_remember"), "陈巧倩·未喂忘尘丹线节点已就位（占位草稿）");
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e1_chen_forgot"), 0);
+  assert(!s.pendingEvent, "魔道争锋·第一幕·烽火征调·完（主线挂在矿场前线·候第二幕）");
 }
 
 console.log("\n=== 6. 拜别版回乡（离门远行）===");

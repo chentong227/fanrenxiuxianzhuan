@@ -1284,12 +1284,186 @@ const STORY = [
       State.setFlag("yanjia_done");
       State.setFlag("modao_conscripted");
       State.data.location = "modao_front";   // 退守前线待命营（home:闭关/调息），矿道箱庭随增量E开
+      // 征调时锚：编入待命营后约两月，征调令方下（先给一段闭关备战的喘息，再开矿场硬仗）
+      s.flags.modao_call_due = State.absMonth() + 2;
       Engine.writeLedger("modao_conscript", "逃出燕家堡，被七派强征入伍——编入魔道争锋前线待命营，听候征调");
       Engine.addMilestone("魔道争锋篇·启：逃出燕家堡，被强征入伍", "story");
       if (typeof Sfx !== "undefined") Sfx.play("bell");
     },
     choices: [
       { text: "「这一仗，才刚开始。」随征旗开赴前线。（燕家堡之战·完）", resolve: "advance" },
+    ],
+  },
+
+  /* ============================================================
+   *  魔道争锋 · 第一幕 · 烽火征调（矿道箱庭）—— 增量E（87~100话）
+   *  官方序：燕家堡之战 → 魔道争锋（22~46话）。考据源 docs/modao-design.md §第一幕（用户修订裁决并入 2026-06-16）。
+   *  链：征调矿场守备 → 矿洞黑吃黑·阴手宣乐 → 血玉蜘蛛 boss → 机缘房 → 陈巧倩读档分支。
+   *  设计取舍：灵宠孵化系统与 L3 矿洞箱庭暂以叙事+直战承载（得卵即立项，孵化随后续篇章实装）；
+   *  血玉蜘蛛单形态（多形态随乱星海篇）。【修·待用户亲笔】陈巧倩未喂忘尘丹线情感戏为占位草稿。
+   * ============================================================ */
+  {
+    id: "modao_e1_conscript",
+    skipIf: (s) => s.flags.modao_e1_conscript_done,
+    cond: (s) => s.flags.modao_conscripted && !s.flags.modao_e1_conscript_done
+                 && State.absMonth() >= (s.flags.modao_call_due || 0),
+    bgm: "tense",
+    objTitle: "听候征调",
+    objHint: "前线待命营——闭关修炼、调息备战（度月即可）。征调令旦夕将至，矿场守备的硬仗在前头等你。",
+    title: "魔道争锋·第一幕 · 烽火征调",
+    text: [
+      { scene: "魔道前线 · 黑风岭矿场" },
+      "待命营里熬了些时日，一纸征调令终于压下来——你被拨去黑风岭矿场守备。这片矿脉出产炼器炼丹的灵矿，正魔两道都红了眼，是前线绞肉机般的死争之地。",
+      "领你的是个沉默寡言的小队官，姓吕名天蒙，筑基初期。他扫了你一眼，没问灵根，只把一面刻着编号的腰牌丢给你。",
+      { say: "吕天蒙", tone: "声音沉冷", text: "新来的，记住一句话——矿场里活下去，比立功要紧。前头那些『弃子』，就是没记住这句话。" },
+      "他抬了抬下巴。矿道口外，几个修为低微的征卒正被推去填魔物的口子——所谓弃子战术，拿人命去探路、去耗魔物的杀招。你望着那几个再没回来的背影，心口发沉。",
+      { aside: "弃子。在这片矿场，伪灵根筑基的你，和那些被推上去的人，本就只隔着一层窗户纸。想活着走出去，就得比谁都清醒。" },
+      "队伍里还有个总含着浅笑的征卒，唤作宣乐，话不多，眼神却总在人背后转。你说不上哪里不对，只是本能地，不愿把后背交给他。",
+    ],
+    onArrive(s) {
+      Engine.meetNpc("lvtianmeng", "黑风岭矿场的征军小队官——待麾下征卒尚存几分照拂，在这冷硬矿场里难得。");
+      State.setFlag("modao_e1_conscript_done");
+      State.data.location = "modao_front";
+      Engine.writeLedger("modao_conscript_post", "拨入黑风岭矿场守备——初识队官吕天蒙，亲见『弃子战术』的冷酷");
+      Engine.addMilestone("魔道争锋·第一幕：烽火征调，拨守黑风岭矿场", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("danger");
+    },
+    choices: [
+      { text: "「我不做弃子。」收起腰牌，打起十二分精神。", resolve: "advance" },
+    ],
+  },
+  {
+    id: "modao_e1_betray",
+    skipIf: (s) => s.flags.modao_e1_betray_done,
+    cond: (s) => s.flags.modao_e1_conscript_done && !s.flags.modao_e1_betray_done,
+    bgm: "boss",
+    title: "矿洞黑吃黑 · 阴手现形",
+    text: [
+      { scene: "黑风岭 · 矿洞深处" },
+      "一队人奉命深入矿洞清剿渗进来的魔物。行至深处，一声闷响——有人炸了矿！岩层轰然垮塌，烟尘里惨叫四起，整支小队转眼被冲散在塌方与黑暗之间。",
+      "混乱中你瞥见一道身影贴上了吕天蒙的后背——是宣乐。他脸上那点浅笑终于咧开，一柄淬毒的匕首已抵住队官的命门。",
+      { say: "宣乐", tone: "声音阴狠", text: "队官，得罪了。这矿脉底下的好东西，掩月宗惦记很久了……黑吃黑而已，乱矿里死个把人，谁查得清？" },
+      { aside: "掩月宗的阴手！平日扮作征卒敛息匿形，专挑这种乱局对自己人下手——这一路阴诡敌型，你还是头一回正面撞上。" },
+      "吕天蒙吐着血，用尽最后力气将一截青铜短尺塞进你手里。",
+      { say: "吕天蒙", tone: "气若游丝", text: "平天尺……替我，带出去。这条毒蛇，别……别让他得逞——" },
+      "话没说完，人就凉了。宣乐的匕首已转向了你。识破了他的偷袭，退无可退——这一战，替死去的队官，讨回那一刀！",
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e1_betray_seen");
+      if (!s.flags.pingtian_got) {
+        State.give("pingtian_chi", 1);
+        State.setFlag("pingtian_got");
+        Engine.log("【遗物】吕天蒙拼死塞来的「平天尺」入手——一截不起眼的青铜短尺，他日可炼可参，自成一条法器长线。", "good");
+      }
+      if (typeof Sfx !== "undefined") Sfx.play("danger");
+    },
+    choices: [
+      { text: "「这一刀，是替吕队官还的。」御剑反杀宣乐！", resolve: "xuanle_fight" },
+    ],
+  },
+  {
+    id: "modao_e1_spider",
+    skipIf: (s) => s.flags.modao_e1_spider_done,
+    cond: (s) => s.flags.modao_e1_betray_done && !s.flags.modao_e1_spider_done,
+    bgm: "boss",
+    title: "矿洞最深处 · 血玉蜘蛛",
+    text: [
+      { scene: "黑风岭 · 矿洞最深处" },
+      "诛了宣乐，你循着塌方撕开的缺口，摸进了矿洞从未有人到过的最深处。岩壁上密布暗红的丝网，空气里浮着一股腥甜的血气。",
+      "缺口尽头，一道古旧的封印阵纹正在崩裂——方才那场炸矿塌方，竟把镇在矿脉底下不知多少年的东西，给震松了。",
+      "血光一闪，一头通体血玉甲壳、八足如戟的巨妖自封印中挣出——四级蛛妖，血玉蜘蛛！封印松脱，它狂化在即，猩红的复眼里只剩噬人的疯狂。",
+      { aside: "四级妖，气息比寻常筑基还凶悍几分。可它那一身岩穴血玉，是土煞之质——你这身木行道基，正克它。狭路相逢，避无可避：杀了它，或被它吞了。" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e1_spider_seen");
+      if (typeof Sfx !== "undefined") Sfx.play("danger");
+    },
+    choices: [
+      { text: "「以木克土。」聚起木行剑光，迎上狂化的血玉蜘蛛！", resolve: "xueyu_zhizhu_fight" },
+    ],
+  },
+  {
+    id: "modao_e1_fortune",
+    skipIf: (s) => s.flags.modao_e1_fortune_done,
+    cond: (s) => s.flags.modao_e1_spider_done && !s.flags.modao_e1_fortune_done,
+    bgm: "triumph",
+    title: "矿洞密室 · 机缘",
+    text: [
+      { scene: "矿洞 · 蛛妖巢穴密室" },
+      "血玉蜘蛛伏诛，你剖开它腹下的卵囊，得了两枚温润的白玉蛛卵——未及孵化，灵机犹存。得卵即立项，这是一条「灵宠」的长线，孵化之法，留待来日。",
+      "巢穴尽头还藏着一间石室。室心一座古旧的传送阵盘早已残破熄灭，阵心却嵌着一枚古朴玉令——「大挪移令」。你说不清它的来历，只觉这东西通着某个极遥远的去处。",
+      "石室一角的玉匣里，静静躺着一枚赤金色的灵丹。古丹方所炼的「补天丹」，专为补全先天残缺的灵根——对你这伪灵根而言，简直是天赐之物。",
+      { aside: "补天丹……伪灵根的桎梏，能松一松了。" },
+      "你当即盘膝服下补天丹。一股暖流游走百脉，残缺的灵根被丝丝补全，往后吐纳百脉之效，永久地长进了一分。",
+    ],
+    onArrive(s) {
+      if (!s.flags.modao_e1_fortune_done) {
+        State.give("dayi_ling", 1);
+        State.setFlag("butian_used");   // 补天丹·服下：修炼速度永久小幅提升（butianMul ×1.10，见 engine.cultivate）
+        State.setFlag("lingchong_line_open");
+        Engine.writeLedger("lingchong_line", "剖血玉蜘蛛得白玉蛛卵两枚——「灵宠」长线立项，孵化随后续篇章实装");
+        Engine.writeLedger("dayi_ling_got", "矿洞古传送阵心得「大挪移令」——一把通往极远之地的钥匙（乱星海长线）");
+        Engine.addMilestone("矿洞机缘：得大挪移令·服补天丹·开灵宠长线", "bigitem");
+      }
+      State.setFlag("modao_e1_fortune_done");
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+    },
+    choices: [
+      { text: "收起大挪移令与两枚蛛卵，循原路退出矿洞。", resolve: "advance" },
+    ],
+  },
+  {
+    id: "modao_e1_chen_forgot",
+    skipIf: (s) => s.flags.modao_e1_chen_done || !(s.ledger && s.ledger.chen_wangchen),
+    cond: (s) => s.flags.modao_e1_fortune_done && !s.flags.modao_e1_chen_done
+                 && !!(s.ledger && s.ledger.chen_wangchen),
+    bgm: "sorrow",
+    title: "待命营 · 故人不识",
+    text: [
+      { scene: "魔道前线 · 待命营" },
+      "退出矿洞，回到待命营。一支运送丹药的队伍正从营门进来——押队的女修一身黄枫谷装束，眉目清冷。是陈巧倩。",
+      { aside: "黄枫谷一别，没想到在这魔道前线又遇上她。只是……那枚忘尘丹下去之后，她眼里那段过往，早被你亲手抹去了。" },
+      { say: "陈巧倩", tone: "语气疏淡", text: "这位道友，借过。前线丹药紧着伤号，闲人莫挡道。" },
+      "她的目光在你脸上停了不到一瞬，便淡淡移开，没有半分波澜——她是真的，不记得你了。",
+      { aside: "也好。这一世的恩怨牵扯，到此干净两清。她不必记得坊市归途那一夜，也不必记得你欠她、她欠你的那些。就当……从没相识过。" },
+      "你侧身让开。她押着丹药队走远，背影没有一次回头。",
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e1_chen_done");
+      State.setFlag("modao_act1_done");
+      Engine.writeLedger("chen_qiaoqian_forgot", "前线再遇陈巧倩——忘尘丹既下，她已不识你，平淡道别，恩怨两清");
+      Engine.addMilestone("魔道争锋·第一幕·完：故人不识，烽火征调了结", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+    },
+    choices: [
+      { text: "「就当从没相识过。」（魔道争锋·第一幕·完）", resolve: "advance" },
+    ],
+  },
+  {
+    id: "modao_e1_chen_remember",
+    skipIf: (s) => s.flags.modao_e1_chen_done || !!(s.ledger && s.ledger.chen_wangchen),
+    cond: (s) => s.flags.modao_e1_fortune_done && !s.flags.modao_e1_chen_done
+                 && !(s.ledger && s.ledger.chen_wangchen),
+    bgm: "sorrow",
+    title: "待命营 · 故人相识",
+    text: [
+      { scene: "魔道前线 · 待命营" },
+      "退出矿洞，回到待命营。一支运送丹药的队伍正从营门进来——押队的女修一身黄枫谷装束，眉目清冷。是陈巧倩。",
+      { aside: "当年那枚忘尘丹，你终究没让她服下。于是黄枫谷的恩怨、坊市归途那一夜，她都还记着——记着你。" },
+      // —— 【修·待用户亲笔·占位草稿】未喂忘尘丹线·她认出你·重头情感戏（待定稿，勿当终稿）——
+      { say: "陈巧倩", emo: "sad", tone: "声音微颤", text: "（占位草稿·待用户亲笔）……韩师弟？真的是你。这魔道前线刀山火海，你也被征调来了……" },
+      "【占位草稿：此处为「未喂忘尘丹」线的重头情感戏，待用户亲笔定稿——她认出你、当年那一夜的命债与那个你答不上来的问题、前线重逢的复杂心绪。】",
+      { aside: "（占位）她还记得。这一截路，看来还没走完。" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e1_chen_done");
+      State.setFlag("modao_act1_done");
+      Engine.writeLedger("chen_qiaoqian_remember", "前线再遇陈巧倩——忘尘丹未下，她仍记得你（情感线待续·占位草稿）");
+      Engine.addMilestone("魔道争锋·第一幕·完：故人相识，前路未了", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+    },
+    choices: [
+      { text: "「巧倩师姐。……是我。」（魔道争锋·第一幕·完）", resolve: "advance" },
     ],
   },
 ];
