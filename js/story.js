@@ -1100,7 +1100,65 @@ const STORY = [
     ],
   },
   {
+    /* —— 元武国·齐云霄代工（黄枫谷篇·血色禁地后真去元武国：墨蛟材料+千年灵草 → 一炉三件大件）——
+     *   考据 ≥2 源：combat-arsenal §3.8 / huangfeng-design 墨蛟链·阵法链 / bigitem-design 首条范本 /
+     *   modao-design 裁决3·5（真去元武国代工·首访不遇辛如音·须排在大衍诀演出之前）。
+     *   where:"yuanwu" 地点门禁——玩家须真北上元武国方触发；发放在此（增量B 仅立项定义）。 */
+    id: "qiyunxiao_daigong",
+    where: "yuanwu",
+    skipIf: (s) => s.flags.daigong_done,
+    cond: (s) => s.flags.dongfu_done && !s.flags.daigong_done,
+    objTitle: "北上元武国 · 代工",
+    objHint: "携血色禁地的墨蛟皮鳞角，越太岳山脉北上元武国，寻百艺坊巧匠齐云霄代工。",
+    title: "代工 · 百艺坊巧匠",
+    text: [
+      { scene: "元武国 · 百艺坊" },
+      "出黄枫谷北行，过太岳山脉，便是元武国——比胥国更尚武的邻邦。坊市街尾那间「百艺坊」招牌不大，炉火却彻夜不熄。",
+      "你解下行囊里那一捆血色禁地的战利品：墨蛟之皮、之鳞、之角，腥气未散。柜后转出一个精瘦汉子，三角眼往那堆料上一扫，先是一亮，随即慢条斯理敲起算盘。",
+      { say: "齐云霄", text: "墨蛟的料？啧——好东西，到了旁人手里是糟蹋。皮可裁帆、角可炼钩、鳞可衬骨。小兄弟，是要快、要狠，还是要稳？" },
+      { say: "韩立", text: "都要。" },
+      { say: "齐云霄", emo: "smile", text: "痛快！那便一炉三件：神风舟载你赶路，乌龙夺替你搏命；再奉送一张护阵的图——颠倒五行阵，基础的式子，我那口千年灵草的老底，匀你一份作引。" },
+      { aside: "坊里似乎还该有个掌账的女子打理这些，却始终不见人影。齐云霄只字未提，你也没多问——有些人，要等再来一趟，才遇得上。" },
+    ],
+    onArrive(s) {
+      Engine.meetNpc("qiyunxiao", "元武国百艺坊的巧匠，一炉好风火——墨蛟皮、千年灵草这等好料，到他手里方不算糟蹋。");
+      Engine.writeLedger("yuanwu_first", "北上元武国百艺坊，会巧匠齐云霄代工——首访不遇辛如音");
+    },
+    choices: [
+      {
+        text: "「尽数托付。」把墨蛟的皮鳞角，连同这一程赶路与搏命的指望，都交进这炉火里。",
+        effect(s) {
+          const made = [];
+          if (State.count("wulong_duo") < 1 && State.take("mojiao_jiao", 1)) {
+            State.give("wulong_duo", 1);
+            made.push("乌龙夺（御物·破甲水属攻击法宝——继金蚨子母刃后的筑基主战法器）");
+          }
+          if (s.flightId !== "shen_feng_zhou" && State.take("mojiao_pi", 1)) {
+            State.take("mojiao_lin", 1);   // 龙骨贴片：有则用，缺亦不阻
+            s.flightId = "shen_feng_zhou";
+            if (DATA.flightTreasures.shen_feng_zhou) DATA.flightTreasures.shen_feng_zhou.locked = false;
+            made.push("神风舟（御风疾驰的小舟形法器——前期赶路全靠它）");
+          }
+          if (State.count("wuxing_zhen") < 1) {
+            State.take("qiannian_lingcao", 1);   // 引子：自带千年灵草则耗，缺则齐云霄以自家老底补
+            State.give("wuxing_zhen", 1);
+            made.push("颠倒五行阵图·基础版（洞府护阵——他日魔道重逢齐云霄，可加强为「真·颠倒五行阵」）");
+          }
+          State.setFlag("daigong_done");
+          Engine.addMilestone("元武国代工：齐云霄一炉三件（神风舟·乌龙夺·颠倒五行阵基础版）", "bigitem");
+          Engine.writeLedger("daigong_done", "墨蛟之料托元武国齐云霄炼成三件大件——神风舟、乌龙夺、颠倒五行阵基础版");
+          if (typeof Sfx !== "undefined") Sfx.play("success");
+          const body = made.length
+            ? "炉火三日不熄。再开炉时——\n\n" + made.map(m => "· " + m).join("\n") + "\n\n齐云霄拍去掌上的灰：「拿好。墨蛟没白杀，你也没白来这一趟。」"
+            : "你料囊空空，齐云霄两手一摊：「巧妇难为无米之炊。下回带足墨蛟的料，再来寻我。」";
+          return { text: body, kind: "good" };
+        },
+      },
+    ],
+  },
+  {
     id: "ye_finale",
+    where: "huangfeng_gate",
     skipIf: (s) => s.flags.huangfeng_complete,
     cond: (s) => s.flags.dongfu_done && !s.flags.huangfeng_complete,
     bgm: "tense",

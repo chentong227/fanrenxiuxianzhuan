@@ -477,7 +477,27 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(s.pendingEvent === "dongfu_pick", `洞府选址触发（${s.pendingEvent}）`);
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "dongfu_pick"), 0);
   assert(s.flags.dongfu_type === "lingquan", "灵泉眼洞府落成（修炼+15%）");
-  // —— 叶师叔之报（黄枫谷篇收口）——
+  // —— 赴元武国代工（增量C：齐云霄一炉三件·首访不遇辛如音）——
+  assert(!s.pendingEvent, "洞府落定后挂在「赴元武国」地点门禁（未就地触发叶师叔）");
+  if (State.count("mojiao_pi") < 1) State.give("mojiao_pi", 1);     // 兜底：神风舟料在手
+  if (State.count("mojiao_jiao") < 1) State.give("mojiao_jiao", 1); // 兜底：乌龙夺料在手
+  State.give("qiannian_lingcao", 1);                                // 玩家此前已售，补一株以验消耗路径
+  const matBefore = { jiao: State.count("mojiao_jiao"), pi: State.count("mojiao_pi"), qnc: State.count("qiannian_lingcao") };
+  s.location = "yuanwu";
+  Engine.checkStory();
+  assert(s.pendingEvent === "qiyunxiao_daigong", `元武国代工触发（${s.pendingEvent}）`);
+  assert(s.metNpcs.includes("qiyunxiao"), "齐云霄入图鉴");
+  assert(!s.metNpcs.includes("xinruyin"), "首访不遇辛如音（留再别天南）");
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "qiyunxiao_daigong"), 0);
+  assert(State.count("wulong_duo") === 1, "乌龙夺到手（御物·破甲水攻法宝）");
+  assert(s.flightId === "shen_feng_zhou", "神风舟到手（御风提速）");
+  assert(State.count("wuxing_zhen") === 1, "颠倒五行阵图·基础版到手");
+  assert(State.count("mojiao_jiao") === matBefore.jiao - 1, "墨蛟之角实扣（乌龙夺料）");
+  assert(State.count("mojiao_pi") === matBefore.pi - 1, "墨蛟之皮实扣（神风舟料）");
+  assert(State.count("qiannian_lingcao") === matBefore.qnc - 1, "千年灵草实扣（颠倒五行阵引）");
+  assert(s.flags.daigong_done, "代工完成（daigong_done）");
+  // —— 叶师叔之报（黄枫谷篇收口·回山门触发）——
+  s.location = "huangfeng_gate";
   if (!s.pendingEvent) Engine.checkStory();
   assert(s.pendingEvent === "ye_finale", `叶师叔之报触发（${s.pendingEvent}）`);
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "ye_finale"), 0);
