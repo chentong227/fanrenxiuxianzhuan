@@ -122,11 +122,38 @@
     // source: "martial"|"art"；grade: 主修功法品阶(1黄~4天)；realmTier: 大境界序(0练气,1筑基,...)
     sourceMul(source) { return source === "martial" ? 0.8 : 1.0; },
     gradeMul(grade) { return ({ 0: 0.85, 1: 1.0, 2: 1.15, 3: 1.35, 4: 1.6 })[grade || 1] || 1.0; },
+    /* ---- 大境界几何标度 realmBand（A2 承重墙·读时计算）----
+     * 法术/法器威力随大境界**几何**成长，与法力池/血量同档，而非线性逐档+定值。
+     * 线性标度会让高境界手段被基数淹没（"元婴用眨眼只有 20"的根）；几何标度让
+     * "招式÷敌血"轴内恒定、跨阶靠底牌咬。候选起步值（待 scale.bal.js 蒙特卡洛校准）：
+     *   练气1.0 / 筑基2.4 / 结丹5.5 / 元婴12 / 化神26。
+     * realmBand(0)=1.0 → 练气期逐字节零扰动（既有测试全绿的硬约束）。
+     * 超出表（化神以上）按 ×2.2/档 外推，保持几何不塌。
+     */
+    realmBand(realmTier) {
+      const band = [1.0, 2.4, 5.5, 12, 26];
+      const t = realmTier || 0;
+      return band[t] != null ? band[t] : band[band.length - 1] * Math.pow(2.2, t - (band.length - 1));
+    },
     realmScale(source, realmTier) {
-      // 武学几乎不随境界成长；法术随境界成长；法器（御物）成长最陡——威力=注入法力
+      // 武学几乎不随大境界成长（贴身肉搏的下限，终被法术/法宝拉开）；
+      // 法术与法器统一吃几何 realmBand（标度对齐——法宝额外的强弱由 driveMul/本命决定，不再靠更陡的标度）。
       if (source === "martial") return 1 + (realmTier || 0) * 0.05;
-      if (source === "treasure") return 1 + (realmTier || 0) * 0.5;
-      return 1 + (realmTier || 0) * 0.35;
+      return this.realmBand(realmTier);
+    },
+    /* ---- 法宝驱动门槛 driveRealm + 本命系数 natal（A2 承重墙·读时计算）----
+     * 法宝威力=注入法力，须境界够格方能"驱"得动（"古宝唯元婴可驱"的考据落地）：
+     *  - realmTier < driveRealm：越阶强驱，打折（候选 ×0.45）——练气号驱结丹本命法宝就该弱。
+     *  - realmTier ≥ driveRealm 且 natal：达标本命法宝，吃本命系数（候选 ×1.35，体感"主战"）。
+     *  - 无 driveRealm（寻常法器·练气即可驭）或达标非本命：×1.0，逐字节零扰动。
+     *  - isConsumable（chargeCost 消耗性底牌·特区四通道）：**不吃驱动门槛折扣**——底牌走乘性穿透。
+     * 候选起步值待 scale.bal.js 校准。
+     */
+    driveMul(realmTier, driveRealm, isNatal, isConsumable) {
+      const dr = driveRealm || 0;
+      const rt = realmTier || 0;
+      if (rt < dr) return isConsumable ? 1.0 : 0.45;  // 消耗性底牌豁免门槛折扣
+      return isNatal ? 1.35 : 1.0;                     // 达标本命=主战；寻常达标=无修正
     },
     // 功法层数轴：同一门功法逐层精进的"温和"乘子（入门 1.0 → 满层 1.3）。
     // 平缓单调，保证同境界同品阶巅峰>初入，但峰值刻意低于"高一大境界"的跨度（realmScale 一档≥0.35），不喧宾夺主。

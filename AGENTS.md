@@ -71,7 +71,8 @@
      （`rebase` 保持 main 线性，等同直推。）
   4. 合并后 GitHub Pages 自动部署，验 `curl https://chentong227.github.io/fanrenxiuxianzhuan/ver.txt` = 新版本号（部署有几十秒延迟，带 `?cb=` 绕缓存）。
 - **测试**：`node test/run.js`（存档迁移）、`node test/journey.test.js`（E2E 主线）、
-  `node test/combat.test.js`、平衡蒙特卡洛 `node test/encounter.bal.js`、`node test/elem.bal.js`。
+  `node test/combat.test.js`、平衡蒙特卡洛 `node test/encounter.bal.js`、`node test/elem.bal.js`、
+  `node test/tier.bal.js`（标度公式）、`node test/scale.bal.js`（A2 标度校准·几何 realmBand+驱动门槛）。
   改战斗/数值必跑平衡脚本，胜率锚点见 combat-balance-design.md。
 - **美术**：`node scripts/genart.js`（生图：立绘/场景/CG/表情，含竖版 `_p`）；
   `node scripts/cutout.js`（抠图）；`node scripts/cropbars.js`（裁黑边）；
@@ -85,9 +86,30 @@
 - 预览调试：`test/preview.html`；存档兼容：改 state.js 必须同步 `_migrate()`。
 - js 模块序：data → world → state → balance → loadout → combat → explore →
   story → chapters → engine → ui → llm → audio → art → main（全局对象，无模块系统）。
+- **⚠ A2 承重墙·数值标度尺（2026-06-16 起·硬约束，推进剧情/造高阶内容必读）**：
+  全部落 `js/balance.js` 纯函数·读时计算·存档 schema 不变；校准回路 `node test/scale.bal.js`。
+  后续任何篇章推进、立项新法宝/功法/敌人/数值，**一律吃这把已校准的尺子**：
+  1. **realmScale 已几何化**（`realmBand` 候选 1.0/2.4/5.5/12/26，法术＝法器同档；武学仍线性 1+0.05/阶）——
+     新内容的伤害/血量锚点按几何标度对齐，**别再线性逐档拍定值**（线性会让高阶手段被基数淹没＝“元婴用眨眼只有 20”的根）。
+  2. **平铺加成禁令**：附魔/丹药/buff 一律乘性或随境界缩放，**严禁裸 `+N` 平铺**（高境界必归零）。
+     先例：神雷附剑 v96 的 `+8` 已改 `×1.25`（combat.js）。
+  3. **法宝必带 `driveRealm`（+ 本命 `natal`）**：新法宝立项必标可驱境界门槛。
+     越阶强驱打折（`Balance.driveMul` ×0.45），达标本命才“主战”（×1.35）；寻常练气法器不标 driveRealm＝逐字节零扰动。
+  4. **消耗性底牌（`chargeCost`）不吃驱动门槛折扣**：特区四通道（条件特攻×倍率/多段/破防/免死）走乘性穿透，越阶亦可用。
+  5. **跨阶靠底牌咬、轴内靠标度恒定**：同阶一招好术≈敌血固定百分比；越阶差距由 realmBand 自然拉开，
+     裸招打不动须靠底牌。改战斗/数值后 `node test/scale.bal.js` 必须全绿（5 条断言：轴内恒定/越阶胜率带/TTK 带/元婴致死不趋零/驱动门槛）。
+  **本期范围（D5）＝只校准尺子**：当前可达内容全在练气期，A2 仅把标度对齐+驱动门槛装好并以 scale.bal 验高阶不塔缩；
+  **高阶实战内容（结丹/元婴…的具体敌人、法宝、招式）随后续篇章推进时再造，造的时候吃这把尺子**——不脱离已实装剧情、不凭空造高阶内容。
+  设计全文见 `docs/balance-master-design.md`。
 
-## 五、当前状态指针（2026-06-14）
+## 五、当前状态指针（2026-06-16）
 
+- **v148 · A2 承重墙·标度尺校准（2026-06-16）**：数值平衡承重墙落地（设计稿 docs/balance-master-design.md 已拍板）。
+  三刀全落 balance.js 纯函数·读时计算·存档不变：①realmScale 线性→几何 `realmBand`（1.0/2.4/5.5/12/26，
+  法术＝法器同档，realmBand(0)=1.0 故练气期逐字节零扰动）；②神雷附剑 `+8`→`×1.25`（平铺→乘性，combat.js）；
+  ③法宝驱动门槛 `Balance.driveMul`（越阶 ×0.45/达标本命 ×1.35/消耗底牌豁免）+ 青竹蜂云剑 natal·driveRealm2、辟邪神雷·劈 driveRealm2。
+  新增 `test/scale.bal.js`（5 条断言全绿）；20 套测试全绿（练气期 byte-identical）。
+  **此后推进剧情/造高阶内容必吃这把尺子——见 §四 “A2 承重墙·数值标度尺” 硬约束。**
 - **版本 v101（v94~v101 = 本批 push）**：战术层 v1（v94）+大战场小人物·sides[] 复数化（v95）
   +法宝三位制·伴身法宝（v96）+辟邪神雷·青竹云剑剑阵特效（v98）——分项见下；**17 套测试
   全绿**（含修复 4 项 combat-v2 迁移遗留际测试：loadout §2 法术槽恒6/§6 法力池、technique

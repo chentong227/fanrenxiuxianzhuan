@@ -110,19 +110,19 @@
 
     /* —— 青竹蜂云剑（本命法宝·主攻；正典=星海飞驰篇炼成，演武先行）——
      * swordOrbit:true=持续绕身剑阵（UI 渲染 au-swords）；神雷附剑给它缠金雷 */
-    qingzhu_jian: { name: "青竹蜂云剑", mp: 9, range: [1, 4], type: "atk", dmg: 22, fixedSegs: 2, source: "treasure", elem: "mu", swordOrbit: true,
+    qingzhu_jian: { name: "青竹蜂云剑", mp: 9, range: [1, 4], type: "atk", dmg: 22, fixedSegs: 2, source: "treasure", elem: "mu", swordOrbit: true, natal: true, driveRealm: 2,
                 desc: "本命法宝·青竹蜂云剑：群剑御空、剑随神念分袭，两段连斩各自结算，威力随灵力雄厚而涨。可引辟邪神雷附剑、凌空劈落、雷遁穿空。" },
 
     /* —— 辟邪神雷三用途（v96 用户裁决：72 剑 72 雷=独立资源，取舍即战术）——
      * chargeCost: { id, n }——特色资源消耗（战斗内不回充——池制同源）。
      * ⚠ 正典获得=星海飞驰篇青竹蜂云剑炼成（结丹）；演武先行验证编排 */
-    shenlei_pi: { name: "辟邪神雷·劈", mp: 6, range: [1, 10], type: "atk", dmg: 34, source: "treasure", elem: "mu",
+    shenlei_pi: { name: "辟邪神雷·劈", mp: 6, range: [1, 10], type: "atk", dmg: 34, source: "treasure", elem: "mu", driveRealm: 2,
                 aoe: true, aoeSpan: 10,
                 chargeCost: { id: "shenlei", n: 1 }, slays: { ghost: 1.8, demon: 1.8 },
                 desc: "自身畔引爆辟邪神雷、左右十格横扫——金雷自人而发（非法宝飞袭），近处之敌尽数笼罩（专克邪魔鬼物×1.8）。耗神雷一道，雷尽则止。" },
     shenlei_fujian: { name: "神雷附剑", mp: 4, range: [0, 0], type: "buff", source: "treasure", elem: "mu",
                 chargeCost: { id: "shenlei", n: 3 }, leiEnchant: 3,
-                desc: "三道神雷缠上本命飞剑——三回合内主攻法宝带金雷（伤害+8、克邪×1.5）。耗神雷三道。" },
+                desc: "三道神雷缠上本命飞剑——三回合内主攻法宝带金雷（伤害×1.25、克邪×1.5）。耗神雷三道。" },
     leidun:     { name: "雷遁", mp: 5, range: [0, 0], type: "buff", quick: true, source: "treasure", elem: "mu",
                 chargeCost: { id: "shenlei", n: 1 }, blinkMove: true, needTrait: "fenglei",
                 desc: "化一道银弧穿亚空间而行——本回合可瞬移到场上任意空位、无视挡线困足（瞬发）。需御「风雷翅」方可施展。耗神雷一道。韩跑跑的本钱。" },
@@ -1103,7 +1103,7 @@
       // 神雷附剑/雷遁（buff 型特技）：不走 _applySpell 的通用 buff——专项结算
       if (sp.leiEnchant) {
         this.player._leiEnchant = sp.leiEnchant;
-        this._log(`三道银蛇自剑鞘窜出、缠上本命飞剑——剑光转为雷色（${sp.leiEnchant} 回合内主攻法宝带雷+8、克邪×1.5）！`);
+        this._log(`三道银蛇自剑鞘窜出、缠上本命飞剑——剑光转为雷色（${sp.leiEnchant} 回合内主攻法宝带雷×1.25、克邪×1.5）！`);
         this._emitFx("player", "crit", "神雷附剑");
         this._checkEnd();
         return { ok: true };
@@ -1185,15 +1185,20 @@
         let baseDmg = sp.dmg;
         if (sp.spendMomentum && !sp.multiSeg) { baseDmg += spentMomentum * (sp.momentumDmg || 0); }
         baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier, lm);
+        // A2 承重墙：法宝驱动门槛 + 本命系数（消耗性底牌 chargeCost 不吃门槛折扣）——读时计算，存档 schema 不变
+        if (sp.source === "treasure") {
+          baseDmg = Math.round(baseDmg * Balance.driveMul(caster.realmTier, sp.driveRealm, sp.natal, !!sp.chargeCost));
+        }
         baseDmg = Math.max(1, Math.round(baseDmg * auxMul * (caster.dmgBonus || 1)));
         // 贴身惩罚：御物/法术类远程攻击在距离1施展不开（-30%）——武学的主场
         let closeSqueeze = false;
         if (sp.source !== "martial" && sp.range && sp.range[1] >= 2 && this.dist(caster, target) === 1) {
           baseDmg = Math.round(baseDmg * 0.7); closeSqueeze = true;
         }
-        // 神雷附剑（v96）：主攻法宝带雷——伤害+8、克邪×1.5（三回合余威）
+        // 神雷附剑（v96→A2）：主攻法宝带雷——伤害×1.25、克邪×1.5（三回合余威）。
+        // 乘性而非平铺：高境界注入法力后基数已高，平铺 +8 会被几何标度淹没（高境界归零）。
         if (caster._leiEnchant > 0 && sp.source === "treasure" && caster === this.player) {
-          baseDmg += 8;
+          baseDmg = Math.round(baseDmg * 1.25);
           if (target.nature === "ghost" || target.nature === "demon") baseDmg = Math.round(baseDmg * 1.5);
         }
         const eMul = elemMul(sp.elem, target.elem);
