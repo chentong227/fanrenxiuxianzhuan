@@ -444,6 +444,8 @@ DATA.exploreSites = {
     w: 9, h: 9, stepCost: 0.34, sightRadius: 1,
     density: { herb: 6, duherb: 4, ore: 2, chest: 1, beast: 4 },
     beastEnemy: "wild_wolf",
+    beastHabitat: true,        // 妖王栖地：异闻里的妖王客观盘踞此地——纵未听闻，深处亦可能与之相遇（只是事先不知）
+    beastHabitatChance: 0.3,   // 无异闻时，深处 boss 为一头未伏诛妖王的概率（其余仍是寻常散修）
     companions: [],   // 七玄门篇暂独行；可由剧情/交互加入同伴
     arc: "qixuan",
   },
