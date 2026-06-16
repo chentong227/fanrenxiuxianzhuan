@@ -427,9 +427,21 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(State.count("xueshi_zhuyao") >= 6, `主药并入行囊（${State.count("xueshi_zhuyao")}）`);
   if (!s.pendingEvent) Engine.checkStory();
   assert(s.pendingEvent === "mojiao_after", `潭边一幕触发（${s.pendingEvent}）`);
+  const hornBefore = State.count("mojiao_jiao");   // 炼乌龙夺前的蛟角数（拜师后炼器节点会消耗一只）
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "mojiao_after"), 0);
   assert(s.flags.mojiao_resolved, "拜入李化元门下（记名弟子）");
   assert(s.ledger.mojiao_neidan, "「内丹」入账（来路日后见分晓）");
+  // —— 妖材成器：齐云霄代炼乌龙夺（四爪毒法宝，妖材→法宝链首件落地，拜师后紧接自动触发）——
+  // 节点 onArrive 在触发即结算（playStage）：消蛟角、得乌龙夺、置 flag——故此处已成既定事实
+  if (!s.pendingEvent) Engine.checkStory();
+  assert(s.pendingEvent === "wulong_forge", `蛟角成器一幕触发（${s.pendingEvent}）`);
+  assert(s.flags.wulong_forged, "乌龙夺已炼成（flag）");
+  assert(State.count("wulong_duo") === 1, `乌龙夺入囊（${State.count("wulong_duo")}）`);
+  assert(State.count("mojiao_jiao") === hornBefore - 1, "炼器消耗一只蛟角");
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "wulong_forge"), 0);   // 推进过该节点
+  Engine.equipGear("wulong_duo");
+  assert(s.gear.weapon === "wulong_duo", "乌龙夺佩为主攻位（四爪毒法宝）");
+  assert(Engine.playerFighter().spells.includes("wulong_zhua"), "乌龙夺授予战斗技「乌龙夺」(wulong_zhua) 入战");
   // —— 地火炼丹：筑基丹满匣 ——
   s.location = "huangfeng_gate";
   State.give("lingcao", 6);

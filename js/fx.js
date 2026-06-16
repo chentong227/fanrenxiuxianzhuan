@@ -685,6 +685,30 @@
         }
         F._run();
       },
+      /* 乌龙夺（墨蛟双角炼成·四爪短法宝）：四道墨绿蛟爪扇形分袭连抓→爪痕迸裂＋青紫毒雾洇开（"四爪带毒"的脸） */
+      wulong_zhua(F, from, to) {
+        if (!to) return;
+        for (let i = 0; i < 4; i++) {
+          const spread = (i - 1.5) * 12;   // 四爪扇形错落分袭
+          setTimeout(() => F.trail(
+            { x: from.x + rnd(-6, 10), y: from.y + rnd(-18, 8) },
+            { x: to.x + spread, y: to.y + rnd(-10, 8) },
+            { core: "#86e6a0", elem: "shui", size: 2.6, flyMs: 150, gap: 12, fade: 130, curve: (i % 2 ? 1 : -1) * rnd(10, 22) }
+          ), i * 60);
+        }
+        setTimeout(() => {
+          F.burst(to.x, to.y, "shui", 14, { power: 3.2 });
+          // 四道爪痕迸裂的墨绿碎芒
+          for (let i = 0; i < 10 * F._degraded; i++) {
+            F.shard(to.x, to.y, { vx: rnd(-3.2, 3.2), vy: rnd(-3.6, .6), c: i % 2 ? "#bdeecf" : "#5fae8f", size: rnd(2, 4.2), life: 560 });
+          }
+          // 爪尖之毒：青紫毒雾洇开（与喂毒同色谱）
+          for (let i = 0; i < 10 * F._degraded; i++) {
+            F.mote(to.x + rnd(-14, 14), to.y + rnd(-10, 10), { vy: -.4, life: 760, size: rnd(4, 7), c: i % 2 ? "#9fe07a" : "#7a5fa8", delay: rnd(0, 220) });
+          }
+        }, 4 * 60 + 120);
+        F._run();
+      },
       /* 长春吐纳/护体：木灵绿芒自下而上回环（生生不息） */
       tuna(F, from) {
         F._emit("back", () => {   // 长春吐纳：木灵绿芒自下而上回环＝身后层（绕身而非贴脸）
