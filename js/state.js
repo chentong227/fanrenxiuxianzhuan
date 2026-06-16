@@ -100,6 +100,7 @@ const State = {
       gear: { weapon: null, armor: null, accessory: null },   // 法器装备三槽（DATA.gear）
       sideTreasures: [],      // 伴身法宝槽（v96 三类法宝制：被动面板件，槽数=神识档）
       visitedNodes: ["caixia"],   // 到过的大陆节点（舆图墨痕：走过的路，地图记得）
+      yiwenSeen: [],          // 异闻录：已听闻（风声在耳）的异闻 id（触发留痕；WORLD.yiwen 图鉴卡态派生之一）
     };
     this.give("qingyuan_dan", 2);
     if (typeof NPCSIM !== "undefined") NPCSIM.init(this.data);
@@ -162,6 +163,7 @@ const State = {
     if (d.ripple === undefined) d.ripple = null;
     if (d.rippleWindow === undefined) d.rippleWindow = null;
     if (!d.doneRipples) d.doneRipples = [];
+    if (!d.yiwenSeen) d.yiwenSeen = [];
     if (d.fame == null) d.fame = 0;
     if (d.sideUnit === undefined) d.sideUnit = null;
     if (!d.gear) d.gear = { weapon: null, armor: null, accessory: null };

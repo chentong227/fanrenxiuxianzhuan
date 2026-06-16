@@ -52,7 +52,20 @@
 - **三类条目**：①**妖王**（栖地客观存在的具名猎物）②**特殊材料**（复用进大件链入口，如墨蛟角/皮鳞）
   ③**重要情报**（剧情钩子/弱点/坊市风声）。
 - 异闻**不必每地点都铺**，但**当前剧情可达地的配套不得留白**（见 AGENTS.md §一·6 推剧情即补全红线）。
-- *（UI / 数据 schema 待「异闻扩充 PR」设计稿拍板后实装——本档先立模型，不预建未拍板的 UI。）*
+
+**已实装（异闻扩充 PR，详见 `docs/yiwen-codex-design.md`）：**
+
+- **数据**：`WORLD.yiwen[]` 静态册（20 条：6 妖王 / 5 材料 / 9 情报）。每条 `{id,type,title,node,arc,exist,guide,effects[],link:{kind,id},doneFlag?}`；
+  `link.kind ∈ {beastRumor, ripple, item, story}` 指向**真实既有 id**（守恒，有 `test/yiwen.test.js` 护栏）。
+- **状态**：仅新增一个字段 `s.yiwenSeen[]`（听闻留痕）+ `_migrate` 兜底；卡态全部**派生既有状态**，零新引擎。
+- **卡态派生** `Engine._yiwenState(entry, s)` → 三态：
+  - **未闻 `unseen`**：显「？？？·〈类〉」+ `guide` 引导（恒在：它仍在那里等你撞见）。
+  - **风声在耳 `active`**：已 `_seeYiwen`（异闻投放/涟漪起链）或线索进行中；妖王类显线索进度条 `线索 n/总`。
+  - **已了 `done`**：妖王伏诛（`slainBeasts`）/涟漪了结（`doneRipples`）/材料入袋（`inventory|ledger`）/剧情 flag（`story`），
+    外加 `doneFlag` 兜底（材料被消耗、情报一次性时避免 `count` 归零误判）。
+- **埋点**：`_maybeBeastRumor`（听闻妖王）、`_tickRipples` 起链（涟漪）均调 `_seeYiwen(id)` 入录。
+- **UI**：图鉴第三页签「异闻录」（人物 / 大件 / 异闻录，复用 `_compTabs` + 大件卡片范式），按三类分区，
+  头部计数「已录 n/total」，七效以 ①-⑦ 徽记呈现。
 
 ---
 
@@ -123,17 +136,27 @@
 
 ---
 
-## 四、传闻·异闻池现状（`WORLD.beastRumors`）
+## 四、传闻·异闻池现状（`WORLD.beastRumors` + `WORLD.yiwen`）
 
-彩霞山后山的**可选情报层**（`_maybeBeastRumor` 投放 → `clues` 寻踪渐进 → 知其名其弱），用 `slainBeasts[]` 记伏诛：
+**可选情报层**（`_maybeBeastRumor` 按区域投放 → `clues` 寻踪渐进 → 知其名其弱），用 `slainBeasts[]` 记伏诛。
+每条 `beastRumor` 标 `area`（大陆节点），投放由 `Engine._currentBeastArea()` 按所在节点限定，**区域不串场**：
 
+**彩霞山一带（`area:"caixia"` · 栖地 `houshan_explore`，`beastPool` 限本区三头）**
 - `beast_baihu`「白额虎王噬人」——后山深处白额吊睛猛虎，大如牛犊、眼有灵光。
 - `beast_wugong`「铁背蜈蚣成王」——岩缝铁背蜈蚣成精，甲壳泛铁光、寻常刀剑难伤。
 - `beast_chimu`「赤目狼王啸月」——狼群新王，双目赤红、疾如鬼魅，满月更凶。
 
-三头**客观盘踞**七玄门后山（`houshan_explore`，已挂 `beastHabitat`）：纵未触发传闻，深探深处亦可能撞见
-（见〇·客观恒在）；触发传闻则名实一致+预知。**墨蛟不在此池**（剧情固定 boss，用 `flags.mojiao_slain`）。
+**黄枫谷一带（`area:"huangfeng"`）**
+- `yinjia_jiaomang`「银甲角蟒·蜕甲」——乌龙潭底蜕甲角蟒，银鳞坚逾精铁，**怕雷、怕破甲钝劲**（栖地 `wulong_tan`）。
+- `guwai_yaowang`「谷外山林·无名妖王」——护山大阵外山林深处的来历不明妖王，**其名待考据·暂以栖地记之**（栖地 `guwai_lin`）。
 
-> **扩充缺口（留给「异闻扩充 PR」）**：异闻目前只覆盖彩霞山后山三头。按 AGENTS.md §一·6，需在当前剧情
-> 可达地（黄枫谷、太南谷、嘉元城/越京沿途等）调研原著（≥2 源·动漫为锚）补传闻 + 自由探索地点 + 异闻录图鉴
-> UI/schema——先出设计稿拍板，再实装。
+栖地（挂 `beastHabitat` 的 exploreSite）**客观盘踞**：纵未触发传闻，深探深处亦可能撞见（见〇·客观恒在）；
+触发则名实一致+预知。每个栖地 `beastPool` 限定本区可遇妖王（彩霞三头 / 乌龙潭角蟒 / 谷外妖王），互不串场。
+**墨蛟不在此池**（血色禁地剧情固定 boss，用 `flags.mojiao_slain`，以 `story` 类收编进异闻录）。
+
+**自由探索地点（`DATA.exploreSites`）**：`houshan_explore`（彩霞·后山）、`wulong_tan`（乌龙潭·寒烟草+银甲角蟒）、
+`guwai_lin`（谷外山林·无名妖王）、`tainan_yelin`（太南野林·散修，无妖王栖地）、`xueshi_jindi`（血色禁地·墨蛟，剧情锁）。
+
+**异闻录图鉴 `WORLD.yiwen[]`（20 条）** 把上述妖王 + 涟漪三链 + 情报面纱/剧情钩子按三类收编（详见 §0.3）。
+当前剧情范围＝七玄门篇 + 黄枫谷篇（至叶师叔之报）；后续篇章前路不预埋（`oyft` 欧阳飞天一条暂列**前路·待考据**剪影，
+动漫未明拍此战·历史曾误植已废，未落实装，待 ≥2 源核定）。

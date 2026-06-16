@@ -176,6 +176,7 @@ const Engine = {
     if (Math.random() > Math.min(0.08 * months, 0.3)) return;
     const chain = pool[Math.floor(Math.random() * pool.length)];
     s.ripple = { id: chain.id, stage: 0, nextAbs: State.absMonth() + 1 + Math.floor(Math.random() * 2) };
+    this._seeYiwen(chain.id);   // 异闻录留痕：涟漪起链即入"重要情报"录
     s.worldNews = s.worldNews || [];
     s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "rumor", text: chain.stages[0].news });
     this.log("【风声】" + chain.stages[0].news, "sys");
@@ -552,7 +553,7 @@ const Engine = {
     else if (action === "wanbao") { UI.openWanbao(); return; }
     else if (action === "alchemy") this.alchemy();
     else if (action === "investigate") this.investigate();
-    else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
+    else if (action === "explore") { const loc = State.location(); this.enterExplore((loc && loc.exploreSite) || "houshan_explore"); return; }
     else if (action === "board") { this.cityRead("board"); return; }
     else if (action === "rumor") { this.cityRead("rumor"); return; }
     else if (action === "travel") { UI.openTravel(); return; }
@@ -1122,11 +1123,13 @@ const Engine = {
     let foreknown = false;
     if (cfg.beastHabitat) {
       const slain = s.slainBeasts || [];
-      if (s.beastRumor && WORLD.enemies[s.beastRumor] && !slain.includes(s.beastRumor)) {
+      // 本地栖地妖王池：cfg.beastPool 限定本地（区域不串场）；未配则退回全异闻池（兼容旧点）
+      const localIds = cfg.beastPool || (WORLD.beastRumors || []).map(r => r.id);
+      if (s.beastRumor && localIds.includes(s.beastRumor) && WORLD.enemies[s.beastRumor] && !slain.includes(s.beastRumor)) {
         xcfg.bossEnemy = s.beastRumor;
         foreknown = true;
       } else {
-        const pool = (WORLD.beastRumors || []).filter(r => !slain.includes(r.id) && WORLD.enemies[r.id]);
+        const pool = (WORLD.beastRumors || []).filter(r => localIds.includes(r.id) && !slain.includes(r.id) && WORLD.enemies[r.id]);
         const chance = cfg.beastHabitatChance != null ? cfg.beastHabitatChance : 0.3;
         if (pool.length && Math.random() < chance) {
           xcfg.bossEnemy = pool[Math.floor(Math.random() * pool.length)].id;
@@ -1285,8 +1288,8 @@ const Engine = {
     this.log(`你${reachedExit ? "寻到出口，离开了" : "退出了"}「${st.siteName}」，探索耗时约 ${months} 月。${summary}`, gained.length ? "good" : "sys");
     s.explore = null;
 
-    // 异闻投放：深入后山探索，最易撞见风声（无活跃异闻且尚有未伏诛的妖王时）
-    this._maybeBeastRumor(0.5);
+    // 异闻投放：深入栖地探索，最易撞见风声（按本地妖王池限定·无活跃异闻且尚有未伏诛妖王时）
+    this._maybeBeastRumor(0.5, (DATA.exploreSites[st.siteId] || {}).beastPool);
 
     this.checkLifespan();
     this.checkStory();
@@ -2272,35 +2275,69 @@ const Engine = {
     UI.renderAll();
   },
 
-  // 异闻妖王：听闻其名（投放）——威名先至，相遇在后
-  _maybeBeastRumor(chance) {
+  // 异闻录留痕：听闻一桩异闻（风声在耳）即入录——图鉴卡态派生之一（恒在原则·非门槛）
+  _seeYiwen(id) {
+    const s = State.data;
+    if (!s.yiwenSeen) s.yiwenSeen = [];
+    if (id && !s.yiwenSeen.includes(id)) s.yiwenSeen.push(id);
+  },
+  // 异闻录卡态派生（恒在原则）：由既有状态推导一条异闻的图鉴卡态——
+  //   "done" 已了（已伏诛/已得/已了结）｜ "active" 风声在耳（已听闻/线索进行中）｜ "unseen" 未闻（给引导）。
+  // 不新增权威状态：beastRumor→slainBeasts，ripple→doneRipples，item→inventory/ledger，story→flags；
+  //   外加 doneFlag 兜底（材料被消耗、情报一次性时避免 count 归零误判）与 s.yiwenSeen[] 听闻留痕。
+  _yiwenState(entry, s) {
+    const link = entry.link || {};
+    let done = false;
+    if (entry.doneFlag && s.flags && s.flags[entry.doneFlag]) done = true;
+    if (!done) {
+      if (link.kind === "beastRumor") done = (s.slainBeasts || []).includes(link.id);
+      else if (link.kind === "ripple") done = (s.doneRipples || []).includes(link.id);
+      else if (link.kind === "item") done = (State.count(link.id) > 0) || !!(s.ledger && s.ledger[link.id]);
+      else if (link.kind === "story") done = !!(s.flags && s.flags[link.id]);
+    }
+    if (done) return "done";
+    let active = (s.yiwenSeen || []).includes(entry.id);
+    if (!active && link.kind === "beastRumor") active = (s.beastRumor === link.id);
+    if (!active && link.kind === "ripple") active = !!(s.ripple && s.ripple.id === link.id);
+    return active ? "active" : "unseen";
+  },
+  // 异闻妖王：听闻其名（投放）——威名先至，相遇在后。beastIds：限定可投放的异闻 id（区域投放）
+  _maybeBeastRumor(chance, beastIds) {
     const s = State.data;
     if (s.beastRumor) return;
     if (typeof WORLD === "undefined" || !WORLD.beastRumors) return;
-    const pool = WORLD.beastRumors.filter(r => !(s.slainBeasts || []).includes(r.id));
+    let pool = WORLD.beastRumors.filter(r => !(s.slainBeasts || []).includes(r.id));
+    if (beastIds) pool = pool.filter(r => beastIds.includes(r.id));
     if (!pool.length || Math.random() > chance) return;
     const r = pool[Math.floor(Math.random() * pool.length)];
     s.beastRumor = r.id;
     s.beastRumorClue = 0;
+    this._seeYiwen(r.id);
     this.log(`【异闻】${r.rumor}`, "event");
     this.toast("听到一桩异闻（见际遇栏）");
     if (typeof Sfx !== "undefined") Sfx.play("chime");
   },
-  // 当前是否身处彩霞山一带（后山可及）——异闻只在此处的山野风声里酝酿
-  _nearHoushan() {
+  // 当前所在大陆节点 id（异闻按区域投放：彩霞山一带=caixia，黄枫谷一带=huangfeng）
+  _currentBeastArea() {
     const s = State.data;
-    if (typeof WORLD === "undefined" || !WORLD.continent) return false;
-    const caixia = (WORLD.continent.nodes.find(n => n.id === "caixia") || {}).locs || [];
-    return caixia.includes(s.location);
+    if (typeof WORLD === "undefined" || !WORLD.continent) return null;
+    const node = (WORLD.continent.nodes || []).find(n => (n.locs || []).includes(s.location));
+    return node ? node.id : null;
   },
-  // 异闻链 · 随时间渐起（听闻→寻踪→相遇）：山里的风声会自己找上门，不必非要深入后山才撞见
+  // 当前是否身处彩霞山一带（后山可及）——保留兼容旧调用
+  _nearHoushan() { return this._currentBeastArea() === "caixia"; },
+  // 异闻链 · 随时间渐起（听闻→寻踪→相遇）：山里的风声会自己找上门，不必非要深入栖地才撞见
   _tickBeastRumor(months) {
     const s = State.data;
     if (typeof WORLD === "undefined" || !WORLD.beastRumors) return;
-    if (!this._nearHoushan()) return;
+    const area = this._currentBeastArea();
+    if (!area) return;
+    // 本区域可投放的异闻（按 area 字段分区；未标 area 的旧条目归彩霞山）
+    const areaIds = WORLD.beastRumors.filter(r => (r.area || "caixia") === area).map(r => r.id);
+    if (!areaIds.length) return;
     if (!s.beastRumor) {
-      // 听闻：身在彩霞山，约 18%/月 听到一桩新异闻（比"深入后山30%"更易撞上）
-      this._maybeBeastRumor(clamp(0.18 * months, 0, 0.4));
+      // 听闻：身在异闻区域，约 18%/月 听到一桩新异闻（比"深入栖地30%"更易撞上）
+      this._maybeBeastRumor(clamp(0.18 * months, 0, 0.4), areaIds);
       return;
     }
     // 寻踪：身负异闻时，随月份逐条浮现线索——把"突然弹一条"拉成有铺垫的逼近
