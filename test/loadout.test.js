@@ -181,7 +181,7 @@ console.log("\n=== 9. 黄枫谷入谷起步法器：外门铁剑（练气即可�
   assert(s2.gear.weapon === "waimen_tiejian", "外门铁剑入谷自动装上空置的主攻位");
 }
 
-console.log("\n=== 10. 元武国·齐云霄代工大件立项（增量B：乌龙夺三件套 + 颠倒五行阵基础版）===");
+console.log("\n=== 10. 元武国·齐云霄代工（增量C：一炉三件大件发放 + 增量B 立项守护）===");
 {
   // 10a. 乌龙夺：DATA.items + DATA.gear + combat SPELLS 三件套齐备（继金蚨子母刃后的筑基主战）
   assert(!!DATA.items.wulong_duo && DATA.items.wulong_duo.type === "gear", "DATA.items.wulong_duo 道具条目存在（type:gear）");
@@ -193,6 +193,25 @@ console.log("\n=== 10. 元武国·齐云霄代工大件立项（增量B：乌龙
   assert(ws && ws.driveRealm === 1 && !ws.natal, "乌龙夺带驱动门槛 driveRealm:1（筑基方可主驱）·非本命");
   // 10b. 颠倒五行阵基础版：齐云霄千年灵草线（魔道篇加强为完整版）
   assert(!!DATA.items.wuxing_zhen, "DATA.items.wuxing_zhen 颠倒五行阵图（基础版）道具条目存在");
+  // 10c. 代工 story 节点：一炉三件实发 + 墨蛟料/千年灵草实扣 + 首访不遇辛如音（增量C）
+  const node = sandbox.STORY.find(x => x.id === "qiyunxiao_daigong");
+  assert(!!node && node.where === "yuanwu", 'story 节点 qiyunxiao_daigong 存在且 where:"yuanwu"（地点门禁）');
+  {
+    State.create("韩立", "si");
+    const s3 = State.data;
+    s3.flags.dongfu_done = true;
+    State.give("mojiao_jiao", 1); State.give("mojiao_pi", 1); State.give("mojiao_lin", 1); State.give("qiannian_lingcao", 1);
+    node.onArrive(s3);
+    assert((s3.metNpcs || []).includes("qiyunxiao"), "代工·onArrive 录入齐云霄（人物图鉴）");
+    assert(!(s3.metNpcs || []).includes("xinruyin"), "代工·首访不遇辛如音（未录入 xinruyin）");
+    node.choices[0].effect(s3);
+    assert(State.count("wulong_duo") === 1, "代工发放·乌龙夺×1");
+    assert(s3.flightId === "shen_feng_zhou", "代工发放·神风舟（s.flightId=shen_feng_zhou）");
+    assert(State.count("wuxing_zhen") === 1, "代工发放·颠倒五行阵图基础版×1");
+    assert(State.count("mojiao_jiao") === 0 && State.count("mojiao_pi") === 0, "墨蛟之角/皮实扣（乌龙夺·神风舟料）");
+    assert(State.count("qiannian_lingcao") === 0, "千年灵草实扣（颠倒五行阵引）");
+    assert(s3.flags.daigong_done, "代工完成置 daigong_done");
+  }
 }
 
 console.log(`\n========== 功法配装：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);
