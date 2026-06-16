@@ -2319,7 +2319,9 @@ const Engine = {
     const demonPenalty = 1 - (s.demon / 200);
     // 洞府加成：灵泉眼吐灵，闭关事半功倍（dongfu_pick 抉择的长期兑现）
     const dongfuMul = s.flags.dongfu_type === "lingquan" ? 1.15 : 1;
-    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * dongfuMul));
+    // 补天丹：伪灵根改善，吐纳百脉之效永久略增（乘性·非平铺，吃 A2 承重墙；幅度【设计取舍·待平衡组校】）
+    const butianMul = s.flags.butian_used ? 1.10 : 1;
+    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * dongfuMul * butianMul));
     let gain = perMonth * months;
 
     // 心境告急：心乱则修为难进、心魔易侵（杂念丛生，事倍功半）
@@ -3834,6 +3836,29 @@ const Engine = {
           if (typeof Sfx !== "undefined") Sfx.play("success");
           s.storyStage += 1;   // 越过 yanjia_boss → 由公共尾部 checkStory 接 yanjia_escape
         }
+        // —— 矿洞黑吃黑·阴手宣乐（增量E）：识破偷袭→反杀诛之（隐灵纱已由 namedLoot 自动入袋）——
+        if (meta.enemyName === "宣乐" && !anyEscaped) {
+          State.setFlag("xuanle_slain");
+          State.setFlag("modao_e1_betray_done");
+          this.meetNpc("xuanle", "掩月宗潜伏征军的阴手——黑吃黑害死队官吕天蒙，反被韩立识破诛杀。");
+          this.writeLedger("xuanle_slain", "矿洞黑吃黑——识破并诛杀掩月宗阴手宣乐，为队官吕天蒙讨回那一刀");
+          this.addMilestone("阴手首演：识破宣乐的偷袭，反杀诛之", "showdown");
+          this.log("宣乐至死不信，自己竟栽在一个伪灵根的征卒手里。那条藏在征军里的毒蛇，断在了你手上。", "good");
+          if (typeof Sfx !== "undefined") Sfx.play("success");
+          s.storyStage += 1;   // 越过 modao_e1_betray → 公共尾部 checkStory 接 modao_e1_spider
+        }
+        // —— 血玉蜘蛛 boss（增量E）：狂化态伏诛（蛛卵×2 已由 namedLoot 自动入袋，开灵宠线在机缘房结算）——
+        if (meta.enemyName === "血玉蜘蛛" && !anyEscaped) {
+          State.setFlag("xueyu_zhizhu_slain");
+          State.setFlag("modao_e1_spider_done");
+          this.meetNpc("xueyu_zhizhu", "矿洞最深处镇压的四级蛛妖——封印松脱狂化，伏诛于韩立之手。");
+          this.writeLedger("xueyu_slain", "诛杀狂化的血玉蜘蛛——剖腹得白玉蛛卵两枚，一条「灵宠」长线自此开端");
+          this.addMilestone("矿洞伏诛四级妖·血玉蜘蛛（得蛛卵×2）", "showdown");
+          this.addFame(8, "矿场征军里传出，有个伪灵根征卒独毙了狂化的血玉蜘蛛");
+          this.log("血玉蜘蛛蜷起八足、血玉甲壳寸寸碎裂——这头镇了不知多少年的狂妖，终究死在你的木行剑光之下。", "good");
+          if (typeof Sfx !== "undefined") Sfx.play("success");
+          s.storyStage += 1;   // 越过 modao_e1_spider → 公共尾部 checkStory 接 modao_e1_fortune
+        }
       } else if (meta.enemyName === "战王蝉") {
         // 撑不住血线：浴血退守、就地整顿再战（fail-forward·不设死局）——不诛杀、不死亡螺旋
         this._bountyFight = false;
@@ -3844,6 +3869,22 @@ const Engine = {
         this.log(`战王蝉势大如崩山，你浴血退守、就地整顿（再战伤害+${bonus}%）。这一蝉不死不休——你不退，它更不会退。调息再上！`, "bad");
         s.pendingEvent = "yanjia_boss";
         this._retryAfterLoss = "yanjia_boss";
+      } else if (meta.enemyName === "宣乐" || meta.enemyName === "血玉蜘蛛") {
+        // 矿洞两战·fail-forward：浴血暂退、就地敷伤整顿再战，败有所偿（不设死局）——回各自来源节点
+        this._bountyFight = false;
+        const isSpider = meta.enemyName === "血玉蜘蛛";
+        const lk = isSpider ? "losses_xueyu_zhizhu" : "losses_xuanle";
+        s.flags[lk] = (s.flags[lk] || 0) + 1;
+        const bonus = Math.min(3, s.flags[lk]) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 8, 0, 100);
+        const node = isSpider ? "modao_e1_spider" : "modao_e1_betray";
+        this.log(isSpider
+          ? `血玉蜘蛛狂性大发，你浴血暂退、就地敷伤整顿（再战伤害+${bonus}%）。这等狂妖退无可退——调息，再上！`
+          : `宣乐阴招狠辣，你识破却仍中了一记，错身暂退、敛息蓄势（再战伤害+${bonus}%）。这条毒蛇绝不能放——稳住，反杀他！`,
+          "bad");
+        s.pendingEvent = node;
+        this._retryAfterLoss = node;
       } else {
         this._bountyFight = false;
         const dmg = Math.round(s.hpMax * 0.2);
@@ -4281,6 +4322,20 @@ const Engine = {
       s.pendingEvent = null;
       this._nextFightType = "zhanwangchan";
       this.startEncounterFight("zhanwangchan");
+      return;
+    }
+    // 宣乐之战（增量E·矿洞黑吃黑：阴手敌型首演，识破偷袭→反杀）
+    if (choice.resolve === "xuanle_fight") {
+      s.pendingEvent = null;
+      this._nextFightType = "xuanle";
+      this.startEncounterFight("xuanle");
+      return;
+    }
+    // 血玉蜘蛛之战（增量E·矿洞最深处四级蛛妖：封印松脱狂化·单形态 boss）
+    if (choice.resolve === "xueyu_zhizhu_fight") {
+      s.pendingEvent = null;
+      this._nextFightType = "xueyu_zhizhu";
+      this.startEncounterFight("xueyu_zhizhu");
       return;
     }
 
