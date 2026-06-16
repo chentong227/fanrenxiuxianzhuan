@@ -22,7 +22,7 @@
     sanshu: 1, tienu: 1, mocaihuan: 1, wanxiaoshan: 1,
     wushishu: 1, luyunfeng: 1, yeshishu: 1, mashibo: 1, chenqiaoqian: 1,
     nangongwan: 1, lihuayuan: 1, fengyue: 1, zhongwu: 1, hanyunzhi: 1,
-    lvtianmeng: 1, xuanle: 1, xueyu_zhizhu: 1,
+    lvtianmeng: 1, xuanle: 1, xueyu_zhizhu: 1, baiyu_zhizhu: 1,
   };
   // 已生成的表情变体：{ 人物id: { 表情名: 1 } }
   const EMOS = {
@@ -69,8 +69,8 @@
     bt_modafu: { face: "c" }, bt_tienu: { face: "c" }, bt_wanxiaoshan: { face: "c" },
     bt_mojiao: { face: "l" }, bt_nangongwan: { face: "l" },   // 南宫婉飞姿=复用站姿（用户裁决：v2 与站姿无异+抠图白圈，弃）
     bt_dujiao: { face: "l" },
-    // 增量E：宣乐（阴手·正面对称永不镜像）、血玉蜘蛛（蛛形对称 c）
-    bt_xuanle: { face: "c" }, bt_xueyu_zhizhu: { face: "c" },
+    // 增量E：宣乐（阴手·正面对称永不镜像）、血玉蜘蛛（蛛形对称 c）；灵宠白玉蜘蛛·小白（蛛形对称 c）
+    bt_xuanle: { face: "c" }, bt_xueyu_zhizhu: { face: "c" }, bt_baiyu_zhizhu: { face: "c" },
   };
 
   // 剧情 CG（p:1 = 竖版已生成）
@@ -89,7 +89,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 20,
+    ASSET_VER: 21,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 
