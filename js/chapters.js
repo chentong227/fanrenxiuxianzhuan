@@ -30,9 +30,22 @@ const Chapters = {
       realmCapIndex: 13,        // 练气十三层 + 筑基初期（DATA.realms 已扩）
       startLocation: null,      // 入谷剧情设定（升仙大会后由 warline/旅途落点）
       completeFlag: "arc2_complete",
-      nextChapter: null,        // 魔道争锋篇尚未建——留空待后续
+      nextChapter: "modao",     // 篇末·燕家堡调令接魔道争锋篇（增量D前置）
       currencyName: "灵石",
       // 主线已实装：入谷四连/百药园/坊市归途杀陆云风/筑基/青元剑诀。后续（血色禁地深入·出谷）随版本续填。
+    },
+    {
+      id: "modao",
+      name: "魔道争锋篇",
+      order: 3,
+      locked: true,             // 由黄枫谷篇尾·燕家堡调令（李化元强制进场）解锁
+      realmTier: 1,             // 筑基（韩立已伪灵根筑基入魔道争锋）
+      realmCapIndex: 13,        // 暂沿筑基初期；深层筑基随增量E/F续填（不预造中后期）
+      startLocation: "yanjiabao",
+      completeFlag: "arc3_complete",
+      nextChapter: null,        // 第一幕烽火征调（增量E）/拍卖会（增量F）续接
+      currencyName: "灵石",
+      // 前置·燕家堡之战（特别篇）已实装：李化元强制调令→重逢墨彩环/结识董萱儿→战王蝉大BOSS→逃出强征入伍。
     },
   ],
 
