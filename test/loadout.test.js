@@ -181,5 +181,19 @@ console.log("\n=== 9. 黄枫谷入谷起步法器：外门铁剑（练气即可�
   assert(s2.gear.weapon === "waimen_tiejian", "外门铁剑入谷自动装上空置的主攻位");
 }
 
+console.log("\n=== 10. 元武国·齐云霄代工大件立项（增量B：乌龙夺三件套 + 颠倒五行阵基础版）===");
+{
+  // 10a. 乌龙夺：DATA.items + DATA.gear + combat SPELLS 三件套齐备（继金蚨子母刃后的筑基主战）
+  assert(!!DATA.items.wulong_duo && DATA.items.wulong_duo.type === "gear", "DATA.items.wulong_duo 道具条目存在（type:gear）");
+  const wg = DATA.gear.wulong_duo;
+  assert(!!wg && wg.slot === "weapon" && (wg.grantSpells || []).includes("wulong_duo"), "DATA.gear.wulong_duo 主攻位且 grantSpells 含「乌龙夺」");
+  const ws = CombatAPI.SPELLS.wulong_duo;
+  assert(!!ws && ws.source === "treasure" && ws.type === "atk", "combat.js SPELLS 定义「乌龙夺」（御物·攻击）");
+  // A2 承重墙：新法宝必带 driveRealm（§四 rule3）；非本命（本命=青竹蜂云剑）
+  assert(ws && ws.driveRealm === 1 && !ws.natal, "乌龙夺带驱动门槛 driveRealm:1（筑基方可主驱）·非本命");
+  // 10b. 颠倒五行阵基础版：齐云霄千年灵草线（魔道篇加强为完整版）
+  assert(!!DATA.items.wuxing_zhen, "DATA.items.wuxing_zhen 颠倒五行阵图（基础版）道具条目存在");
+}
+
 console.log(`\n========== 功法配装：${failures === 0 ? "全部通过 ✓" : failures + " 项失败 ✗"} ==========\n`);
 process.exit(failures === 0 ? 0 : 1);
