@@ -4325,17 +4325,24 @@ const Engine = {
       return;
     }
     // 宣乐之战（增量E·矿洞黑吃黑：阴手敌型首演，识破偷袭→反杀）
+    // 矿洞坑道开战：长卷全景做底（L3 战斗轴横移长背景），镜头一沉推近——开战不换天地
     if (choice.resolve === "xuanle_fight") {
       s.pendingEvent = null;
       this._nextFightType = "xuanle";
+      this._caveFightCfg = (typeof Art !== "undefined" && Art.has && Art.has("pano_kuangdong"))
+        ? { sceneBg: "pano_kuangdong", seamless: true } : null;
       this.startEncounterFight("xuanle");
+      this._caveFightCfg = null;
       return;
     }
     // 血玉蜘蛛之战（增量E·矿洞最深处四级蛛妖：封印松脱狂化·单形态 boss）
     if (choice.resolve === "xueyu_zhizhu_fight") {
       s.pendingEvent = null;
       this._nextFightType = "xueyu_zhizhu";
+      this._caveFightCfg = (typeof Art !== "undefined" && Art.has && Art.has("pano_kuangdong"))
+        ? { sceneBg: "pano_kuangdong", seamless: true } : null;
       this.startEncounterFight("xueyu_zhizhu");
+      this._caveFightCfg = null;
       return;
     }
 

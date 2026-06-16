@@ -22,6 +22,7 @@
     sanshu: 1, tienu: 1, mocaihuan: 1, wanxiaoshan: 1,
     wushishu: 1, luyunfeng: 1, yeshishu: 1, mashibo: 1, chenqiaoqian: 1,
     nangongwan: 1, lihuayuan: 1, fengyue: 1, zhongwu: 1, hanyunzhi: 1,
+    lvtianmeng: 1, xuanle: 1, xueyu_zhizhu: 1,
   };
   // 已生成的表情变体：{ 人物id: { 表情名: 1 } }
   const EMOS = {
@@ -30,6 +31,7 @@
     lifeiyu: { laugh: 1 },
     modafu: { sinister: 1 },
     wanxiaoshan: { panic: 1 },
+    chenqiaoqian: { sad: 1 },
   };
 
   // 场景（p:1 = 竖版已生成，竖屏自动启用）
@@ -50,6 +52,8 @@
     xueshi_jindi: {}, dihuo_wu: {},
     // 长卷全景（21:9 横向卷轴底图——镜头横移时背景跟着退，探索轴/战斗轴共用）
     pano_dongku: {}, pano_xueshi: {},
+    // 增量E·矿道箱庭：矿洞 L3 战斗轴横移长背景
+    pano_kuangdong: {},
   };
 
   // 战斗全身立绘（battlers/：轴上单位图——妖兽/人形敌/剧情人物战斗姿态）
@@ -65,10 +69,14 @@
     bt_modafu: { face: "c" }, bt_tienu: { face: "c" }, bt_wanxiaoshan: { face: "c" },
     bt_mojiao: { face: "l" }, bt_nangongwan: { face: "l" },   // 南宫婉飞姿=复用站姿（用户裁决：v2 与站姿无异+抠图白圈，弃）
     bt_dujiao: { face: "l" },
+    // 增量E：宣乐（阴手·正面对称永不镜像）、血玉蜘蛛（蛛形对称 c）
+    bt_xuanle: { face: "c" }, bt_xueyu_zhizhu: { face: "c" },
   };
 
   // 剧情 CG（p:1 = 竖版已生成）
-  const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 }, mojiao: {} };
+  const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 }, mojiao: {},
+    // 增量E·矿道箱庭演出 CG（横版底 + 竖版 _p）
+    kuangchang: { p: 1 }, kuangdong: { p: 1 }, jiyuan_shi: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };
@@ -81,7 +89,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 17,
+    ASSET_VER: 18,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 
