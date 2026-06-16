@@ -1300,13 +1300,14 @@ const STORY = [
    *  官方序：燕家堡之战 → 魔道争锋（22~46话）。考据源 docs/modao-design.md §第一幕（用户修订裁决并入 2026-06-16）。
    *  链：征调矿场守备 → 矿洞黑吃黑·阴手宣乐 → 血玉蜘蛛 boss → 机缘房 → 陈巧倩读档分支。
    *  设计取舍：灵宠孵化系统与 L3 矿洞箱庭暂以叙事+直战承载（得卵即立项，孵化随后续篇章实装）；
-   *  血玉蜘蛛单形态（多形态随乱星海篇）。【修·待用户亲笔】陈巧倩未喂忘尘丹线情感戏为占位草稿。
+   *  血玉蜘蛛单形态（多形态随乱星海篇）。陈巧倩未喂忘尘丹线情感戏已执笔（我执笔·考据为据 fate-design §一·待用户定夺）。
    * ============================================================ */
   {
     id: "modao_e1_conscript",
     skipIf: (s) => s.flags.modao_e1_conscript_done,
     cond: (s) => s.flags.modao_conscripted && !s.flags.modao_e1_conscript_done
                  && State.absMonth() >= (s.flags.modao_call_due || 0),
+    cg: "kuangchang",   // 黑风岭矿场地表/前线营垒
     bgm: "tense",
     objTitle: "听候征调",
     objHint: "前线待命营——闭关修炼、调息备战（度月即可）。征调令旦夕将至，矿场守备的硬仗在前头等你。",
@@ -1336,6 +1337,7 @@ const STORY = [
     id: "modao_e1_betray",
     skipIf: (s) => s.flags.modao_e1_betray_done,
     cond: (s) => s.flags.modao_e1_conscript_done && !s.flags.modao_e1_betray_done,
+    cg: "kuangdong",   // 矿洞坑道
     bgm: "boss",
     title: "矿洞黑吃黑 · 阴手现形",
     text: [
@@ -1365,6 +1367,7 @@ const STORY = [
     id: "modao_e1_spider",
     skipIf: (s) => s.flags.modao_e1_spider_done,
     cond: (s) => s.flags.modao_e1_betray_done && !s.flags.modao_e1_spider_done,
+    cg: "kuangdong",   // 矿洞最深处坑道
     bgm: "boss",
     title: "矿洞最深处 · 血玉蜘蛛",
     text: [
@@ -1386,6 +1389,7 @@ const STORY = [
     id: "modao_e1_fortune",
     skipIf: (s) => s.flags.modao_e1_fortune_done,
     cond: (s) => s.flags.modao_e1_spider_done && !s.flags.modao_e1_fortune_done,
+    cg: "jiyuan_shi",   // 蛛妖巢穴尽头机缘石室
     bgm: "triumph",
     title: "矿洞密室 · 机缘",
     text: [
@@ -1417,6 +1421,7 @@ const STORY = [
     skipIf: (s) => s.flags.modao_e1_chen_done || !(s.ledger && s.ledger.chen_wangchen),
     cond: (s) => s.flags.modao_e1_fortune_done && !s.flags.modao_e1_chen_done
                  && !!(s.ledger && s.ledger.chen_wangchen),
+    cg: "kuangchang",   // 前线营垒（矿场地表）
     bgm: "sorrow",
     title: "待命营 · 故人不识",
     text: [
@@ -1444,21 +1449,34 @@ const STORY = [
     skipIf: (s) => s.flags.modao_e1_chen_done || !!(s.ledger && s.ledger.chen_wangchen),
     cond: (s) => s.flags.modao_e1_fortune_done && !s.flags.modao_e1_chen_done
                  && !(s.ledger && s.ledger.chen_wangchen),
+    cg: "kuangchang",   // 前线营垒（矿场地表）
     bgm: "sorrow",
     title: "待命营 · 故人相识",
     text: [
       { scene: "魔道前线 · 待命营" },
       "退出矿洞，回到待命营。一支运送丹药的队伍正从营门进来——押队的女修一身黄枫谷装束，眉目清冷。是陈巧倩。",
       { aside: "当年那枚忘尘丹，你终究没让她服下。于是黄枫谷的恩怨、坊市归途那一夜，她都还记着——记着你。" },
-      // —— 【修·待用户亲笔·占位草稿】未喂忘尘丹线·她认出你·重头情感戏（待定稿，勿当终稿）——
-      { say: "陈巧倩", emo: "sad", tone: "声音微颤", text: "（占位草稿·待用户亲笔）……韩师弟？真的是你。这魔道前线刀山火海，你也被征调来了……" },
-      "【占位草稿：此处为「未喂忘尘丹」线的重头情感戏，待用户亲笔定稿——她认出你、当年那一夜的命债与那个你答不上来的问题、前线重逢的复杂心绪。】",
-      { aside: "（占位）她还记得。这一截路，看来还没走完。" },
+      // —— 增量E·我执笔·考据为据（fate-design §一·黄枫谷未喂忘尘丹线）·待用户定夺 ——
+      // 锚点：未喂忘尘丹→她记得救命之恩与坊市那夜；白菊山表白尚在将来，此刻情愫未宣、唯劫后重逢；
+      //       韩立伪灵根·谨身自保、藏拙守距（in-character，不臆造越界的情爱）；埋「郁结」分野→白菊山之约窗口。
+      "她本垂着眼清点药匣，目光扫过让道的人群，在你脸上倏地一顿——那一顿里，清冷的眉眼霎时漾开，又被她极快地收住，只剩指尖捏着药匣，微微发紧。",
+      { say: "陈巧倩", emo: "sad", tone: "声音微不可察地一颤", text: "……韩师弟。真的是你。" },
+      { say: "陈巧倩", emo: "sad", tone: "话放得极轻，怕惊散了什么", text: "我听闻黑风岭矿场守备死了大半，名册上又迟迟不见你的牌号……我还当，这一面是再见不着了。" },
+      "她到底没把那句话说尽。当着满营征卒，押队的女修把翻涌的心绪压回那身清冷底下，只是看你的眼神，比黄枫谷那年要深得多。",
+      { aside: "她记得。坊市归途那一夜你拼死护下的人，终究没忘。那枚没喂下去的忘尘丹，让她把这一点记挂，一路揣到了这刀山火海的前线。" },
+      { say: "韩立", emo: "cold", tone: "拱手，话说得淡", text: "巧倩师姐。让师姐挂心了。矿洞塌方，侥幸捡回条命——命大而已，当不得什么。" },
+      { aside: "你刻意把话头压平。伪灵根走到今日，全凭不与人深交、不教人看清深浅——这魔道前线更是如此。她待你的这份好，你领；可这份情，你给不起，也不敢接。" },
+      "陈巧倩看着你这副疏淡模样，唇瓣动了动，欲言又止，终是将一只青玉小瓶搁进你掌心——是上等的疗伤丹。",
+      { say: "陈巧倩", emo: "sad", tone: "低声", text: "前线不比黄枫谷，刀剑无眼。这个你收着……我不图你记着我什么，只盼你能活着走出去。" },
+      { aside: "你握着那只尚带她掌心温度的玉瓶，心里某处微微一动，又被你稳稳按了下去。仙凡修途各有各的劫——有些话此刻说不得，有些约，也要留给往后的山水。" },
+      "丹药队在营门外催着启程。她押队远去，这一回，走出几步，到底回了一次头。",
+      { aside: "黄枫谷那年她说，凡有陈家在的地方，必有你一席。如今看来，这一席，她还替你留着。来日方长——若真有缘再见，总该有个交代。" },
     ],
     onArrive(s) {
       State.setFlag("modao_e1_chen_done");
       State.setFlag("modao_act1_done");
-      Engine.writeLedger("chen_qiaoqian_remember", "前线再遇陈巧倩——忘尘丹未下，她仍记得你（情感线待续·占位草稿）");
+      Engine.writeLedger("chen_qiaoqian_remember", "前线再遇陈巧倩——忘尘丹未下，她仍记得你：劫后重逢、赠疗伤丹、情愫未宣，埋下白菊山之约的伏笔");
+      State.setFlag("chen_front_reunion");   // 白菊山之约（fate baiju_appt）前置：她仍记挂你
       Engine.addMilestone("魔道争锋·第一幕·完：故人相识，前路未了", "story");
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
