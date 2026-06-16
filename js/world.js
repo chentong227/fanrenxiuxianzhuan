@@ -174,6 +174,21 @@ WORLD.locations = [
     actions: ["wanbao", "rest"],
     encounters: [],
   },
+
+  /* —— 元武国 · 百艺坊（黄枫谷篇起永久可进：剧情真到访过的地点即做成永久据点）——
+   *   考据：太岳山脉以北的邻国，巧匠齐云霄在此；韩立洞府落定后真往代工（神风舟/乌龙夺/颠倒五行阵基础版），
+   *   首访不遇辛如音（modao-design 裁决3；faction-timeline §8 元武国到访×3 之首）。 */
+  {
+    id: "yuanwu",
+    arc: "huangfeng",
+    name: "元武国 · 百艺坊",
+    desc: "太岳山脉那头的邻国，比胥国更尚武，炼器炉火彻夜不熄。坊市街尾那间「百艺坊」招牌不大，名头却响——巧匠齐云霄一炉好风火，墨蛟皮、千年灵草这等好料，到了他手里才不算糟蹋。",
+    travelCost: 2,
+    map: { x: 50, y: 30 },
+    unlock: (s) => s.flags.dongfu_done,
+    actions: ["rest"],
+    encounters: [],
+  },
 ];
 
 /* ---------- 大陆层（world-architecture L0）：天南 · 胥国一带 ----------
@@ -205,6 +220,11 @@ WORLD.continent = {
       gate: (s) => State.count("shengxian_ling") > 0
         ? (s.flags.departure_complete ? null : (s.flags.arc1_complete ? "升仙大会未了（太南谷）——仙门入谷自有章程" : "七玄门之事未了"))
         : "无升仙令者，仙门不纳" },
+    // —— 元武国（邻国·黄枫谷篇起永久可进）：太岳山脉以北，齐云霄百艺坊所在。洞府落定后开通北行。
+    { id: "yuanwu",   name: "元武国",  pos: { x: 64, y: 5 }, locs: ["yuanwu"],
+      factionByEpoch: { 1: "modao" },
+      desc: "胥国之北、太岳山脉那头的邻国，比胥国更尚武。黄枫谷北面群山之外便是元武国——巧匠齐云霄的「百艺坊」在此，墨蛟皮、千年灵草这等好料，寻他代工最相宜。", months: 2, danger: "中",
+      gate: (s) => s.flags.dongfu_done ? null : "太岳山脉以北的邻国——黄枫谷洞府落定、有了北行的由头，方可前往" },
     { id: "yuejing",  name: "越京",    pos: { x: 34, y: 50 }, locs: [],
       desc: "胥国京城，凡俗繁华之极。郊外白菊山是赏景名胜。", months: 2, danger: "低",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
@@ -245,6 +265,7 @@ WORLD.continent = {
     { from: "yuejing", to: "huangfeng" },
     { from: "jiayuan", to: "tainangu" },
     { from: "caixia", to: "yuejing" },
+    { from: "huangfeng", to: "yuanwu" },
   ],
   /* —— L3 州块（v147 §10.4「拆越国→镜/建/岚州」）：凡俗政区，叠在胥国水墨图上的州界区块（非破坏，底图零改）。
    *   区分度：L3＝块状州界（点州看一州城·宗），L4＝点状城/宗（点钉启程/下钻 L5）。
@@ -401,10 +422,11 @@ WORLD.atlas = {
           factionByEpoch: { 2: "tiandao" },
           poly: "61.98,14.06 44.62,24.18 40.91,21.24 40.34,10.42 62.33,5.54",
           desc: "天南北境小国——后为天道盟核心地之一（云梦山）。远观之地，且记在心头。" },
-        { id: "yuanwuguo", name: "元武国", pos: { x: 57, y: 25 }, silhouette: true, unlock: () => false,
+        { id: "yuanwuguo", name: "元武国", pos: { x: 57, y: 25 },
+          unlock: (s) => !!(s.flags && s.flags.dongfu_done),
           factionByEpoch: { 1: "modao" },
           poly: "51.60,36.16 47.38,32.82 44.62,24.18 61.98,14.06 69.08,25.04",
-          desc: "胥国之北的大国，黄枫谷北面太岳山脉与之接壤——从金鼓原赴京城必经之地。" },
+          desc: "胥国之北的大国，黄枫谷北面太岳山脉与之接壤。巧匠齐云霄的百艺坊在此——韩立洞府落定后真往代工（神风舟·乌龙夺·颠倒五行阵基础版），首访不遇辛如音；后亦为再别天南、元婴灭付家旧地。" },
         { id: "tianluguo", name: "天卢国", pos: { x: 74, y: 14 }, silhouette: true, unlock: () => false,
           factionByEpoch: { 2: "tiandao" },
           poly: "73.58,27.08 69.08,25.04 61.98,14.06 62.33,5.54 64.46,0.00 100.00,0.00 100.00,14.50",

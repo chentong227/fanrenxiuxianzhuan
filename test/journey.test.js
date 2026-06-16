@@ -40,6 +40,14 @@ console.log("\n=== 1. 大陆层数据完备 ===");
   assert(qn && qn.visit === "home", "青牛镇为探家事件节点");
   const hf = WORLD.continent.nodes.find(n => n.id === "huangfeng");
   assert(hf && typeof hf.gate === "function", "黄枫谷有道途门槛");
+  // 元武国·永久可进（黄枫谷篇起）：旅行节点 + 据点 + 道途门槛随洞府开通 + L2 去剪影
+  const yw = WORLD.continent.nodes.find(n => n.id === "yuanwu");
+  assert(yw && yw.locs && yw.locs.includes("yuanwu") && typeof yw.gate === "function", "元武国为可旅行节点（齐云霄百艺坊）");
+  assert(yw.gate({ flags: {} }) && !yw.gate({ flags: { dongfu_done: true } }), "元武国道途随洞府落定开通（洞府前锁·洞府后通）");
+  const ywLoc = WORLD.locations.find(l => l.id === "yuanwu");
+  assert(ywLoc && ywLoc.arc === "huangfeng" && Array.isArray(ywLoc.actions), "元武国据点已立（黄枫谷篇）");
+  const ywAtlas = WORLD.atlas.levels.tiannan.nodes.find(n => n.id === "yuanwuguo");
+  assert(ywAtlas && !ywAtlas.silhouette && !ywAtlas.unlock({ flags: {} }) && !!ywAtlas.unlock({ flags: { dongfu_done: true } }), "L2 元武国去剪影·洞府落定后点亮");
 }
 
 console.log("\n=== 2. gate 拦截：升仙令未得不可去黄枫谷 ===");
