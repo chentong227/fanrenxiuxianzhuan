@@ -89,7 +89,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 19,
+    ASSET_VER: 20,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 
