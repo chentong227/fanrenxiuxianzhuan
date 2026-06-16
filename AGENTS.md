@@ -74,6 +74,11 @@
   `node test/combat.test.js`、平衡蒙特卡洛 `node test/encounter.bal.js`、`node test/elem.bal.js`、
   `node test/tier.bal.js`（标度公式）、`node test/scale.bal.js`（A2 标度校准·几何 realmBand+驱动门槛）。
   改战斗/数值必跑平衡脚本，胜率锚点见 combat-balance-design.md。
+- **⚠ 移动端测试基准（2026-06-16 起·硬约束，用户明令"要记住"）**：本游戏**主攻手机端**，
+  一切浏览器可视化测试/验收/录屏**一律用 iPhone 14 Pro Max 视口（430×932，DPR 3）**跑——
+  Chrome DevTools → 设备模式（Ctrl+Shift+M）→ 设备下拉选「iPhone 14 Pro Max」。
+  默认就以手机竖屏单列布局为准（≤640px 切顶栏「舆图＋⋯」+ 底部导航「见闻/行动/韩立」），
+  桌面宽屏只作旁证。新 UI/特效/地图改动验收必须先在此视口确认手机端适配无误。
 - **美术**：`node scripts/genart.js`（生图：立绘/场景/CG/表情，含竖版 `_p`）；
   `node scripts/cutout.js`（抠图）；`node scripts/cropbars.js`（裁黑边）；
   `node scripts/genmusic.js`（Lyria BGM）。资产目录 assets/{portraits,scenes,cg,maps}。
@@ -104,6 +109,13 @@
 
 ## 五、当前状态指针（2026-06-16）
 
+- **v149 · 游玩体验修复 + 巨剑术实装（2026-06-16）**：四项用户实测反馈闭环（手机端复测·iPhone 14 Pro Max）：
+  ①**巨剑术**＝用户裁决直授：获《青元剑诀》即解锁 `jujian_shu` 法术（combat.js source"art"·mu·dmg40·破甲·cd2；
+  data.js `qingyuan_sword.layerUnlocks[3]`；story.js `qingyuan_gift` onArrive `equipSkill`；fx.js RECIPE 聚芒→自天倾斩→落点重震·吃 `_degraded`·无 shadowBlur）；不走严格 canon 金页桥段（标记设计取舍·非考据）。
+  ②**地图**：L3（`UI.openContinent` 胥国·十三州）去掉虚线州界框，改**点线链接**（`map-line` 连线＋据点 pin＋可点州名）；L1/L2（`openAtlas`）仍区块下钻·云遮，未动。
+  ③**预加载**：`Art.preloadAll` 空闲队列（requestIdleCallback+img.decode，MAPS→PORTRAITS→SCENES→CG→BATTLERS），main.js enterGame 挂钩；CSS 淡入时长收短——治"新人物/新地图慢慢出现像卡了"。
+  ④**太南小会复仇战**（暮色森林·故人之血）解死锁：复仇战满血上场（破残血死螺）＋底牌为 0 时多给「退去后山备货」出口（发毒草+3/暗器+3 并满血），保留"硬拼"选项。
+  14 套 .test.js + 5 套 .bal.js 全绿。
 - **v148 · A2 承重墙·标度尺校准（2026-06-16）**：数值平衡承重墙落地（设计稿 docs/balance-master-design.md 已拍板）。
   三刀全落 balance.js 纯函数·读时计算·存档不变：①realmScale 线性→几何 `realmBand`（1.0/2.4/5.5/12/26，
   法术＝法器同档，realmBand(0)=1.0 故练气期逐字节零扰动）；②神雷附剑 `+8`→`×1.25`（平铺→乘性，combat.js）；
