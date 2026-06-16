@@ -503,6 +503,46 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "ye_finale"), 0);
   assert(s.flags.huangfeng_complete, "黄枫谷篇 · 完（huangfeng_complete）");
   assert(s.ledger.dayan_clue, "大衍诀残卷线索入账（魔道争锋篇的钩子）");
+
+  // —— 5.6 魔道争锋篇·前置：燕家堡之战（增量D·李化元强制进场→重逢→战王蝉大BOSS→逃出强征入伍）——
+  // 同一个韩立续战：篇末调令链式自动演出（无 where，靠 flag 门禁顺序触发）
+  if (!s.pendingEvent) Engine.checkStory();
+  assert(s.pendingEvent === "yanjia_summon", `燕家堡调令链式触发（${s.pendingEvent}）`);
+  assert(s.activeChapter === "modao", "魔道争锋篇章容器已开（activeChapter=modao）");
+  assert(sandbox.Chapters.realmTier() === 1, `realmCap 抬进筑基（realmTier=${sandbox.Chapters.realmTier()}）`);
+  assert(sandbox.Chapters.realmCap() === 13, `本篇境界上限=筑基初期（realmCap=${sandbox.Chapters.realmCap()}）`);
+  assert(s.location === "yanjiabao", `强制进场燕家堡（location=${s.location}）`);
+  assert(s.unlockedChapters && s.unlockedChapters.includes("modao"), "modao 篇章已解锁入档");
+  // 调令 → 重逢
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "yanjia_summon"), 0);
+  assert(s.pendingEvent === "yanjia_reunion", `北上即重逢（${s.pendingEvent}）`);
+  assert(s.metNpcs.includes("mocaihuan"), "重逢墨彩环（入图鉴）");
+  assert(s.metNpcs.includes("dongxuaner"), "结识董萱儿（入图鉴）");
+  assert(s.flags.yanjia_reunion_done && s.flags.mocaihuan_reunion, "重逢节点收口（reunion_done）");
+  // 重逢 → 大BOSS（战王蝉）
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "yanjia_reunion"), 0);
+  assert(s.pendingEvent === "yanjia_boss", `战王蝉破阵（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "yanjia_boss"), 0);
+  const zc = Engine._combat;
+  assert(zc && zc.enemies[0].name === "战王蝉", "战王蝉大BOSS入战");
+  assert(zc.enemies[0].boss && !zc.enemies[0].canFlee, "BOSS·不可逃（撑过血线收口，非诛杀）");
+  assert(WORLD.enemies.zhanwangchan.armor >= 8 && WORLD.enemies.zhanwangchan.reward == null, "战王蝉护甲厚·无掉落（逃逸式BOSS）");
+  // 撑过血线（打到溃退）= 剧情撤离
+  Engine._combat.enemies.forEach(e => { e.hp = 0; });
+  Engine._combat._checkEnd();
+  Engine._finishCombat();
+  assert(s.flags.yanjia_boss_done, "力挫战王蝉（yanjia_boss_done）");
+  assert(s.ledger.zhanwangchan_grudge, "不死不休之仇入账本（zhanwangchan_grudge）");
+  assert(!s.flags.zhanwangchan_slain, "本战不诛杀战王蝉（他日再别天南重现）");
+  assert(s.metNpcs.includes("zhanwangchan"), "战王蝉入「人物图鉴」（宿敌codex）");
+  // 大BOSS → 逃出强征入伍
+  if (!s.pendingEvent) Engine.checkStory();
+  assert(s.pendingEvent === "yanjia_escape", `逃出生天（${s.pendingEvent}）`);
+  assert(s.flags.yanjia_done && s.flags.modao_conscripted, "逃出燕家堡·被七派强征入伍");
+  assert(s.location === "modao_front", `退守前线待命营（location=${s.location}）`);
+  assert(s.ledger.modao_conscript, "强征入伍入账本（增量E·烽火征调的钩子）");
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "yanjia_escape"), 0);
+  assert(!s.pendingEvent, "燕家堡之战·完（主线挂在待命营·候增量E）");
 }
 
 console.log("\n=== 6. 拜别版回乡（离门远行）===");

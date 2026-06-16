@@ -1184,6 +1184,114 @@ const STORY = [
       { text: "魔道暗流已动——天南，要变天了。（黄枫谷篇·完）", resolve: "advance" },
     ],
   },
+
+  /* ============================================================
+   * 魔道争锋篇·前置：燕家堡之战（特别篇）——增量D
+   *   官方序：风起天南 → 燕家堡之战（特别篇）→ 魔道争锋（22~46话）。
+   *   考据 ≥2 源：modao-design §前置·燕家堡之战 + 裁决6（李化元强制进场 / 战王蝉=大BOSS·结不死不休之仇·
+   *   本战不诛 / 重逢墨彩环 / 结识董萱儿 / 篇末逃出被七派强征入伍 / ⚠燕家堡≠天阙堡）。
+   *   四节点强制链（无 where，靠 flag 门禁顺序自动演出）：调令 → 重逢 → 大BOSS → 逃出强征入伍。
+   * ============================================================ */
+  {
+    id: "yanjia_summon",
+    skipIf: (s) => s.flags.yanjia_summoned,
+    cond: (s) => s.flags.huangfeng_complete && !s.flags.yanjia_summoned,
+    bgm: "tense",
+    objTitle: "燕家堡调令",
+    objHint: "李化元一纸调令已下——魔道入侵在即，正道七派齐聚燕家堡御魔，伪灵根筑基的你也在征调之列。",
+    title: "魔道争锋篇·前置 · 燕家堡调令",
+    text: [
+      { scene: "黄枫谷 · 外门居所" },
+      "大衍诀的事还压在心头，谷中一道加急调令便到了你手上——朱漆封口，落款是首席大长老李化元。",
+      "「魔道入侵在即。天南正道七派会盟燕家堡，共御魔锋。凡谷中筑基弟子，无论灵根，尽数征调——三日内动身。」",
+      { aside: "无论灵根。这四个字，分明是冲着你这伪灵根来的。修为压制，军令如山——这一回，没有「不去」的选项。" },
+      { say: "李化元", tone: "cold", text: "你筑基了，便是谷中战力。燕家堡那一战躲不过，与其日后被人推上去送死，不如老夫先把你这条命，用在该用的地方。" },
+      "你收拾起神风舟、乌龙夺与那张颠倒五行阵图，望了一眼太岳山脉北面那片越来越浓的妖氛——天南，真的要变天了。",
+    ],
+    onArrive(s) {
+      Chapters.unlock("modao");
+      Chapters.enter("modao");   // activeChapter=modao + location=yanjiabao（realmCap 抬进筑基）
+      State.setFlag("yanjia_summoned");
+      Engine.writeLedger("yanjia_summon", "李化元强制调令——征调伪灵根筑基的你赴燕家堡，正道七派会盟御魔");
+      Engine.addMilestone("魔道争锋篇·前置：燕家堡之战 启（李化元强制进场）", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("danger");
+    },
+    choices: [
+      { text: "「军令如山。」收拾行装，北上燕家堡。", resolve: "advance" },
+    ],
+  },
+  {
+    id: "yanjia_reunion",
+    skipIf: (s) => s.flags.yanjia_reunion_done,
+    cond: (s) => s.flags.yanjia_summoned && !s.flags.yanjia_reunion_done,
+    bgm: "sorrow",
+    title: "燕家堡 · 故人重逢",
+    text: [
+      { scene: "燕家堡 · 堡内校场" },
+      "燕家堡——天南正道七派临时会盟的大堡，堡墙旌旗猎猎，堡内却人心惶惶。（这里是燕家，可不是天阙堡——那是更往后的事了。）",
+      "你正寻自己的战位，一道熟悉的身影从避难的墨府家眷中迎面撞来——竟是墨彩环。嘉元城一别，她眉眼间已添了几分风霜。",
+      { say: "墨彩环", emo: "cry", text: "黑小子……真的是你。魔道打过来，爹让我们随墨府避进堡里。你……你也来了。这回，可别又把人丢下不管。" },
+      "校场另一头，一位眉眼高华的红拂门下女修按剑而立，目光在你那柄乌龙夺上停了一瞬——后来你才知她姓董，名萱儿。当年陆云风为攀附的，正是她这条线。",
+      { say: "董萱儿", tone: "cold", text: "伪灵根能筑基，倒是稀奇。战王蝉就要破阵了——活着出了这堡，再论你够不够格同我说话。" },
+    ],
+    onArrive(s) {
+      Engine.meetNpc("mocaihuan", "墨大夫之女、嘉元城墨府小姐——魔道入侵随家眷避入燕家堡，与你重逢。");
+      Engine.meetNpc("dongxuaner", "红拂门下名门之后——陆云风当年为攀附她而痛下杀手；燕家堡之战中与你并肩御魔。");
+      State.setFlag("yanjia_reunion_done");
+      State.setFlag("mocaihuan_reunion");
+      Engine.writeLedger("yanjia_reunion", "燕家堡重逢墨彩环、结识董萱儿——魔道入侵下的故人与名门");
+      // 因果联动：坊市归途杀陆云风（luyunfeng_dead）→ 陈家暗中相助
+      if (s.flags.luyunfeng_dead || (s.ledger && s.ledger.chen_remember)) {
+        Engine.log("陈家的人也在堡中——为陆云风一事，陈巧倩那一脉暗中给你递来一囊疗伤丹药，未发一言。这份人情，你记下了。", "event");
+      }
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+    },
+    choices: [
+      { text: "「都到这步了，谁也别想再把谁丢下。」握紧乌龙夺，列入战阵。", resolve: "advance" },
+    ],
+  },
+  {
+    id: "yanjia_boss",
+    skipIf: (s) => s.flags.yanjia_boss_done,
+    cond: (s) => s.flags.yanjia_reunion_done && !s.flags.yanjia_boss_done,
+    bgm: "boss",
+    title: "燕家堡之战 · 战王蝉破阵",
+    text: [
+      { scene: "燕家堡 · 堡墙血夜" },
+      "妖氛冲天，堡墙轰然炸裂——魔道巨擘战王蝉破阵而出！甲胄如铁，双镰开阖，振翅之间裂石分风，正道修士成片倒下。",
+      { say: "董萱儿", tone: "cold", text: "它的目标是堡心！挡不住它，今夜谁也活不成——韩立，你那柄破甲的钩子，该出鞘了！" },
+      { aside: "诛它？这等魔道巨擘岂是今日的你能诛的。撑过它的杀势、活着退出燕家堡——这一战，只为这一个字：活。" },
+    ],
+    choices: [
+      { text: "御乌龙夺，迎上战王蝉！（撑过血线即撤离）", resolve: "zhanwangchan_fight" },
+    ],
+  },
+  {
+    id: "yanjia_escape",
+    skipIf: (s) => s.flags.yanjia_done,
+    cond: (s) => s.flags.yanjia_boss_done && !s.flags.yanjia_done,
+    bgm: "triumph",
+    title: "燕家堡 · 逃出生天",
+    text: [
+      { scene: "燕家堡 · 溃围" },
+      "战王蝉重伤遁空，可燕家堡也守不住了。堡墙四面起火，正道修士护着家眷夺路突围——你断后掩护，护着墨彩环、随董萱儿杀出一条血路。",
+      { say: "墨彩环", emo: "cry", text: "你又要走了……我知道你拦不住自己。可你得活着——答应我。" },
+      "堡外，七派会盟的执旗使早已等在那里。一面「征」字大旗压下来——凡今夜活着出堡的筑基修士，尽数编入魔道争锋的战阵，即刻开赴前线。",
+      { say: "执旗使", tone: "cold", text: "活下来的，都是战力。黄枫谷韩立——编入前线待命营，听候征调。魔道争锋，才刚开始。" },
+      { aside: "你回头望了一眼火光里的燕家堡。这一战撑过来了，可真正的修罗场，是前头那一片不知尽头的矿道与杀阵。" },
+    ],
+    onArrive(s) {
+      State.setFlag("yanjia_done");
+      State.setFlag("modao_conscripted");
+      State.data.location = "modao_front";   // 退守前线待命营（home:闭关/调息），矿道箱庭随增量E开
+      Engine.writeLedger("modao_conscript", "逃出燕家堡，被七派强征入伍——编入魔道争锋前线待命营，听候征调");
+      Engine.addMilestone("魔道争锋篇·启：逃出燕家堡，被强征入伍", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("bell");
+    },
+    choices: [
+      { text: "「这一仗，才刚开始。」随征旗开赴前线。（燕家堡之战·完）", resolve: "advance" },
+    ],
+  },
 ];
 
 window.STORY = STORY;

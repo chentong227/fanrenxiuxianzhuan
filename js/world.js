@@ -189,6 +189,27 @@ WORLD.locations = [
     actions: ["rest"],
     encounters: [],
   },
+
+  /* —— 魔道争锋篇·前置（增量D）——
+   *   燕家堡：天南正道七派齐聚御魔的临时大堡（⚠燕家堡≠天阙堡，modao-design 考据红线）。
+   *   李化元一纸调令把伪灵根筑基的韩立也压了进来——战王蝉破阵的血夜由此而起。过场地点，循剧情前行。 */
+  {
+    id: "yanjiabao", arc: "modao", scene: true,
+    name: "燕家堡",
+    desc: "魔道入侵前夜，天南正道七派齐聚的临时大堡。堡墙旌旗猎猎，堡内人心惶惶——李化元一纸调令，连你这伪灵根筑基也压了进来。堡外妖氛冲天，魔道巨擘战王蝉，正在破阵。",
+    travelCost: 1, actions: [], encounters: [],
+  },
+  /* 魔道前线·待命营：燕家堡血战后随正道残部退守的前线据点。非过场（home:true 出闭关/调息），
+   * 但暂无 map（不入云游列表）——「被七派强征入伍·等候征调」的留白，矿道箱庭随增量E开。 */
+  {
+    id: "modao_front", arc: "modao",
+    name: "魔道前线 · 待命营",
+    desc: "燕家堡一夜血战后，你随溃退的正道残部退守前线营地。七派强征入伍的旗令已下——且闭关调息、等候征调，下一道军令不知落在天南哪一处的矿道。（第一幕·烽火征调随后续版本开启）",
+    travelCost: 1,
+    home: true,
+    actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
+    encounters: [],
+  },
 ];
 
 /* ---------- 大陆层（world-architecture L0）：天南 · 胥国一带 ----------
@@ -600,6 +621,26 @@ WORLD.enemies = {
     reward: { lingshi: 4 }, namedLoot: { mojiao_jiao: 1, mojiao_pi: 1, mojiao_lin: 3, xueshi_zhuyao: 2 },
   },
 
+  /* 战王蝉（增量D·燕家堡之战大BOSS）——魔道争锋中威名赫赫的巨擘。
+   * 撑过血线即剧情撤离：本战不诛杀（考据：他日再别天南重现），故 reward/namedLoot 皆无。
+   * 数值参照墨蛟(hp270)上抬一档至筑基初期：破甲(pierce)/范围(zone)/追击(charge·track) 俱全，护甲更厚，
+   * 行金属（甲胄如铁·金鸣）——金克木，对主修木系功法的韩立是一场货真价实的硬仗（败则浴血整顿·再战+伤，fail-forward）。 */
+  zhanwangchan: {
+    name: "战王蝉", hp: 360, sense: 12, speed: 15, agility: 11, move: 2, mp: 110, elem: "jin", nature: "beast",
+    tactics: "feral", stubborn: true, canFlee: false, boss: true,
+    introNote: "燕家堡破阵而出的魔道巨擘——甲胄如铁，双镰开阖，振翅之间裂石分风！它的「振翅冲撞」会循着你的气息追击，破甲贯刺更是专破护体灵光。这一战不为诛它，只为撑过它的杀势、活着退出燕家堡。甲坚势猛，破甲与符宝方能扛得住。",
+    attacks: [
+      { name: "镰爪斩", dmg: 30, kind: "normal", weight: 12, range: [1, 1] },
+      // 裂翅横扫=扫战位前排（depth:front——僚位躲得掉）
+      { name: "裂翅横扫", dmg: 22, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front" },
+      { name: "破甲贯刺", dmg: 26, kind: "pierce", weight: 7, range: [1, 2] },
+      { name: "振翅冲撞", dmg: 36, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, mp: 12, range: [1, 5] },
+      { name: "金鸣音波", dmg: 16, kind: "normal", weight: 6, elem: "jin", aim: "zone", zoneSpan: 1, range: [2, 5], mp: 8 },
+    ],
+    armor: 8,
+    reward: null, namedLoot: null,
+  },
+
   beast_chimu: {
     name: "赤目狼王", hp: 185, sense: 9, speed: 19, agility: 16, move: 2, mp: 60, tactics: "feral", elem: "huo", nature: "beast",
     introNote: "赤目狼王——一身火煞，身法鬼魅快得只剩残影，稍有不慎便是连袭两击！水克火，寒冰符是它的克星。它越是受伤越疯，看准蓄力回合全力压制。",
@@ -810,9 +851,9 @@ WORLD.npcs = [
   },
   {
     id: "mocaihuan", name: "墨彩环", role: "墨府小姐 · 故人之女",
-    bio: "墨大夫（墨居仁）之女，嘉元城墨府的小姐。古灵精怪，娇憨狡黠，初见便骗走了你的萦香丸。她问过你一个你答不上来的问题：凡人，就真的不能修仙吗？",
-    lines: ["黑小子，今天的药膳你又没喝完！", "爹的信里写了你好多坏话哦——骗你的啦。", "等你走了，这院子又要冷清下来了……"],
-    where: ["jiayuan_city"], cond: (s) => s.flags.mo_met,
+    bio: "墨大夫（墨居仁）之女，嘉元城墨府的小姐。古灵精怪，娇憨狡黠，初见便骗走了你的萦香丸。她问过你一个你答不上来的问题：凡人，就真的不能修仙吗？魔道入侵，墨府随正道避入燕家堡——她又出现在你面前，眉眼里已添了几分风霜。",
+    lines: ["黑小子，今天的药膳你又没喝完！", "爹的信里写了你好多坏话哦——骗你的啦。", "等你走了，这院子又要冷清下来了……", "（燕家堡上重逢）黑小子……你也来了。这回，可别又把人丢下不管。"],
+    where: ["jiayuan_city", "yanjiabao"], cond: (s) => s.flags.mo_met,
   },
   {
     id: "wanxiaoshan", name: "万小山", role: "散修 · 修仙世家子弟",
@@ -888,6 +929,18 @@ WORLD.npcs = [
     id: "jinguang", name: "金光上人", role: "青苓修仙杀手",
     bio: "青苓来的矮胖和尚，野狼帮帮主贾天龙重金请来的修仙杀手。会金符、剑符、金钟罩等术法，轻易击败七玄门三位师叔。最终被以毒、暗器与算计反杀。",
     lines: ["七玄门？也配？"], where: [], cond: (s) => s.flags.jinguang_appeared,
+  },
+  {
+    id: "dongxuaner", name: "董萱儿", role: "红拂门下 · 名门之后",
+    bio: "出身名门的红拂门下女修，眉眼高华、心思深沉。陆云风当年正是为攀附她这条线，才对道侣陈巧倩痛下杀手（那笔血债，最终算在了你手上）。燕家堡之战中她与你并肩御魔——这位心高气傲的名门之后，记下了你这个伪灵根筑基。",
+    lines: ["（她淡淡扫你一眼，目光在你那柄乌龙夺上停了一瞬）", "伪灵根能筑基，倒是稀奇。活着出了这堡，再论你够不够格同我说话。", "战王蝉那一蝉……记着，它也记着你了。"],
+    where: ["yanjiabao"], cond: (s) => s.flags.yanjia_reunion_done,
+  },
+  {
+    id: "zhanwangchan", name: "战王蝉", role: "魔道巨擘 · 不死宿敌",
+    bio: "魔道争锋中威名赫赫的巨擘，甲胄如铁、双镰开阖，振翅裂石分风。燕家堡一战你力挫其锋，却未能诛之——它带伤遁空，结下不死不休之仇。再见之日，必在更凶险的杀场（再别天南）。",
+    lines: ["（甲叶摩擦的森然声响，自黑暗里步步逼近）", "蝼蚁……也敢挡我的路。", "记住这口气息——下次，我啃碎你的骨头。"],
+    where: [],   // 纯图鉴宿敌：燕家堡力挫后由 meetNpc("zhanwangchan") 录入「人物图鉴」
   },
 ];
 

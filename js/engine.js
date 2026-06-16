@@ -3824,6 +3824,26 @@ const Engine = {
         if (meta.enemyName === "墨蛟" && !anyEscaped) {
           State.setFlag("mojiao_slain");
         }
+        // —— 燕家堡之战·战王蝉（增量D）：撑过血线=打到其溃退（剧情撤离，非诛杀）——
+        if (meta.enemyName === "战王蝉") {
+          State.setFlag("yanjia_boss_done");
+          this.meetNpc("zhanwangchan", "燕家堡破阵的魔道巨擘——重伤遁空，与你结下不死不休之仇。");
+          this.writeLedger("zhanwangchan_grudge", "燕家堡之战力挫战王蝉——魔道巨擘重伤遁空，与你结下不死不休之仇");
+          this.addMilestone("燕家堡之战：力挫战王蝉（不死不休之仇已结）", "showdown");
+          this.log("战王蝉甲胄迸裂、振翅遁空——这等魔道巨擘岂是一战可诛？它临去前那一眼死死咬住你的气息：不死不休。这一关，你撑过来了。", "event");
+          if (typeof Sfx !== "undefined") Sfx.play("success");
+          s.storyStage += 1;   // 越过 yanjia_boss → 由公共尾部 checkStory 接 yanjia_escape
+        }
+      } else if (meta.enemyName === "战王蝉") {
+        // 撑不住血线：浴血退守、就地整顿再战（fail-forward·不设死局）——不诛杀、不死亡螺旋
+        this._bountyFight = false;
+        s.flags.losses_zhanwangchan = (s.flags.losses_zhanwangchan || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_zhanwangchan) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 10, 0, 100);
+        this.log(`战王蝉势大如崩山，你浴血退守、就地整顿（再战伤害+${bonus}%）。这一蝉不死不休——你不退，它更不会退。调息再上！`, "bad");
+        s.pendingEvent = "yanjia_boss";
+        this._retryAfterLoss = "yanjia_boss";
       } else {
         this._bountyFight = false;
         const dmg = Math.round(s.hpMax * 0.2);
@@ -4254,6 +4274,13 @@ const Engine = {
       this._nextFightType = "mojiao";
       this._sideOverride = this._nangongwanAlly();
       this.startEncounterFight("mojiao");
+      return;
+    }
+    // 战王蝉之战（增量D·燕家堡之战大BOSS：撑过血线即剧情撤离，本战不诛杀）
+    if (choice.resolve === "zhanwangchan_fight") {
+      s.pendingEvent = null;
+      this._nextFightType = "zhanwangchan";
+      this.startEncounterFight("zhanwangchan");
       return;
     }
 
