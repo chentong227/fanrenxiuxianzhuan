@@ -143,6 +143,15 @@ DATA.items = {
   mojiao_pi: { name: "墨蛟之皮", rarity: "epic", type: "material",
     desc: "整张剥下的蛟皮，韧逾百炼软甲、遇水不沉。炼器师以此为主材可制乘风破浪的「神风舟」——妖王身上没有一处是凡品。（小大件链：神风舟）" },
 
+  /* —— 元武国·齐云霄代工成品（黄枫谷篇·血色禁地后真去元武国代工：墨蛟材料+千年灵草 → 大件）——
+   *   ≥2 源：combat-arsenal §3.8（齐云霄炼乌龙夺/神风舟）/huangfeng-design 墨蛟链·阵法链/
+   *   bigitem-design 首条范本（墨蛟之角→乌龙夺）/modao-design 裁决2·3（颠倒五行阵基础版·齐云霄千年灵草线）。
+   *   立项即定义、授予在 story.js 齐云霄代工（增量C）；神风舟见 DATA.flightTreasures.shen_feng_zhou。 */
+  wulong_duo: { name: "乌龙夺", rarity: "epic", type: "gear",
+    desc: "齐云霄以墨蛟之角炼成的顶阶攻击法宝：黝黑双钩如蛟探爪，御使凌空绞夺、势大力沉且破甲。继金蚨子母刃之后，韩立筑基期的第二件主战法器。" },
+  wuxing_zhen: { name: "颠倒五行阵图", rarity: "epic", type: "treasure",
+    desc: "齐云霄以千年灵草为引、为韩立推演布设的护阵之法（基础版）——五行倒转、虚实易位，立于洞府可乱外敌方位、死守不破。〔他日魔道争锋·重逢齐云霄，可加强为改写战场规则的『真·颠倒五行阵』。〕" },
+
   /* —— 妖材经济 v1（用户裁决）：妖兽掉的是"材"不是成品——
    * 普通妖兽掉皮骨牙（硝制贩卖/炼器打底），高阶妖兽掉妖丹（炼药炼器坊市硬通货），
    * 妖王伏诛掉具名稀有材→自然衔接大件链条（bigitem-design 妖材→法宝链）。 —— */
@@ -214,6 +223,13 @@ DATA.gear = {
     bonus: { body: 1 },
     grantSpells: ["jujian_zhan"],
     traits: [{ id: "heavy_sword", desc: "御剑凌空：战斗技「巨剑斩」势大力沉且破甲——一剑之威，胜过百剑之繁" }],
+  },
+  // —— 元武国·齐云霄代工（墨蛟之角炼成的顶阶攻击法宝——韩立筑基期第二主战；授予见 story.js 增量C）——
+  wulong_duo: {
+    slot: "weapon", minLayer: 11,
+    bonus: { body: 1 },
+    grantSpells: ["wulong_duo"],
+    traits: [{ id: "wulong_seize", desc: "蛟爪绞夺：战斗技「乌龙夺」势大力沉且破甲——继金蚨子母刃后的主战法器（齐云霄以墨蛟之角炼成）" }],
   },
   // —— 属性/特性类（被动）——
   xuantie_dun: {
