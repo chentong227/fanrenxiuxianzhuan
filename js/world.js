@@ -193,11 +193,11 @@ WORLD.continent = {
   parent: "tiannan",
   map: "tiannan_map",
   nodes: [
-    { id: "caixia",   name: "彩霞山",  pos: { x: 17, y: 19 }, locs: ["yaolu", "houshan", "wuting", "town", "miju"],
+    { id: "caixia",   name: "彩霞山",  pos: { x: 17, y: 19 }, locs: ["yaolu", "houshan", "wuting", "town", "miju"], localMap: "shanmen",
       desc: "镜州第二大山，原名落凤山——传说古时一头五色彩凤落于此地，化作此山。七玄门据此百年，是你修仙路的起点。" },
     { id: "qingniu",  name: "青牛镇",  pos: { x: 26, y: 31 }, locs: [],
       desc: "七玄门治下的小镇，你的家乡就在镇郊五里沟。爹娘的白发，几亩薄田。", months: 1, danger: "低", visit: "home" },
-    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate", "baiyao_yuan", "fangshi"],
+    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate", "baiyao_yuan", "fangshi"], localMap: "huangfeng_gate",
       faction: "qipai", factionByEpoch: { 1: "neutral" },
       nameByEpoch: { 1: "黄枫谷旧址" }, ruinByEpoch: { 1: true },
       descByEpoch: { 1: "黄枫谷旧址——魔道入侵后，黄枫谷携门人远遁南方北凉国重立山门，太岳山脉深处只余断壁颓垣。" },
@@ -208,10 +208,10 @@ WORLD.continent = {
     { id: "yuejing",  name: "越京",    pos: { x: 34, y: 50 }, locs: [],
       desc: "胥国京城，凡俗繁华之极。郊外白菊山是赏景名胜。", months: 2, danger: "低",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
-    { id: "jiayuan",  name: "嘉元城",  pos: { x: 44, y: 60 }, locs: ["jiayuan_city"],
+    { id: "jiayuan",  name: "嘉元城",  pos: { x: 44, y: 60 }, locs: ["jiayuan_city"], localMap: "jiayuan_city",
       desc: "岚州第一大城。岚州居胥国之南，沃野产粮，富庶仅次京畿——城中鱼龙混杂，传闻有修仙者出没。", months: 3, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
-    { id: "tainangu", name: "太南谷",  pos: { x: 28, y: 80 }, locs: ["tainan_fair"],
+    { id: "tainangu", name: "太南谷",  pos: { x: 28, y: 80 }, locs: ["tainan_fair"], localMap: "tainan_fair",
       desc: "岚州最南端，广贵城西四十里的太南山中。修仙者的集市「太南小会」每隔数年在此举办，凡人勿近。", months: 4, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
     // —— 胥国七派（L3 宗门级势力，§9）：黄枫谷之外六派——远观剪影（未到访不造假据点），
@@ -246,12 +246,12 @@ WORLD.continent = {
     { from: "jiayuan", to: "tainangu" },
     { from: "caixia", to: "yuejing" },
   ],
-  /* —— L3 州块（v147 §10.4「拆越国→镜/建/岚州」）：凡俗政区，叠在胥国水墨图上的州界区块（非破坏，底图零改）。
-   *   区分度：L3＝块状州界（点州看一州城·宗），L4＝点状城/宗（点钉启程/下钻 L5）。
+  /* —— L3 州（v147 §10.4「拆越国→镜/建/岚州」；v148 去格子：州块多边形不再渲染，州仅作分组）：凡俗政区。
+   *   区分度：L3＝州名题字（点州名看一州城·宗），L4＝点状城/宗（点钉启程/下钻 L5）。
    *   canon（§6.3，≥2 源：凡人手册·地理篇 + 动画/原著）：镜州=西北贫州（彩霞山·七玄门起点）；
    *   建州=东北多山、北接元武国（太岳山脉·黄枫谷·血色禁地）；岚州=南部产粮富州（嘉元城·太南谷）；
    *   京畿=越京京城（郊白菊山）。其余诸州（越国共十三州）此处从略，远观为「诸州」。
-   *   poly/label＝% 坐标，与 tiannan_map.png 地貌方位对位；七派据点按方位归州（L3 起可原创）。 */
+   *   poly＝旧州界数据（保留备查/便于将来恢复，当前不渲染）；label＝州名题字锚点；nodes＝本州城·宗分组。 */
   prefectures: [
     { id: "jingzhou", name: "镜州", poly: "6,7 40,7 33,40 23,49 6,46", label: { x: 14, y: 12 },
       nodes: ["caixia", "qingniu"],
