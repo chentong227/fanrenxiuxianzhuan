@@ -1284,15 +1284,17 @@ const UI = {
       const du = State.count("duyao_cao"), an = State.count("anqi");
       const ready = (du >= 3 && an >= 3);
       const warn = (du === 0 && an === 0);
+      const hasPrep = (stage.choices || []).some(c => c.calm);   // 本节点是否提供「退去后山备货」真出口
+      const warnNote = hasPrep ? '毫无底牌！可选「退去后山」备足毒草暗器再战，不必硬拼' : '毫无底牌！硬拼九死一生，建议先去后山备足毒草暗器';
       prepHtml = `<div class="fight-prep ${ready ? 'ok' : warn ? 'bad' : 'mid'}">
         <span class="fp-tag">临战准备</span>
         <span class="fp-item">毒草 ×${du}</span><span class="fp-item">暗器 ×${an}</span>
-        <span class="fp-note">${ready ? '准备充分，可放手一搏' : warn ? '毫无底牌！硬拼九死一生，建议先去后山备足毒草暗器' : '底牌偏少，胜算有限，宜再备一些'}</span>
+        <span class="fp-note">${ready ? '准备充分，可放手一搏' : warn ? warnNote : '底牌偏少，胜算有限，宜再备一些'}</span>
       </div>`;
     }
     box.innerHTML = prepHtml + (stage.choices || []).map((c, i) => {
       const lack = c.requireItem && !State.count(c.requireItem);
-      return `<button class="choice${c.resolve ? ' choice-fight' : ''}" onclick="UI.storyChoose(${i})">
+      return `<button class="choice${c.resolve && !c.calm ? ' choice-fight' : ''}" onclick="UI.storyChoose(${i})">
         ${c.text}${c.hint ? `<span class="c-hint">${c.hint}${lack ? '（尚缺）' : ''}</span>` : ""}
       </button>`;
     }).join("");
@@ -2233,12 +2235,8 @@ const UI = {
         <span class="pin-label">${nm}${here ? ' ·在此' : ''}</span>
       </div>`;
     }).join("");
-    // 州界区块（凡俗政区·块状）——单独可点图层（.map-lines 不收点击）；题字楷体锚在州中心
-    const prefBlocks = prefList.map(p =>
-      `<path class="pref-block${p.id === selPref ? ' sel' : ''}" d="${this._polyToPath(p.poly)}"
-        onclick="UI._prefPick('${p.id}')"></path>`).join("");
-    const prefSvg = prefBlocks
-      ? `<svg class="pref-layer" viewBox="0 0 100 100" preserveAspectRatio="none">${prefBlocks}</svg>` : "";
+    // L3 起＝点线链接（用户裁决·v149）：去掉州界框线（pref-block 多边形不再渲染），
+    //   只留「点」（据点 pin）+「线」（routes 墨痕）+ 州名题字作方位标注，可点筛选本州城·宗。
     const prefLabels = prefList.map(p => {
       const L = p.label || { x: 50, y: 50 };
       return `<div class="pref-label${p.id === selPref ? ' sel' : ''}" style="left:${L.x}%;top:${L.y}%"
@@ -2265,11 +2263,10 @@ const UI = {
     this.openModal(`
       ${this._atlasCrumbs("yueguo")}
       <h2 class="atlas-title">${C.name} · 十三州</h2>
-      <p style="color:var(--ink-dim);font-size:12px">点州界看一州城·宗，点据点可启程——看得见的远方，未必去得了：修为、盘缠、机缘，缺一不可。</p>
+      <p style="color:var(--ink-dim);font-size:12px">点州名看一州城·宗，点据点可启程——看得见的远方，未必去得了：修为、盘缠、机缘，缺一不可。</p>
       <div class="worldmap continent${mapUrl ? ' inked' : ''}${on ? ' show-factions' : ''}${selPref ? ' pref-sel' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
-        ${prefSvg}
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
         ${prefLabels}
         ${pins}

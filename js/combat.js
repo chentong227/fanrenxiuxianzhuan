@@ -91,6 +91,10 @@
                 desc: "青元剑诀五层之技：剑芒环身结盾，密不透风。比长春护体坚实得多——筑基修士的防御底气。" },
     qingyuan_jianying: { name: "剑影分光", mp: 20, range: [1, 3], type: "atk", dmg: 16, fixedSegs: 3, cd: 2, minLayer: 7, school: "mu", source: "art", elem: "mu",
                 desc: "青元剑诀七层之技·形态A分影多段：青芒一分为三、各自扑敌，每道分影独立结算克制与破甲。修为愈深、法宝相佐，分影愈众（更高层与绿煌剑解锁分光扫敌）。催动后须回气两回合。" },
+    // 巨剑术（用户裁决·v149：随青元剑诀直授的大杀招——不纠结 canon 获取路径，重特效演出）：
+    // 聚周身青芒铸丈余巨剑、自天倾斩。source:"art" 走标度尺(realmBand)同青元线；破甲+回气两回合。
+    jujian_shu: { name: "巨剑术", mp: 16, range: [1, 3], type: "atk", dmg: 40, pierce: true, cd: 2, school: "mu", source: "art", elem: "mu",
+                desc: "青元剑诀所附之大杀招：聚周身青芒凝铸丈余巨剑，自天倾斩而下——势大力沉、破甲裂阵，一剑之威胜百剑之繁。催动后须回气两回合。" },
 
     /* —— 法器战斗技（装备授予，gear grantSpells）——
      * source:"treasure"（御物）：威力随境界成长最陡（威力=注入灵力）；贴身-30%。 */

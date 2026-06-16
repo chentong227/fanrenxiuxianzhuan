@@ -3416,8 +3416,9 @@ const Engine = {
     const s = State.data;
     this._nextFightType = "revenge";
     const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;   // 复仇战满血上场（对齐决战；破"残血重进"死亡螺旋）
     const mk = (name, hp, atk) => ({
-      name, hp, sense: 5, speed: 9, agility: 4, move: 1, mp: 48, qiLayer: 3, elem: "tu", tactics: "cunning",
+      name, hp, sense: 4, speed: 8, agility: 3, move: 1, mp: 48, qiLayer: 2, elem: "tu", tactics: "cunning",
       attacks: [
         { name: "法器斩", dmg: atk, kind: "normal", weight: 12, elem: "tu", mp: 6 },
         { name: "土遁刺", dmg: atk - 3, kind: "pierce", weight: 6, elem: "tu", mp: 7 },
@@ -3425,8 +3426,8 @@ const Engine = {
     });
     this._combat = new CombatAPI.Combat({
       player,
-      enemies: [mk("刀疤散修", 95, 16), mk("瘦高散修", 85, 14)],
-      maxRounds: 16,
+      enemies: [mk("刀疤散修", 78, 13), mk("瘦高散修", 66, 11)],
+      maxRounds: 18,
     });
     this._combatMeta = { type: "revenge" };
     s.combat = true;
@@ -4191,6 +4192,27 @@ const Engine = {
     if (choice.resolve === "revenge_fight") {
       s.pendingEvent = null;
       this.startRevengeFight();
+      return;
+    }
+    // 复仇·退去后山备货（破"无底牌→打不过也跑不掉"死局：给真出口，韩立的道本就是万全准备）
+    if (choice.resolve === "revenge_prep") {
+      if (!s.flags.revenge_prepped) {
+        State.setFlag("revenge_prepped");
+        State.give("duyao_cao", 3);
+        State.give("anqi", 3);
+        this.log("你强压杀意，退入太南山后山——三日间寻得毒草、淬足飞针（毒草+3、暗器+3）。调息既毕，伤势已敷。", "good");
+      } else {
+        s.hp = s.hpMax;
+        this.log("你再退一步，调息敷伤、清点底牌，定了定神。", "event");
+      }
+      s.hp = s.hpMax;
+      s.pendingEvent = "wan_death";
+      State.save();
+      UI.renderAll();
+      this._retryStage = true;
+      const stage = STORY.find(st => st.id === "wan_death") || STORY[s.storyStage];
+      try { UI.renderStory(stage); }
+      catch (e) { this._retryStage = false; UI.renderStory(stage); }
       return;
     }
     // 搭伴探山：同道系统首战（万小山并肩）
