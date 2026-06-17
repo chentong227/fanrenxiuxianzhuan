@@ -2321,7 +2321,9 @@ const Engine = {
     const dongfuMul = s.flags.dongfu_type === "lingquan" ? 1.15 : 1;
     // 补天丹：伪灵根改善，吐纳百脉之效永久略增（乘性·非平铺，吃 A2 承重墙；幅度【设计取舍·待平衡组校】）
     const butianMul = s.flags.butian_used ? 1.10 : 1;
-    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * dongfuMul * butianMul));
+    // 三转重元功·真元精纯乘性印记：散功重修一遍，根基更纯，闭关修为增速永久略增（乘性·非平铺，吃 A2 承重墙）
+    const zhuanMul = s.zhuanImprint || 1;
+    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * dongfuMul * butianMul * zhuanMul));
     let gain = perMonth * months;
 
     // 心境告急：心乱则修为难进、心魔易侵（杂念丛生，事倍功半）
@@ -2416,6 +2418,24 @@ const Engine = {
       this.log(`闭关插曲·心魔幻象：${dream}　你惊醒时一身冷汗，静室里只有自己的呼吸声。修仙是条孤路，越往前走，梦越缠人。心魔+8。`, "bad",
         { label: "心魔入梦", prompt: "主角闭关中被故人梦境所扰、惊醒后枯坐到天明。用一两句孤寂的笔触描写，不提数值。" });
     }
+  },
+
+  /* -------- 三转重元功·散功重修（一转）：根基重炼，刻入真元精纯乘性印记 --------
+   * 散功＝青元剑诀重修（叙事「跌回入门重修」），但保留一份持久乘性印记 zhuanImprint
+   * （每转 ×imprintMul 累乘），令重修一遍后比上一轮更纯——闭关修为增速永久略增。
+   * 本篇只行一转（DATA.reforge.chapterZhuan.starsea=1）。乘性·不动 balance.js。
+   * 二十载闭关时间跳已覆盖重修过程，故不剥离 techLayers（中途清零只惩罚无收益）。 */
+  doReforge() {
+    const s = State.data;
+    const cfg = (typeof DATA !== "undefined") ? DATA.reforge : null;
+    if (!cfg) return false;
+    if (s.flags[cfg.doneFlag]) return false;           // 已转过·幂等
+    const before = s.zhuanImprint || 1;
+    s.zhuanImprint = Math.round(before * cfg.imprintMul * 1000) / 1000;
+    State.setFlag(cfg.doneFlag);
+    s.flags.zhuanCount = (s.flags.zhuanCount || 0) + 1;
+    this.writeLedger("sanzhuan_yizhuan", `${cfg.name}·一转——散功重修青元剑诀，根基反比从前更纯。真元精纯乘性印记 ×${cfg.imprintMul}（闭关修为增速永久略增），不剥离已修层数（二十载苦修已重炼归位）。`);
+    return true;
   },
 
   // 闭关研习功法：习得一卷已持有的功法典籍（耗时）
@@ -3948,6 +3968,41 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // —— 三②·外星海·霓裳草引妖·噬金虫群猎杀（致富妖丹线·噬金虫四用法实战＋fieldCycle 妖氛相位＋waves 群猎＋曲魂）——
+  startStarseaWaihaiFight() {
+    const s = State.data;
+    this._nextFightType = "ss_waihai";
+    const player = this.playerFighter();   // 背包持噬金虫→四用法（附体/出战/变武器/变身外化身）共池入战
+    // 外海妖氛相位（player-favorable·霓裳草香气惑妖·妖氛潮汐露隙）
+    const fieldCycle = [
+      { name: "妖氛·霓裳惑神", log: "霓裳草的异香在妖氛里漫开，那妖兽迷了一瞬神智，扑势一滞。", suppress: 0.06, expose: true, player: { dodge: 0.05 } },
+      { name: "妖氛·暗潮裹身", log: "外海暗潮裹住兽躯，迟滞了它的腾挪。", suppress: 0.05, player: { shield: 8 } },
+      { name: "妖氛·潮信乱涌", log: "潮信乱涌搅乱妖兽落点，破绽微露。", suppress: 0.06, expose: true },
+      { name: "妖氛·咸雾蚀目", log: "咸涩海雾迷住妖兽双目，攻势偏了几分。", suppress: 0.05, player: { mp: 6 } },
+    ];
+    // 中阶海妖（霓裳草引出·噬金虫群缠困不令遁走，剖丹取财）
+    const yao = Object.assign({}, WORLD.enemies.waihai_yaoshou, {
+      canFlee: false,            // 霓裳草引妖·噬金虫群缠身，困而后杀（不令带丹遁走）
+      reward: { lingshi: 2 }, namedLoot: null,
+    });
+    // 群猎二阶段（waves：血腥引来第二头同阶海妖，正是积妖丹的进项）
+    const yao2 = Object.assign({}, WORLD.enemies.waihai_yaoshou, {
+      name: "外星海妖兽·闻血而来", hp: 210, armor: 4, canFlee: false,
+      introNote: "血腥气漫开，又一头中阶海妖循味扑来——霓裳草引妖、噬金虫群缠，正是连斩积丹的好时候。",
+      reward: { lingshi: 2 }, namedLoot: null,
+    });
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [yao], waves: [[yao2]], fieldCycle, maxRounds: 20, W: 13, lanes: 2, sides,
+    });
+    this._combatMeta = { type: "ss_waihai" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("你将霓裳草悬于礁石引妖，掌心噬金虫蠢蠢欲动——附体结甲、放群出战、化刃破甲、化身全力一击，四式同抽一池灵机，打一分少一分。妖兽循香扑来，曲魂黑刃已迎上。");
+    this.log("外星海猎场，霓裳草引妖、噬金虫群缠。海妖循香而来——以噬金虫四用法（附体/出战/变武器/变身外化身·共池取舍）困而后杀，剖取妖丹。这是星海的硬通货，发家致富，自此开始。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -4911,6 +4966,28 @@ const Engine = {
         s.pendingEvent = "starsea_a2_jiuziling";
         this._retryAfterLoss = "starsea_a2_jiuziling";
       }
+    } else if (meta.type === "ss_waihai") {
+      // 初入星海·三② 外星海·霓裳草引妖·噬金虫群猎杀（致富妖丹线·噬金虫四用法实战）——胜得乱星海妖丹（结丹资粮·硬通货）
+      if (win) {
+        State.setFlag("starsea_zhifu_done");
+        State.give("xinghai_yaodan", 34);   // 结丹关 consume×30 + 余裕（连斩积丹·一笔进项的代表战）
+        State.give("lingshi", 8);
+        this.writeLedger("starsea_zhifu_won", "外星海发家——霓裳草引妖、噬金虫群缠（附体/出战/变武器/变身外化身四用法共池取舍），连斩中阶海妖、剖取乱星海妖丹。妖丹乃星海硬通货，韩立自此积起结丹资粮。");
+        this.addMilestone("外星海致富：噬金虫群猎积妖丹（结丹资粮）", "starsea");
+        this.addFame(6, "外星海猎场·噬金虫群猎中阶海妖、积妖丹发家");
+        this.log("两头海妖先后沉入碧波，妖丹剖出、温润生光。三十余颗乱星海妖丹入囊——星海的硬通货，结丹的资粮，你算是攒下了第一桶金。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_ss_waihai = (s.flags.losses_ss_waihai || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_ss_waihai) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`海妖凶蛮、群起反扑，这一趟险些反被它们拖入深海——你调息再引霓裳草、重放噬金虫群困而后杀（再战伤害+${bonus}%）。妖丹到手前，绝不能让它遁了。`, "bad");
+        s.pendingEvent = "starsea_a3_waihai";
+        this._retryAfterLoss = "starsea_a3_waihai";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -5244,6 +5321,9 @@ const Engine = {
     if (choice.resolve === "starsea_leitai_fight")   { s.pendingEvent = null; this.startStarseaLeitaiFight();   return; }
     if (choice.resolve === "starsea_yingli_fight")   { s.pendingEvent = null; this.startStarseaYingliFight();   return; }
     if (choice.resolve === "starsea_jiuziling_fight"){ s.pendingEvent = null; this.startStarseaJiuzilingFight();return; }
+
+    // —— 初入星海篇·第三幕战斗派发（增量6·外星海致富·噬金虫四用法实战）——
+    if (choice.resolve === "starsea_waihai_fight")   { s.pendingEvent = null; this.startStarseaWaihaiFight();   return; }
 
     // 普通推进
     s.pendingEvent = null;

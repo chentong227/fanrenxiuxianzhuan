@@ -2836,8 +2836,9 @@ const STORY = [
     onArrive(s) {
       s.location = "xiaohuan_island";
       State.setFlag("starsea_biguan_done");
+      Engine.doReforge();   // 三转重元功·一转：散功重修，刻入真元精纯乘性印记 zhuanImprint（闭关增速永久略增·不剥层数）
       Engine.addMilestone("初入星海·一幕：小寰岛闭关二十载，拾回筑基后期巅峰（三转一转）", "starsea");
-      Engine.writeLedger("starsea_biguan", "初入星海·孤岛立身——小寰岛闭关苦修二十载，行三转重元功一转，散功重修而真元愈纯，拾回落海暂失之修为，重回筑基后期巅峰。纯叙事·不动数值。");
+      Engine.writeLedger("starsea_biguan", "初入星海·孤岛立身——小寰岛闭关苦修二十载，行三转重元功一转，散功重修而真元愈纯（乘性印记 zhuanImprint），拾回落海暂失之修为，重回筑基后期巅峰。");
     },
     choices: [
       { text: "出关——该往魁星城走一遭了。", hint: "孤岛立身·一幕终", resolve: "advance" },
@@ -3065,6 +3066,345 @@ const STORY = [
     },
     choices: [
       { text: "（携紫灵·遁入外海——乱中取利，自此开始）", hint: "孤岛立身·镇妖大典惊变·暂告段落", resolve: "advance" },
+    ],
+  },
+
+  /* ============================================================
+   *  初入星海篇 · 第三幕 —— 外星海取丹 · 发家致富（增量6）
+   *  考据：churu-xinghai-design.md §二第三幕 + 动漫《初入星海》ep61~72
+   *  顺乱出海 → 霓裳草引妖·噬金虫群猎杀 → 妖丹硬通货 → 金魁示威极阴岛·收复内星海
+   * ============================================================ */
+
+  // —— 第三幕①·顺乱出海·外星海猎场（携紫灵漂泊·决意猎妖积丹）——
+  {
+    id: "starsea_a3_chuhai",
+    skipIf: (s) => s.flags.starsea_chuhai_done,
+    cond: (s) => s.flags.starsea_luan_done && !s.flags.starsea_chuhai_done,
+    bgm: "journey",
+    title: "外星海 · 顺乱出海",
+    objTitle: "乱中取利 · 出海",
+    objHint: "乱星海的妖潮把无数散修逼向外海，你却看出这是机缘——外星海妖兽虽凶，妖丹却是结丹的硬通货。安顿好紫灵，备齐行装，往那妖氛弥漫的猎场去。",
+    text: [
+      { scene: "外星海 · 妖氛猎场边缘" },
+      { cam: "pan", to: { x: 0, y: -4 }, ms: 1400 },
+      "乱星海一乱，内海待不得了。你驾遁光载着汪凝一路向外海漂去——越往外，海水越是幽碧，妖氛越是浓重，寻常修士避之不及，你却嗅出了机会。",
+      { say: "汪凝", emo: "worried", tone: "soft", text: "「大哥哥，外面……外面好多妖兽的气息。我们真要去那种地方吗？」" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「越凶险的地方，越藏着旁人不敢取的利。结丹要的资粮，就在那一头头海妖的妖丹里。你且寻处安稳礁岛待着，剩下的，交给我。」" },
+      { aside: "结丹三资——降尘丹已得其一，雪灵水、天火液在魁星城寻而未果，更缺的是温养金丹的妖丹。这片外海，正是发家致富的本钱。" },
+      { fx: "flash", at: "center", color: "#7fd4c4", ms: 220 },
+    ],
+    onArrive(s) {
+      s.location = "waixinghai";
+      State.setFlag("starsea_chuhai_done");
+      Engine.writeLedger("starsea_chuhai", "初入星海·三幕——顺乱星海大乱之势启程外海猎场，安顿汪凝，决意以猎妖取丹积攒结丹资粮（妖丹＝星海硬通货）。");
+      Engine.addMilestone("初入星海·三幕：顺乱出海，赴外星海猎场", "starsea");
+    },
+    choices: [
+      { text: "深入外海猎场——猎妖取丹，发家就从这里起。", hint: "外星海致富线·启", resolve: "advance" },
+    ],
+  },
+
+  // —— 第三幕②·偶得噬金虫·霓裳草引妖之法（授噬金虫→四用法入战）——
+  {
+    id: "starsea_a3_shijin",
+    skipIf: (s) => s.flags.starsea_shijin_done,
+    cond: (s) => s.flags.starsea_chuhai_done && !s.flags.starsea_shijin_done,
+    bgm: "journey",
+    title: "外星海 · 噬金虫 · 霓裳草",
+    objTitle: "奇虫 · 取丹之器",
+    objHint: "外海一处沉船灵窟，你撞见一窝通体金芒、专噬金铁的异种灵虫——奇虫榜十二「噬金虫」。一物四用，正是纵横外海的看家虫器；再以霓裳草为饵引妖，取丹之法便成了。",
+    text: [
+      { scene: "外星海 · 沉船灵窟" },
+      "猎场边缘一艘不知沉了多少年的古修仙舟里，金芒乱窜——一窝异种灵虫盘踞其中，通体如熔金、振翅如金云蔽日，啃噬着船骸上的精铁法器。",
+      { say: "韩立", emo: "serious", tone: "low", text: "「群飞如金云、专噬金铁……奇虫榜上有名的『噬金虫』？这等灵虫，落到旁人手里是祸，落到我手里——便是一桩大机缘。」" },
+      { fx: "burst", at: "center", elem: "jin", ms: 300 },
+      { sfx: "cast" },
+      "你以神识小心收伏这窝噬金虫，纳入灵机豢养。这虫一物四用：可附体淬身结甲、可放群出战噬敌、可化虫为刃破甲、亦可外化作虫之化身全力一击——四式同抽一池灵机，打一分少一分，取舍即战术。",
+      { say: "韩立", emo: "calm", tone: "low", text: "「再以乱星海特产的霓裳草为饵——花气甜腻、最招妖兽。布饵引妖来食，纵虫群一举围杀，剖丹取财……这取丹的关窍，齐了。」" },
+      { aside: "噬金虫＋霓裳草，一引一杀。这片外海的妖丹，从今日起，便是我韩某人的进项了。" },
+      {
+        guide: {
+          tag: "新虫器 · 噬金虫（四用法）",
+          title: "战斗·噬金虫四用法（共池取舍）",
+          hint: "噬金虫入战后于法宝栏出战：附体结甲 / 出战群噬 / 变武器破甲 / 变身外化身全力一击——四式同抽一池灵机（满6·每战重置），打一分少一分、耗尽则哑火。下一战即可实战。",
+          cta: "（携虫引妖·下海猎杀）",
+        },
+      },
+    ],
+    onArrive(s) {
+      s.location = "waixinghai";
+      State.setFlag("starsea_shijin_done");
+      if (State.count("shijinchong") < 1) State.give("shijinchong", 1);   // 授噬金虫→playerFighter 四用法入战
+      State.give("nichang_cao", 6);   // 霓裳草·引妖之饵
+      Engine.writeLedger("starsea_shijin", "初入星海·三幕——外海沉船灵窟偶得奇虫榜『噬金虫』（一物四用·附体/出战/变武器/变身外化身），并以乱星海特产『霓裳草』为引妖之饵。猎妖取丹之法成。");
+      Engine.addMilestone("外星海·偶得噬金虫（四用法）＋霓裳草引妖之法", "starsea");
+    },
+    choices: [
+      { text: "布霓裳草为饵·携噬金虫下海——猎杀第一头海妖！", hint: "噬金虫四用法实战·致富取丹", resolve: "advance" },
+    ],
+  },
+
+  // —— 第三幕③·外星海致富·霓裳草引妖·噬金虫群猎杀（FIGHT·妖丹硬通货）——
+  {
+    id: "starsea_a3_waihai",
+    skipIf: (s) => s.flags.starsea_zhifu_done,
+    cond: (s) => s.flags.starsea_shijin_done && !s.flags.starsea_zhifu_done,
+    bgm: "combat",
+    title: "外星海 · 噬金虫群猎杀",
+    objTitle: "群猎 · 积丹发家",
+    objHint: "霓裳草悬于礁岛，妖氛里很快有海妖循香扑来。以噬金虫四用法（附体/出战/变武器/变身外化身·共池取舍）困而后杀，连斩积丹——这是星海的硬通货，发家致富，自此开始。",
+    text: [
+      { scene: "外星海 · 礁岛猎场" },
+      "你将一束霓裳草悬上礁岩，甜腻花气随妖氛漫开。不过片刻，幽碧海面下黑影攒动——一头中阶海妖破水而出，獠牙利爪、喷吐水箭，正是循香而来。",
+      { say: "韩立", emo: "serious", tone: "low", text: "「来得正好。噬金虫——围杀。」" },
+      { fx: "burst", at: "center", elem: "jin", ms: 280 },
+      { sfx: "splash" },
+      "掌心金芒暴起，噬金虫群如金云扑出。曲魂黑刃自侧翼并上——困而后杀，剖丹取财，星海的第一桶金，就在这一战。",
+    ],
+    onArrive(s) { s.location = "waixinghai"; },
+    choices: [
+      { text: "霓裳引妖·噬金虫群围杀——困而后杀，剖丹！", hint: "噬金虫四用法实战＋fieldCycle 妖氛相位＋waves 群猎", resolve: "starsea_waihai_fight" },
+    ],
+  },
+
+  // —— 第三幕④·金魁示威极阴岛·星宫收复内星海（背景演出·worldNews·#背景强者三态）——
+  {
+    id: "starsea_a3_jinkui",
+    skipIf: (s) => s.flags.starsea_jinkui_done,
+    cond: (s) => s.flags.starsea_zhifu_done && !s.flags.starsea_jinkui_done,
+    bgm: "boss",
+    title: "星海风云 · 金魁示威极阴岛",
+    objTitle: "远观 · 大修士的手段",
+    objHint: "外海猎丹多日，妖丹积囊。一日天际骤暗、海面齐齐下沉——星宫大长老金魁孤身踏临极阴岛，当众示威、一炮轰碎此岛。这是星宫着手收复内星海的先声，乱局又要变了。",
+    text: [
+      { scene: "外星海 · 远眺极阴岛" },
+      { cam: "pan", to: { x: 0, y: -8 }, ms: 1800 },
+      "这些时日，霓裳草引妖、噬金虫群杀，妖丹一颗颗剖出、装满了储物袋。正当你盘算着该往内海销丹之际——",
+      { fx: "flash", at: "center", color: "#fff0c0", ms: 260 },
+      "天际骤然一暗，极远处的海面竟被一股无形威压齐齐压沉！极阴岛方向，一道身影孤身踏空而立。",
+      { say: "韩立", emo: "shock", tone: "low", text: "「那威压……元婴中期巅峰？是星宫大长老金魁！他孤身踏临极阴岛——这是要当众示威。」" },
+      { fx: "lightning", at: "center", elem: "jin", px: 0, ms: 600 },
+      { sfx: "thunder" },
+      "只见金魁信手一引，一道毁天灭地的法光当空轰落——整座极阴岛连同逆星盟极阴祖师一脉的老巢，在惊天动地的轰鸣里崩成齑粉，沉入海底。乌丑等辈，早躲得不见踪影。",
+      { aside: "一炮碎一岛。这便是元婴大修士的手段，也是星宫收复内星海的先声。仙凡有别，这等人物的棋局，眼下还轮不到我来落子——可这片海，怕是要为之再变一回了。" },
+    ],
+    onArrive(s) {
+      s.location = "waixinghai";
+      State.setFlag("starsea_jinkui_done");
+      Engine.meetNpc("jinkui", "星宫大长老金魁，元婴中期巅峰。你于外海远远见他孤身炸碎极阴岛——这等大修士的手段，只可远观。星宫收复内星海的棋局，自此落下第一子。");
+      Engine.writeLedger("starsea_jinkui", "初入星海·三幕——星宫大长老金魁孤身踏临极阴岛、当众示威、一炮轰碎此岛（乌丑远遁），星宫着手收复内星海。韩立于外海远观，识得元婴大修士之威（背景强者·在场远见）。");
+      Engine.addMilestone("星海风云：远观金魁炸极阴岛·星宫收复内星海", "starsea");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "巨变：星宫大长老金魁孤身炸碎极阴岛，逆星盟极阴祖师一脉老巢覆灭——星宫着手收复内星海，乱星海格局再变。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      { text: "妖丹已积·内海局势将变——该往天星城落户叩关了。", hint: "三幕终·接第四幕天星城结丹", resolve: "advance" },
+    ],
+  },
+
+  /* ============================================================
+   *  初入星海篇 · 第四幕 —— 天星城叩关 · 结丹（增量6·章末高潮）
+   *  考据：churu-xinghai-design.md §二第四幕 + §六结丹机制（觅长生手感）
+   *        ＋ 动漫《凡人星海飞驰》序章末（ep76·天星城结丹成功）
+   *  落户天星城 → 集齐资粮（雪灵水/天火液/大衍诀三层）→ 首次结丹失败演出
+   *        → 觅长生式可玩渡劫·结丹关心魔劫（bigRealmRites.core）→ 金丹大成（realmIndex 16→17）→ 章末钩
+   * ============================================================ */
+
+  // —— 第四幕①·落户内海第一都会·天星城（星宫治下·人修文明中心）——
+  {
+    id: "starsea_a4_tianxing",
+    skipIf: (s) => s.flags.starsea_tianxing_done,
+    cond: (s) => s.flags.starsea_jinkui_done && !s.flags.starsea_tianxing_done,
+    bgm: "town",
+    title: "天星城 · 落户",
+    objTitle: "内海都会 · 叩关之地",
+    objHint: "携外海挣下的妖丹返回内海，落户星宫治下的第一都会——天星城。坊市林立、传送阵网纵横，正是闭关苦修、择吉叩结丹之关的好去处。",
+    text: [
+      { scene: "天星城 · 天都坊市" },
+      { bgm: "town" },
+      "循着内海航路，你携满囊妖丹与降尘丹来到天星城——内星海中枢的修仙大都会，星宫治下，巨塔接云、坊市连绵、传送阵网四通八达，人修云集，是这片妖海里难得的太平中枢。",
+      { say: "韩立", emo: "calm", tone: "low", text: "「内海第一都会，气象果然不同。在此落户置一处洞府，安顿好紫灵，再闭关备齐资粮——结丹之关，便在这里叩了。」" },
+      { fx: "flash", at: "center", color: "#caa6ff", ms: 200 },
+      { aside: "天都街上人潮如织，曾有两道惊才绝艳的身影擦肩而过，气度迥异于常人……可惜只是惊鸿一瞥，转瞬便没入了人海。（你心头掠过一丝异样，却也未及细想。）" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("starsea_tianxing_done");
+      State.setFlag("tianxing_open");   // 解锁天星城（home·可 cultivate/breakthrough/alchemy）
+      Engine.writeLedger("starsea_tianxing", "初入星海·四幕——韩立携外海妖丹返内海，落户星宫治下第一都会天星城，置洞府、安顿汪凝，备齐结丹资粮叩关。天都街双骄惊鸿一瞥（cameo·仅留印象，羁绊正戏在后续篇章）。");
+      Engine.addMilestone("初入星海·四幕：落户天星城（内海第一都会）", "starsea");
+    },
+    choices: [
+      { text: "置洞府·安顿紫灵——着手集齐结丹资粮。", hint: "落户天星城·四幕启", resolve: "advance" },
+    ],
+  },
+
+  // —— 第四幕②·集齐结丹资粮（雪灵水/天火液补齐＋大衍诀三层蓄力·神识淬炼大成）——
+  {
+    id: "starsea_a4_ziliang",
+    skipIf: (s) => s.flags.starsea_ziliang_done,
+    cond: (s) => s.flags.starsea_tianxing_done && !s.flags.starsea_ziliang_done,
+    bgm: "journey",
+    title: "天星城 · 集齐资粮",
+    objTitle: "觅长生 · 攒资粮",
+    objHint: "结丹是「觅长生」之关——备得越足，活路越宽。妖丹已积、降尘丹在手，再以天星城的财力补齐雪灵水、天火液，并将大衍诀催至三层、神识淬炼大成——结丹的本钱，一样样凑齐了。",
+    text: [
+      { scene: "天星城 · 洞府静室" },
+      "结丹之关，最是凶险，可备得越足，活路便越宽——这是「觅长生」的道理。你在天星城的丹铺药行间奔走，以外海妖丹为本钱，将魁星城求而未得的两味灵药一一补齐。",
+      { say: "韩立", emo: "serious", tone: "low", text: "「雪灵水一寒、天火液一热，一寒一热相济，方能把一身灵力反复压炼成丹。再加降尘丹涤去尘浊、妖丹温养——资粮，算是齐了。」" },
+      { fx: "material", at: "center", elem: "shui", ms: 500 },
+      { sfx: "cast" },
+      "更要紧的是神识。二十载闭关加这一程外海历练，你将叶师叔遗下的《大衍诀》参研至三层——神识如臂使指、淬炼大成，方堪驾驭结丹之劫的反噬。",
+      { fx: "material", at: "center", elem: "mu", ms: 500 },
+      { say: "韩立", emo: "calm", tone: "low", text: "「大衍诀三层既成，神识已足。三转重元功一转的精纯真元、大衍诀三层的神识、外海妖丹、降尘丹、雪灵水、天火液——结丹六资，齐备。」" },
+      { aside: "万事俱备。可越是齐备，心里那根弦反倒绷得越紧——结丹的心魔，是平生执念所化，最难缠。这一关，终究要亲身去闯。" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("starsea_ziliang_done");
+      State.setFlag("dayan_learned");   // 大衍诀入修·神识伴身位（slot 由 balance.js 自读）
+      State.setFlag("dayan_layer3");    // 大衍诀三层·神识淬炼大成（结丹关 require 之一）
+      if (State.count("xueling_shui") < 1) State.give("xueling_shui", 1);   // 雪灵水（凝丹灵材·结丹关 require/consume）
+      if (State.count("tianhuo_ye") < 1) State.give("tianhuo_ye", 1);       // 天火液（淬丹真火·结丹关 require/consume）
+      if (State.count("jiangchen_dan") < 1) State.give("jiangchen_dan", 1); // 降尘丹兜底（镇妖大典若漏得）
+      Engine.writeLedger("starsea_ziliang", "初入星海·四幕——集齐结丹资粮：大衍诀催至三层（dayan_layer3·神识淬炼大成）、补齐雪灵水/天火液，合三转一转之精纯真元、外海妖丹、镇妖大典所得降尘丹，结丹六资齐备（喂 bigRealmRites.core）。");
+      Engine.addMilestone("结丹资粮齐备：大衍诀三层＋雪灵水/天火液（觅长生·攒资源）", "starsea");
+    },
+    choices: [
+      { text: "资粮齐备——先试着叩一叩这结丹之关。", hint: "接首次结丹失败演出", resolve: "advance" },
+    ],
+  },
+
+  // —— 第四幕③·首次结丹·铩羽（#4 脚本必败演出·对照曲魂结煞丹成·屡挫屡战）——
+  {
+    id: "starsea_a4_shibai",
+    skipIf: (s) => s.flags.starsea_jiedan_fail_done,
+    cond: (s) => s.flags.starsea_ziliang_done && !s.flags.starsea_jiedan_fail_done,
+    cg: "luanxinghai",
+    bgm: "sorrow",
+    title: "天星城 · 首番结丹 · 铩羽",
+    objTitle: "屡挫 · 平生执念",
+    objHint: "资粮齐备，你迫不及待地引灵入丹田凝丹——可结丹的心魔是平生执念所化，最是难缠。首番叩关，丹未凝成、反遭心魔反噬，铩羽而归。对照曲魂结煞丹的水到渠成，更显这一关之难。",
+    text: [
+      { scene: "天星城 · 洞府静室" },
+      { cam: "zoom", scale: 1.05, ms: 320 },
+      "静室之内，你盘膝凝神，引一身精纯真元向丹田汇聚，要将那盈满百窍的灵力反复压炼、凝散成丹。雪灵水寒、天火液炽，一寒一热在丹田里相搏——",
+      { fx: "lightning", at: "center", elem: "huo", ms: 520 },
+      { sfx: "thunder" },
+      "丹将凝时，一缕心魔自识海猛然窜起！青牛镇的土屋、墨大夫临终的冷笑、七玄门的旧人、落海二十载的孤苦……平生执念尽数翻涌而上，搅得真元逆乱、凝丹之势骤崩。",
+      { say: "韩立", emo: "pain", tone: "low", text: "「唔——！心魔……结丹的心魔，竟这般难缠！」" },
+      { fx: "shake", at: "center", ms: 360 },
+      "一口逆血喷出，将凝的丹胚溃散回灵力。首番叩关，败了。",
+      { aside: "曲魂当年结煞丹水到渠成，我却在这一关前栽了跟头。可这本就是『鲜有不败』的结丹关——执念既是劫，便要亲手勘破。调息、定心，再来。" },
+      {
+        guide: {
+          tag: "结丹关 · 屡挫屡战",
+          title: "下一步：择吉·再闯结丹关心魔劫",
+          hint: "首番失败是结丹必经的挫折。先调息平复心魔（道心澄明≥0.7、心魔已伏≤25），待灵力圆满，再于天星城洞府择吉叩关——这一回，是可玩的渡劫。",
+          cta: "（定心·择时再闯）",
+        },
+      },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("starsea_jiedan_fail_done");
+      s.demon = clamp((s.demon || 0) + 6, 0, 100);   // 心魔翻涌（轻推·教玩家结丹前须定心；非跌境）
+      s.mood = clamp((s.mood || 0) - 8, 0, s.moodMax || 100);
+      Engine.writeLedger("starsea_jiedan_fail", "初入星海·四幕——首番结丹铩羽：资粮虽齐，结丹心魔为平生执念所化，凝丹之际心魔反噬、丹胚溃散，首番叩关而败（脚本必经之挫·对照曲魂结煞丹水到渠成）。屡挫屡战——定心再闯。");
+      Engine.addMilestone("首番结丹·铩羽（平生执念·心魔反噬）", "starsea");
+    },
+    choices: [
+      { text: "调息定心——择吉时，再闯结丹关！", hint: "接·可玩渡劫引导", resolve: "advance" },
+    ],
+  },
+
+  // —— 第四幕④·择吉叩关引导（觅长生式·准备-择时·框可玩渡劫·等玩家真破 16→17）——
+  {
+    id: "starsea_a4_jieguan",
+    skipIf: (s) => s.flags.starsea_jieguan_done,
+    cond: (s) => s.flags.starsea_jiedan_fail_done && !s.flags.starsea_jieguan_done,
+    bgm: "tense",
+    title: "天星城 · 择吉叩关",
+    objTitle: "觅长生 · 择时渡劫",
+    objHint: "资粮齐备、心魔已伏，只待灵力圆满、择一吉时，亲身去闯结丹关的心魔劫。在天星城洞府「行动→突破」叩关——这一回，胜则金丹大成。",
+    text: [
+      { scene: "天星城 · 洞府静室" },
+      "首番之败让你看清了这一关的分量。你闭门调息、勘破执念，将那翻涌的心魔一寸寸压伏，又把一身灵力推向圆满——只待择一吉时，再叩结丹之门。",
+      { say: "韩立", emo: "serious", tone: "low", text: "「觅长生之关，备得越足、活路越宽。资粮齐、神识足、心魔伏——剩下的，是亲手去闯那一场心魔劫。这一回，不容有失。」" },
+      { aside: "结丹的心魔劫，是生平执念所化，最是凶险，败则有跌境之险。可凡人韩立的路，从来都是把万全准备做到极致，再以命相搏。" },
+      {
+        guide: {
+          tag: "结丹关 · 觅长生式渡劫（可玩）",
+          title: "前往天星城洞府叩关：行动 → 突破",
+          hint: "灵力圆满后，于天星城（行动→突破）叩结丹之关——校验六资（三转一转/大衍诀三层/降尘丹/雪灵水/天火液/妖丹×30＋道心澄明·心魔已伏），齐备即闯心魔劫（trialHp 360/13 回合）。胜则金丹大成 · 结丹初期。",
+          cta: "（择吉·叩结丹之关）",
+        },
+      },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("starsea_jieguan_done");
+      Engine.writeLedger("starsea_jieguan", "初入星海·四幕——勘破首败之心魔、调息至灵力圆满，择吉叩关：于天星城洞府以 bigRealmRites.core 闯结丹关心魔劫（觅长生式·可玩渡劫）。等玩家亲破筑基大圆满→结丹初期（realmIndex 16→17）。");
+    },
+    choices: [
+      { text: "（前往天星城洞府·择吉叩结丹之关——行动→突破）", hint: "可玩渡劫·胜则接金丹大成", resolve: "advance" },
+    ],
+  },
+
+  // —— 第四幕⑤·金丹大成（realmIndex 16→17·章末高潮·扬眉吐气·章末钩·故人钟）——
+  {
+    id: "starsea_a4_jindan",
+    skipIf: (s) => s.flags.arc5_complete,
+    cond: (s) => s.realmIndex >= 17 && s.flags.starsea_jieguan_done && !s.flags.arc5_complete,
+    cg: "luanxinghai",
+    bgm: "triumph",
+    title: "天星城 · 金丹大成",
+    objTitle: "正向质变 · 扬眉吐气",
+    objHint: "心魔劫闯过，丹胚终凝！一身灵力尽数压炼成一枚温润金丹，金丹大成、结丹初期。自此你第一次能正面打得过同阶——凡人韩立，结丹了。",
+    text: [
+      { scene: "天星城 · 洞府静室" },
+      { cam: "zoom", scale: 1.08, ms: 360 },
+      "这一回，当平生执念所化的心魔再度扑来，你已不再退避——青牛镇、墨大夫、七玄门、孤岛二十载……你一一受之、一一勘破，任它翻涌，自有一颗道心如磐。",
+      { fx: "lightning", at: "center", elem: "jin", ms: 560 },
+      { sfx: "thunder" },
+      "心魔伏、真元聚，丹田之内，盈满百窍的灵力被你反复压炼、层层凝散——终于，「噗」的一声轻响，一枚温润生光的金丹，在丹田里凝成了。",
+      { fx: "burst", at: "center", elem: "jin", ms: 420 },
+      { sfx: "success" },
+      { say: "韩立", emo: "joy", tone: "low", text: "「成了……金丹大成！我韩立，结丹了！」" },
+      "二十载孤岛苦修、镇妖大典的九死一生、外海猎妖的发家积淀、首番结丹的铩羽——尽数化作此刻丹田里这一点温润的金芒。这是你修仙以来，第一次能正面打得过同阶的扬眉吐气之时。",
+      { aside: "曲魂静立一旁。这一程，它陪你从天南到星海、从筑基到结丹。可不知为何，就在金丹大成的这一刻，远在嘉元城的某座旧府里，似有一缕故人的气息悄然黯淡了下去……（故人钟·低鸣）" },
+      {
+        guide: {
+          tag: "初入星海篇 · 终　——　金丹大成（realmTier 1→2）",
+          title: "章末钩 · 下一篇：星海飞驰篇",
+          hint: "金丹既成，星海万里任去来。远处的钩子已隐隐浮现：虚天殿与虚天鼎、银月、青竹蜂云剑、风希夺去的风雷翅（炼制在后）、将夺曲魂身躯的玄骨上人、乾蓝冰焰……——这一切，都留待《星海飞驰篇》。",
+          cta: "（金丹大成·初入星海篇 终）",
+        },
+      },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("arc5_complete");
+      // 篇章契约：通关解锁下一篇（星海飞驰篇·钩子）
+      if (typeof Chapters !== "undefined") {
+        const next = Chapters.active().nextChapter;
+        if (next) Chapters.unlock(next);
+      }
+      Engine.writeLedger("starsea_jindan", "初入星海·四幕·章末高潮——韩立勘破平生执念之心魔、闯过结丹关心魔劫，金丹大成（筑基大圆满→结丹初期·realmTier 1→2质变·本作第一次正面打得过同阶的扬眉吐气节点）。故人钟低鸣：墨彩环病逝于远渡期间（#13·软伏笔墨彩环转世＝紫灵·不写死）。章末埋钩：虚天殿/虚天鼎/银月/青竹蜂云剑/风雷翅炼制/玄骨上人夺曲魂身躯/乾蓝冰焰（皆留星海飞驰篇）。初入星海篇·终。");
+      Engine.addMilestone("初入星海·章末：金丹大成（结丹初期·realmTier 1→2）", "breakthrough");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "天星城：散修韩立于洞府结丹大成，跻身结丹修士之列。" });
+      s.worldNews.push({ t, kind: "sorrow", text: "故人钟·低鸣：嘉元城墨府传来音讯——墨彩环于韩立远渡星海期间病逝。仙凡有别，凡人之命，终是扳不动的。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+      Engine.toast("初入星海篇通关！金丹大成 · 结丹初期");
+    },
+    choices: [
+      { text: "（金丹在腹·星海万里——且待星海飞驰）", hint: "初入星海篇·终（realmTier 1→2质变）", resolve: "advance" },
     ],
   },
 ];
