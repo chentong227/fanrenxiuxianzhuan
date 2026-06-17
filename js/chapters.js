@@ -66,8 +66,8 @@ const Chapters = {
       name: "初入星海篇",
       order: 5,
       locked: true,             // 由再别天南篇收尾·落海定格（zaibie 章末）解锁
-      realmTier: 1,             // 全章主体筑基（章末天星城金丹大成质变入结丹·tier 2）
-      realmCapIndex: 13,        // 暂沿筑基初期；增量2 扩 DATA.realms（筑基中后期+结丹四层）后上调至结丹大圆满
+      realmTier: 1,             // 全章主体筑基（战斗标度恒筑基；章末天星城金丹大成为剧情质变，下篇 realmTier 升 2）
+      realmCapIndex: 17,        // 结丹初期（DATA.realms 索引17）——章末「金丹大成」可破至此；筑基中后期/大圆满(14~16)为途中进阶
       startLocation: "kuixing_island",
       completeFlag: "arc5_complete",
       nextChapter: "xinghaifeichi", // 章末金丹大成→星海飞驰篇（钩子·下篇实装）
