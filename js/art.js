@@ -76,7 +76,9 @@
   // 剧情 CG（p:1 = 竖版已生成）
   const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 }, mojiao: {},
     // 增量E·矿道箱庭演出 CG（横版底 + 竖版 _p）
-    kuangchang: { p: 1 }, kuangdong: { p: 1 }, jiyuan_shi: { p: 1 } };
+    kuangchang: { p: 1 }, kuangdong: { p: 1 }, jiyuan_shi: { p: 1 },
+    // 增量G·魔道争锋第三幕·京城暗流演出 CG（待 genart 生成，缺图自动回退到场景标题文字）
+    jingcheng: {}, wangfu_yan: {} };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };
