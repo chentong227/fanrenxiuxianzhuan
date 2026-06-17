@@ -640,6 +640,56 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(s.flags.modao_act2_done, "魔道争锋·第二幕收口（modao_act2_done）");
   assert(s.flags.modao_act3_due > sandbox.State.absMonth(), "第三幕时锚已埋（modao_act3_due，候京城暗流实装）");
   assert(!s.pendingEvent, "魔道争锋·第二幕·金鼓原前线相持·完（主线挂在赴京途中·候第三幕）");
+
+  // —— 5.9 魔道争锋·第三幕·京城暗流（增量G：入京·萧翠儿→连环失踪案·情报面纱→馨王府墨彩环重逢→铁罗血茧遁走→五色门收口杀王管事）——
+  // 强制第三幕时锚到期（赴京途中度月的等效），主线链式自动演出
+  s.flags.modao_act3_due = 0;
+  Engine.checkStory();
+  assert(s.pendingEvent === "modao_e3_rujing", `入京·天子脚下（${s.pendingEvent}）`);
+  assert(s.metNpcs.includes("xiaocui"), "市井偶遇萧翠儿（入图鉴）");
+  assert(s.ledger.modao_rujing, "入京·秦府门房哭戏入账本");
+  // 入京 → 连环失踪案（蒙山五友登场·情报面纱·翠儿求救）
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e3_rujing"), 0);
+  assert(s.pendingEvent === "modao_e3_shizong", `连环失踪案（${s.pendingEvent}）`);
+  assert(s.metNpcs.includes("mengshan_wuyou"), "结识蒙山五友（散修线人入图鉴）");
+  assert(s.ledger.modao_shizong, "京城连环失踪案入账本");
+  // 情报面纱·京城版：选「情报最全」档 → jingcheng_intel=2（复用 story 选项的乘法设计，第四幕据此调难度）
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e3_shizong"), 0);
+  assert(s.flags.jingcheng_intel === 2, `情报面纱·查得最全（jingcheng_intel=${s.flags.jingcheng_intel}）`);
+  // 失踪案 → 馨王府夜宴·墨彩环重逢（修#2·情感落点占位待亲笔）
+  assert(s.pendingEvent === "modao_e3_yanhui", `馨王府夜宴·墨彩环重逢（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e3_yanhui"), 0);
+  assert(s.metNpcs.includes("mocaihuan"), "馨王府重逢易容墨彩环（入图鉴·燕家堡因果第二章）");
+  assert(s.ledger.modao_yanhui, "馨王府夜宴重逢入账本");
+  // 夜宴 → 血池·血侍铁罗（可逃逸 boss 首演·仇恨账本跨场）
+  assert(s.pendingEvent === "modao_e3_tieluo", `血池·血侍铁罗（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e3_tieluo"), 0);
+  const tc = Engine._combat;
+  assert(tc && tc.enemies[0].name === "铁罗", "铁罗入战（血侍）");
+  assert(WORLD.enemies.tieluo.canFlee === true && WORLD.enemies.tieluo.boss === true, "铁罗·可逃逸 boss（逼退化血茧遁走·仇恨账本跨场首例）");
+  assert(WORLD.enemies.tieluo.elem === "huo", "铁罗·火属（木生火·韩立讨不到相克便宜=硬仗）");
+  Engine._combat.enemies.forEach(e => { e.hp = 0; });
+  Engine._combat._checkEnd();
+  Engine._finishCombat();
+  assert(s.flags.modao_e3_tieluo_done && s.flags.tieluo_escaped, "铁罗化血茧遁走（modao_e3_tieluo_done + tieluo_escaped）");
+  assert(s.metNpcs.includes("tieluo"), "铁罗入「人物图鉴」（黑煞教血侍）");
+  assert(s.ledger.tieluo_escaped, "逼退铁罗·跨场血仇入账本（皇宫决战再算）");
+  // 铁罗遁走 → 五色门收口（妖化王管事·为墨彩环报仇·墨府之祸总兑现）
+  assert(s.pendingEvent === "modao_e3_wuse", `五色门收口（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e3_wuse"), 0);
+  const wc = Engine._combat;
+  assert(wc && wc.enemies[0].name === "王管事", "王管事入战（妖化门主）");
+  assert(WORLD.enemies.wuse_menzhu.boss === true && WORLD.enemies.wuse_menzhu.canFlee === false, "王管事·boss·不可逃（妖化正面收口）");
+  assert(WORLD.enemies.wuse_menzhu.elem === "tu", "王管事·土属（韩立木行克之，可胜）");
+  Engine._combat.enemies.forEach(e => { e.hp = 0; });
+  Engine._combat._checkEnd();
+  Engine._finishCombat();
+  assert(s.flags.modao_e3_wuse_done && s.flags.modao_act3_done, "诛王管事（modao_e3_wuse_done + 第三幕收口 modao_act3_done）");
+  assert(s.flags.mofu_avenged, "墨府之祸总兑现·为墨彩环报仇（mofu_avenged）");
+  assert(s.metNpcs.includes("wuse_menzhu"), "王管事入「人物图鉴」（墨府之祸真凶）");
+  assert(s.ledger.mofu_avenged, "五色门收口·了结墨家血债入账本");
+  assert(s.flags.modao_act4_due > sandbox.State.absMonth(), "第四幕时锚已埋（modao_act4_due，候黑煞覆灭·皇宫决战实装）");
+  assert(!s.pendingEvent, "魔道争锋·第三幕·京城暗流·完（主线挂在京城·候第四幕）");
 }
 
 console.log("\n=== 6. 拜别版回乡（离门远行）===");
