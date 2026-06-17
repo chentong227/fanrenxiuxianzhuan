@@ -142,6 +142,23 @@
     leidun:     { name: "雷遁", mp: 5, range: [0, 0], type: "buff", quick: true, source: "treasure", elem: "mu",
                 chargeCost: { id: "shenlei", n: 1 }, blinkMove: true, needTrait: "fenglei",
                 desc: "化一道银弧穿亚空间而行——本回合可瞬移到场上任意空位、无视挡线困足（瞬发）。需御「风雷翅」方可施展。耗神雷一道。韩跑跑的本钱。" },
+
+    /* —— 噬金虫·四用法（初入星海篇·#5 用户裁决：复用神雷 chargeCost 共享池）——
+     * 一窝灵虫四种调遣，同抽一池"灵机"（charges.shijinchong），打一分少一分、耗尽则哑火——取舍即战术。
+     * 正典获得＝外星海致富偶得一窝噬金虫（见 data.js 同名条目）；持虫即四式入战（engine.playerFighter 注入 + 上膛）。
+     * 全 source:"treasure"·driveRealm:2，chargeCost 消耗性底牌穿透越阶门槛（Balance.driveMul 第四参豁免折扣）。 */
+    shijin_fu:    { name: "噬金·附体", mp: 5, range: [0, 0], type: "def", shield: 36, source: "treasure", elem: "jin",
+                chargeCost: { id: "shijinchong", n: 1 },
+                desc: "纵噬金虫附于体表、淬结一层金芒虫甲护身（结盾 36）。耗灵机一分，虫尽则止。" },
+    shijin_chao:  { name: "噬金·出战", mp: 6, range: [1, 5], type: "atk", dmg: 14, fixedSegs: 3, source: "treasure", elem: "jin", driveRealm: 2,
+                chargeCost: { id: "shijinchong", n: 1 },
+                desc: "放虫群如金云扑敌、分头撕咬（三段连噬、各自结算）——金芒专噬金铁，远近皆可笼罩。耗灵机一分，虫尽则止。" },
+    shijin_blade: { name: "噬金·变武器", mp: 8, range: [1, 3], type: "atk", dmg: 36, pierce: true, cd: 1, source: "treasure", elem: "jin", driveRealm: 2,
+                chargeCost: { id: "shijinchong", n: 2 },
+                desc: "聚虫群凝成一柄噬金巨刃御使斩落——专啮金铁、破甲裂宝（必破甲）。耗灵机二分；催动后须回气一回合。虫尽则止。" },
+    shijin_huashen: { name: "噬金·变身外化身", mp: 12, range: [1, 4], type: "atk", dmg: 24, fixedSegs: 3, pierce: true, cd: 2, source: "treasure", elem: "jin", driveRealm: 2,
+                chargeCost: { id: "shijinchong", n: 3 },
+                desc: "倾巢而出——万千噬金虫外化作一尊丈余虫王化身，扑食撕咬、势不可挡（三段破甲连击）。噬金虫的全力一击，耗灵机三分（半池倾覆）；催动后须回气两回合。虫尽则哑火。" },
   };
 
   function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }

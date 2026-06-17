@@ -4047,8 +4047,9 @@ const UI = {
     // —— 手牌排版（用户裁决 L1-L5）：法宝=左详细(主攻/主防) + 右图标(特效型/悬浮，两排)；
     //    法术锁死 8 格、4×2 对齐；瞬发/助战各自独立窄行；回合结束与手牌同屏（combat-console 紧凑）。
     //    装备型(只加属性的伴身法宝)不入手牌——在洞府装备界面吃属性(L3)，故此处不再渲染 side-seal。
-    // 神雷类特色资源技（chargeCost）一律不入法宝/法术/瞬发栏——统一走辟邪神雷单卡三选
-    const treasures = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source === "treasure" && !SP[id].chargeCost);
+    // 神雷类特色资源技（chargeCost.id==="shenlei"）不入法宝/法术/瞬发栏——统一走辟邪神雷单卡三选；
+    // 噬金虫四用法（chargeCost.id==="shijinchong"）则照常入法宝栏（主攻/图标卡），共享池由 canAfford 自动哑火。
+    const treasures = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source === "treasure" && !(SP[id].chargeCost && SP[id].chargeCost.id !== "shijinchong"));
     const mains = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source !== "treasure");
     const quicks = p.spells.filter(id => SP[id] && SP[id].quick && !SP[id].chargeCost);
     // 主攻法宝=兵器(gear weapon)所授攻击法宝，余者首张攻击法宝兜底；主防法宝=首张护体法宝。

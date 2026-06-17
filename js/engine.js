@@ -2903,6 +2903,13 @@ const Engine = {
         if (!spells.includes(sk)) spells.push(sk);
       });
     });
+    // 噬金虫·四用法（初入星海篇·#5：复用神雷 chargeCost 共享池）——背包持噬金虫即四式入战
+    // （外星海致富偶得后解锁；此前与神雷同理"演武先行·池未上膛"则四式不入手牌）
+    if (State.count("shijinchong") > 0) {
+      ["shijin_fu", "shijin_chao", "shijin_blade", "shijin_huashen"].forEach(sk => {
+        if (!spells.includes(sk)) spells.push(sk);
+      });
+    }
     const dunTrait = State.gearTrait("charge_resist");
     return new CombatAPI.Fighter({
       name: s.name,
@@ -2967,6 +2974,12 @@ const Engine = {
           p[id] = State.count(id) + (bag[id] || 0);
         });
         return p;
+      })(),
+      // 特色资源池（神雷式·战斗内不回充·每战重置）：持噬金虫→四用法同抽一池"灵机"（满 6 分）
+      charges: (() => {
+        const ch = {};
+        if (State.count("shijinchong") > 0) ch.shijinchong = { name: "噬金虫", cur: 6, max: 6 };
+        return Object.keys(ch).length ? ch : null;
       })(),
     });
   },
