@@ -2266,6 +2266,7 @@ const Engine = {
     const r = pool[Math.floor(Math.random() * pool.length)];
     s.beastRumor = r.id;
     s.beastRumorClue = 0;
+    s.beastRumorClueAt = (s.year || 0) * 12 + (s.month || 0); // 寻踪起点：线索须隔月渐起，不被连点时间挤成一拍
     this.log(`【异闻】${r.rumor}`, "event");
     this.toast("听到一桩异闻（见际遇栏）");
     if (typeof Sfx !== "undefined") Sfx.play("chime");
@@ -2292,9 +2293,14 @@ const Engine = {
     if (!r || !r.clues || !r.clues.length) return;
     s.beastRumorClue = s.beastRumorClue || 0;
     if (s.beastRumorClue >= r.clues.length) return;
-    if (Math.random() > clamp(0.34 * months, 0, 0.6)) return;
+    // 隔月铺陈：两条线索之间至少相隔 2 个月，连点跳月不会把 0→3/3 挤成一瞬
+    const now = (s.year || 0) * 12 + (s.month || 0);
+    if (s.beastRumorClueAt == null) s.beastRumorClueAt = now;
+    if (now - s.beastRumorClueAt < 2) return;
+    if (Math.random() > clamp(0.26 * months, 0, 0.5)) return;
     this.log(`【异闻】${r.clues[s.beastRumorClue]}`, "event");
     s.beastRumorClue++;
+    s.beastRumorClueAt = now;
     if (typeof Sfx !== "undefined") Sfx.play("chime");
   },
 

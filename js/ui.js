@@ -2084,10 +2084,65 @@ const UI = {
     `);
   },
 
-  // 图鉴页签：人物 | 大件（复用同一套图鉴 UI 的独立栏位）
+  // 图鉴页签：人物 | 大件 | 传闻（复用同一套图鉴 UI 的独立栏位）
   _compTabs(active) {
     const t = (id, label, fn) => `<button class="comp-tab ${active === id ? 'on' : ''}" onclick="UI.${fn}()">${label}</button>`;
-    return `<div class="comp-tabs">${t("npc", "人物图鉴", "openCodex")}${t("big", "大件图鉴", "openBigitems")}</div>`;
+    return `<div class="comp-tabs">${t("npc", "人物图鉴", "openCodex")}${t("big", "大件图鉴", "openBigitems")}${t("rumor", "传闻图鉴", "openRumors")}</div>`;
+  },
+
+  /* -------- 传闻图鉴（异闻妖王 + 风闻线报：一册收拢"听来的传闻"，明牌惦记·循声而往）-------- */
+  openRumors() {
+    const s = State.data;
+    const beasts = (typeof WORLD !== "undefined" && WORLD.beastRumors) ? WORLD.beastRumors : [];
+    const slain = s.slainBeasts || [];
+    const activeId = s.beastRumor || null;
+    const clueN = s.beastRumorClue || 0;
+
+    // —— 异闻妖王：听闻 → 寻踪 → 伏诛 ——
+    const beastCard = (r) => {
+      const isSlain = slain.includes(r.id);
+      const isActive = activeId === r.id;
+      if (!isSlain && !isActive) {
+        return `<div class="bi-card bi-unheard"><div class="bi-head"><b>？？？</b><span class="bi-badge">未闻</span></div>
+          <div class="bi-blurb">后山尚有未起的风声——静待山民口耳相传。</div></div>`;
+      }
+      const total = (r.clues || []).length;
+      const shown = isSlain ? total : Math.min(clueN, total);
+      const cls = isSlain ? "bi-got" : "bi-track";
+      const badge = isSlain ? "已伏诛" : "追猎中";
+      const clues = (r.clues || []).map((c, i) =>
+        `<div style="font-size:12px;line-height:1.6;margin-top:4px;color:${i < shown ? 'var(--ink)' : 'var(--ink-faint)'}">${i < shown ? "· " + c : "· ？？？——线索未明，深入后山方能寻得。"}</div>`).join("");
+      const prog = total ? `<div class="bi-prog"><div class="bi-prog-bar"><i style="width:${Math.round(shown / total * 100)}%"></i></div><span>线索 ${shown}/${total}</span></div>` : "";
+      const foot = isSlain
+        ? `<div class="bi-note">此妖已伏诛——稀材入囊，风声散尽。</div>`
+        : `<div class="bi-guide"><span class="bi-guide-key">寻踪</span>深入后山探索，线索了然后入深处与之一战。</div>`;
+      return `<div class="bi-card ${cls}"><div class="bi-head"><b>${r.title}</b><span class="bi-badge">${badge}</span></div>
+        <div class="bi-blurb">${r.rumor}</div>${prog}${clues}${foot}</div>`;
+    };
+
+    // —— 风闻线报：复用既有「风云录」worldNews（剧情传闻/线报，如皇宫决战「第五血侍·救刘靖」线报）——
+    const newsRumors = (s.worldNews || []).filter(n => n.kind === "rumor").slice().reverse();
+    const newsHtml = newsRumors.length
+      ? newsRumors.map(n => `<div class="chron-item rumor"><span class="chron-t">${n.t}</span>${n.text}</div>`).join("")
+      : `<div class="inv-empty">尚无风闻入耳——行走江湖，自有听闻时。</div>`;
+
+    // —— 前路风闻：已知的远方传闻（明牌惦记·只示意不剧透）——
+    const ahead = (typeof WORLD !== "undefined" && WORLD.rumorAhead) ? WORLD.rumorAhead : [];
+    const aheadHtml = ahead.map(a =>
+      `<div class="bi-card bi-far"><div class="bi-head"><b>${a.title}</b><span class="bi-badge">前路</span></div><div class="bi-blurb">${a.hint}</div></div>`).join("");
+
+    const slainCount = beasts.filter(r => slain.includes(r.id)).length;
+    this.openModal(`
+      ${this._compTabs("rumor")}
+      <h2>传闻图鉴 <span class="codex-count">异闻 ${slainCount}/${beasts.length}</span></h2>
+      <p style="color:var(--ink-dim);font-size:12px">行走江湖，听来的传闻自成一册：山野异闻、市井风声、京华线报——明牌惦记，循声而往。</p>
+      <h3 class="panel-title">异闻妖王（听闻 → 寻踪 → 伏诛）</h3>
+      <div class="bi-list">${beasts.map(beastCard).join("")}</div>
+      <h3 class="panel-title" style="margin-top:12px">风闻线报（风云录所记之传闻）</h3>
+      <div class="chronicle">${newsHtml}</div>
+      ${ahead.length ? `<h3 class="panel-title" style="margin-top:12px">前路风闻（已知的远方）</h3><div class="bi-list">${aheadHtml}</div>` : ""}
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">合上</button></div>
+    `);
   },
 
   /* -------- 大件图鉴（第一公民系统总表：明牌惦记 + 如何开启·获取）-------- */
@@ -4852,6 +4907,8 @@ const UI = {
       <h2>系统</h2>
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openCodex()">人物图鉴</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openBigitems()">大件图鉴</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openRumors()">传闻图鉴</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openChronicle()">风云录</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTechniques()">功法 · 配装</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTreasury()">法宝 · 装备位</button>

@@ -11,15 +11,23 @@ const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 
-const KEY = process.argv[2];
+const KEY = process.argv[2] || process.env.OPENROUTER_KEY;
 const ONLY = process.argv[3];
-if (!KEY) { console.error("用法: node scripts/genmusic.js <OPENROUTER_KEY> [onlyId]"); process.exit(1); }
+if (!KEY) { console.error("用法: node scripts/genmusic.js <OPENROUTER_KEY|env OPENROUTER_KEY> [onlyId]"); process.exit(1); }
 
 const MODEL = "google/lyria-3-clip-preview";
-const PROXY = process.env.GEN_PROXY || "http://127.0.0.1:7890";
+// 跨平台 curl：Windows 用 curl.exe，Linux/macOS（云机）用 curl
+const CURL = process.platform === "win32" ? "curl.exe" : "curl";
+// 代理：默认走本机 clash(7890)；无代理环境（CI/云机）显式传 GEN_PROXY="" 或 GEN_PROXY=none 直连
+const PROXY = (process.env.GEN_PROXY != null) ? process.env.GEN_PROXY : "http://127.0.0.1:7890";
+const USE_PROXY = PROXY && PROXY !== "none";
 const OUT = path.join(__dirname, "..", "assets", "audio");
 const TMP = path.join(__dirname, "..", "test");
-if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
+// 候选产出：OUT_SUBDIR=_cand 落候选目录，CAND_SUFFIX=_c1 给文件名加后缀（择优前不覆盖正轨）
+const OUT_SUBDIR = process.env.OUT_SUBDIR || "";
+const SUFFIX = process.env.CAND_SUFFIX || "";
+const OUTDIR = OUT_SUBDIR ? path.join(OUT, OUT_SUBDIR) : OUT;
+if (!fs.existsSync(OUTDIR)) fs.mkdirSync(OUTDIR, { recursive: true });
 
 const COMMON = "中国古风纯器乐游戏背景音乐，无人声无歌词，30秒无缝循环（首尾衔接平滑），48kHz高品质";
 
@@ -56,15 +64,18 @@ function genOne(id, prompt) {
   const bodyFile = path.join(TMP, "_genmusic.body.json");
   const respFile = path.join(TMP, "_genmusic.sse.txt");
   fs.writeFileSync(bodyFile, body);
-  execFileSync("curl.exe", [
-    "-s", "-N", "-x", PROXY, "-X", "POST", "https://openrouter.ai/api/v1/chat/completions",
+  const curlArgs = ["-s", "-N"];
+  if (USE_PROXY) curlArgs.push("-x", PROXY);
+  curlArgs.push(
+    "-X", "POST", "https://openrouter.ai/api/v1/chat/completions",
     "-H", "Authorization: Bearer " + KEY,
     "-H", "Content-Type: application/json",
     "-H", "X-Title: FanrenXiuxian",
     "--data", "@" + bodyFile,
     "-o", respFile,
     "--max-time", "300",
-  ], { stdio: "ignore" });
+  );
+  execFileSync(CURL, curlArgs, { stdio: "ignore" });
   const raw = fs.readFileSync(respFile, "utf8");
   if (raw.trim().startsWith("{")) {   // 非流式错误响应
     const j = JSON.parse(raw);
@@ -107,23 +118,35 @@ function genOne(id, prompt) {
   const ext = mm.includes("mpeg") || mm.includes("mp3") ? "mp3"
             : mm.includes("wav") ? "wav"
             : mm.includes("ogg") ? "ogg" : "mp3";
-  const outFile = path.join(OUT, `bgm_${id}.${ext}`);
+  const outFile = path.join(OUTDIR, `bgm_${id}${SUFFIX}.${ext}`);
   fs.writeFileSync(outFile, buf);
   try { fs.unlinkSync(bodyFile); fs.unlinkSync(respFile); } catch (e) {}
   return outFile;
 }
 
 (async () => {
-  const ids = ONLY ? [ONLY] : Object.keys(TRACKS);
+  const ids = ONLY ? ONLY.split(",").map(s => s.trim()).filter(Boolean) : Object.keys(TRACKS);
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   for (const id of ids) {
     if (!TRACKS[id]) { console.log(`跳过未知轨 ${id}`); continue; }
-    process.stdout.write(`生成 bgm_${id} ... `);
-    try {
-      const f = genOne(id, TRACKS[id]);
-      const kb = Math.round(fs.statSync(f).size / 1024);
-      console.log(`✓ ${path.basename(f)} (${kb}KB)`);
-    } catch (e) {
-      console.log("✗ " + e.message.slice(0, 200));
+    process.stdout.write(`生成 bgm_${id}${SUFFIX} ... `);
+    let ok = false;
+    for (let attempt = 1; attempt <= 3 && !ok; attempt++) {
+      try {
+        const f = genOne(id, TRACKS[id]);
+        const kb = Math.round(fs.statSync(f).size / 1024);
+        console.log(`✓ ${path.basename(f)} (${kb}KB)`);
+        ok = true;
+      } catch (e) {
+        const msg = e.message.slice(0, 200);
+        if (attempt < 3 && /429|rate|timeout|limit|503|502/i.test(msg)) {
+          const back = attempt * 8;
+          process.stdout.write(`(限流重试 ${attempt}/2，等 ${back}s) `);
+          await sleep(back * 1000);
+        } else {
+          console.log("✗ " + msg);
+        }
+      }
     }
   }
   console.log("完成。");
