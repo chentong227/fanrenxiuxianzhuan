@@ -61,6 +61,20 @@ const Chapters = {
       // 衔接为主、自由度适当低的过场大章，重头在两段演出（离开天南/到达乱星海）。
       // 已实装：寻魂夺剑(绿煌剑·奇虫榜玉简)/曲魂身外化身(SideUnit)/金鼓原崩盘/亡命元武/三人护道·跌境/矿洞拖时启阵·大挪移令传送/落海定格。
     },
+    {
+      id: "starsea",
+      name: "初入星海篇",
+      order: 5,
+      locked: true,             // 由再别天南篇收尾·落海定格（zaibie 章末）解锁
+      realmTier: 1,             // 全章主体筑基（章末天星城金丹大成质变入结丹·tier 2）
+      realmCapIndex: 13,        // 暂沿筑基初期；增量2 扩 DATA.realms（筑基中后期+结丹四层）后上调至结丹大圆满
+      startLocation: "kuixing_island",
+      completeFlag: "arc5_complete",
+      nextChapter: "xinghaifeichi", // 章末金丹大成→星海飞驰篇（钩子·下篇实装）
+      currencyName: "灵石",
+      // 见 docs/lore-churu-xinghai.md / docs/churu-xinghai-design.md。动漫年番原创脊柱（镇妖大典）。
+      // 待实装：登魁星岛·镇妖台擂台/小寰岛闭关重修(三转一转)/镇妖大典(越级斩婴鲤兽)·大典惊变(雷鹏·风希·救小紫灵·乱星海大乱)/外星海致富(噬金虫·全妖丹)/天星城首次结丹失败·金丹大成。
+    },
   ],
 
   get(id) { return this.list.find(c => c.id === id) || null; },
