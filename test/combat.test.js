@@ -767,5 +767,45 @@ console.log("\n=== 22. sides[] 多侧位（T4）：双同道同场/仇恨分流/
   assert(c2.sides[0].hp < sHp || c2.player.hp === c2.player.hpMax, "挡刀掷骰仍生效（侧位代受）");
 }
 
+console.log("\n=== 23. 拖时布阵战（objective=survive·拖满即胜·败有所得首例·H下）===");
+{
+  // 不死的木桩（0 攻、海量血），玩家只需撑满 maxRounds=4 回合即「阵成」判胜，不必杀敌
+  const c = new Combat({ player: mkHan({ hp: 300, hpMax: 300 }),
+    enemies: [dummy({ name: "胥王(测)", hp: 9999, atk: 0 })],
+    objective: { kind: "survive", rounds: 4, winLog: "阵成了——！" },
+    maxRounds: 4, rng: noCrit, W: 9, playerPos: 2, enemyPos: 6 });
+  c.startRound(); c.endRound();          // r1
+  assert(c.status === "ongoing", "拖时·未满回合不提前判胜（r1 后仍在死守）");
+  c.startRound(); c.endRound();          // r2
+  c.startRound(); c.endRound();          // r3
+  assert(c.status === "ongoing" && c.round === 3, `拖到第 3 回合仍在打（round=${c.round}）`);
+  c.startRound(); c.endRound();          // r4 → round>=maxRounds → survive 胜
+  assert(c.status === "win", "拖满 4 回合·阵成判胜（survive 目标·不杀敌也能赢）");
+  // 对照：无 survive 目标时拖满回合＝判负（旧规则不破坏）
+  const c2 = new Combat({ player: mkHan({ hp: 300, hpMax: 300 }),
+    enemies: [dummy({ name: "木桩", hp: 9999, atk: 0 })], maxRounds: 2, rng: noCrit, W: 9, playerPos: 2, enemyPos: 6 });
+  c2.startRound(); c2.endRound(); c2.startRound(); c2.endRound();
+  assert(c2.status === "lose", "无 survive 目标·回合耗尽仍判负（旧规则不破坏）");
+}
+
+console.log("\n=== 24. 真·颠倒五行阵：逐回合相位轮转 + 阵力反噬(穿甲) + 破绽/佐助（H下）===");
+{
+  const c = new Combat({ player: mkHan({ hp: 200, hpMax: 200 }),
+    enemies: [dummy({ name: "胥王(测)", hp: 100, atk: 0, armor: 50 })],
+    fieldCycle: [
+      { name: "甲相", suppress: 0.1, expose: true },
+      { name: "乙相", suppress: 0.2, player: { shield: 20 } },
+    ],
+    maxRounds: 10, rng: noCrit, W: 9, playerPos: 2, enemyPos: 6 });
+  c.startRound();                        // r1 → 甲相
+  assert(c._fieldPhase && c._fieldPhase.name === "甲相", "第1回合落「甲相」相位");
+  assert(c.enemies[0].hp <= 91 && c.enemies[0].hp >= 89, `阵力穿甲反噬约 10（敌血 ${c.enemies[0].hp}/100·无视护甲50）`);
+  assert(c.enemies[0].exposed === true, "expose 相位令敌破绽毕露（受击+30%）");
+  c.endRound(); c.startRound();          // r2 → 乙相
+  assert(c._fieldPhase.name === "乙相", "第2回合轮转到「乙相」（逐回合切换）");
+  assert(c.enemies[0].hp <= 71, `乙相再噬约 20（敌血 ${c.enemies[0].hp}）`);
+  assert(c.player.shield >= 20, `佐助相位给玩家护盾（盾 ${c.player.shield}）`);
+}
+
 console.log(failures === 0 ? "\n全部通过 ✓" : `\n${failures} 项失败 ✗`);
 process.exit(failures ? 1 : 0);

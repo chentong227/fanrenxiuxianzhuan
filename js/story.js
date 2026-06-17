@@ -2050,7 +2050,148 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("danger");
     },
     choices: [
-      { text: "「拖住他——给师兄妹布阵争时间！」（皇宫决战·下篇待续）", resolve: "advance" },
+      { text: "「拖住他——给师兄妹布阵争时间！」", resolve: "advance" },
+    ],
+  },
+
+  /* ========== 皇宫决战·下篇（增量H下·收官）：拖时布阵 → 阵成反制 → 三符宝＋真凰符终结 → 离京钩 ========== */
+  {
+    // ① 拖时布阵战（survive 拖满回合机制首演·败有所得）。时锚由 modao_e4_xuwang.onArrive 落定（due=当月）；
+    //    胜负在 _finishCombat(meta.type==="tuoshi") 结算并 setFlag modao_e4b_tuoshi_done → storyStage++。
+    id: "modao_e4b_tuoshi",
+    skipIf: (s) => s.flags.modao_e4b_tuoshi_done,
+    cond: (s) => s.flags.modao_e4_xuwang_done && State.absMonth() >= (s.flags.modao_e4b_due || 0),
+    cg: "jingcheng",
+    bgm: "boss",
+    title: "皇宫决战 · 拖时布阵",
+    objTitle: "且战且退·拖住他",
+    objHint: "硬拼必死——撑住，拖到师兄妹与傀儡蜥蜴把「真·颠倒五行阵」布成！",
+    text: [
+      { scene: "皇宫 · 血池大殿" },
+      "假丹之威如山压顶，黑血刀所过之处血煞横飞。你一边周旋一边厉声招呼众人：莫要硬碰，只管退、只管缠！",
+      { say: "韩立", emo: "shout", tone: "你飞快盘算着，把那个疯狂的念头喊了出来", text: "宋师兄、钟师姐——带傀儡蜥蜴叼旗布阵！『真·颠倒五行阵』！我们几个，给你们拖时间！" },
+      { aside: "宋蒙眼睛一亮，重元珠当即护身：「好胆识——就这么办！」他与钟卫娘急急退向四角，驱使着那几头筑基傀儡蜥蜴叼起阵旗，往血池广场的方位上死死镇去。" },
+      { aside: "（拖时布阵战：你这一战不必胜，只须撑住——拖满回合，师兄妹的颠倒五行阵便成，便是翻盘之时。败有所得，浴血退守也能再上。）" },
+    ],
+    choices: [
+      { text: "「都听我的——结阵死守，拖住胥王！」", hint: "拖时布阵战：撑满回合即胜（败有所得·浴血再战）", resolve: "tuoshi_fight" },
+    ],
+  },
+  {
+    // ② 阵成·反制（真·颠倒五行阵 fieldCycle 逐回合压制 + 二阶段假丹 boss waves）。
+    //    胜负在 _finishCombat(meta.type==="xuwang_final") 结算并 setFlag modao_e4b_xuwang_done → storyStage++。
+    id: "modao_e4b_zhencheng",
+    skipIf: (s) => s.flags.modao_e4b_xuwang_done,
+    cond: (s) => s.flags.modao_e4b_tuoshi_done && !s.flags.modao_e4b_xuwang_done,
+    cg: "jingcheng",
+    bgm: "boss",
+    title: "皇宫决战 · 阵成·反制",
+    objTitle: "颠倒五行·反制",
+    objHint: "阵成！五行倒转逐回合反噬胥王——底牌齐发，毕其功于一役！",
+    text: [
+      { scene: "皇宫 · 血池大殿" },
+      "最后一道阵旗轰然插定，整座血池广场五行光华暴涨——木、火、金、水、土，倒转生克、虚实易位！「真·颠倒五行阵」终于布成！",
+      { say: "宋蒙", emo: "shout", tone: "他与钟卫娘联手稳住阵眼，厉声", text: "阵成——压！韩师弟，机会只此一次，五行倒转镇着他的工夫，你的底牌，全给我招呼上去！" },
+      { aside: "竹海缠足、九天真火倒灌、镜影分身、渊薮心魔、黄沙陷脚……五行之力逐息反噬，那不可一世的假丹之威，竟被一寸寸地压了下去。胥王第一次露出了惊怒之色。" },
+      { aside: "（阵成决战：颠倒五行阵逐回合反噬胥王、佐助于你；金光砖等符宝底牌已在手——此刻不留底牌，更待何时！注意：他有二阶段，毁其肉身后仍会借丹复生。）" },
+    ],
+    choices: [
+      { text: "「就是现在——金光砖！」底牌尽出，毕其功于一役！", hint: "阵成决战：颠倒五行阵逐回合压制 + 二阶段假丹 boss", resolve: "xuwang_final_fight" },
+    ],
+  },
+  {
+    // ③-live 真凰符·终结（刘靖示警支线·重伤生还）。三符宝齐轰已在 phase 切换的波次旁白演过，
+    //     此节点收尾：钟卫娘祭真凰符灭神魂（剧情杀·玩家不操作）+ 发战利品。彩蛋：刘宋渊源。
+    //     分支契约同 liujing_live/die：本节点 skipIf 在「刘靖已殁」时跳过 → 落到下一 die 节点。
+    id: "modao_e4b_finale_live",
+    skipIf: (s) => s.flags.modao_e4b_finale_done || !s.flags.liujing_survived,
+    cond: (s) => s.flags.modao_e4b_xuwang_done && s.flags.liujing_survived,
+    cg: "jingcheng",
+    bgm: "triumph",
+    title: "皇宫决战 · 真凰符·终结",
+    objTitle: "毕其功于一役",
+    objHint: "三符宝毁其肉身、复生神魂被阵法死死镇住——只待那一击。",
+    text: [
+      { scene: "皇宫 · 血池大殿" },
+      "平天尺、重元珠、赤红剑——你与宋蒙、陈巧倩三件符宝齐轰而下，胥王那具假丹肉身轰然崩碎。可血凝五行丹借阵中五行之力，犹自凝起一缕复生神魂，被颠倒五行阵死死镇在原地、寸步难逃。",
+      { say: "刘靖", tone: "他按着左肩的伤、剑还握不稳，却把一枚古拙符箓郑重递向钟卫娘", text: "卫娘——刘家祖传的真凰符，一生只可一击。我这身子催不动它了……了结这魔头，托付你了。" },
+      { say: "钟卫娘", emo: "shout", tone: "她双手捧符、赤金凰焰冲天而起", text: "真凰符——焚！" },
+      { aside: "一只赤金火凰自符中振翅而出，长鸣一声，将那缕负隅顽抗的复生神魂连同满殿血煞，尽数吞没、焚作飞灰。胥王、越皇、黑煞教主——这魔道巨擘，终于伏诛。" },
+      { aside: "（彩蛋·刘宋渊源：宋蒙扶住力竭的刘靖，低声道「当年若非令尊援手，我宋家早已……这一符之恩，记下了。」——两家的旧渊源，是后话了。）" },
+      { aside: "（战利品入囊：血凝五行丹／玄阴诀／血灵钻／锦帕／玉简／钵盂。）" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e4b_finale_done");
+      ["xuening_wuxing_dan", "xuanyin_jue", "xueling_zuan", "jinpa_liusong", "yujian_canpian", "boyu_alms"].forEach(k => State.give(k, 1));
+      Engine.writeLedger("modao_e4b_finale", "皇宫血池大殿·终结——三符宝（韩立平天尺/宋蒙重元珠/陈巧倩赤红剑）齐轰毁胥王假丹肉身→血凝五行丹借阵复生神魂→颠倒五行阵镇之、刘靖将祖传真凰符托付钟卫娘、师妹祭符灭神魂。黑煞教覆灭。得：血凝五行丹/玄阴诀/血灵钻/锦帕/玉简/钵盂。彩蛋：刘宋渊源");
+      Engine.addMilestone("皇宫决战·终结：真凰符灭胥王神魂，黑煞教覆灭（刘靖生还）", "showdown");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      { text: "（赤金凰焰吞没神魂——胥王，终于伏诛。）", resolve: "advance" },
+    ],
+  },
+  {
+    // ③-die 真凰符·终结（刘靖身陨·默认命途）：情报未拉满时由上一 live 节点 skipIf 落到此处（fallback·无附加 cond）。
+    id: "modao_e4b_finale_die",
+    skipIf: (s) => s.flags.modao_e4b_finale_done,
+    cond: (s) => s.flags.modao_e4b_xuwang_done,
+    cg: "jingcheng",
+    bgm: "triumph",
+    title: "皇宫决战 · 真凰符·终结",
+    objTitle: "为刘师兄·了结此獠",
+    objHint: "三符宝毁其肉身、复生神魂被阵法死死镇住——只待那一击。",
+    text: [
+      { scene: "皇宫 · 血池大殿" },
+      "平天尺、重元珠、赤红剑——你与宋蒙、陈巧倩三件符宝齐轰而下，胥王那具假丹肉身轰然崩碎。可血凝五行丹借阵中五行之力，犹自凝起一缕复生神魂，被颠倒五行阵死死镇在原地、寸步难逃。",
+      { say: "钟卫娘", emo: "cry", tone: "她攥着刘师兄留下的那枚祖传真凰符，泪流满面，双手却稳得出奇", text: "刘师兄……你护道一生，这最后一击，师妹替你了结他——真凰符，焚！" },
+      { aside: "一只赤金火凰自符中振翅而出，长鸣一声，将那缕负隅顽抗的复生神魂连同满殿血煞，尽数吞没、焚作飞灰。胥王、越皇、黑煞教主——这魔道巨擘，终于伏诛。这一焚，是为天下苍生，也是为那位再回不来的正道楷模。" },
+      { aside: "（战利品入囊：血凝五行丹／玄阴诀／血灵钻／锦帕／玉简／钵盂。）" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e4b_finale_done");
+      ["xuening_wuxing_dan", "xuanyin_jue", "xueling_zuan", "jinpa_liusong", "yujian_canpian", "boyu_alms"].forEach(k => State.give(k, 1));
+      Engine.writeLedger("modao_e4b_finale", "皇宫血池大殿·终结——三符宝（韩立平天尺/宋蒙重元珠/陈巧倩赤红剑）齐轰毁胥王假丹肉身→血凝五行丹借阵复生神魂→颠倒五行阵镇之、钟卫娘含泪祭刘靖遗下的祖传真凰符灭神魂（为身陨的刘师兄报仇）。黑煞教覆灭。得：血凝五行丹/玄阴诀/血灵钻/锦帕/玉简/钵盂");
+      Engine.addMilestone("皇宫决战·终结：真凰符灭胥王神魂，黑煞教覆灭（刘靖身陨）", "showdown");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      { text: "（赤金凰焰吞没神魂——胥王，终于伏诛。）", resolve: "advance" },
+    ],
+  },
+  {
+    // ④ 离京钩（收官·接「再别天南篇」）：京城血夜终了、黑煞教覆灭；韩立离京回天南。
+    //    传闻系统埋三条长线钩（回天南/古传送阵·乱星海/天南故人），不在本增量内实装下一篇章。
+    id: "modao_e4b_likjing",
+    skipIf: (s) => s.flags.modao_e4_done,
+    cond: (s) => s.flags.modao_e4b_finale_done && !s.flags.modao_e4_done,
+    cg: "jingcheng",
+    bgm: "journey",
+    title: "皇宫决战 · 离京",
+    objTitle: "尘埃落定·离京",
+    objHint: "京城的事了了——是时候回天南了。江湖传闻里，已有再起波澜的引线。",
+    text: [
+      { scene: "皇宫 · 血池大殿" },
+      "血池熄了，赤水褪尽。这一夜，九名筑基修士夜闯皇城、力诛假丹境的黑煞教主胥王——蟠踞越国多年、以血祭邪法残害散修的黑煞教，自此覆灭。",
+      { aside: "天光将明，众人各自收拾伤势与心绪。宋蒙拍了拍你的肩：「韩师弟，京城这趟，多亏有你。各派的烂账，七派自会去理——你我，是该回天南了。」" },
+      { aside: "你握着囊中那枚自矿洞古传送阵心捧出的大挪移令，心头掠过一个念头：残缺的古传送阵、远在天南之外的乱星海……这条极长的线，今日还握不住，却已悄然牵起。" },
+      { aside: "（魔道争锋·京城篇·收束。下一程「再别天南」：天南旧人旧事、古传送阵的修补、以及那条通向乱星海的引线——皆是后话。注意听各地江湖传闻，便知风从何起。）" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e4_done");
+      State.setFlag("modao_e4b_done");
+      Engine.writeLedger("modao_e4b_likjing", "皇宫决战收束·离京——黑煞教覆灭，九筑基功成离京、各返天南。埋「再别天南篇」长线钩：回天南旧人旧事/矿洞古传送阵修补/通向乱星海的大挪移令引线（本增量止于此·下一篇章后续窗口实装）");
+      Engine.addMilestone("魔道争锋·第四幕·皇宫决战·收官：黑煞教覆灭，韩立离京回天南", "showdown");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "京城血夜：九名筑基修士夜闯皇城，力诛伪作越皇的黑煞教主胥王——蟠踞越国多年的黑煞教，一夜覆灭。" });
+      s.worldNews.push({ t, kind: "rumor", text: "传闻黄枫谷一脉的修士们已动身南返天南——天南那边，旧人旧事，怕是又要起些波澜了。" });
+      s.worldNews.push({ t, kind: "rumor", text: "市井奇谈：有人说天南之外的茫茫『乱星海』里藏着上古传送大阵，得其钥者可往返极远之地——只是那等机缘，凡修连边都摸不着。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      { text: "「京城的事，了了。——是时候，回天南了。」", resolve: "advance" },
     ],
   },
 ];

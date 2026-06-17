@@ -793,6 +793,39 @@ WORLD.enemies = {
     ],
     reward: { silver: 10 }, namedLoot: { chiyan_langpi: 1, yaodan_1: 1, langya_fang: 2 },
   },
+
+  /* —— 胥王·假丹肉身（增量H下·皇宫决战 phase1）——
+   *   胥王褪凡人皮、催血煞秘法跃入假丹境（筑基巅峰）；执残缺法宝「黑血刀」破壁仍困。
+   *   拖时布阵战里他强压几人（survive 目标，玩家只需撑住待阵成）；阵成决战里被颠倒五行阵
+   *   逐回合反噬，终被三符宝齐轰毁去肉身（waves phase1）。A2 几何标度：假丹 boss·stubborn→mastery2。 */
+  xuwang_danshen: {
+    name: "胥王（假丹肉身）", hp: 380, sense: 18, speed: 16, agility: 12, move: 2, mp: 90, qiLayer: 14,
+    elem: "huo", armor: 5, boss: true, stubborn: true, canFlee: false, tactics: "cunning",
+    introNote: "胥王褪去凡人君王的皮囊，血煞冲天、跃入假丹之境——执一柄残缺法宝「黑血刀」，破壁之威仍能困住数名筑基。硬拼必败；唯有拖到师兄妹「真·颠倒五行阵」布成、借阵反制，方有胜机。他行血煞赤焰，木生火，你木行道基占不到相克便宜。",
+    attacks: [
+      { name: "黑血刀斩", dmg: 30, kind: "normal", weight: 12, elem: "huo", range: [1, 2], mp: 6 },
+      { name: "血煞噬刃", dmg: 26, kind: "pierce", weight: 8, range: [1, 2], mp: 8 },
+      { name: "黑血刀·破壁", dmg: 44, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12 },
+      { name: "血煞燎原", dmg: 20, kind: "normal", weight: 6, elem: "huo", aim: "zone", zoneSpan: 1, range: [1, 4], depth: "front", mp: 8 },
+    ],
+    reward: { lingshi: 12 }, namedLoot: null,
+  },
+
+  /* —— 血凝五行丹·神魂（增量H下·皇宫决战 phase2·复生态）——
+   *   肉身被三符宝齐轰碎裂后，胥王催「血凝五行丹」借阵中五行之力复生神魂——气血已残（脆），
+   *   神魂态出招以夺舍侵神为主。⚠ 刻意不设 nature:"ghost"（那会令引擎置 soulOnly=true、
+   *   令底牌/阵法全数零伤＝死局）——此神魂残虚态被颠倒五行阵死死镇出半实之形，故底牌+阵可破；
+   *   终由钟卫娘祭真凰符（刘靖祖传真宝·只可一击）灭其神魂（剧情杀·战胜后演出）。 */
+  xuwang_shenhun: {
+    name: "胥王（血凝五行丹·神魂）", hp: 150, sense: 22, speed: 18, agility: 10, move: 2, mp: 80, qiLayer: 14,
+    elem: "huo", armor: 1, boss: true, stubborn: true, canFlee: false, tactics: "cunning",
+    introNote: "平天尺、重元珠、赤红剑——韩立、宋蒙、陈巧倩三件符宝齐轰而下，胥王那具假丹肉身轰然崩碎！可血凝五行丹借阵中五行之力，竟凝起一缕复生神魂——肉身已毁、神魂残虚，却仍要夺舍逃命！颠倒五行阵正死死镇着它，趁此底牌齐发将其打散——真凰符已在钟卫娘手中蓄势，只待这一击。",
+    attacks: [
+      { name: "夺舍侵神", dmg: 22, soul: true, kind: "normal", weight: 12, range: [1, 4], mp: 7 },
+      { name: "五行血煞", dmg: 18, kind: "normal", weight: 8, elem: "huo", range: [1, 3], mp: 6 },
+    ],
+    reward: { lingshi: 8 }, namedLoot: null,
+  },
 };
 
 /* ---------- 情报面纱：关键人物的可打探底细（L0 传闻 / L1 见过出手 / L2 买过底细） ----------

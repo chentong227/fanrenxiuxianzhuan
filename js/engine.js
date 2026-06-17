@@ -3520,6 +3520,110 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // —— 皇宫决战·拖时布阵战（增量H下·survive 拖满回合机制首演）——
+  // 几人不敌胥王假丹之威、且战且退：玩家+傀儡蜥蜴(+刘靖若在)死守，撑满 N 回合即胜——
+  // 师兄妹（宋蒙/钟卫娘）此刻正叼旗布「真·颠倒五行阵」（场外·叙事）；拖到阵成便翻盘。
+  // objective={kind:"survive"} 拖满 maxRounds 即胜；败有所得（不设死局，浴血退守再上）。
+  startTuoshiFight() {
+    const s = State.data;
+    this._nextFightType = "tuoshi";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;   // 拖时之战满血上场（避免残血死螺）
+
+    // 傀儡蜥蜴×2：师兄妹驱使的筑基傀儡，叼阵旗、护阵脚、替同袍挡刀（高 prot 顶前排吸火）
+    const xiyi = (n) => ({ id: "xiyi" + n, name: "傀儡蜥蜴", kind: "ally", art: "kuilei",
+      hp: 120, hpMax: 120, guard: 0.42, elem: "tu",
+      persona: { aggr: 3, prot: 9, kite: 0 },
+      moves: [
+        { name: "甩尾横扫", dmg: 14, weight: 12, elem: "tu", range: [1, 1], line: "一条傀儡蜥蜴甩尾横扫，替同袍挡下黑血刀的余势" },
+        { name: "叼旗镇位", dmg: 8, weight: 6, elem: "tu", range: [1, 2], line: "傀儡蜥蜴死死叼住阵旗、寸步不退，护住阵脚" },
+      ] });
+    const sides = [xiyi(1), xiyi(2)];
+    // 刘靖若在（jingcheng_intel≥2 救下）则重伤并肩死守；身陨则不在场
+    if (s.flags.liujing_survived) {
+      sides.unshift({ id: "liujing", name: "刘靖", kind: "ally", art: "liujing",
+        hp: 96, hpMax: 96, guard: 0.30, elem: "jin",
+        persona: { aggr: 6, prot: 6, kite: 1 },
+        moves: [
+          { name: "强撑剑光", dmg: 18, weight: 12, elem: "jin", range: [1, 2], line: "刘靖按着伤口、剑光仍利：「韩师弟，撑住——阵就快成了！」" },
+          { name: "护身剑幕", dmg: 10, weight: 6, elem: "jin", range: [1, 1], line: "刘靖横剑挡在你身前，替你卸下一记黑血刀" },
+        ] });
+    }
+
+    // 拖时之敌：胥王假丹肉身（刻意拔高 hp/armor——硬拼必败，意在"拖到阵成"而非速杀）
+    const boss = Object.assign({}, WORLD.enemies.xuwang_danshen, { hp: 600, hpMax: 600, armor: 7 });
+    this._combat = new CombatAPI.Combat({
+      player,
+      enemies: [boss],
+      objective: { kind: "survive", rounds: 6,
+        winLog: "「阵成了——！」最后一道阵旗插定，整座广场五行光华暴涨——总算拖到了这一刻！" },
+      maxRounds: 6,
+      W: 15, lanes: 2,
+      sides,
+    });
+    this._combatMeta = { type: "tuoshi" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("宋蒙、钟卫娘急退布阵：「拖住他！我们叼旗布阵——只须六息工夫，颠倒五行阵成，便能反制此獠！」");
+    this.log("胥王假丹之威如山压下，几人节节败退。宋蒙、钟卫娘领着傀儡蜥蜴急布「真·颠倒五行阵」——这一战不必胜，只须撑住：拖到阵成，便是翻盘之时！", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 皇宫决战·阵成决战（增量H下·真·颠倒五行阵 fieldCycle 逐回合压制 + 二阶段假丹 boss waves）——
+  // 阵成后五行倒转逐回合反噬胥王（fieldCycle 六相·万象星河为 climax），玩家以金光砖符宝等底牌齐发；
+  // 三符宝齐轰毁假丹肉身（phase1）→血凝五行丹借阵复生神魂（phase2 wave·脆）→战胜后真凰符剧情杀。
+  // 师兄妹维系阵法（=fieldCycle，场外）；刘靖若在则并肩补刀。满血上场 + 确保金光砖符宝底牌在手。
+  startXuwangFight() {
+    const s = State.data;
+    this._nextFightType = "xuwang_final";
+    // 确保金光砖符宝底牌在手（体验"底牌天花板"）——阵成决战发一枚应急符宝充能
+    if (State.count("jinguang_zhuan_charge") < 1) State.give("jinguang_zhuan_charge", 1);
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;   // 决战满血上场
+
+    // 真·颠倒五行阵·六相（逐回合切换）：木缠足→火灼烧→金镜影→水心魔→土陷脚→万象星河(climax)。
+    // suppress=占敌 hpMax 之比(穿甲·不可挡)；阵法只"反制+佐助"，多回合 suppress 不可独自速杀——
+    // 留出底牌天花板与同袍补刀的空间（万象星河为收官重击，其余相位平缓）。
+    const fieldCycle = [
+      { name: "木·竹海缠足", log: "竹海自地涌生、缠住胥王手脚，黑血刀招式一滞。", suppress: 0.05, expose: true, player: { dodge: 0.05 } },
+      { name: "火·焚天灼烧", log: "九天真火倒灌而下，他那身血煞赤焰反被克制焚烧。", suppress: 0.07 },
+      { name: "金·镜影分身", log: "镜影分身错乱了他的杀招落点，破绽毕露。", suppress: 0.05, expose: true },
+      { name: "水·渊薮心魔", log: "渊薮水气勾起他的心魔，神识一阵恍惚。", suppress: 0.05, player: { mp: 8 } },
+      { name: "土·沙葬陷脚", log: "黄沙陷脚、厚土镇压，胥王步法尽废。", suppress: 0.06, expose: true, player: { shield: 12 } },
+      { name: "万象星河·倒悬", log: "六行归一、万象星河倒悬——这是颠倒五行阵的极致一击！", suppress: 0.13, expose: true },
+    ];
+
+    const p1 = Object.assign({}, WORLD.enemies.xuwang_danshen);   // 假丹肉身（phase1）
+    const p2 = Object.assign({}, WORLD.enemies.xuwang_shenhun);   // 血凝五行丹·复生神魂（phase2·脆）
+
+    const sides = [];
+    if (s.flags.liujing_survived) {
+      sides.push({ id: "liujing", name: "刘靖", kind: "ally", art: "liujing",
+        hp: 110, hpMax: 110, guard: 0.30, elem: "jin",
+        persona: { aggr: 8, prot: 3, kite: 1 },
+        moves: [
+          { name: "除魔剑光", dmg: 22, weight: 12, elem: "jin", range: [1, 2], line: "刘靖剑光如练，趁阵法压制狠斩胥王" },
+          { name: "浩然斩", dmg: 28, weight: 6, elem: "jin", range: [1, 1], line: "「魔道巨擘，今日伏诛！」刘靖一剑递出，浩然无前" },
+        ] });
+    }
+
+    this._combat = new CombatAPI.Combat({
+      player,
+      enemies: [p1],
+      waves: [[p2]],
+      fieldCycle,
+      maxRounds: 16,
+      W: 15, lanes: 2,
+      sides,
+    });
+    this._combatMeta = { type: "xuwang_final" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("「阵成——压！」师兄妹齐声厉喝，颠倒五行阵轰然运转，五行之力如山倒灌向胥王。机会只此一次：底牌齐发，趁阵法镇住他的工夫，将这魔道巨擘连肉身带神魂一并轰碎！");
+    this.log("真·颠倒五行阵布成，五行倒转死死镇住胥王——轮到你了！金光砖、平天尺、重元珠、赤红剑……此刻不留底牌，更待何时？阵法逐回合反噬，底牌齐发，毕其功于一役！", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -4245,6 +4349,46 @@ const Engine = {
         s.pendingEvent = "modao_e4_santuan";
         this._retryAfterLoss = "modao_e4_santuan";
       }
+    } else if (meta.type === "tuoshi") {
+      // 拖时布阵战（增量H下·survive 首例）：几人不敌胥王假丹之威、且战且退，撑到师兄妹「真·颠倒五行阵」布成
+      if (win) {
+        State.setFlag("modao_e4b_tuoshi_done");
+        this.writeLedger("modao_tuoshi_won", "皇宫决战·拖时布阵——几人不敌胥王假丹之威、且战且退拖延时辰，终待师兄妹与傀儡蜥蜴将「真·颠倒五行阵」布成（survive 拖满回合·败有所得首例）");
+        this.addMilestone("皇宫决战：拖住胥王，真·颠倒五行阵布成", "showdown");
+        this.log("「阵成了——！」师兄妹一声厉喝，五道阵旗同时插定，整座皇城广场陡然光华大作。胥王脚下五行倒转、虚实易位，那柄黑血刀第一次劈了个空。轮到我们了。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        // fail-forward：浴血退守、重整阵线（拖时之战不设死局）——撑住待阵成
+        s.flags.losses_tuoshi = (s.flags.losses_tuoshi || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_tuoshi) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`胥王假丹之威太盛，一时险些被冲垮——你与同袍浴血退守、重整阵线（再战伤害+${bonus}%）。撑住！只要拖到阵成，便有胜机——护住彼此，莫要恋战！`, "bad");
+        s.pendingEvent = "modao_e4b_tuoshi";
+        this._retryAfterLoss = "modao_e4b_tuoshi";
+      }
+    } else if (meta.type === "xuwang_final") {
+      // 阵成决战（增量H下）：颠倒五行阵逐回合压制+底牌齐发→三符宝毁假丹肉身→血凝五行丹复生神魂（waves）→战胜后真凰符剧情杀
+      if (win) {
+        State.setFlag("modao_e4b_xuwang_done");
+        this.writeLedger("modao_xuwang_slain", "皇宫决战·阵成压制——颠倒五行阵逐回合反噬胥王，三符宝齐轰毁其假丹肉身，血凝五行丹借阵复生之神魂亦被打散，终由钟卫娘祭真凰符灭其神魂。黑煞教覆灭。");
+        this.addMilestone("皇宫决战：胥王伏诛，黑煞教覆灭", "showdown");
+        this.addFame(14, "京城血夜终了——九筑基夜闯皇城，力诛黑煞教主胥王，越国魔患一朝荡平");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        // fail-forward：阵法仍镇着他，再蓄底牌、卷土重来（决战不设死局）
+        s.flags.losses_xuwang = (s.flags.losses_xuwang || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xuwang) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`胥王假丹肉身悍勇异常，一击险些破阵——你与同袍咬牙稳住阵脚、再蓄底牌（再战伤害+${bonus}%）。阵法仍在镇着他，底牌齐发、莫给他喘息之机——再来！`, "bad");
+        s.pendingEvent = "modao_e4b_zhencheng";
+        this._retryAfterLoss = "modao_e4b_zhencheng";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -4552,6 +4696,18 @@ const Engine = {
     if (choice.resolve === "santuan_fight") {
       s.pendingEvent = null;
       this.startSantuanFight();
+      return;
+    }
+    // 皇宫决战·拖时布阵战（增量H下：survive 拖满回合机制首演——撑到师兄妹布成颠倒五行阵）
+    if (choice.resolve === "tuoshi_fight") {
+      s.pendingEvent = null;
+      this.startTuoshiFight();
+      return;
+    }
+    // 皇宫决战·阵成决战（增量H下：颠倒五行阵 fieldCycle 逐回合压制 + 二阶段假丹 boss waves）
+    if (choice.resolve === "xuwang_final_fight") {
+      s.pendingEvent = null;
+      this.startXuwangFight();
       return;
     }
 
