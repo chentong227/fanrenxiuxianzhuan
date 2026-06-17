@@ -2180,6 +2180,7 @@ const STORY = [
     onArrive(s) {
       State.setFlag("modao_e4_done");
       State.setFlag("modao_e4b_done");
+      Chapters.unlock("zaibie");   // 京城血夜了结→解锁再别天南篇
       Engine.writeLedger("modao_e4b_likjing", "皇宫决战收束·离京——黑煞教覆灭，九筑基功成离京、各返天南。埋「再别天南篇」长线钩：回天南旧人旧事/矿洞古传送阵修补/通向乱星海的大挪移令引线（本增量止于此·下一篇章后续窗口实装）");
       Engine.addMilestone("魔道争锋·第四幕·皇宫决战·收官：黑煞教覆灭，韩立离京回天南", "showdown");
       s.worldNews = s.worldNews || [];
@@ -2192,6 +2193,496 @@ const STORY = [
     },
     choices: [
       { text: "「京城的事，了了。——是时候，回天南了。」", resolve: "advance" },
+    ],
+  },
+
+  /* ============================================================
+   * 再别天南篇（order 4·衔接过场大章）——考据见 docs/zaibie-tiannan-design.md
+   * 定位：衔接为主、自由度适当低的过场大章，重头在两段高代入演出
+   *   （①离开天南·矿洞古阵大挪移令传送毁阵断追；②到达乱星海·落海首见妖海定格）。
+   * 链路：linear（skipIf+cond flag 链；onArrive 设 s.location 供场景图），非 where 门控。
+   * 复用：fieldCycle / waves / sides[] / objective:survive / s.sideUnit / cutscene 原语，无新系统。
+   * ============================================================ */
+
+  // ——【进入·回天南】京城收官后，韩立携曲魂幡南返嘉元城——
+  {
+    id: "zaibie_open",
+    skipIf: (s) => s.flags.zaibie_open_done,
+    cond: (s) => s.flags.modao_e4_done && !s.flags.zaibie_open_done,
+    cg: "jiyuan_shi",
+    bgm: "journey",
+    title: "再别天南 · 回天南",
+    objTitle: "南返嘉元城",
+    objHint: "京城的烂账了了。携曲魂幡南返天南，先回嘉元城——御灵宗的人，似乎也循着曲魂的气息追来了。",
+    text: [
+      { scene: "嘉元城外 · 官道" },
+      "离了京城，一路南行。越往天南腹地走，那股熟悉的山水气息便越浓——这是你筑基之后，第一次踏回天南的土地。",
+      { aside: "囊中那面曲魂幡幽幽震动，似在感应着什么。自燕家堡一路带到京城、又带回天南的这缕残魂，是你筹谋已久的一着暗棋。" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「曲魂幡躁动得厉害……是御灵宗的人，循着这缕魂气追来了。在他们动手之前——这缕曲魂，得先成我的底牌。」" },
+      { aside: "（再别天南篇·开篇。先在嘉元城将曲魂祭成身外化身；御灵宗的夺舍者已在城外候着了。）" },
+    ],
+    onArrive(s) {
+      Chapters.unlock("zaibie");
+      Chapters.enter("zaibie");
+      s.location = "jiayuan_city";
+      State.setFlag("zaibie_open_done");
+      Engine.writeLedger("zaibie_open", "再别天南·开篇——京城血夜了结，韩立携曲魂幡南返嘉元城。御灵宗夺舍者循曲魂魂气追至。");
+      Engine.addMilestone("再别天南：回到天南，重履嘉元城", "zaibie");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "rumor", text: "嘉元城传闻：御灵宗放出重赏，悬缉一缕『曲魂』残识——据说与早年一桩夺舍秘辛有关，引得不少散修暗中打探。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      { text: "「先成底牌，再会来敌。」", resolve: "advance" },
+    ],
+  },
+
+  // ——【曲魂·身外化身】开篇一步祭炼：以玄阴诀祭曲魂为身外化身，装黑煞教主血刃·达假丹境——
+  {
+    id: "zaibie_quhun_refine",
+    skipIf: (s) => s.flags.zaibie_quhun_done,
+    cond: (s) => s.flags.zaibie_open_done && !s.flags.zaibie_quhun_done,
+    bgm: "tense",
+    title: "再别天南 · 身外化身",
+    objTitle: "祭炼曲魂·身外化身",
+    objHint: "以玄阴诀祭曲魂为身外化身，装黑煞教主血刃，达假丹之境——乱星海结丹之前，这便是你压自己一头的核心底牌。",
+    text: [
+      { scene: "嘉元城 · 墨府旧宅 · 静室" },
+      "你寻了处隐秘静室，取出曲魂幡，又请出自黑煞教主胥王处所得的那柄『血刃』——通体暗红、煞气森森的一件邪宝。",
+      { aside: "玄阴诀的法门在识海中流转。这一脉『身外化身』之术，正是要以秘法将一缕强魂祭炼成可离体而战的化身——再以利器附之，便是一具不惧伤亡、可挡在身前的战傀。" },
+      { say: "韩立", tone: "low", text: "「曲魂本就是一缕假丹境的残魂，配上这柄血刃……成了它，便是一记能压我一头的杀招。」" },
+      { fx: "material", at: "center", elem: "huo" },
+      { sfx: "cast" },
+      "你掐诀祭炼，曲魂幡中那缕残魂被血刃一引，煞气勃发、缓缓凝出一道人形虚影——假丹之威扑面而来。",
+    ],
+    choices: [
+      {
+        text: "「以玄阴诀祭炼——曲魂，成我身外化身。」",
+        hint: "祭成 SideUnit 友军·假丹境·全程并肩",
+        effect(s) {
+          s.sideUnit = {
+            id: "quhun_huashen", name: "曲魂·身外化身", kind: "incarnation",
+            hp: 200, hpMax: 200, mp: 60, mpMax: 60,
+            atk: 30, atkName: "血刃斩",
+            elem: "huo", nature: null, guard: 0.32, move: 1, mastery: 1,
+            persona: { aggr: 8, prot: 5, kite: 2 }, status: "ok", carry: true,
+            moves: [
+              { name: "血刃斩", dmg: 30, weight: 12, elem: "huo", range: [1, 2], line: "曲魂血刃一闪，赤煞裂空斩向" },
+              { name: "血煞噬魂", dmg: 24, weight: 7, elem: "huo", range: [1, 3], line: "曲魂吐出一道血煞，缠噬而上" },
+              { name: "假丹·血遁突袭", dmg: 40, weight: 5, elem: "huo", range: [1, 4], line: "曲魂化作一道血虹，假丹之威贯阵突袭" },
+            ],
+          };
+          State.setFlag("zaibie_quhun_done");
+          Engine.writeLedger("zaibie_quhun_huashen", "再别天南·身外化身——以玄阴诀祭曲魂为身外化身，装黑煞教主血刃、达假丹之境。乱星海结丹前，战力始终压韩立一头，为本章核心底牌（SideUnit 友军·全程并肩）。");
+          Engine.addMilestone("再别天南：曲魂祭成身外化身（假丹·黑煞血刃）", "zaibie");
+          return { text: "曲魂·身外化身祭炼功成——假丹之境、执黑煞血刃，自此随你并肩而战。在乱星海结丹之前，它的战力始终压你一头，是你最硬的一张底牌。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // ——【Act1·寻魂夺剑·其一】御灵宗夺舍者驱兽拦路：金背妖螂险战（fieldCycle 颠倒五行阵图反制）——
+  {
+    id: "zaibie_a1_jinbei",
+    skipIf: (s) => s.flags.zaibie_jinbei_done,
+    cond: (s) => s.flags.zaibie_quhun_done && !s.flags.zaibie_jinbei_done,
+    cg: "jiyuan_shi",
+    bgm: "boss",
+    title: "再别天南 · 金背妖螂",
+    objTitle: "御灵宗拦路·金背妖螂",
+    objHint: "御灵宗夺舍者放出一头金背妖螂拦路。金克木、甲坚镰利——祭出颠倒五行阵图逐回合反制，曲魂当先迎战。",
+    text: [
+      { scene: "嘉元城外 · 乱石坡" },
+      "才出城门，一股凌厉煞气当头压下。乱石坡上，一道清癯人影负手而立，身前伏着一头金背如铁、双镰开阖的庞然大妖。",
+      { say: "御灵宗夺舍者", tone: "cold", text: "「曲魂的气息，果然在你身上。识相的，把它交出来——本座还能留你个全尸。」" },
+      { say: "韩立", emo: "cold", text: "「御灵宗的人……来得倒快。这缕曲魂，如今是我的底牌——想要，自己来取。」" },
+      { fx: "lightning", at: "left", elem: "jin" },
+      "那夺舍者冷哼一声，袖一挥——金背妖螂双镰一振，金鸣裂石，朝你扑来！",
+    ],
+    onArrive(s) { s.location = "jiayuan_city"; },
+    choices: [
+      { text: "掷出颠倒五行阵图，曲魂当先——迎战！", hint: "fieldCycle 险战·曲魂并肩", resolve: "jinbei_fight" },
+    ],
+  },
+
+  // ——【Act1·寻魂夺剑·其二】御灵宗夺舍者·夺剑（waves 二阶段；胜得绿煌剑+奇虫榜玉简）——
+  {
+    id: "zaibie_a1_duoshe",
+    skipIf: (s) => s.flags.zaibie_duoshe_done,
+    cond: (s) => s.flags.zaibie_jinbei_done && !s.flags.zaibie_duoshe_done,
+    cg: "duoshe",
+    bgm: "boss",
+    title: "再别天南 · 夺剑",
+    objTitle: "夺御灵宗夺舍者之绿煌剑",
+    objHint: "妖螂既毙，那夺舍者亲自下场。他神魂结丹、躯壳筑基，催不全本命之力——曲魂假丹之躯硬撼，先碎躯壳、再散残念。胜得绿煌剑。",
+    text: [
+      { scene: "嘉元城外 · 乱石坡" },
+      "金背妖螂轰然坠地。那夺舍者面色铁青，一柄通体莹绿的古剑应声出鞘，剑气森森——竟是一件结丹本命之器！",
+      { say: "御灵宗夺舍者", tone: "angry", text: "「区区筑基，也敢坏本座的事！这绿煌剑乃我本命之宝，今日便叫你死在它下！」" },
+      { aside: "你心头雪亮：他神魂虽是结丹，强占的这具躯壳却催不全本命真元——战力被生生压在筑基一档。这柄绿煌剑，今日志在必得。" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「催不全的本命之力……那便是你的死穴。曲魂——上！」" },
+    ],
+    onArrive(s) { s.location = "jiayuan_city"; },
+    choices: [
+      { text: "曲魂掠阵硬撼，越阶夺剑！", hint: "waves 二阶段·胜得绿煌剑+奇虫榜玉简", resolve: "duoshe_fight" },
+    ],
+  },
+
+  // ——【Act1 收束·过渡 Act2】得绿煌剑·奇虫榜玉简；金鼓原战火传来——
+  {
+    id: "zaibie_a1_after",
+    skipIf: (s) => s.flags.zaibie_a1_after_done,
+    cond: (s) => s.flags.zaibie_duoshe_done && !s.flags.zaibie_a1_after_done,
+    bgm: "tense",
+    title: "再别天南 · 战报",
+    objTitle: "绿煌剑入手·金鼓原急报",
+    objHint: "绿煌剑与奇虫榜玉简到手。可还未及细看，金鼓原方向已传来天崩地裂的战报——黑煞教倾巢、灵兽山倒戈，正道危如累卵。",
+    text: [
+      { scene: "嘉元城 · 客栈" },
+      "绿煌剑通体莹绿、剑身流转着古拙的纹路。你越阶一试，剑影分光、威势赫赫——虽催不出结丹本命的全威，已足以列为你第三柄主战法宝。",
+      { aside: "那卷奇虫榜玉简亦是意外之喜——内里录着诸般天地奇虫的来历与豢养之法，于你日后大有用处。" },
+      { aside: "可还未及细看，城中已是一片哗然——金鼓原方向，黑煞教残部竟与天南各路魔修合流、倾巢来犯，灵兽山一脉临阵倒戈反水，正道大军节节败退……" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「金鼓原……黄枫谷的人，怕是都在那里。」" },
+    ],
+    onArrive(s) {
+      s.location = "jiayuan_city";
+      State.setFlag("zaibie_a1_after_done");
+      Engine.writeLedger("zaibie_a1_after", "再别天南·夺剑收束——绿煌剑（越阶第三主战·配剑影分光术）与奇虫榜玉简入手。金鼓原急报传来：黑煞教倾巢、灵兽山倒戈，正道危殆。");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "金鼓原战报：黑煞教残部与天南诸路魔修合流倾巢来犯，灵兽山一脉临阵倒戈，正道联军节节败退、血染旷野。" });
+      s.worldNews.push({ t, kind: "rumor", text: "灵兽山倒戈：素来中立的灵兽山竟在金鼓原反水投魔，天南正道一时人心惶惶，皆道大厦将倾。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      { text: "「黄枫谷有难——赶赴金鼓原。」", resolve: "advance" },
+    ],
+  },
+
+  // ——【Act2·金鼓原崩盘·其一】群战（sides[]：李化元/南宫婉并肩 vs 黑煞教残众）——
+  {
+    id: "zaibie_a2_jingu",
+    skipIf: (s) => s.flags.zaibie_jingu_done,
+    cond: (s) => s.flags.zaibie_a1_after_done && !s.flags.zaibie_jingu_done,
+    cg: "kuangchang",
+    bgm: "combat",
+    title: "再别天南 · 金鼓原决战",
+    objTitle: "金鼓原·擒贼先擒王",
+    objHint: "战鼓如雷、血染黄沙。与李化元、南宫婉并肩冲杀，先斩魔修领队、撕开缺口——纵知大局难挽，也要为黄枫谷的弟子搏一条退路。",
+    text: [
+      { scene: "金鼓原 · 旷野战场" },
+      { fx: "shake", px: 10 },
+      "金鼓原上，战鼓如雷、血染黄沙。黑煞教倾巢而出，倒戈的灵兽山妖兽成群，正道联军被压得节节后退。",
+      { actor: "lihuayuan", enter: "left", name: "李化元" },
+      { say: "李化元", tone: "stern", text: "「韩立！你来得正好——先斩那魔修领队，群势自溃！曲魂护住中路！」" },
+      { actor: "nangongwan", enter: "left", name: "南宫婉" },
+      { say: "南宫婉", tone: "cold", text: "「我掠左翼。韩立，你我合力——擒贼先擒王。」" },
+    ],
+    onArrive(s) {
+      s.location = "jinguyuan";
+    },
+    choices: [
+      { text: "与李化元、南宫婉并肩——先斩领队！", hint: "sides[] 群战·曲魂并肩", resolve: "jingu_fight" },
+    ],
+  },
+
+  // ——【Act2·金鼓原崩盘·其二】护山大阵·守阵（objective:survive；撑到李化元燃命布阵）——
+  {
+    id: "zaibie_a2_hushan",
+    skipIf: (s) => s.flags.zaibie_hushan_done,
+    cond: (s) => s.flags.zaibie_jingu_done && !s.flags.zaibie_hushan_done,
+    cg: "kuangchang",
+    bgm: "boss",
+    title: "再别天南 · 护山大阵",
+    objTitle: "死守阵脚·待阵成",
+    objHint: "溃局已不可挽。李化元燃起本命真元强布护山大阵，护黄枫谷弟子退走——你与曲魂死守阵脚六息，拖到阵成即可，不必胜。",
+    text: [
+      { scene: "金鼓原 · 山口阵眼" },
+      "领队虽斩，魔潮却如决堤之水涌来。正道大势已去，李化元面色惨白，却忽然盘膝坐定阵心，白须无风自动。",
+      { say: "李化元", tone: "low", text: "「大势已去……老夫这条残命，便换一道护山大阵，护黄枫谷的弟子退走！韩立、曲魂——给我守住阵脚六息！」" },
+      { fx: "material", at: "center", elem: "tu" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「李前辈——！……好。曲魂，封住阵口，一个都别放进来！」" },
+    ],
+    onArrive(s) { s.location = "jinguyuan"; },
+    choices: [
+      { text: "死守阵脚，拖到护山大阵布成！", hint: "objective:survive 6 回合·满血上阵", resolve: "hushan_fight" },
+    ],
+  },
+
+  // ——【Act2 收束】李化元燃命殉道（cutscene·sorrow）——
+  {
+    id: "zaibie_a2_lihuayuan",
+    skipIf: (s) => s.flags.zaibie_lhy_done,
+    cond: (s) => s.flags.zaibie_hushan_done && !s.flags.zaibie_lhy_done,
+    bgm: "sorrow",
+    title: "再别天南 · 燃命",
+    objTitle: "李化元殉道",
+    objHint: "护山大阵成，魔潮被挡在阵外。可阵心那道白须身影，已灯枯油尽——李化元燃尽了最后一缕真元。",
+    text: [
+      { scene: "金鼓原 · 护山大阵 · 阵心" },
+      { cam: "zoom", scale: 1.12, ms: 1200 },
+      "齐天光幕轰然立起，整座山口被一道光墙护住，溃退的弟子们终于得了喘息。可阵心那道白须身影，却悄然伏倒，气息一点点散去。",
+      { actor: "lihuayuan", enter: "left", emote: null, name: "李化元" },
+      { say: "李化元", tone: "weak", text: "「咳……护山大阵，能撑上三日。韩立……黄枫谷的根，就……拜托了……」" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「李前辈！……前辈！」" },
+      { fx: "flash", color: "#ffe8b0", ms: 240 },
+      { actor: "lihuayuan", exit: true },
+      "白须身影化作点点流光，散入那道护山光幕里。一位老人，把自己烧成了黄枫谷最后一道屏障。",
+      { aside: "你将这份沉甸甸的托付记在心头。天南的旧人旧事，原来真的会一桩桩、一件件地凋零下去。" },
+    ],
+    onArrive(s) {
+      s.location = "jinguyuan";
+      State.setFlag("zaibie_lhy_done");
+      Engine.writeLedger("zaibie_lihuayuan", "再别天南·金鼓原收束——李化元燃尽本命真元布成护山大阵，护黄枫谷弟子退走，自己灯枯油尽、殉道于阵心。韩立受其临终托付。");
+      Engine.addMilestone("再别天南：李化元燃命殉道，护山大阵成", "zaibie");
+      if (typeof Sfx !== "undefined") Sfx.play("fail");
+    },
+    choices: [
+      { text: "「前辈的托付，我记下了。」", resolve: "advance" },
+    ],
+  },
+
+  // ——【Act3·亡命元武】齐云霄已殁·辛如音耗血修阵·赠古阵图纸——
+  {
+    id: "zaibie_a3_yuanwu",
+    skipIf: (s) => s.flags.zaibie_a3_done,
+    cond: (s) => s.flags.zaibie_lhy_done && !s.flags.zaibie_a3_done,
+    bgm: "sorrow",
+    title: "再别天南 · 亡命元武",
+    objTitle: "元武国·古阵图纸",
+    objHint: "金鼓原既崩，天南再无你立锥之地。循大挪移令的线索，你亡命奔向元武国——故人齐云霄已殁，唯有辛如音守着一座残破的古传送阵。",
+    text: [
+      { scene: "元武国 · 百艺坊 · 地窟" },
+      "金鼓原一败，天南正道再难给你容身之处。你循着大挪移令与古传送阵的线索，一路亡命，奔入元武国境内。",
+      { aside: "百艺坊深处的地窟里，藏着一座尘封万载的古传送阵。可当年精研此阵的齐云霄，早已在魔劫中身死道消——只剩一个清瘦女子，守着残阵，形容枯槁。" },
+      { say: "辛如音", tone: "weak", text: "「你便是……韩立？齐前辈临终前说过，若有持大挪移令者来，便把这座古阵……交托于他。」" },
+      { say: "辛如音", tone: "low", text: "「这阵残损得太重，凭我之力修不全了。这卷修复图纸，你拿着——配上大挪移令，或许真能强启它一次，送你离开天南。」" },
+      { aside: "你接过那卷《古传送阵·修复图纸》，指尖一沉。原来通往乱星海的那条线，竟要踏着这许多故人的死生，才牵得起来。" },
+    ],
+    onArrive(s) {
+      s.location = "yuanwu";
+      State.setFlag("zaibie_a3_done");
+      if (State.count("guzhen_tuzhi") < 1) State.give("guzhen_tuzhi", 1);
+      Engine.writeLedger("zaibie_a3_yuanwu", "再别天南·亡命元武——故人齐云霄已殁，辛如音守残破古传送阵，赠《古传送阵·修复图纸》。配大挪移令可强启古阵、离开天南。");
+      Engine.addMilestone("再别天南：得古传送阵修复图纸（辛如音赠）", "zaibie");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "rumor", text: "元武国传闻：付家昔年延请的修阵大家齐云霄，已殁于天南魔劫；其遗下的古传送阵秘术，不知落入何人之手。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      { text: "「这份图纸，我收下了。——多谢。」", resolve: "advance" },
+    ],
+  },
+
+  // ——【Act4·再别天南·其一】三人护道战（objective:survive；南宫婉/陈巧倩护道）——
+  {
+    id: "zaibie_a4_hudao",
+    skipIf: (s) => s.flags.zaibie_hudao_done,
+    cond: (s) => s.flags.zaibie_a3_done && !s.flags.zaibie_hudao_done,
+    bgm: "combat",
+    title: "再别天南 · 护道",
+    objTitle: "三人护道·撑过追杀",
+    objHint: "魔道追兵咬得极紧。南宫婉、陈巧倩赶来与你结阵护道——撑住这一波追杀，护住身后那条退往越国矿洞的退路。",
+    text: [
+      { scene: "燕家堡 · 残垣" },
+      "携图纸西行，魔道的追兵却咬得极紧。退至燕家堡旧地的残垣时，两道身影自侧翼掠来，替你挡下了当头一击。",
+      { actor: "nangongwan", enter: "left", name: "南宫婉" },
+      { say: "南宫婉", tone: "cold", text: "「韩立，护住退路——这一波追兵，我与巧倩替你拦下。」" },
+      { actor: "chenqiaoqian", enter: "left", name: "陈巧倩" },
+      { say: "陈巧倩", tone: "anxious", text: "「韩师弟当心！往矿洞去的路，绝不能断！」" },
+    ],
+    onArrive(s) { s.location = "yanjiabao"; },
+    choices: [
+      { text: "三人结阵护道——撑住这一波！", hint: "objective:survive 6 回合·满血上阵", resolve: "hudao_fight" },
+    ],
+  },
+
+  // ——【Act4·再别天南·其二】吸修跌境·纯演出（不动数值）——
+  {
+    id: "zaibie_a4_diejing",
+    skipIf: (s) => s.flags.zaibie_diejing_done,
+    cond: (s) => s.flags.zaibie_hudao_done && !s.flags.zaibie_diejing_done,
+    bgm: "sorrow",
+    title: "再别天南 · 跌境",
+    objTitle: "暗算·修为暴跌",
+    objHint: "追兵中混着一名阴狠的吸修。混战间他贴身偷袭，一缕诡异魔功攫住你的修为——气海骤空，外人看去，你竟跌回了炼气数层。",
+    text: [
+      { scene: "燕家堡 · 残垣" },
+      "追兵将退之际，人群中却悄然欺近一道阴影——是个修『吸星噬元』一脉邪法的吸修，专挑你护体真元最薄的一瞬，贴身一击！",
+      { fx: "burst", at: "center", elem: "huo" },
+      { sfx: "hit" },
+      { say: "韩立", emo: "cold", tone: "weak", text: "「唔——！我的灵力……被他吸走了大半……！」" },
+      { aside: "气海骤然一空。曲魂血刃及时反手将那吸修绞杀，可你的修为已被夺去大半——外人看去，你竟像是跌回了炼气数层的孱弱模样。" },
+      { aside: "（跌境·纯演出——你的境界与战力数值并未真正改变；这只是外人眼中、与你自己心境上的一道阴影。乱星海之初，你自会重新拾回这口气，并一举踏入结丹。）" },
+    ],
+    onArrive(s) {
+      s.location = "yanjiabao";
+      State.setFlag("zaibie_diejing");      // 纯演出标记（引擎不读·不动任何数值）
+      State.setFlag("zaibie_diejing_done");
+      Engine.writeLedger("zaibie_diejing", "再别天南·跌境（纯演出·不动数值）——吸修贴身暗算，夺走韩立大半修为，外人看去如跌回炼气数层。境界/战力数值实际未变，乱星海之初自会拾回并结丹。");
+      Engine.addMilestone("再别天南：遭吸修暗算，修为『跌境』（纯演出）", "zaibie");
+      if (typeof Sfx !== "undefined") Sfx.play("fail");
+    },
+    choices: [
+      { text: "「……不过是一时的。这口气，我迟早拿回来。」", resolve: "advance" },
+    ],
+  },
+
+  // ——【Act4·再别天南·其三】南宫婉赠灵石——
+  {
+    id: "zaibie_a4_lingshi",
+    skipIf: (s) => s.flags.zaibie_lingshi_done,
+    cond: (s) => s.flags.zaibie_diejing_done && !s.flags.zaibie_lingshi_done,
+    bgm: "sorrow",
+    title: "再别天南 · 赠别",
+    objTitle: "南宫婉赠灵石",
+    objHint: "退至越国矿洞外，南宫婉默默塞来一袋中品灵石，助你疗复、催动古阵。再别天南，这一程，到了分别的时候。",
+    text: [
+      { scene: "越国矿洞 · 洞口" },
+      "一路退到越国边陲那座废弃矿洞外，追兵被远远甩开。南宫婉看着你跌境后孱弱的模样，沉默片刻，将一袋沉甸甸的灵石塞进你手里。",
+      { actor: "nangongwan", enter: "left", name: "南宫婉" },
+      { say: "南宫婉", tone: "soft", text: "「这是一袋中品灵石，拿着——你如今这副样子，路上总要用得着。古阵那边，进去之后，就别再回头了。」" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「……南宫姑娘，多谢。后会，总该有期。」" },
+      { aside: "她没有再说话，只是退开一步，目送你走向矿洞深处。这一别，便是天南之外、茫茫数万里了。" },
+    ],
+    onArrive(s) {
+      s.location = "yuekuang";
+      State.setFlag("zaibie_lingshi_done");
+      State.give("lingshi", 30);
+      Engine.writeLedger("zaibie_lingshi", "再别天南·赠别——越国矿洞外，南宫婉赠中品灵石一袋，助跌境后的韩立疗复、催动古阵。");
+      Engine.addMilestone("再别天南：南宫婉赠灵石，矿洞前赠别", "zaibie");
+    },
+    choices: [
+      { text: "「就此别过。——进矿洞，启古阵。」", resolve: "advance" },
+    ],
+  },
+
+  // ——【Act4·再别天南·其四】矿洞拖时·启阵（objective:survive；辛如音耗血修阵+大挪移令）——
+  {
+    id: "zaibie_a4_kuangdong",
+    skipIf: (s) => s.flags.zaibie_kuangdong_done,
+    cond: (s) => s.flags.zaibie_lingshi_done && !s.flags.zaibie_kuangdong_done,
+    cg: "kuangdong",
+    bgm: "boss",
+    title: "再别天南 · 矿洞拖时",
+    objTitle: "死守洞口·待古阵启",
+    objHint: "矿洞最深处，辛如音耗尽精血强行修阵。追兵踏碎洞口扑来——你与曲魂死守隘口六息，待大挪移令催动古阵，便能一步踏出天南。",
+    text: [
+      { scene: "越国矿洞 · 古传送阵 · 阵心" },
+      "矿洞最深处，那座尘封万载的古传送阵幽光明灭。辛如音竟先你一步赶到，正瘫坐阵心、咬破指尖，以精血一笔一笔补全残破的阵纹。",
+      { say: "辛如音", tone: "weak", text: "「韩道友——我以精血替你强修这古阵！你与那化身……替我拖住追兵六息！大挪移令一催，古阵就能送你走！」" },
+      { fx: "shake", px: 8 },
+      "话音未落，追兵已踏碎洞口、潮水般涌入。曲魂血刃横身拦在阵前——只剩这最后六息了。",
+    ],
+    onArrive(s) { s.location = "yuekuang"; },
+    choices: [
+      { text: "死守隘口六息——待古阵启动！", hint: "objective:survive·满血上阵·胜接演出①", resolve: "kuangdong_fight" },
+    ],
+  },
+
+  // ============================================================
+  // 演出① 离开天南（矿洞古阵·大挪移令当面传送·毁阵断追·韩立辞别天南之誓）
+  // ============================================================
+  {
+    id: "zaibie_cut1_likai",
+    skipIf: (s) => s.flags.zaibie_likai_done,
+    cond: (s) => s.flags.zaibie_kuangdong_done && !s.flags.zaibie_likai_done,
+    cg: "kuangdong",
+    bgm: "boss",
+    title: "再别天南 · 离开天南",
+    objTitle: "大挪移令·强启古阵",
+    objHint: "辛如音泣血修成古阵，贯天光柱已起。取出大挪移令，亲手催动这跨域大阵——一步踏出天南，再毁阵断后，斩断身后所有追路。",
+    text: [
+      { scene: "越国矿洞 · 古传送阵 · 阵心" },
+      { cam: "focus", at: "center" },
+      "六息撑过，古阵心爆起一道贯天光柱。辛如音泣血一喝，指尖最后一道阵纹补全——大挪移令催动的契机，只在这一瞬。",
+      { say: "辛如音", tone: "weak", text: "「就是现在——！持令入阵心，催动它！迟一息，这古阵就要塌了！」" },
+      { actor: "hanli", enter: "right", emote: "cold", name: "韩立" },
+      "你取出那枚自胥王矿洞古阵心捧出的大挪移令，掌心一热，迎着贯天光柱踏入阵心——",
+      {
+        beat: {
+          kind: "window",
+          prompt: "贯天光柱将熄、追兵已扑至阵前——",
+          action: "催动大挪移令·强启古阵！",
+          ms: 2600,
+          onHit: { sfx: "success", fx: { fx: "flash", color: "#bfe9ff", ms: 320 }, cam: "shake", px: 12,
+                   line: "大挪移令应手而碎，跨域大阵轰然全开——刺目青光自脚下冲天而起，将你整个人吞没！" },
+          onMiss: { sfx: "cast", fx: { fx: "flash", color: "#bfe9ff", ms: 320 },
+                    line: "千钧一发，你咬牙将大挪移令拍入阵心——青光暴涨，将你整个人吞没！" },
+        },
+      },
+      { fx: "flash", color: "#dff3ff", ms: 360 },
+      { sfx: "thunder" },
+      { cam: "shake", px: 14 },
+      "光柱冲霄的刹那，古阵自身也轰然崩裂——身后追兵的咒骂、辛如音最后那个虚弱而释然的笑、整座天南的山河……都在这一瞬被青光彻底吞没、抛在了脑后。",
+      { say: "韩立", emo: "cold", tone: "low", text: "「天南……生我、养我、也负我之地。总有一天——我会回来的。」" },
+      { aside: "大挪移令碎了，古阵塌了，身后所有的追路，就此斩断。再别天南——这一别，是天南之外、茫茫数万里的未知。" },
+    ],
+    onArrive(s) {
+      s.location = "yuekuang";
+      State.setFlag("zaibie_likai_done");
+      if (State.count("xinruyin_letter") < 1) State.give("xinruyin_letter", 1);
+      Engine.writeLedger("zaibie_likai", "再别天南·演出①离开天南——辛如音泣血修成古阵，韩立持大挪移令强启跨域大阵、一步踏出天南，古阵随之崩毁、斩断追路。辞天南之誓：『总有一天，我会回来的。』辛如音绝笔随身。");
+      Engine.addMilestone("再别天南：大挪移令强启古阵，离开天南", "zaibie");
+    },
+    choices: [
+      { text: "青光吞没——一步踏出天南。", resolve: "advance" },
+    ],
+  },
+
+  // ============================================================
+  // 演出② 到达乱星海（落海·首见浩瀚妖海·大远景空镜·章末定格）+ 解锁初入星海钩
+  // ============================================================
+  {
+    id: "zaibie_cut2_luanxinghai",
+    skipIf: (s) => s.flags.arc4_complete,
+    cond: (s) => s.flags.zaibie_likai_done && !s.flags.arc4_complete,
+    cg: "luanxinghai",
+    bgm: "journey",
+    title: "再别天南 · 到达乱星海",
+    objTitle: "落海 · 首见乱星海",
+    objHint: "古阵崩毁的洪流将你抛入一片无边汪洋——海天一色、星罗万岛、妖氛弥天。这便是传说中的乱星海。再别天南篇·终。",
+    text: [
+      { scene: "乱星海 · 无边汪洋" },
+      { cam: "zoom", scale: 1.0, ms: 200 },
+      "青光骤散。脚下一空——你竟自半空跌落，重重砸进一片冰凉的咸涩海水里！",
+      { fx: "burst", at: "center", elem: "shui" },
+      { sfx: "splash" },
+      "古阵崩毁的空间乱流，把你抛到了一个全然陌生的所在。你拼力浮出水面，环顾四周——",
+      { cam: "pan", to: { x: 0, y: -6 }, ms: 1600 },
+      { wait: 600 },
+      "海天一色，无边无际。远处星罗棋布般散着大大小小的岛屿，天际线上妖氛弥漫、隐有庞然之物翻涌的气息。这片汪洋，比你见过的任何天地都更辽阔、也更凶险。",
+      { say: "韩立", emo: "cold", tone: "low", text: "「这里……便是传说中的乱星海么。内星海人修、外星海妖修……我落在了哪一边？」" },
+      { cam: "zoom", scale: 1.15, ms: 2000 },
+      { aside: "孤身一人，落在这片陌生的浩瀚妖海。身后是再回不去的天南，身前是吉凶未卜的星海万里。一段全新的命途，自这片海平线上，缓缓拉开。" },
+      {
+        guide: {
+          tag: "再别天南篇 · 终",
+          title: "下一程：初入星海",
+          hint: "古阵将你抛入乱星海。在这里，你将拾回跌境暂失的修为，并一举踏入结丹之境——此乃后续『初入星海篇』之事，敬候续作窗口实装。",
+          cta: "（章末定格·眺望乱星海）",
+        },
+      },
+    ],
+    onArrive(s) {
+      s.location = "luanxinghai";
+      State.setFlag("arc4_complete");
+      State.setFlag("zaibie_luanxinghai_done");
+      Chapters.unlock("starsea");   // 解锁初入星海篇钩子（篇章配置待后续窗口实装）
+      Engine.writeLedger("zaibie_luanxinghai", "再别天南·演出②到达乱星海——古阵崩毁的空间乱流将韩立抛入乱星海，落海·首见浩瀚妖海。章末定格于无边海景。解锁『初入星海篇』钩子（待后续实装）。再别天南篇·终。");
+      Engine.addMilestone("再别天南·终：落海乱星海，首见浩瀚妖海（章末定格）", "zaibie");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "异闻：天南越国一座废弃矿洞深处的万载古传送阵骤然崩毁，光华冲霄数十里——有人说，那是有人借古阵远遁出了天南。" });
+      s.worldNews.push({ t, kind: "rumor", text: "乱星海传说：人界西北那片无尽汪洋，内星海人修、外星海妖修，凶险莫测；得入其中者，再难循原路返回天南。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      { text: "（眺望乱星海·章末定格——再别天南篇·终）", next: "end" },
     ],
   },
 ];

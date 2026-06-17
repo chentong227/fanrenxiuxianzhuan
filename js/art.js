@@ -25,6 +25,8 @@
     lvtianmeng: 1, xuanle: 1, xueyu_zhizhu: 1, baiyu_zhizhu: 1,
     // 增量G·魔道争锋第三幕·京城暗流
     xiaocui: 1, mengshan_wuyou: 1,
+    // 再别天南篇·辛如音（阵法大家·赴乱星海之钥）
+    xinruyin: 1,
   };
   // 已生成的表情变体：{ 人物id: { 表情名: 1 } }
   const EMOS = {
@@ -82,7 +84,9 @@
     // 增量E·矿道箱庭演出 CG（横版底 + 竖版 _p）
     kuangchang: { p: 1 }, kuangdong: { p: 1 }, jiyuan_shi: { p: 1 },
     // 增量G·魔道争锋第三幕·京城暗流演出 CG（横版底 + 竖版 _p 已生成）
-    jingcheng: { p: 1 }, wangfu_yan: { p: 1 } };
+    jingcheng: { p: 1 }, wangfu_yan: { p: 1 },
+    // 再别天南篇·章末定格·首见乱星海（横版底 + 竖版 _p）
+    luanxinghai: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };
@@ -95,7 +99,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 22,
+    ASSET_VER: 23,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 

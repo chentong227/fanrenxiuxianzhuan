@@ -210,6 +210,27 @@ WORLD.locations = [
     actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
     encounters: [],
   },
+
+  /* —— 再别天南篇（衔接过场大章·ep47~63）场景地点 ——
+   *   过场地点，循剧情前行（非云游列表·由剧情 onArrive 落点）。考据见 docs/zaibie-tiannan-design.md。 */
+  {
+    id: "jinguyuan", arc: "zaibie", scene: true,
+    name: "金鼓原",
+    desc: "天南正道与魔道大军决战的旷野——战鼓如雷、血染黄沙。黑煞教倾巢而出，灵兽山倒戈反水，正道节节败退。李化元燃尽残命布下的护山大阵，是这溃局里最后一道光。",
+    travelCost: 1, actions: [], encounters: [],
+  },
+  {
+    id: "yuekuang", arc: "zaibie", scene: true,
+    name: "越国矿洞 · 古传送阵",
+    desc: "胥国边陲一座废弃矿洞的最深处，藏着一座尘封万载的古传送阵。残破的阵纹仍透着幽光——辛如音耗尽精血补全的修复图纸、加上大挪移令，便能强启这跨域大阵，一步踏出天南。身后，魔道的追兵已踏碎洞口。",
+    travelCost: 1, actions: [], encounters: [],
+  },
+  {
+    id: "luanxinghai", arc: "zaibie", scene: true,
+    name: "乱星海",
+    desc: "古阵崩毁的洪流把你抛入一片无边无际的汪洋——海天一色，星罗万岛，妖氛弥漫天际。这便是传说中的乱星海，天南以东的无尽海域。你孤身一人，落在了一个全然陌生的天地。",
+    travelCost: 1, actions: [], encounters: [],
+  },
 ];
 
 /* ---------- 大陆层（world-architecture L0）：天南 · 胥国一带 ----------
@@ -823,6 +844,57 @@ WORLD.enemies = {
     attacks: [
       { name: "夺舍侵神", dmg: 22, soul: true, kind: "normal", weight: 12, range: [1, 4], mp: 7 },
       { name: "五行血煞", dmg: 18, kind: "normal", weight: 8, elem: "huo", range: [1, 3], mp: 6 },
+    ],
+    reward: { lingshi: 8 }, namedLoot: null,
+  },
+
+  /* ===== 再别天南篇（衔接过场大章·ep47~63）敌模板（考据见 docs/zaibie-tiannan-design.md） ===== */
+
+  /* —— 金背妖螂（Act1·嘉元城·御灵宗夺舍者驱使的灵兽）——
+   *   御灵宗一脉以灵兽奇虫役战。这头金背妖螂甲坚镰利、行金属，金克木，对主修木系的韩立是场硬仗。
+   *   战中韩立祭出随身的「颠倒五行阵图」（fieldCycle 复用·player-favorable）逐回合反制其凶威。
+   *   A2 几何标度：筑基大妖·参照墨蛟(hp270)上抬半档→hp300，armor5。 */
+  jinbei_yaolang: {
+    name: "金背妖螂", hp: 300, sense: 11, speed: 15, agility: 13, move: 2, mp: 80, elem: "jin", nature: "beast",
+    tactics: "feral", stubborn: true, canFlee: false, boss: true, armor: 5,
+    introNote: "御灵宗夺舍者驱使的一头筑基大妖——金背如铁、双镰开阖，振翅之间金鸣裂石！它行金属，金克木，专破你木行道基的护体灵光；「镰突贯袭」更会循着你的气息折转追击。甲坚势猛，破甲与符宝、再借颠倒五行阵逐回合反制，方能扛住这场越阶硬仗。",
+    attacks: [
+      { name: "金背镰斩", dmg: 28, kind: "normal", weight: 12, elem: "jin", range: [1, 1] },
+      { name: "裂空横扫", dmg: 22, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front", elem: "jin" },
+      { name: "破甲贯刺", dmg: 26, kind: "pierce", weight: 7, range: [1, 2], elem: "jin" },
+      { name: "镰突贯袭", dmg: 36, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12, elem: "jin" },
+    ],
+    reward: { lingshi: 6 }, namedLoot: null,
+  },
+
+  /* —— 御灵宗夺舍者·夺舍体（Act2·waves phase1）——
+   *   一名御灵宗结丹修士夺舍败露：神魂强占了一具筑基躯壳，结丹本命之力催不全（镜像韩立越阶驱剑），
+   *   故战力压在筑基一档。执其本命古剑「绿煌剑」（败后入韩立之手·配剑影分光术）。
+   *   A2 几何标度：筑基巅峰 boss·参照胥王假丹肉身略低一线→hp340，armor5。 */
+  yuling_duoshe: {
+    name: "御灵宗夺舍者", hp: 340, sense: 16, speed: 16, agility: 12, move: 2, mp: 90, qiLayer: 13,
+    elem: "jin", armor: 5, boss: true, stubborn: true, canFlee: false, tactics: "cunning",
+    introNote: "御灵宗一名结丹修士夺舍败露——神魂强占了一具筑基躯壳，结丹本命催发不全，战力被生生压在筑基一档。他执一柄通体莹绿的古剑「绿煌剑」，剑势大力沉、剑影分光多段攒袭；「越阶剑罡」循气追击、专破护体。甲坚剑利，这是一场势均的越阶恶战——胜则那柄结丹本命之器，归你。",
+    attacks: [
+      { name: "绿煌剑斩", dmg: 30, kind: "normal", weight: 12, elem: "jin", range: [1, 2], mp: 6 },
+      { name: "剑影分光", dmg: 16, kind: "normal", weight: 8, aim: "zone", zoneSpan: 1, range: [1, 3], depth: "front", elem: "jin", mp: 7 },
+      { name: "破甲剑芒", dmg: 26, kind: "pierce", weight: 7, range: [1, 3], elem: "jin", mp: 8 },
+      { name: "越阶剑罡", dmg: 40, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12, elem: "jin" },
+    ],
+    reward: { lingshi: 10 }, namedLoot: null,
+  },
+
+  /* —— 御灵宗夺舍者·结丹残念（Act2·waves phase2·复生态）——
+   *   筑基躯壳被打碎后，那缕结丹神魂强自凝出半实之形负隅顽抗——气血已残（脆），出招以夺舍侵神为主。
+   *   ⚠ 同 xuwang_shenhun：刻意不设 nature:"ghost"（否则 soulOnly=true→底牌全零伤死局），
+   *   神魂残虚态被韩立法宝逼出半实之形，故符宝/剑可破。败后绿煌剑与奇虫榜玉简归韩立。 */
+  yuling_zhenshen: {
+    name: "御灵宗夺舍者（结丹残念）", hp: 170, sense: 20, speed: 18, agility: 11, move: 2, mp: 80, qiLayer: 13,
+    elem: "jin", armor: 1, boss: true, stubborn: true, canFlee: false, tactics: "cunning",
+    introNote: "筑基躯壳轰然崩碎——那缕结丹神魂却不肯散，强自凝出一道半实的剑影残念，犹要夺舍逃命！神魂残虚（脆），出招以侵神夺舍为主。趁它肉身已失、被你法宝逼出半实之形，底牌齐发将其彻底打散——那柄绿煌剑与奇虫榜玉简，再无主人。",
+    attacks: [
+      { name: "夺舍侵神", dmg: 22, soul: true, kind: "normal", weight: 12, range: [1, 4], mp: 7 },
+      { name: "本命剑气", dmg: 20, kind: "pierce", weight: 8, range: [1, 3], elem: "jin", mp: 6 },
     ],
     reward: { lingshi: 8 }, namedLoot: null,
   },
