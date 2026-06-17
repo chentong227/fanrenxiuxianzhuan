@@ -6,4 +6,8 @@ Thumbs.db
 # 生图/测试临时文件
 test/_*.json
 test/_*.tmp.js
+test/_genmusic.*
 test_out.txt
+
+# 音频生成候选/指标（试听挑选用，转正后只留 assets/audio/bgm_<id>.mp3）
+assets/audio/_cand/
