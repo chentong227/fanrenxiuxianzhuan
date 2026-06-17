@@ -43,9 +43,23 @@ const Chapters = {
       realmCapIndex: 13,        // 暂沿筑基初期；深层筑基随增量E/F续填（不预造中后期）
       startLocation: "yanjiabao",
       completeFlag: "arc3_complete",
-      nextChapter: null,        // 第一幕烽火征调（增量E）/拍卖会（增量F）续接
+      nextChapter: "zaibie",    // 京城血夜了结→回天南（modao_e4b_likjing 接 再别天南篇）
       currencyName: "灵石",
       // 前置·燕家堡之战（特别篇）已实装：李化元强制调令→重逢墨彩环/结识董萱儿→战王蝉大BOSS→逃出强征入伍。
+    },
+    {
+      id: "zaibie",
+      name: "再别天南篇",
+      order: 4,
+      locked: true,             // 由魔道争锋篇尾·京城血夜了结（modao_e4b_likjing）解锁
+      realmTier: 1,             // 筑基（章末跌境为纯演出·不动数值；乱星海篇初方结丹）
+      realmCapIndex: 13,        // 沿筑基（跌境只演出·境界不真掉）
+      startLocation: "jiayuan_city",
+      completeFlag: "arc4_complete",
+      nextChapter: "starsea",   // 章末落海·首见乱星海定格→初入星海篇（钩子·随后续篇章实装）
+      currencyName: "灵石",
+      // 衔接为主、自由度适当低的过场大章，重头在两段演出（离开天南/到达乱星海）。
+      // 已实装：寻魂夺剑(绿煌剑·奇虫榜玉简)/曲魂身外化身(SideUnit)/金鼓原崩盘/亡命元武/三人护道·跌境/矿洞拖时启阵·大挪移令传送/落海定格。
     },
   ],
 
