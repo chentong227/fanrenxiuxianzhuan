@@ -21,6 +21,7 @@ const State = {
       poolBonus: 0,           // 灵力池永久加成（突破水准+天材地宝/特殊境遇累计——balance.manaPool）
       sense: 5,               // 神识
       body: 8,                // 体魄
+      zhuanImprint: 1,        // 三转重元功·真元精纯乘性印记（每转累乘·吃进闭关修为增速——见 DATA.reforge）
 
       hp: 100, hpMax: 100,
       mood: 100, moodMax: 100,
@@ -155,6 +156,7 @@ const State = {
     if (d.beastRumorClue === undefined) d.beastRumorClue = 0;
     if (!d.slainBeasts) d.slainBeasts = [];
     if (d.revealedRealm == null) d.revealedRealm = d.realmIndex;   // 老档：示人=真实（未藏过）
+    if (d.zhuanImprint == null) d.zhuanImprint = 1;   // 三转重元功·乘性印记（增6）
     if (!d.skills) d.skills = { alchemy: 0, scouting: 0 };
     if (!d.medals) d.medals = {};
     if (!d.intel) d.intel = {};
