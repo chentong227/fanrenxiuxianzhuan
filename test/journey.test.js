@@ -599,6 +599,47 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(sandbox.STORY.find(x => x.id === "modao_e1_chen_remember"), "陈巧倩·未喂忘尘丹线节点已就位（占位草稿）");
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e1_chen_forgot"), 0);
   assert(!s.pendingEvent, "魔道争锋·第一幕·烽火征调·完（主线挂在矿场前线·候第二幕）");
+  assert(s.flags.modao_act2_due > sandbox.State.absMonth(), "第二幕时锚已埋（modao_act2_due=absMonth+2，未到不弹）");
+
+  // —— 5.8 魔道争锋·第二幕·金鼓原前线相持（增量F：前哨集结→巡逻 pack 遭遇战→董萱儿被掳暗线→南宫婉吃醋告别→赴京）——
+  // 强制第二幕时锚到期（前线度月的等效），主线链式自动演出
+  s.flags.modao_act2_due = 0;
+  Engine.checkStory();
+  assert(s.pendingEvent === "modao_e2_muster", `金鼓原前哨集结（${s.pendingEvent}）`);
+  assert(s.metNpcs.includes("liujing") && s.metNpcs.includes("songmeng")
+         && s.metNpcs.includes("zhongweiniang") && s.metNpcs.includes("wuxuan"),
+         "结识刘靖/宋蒙/钟卫娘/武炫（四同袍入图鉴）");
+  assert(s.ledger.modao_muster, "前哨集结·同袍并肩入账本");
+  // 集结 → 巡逻遭遇战（魔修小队 pack 阵型：擒贼先擒王）
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e2_muster"), 0);
+  assert(s.pendingEvent === "modao_e2_patrol", `金鼓原巡逻遭遇战（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e2_patrol"), 0);
+  const pc = Engine._combat;
+  assert(pc && pc.enemies.length >= 2, `魔修小队群战入战（敌数=${pc ? pc.enemies.length : 0}）`);
+  assert(pc.enemies.some(e => e.leader && e.formation === "pack"), "魔修头目·pack 阵型领队（领队死=士气崩）");
+  assert(pc.enemies.filter(e => e.formation === "pack" && !e.leader).length >= 1, "魔修喽啰·pack 从者随队成网");
+  assert(WORLD.enemies.moxiu_toumu.elem === "tu", "魔修头目·土煞（韩立木行克之，练兵可胜）");
+  Engine._combat.enemies.forEach(e => { e.hp = 0; });
+  Engine._combat._checkEnd();
+  Engine._finishCombat();
+  assert(s.flags.modao_e2_patrol_done, "巡逻遭遇战告捷（modao_e2_patrol_done）");
+  assert(State.count("kuilei_canjian") >= 1, "缴获傀儡残件入袋（傀儡线引子·缴获包装【修#5】）");
+  assert(s.ledger.modao_patrol_won, "金鼓原巡逻告捷入账本");
+  // 巡逻 → 董萱儿被掳暗线（无战斗·线报归账·再别天南显影）
+  assert(s.pendingEvent === "modao_e2_dongxuaner", `董萱儿被掳暗线（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e2_dongxuaner"), 0);
+  assert(s.ledger.dongxuaner_captured, "董萱儿被掳·暗线入账本（再别天南伏笔）");
+  // 董萱儿暗线 → 南宫婉吃醋告别（轻糖克制·一枚炒栗子·【修#6】）
+  assert(s.pendingEvent === "modao_e2_nangongwan", `南宫婉吃醋告别（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e2_nangongwan"), 0);
+  assert(s.ledger.nangongwan_chestnut, "南宫婉含栗吃醋·金鼓原一别入账本");
+  assert(s.flags.nangongwan_jingcheng_farewell, "正宫线·金鼓原一别窗口（nangongwan_jingcheng_farewell）");
+  // 告别 → 赴京（第二幕收口·挂第三幕京城暗流·待实装）
+  assert(s.pendingEvent === "modao_e2_jingcheng", `拔营赴京（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e2_jingcheng"), 0);
+  assert(s.flags.modao_act2_done, "魔道争锋·第二幕收口（modao_act2_done）");
+  assert(s.flags.modao_act3_due > sandbox.State.absMonth(), "第三幕时锚已埋（modao_act3_due，候京城暗流实装）");
+  assert(!s.pendingEvent, "魔道争锋·第二幕·金鼓原前线相持·完（主线挂在赴京途中·候第三幕）");
 }
 
 console.log("\n=== 6. 拜别版回乡（离门远行）===");
