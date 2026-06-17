@@ -27,6 +27,9 @@
     xiaocui: 1, mengshan_wuyou: 1,
     // 再别天南篇·辛如音（阵法大家·赴乱星海之钥）
     xinruyin: 1,
+    // 初入星海篇·全量补绘：魁星岛旧识/妙音门/六连殿/逆星盟/妖修/星宫
+    wen_qiang: 1, wang_ning: 1, feng_sanniang: 1, gu_family: 1,
+    miaoyin_zhangmen: 1, wuchou: 1, fengxi: 1, jinkui: 1,
   };
   // 已生成的表情变体：{ 人物id: { 表情名: 1 } }
   const EMOS = {
@@ -36,6 +39,8 @@
     modafu: { sinister: 1 },
     wanxiaoshan: { panic: 1 },
     chenqiaoqian: { sad: 1 },
+    // 初入星海篇·汪凝（小紫灵）失怙泪眼
+    wang_ning: { sad: 1 },
   };
 
   // 场景（p:1 = 竖版已生成，竖屏自动启用）
@@ -58,6 +63,9 @@
     pano_dongku: {}, pano_xueshi: {},
     // 增量E·矿道箱庭：矿洞 L3 战斗轴横移长背景
     pano_kuangdong: {},
+    // 初入星海篇·地点（横版底 + 竖版 _p）：魁星岛/小寰岛/外星海猎场/天星城/极阴岛/内外星海通道
+    kuixing_island: { p: 1 }, xiaohuan_island: { p: 1 }, waixinghai: { p: 1 },
+    tianxing_city: { p: 1 }, jiyin_island: { p: 1 }, xinghai_tongdao: { p: 1 },
   };
 
   // 战斗全身立绘（battlers/：轴上单位图——妖兽/人形敌/剧情人物战斗姿态）
@@ -77,6 +85,8 @@
     bt_xuanle: { face: "c" }, bt_xueyu_zhizhu: { face: "c" }, bt_baiyu_zhizhu: { face: "c" },
     // 增量G·京城暗流：血侍铁罗（一阶段）+ 血茧铁罗（化茧狂暴独臂形态·二阶段）+ 妖化王管事
     bt_tieluo: { face: "c" }, bt_tieluo_mao: { face: "c" }, bt_wuse: { face: "c" },
+    // 初入星海篇·妖兽/人形敌（正面对称构图，永不镜像）；雷鹏=奇观演出走 CG·非可战敌·无战姿
+    bt_yingli: { face: "c" }, bt_waihai: { face: "c" }, bt_guzhanglao: { face: "c" },
   };
 
   // 剧情 CG（p:1 = 竖版已生成）
@@ -86,7 +96,11 @@
     // 增量G·魔道争锋第三幕·京城暗流演出 CG（横版底 + 竖版 _p 已生成）
     jingcheng: { p: 1 }, wangfu_yan: { p: 1 },
     // 再别天南篇·章末定格·首见乱星海（横版底 + 竖版 _p）
-    luanxinghai: { p: 1 } };
+    luanxinghai: { p: 1 },
+    // 初入星海篇·全量补绘演出 CG（横版底 + 竖版 _p）
+    kuixing_land: { p: 1 }, xiaohuan_dongfu: { p: 1 }, sanzhuan: { p: 1 },
+    doushouchang: { p: 1 }, leipeng_pofeng: { p: 1 }, jiu_ziling: { p: 1 },
+    waihai_lie: { p: 1 }, jindan: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };
@@ -99,7 +113,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 23,
+    ASSET_VER: 24,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 
