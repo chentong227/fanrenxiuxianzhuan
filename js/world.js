@@ -231,6 +231,64 @@ WORLD.locations = [
     desc: "古阵崩毁的洪流把你抛入一片无边无际的汪洋——海天一色，星罗万岛，妖氛弥漫天际。这便是传说中的乱星海，天南以东的无尽海域。你孤身一人，落在了一个全然陌生的天地。",
     travelCost: 1, actions: [], encounters: [],
   },
+
+  /* —— 初入星海篇（动漫年番·镇妖大典脊柱·ep61~76）地点 · 乱星海 6 点阵 ——
+   *   首次解锁天南之外的全新海图（world-architecture 新大陆层）。可游 home/猎场按 map 入云游列表，
+   *   纯演出节点（事变/炸岛）置 scene:true 由剧情 onArrive 落点。考据见 docs/lore-churu-xinghai.md。 */
+  {
+    id: "kuixing_island", arc: "starsea",
+    name: "魁星岛",
+    desc: "乱星海西南缘的一座外星岛，韩立携曲魂落海后登陆的首站。岛上顾家坐地经营，镇妖台擂台日日有妖兽相搏——藏拙赢上一场，便能换得一纸居留。逆星盟的黑袍乌丑，也在这岛上鬼祟出没。",
+    travelCost: 1,
+    home: true,
+    actions: ["cultivate", "rest", "bottle"],
+    map: { x: 27, y: 67 },
+    encounters: [],
+  },
+  {
+    id: "xiaohuan_island", arc: "starsea",
+    name: "小寰岛",
+    desc: "一座荒僻无人的外岛，韩立择此辟洞府闭关。借三转重元功散功重修、一转之后真元愈纯，筑基修为重攀巅峰；岛畔礁缝里那只贪金的灵虫，日后便是他护身的噬金虫。",
+    travelCost: 2,
+    home: true,
+    actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
+    map: { x: 15, y: 45 },
+    unlock: (s) => !!(s.flags && s.flags.kuixing_resident),
+    encounters: [],
+  },
+  {
+    id: "xinghai_tongdao", arc: "starsea", scene: true,
+    name: "内外星海通道",
+    desc: "镇妖大典惊变之夜，乌丑勾结风希、六连殿反水长老炸开镇妖台，连同封镇百年的雷鹏一并放出，更轰开了这道内外星海之间的天然壁障。自此外海妖兽长驱涌入内海，乱星海大乱由此而起。",
+    travelCost: 1, actions: [], encounters: [],
+  },
+  {
+    id: "waixinghai", arc: "starsea",
+    name: "外星海猎场",
+    desc: "内星海防御大阵失效后，韩立顺势远赴外星海猎妖取丹。这片海域妖兽横行、人迹罕至，却也遍地是财——以霓裳草引妖、放噬金虫群猎杀，六七级妖丹论颗装袋，正是他发家结丹的资粮。",
+    travelCost: 3,
+    actions: ["rest", "cultivate"],
+    map: { x: 81, y: 53 },
+    unlock: (s) => !!(s.flags && s.flags.luanxinghai_chaos),
+    encounters: [],
+  },
+  {
+    id: "jiyin_island", arc: "starsea", scene: true,
+    name: "极阴岛",
+    desc: "逆星盟极阴祖师一脉的老巢、乌丑的根脚所在。星宫大长老金魁孤身踏临、当众示威、一炮轰碎此岛——这是星宫着手收复内星海的起点，也是乱星海风云再变的先声（背景演出）。",
+    travelCost: 1, actions: [], encounters: [],
+  },
+  {
+    id: "tianxing_city", arc: "starsea",
+    name: "天星城",
+    desc: "内星海中枢的修仙大都会，星宫治下、坊市林立。韩立携外海挣下的妖丹与降尘丹返此苦修叩关——首番结丹铩羽，再以觅长生之姿择吉布坛、九死渡劫，终成金丹大成。",
+    travelCost: 3,
+    home: true,
+    actions: ["cultivate", "breakthrough", "rest", "alchemy"],
+    map: { x: 52, y: 36 },
+    unlock: (s) => !!(s.flags && s.flags.tianxing_open),
+    encounters: [],
+  },
 ];
 
 /* ---------- 大陆层（world-architecture L0）：天南 · 胥国一带 ----------
@@ -898,6 +956,73 @@ WORLD.enemies = {
     ],
     reward: { lingshi: 8 }, namedLoot: null,
   },
+
+  /* ===== 初入星海篇（动漫年番·镇妖大典脊柱·ep61~76）敌模板（考据见 docs/lore-churu-xinghai.md） ===== */
+
+  /* —— 婴鲤兽（镇妖大典·擂台团战 boss·五阶越级·幼体堪比六阶）——
+   *   动漫魔改：镇妖大典斗兽场放出的越级凶兽，冯三娘领队团战、以阵法困兽极限斩杀夺彩（得降尘丹）。
+   *   是本篇最硬的一场越阶恶战——韩立携曲魂并肩、冯三娘等友军侧助（剧情编排见增量5）。
+   *   A2 几何标度：越级大妖·较御灵宗夺舍者(hp340)再上一档半→hp520，armor7。 */
+  yingli_beast: {
+    name: "婴鲤兽", hp: 520, sense: 18, speed: 17, agility: 14, move: 2, mp: 110,
+    elem: "shui", nature: "beast", tactics: "feral", stubborn: true, canFlee: false, boss: true, armor: 7,
+    introNote: "镇妖台斗兽场铁笼掀开，一头形如赤鳞巨鲤的越级凶兽破水而出——虽只是幼体，凶威已堪比六阶！它行水属，狂涛裹尾、巨口吞噬，「越阶冲撞」更循气追身、势如雷霆。寻常修士近不得身，唯赖冯三娘的困兽阵层层迟滞、众人合力，方能寻那一线极限斩杀的破绽。",
+    attacks: [
+      { name: "赤鳞水箭", dmg: 30, kind: "normal", weight: 12, elem: "shui", range: [1, 4], mp: 6 },
+      { name: "狂涛尾扫", dmg: 24, kind: "normal", weight: 8, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front", elem: "shui", mp: 7 },
+      { name: "巨口吞噬", dmg: 34, kind: "pierce", weight: 7, range: [1, 1], elem: "shui", mp: 8 },
+      { name: "越阶冲撞", dmg: 44, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 14, elem: "shui" },
+    ],
+    reward: { lingshi: 18 }, namedLoot: null,
+  },
+
+  /* —— 雷鹏（上代妖兽之王·十级化形雷属性神禽·镇妖大典惊变破封）——
+   *   动漫年番原创悲情妖王：被星宫双圣镇压百年，乌丑/风希炸台放出后破封屠戮、踩碎双圣石像，
+   *   终为元婴期风希斩杀、夺其双翅（风雷翅之材料）离场。本篇定位＝奇观演出（非韩立可独胜）：
+   *   作 survive/编排奇观出场，由风希 SideUnit 终结（剧情编排见增量5）。
+   *   A2 几何标度：十级妖王·碾压档→hp1500，armor12（远超筑基/结丹标度，刻意不可硬撼）。 */
+  leipeng: {
+    name: "雷鹏", hp: 1500, sense: 24, speed: 20, agility: 16, move: 3, mp: 200,
+    elem: "jin", nature: "beast", tactics: "feral", stubborn: true, canFlee: false, boss: true, armor: 12,
+    introNote: "镇压百年的封印轰然炸碎——一头通体雷光的巨大神禽冲霄而起，正是上代妖兽之王·十级雷鹏！疾雷双翅一振，劲气横扫连营；它踏碎镇妖台上的双圣石像，雷罡过处寸草不生。这等碾压之威绝非筑基修士可撼，韩立能做的，唯有在这场惊变里护住要护的人、活着退出去。",
+    attacks: [
+      { name: "疾雷双翅", dmg: 60, kind: "normal", weight: 12, aim: "zone", zoneSpan: 2, range: [1, 4], depth: "front", elem: "jin", mp: 10 },
+      { name: "落雷屠戮", dmg: 80, kind: "charge", weight: 9, aim: "cell", lunge: true, track: true, range: [1, 6], mp: 18, elem: "jin" },
+      { name: "雷罡横绝", dmg: 50, kind: "pierce", weight: 8, range: [1, 5], elem: "jin", mp: 12 },
+    ],
+    reward: {}, namedLoot: null,
+  },
+
+  /* —— 外星海妖兽（致富猎场·可反复猎杀的杂妖·妖丹来源·#11）——
+   *   内星海大阵失效后，韩立赴外星海以霓裳草引妖、噬金虫群猎杀，妖丹论颗装袋＝发家结丹的资粮。
+   *   定位＝可反复 encounter 的猎物（reward 落乱星海妖丹）；带伤可遁（canFlee·走脱则财货随之溜走·添致富张力）。
+   *   A2 几何标度：外海寻常妖兽·略低于筑基大妖→hp200，armor3。 */
+  waihai_yaoshou: {
+    name: "外星海妖兽", hp: 200, sense: 13, speed: 15, agility: 12, move: 2, mp: 70,
+    elem: "shui", nature: "beast", tactics: "feral", stubborn: false, canFlee: true, boss: false, armor: 3,
+    introNote: "外星海妖氛缭绕处，一头中阶海妖循着霓裳草的香气扑来——獠牙利爪、喷吐水箭。放出噬金虫群缠住它，了结之后剖取妖丹，便是一笔进项。它见势不妙也会带伤遁走，跑了，那颗到嘴的妖丹也就跟着没了。",
+    attacks: [
+      { name: "獠牙撕咬", dmg: 22, kind: "normal", weight: 12, elem: "shui", range: [1, 1] },
+      { name: "喷射水箭", dmg: 18, kind: "normal", weight: 8, elem: "shui", range: [1, 3], mp: 5 },
+      { name: "扑击", dmg: 26, kind: "charge", weight: 6, aim: "cell", lunge: true, range: [1, 4], mp: 8, elem: "shui" },
+    ],
+    reward: { xinghai_yaodan: 1, lingshi: 2 }, namedLoot: null,
+  },
+
+  /* —— 逆星盟古长老（人修·假丹境·韩立大典脱身一战）——
+   *   动漫：大典惊变中逆星盟古姓长老围杀妙音门、阻韩立救汪凝脱身；韩立斩之、携小紫灵逃离。
+   *   A2 几何标度：假丹/筑基巅峰人修 boss·参照御灵宗夺舍者上抬一线→hp380，armor5。 */
+  nixingmeng_guzhanglao: {
+    name: "逆星盟古长老", hp: 380, sense: 19, speed: 17, agility: 12, move: 2, mp: 100, qiLayer: 13,
+    elem: "jin", armor: 5, boss: true, stubborn: true, canFlee: false, tactics: "cunning",
+    introNote: "逆星盟一名古姓长老拦在退路上——黑袍翻卷、星芒森冷，假丹境的威压压得人喘不过气。他出招阴狠，「噬星黑芒」专破护体、「血遁追命」循气贴身。要救下妙音门那对孤雏、要活着退出这场惊变，就得先把这道拦路的黑影斩了。",
+    attacks: [
+      { name: "噬星黑芒", dmg: 30, kind: "normal", weight: 12, elem: "jin", range: [1, 3], mp: 6 },
+      { name: "星盟剑罡", dmg: 24, kind: "pierce", weight: 8, range: [1, 3], elem: "jin", mp: 7 },
+      { name: "血遁追命", dmg: 40, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12, elem: "jin" },
+    ],
+    reward: { lingshi: 14 }, namedLoot: null,
+  },
 };
 
 /* ---------- 情报面纱：关键人物的可打探底细（L0 传闻 / L1 见过出手 / L2 买过底细） ----------
@@ -1271,6 +1396,58 @@ WORLD.npcs = [
     bio: "黑煞教的教主，亦是越国之主——胥王、越皇、黑煞教主，本是同一人。他在皇宫决战中一直装作无害的凡人君主、隐于「第五血侍」之名潜伏，待刘靖凤凰符尽兴、防备一松，便暴起以阴手偷袭。继而当众褪去凡人皮囊、催动血煞秘法，神魂气息暴涨直入假丹之境（筑基巅峰）——那一身越国君王的温吞皮相，原是这魔道巨擘藏了半生的一张面具。",
     lines: ["（一身越王常服，温声笑着）诸位仙长远来辛苦，寡人……备了些薄礼。", "（皮囊寸寸剥落，声音陡然森冷）装了这许多年凡人，也该腻了。", "（血煞冲天、气息暴涨）假丹之威，岂是尔等筑基蝼蚁可挡？"],
     where: [], cond: (s) => s.metNpcs && s.metNpcs.includes("xuwang"),
+  },
+
+  /* —— 初入星海篇（动漫年番·镇妖大典脊柱·ep61~76）人物（考据见 docs/lore-churu-xinghai.md） ——
+   *   忠于动漫年番原创脊柱：文樯/汪凝/冯三娘/顾家＝人族友侧；乌丑/风希/古长老＝乱星海大乱之源；
+   *   金魁＝星宫收复内星海的背景强者。羁绊正落点＝救汪凝（小紫灵）。均由剧情 onArrive/节点入图鉴。 */
+  {
+    id: "wen_qiang", name: "文樯", role: "魁星岛旧识 · 文思月之父",
+    bio: "韩立在魁星岛结识的一位中年修士，文思月之父。为人热络、消息通达，正是他引韩立同赴六连殿镇妖大典，又点醒他「降尘丹」可降结丹门槛之妙。其女文思月，外海风云时还要再来求韩立相助（远线）。",
+    lines: ["韩道友既要结丹，这镇妖大典就非去不可——出力最大者，赏的可是降尘丹。", "降尘丹一枚，能把结丹的门槛降下好大一截，多少人求而不得。", "（他压低声音）这岛上水深，逆星盟的人，最近格外不安分。"],
+    where: ["kuixing_island"], cond: (s) => s.metNpcs && s.metNpcs.includes("wen_qiang"),
+  },
+  {
+    id: "wang_ning", name: "汪凝（小紫灵）", role: "妙音门少主 · 掌门之女",
+    bio: "妙音门掌门之女、门中少主，年方十二、修为炼气六层。镇妖大典惊变中父母双亡，是韩立在乱军里救下、联手逃出的孤雏——这是本篇真正的情感羁绊落点。多年后她长大成人，便是那位名动星海的紫灵（墨彩环转世的软彩蛋，片尾暗示）。",
+    lines: ["韩……韩大哥，他们都死了……就剩我一个了。", "（她把脸埋进膝盖，肩膀一抽一抽）爹娘让我活下去……我答应过的。", "等我长大，一定要变得很强很强——强到再没人能从我身边把人抢走。"],
+    where: ["xiaohuan_island", "tianxing_city"], cond: (s) => s.metNpcs && s.metNpcs.includes("wang_ning"),
+  },
+  {
+    id: "feng_sanniang", name: "冯三娘（冯钰）", role: "六连殿阵法师 · 大典团战领队",
+    bio: "六连殿的女阵法师，本名冯钰，镇妖大典上领队团战的中坚。布得一手好困兽阵，临危不乱、调度有方——婴鲤兽越级肆虐时，正是她邀韩立联手、以阵法层层迟滞，才换来那一线极限斩杀的破绽。",
+    lines: ["这婴鲤兽是幼体却堪比六阶，硬拼是找死——听我的，进阵，困住它。", "韩道友的手段倒出乎我意料，难怪敢应这一场。", "阵眼我来守，破绽你来抓——成与不成，就这一下了。"],
+    where: ["kuixing_island"], cond: (s) => s.metNpcs && s.metNpcs.includes("feng_sanniang"),
+  },
+  {
+    id: "gu_family", name: "顾家家主", role: "魁星岛 · 坐地豪族",
+    bio: "魁星岛上坐地经营的修仙豪族之主。岛上居留、坊市、镇妖台擂台皆由顾家张罗。韩立藏拙在擂台上赢了一场，替顾家挣了脸面、也争了一桩经商之利，这才换来一纸落脚乱星海的居留。",
+    lines: ["道友这一场打得漂亮，魁星岛的居留，顾某替你担保了。", "外来散修要在乱星海立足，没有一处落脚的岛、一纸居留，寸步难行。", "镇妖大典在即，道友既得了居留，不妨随六连殿的人去见见世面。"],
+    where: ["kuixing_island"], cond: (s) => s.metNpcs && s.metNpcs.includes("gu_family"),
+  },
+  {
+    id: "miaoyin_zhangmen", name: "妙音门门主", role: "汪凝之父 · 大典殉难",
+    bio: "妙音门掌门，汪凝（小紫灵）之父。携妻女赴镇妖大典，却撞上乌丑一伙蓄谋的惊变。夫妇二人为护女儿力战殉难，临终将汪凝托付给乱军中仗义出手的韩立——一句托孤，系起了韩立与紫灵跨越岁月的缘分。",
+    lines: ["（他护着妻女且战且退，嘶声喝道）凝儿，跟着这位道友走，别回头！", "（重伤倒地，气若游丝）这位道友……求你……把我女儿……带出去……", "妙音门……到我这一代，也算……尽了。"],
+    where: [], cond: (s) => s.metNpcs && s.metNpcs.includes("miaoyin_zhangmen"),
+  },
+  {
+    id: "wuchou", name: "乌丑", role: "逆星盟黑袍 · 极阴祖师后人",
+    bio: "逆星盟的黑袍修士，极阴岛极阴祖师一脉的后人。在魁星岛便鬼祟出没，暗中勾结妖修风希、策反六连殿一名长老，于镇妖大典上炸毁镇妖台、放出雷鹏、算计妙音门——乱星海大乱的人族元凶之一。此战未除，远线纠缠直到下一年番。",
+    lines: ["（黑袍下一双眼睛阴恻恻地扫过全场）镇妖台镇了百年的东西，也该放出来透透气了。", "祖师当年栽在星宫双圣手里，这笔账，今日连本带利讨回来。", "（阴笑）乱起来才好——乱世里，才有我逆星盟的活路。"],
+    where: [], cond: (s) => s.metNpcs && s.metNpcs.includes("wuchou"),
+  },
+  {
+    id: "fengxi", name: "风希", role: "妖修「大善人」 · 元婴期裂风兽化人",
+    bio: "一头裂风兽化形的元婴期妖修，世称「大善人」，行事自有一套妖族的盘算。与乌丑各取所需、合谋炸台放雷鹏；待雷鹏破封肆虐，他却一剑斩杀这上代妖王，夺走雷鹏双翅（风雷翅之材料）扬长而去。那对翅膀，要到外海风云篇才被炼成风雷翅——也才被韩立惦记上。",
+    lines: ["（负手立于狂风之中，温和地笑）诸位放心，风某素来与人为善。", "雷鹏是头好妖兽，可惜……它这对翅膀，我更喜欢。", "（一剑斩落妖王，拎翅而起）合作愉快。后会，未必有期。"],
+    where: [], cond: (s) => s.metNpcs && s.metNpcs.includes("fengxi"),
+  },
+  {
+    id: "jinkui", name: "金魁", role: "星宫大长老 · 元婴中期巅峰",
+    bio: "天星宫大长老，元婴中期巅峰的强者，动画年番原创人物。乱星海大乱之后，他孤身踏临逆星盟老巢极阴岛、当众示威、一炮轰碎此岛——星宫着手收复内星海，自此开端。于本篇只作背景演出登场，年番2中他才是举足轻重的角色。",
+    lines: ["（立于极阴岛上空，声若洪钟）逆星盟也敢在内星海翻天？星宫，收回来了。", "（指尖星芒一凝，整座岛在脚下崩裂）此岛，除名。", "乱星海的乱，到此为止——往后，是星宫说了算。"],
+    where: [], cond: (s) => s.metNpcs && s.metNpcs.includes("jinkui"),
   },
 ];
 
