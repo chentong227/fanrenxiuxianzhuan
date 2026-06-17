@@ -3470,6 +3470,56 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // 皇宫决战开幕·三组对位群架（增量H·魔道争锋第四幕）——sides[] 复数化的首个内容关卡：
+  // 韩立＋黄枫谷三同袍（刘靖/宋蒙/钟卫娘）同场，对阵黑煞教血侍×3。三个 side 各有打法
+  // （刘靖前压斩魔、宋蒙重元珠护中、钟卫娘急性子游火），玩家可凭简令交叉支援。这是"人多势众
+  // 撕开缺口杀进皇宫"的群架演出，不是单挑硬 boss——血侍数值刻意压低（见 world.xueshi_zu）。
+  startSantuanFight() {
+    const s = State.data;
+    this._nextFightType = "santuan";
+    const player = this.playerFighter();
+    const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
+    this._combat = new CombatAPI.Combat({
+      player,
+      enemies: [xs(), xs(), xs()],
+      maxRounds: 24,
+      W: 13, lanes: 2,
+      // 三同袍 side 同场（sides[] 复数化）：人格即打法——
+      sides: [
+        // 刘靖·除魔卫道之楷模：前压抢攻、剑光凌厉（凤凰符是后话，此战只显其正道剑修本色）
+        { id: "liujing", name: "刘靖", kind: "ally", art: "liujing",
+          hp: 138, hpMax: 138, guard: 0.28, elem: "jin",
+          persona: { aggr: 8, prot: 4, kite: 1 },
+          moves: [
+            { name: "除魔剑光", dmg: 22, weight: 12, elem: "jin", range: [1, 2], line: "一道凌厉剑光当头斩落血侍" },
+            { name: "浩然斩", dmg: 28, weight: 6, elem: "jin", range: [1, 1], line: "「魔道役尸，人人得而诛之！」长剑过处煞气崩散" },
+          ] },
+        // 宋蒙·持重元珠的稳重师兄：护中后压、远程砸珠，prot 高（替同袍挡刀）
+        { id: "songmeng", name: "宋蒙", kind: "ally", art: "songmeng",
+          hp: 150, hpMax: 150, guard: 0.38, elem: "tu",
+          persona: { aggr: 4, prot: 8, kite: 2 },
+          moves: [
+            { name: "重元珠击", dmg: 20, weight: 12, elem: "tu", range: [1, 3], line: "一枚温润圆珠破空砸下，沉得砸碎血煞" },
+            { name: "厚土镇压", dmg: 16, weight: 6, elem: "tu", range: [1, 2], line: "沉声一喝，土行真元如壁压向血侍" },
+          ] },
+        // 钟卫娘·心直口快的女修：急性子游火、抢攻收割，护短认死理
+        { id: "zhongweiniang", name: "钟卫娘", kind: "ally", art: "zhongweiniang",
+          hp: 108, hpMax: 108, guard: 0.18, elem: "huo",
+          persona: { aggr: 8, prot: 2, kite: 3 },
+          moves: [
+            { name: "烈焰掌", dmg: 18, weight: 12, elem: "huo", range: [1, 2], line: "「都是些役尸的玩意儿！」一掌烈焰拍出" },
+            { name: "火羽刺", dmg: 22, weight: 6, elem: "huo", range: [1, 3], line: "抖手一蓬火羽攒射" },
+          ] },
+      ],
+    });
+    this._combatMeta = { type: "santuan" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("刘靖长剑出鞘、剑指皇城深处：「韩师弟，三组分头缠住血侍——杀开一条道，直取贼首！」");
+    this.log("皇宫大门轰然洞开——黑煞教血侍蜂拥而上。你与刘靖、宋蒙、钟卫娘三组同袍背靠背列开：这一战，是九筑基夜闯皇城的开幕，也是你第一次以「群阵」之姿，与同袍并肩冲杀。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -4172,6 +4222,29 @@ const Engine = {
         s.pendingEvent = "modao_e2_patrol";
         this._retryAfterLoss = "modao_e2_patrol";
       }
+    } else if (meta.type === "santuan") {
+      // 皇宫决战开幕·三组对位群架（增量H·第四幕）：三同袍并肩撕开缺口→杀进皇宫深处（接 modao_e4_zhanluo 之死）
+      if (win) {
+        State.setFlag("modao_e4_santuan_done");
+        this.meetNpc("liujing", "皇宫决战并肩的黄枫谷师兄——除魔卫道之楷模，身负祖传真宝凤凰符。");
+        this.writeLedger("modao_santuan_won", "九筑基夜闯皇城·开幕三组对位群架告捷——韩立与刘靖/宋蒙/钟卫娘三组同袍并肩冲杀，撕开血侍阵线、杀进皇宫深处（sides[] 复数化群架首演）");
+        this.addMilestone("皇宫决战开幕：三组对位群架告捷，杀入皇宫深处", "showdown");
+        this.addFame(8, "京中传开，九名筑基修士夜闯皇城、当街力破黑煞教血侍阵");
+        this.log("血侍一片片倒下——三组同袍背靠背、攻守交替，竟把黑煞教的血侍阵生生撕开一道口子。刘靖长剑遥指深处：「不要恋战！贼首就在皇宫最底下——杀进去！」众人合身突入，一路向皇宫深处杀去。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        // fail-forward：浴血整顿、再战+伤（不设死局）——群架人多势众，调息再上必能撕开缺口
+        this._bountyFight = false;
+        s.flags.losses_santuan = (s.flags.losses_santuan || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_santuan) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`血侍一拥而上、阵脚一时被冲乱，你与同袍浴血暂退、就地整顿（再战伤害+${bonus}%）。三组对位、交叉支援——莫各自为战，护住彼此侧翼，再杀回去！`, "bad");
+        s.pendingEvent = "modao_e4_santuan";
+        this._retryAfterLoss = "modao_e4_santuan";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -4473,6 +4546,12 @@ const Engine = {
     if (choice.resolve === "wuse_fight") {
       s.pendingEvent = null;
       this.startEncounterFight("wuse_menzhu");
+      return;
+    }
+    // 皇宫决战开幕·三组对位群架（增量H·第四幕：sides[] 复数化首演——三同袍 vs 血侍×3）
+    if (choice.resolve === "santuan_fight") {
+      s.pendingEvent = null;
+      this.startSantuanFight();
       return;
     }
 
