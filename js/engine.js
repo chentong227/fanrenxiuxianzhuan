@@ -3810,6 +3810,144 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  /* ===================== 初入星海篇·第一/二幕 战斗编排（增量5）=====================
+   * 复用 fieldCycle / 单挑藏拙 / sides[]＋waves＋objective / survive 护送——零新增系统。
+   * 越阶范式（A2·balance.js 不动）：韩立筑基后期巅峰；越级妖兽/假丹人修靠 fieldCycle 困势＋曲魂＋底牌咬。 */
+
+  // —— 一①·落海·低阶海妖遭遇（fieldCycle 海域相位·曲魂并肩；致富妖丹 loot 抑制·留增量6）——
+  startStarseaYaoshouFight() {
+    const s = State.data;
+    this._nextFightType = "ss_yaoshou";
+    const player = this.playerFighter();
+    // 海域相位（player-favorable·暗潮/寒流/暗礁/乱涡/浪沫五相）：suppress=占敌 hpMax 之比，平缓佐助
+    const fieldCycle = [
+      { name: "水·暗潮缚足", log: "一道暗潮自海底卷起，缠住那海妖的鳍足，扑势一滞。", suppress: 0.06, expose: true, player: { dodge: 0.05 } },
+      { name: "水·寒流凝甲", log: "冰冷洋流漫过兽躯，海妖的动作迟缓了几分。", suppress: 0.05, player: { shield: 8 } },
+      { name: "土·暗礁阻浪", log: "脚下暗礁劈开浪头，替你卸去一记冲撞。", suppress: 0.05, player: { mp: 6 } },
+      { name: "水·回旋乱涡", log: "回旋的乱涡搅乱了海妖的扑击落点，破绽微露。", suppress: 0.07, expose: true },
+      { name: "金·浪沫映芒", log: "碎浪映着你的剑芒，乱了海妖的视线。", suppress: 0.05, player: { dodge: 0.04 } },
+    ];
+    const enemy = Object.assign({}, WORLD.enemies.waihai_yaoshou, {
+      canFlee: false,            // 落海绝境·此兽不可遁（活下去之战）
+      reward: { lingshi: 2 },    // 抑制 xinghai_yaodan——致富妖丹线留增量6
+      namedLoot: null,
+    });
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [enemy], fieldCycle, maxRounds: 14, W: 13, lanes: 2, sides,
+    });
+    this._combatMeta = { type: "ss_yaoshou" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("「神识尚在，便不算绝路。」你强提滞涩的灵力，神识铺开锁定海妖命门，曲魂黑煞血刃已破水迎上。");
+    this.log("乱星海近岛海域，一头低阶海妖循着气血味扑来。你落海修为暂虚、神识却利——借海域相位（暗潮/暗礁/乱涡）层层迟滞，与曲魂并肩斩兽求生。这是你在星海的第一战。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 一③·镇妖台擂台 1v1（藏拙叙事·筑基压炼气八层·假苦战险胜；公开擂台·不召曲魂）——
+  startStarseaLeitaiFight() {
+    const s = State.data;
+    this._nextFightType = "ss_leitai";
+    const player = this.playerFighter();
+    // 对手＝鲸吞商行重金请的炼气八层打手（弱·筑基碾压；藏拙为纯叙事·不做硬性减益）
+    const foe = {
+      name: "鲸吞商行打手", hp: 96, sense: 11, speed: 13, agility: 11, move: 2, mp: 40, qiLayer: 8,
+      elem: "jin", nature: "human", tactics: "feral", stubborn: false, canFlee: false, boss: false, armor: 1,
+      introNote: "鲸吞商行重金请来的炼气八层打手，灵光外放、气势汹汹。他不知道台上这个看似炼气五层的散修，藏着怎样的真境。",
+      attacks: [
+        { name: "裂石拳", dmg: 14, kind: "normal", weight: 12, elem: "jin", range: [1, 1] },
+        { name: "金光小盾", dmg: 9, kind: "normal", weight: 6, elem: "jin", range: [1, 2], mp: 5 },
+        { name: "蛮力扑摔", dmg: 18, kind: "charge", weight: 5, aim: "cell", lunge: true, range: [1, 3], mp: 6, elem: "jin" },
+      ],
+      reward: { lingshi: 3 }, namedLoot: null,
+    };
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [foe], maxRounds: 12, W: 11, lanes: 2, sides: [],
+    });
+    this._combatMeta = { type: "ss_leitai" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("你刻意只引动炼气五层的灵力，把一身真元压在丹田里，与那汉子缠斗得险象环生——格挡踉跄、还击勉强，台下惊呼连连。");
+    this.log("镇妖台擂台，替顾家一战。对手不过炼气八层，你却是藏了真境的筑基——要赢，更要赢得「狼狈」：露半分锋芒，便要招来不必要的觊觎。藏拙，藏拙。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 二③·镇妖大典·极限斩杀婴鲤兽（sides[冯三娘＋曲魂]＋waves[婴鲤兽→困兽暴走]＋fieldCycle 水罡＋越阶）——
+  startStarseaYingliFight() {
+    const s = State.data;
+    this._nextFightType = "ss_yingli";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;   // 越阶 boss·满血上阵（避免残血死螺）
+    // 冯三娘困兽阵图·水罡相位（player-favorable·阵法困势）
+    const fieldCycle = [
+      { name: "阵·水牢锁鳞", log: "冯三娘阵旗一引，水牢自地涌生，锁住婴鲤兽赤鳞巨躯，扑势一滞。", suppress: 0.06, expose: true, player: { dodge: 0.05 } },
+      { name: "阵·罡风裂甲", log: "六道罡风顺阵纹卷起，撕扯着那身赤鳞，巨兽烦躁翻涌。", suppress: 0.06 },
+      { name: "阵·厚土镇浪", log: "厚土阵眼镇住狂涛，婴鲤兽的尾扫被生生压短。", suppress: 0.05, player: { shield: 10 } },
+      { name: "阵·寒渊滞游", log: "寒渊水气凝住兽躯，越阶冲撞的势头缓了三分。", suppress: 0.05, player: { mp: 6 } },
+      { name: "阵·镜分乱踪", log: "镜影分光错乱了它的扑击落点，命门破绽毕露——斩它，就趁此刻！", suppress: 0.07, expose: true },
+    ];
+    const ying = Object.assign({}, WORLD.enemies.yingli_beast);
+    // 困兽暴走（waves 二阶段：水牢将合·巨兽负伤狂暴反扑，残血更凶，正是极限斩杀之机）
+    const yingRage = Object.assign({}, WORLD.enemies.yingli_beast, {
+      name: "婴鲤兽·困兽暴走", hp: 170, armor: 6,
+      introNote: "水牢将合，婴鲤兽负伤狂暴，赤鳞倒竖、猩红双目尽是疯狂——这是它力竭前的最后反扑，也正是极限斩杀的一线之机！",
+      attacks: [
+        { name: "狂暴撕咬", dmg: 30, kind: "pierce", weight: 12, range: [1, 1], elem: "shui", mp: 6 },
+        { name: "绝命尾扫", dmg: 26, kind: "normal", weight: 8, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front", elem: "shui", mp: 7 },
+      ],
+      reward: {}, namedLoot: null,
+    });
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    // 冯三娘·六连殿阵法师·大典团战领队（友军侧·阵法困势·prot 偏高）
+    sides.push({ id: "feng_sanniang", name: "冯三娘", kind: "ally", art: "feng_sanniang",
+      hp: 140, hpMax: 140, guard: 0.4, elem: "shui",
+      persona: { aggr: 5, prot: 7, kite: 2 },
+      moves: [
+        { name: "困兽阵旗", dmg: 18, weight: 12, elem: "shui", range: [1, 3], line: "冯三娘阵旗翻飞，水罡困势又紧一分：「第六组听令——困住它，给韩道友递机会！」" },
+        { name: "六合剑光", dmg: 22, weight: 6, elem: "jin", range: [1, 2], line: "冯三娘剑指如电，一道六合剑光斩在婴鲤兽鳞甲的缝隙处" },
+      ] });
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [ying], waves: [[yingRage]], fieldCycle, maxRounds: 24, W: 15, lanes: 2, sides,
+    });
+    this._combatMeta = { type: "ss_yingli" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("「众修法阵难伤它分毫，唯有困而后杀。」你与曲魂隐于阵后按兵不动，只待冯三娘的水牢合拢、巨兽力竭的那一线之机。");
+    this.log("镇妖大典斗兽场，越级五阶婴鲤兽破水而出（幼体堪比六阶）。众修法阵不能伤、损失惨重——你与曲魂后发，借冯三娘的困兽阵图层层迟滞，待它困兽暴走、力竭露隙，便是极限斩杀、夺彩之时。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 二⑥·救小紫灵·斩逆星盟古长老脱身（objective:survive 护送逃亡＋精英战·曲魂断后）——
+  startStarseaJiuzilingFight() {
+    const s = State.data;
+    this._nextFightType = "ss_jiuziling";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;   // 护送满血上场
+    const elder = Object.assign({}, WORLD.enemies.nixingmeng_guzhanglao);
+    const hei = () => ({
+      name: "逆星盟黑袍", hp: 72, sense: 12, speed: 14, agility: 12, move: 2, mp: 36,
+      elem: "jin", nature: "human", tactics: "feral", stubborn: false, canFlee: false, armor: 1, formation: "pack",
+      attacks: [
+        { name: "星盟黑芒", dmg: 16, kind: "normal", weight: 12, elem: "jin", range: [1, 2], mp: 4 },
+        { name: "贴身夺命", dmg: 20, kind: "charge", weight: 5, aim: "cell", lunge: true, range: [1, 3], mp: 6, elem: "jin" },
+      ],
+      reward: {}, namedLoot: null,
+    });
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [elder, hei(), hei()],
+      objective: { kind: "survive", rounds: 6,
+        winLog: "曲魂血刃自侧翼洞穿古长老命门，你一剑封喉——黑袍人影颓然坠地。你抄起惊魂未定的小紫灵，趁乱杀出重围、遁入海雾。斩古长老·携紫灵脱身！" },
+      maxRounds: 6, W: 15, lanes: 2, sides,
+    });
+    this._combatMeta = { type: "ss_jiuziling" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("你将小紫灵护在身后，曲魂黑影横刀断后。古长老血遁追命、黑袍杂兵合围——撑住这一阵，斩了拦路的长老，便能带她杀出去！");
+    this.log("大典惊变·妙音门门主夫妇殉难。你接住坠落的小紫灵，逆星盟古长老挟假丹之威拦杀，黑袍杂兵合围。护住她、撑住追杀、斩了古长老——杀出这场惊变。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -4692,6 +4830,87 @@ const Engine = {
         s.pendingEvent = "zaibie_a4_kuangdong";
         this._retryAfterLoss = "zaibie_a4_kuangdong";
       }
+    } else if (meta.type === "ss_yaoshou") {
+      // 初入星海·一① 落海·低阶海妖（fieldCycle 海域相位·曲魂并肩）
+      if (win) {
+        State.setFlag("starsea_yaoshou_done");
+        this.writeLedger("starsea_yaoshou_won", "初入星海·落海——海域相位层层迟滞，韩立携曲魂斩退循血来袭的低阶海妖，于乱星海立住第一口气。");
+        this.addMilestone("初入星海·落海：斩海妖、立身星海", "starsea");
+        this.log("海妖沉尸碧波，血腥气被洋流冲散。你伏在浮木上喘息——这片陌生的妖海，你算是活着踏进来了。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_ss_yaoshou = (s.flags.losses_ss_yaoshou || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_ss_yaoshou) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`海妖凶蛮，险些将你拖入海底——你强提真元、与曲魂背水再战（再战伤害+${bonus}%）。落海绝境，唯有杀出去！`, "bad");
+        s.pendingEvent = "starsea_a1_open";
+        this._retryAfterLoss = "starsea_a1_open";
+      }
+    } else if (meta.type === "ss_leitai") {
+      // 初入星海·一③ 镇妖台擂台 1v1（藏拙叙事·筑基压炼气八层）——胜得居留，藏拙故不扬名（不 addFame）
+      if (win) {
+        State.setFlag("starsea_leitai_done");
+        State.setFlag("kuixing_resident");
+        this.writeLedger("starsea_leitai_won", "初入星海·镇妖台擂台——韩立藏拙佯作苦战，以「炼气五层」之姿险胜炼气八层打手，替顾家夺下经商权，换得魁星岛居留。露而不显，正是凡人韩立的火候。");
+        this.addMilestone("初入星海·擂台藏拙：助顾家、得魁星岛居留", "starsea");
+        this.log("你「踉跄」着一招制胜，台下哗然。顾家如愿，居留玉牌到手——而人人只当你是个运气尚可的落难散修。藏拙，成了。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_ss_leitai = (s.flags.losses_ss_leitai || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_ss_leitai) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`藏拙的分寸没拿稳，险些「真」输了这场——你调息再上，重新拿捏那「将败未败」的火候（再战伤害+${bonus}%）。`, "bad");
+        s.pendingEvent = "starsea_a1_leitai";
+        this._retryAfterLoss = "starsea_a1_leitai";
+      }
+    } else if (meta.type === "ss_yingli") {
+      // 初入星海·二③ 镇妖大典·极限斩杀婴鲤兽（sides[冯三娘＋曲魂]＋waves＋fieldCycle＋越阶）——胜得降尘丹·夺彩扬名
+      if (win) {
+        State.setFlag("starsea_yingli_done");
+        if (State.count("jiangchen_dan") < 1) State.give("jiangchen_dan", 1);
+        this.writeLedger("starsea_yingli_won", "镇妖大典·极限斩杀——众修法阵难伤越级五阶婴鲤兽，韩立携曲魂后发，借冯三娘困兽阵图困而后杀，于巨兽力竭一线之机极限斩杀夺彩，得榜首奖『降尘丹』（降一分结丹门槛）。");
+        this.addMilestone("镇妖大典夺彩：极限斩杀婴鲤兽，得降尘丹", "starsea");
+        this.addFame(8, "镇妖大典·越阶极限斩杀婴鲤兽、夺彩榜首");
+        this.log("巨兽轰然倒在血泊里，满场死寂，旋即爆出震天喝彩。降尘丹入手——结丹之门，被你撬开了一线。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_ss_yingli = (s.flags.losses_ss_yingli || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_ss_yingli) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`婴鲤兽越级之威终究太盛，这一击没能竟全功——你与曲魂退回阵后，再候那困兽力竭的一线之机（再战伤害+${bonus}%）。`, "bad");
+        s.pendingEvent = "starsea_a2_yingli";
+        this._retryAfterLoss = "starsea_a2_yingli";
+      }
+    } else if (meta.type === "ss_jiuziling") {
+      // 初入星海·二⑥ 救小紫灵·斩逆星盟古长老脱身（objective:survive 护送逃亡＋精英战·曲魂断后）
+      if (win) {
+        State.setFlag("starsea_jiuziling_done");
+        this.meetNpc("wang_ning", "你护下的紫衣小女孩——汪凝，小字紫灵，妙音门遗孤。她死死攥着你的衣袖，那张脸总叫你心头泛起一缕说不清的熟悉。");
+        this.writeLedger("starsea_jiuziling_won", "镇妖大典惊变·救小紫灵——妙音门门主夫妇为护女力竭殉难，韩立接住坠落的汪凝，于乱局中越阶斩逆星盟古长老（假丹/筑基巅峰人修）、杀出黑袍合围，携小紫灵脱身。");
+        this.addMilestone("大典惊变：救汪凝、斩古长老脱身", "starsea");
+        this.addFame(8, "乱星海大典惊变·越阶斩逆星盟古长老、护妙音门遗孤脱身");
+        this.log("古长老命门洞穿、颓然坠地。你抄起惊魂未定的小紫灵，趁这滔天乱局，杀出了重围。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_ss_jiuziling = (s.flags.losses_ss_jiuziling || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_ss_jiuziling) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`古长老的血遁追命缠得死紧，护住紫灵已是勉力——你将她护在身后，与曲魂背水再撑这一阵（再战伤害+${bonus}%）。撑住，斩了他，杀出去！`, "bad");
+        s.pendingEvent = "starsea_a2_jiuziling";
+        this._retryAfterLoss = "starsea_a2_jiuziling";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -5020,6 +5239,11 @@ const Engine = {
     if (choice.resolve === "hushan_fight")   { s.pendingEvent = null; this.startHushanFight();   return; }
     if (choice.resolve === "hudao_fight")    { s.pendingEvent = null; this.startHudaoFight();    return; }
     if (choice.resolve === "kuangdong_fight"){ s.pendingEvent = null; this.startKuangdongFight();return; }
+    // —— 初入星海篇·第一/二幕战斗派发（增量5）——
+    if (choice.resolve === "starsea_yaoshou_fight")  { s.pendingEvent = null; this.startStarseaYaoshouFight();  return; }
+    if (choice.resolve === "starsea_leitai_fight")   { s.pendingEvent = null; this.startStarseaLeitaiFight();   return; }
+    if (choice.resolve === "starsea_yingli_fight")   { s.pendingEvent = null; this.startStarseaYingliFight();   return; }
+    if (choice.resolve === "starsea_jiuziling_fight"){ s.pendingEvent = null; this.startStarseaJiuzilingFight();return; }
 
     // 普通推进
     s.pendingEvent = null;
