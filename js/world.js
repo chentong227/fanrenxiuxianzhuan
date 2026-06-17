@@ -709,20 +709,40 @@ WORLD.enemies = {
     reward: { lingshi: 2 }, namedLoot: null,
   },
 
-  /* 血侍·铁罗（增量G·魔道争锋第三幕·京城暗流）——黑煞教浮出水面的第一面。
+  /* 血侍·铁罗（增量G·魔道争锋第三幕·京城暗流）——黑煞教浮出水面的第一面【二阶段·一】。
    * 黑煞教豢养的血侍，筑基初期，一身血煞赤焰（行火·木生火，主修木系的韩立这回讨不到相克便宜，
-   * 是一场货真价实的硬仗）。设定取舍：铁罗为"可逃逸 boss 机制"首演——他被逼入绝境必化血茧遁走，
-   * 不论你是逼退还是看似将他斩杀，他都会蜕一具血茧躯壳脱身（_finishCombat 按 enemyName 统一接管，
-   * 战果只有一个：遁走 + 仇恨账本跨场记你一笔，皇宫决战再算）。故 reward/namedLoot 皆无——他带着家底跑了。 */
+   * 是一场货真价实的硬仗）。二阶段演出·一阶段：硬战将他逼入绝境，韩立木行剑光斩断其一臂——
+   * 铁罗厉啸、血煞内缩结成血茧，蜕出狂暴畸变的「血茧铁罗」二阶段形态（见 tieluo_mao）。
+   * canFlee:false——一阶段是正经硬仗、断其一臂，他不是"逼一下就跑"，而是被打到化茧（_finishCombat
+   * 按 enemyName "铁罗" 接管：断臂+化茧过场→挂二阶段 modao_e3_tieluo2）。故 reward/namedLoot 皆无。 */
   tieluo: {
     name: "铁罗", hp: 250, sense: 14, speed: 16, agility: 13, move: 2, mp: 100, qiLayer: 13, elem: "huo", armor: 4,
-    tactics: "cunning", canFlee: true, boss: true,
-    introNote: "黑煞教的血侍——筑基初期，浑身缠着血煞赤焰，「血煞爪」又快又毒，「血遁突袭」循着你的气息折转猛扑，一步躲不开。他行火，木生火，你那身木行道基这回泄气、占不到相克的便宜，是场硬仗。更棘手的是：把他逼到绝境，他会蜕一具血茧躯壳脱身——这一战未必能留下他，却能逼他现出黑煞教的形迹。",
+    tactics: "cunning", canFlee: false, boss: true,
+    introNote: "黑煞教的血侍——筑基初期，浑身缠着血煞赤焰，「血煞爪」又快又毒，「血遁突袭」循着你的气息折转猛扑，一步躲不开。他行火，木生火，你那身木行道基这回泄气、占不到相克的便宜，是场硬仗。把他逼入绝境、以木行剑光断其一臂——他不会就此倒下，而会厉啸化作血茧，蜕出更狂暴的形态。",
     attacks: [
       { name: "血煞爪", dmg: 26, kind: "normal", weight: 12, elem: "huo", range: [1, 1], mp: 6 },
       { name: "噬血贯刺", dmg: 24, kind: "pierce", weight: 7, range: [1, 2], mp: 8 },
       { name: "血遁突袭", dmg: 32, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12 },
       { name: "血雾缠身", dmg: 16, kind: "normal", weight: 6, elem: "huo", aim: "zone", zoneSpan: 1, range: [1, 3], depth: "front", mp: 6 },
+    ],
+    reward: null, namedLoot: null,
+  },
+
+  /* 血茧铁罗（增量G·京城暗流·二阶段·二）——铁罗断臂后化血茧蜕出的狂暴畸变形态。
+   * 独臂、却以血侍秘术「化血茧」把残余血煞尽数榨出——血气暴涨、痛觉尽失、近乎不死的搏命态。
+   * 数值：筑基初期同档（吃 A2 几何标度·与一阶段同 realmBand），但弃守换攻——hp 更厚（330·濒死反扑）、
+   * armor 降到 3（蜕去皮甲、血肉外露）、招式更重更猛（独臂血爪/血遁狂扑伤害拔高）。canFlee:false——
+   * 二阶段是正面血战，败之后才以秘术真正遁走（_finishCombat 按 enemyName "血茧铁罗" 接管：化茧大战告捷
+   * → 血侍秘术遁走 + 仇恨账本跨场记你一笔，皇宫决战再算）。reward/namedLoot 皆无——他带着家底跑了。 */
+  tieluo_mao: {
+    name: "血茧铁罗", hp: 330, sense: 15, speed: 17, agility: 12, move: 2, mp: 100, qiLayer: 13, elem: "huo", armor: 3,
+    tactics: "feral", stubborn: true, canFlee: false, boss: true,
+    introNote: "断臂化茧后的铁罗——独臂，血煞却暴涨到近乎不死。「独臂血爪」一爪比先前更沉更狠，「血遁狂扑」循着你的气息亡命扑来，「血煞爆」掀起一片赤焰罩住战位前排。他蜕了皮甲、血肉外露（破甲更易），可血气狂涌、痛觉尽失，是头濒死搏命的凶兽。他行火，木生火——你那身木行道基仍占不到相克便宜，只能凭底牌与硬功，把这具血茧彻底打垮。",
+    attacks: [
+      { name: "独臂血爪", dmg: 33, kind: "normal", weight: 12, elem: "huo", range: [1, 1], mp: 6 },
+      { name: "血茧贯刺", dmg: 30, kind: "pierce", weight: 7, range: [1, 2], mp: 8 },
+      { name: "血遁狂扑", dmg: 42, kind: "charge", weight: 8, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12 },
+      { name: "血煞爆", dmg: 22, kind: "normal", weight: 6, elem: "huo", aim: "zone", zoneSpan: 1, range: [1, 3], depth: "front", mp: 8 },
     ],
     reward: null, namedLoot: null,
   },
@@ -1066,8 +1086,8 @@ WORLD.npcs = [
   },
   {
     id: "tieluo", name: "铁罗", role: "黑煞教 · 血侍",
-    bio: "黑煞教豢养的血侍，筑基初期，浑身缠着血煞赤焰。京城连环失踪案的爪牙——掳掠散修与凡人入血池供养煞气。你在京城将他逼入绝境，他却蜕一具血茧躯壳金蝉脱壳遁走，临去死死咬住你的气息。这是「可逃逸宿敌」与「跨场仇恨账本」的头一笔，皇宫决战再算。",
-    lines: ["（一团暗红血雾里，赤瞳森然亮起）", "黑煞教的事，也是你一个外来户能管的？", "（血煞内缩、结成血茧）记住这口气息——下次，是你进血池。"],
+    bio: "黑煞教豢养的血侍，筑基初期，浑身缠着血煞赤焰。京城连环失踪案的爪牙——掳掠散修与凡人入血池供养煞气。血池一战你以木行剑光斩断他一臂，他厉啸化作血茧、蜕出独臂狂暴的「血茧铁罗」搏命再战；血茧大战终被你打垮，他才以血侍秘术蜕茧真正遁走，临去死死咬住你的气息。这是「可逃逸宿敌」与「跨场仇恨账本」的头一笔——断臂之仇、化茧之恨，皇宫决战再算。",
+    lines: ["（一团暗红血雾里，赤瞳森然亮起）", "黑煞教的事，也是你一个外来户能管的？", "（断臂处血煞翻涌、内缩结茧）记住这口气息——下次，是你进血池。"],
     where: [],
   },
   {

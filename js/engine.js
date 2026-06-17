@@ -3889,32 +3889,36 @@ const Engine = {
           if (typeof Sfx !== "undefined") Sfx.play("success");
           s.storyStage += 1;   // 越过 modao_e1_spider → 公共尾部 checkStory 接 modao_e1_fortune
         }
-        // —— 血侍铁罗（增量G·京城暗流）：可逃逸 boss 机制首演——无论逼退或看似斩落，皆蜕血茧遁走（仇恨账本跨场首例）——
+        // —— 血侍铁罗·二阶段·一（增量G·京城暗流）：硬战逼入绝境→木行剑光断其一臂→化血茧蜕出二阶段（接 modao_e3_tieluo2）——
         if (meta.enemyName === "铁罗") {
+          State.setFlag("modao_e3_tieluo_p1_done");
+          this.log("血池边的硬仗终于撕开缺口——你聚起一道木行剑光斜斜劈落，铁罗一臂自肩头齐根断飞，断口血煞狂喷！他却不退反进，仰头一声厉啸，周身血煞骤然内缩、结成一枚暗红血茧。茧丝翻卷暴涨间，一头独臂、血肉外露的狂暴畸变之物，正从茧中挣裂而出——他还没死，他在搏命。", "event");
+          if (typeof Sfx !== "undefined") Sfx.play("danger");
+          s.storyStage += 1;   // 越过 modao_e3_tieluo → 公共尾部 checkStory 接 modao_e3_tieluo2（化茧二阶段大战）
+        }
+        // —— 血茧铁罗·二阶段·二（增量G·京城暗流）：化茧大战告捷→血侍秘术再蜕一茧真正遁走（仇恨账本跨场首例）——
+        if (meta.enemyName === "血茧铁罗") {
           State.setFlag("modao_e3_tieluo_done");
           State.setFlag("tieluo_escaped");
-          this.meetNpc("tieluo", "黑煞教的血侍——京城连环失踪案的爪牙，被你逼入绝境却化血茧遁走，与你结下跨场血仇。");
-          this.writeLedger("tieluo_escaped", "京城救萧爷爷——逼退黑煞教血侍铁罗，他化血茧金蝉脱壳遁走（仇恨账本首次跨场：他会带着对你的记忆回来，皇宫决战再算这笔账）");
-          this.addMilestone("京城暗流：逼退血侍铁罗，黑煞教浮出水面（boss 化血茧遁走）", "showdown");
-          this.addFame(6, "京城散修间传开，有个外来的筑基修士从血侍手里救回了被掳的凡人");
-          this.log("铁罗被你逼到绝境，周身血煞骤然内缩、结成一枚暗红血茧——再睁眼时，他已蜕下一具躯壳，化作血光遁入夜色。他临去那一眼死死咬住你的气息：这笔账，黑煞教记下了。血池边，萧爷爷与几名被掳的散修，总算救了出来。", "event");
+          this.meetNpc("tieluo", "黑煞教的血侍——京城连环失踪案的爪牙。血池一战被你断去一臂、又打垮其化茧搏命的形态，终以血侍秘术蜕茧遁走，与你结下跨场血仇。");
+          this.writeLedger("tieluo_escaped", "京城救萧爷爷——断黑煞教血侍铁罗一臂、再打垮其化血茧的狂暴形态，他终以血侍秘术蜕茧金蝉脱壳遁走（仇恨账本首次跨场：断臂之仇、化茧之恨，他会带着记忆回来，皇宫决战再算）");
+          this.addMilestone("京城暗流：断臂铁罗、力破血茧形态，黑煞教浮出水面（boss 蜕茧遁走）", "showdown");
+          this.addFame(6, "京城散修间传开，有个外来的筑基修士断了血侍一臂、又破了他化茧的搏命形态，从血池里救回被掳的凡人");
+          this.log("血茧铁罗被你一招招逼到油尽灯枯，那具独臂的畸变躯壳终于支撑不住、轰然崩裂。可这血侍到底是黑煞教豢养的死士——崩裂的血肉里竟又内缩出一枚更小的血茧，化作一缕血光遁入夜色，真正脱了身。他临去那一眼死死咬住你的气息：这笔断臂化茧的账，黑煞教记下了。血池边，萧爷爷与几名被掳的散修，总算救了出来。", "event");
           if (typeof Sfx !== "undefined") Sfx.play("success");
-          s.storyStage += 1;   // 越过 modao_e3_tieluo → 公共尾部 checkStory 接 modao_e3_wuse
+          s.storyStage += 1;   // 越过 modao_e3_tieluo2 → 公共尾部 checkStory 接 modao_e3_wuse
         }
-        // —— 五色门主·王管事（增量G·京城暗流）：妖化伏诛=为墨彩环报仇·墨府之祸总兑现（挂 Act4 时锚）——
+        // —— 五色门主·王管事（增量G·京城暗流）：妖化伏诛=为墨彩环报仇·墨府之祸总兑现（情感落点交由 modao_e3_farewell 收束）——
         if (meta.enemyName === "王管事" && !anyEscaped) {
           State.setFlag("modao_e3_wuse_done");
-          State.setFlag("modao_act3_done");
           State.setFlag("mofu_avenged");
           this.meetNpc("wuse_menzhu", "嘉元城墨府之祸的真凶——藏身京城五色门的妖化门主，伏诛于韩立之手，墨彩环的血债至此了结。");
           this.writeLedger("mofu_avenged", "京城五色门收口——诛杀妖化王管事，为墨彩环了结墨府之祸的血债（七玄门篇种下的因果，至此总兑现）");
           this.addMilestone("京城暗流·收口：诛五色门主王管事，为墨彩环报仇（墨府之祸了结）", "showdown");
           this.addFame(10, "京城散修间传开，那外来的修士竟独力端了害人的五色门，为故人雪了血仇");
-          this.log("妖化的王管事在你木行剑光下煞气溃散、轰然倒地——这桩压了墨彩环半生的血债，今日了结。墨彩环立在尸身前久久未语，再回头时，眉眼间那点风霜竟散了：「黑小子……谢谢你。」黑煞教的爪牙循着皇城方向收缩，京城的暗流，正往那座宫城里汇去。", "good");
+          this.log("妖化的王管事在你木行剑光下煞气溃散、轰然倒地——这桩压了墨彩环半生的血债，今日了结。墨彩环立在尸身前久久未语，肩头那口压了半生的浊气，终于缓缓松了下来。", "good");
           if (typeof Sfx !== "undefined") Sfx.play("success");
-          // 第四幕时锚（黑煞覆灭·皇宫决战·待实装）：收口后约一月，黑煞教老巢现形
-          s.flags.modao_act4_due = State.absMonth() + 1;
-          s.storyStage += 1;   // 越过 modao_e3_wuse → 公共尾部 checkStory 接第四幕
+          s.storyStage += 1;   // 越过 modao_e3_wuse → 公共尾部 checkStory 接 modao_e3_farewell（墨彩环·不遗憾的告别）
         }
       } else if (meta.enemyName === "战王蝉") {
         // 撑不住血线：浴血退守、就地整顿再战（fail-forward·不设死局）——不诛杀、不死亡螺旋
@@ -3942,22 +3946,26 @@ const Engine = {
           "bad");
         s.pendingEvent = node;
         this._retryAfterLoss = node;
-      } else if (meta.enemyName === "铁罗" || meta.enemyName === "王管事") {
-        // 京城两战·fail-forward（增量G）：浴血暂退、就地敷伤整顿再战，败有所偿（不设死局）——回各自来源节点
+      } else if (meta.enemyName === "铁罗" || meta.enemyName === "血茧铁罗" || meta.enemyName === "王管事") {
+        // 京城三战·fail-forward（增量G·二阶段铁罗）：浴血暂退、就地敷伤整顿再战，败有所偿（不设死局）——回各自来源节点
         this._bountyFight = false;
-        const isWuse = meta.enemyName === "王管事";
-        const lk = isWuse ? "losses_wuse_menzhu" : "losses_tieluo";
-        s.flags[lk] = (s.flags[lk] || 0) + 1;
-        const bonus = Math.min(3, s.flags[lk]) * 8;
+        const KC = {
+          "铁罗":     { lk: "losses_tieluo",      node: "modao_e3_tieluo" },
+          "血茧铁罗": { lk: "losses_tieluo_mao",  node: "modao_e3_tieluo2" },
+          "王管事":   { lk: "losses_wuse_menzhu", node: "modao_e3_wuse" },
+        }[meta.enemyName];
+        s.flags[KC.lk] = (s.flags[KC.lk] || 0) + 1;
+        const bonus = Math.min(3, s.flags[KC.lk]) * 8;
         s.hp = s.hpMax;
         s.demon = clamp(s.demon + 8, 0, 100);
-        const node = isWuse ? "modao_e3_wuse" : "modao_e3_tieluo";
-        this.log(isWuse
-          ? `妖化的王管事煞气滔天，你浴血暂退、就地敷伤整顿（再战伤害+${bonus}%）。墨彩环半生的血债压在你肩上——他行土，你木行正克，凭相克与底牌啃下他！调息，再上！`
-          : `铁罗血煞缠身、阴诡难缠，你错身暂退、敛息蓄势（再战伤害+${bonus}%）。血池里还有被掳的人在等——稳住，把他逼出形迹！`,
-          "bad");
-        s.pendingEvent = node;
-        this._retryAfterLoss = node;
+        const msg = {
+          "铁罗":     `铁罗血煞缠身、阴诡难缠，你错身暂退、敛息蓄势（再战伤害+${bonus}%）。血池里还有被掳的人在等——稳住，逼他现出形迹、断他一臂！`,
+          "血茧铁罗": `化茧的铁罗痛觉尽失、亡命搏杀，你浴血暂退、就地敷伤整顿（再战伤害+${bonus}%）。这具血茧已是强弩之末——咬住他，把这搏命的躯壳彻底打垮！`,
+          "王管事":   `妖化的王管事煞气滔天，你浴血暂退、就地敷伤整顿（再战伤害+${bonus}%）。墨彩环半生的血债压在你肩上——他行土，你木行正克，凭相克与底牌啃下他！调息，再上！`,
+        }[meta.enemyName];
+        this.log(msg, "bad");
+        s.pendingEvent = KC.node;
+        this._retryAfterLoss = KC.node;
       } else {
         this._bountyFight = false;
         const dmg = Math.round(s.hpMax * 0.2);
@@ -4449,10 +4457,16 @@ const Engine = {
       this.startPatrolFight();
       return;
     }
-    // 京城暗流·血侍铁罗初战（增量G·可逃逸 boss——逼退即化血茧遁走，仇恨账本跨场）
+    // 京城暗流·血侍铁罗·一阶段（增量G·二阶段演出·一：硬战逼入绝境→断其一臂→化血茧）
     if (choice.resolve === "tieluo_fight") {
       s.pendingEvent = null;
       this.startEncounterFight("tieluo");
+      return;
+    }
+    // 京城暗流·血茧铁罗·二阶段（增量G·二阶段演出·二：化茧狂暴大战→败后蜕茧遁走，仇恨账本跨场）
+    if (choice.resolve === "tieluo2_fight") {
+      s.pendingEvent = null;
+      this.startEncounterFight("tieluo_mao");
       return;
     }
     // 京城暗流·五色门收口（增量G·妖化王管事，为墨彩环报仇·墨府之祸总兑现）
