@@ -46,7 +46,16 @@ DATA.realms = [
   { tier: "qi", layer: 12, name: "练气十二层", culMax: 3200, spMax: 1300, lifespan: 0 },
   { tier: "qi", layer: 13, name: "练气十三层", culMax: 4000, spMax: 1550, lifespan: 10 },
   // —— 筑基期（大境界：服筑基丹+秘仪冲关，见 DATA.bigRealmRites.foundation）——
-  { tier: "foundation", layer: 1, name: "筑基初期", culMax: 6000, spMax: 2400, lifespan: 80, big: true },
+  { tier: "foundation", layer: 1, name: "筑基初期",   culMax: 6000,  spMax: 2400, lifespan: 80, big: true },
+  { tier: "foundation", layer: 2, name: "筑基中期",   culMax: 8200,  spMax: 3100, lifespan: 0 },
+  { tier: "foundation", layer: 3, name: "筑基后期",   culMax: 11000, spMax: 3900, lifespan: 40 },
+  { tier: "foundation", layer: 4, name: "筑基大圆满", culMax: 15000, spMax: 4900, lifespan: 0 },
+  // —— 结丹期（大境界：觅长生式渡劫——三转重元功+大衍诀三层+降尘丹/雪灵水/天火液/妖丹，见 DATA.bigRealmRites.core）——
+  //    初入星海篇章末「金丹大成」= 结丹初期（realmTier 1→2）。结丹中后期/大圆满为后续篇章（星海飞驰）预留。
+  { tier: "core", layer: 1, name: "结丹初期",   culMax: 28000, spMax: 9000,  lifespan: 320, big: true },
+  { tier: "core", layer: 2, name: "结丹中期",   culMax: 38000, spMax: 11500, lifespan: 0 },
+  { tier: "core", layer: 3, name: "结丹后期",   culMax: 52000, spMax: 14500, lifespan: 100 },
+  { tier: "core", layer: 4, name: "结丹大圆满", culMax: 70000, spMax: 18000, lifespan: 0 },
 ];
 
 // 本篇可突破到的最高境界索引（练气七层之后即进入主线收尾，封锁筑基）
@@ -231,6 +240,24 @@ DATA.items = {
     desc: "厉飞雨的随身札记，密密麻麻全是切磋心得与招式拆解。「你这记性，看一遍就够了——拿去，省得每回都缠着我问。」字里行间，都是拿你当自己人。" },
   ks_mashibo: { name: "辨药旧刀", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "mashibo",
     desc: "马师伯用了几十年的辨药刀，刀背磨得发亮。「拿去——别糟蹋了药材。」嘴上嫌弃，到底是把心尖子的家伙什，交到了你手里。" },
+  /* —— 初入星海篇（乱星海·动漫年番镇妖大典脊柱·ep61~76）机缘与资粮 ——
+   *   考据源：docs/churu-xinghai-design.md / docs/lore-churu-xinghai.md（≥2 动漫源·16 决议已锁）。
+   *   多为「丹/材/虫/玉简」——结丹资粮与长线钩子，无平衡扰动（结丹率/灵宠/本命飞剑随剧情或后续篇章实装）。 */
+  jiangchen_dan: { name: "降尘丹", rarity: "epic", type: "pill",
+    desc: "镇妖大典「出力最大者」之赏——文樯领你赴会，正为这枚丹。服之可涤去筑基灵力中最后一缕尘浊、大降结丹一关的凶险门槛。结丹本是九死一生，得此丹便多三分生机。（结丹关·破关之资）" },
+  xueling_shui: { name: "雪灵水", rarity: "epic", type: "material",
+    desc: "乱星海深处寒灵脉眼里凝出的一汪灵水，触手砭骨、灵气清冽。结丹时引以温养、镇压丹中燥火，凝丹方不致崩裂。结丹之关的凝丹灵材。（结丹关·破关之资）" },
+  tianhuo_ye: { name: "天火液", rarity: "epic", type: "material",
+    desc: "火灵之精所化的一滴赤金灵液，遇风即燃、其温可熔金铁。结丹时以之作淬丹真火，与雪灵水一寒一热相济，方能将一身灵力反复压炼成丹。（结丹关·破关之资）" },
+  xinghai_yaodan: { name: "乱星海妖丹", rarity: "epic", type: "material", sell: 60,
+    desc: "乱星海外星海妖兽颅内所凝的内丹，比天南所见高出数阶、妖元雄浑。内星海防御大阵一失、乱星海大乱，外星海遂成猎场——以霓裳草引妖、噬金虫群猎，妖丹论筐取。这便是韩立发家致富、攒足结丹资粮的本钱。（外星海致富硬通货·结丹关·破关之资）" },
+  nichang_cao: { name: "霓裳草", rarity: "rare", type: "material", sell: 12,
+    desc: "乱星海特产的一种妖草，花气甜腻、最招妖兽。猎妖人采之为饵：布于礁岛、引妖来食，再纵噬金虫群一举围杀。外星海猎妖取丹的关窍之物。" },
+  shijinchong: { name: "噬金虫", rarity: "epic", type: "treasure",
+    desc: "外星海机缘偶得的一窝异种灵虫，通体金芒、专噬金铁，群飞如金云蔽日。奇虫榜上有名，可附体淬身、可出战群噬、可化虫为刃、亦可外化作虫之化身——一物四用，全凭灵机调遣（耗尽则哑火，取舍即战术）。韩立纵横外星海的看家虫器。（战斗·四用法见 combat.js）" },
+  tianleizhu_yujian: { name: "天雷竹·玉简", rarity: "epic", type: "book",
+    desc: "乱星海所闻的一枚古玉简，载着青元剑诀十三层全本与『青竹蜂云剑』的炼制之法——须以界中神竹『天雷竹』为材，养成万年金雷竹，方能炼就七十二口本命飞剑、以银月为器灵。眼下材料、火候皆远不能及，先记下这条通天的引线。（青竹蜂云剑·银月·长线钩子·实装留星海飞驰篇）" },
+
   ks_chenqiaoqian: { name: "陈家药引", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "chenqiaoqian",
     desc: "陈巧倩从陈家药圃匀来的稀罕药引，寻常炼丹师有价无市。她只淡淡说一句「顺路」，绝口不提坊市归途那一夜的相欠。" },
   ks_wanxiaoshan: { name: "护身符袋", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "wanxiaoshan",
@@ -392,6 +419,25 @@ DATA.techniques = {
 // 本篇主修功法（恒为长春功，不开放更换）
 DATA.startingTechnique = "changchun";
 
+/* ---------- 三转重元功（散功重修·#2 用户裁决：层数清零·属性适当保留·乘性印记）----------
+ * 考据：原著卷三韩立以「三转重元功」散功重修青元剑诀以叩结丹之门；动漫年番·初入星海篇·小寰岛闭关重修。
+ * 机制（引擎逻辑见 engine.js·增量6，本处仅配置·不动 balance.js）：
+ *   触发后将所修剑诀层数清零、重新累升；每完成「一转」铭刻一份「真元精纯」乘性印记（imprintMul），
+ *   重升至原层数时基底更强——给「重修＝变强」的即时正反馈（#2）。神识/体魄等属性按 keepStatRatio 保留，不清零。
+ *   本篇只实装「重元一转」（筑基巅峰→叩结丹门槛之一），余两转为后续篇章预留。完成后置 doneFlag（结丹关 require 之一）。
+ */
+DATA.reforge = {
+  id: "sanzhuan",
+  name: "三转重元功",
+  appliesTo: "qingyuan_sword",   // 散功重修的对象功法（青元剑诀层数轴）
+  maxZhuan: 3,                   // 全本三转
+  chapterZhuan: { starsea: 1 }, // 各篇章实装的转数（本篇一转）
+  imprintMul: 1.1,              // 每转·真元精纯乘性印记（layerMul 之外的独立乘子·引擎侧施加）
+  keepStatRatio: 0.6,           // 散功时神识/体魄等属性保留比例（#2 属性适当保留）
+  doneFlag: "sanzhuan_done",    // 完成一转后置位（结丹关 require 之一）
+  intro: "灵力滞于筑基巅峰、再难寸进。你依三转重元功散去一身剑诀修为，自最浅一层重新累升——散功之痛刻骨，重修之路却愈走愈快：旧日窠臼一朝荡尽，真元淬得格外精纯。这一转，是叩开结丹门户的第一步。",
+};
+
 /* ---------- 大境界突破·秘仪（每个大境界的破关之法各不相同）----------
  * 忠于「真实修仙」：小境界（同大境界内的分层）水到渠成，唯心魔过盛才需心战；
  * 大境界（练气→筑基→结丹→元婴…）则各有独门关隘，须十足准备，并历一场凶险心魔劫。
@@ -405,7 +451,8 @@ DATA.startingTechnique = "changchun";
  *   trialRounds 心战可战回合基数
  *   failRealmLoss 失败时是否跌境（true=大境界失败有跌境风险）
  *
- * 注：本篇封顶练气，foundation 及以上为后续篇章预留（届时 data.realms 扩展真实境界即生效）。
+ * 注：各篇章封顶境界由 chapters.js 的 realmCapIndex 控制；DATA.realms 现已扩展至结丹大圆满。
+ *     foundation 关于七玄门篇为远景钩；core（结丹关）于初入星海篇章末「金丹大成」实装（觅长生式·见上方 require/consume）；nascent 仍为后续篇章预留。
  */
 DATA.bigRealmRites = {
   foundation: {
@@ -421,15 +468,26 @@ DATA.bigRealmRites = {
     trialHp: 90, trialRounds: 10, failRealmLoss: true,
   },
   core: {
-    name: "结丹关 · 灵力成丹",
-    intro: "筑基灵力已盈，须觅一处灵脉，借天材地宝温养，将一身灵力反复压缩、凝而成丹。结丹心魔为生平执念所化，最是难缠。",
+    name: "结丹关 · 凝灵成丹",
+    intro: "筑基百窍灵力已盈，再难寸进——欲破此关，须以三转重元功散功重修、淬出一身精纯真元，更得大衍诀三层凝炼神识，方堪驾驭结丹之劫。临关再以降尘丹涤尽尘浊、雪灵水与天火液一寒一热相济，将一身灵力反复压炼、凝散为丹。结丹心魔为平生执念所化，最是难缠；首番叩关，鲜有不败。此乃「觅长生」之关——备得越足，活路越宽。",
     require: [
+      { kind: "flag", key: "sanzhuan_done",  label: "三转重元功·重元一转（散功重修圆满）" },
+      { kind: "flag", key: "dayan_layer3",   label: "大衍诀·三层（神识淬炼大成）" },
+      { kind: "item", id: "jiangchen_dan", n: 1,  label: "降尘丹 ×1（降结丹门槛）" },
+      { kind: "item", id: "xueling_shui",  n: 1,  label: "雪灵水 ×1（凝丹灵材）" },
+      { kind: "item", id: "tianhuo_ye",    n: 1,  label: "天火液 ×1（淬丹真火）" },
+      { kind: "item", id: "xinghai_yaodan", n: 30, label: "乱星海妖丹 ×30（外星海猎妖所积·温养金丹）" },
       { kind: "stat", key: "spiritRatio", min: 0.95, label: "灵力圆满" },
       { kind: "stat", key: "moodRatio", min: 0.7, label: "道心澄明" },
       { kind: "stat", key: "demonMax", min: 25, label: "心魔已伏（≤25）" },
     ],
-    consume: [],
-    trialHp: 260, trialRounds: 12, failRealmLoss: true,
+    consume: [
+      { id: "jiangchen_dan", n: 1 },
+      { id: "xueling_shui", n: 1 },
+      { id: "tianhuo_ye", n: 1 },
+      { id: "xinghai_yaodan", n: 30 },
+    ],
+    trialHp: 360, trialRounds: 13, failRealmLoss: true,
   },
   nascent: {
     name: "元婴关 · 婴变出窍",
