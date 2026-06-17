@@ -265,6 +265,12 @@
       this.rng = cfg.rng || Math.random;
       this.mode = cfg.mode || "battle";
       this._pendingEnemyWaves = cfg.waves || null;
+      // —— H·下·皇宫决战两块新机制——
+      //   objective：拖时布阵战——{kind:"survive", rounds:N} 拖满 N 回合不死即胜（败有所得首例）；
+      //   fieldCycle：真·颠倒五行阵——逐回合战场规则切换（相位数组，阵成后压制敌、佐助我）。
+      this.objective = cfg.objective || null;
+      this.fieldCycle = cfg.fieldCycle || null;
+      this._fieldPhase = null;
       // —— 轴战场：格数随战斗规格（v95 大战场小人物：标准 11，多敌/boss 15——
       //    战场大→走位与射程才有意义；突破=心象方寸不变）——
       this.W = cfg.W || (this.mode === "breakthrough" ? 5
@@ -989,6 +995,15 @@
       }
       this._log(`【第${this.round}回合】灵力 ${Math.round(this.player.mp)}/${this.player.mpMax}`
         + (this._pActsMax > 1 ? "（遁速远胜——本回合可出手两次！）" : ""));
+      // —— H·下·真·颠倒五行阵：阵成后逐回合战场规则切换（翻盘感——阵起则敌受制、我得佐）——
+      if (this.fieldCycle && this.fieldCycle.length) {
+        this._applyFieldPhase(this.fieldCycle[(this.round - 1) % this.fieldCycle.length]);
+      }
+      // —— H·下·拖时布阵战：survive 目标进度提示（师兄妹与傀儡蜥蜴正布阵，拖满即胜）——
+      if (this.objective && this.objective.kind === "survive") {
+        const left = Math.max(0, this.maxRounds - this.round);
+        if (left > 0) this._log(`【拖时布阵】师兄妹与傀儡蜥蜴正催动「真·颠倒五行阵」——再撑 ${left} 回合，阵即可成！`);
+      }
     }
 
     /* ----- 出招合法性 ----- */
@@ -1474,7 +1489,15 @@
         // 阵法格随时间消散
         this.zones = this.zones.filter(z => --z.turns > 0);
         this._maybeSpawnWave();
-        if (this.round >= this.maxRounds) { this.status = "lose"; this._log(`回合耗尽，未能取胜。`); }
+        if (this.round >= this.maxRounds) {
+          if (this.objective && this.objective.kind === "survive") {
+            // 拖时布阵战：拖满回合不死＝阵成＝胜（败有所得首例）
+            this.status = "win";
+            this._log(this.objective.winLog || `拖到了时辰——师兄妹的「真·颠倒五行阵」终于布成！`);
+          } else {
+            this.status = "lose"; this._log(`回合耗尽，未能取胜。`);
+          }
+        }
       }
     }
 
@@ -2113,6 +2136,32 @@
         this.player.mp = clampNum(this.player.mp + mpBack, 0, this.player.mpMax);
         this._log(`斩敌之威，气势如虹——你抢回片刻喘息（气血+${heal}，灵力+${mpBack}）。`);
         this.status = "ongoing";
+      }
+    }
+
+    /* ----- H·下·真·颠倒五行阵：逐回合战场相位（startRound 内调用）-----
+     * 阵成之后，五行倒转、虚实易位：每回合一相，反噬场上敌人、佐助我方。
+     * ph: { name, log, suppress(占敌 hpMax 之比·穿甲), expose(令敌破绽毕露), player:{shield,dodge,mp} } */
+    _applyFieldPhase(ph) {
+      if (!ph) return;
+      this._fieldPhase = ph;
+      this._log(`【真·颠倒五行阵·${ph.name}】${ph.log || ""}`);
+      const living = this.enemies.filter(e => e.alive);
+      if (ph.suppress > 0) {
+        living.forEach(e => {
+          const dmg = Math.max(1, Math.round((e.hpMax || e.hp) * ph.suppress));
+          e.takeDamage(dmg, { pierce: true });   // 阵法之力·穿甲不可挡
+          this._log(`${e.name} 被阵中「${ph.name}」之力反噬（-${dmg}）。`);
+        });
+      }
+      if (ph.expose) living.forEach(e => { e.exposed = true; });
+      if (ph.player) {
+        if (ph.player.shield) {
+          const cap = this.player._shieldCap || Math.round(this.player.hpMax * 0.5);
+          this.player.shield = Math.min(cap, (this.player.shield || 0) + ph.player.shield);
+        }
+        if (ph.player.dodge) this.player.dodgeBuff = (this.player.dodgeBuff || 0) + ph.player.dodge;
+        if (ph.player.mp) this.player.mp = clampNum(this.player.mp + ph.player.mp, 0, this.player.mpMax);
       }
     }
 
