@@ -3440,6 +3440,36 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // 金鼓原巡逻遭遇战（增量F·魔道争锋第二幕）——魔修小队 pack 阵型练兵场：
+  // 领队（pack leader）在世则喽啰随队形成网，先斩领队=群势立溃（combat.js 阵型崩溃 T3）。
+  // 七派同袍武炫并肩入战（sides[] 练兵），为 Act4 皇宫三组对位群架预热。
+  startPatrolFight() {
+    const s = State.data;
+    this._nextFightType = "patrol";
+    const player = this.playerFighter();
+    const leader = Object.assign({}, WORLD.enemies.moxiu_toumu, { formation: "pack", leader: true });
+    const zu = () => Object.assign({}, WORLD.enemies.moxiu_zu, { formation: "pack" });
+    this._combat = new CombatAPI.Combat({
+      player,
+      enemies: [leader, zu(), zu()],
+      maxRounds: 20,
+      // 七派同袍并肩：好勇斗狠的横练好手——前压抢攻、专挑喽啰收割（persona=人格即打法）
+      side: { id: "wuxuan", name: "武炫", kind: "ally", art: "wuxuan",
+              hp: 92, hpMax: 92, guard: 0.2, elem: "jin",
+              persona: { aggr: 7, prot: 3, kite: 1 },
+              moves: [
+                { name: "横练拳", dmg: 14, weight: 12, range: [1, 1], line: "嗷一嗓子扑上去就是一套拳" },
+                { name: "金刃斩", dmg: 18, weight: 6, elem: "jin", range: [1, 2], line: "抖手一道金刃斩向喽啰" },
+              ] },
+    });
+    this._combatMeta = { type: "patrol" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("武炫往掌心啐了口唾沫，狞笑着抄起家伙：「韩兄护住中路——先斩那领队！」");
+    this.log("金鼓原巡逻撞上一支魔修游猎小队。武炫与你并肩——这是你头一回正面会魔修的「群阵」：擒贼先擒王。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -4067,6 +4097,30 @@ const Engine = {
         s.pendingEvent = "wan_death";
         this._retryAfterLoss = "wan_death";
       }
+    } else if (meta.type === "patrol") {
+      // 金鼓原巡逻遭遇战（增量F）：先斩领队群势溃→缴获傀儡残件（傀儡线引子·缴获包装【修#5】）
+      if (win) {
+        State.setFlag("modao_e2_patrol_done");
+        State.give("kuilei_canjian", 1);
+        this.meetNpc("wuxuan", "金鼓原前线七派同袍——巡逻遭遇战中与你并肩斩魔修小队的筑基初期好手。");
+        this.writeLedger("modao_patrol_won", "金鼓原巡逻遭遇战告捷——先斩魔修领队、群势立溃，缴获傀儡残件，初窥傀儡之术的引子");
+        this.addMilestone("金鼓原练兵：擒贼先擒王，平魔修小队（缴获傀儡残件）", "showdown");
+        this.addFame(6, "金鼓原前线传开，有个伪灵根筑基带着同袍平了一支魔修游猎队");
+        this.log("领队一倒，那两个喽啰登时没了主心骨——被你与武炫三两下料理干净。你从领队尸身上搜出一捧傀儡残件与半幅刻满阴纹的图纸：魔道役尸为傀的机巧，竟与你大衍诀所习暗合。武炫抹了把血，咧嘴：「痛快！」", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        // fail-forward：浴血整顿、再战+伤——点醒"擒贼先擒王"（不设死局）
+        this._bountyFight = false;
+        s.flags.losses_moxiu_patrol = (s.flags.losses_moxiu_patrol || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_moxiu_patrol) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 8, 0, 100);
+        this.log(`魔修结阵难缠，你与武炫浴血暂退、就地整顿（再战伤害+${bonus}%）。记着——擒贼先擒王，先斩了那领队，网就散了。调息，再上！`, "bad");
+        s.pendingEvent = "modao_e2_patrol";
+        this._retryAfterLoss = "modao_e2_patrol";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -4343,6 +4397,13 @@ const Engine = {
         ? { sceneBg: "pano_kuangdong", seamless: true } : null;
       this.startEncounterFight("xueyu_zhizhu");
       this._caveFightCfg = null;
+      return;
+    }
+    // 金鼓原巡逻遭遇战（增量F·魔修小队 pack 阵型练兵场：擒贼先擒王，七派同袍武炫并肩）
+    if (choice.resolve === "moxiu_patrol_fight") {
+      s.pendingEvent = null;
+      this._nextFightType = "patrol";
+      this.startPatrolFight();
       return;
     }
 

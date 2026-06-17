@@ -1436,6 +1436,8 @@ const STORY = [
     onArrive(s) {
       State.setFlag("modao_e1_chen_done");
       State.setFlag("modao_act1_done");
+      // 第二幕时锚：第一幕收口后约两月，金鼓原前哨方集结（先给一段前线度月的喘息，再开第二幕）
+      s.flags.modao_act2_due = State.absMonth() + 2;
       Engine.writeLedger("chen_qiaoqian_forgot", "前线再遇陈巧倩——忘尘丹既下，她已不识你，平淡道别，恩怨两清");
       Engine.addMilestone("魔道争锋·第一幕·完：故人不识，烽火征调了结", "story");
       if (typeof Sfx !== "undefined") Sfx.play("chime");
@@ -1475,6 +1477,8 @@ const STORY = [
     onArrive(s) {
       State.setFlag("modao_e1_chen_done");
       State.setFlag("modao_act1_done");
+      // 第二幕时锚：第一幕收口后约两月，金鼓原前哨方集结
+      s.flags.modao_act2_due = State.absMonth() + 2;
       Engine.writeLedger("chen_qiaoqian_remember", "前线再遇陈巧倩——忘尘丹未下，她仍记得你：劫后重逢、赠疗伤丹、情愫未宣，埋下白菊山之约的伏笔");
       State.setFlag("chen_front_reunion");   // 白菊山之约（fate baiju_appt）前置：她仍记挂你
       Engine.addMilestone("魔道争锋·第一幕·完：故人相识，前路未了", "story");
@@ -1482,6 +1486,158 @@ const STORY = [
     },
     choices: [
       { text: "「巧倩师姐。……是我。」（魔道争锋·第一幕·完）", resolve: "advance" },
+    ],
+  },
+
+  /* ============================================================
+   *  魔道争锋·第二幕·金鼓原前线相持（增量F）
+   *  考据源：docs/modao-design.md §一·节点表 ep27~30 + §二 + 修订裁决 #1
+   *  （金鼓原大决战/灵兽山倒戈/菡长老内奸已移「再别天南」，本篇只做小型前线相持）。
+   *  顺序流五节点：前哨集结 → 巡逻遭遇战 → 董萱儿被掳暗线 → 南宫婉吃醋告别 → 赴京。
+   *  时锚 modao_act2_due 由第一幕两条 chen 分支 onArrive 埋（收口后约两月方集结），
+   *  故第一幕一收，主线先挂在前线度月的喘息里，不会紧接着第二幕直弹（守 journey.test 断言）。
+   * ============================================================ */
+  {
+    id: "modao_e2_muster",
+    skipIf: (s) => s.flags.modao_e2_muster_done,
+    cond: (s) => s.flags.modao_act1_done && !s.flags.modao_e2_muster_done
+                 && State.absMonth() >= (s.flags.modao_act2_due || 0),
+    cg: "kuangchang",
+    bgm: "tense",
+    title: "金鼓原 · 前哨集结",
+    text: [
+      { scene: "魔道前线 · 金鼓原" },
+      "两月过去。黑风岭的矿洞守备换防，你这一队征卒被拨往更北的金鼓原——七派征军与黑煞教魔修在这片焦土上隔原相持，已僵了小半年。",
+      "前哨营盘扎在一道矮坡后。集结的号角里，几名筑基修士陆续到帐——比起黑风岭那些苦熬的征卒，这些是真正能上阵的同袍。",
+      { say: "刘靖", tone: "声音方正", text: "黄枫谷刘靖。听闻这一队里有个伪灵根筑基的——是你？" },
+      { aside: "你拱手称是，已做好了被轻看的准备。出乎意料，那叫刘靖的修士只是上下打量你一眼，神色反倒郑重了几分。" },
+      { say: "刘靖", text: "伪灵根能走到筑基，是自己一寸寸挣来的。同袍面前，没人有资格小看你。——魔道役尸为傀，伤天害理，这一仗，并肩。" },
+      "他身后还立着三人：稳重持珠的宋蒙、叉腰啐声的钟卫娘，与一个年纪轻轻、嗷嗷好斗的武炫。",
+      { say: "钟卫娘", tone: "心直口快", text: "伪灵根？我只问你打不打得过魔修。打得过，就是好同袍——打不过，宋师兄给你收尸！" },
+      { say: "宋蒙", tone: "不疾不徐", text: "卫娘。……韩道友，前线相持最忌浮躁，沉住气。活着，比立功要紧。" },
+      { say: "武炫", emo: "smile", tone: "咧嘴", text: "别听他们文绉绉的！韩兄，回头巡逻遇上魔修，你护中路，喽啰交给我——嗷！" },
+      { aside: "你默默记下这四张脸。藏拙惯了的人，难得在这刀山火海的前线，遇上几个肯把后背交给你的同袍。这份善缘，记账。" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e2_muster_done");
+      Engine.meetNpc("liujing", "黄枫谷除魔卫道之楷模——金鼓原前哨集结时不轻你伪灵根，反生惜才之意；身负祖传真宝凤凰符。");
+      Engine.meetNpc("songmeng", "黄枫谷稳重师兄，持护身大件重元珠；与刘靖之间似有一段不便明言的旧渊源。");
+      Engine.meetNpc("zhongweiniang", "黄枫谷心直口快的女修，常与宋蒙同行——刀子嘴，倒不是坏心。");
+      Engine.meetNpc("wuxuan", "金鼓原七派同袍，年轻气盛好勇斗狠——是前线难得让人省心的一把好手。");
+      Engine.writeLedger("modao_muster", "金鼓原前哨集结：结识黄枫谷刘靖/宋蒙/钟卫娘与七派武炫，结下并肩同袍之谊");
+      Engine.addMilestone("魔道争锋·第二幕·启：金鼓原前哨集结，同袍并肩", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+    },
+    choices: [
+      { text: "「韩立。承蒙诸位不弃。」", resolve: "advance" },
+    ],
+  },
+  {
+    id: "modao_e2_patrol",
+    skipIf: (s) => s.flags.modao_e2_patrol_done,
+    cond: (s) => s.flags.modao_e2_muster_done && !s.flags.modao_e2_patrol_done,
+    cg: "kuangchang",
+    bgm: "tense",
+    title: "金鼓原 · 巡逻遭遇战",
+    text: [
+      { scene: "魔道前线 · 金鼓原焦土" },
+      "轮到你与武炫一队出哨。焦土上腥风阵阵，没走多远，前方残垣后忽地窜出三道人影——黑袍束发、煞气缭绕，是黑煞教外围的魔修游猎小队。",
+      "为首一个手提血煞长镰，脚边半拖着两具被阴纹符箓驱动的尸傀；身后两名喽啰呈犄角散开，竟隐隐结成一张小阵。",
+      { say: "武炫", tone: "压低嗓子", text: "韩兄留神——这帮魔修惯走群阵，领队在，那俩喽啰就缠成一团网。" },
+      { say: "武炫", emo: "smile", tone: "舔了舔牙", text: "可领队一倒，剩下的就是各自逃命的乌合之众。擒贼先擒王——先斩那提镰子的！" },
+      { aside: "你头一回正面会魔修的「群阵」。那领队行的是土煞尸气，正撞你木行道基的相克——啃得动。心念电转间，你已看准了破阵的眼：那柄血煞镰后头那张脸。" },
+    ],
+    choices: [
+      { text: "擒贼先擒王——先斩领队！（迎战魔修小队）", resolve: "moxiu_patrol_fight" },
+    ],
+  },
+  {
+    id: "modao_e2_dongxuaner",
+    skipIf: (s) => s.flags.modao_e2_dongxuaner_done,
+    cond: (s) => s.flags.modao_e2_patrol_done && !s.flags.modao_e2_dongxuaner_done,
+    cg: "kuangchang",
+    bgm: "sorrow",
+    title: "金鼓原 · 暗线·一纸急报",
+    text: [
+      { scene: "魔道前线 · 金鼓原" },
+      "巡逻收兵回营，营里却乱作一团。一骑染血的探马刚从侧翼撤回，带来一桩噩耗——",
+      "随正道大军压上的红拂门一队，前日在东翼遇袭溃散。门中那位名门之后董萱儿，乱军里失了踪影，据逃回的散卒说，是被一股魔道高手裹挟着，往魔道腹地去了。",
+      { aside: "董萱儿。燕家堡那一夜与你并肩御魔、杀出血路的红拂女修。你握剑的手紧了一紧——那夜战王蝉重伤遁空，原来这笔账，魔道一直没忘。" },
+      { say: "探马", tone: "气喘", text: "……据说，掳她的是冲着她红拂门下的身份来的，要解去合欢宗一位姓云的老祖处『验明正身』。具体为何，无人知晓。" },
+      { aside: "合欢宗、云露、验身份……这些名字你一个也搭不上。可你记下了。前线之大，你眼下救不得她——但这条断线，总有接上的一日。（伏笔归账·再别天南显影）" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e2_dongxuaner_done");
+      Engine.writeLedger("dongxuaner_captured", "金鼓原急报：董萱儿于侧翼溃战中被魔道掳走，将解往合欢宗云露处『验身份』——燕家堡同袍之厄，暗线归账（再别天南显影）");
+      Engine.addMilestone("魔道争锋·第二幕·暗线：董萱儿被掳，断线待续", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+    },
+    choices: [
+      { text: "「这笔账，记下了。」", resolve: "advance" },
+    ],
+  },
+  {
+    id: "modao_e2_nangongwan",
+    skipIf: (s) => s.flags.modao_e2_nangongwan_done,
+    cond: (s) => s.flags.modao_e2_dongxuaner_done && !s.flags.modao_e2_nangongwan_done,
+    cg: "kuangchang",
+    bgm: "daily",
+    title: "金鼓原 · 一枚炒栗子",
+    // —— 【修#6·南宫婉吃醋分寸】我执笔取「轻糖·克制」一路（已对齐 fate-design 正宫线之根/血色之夜未越界基调）：
+    //    含栗吃醋＝一个小动作（弹来一枚炒栗子）+ 三两句旁敲侧击，她以清冷掩心绪、不点破；
+    //    韩立藏拙木讷、真没听懂——糖而不腻、不臆造越界情爱，留白给白菊山/正宫线的将来。两线（陈巧倩识/不识）通吃。
+    text: [
+      { scene: "魔道前线 · 金鼓原营侧" },
+      "营侧背风处，一道白衣身影正立在火堆边烘手——掩月宗这回也派了人押阵前线，南宫婉竟也在金鼓原。血潭一别，再见已是这刀光剑影的所在。",
+      { say: "南宫婉", emo: "cold", text: "韩立。立碑的立。——还活着。" },
+      { say: "韩立", emo: "cold", tone: "拱手", text: "南宫道友。……侥幸。" },
+      "她“嗯”了一声，伸手从火堆边的瓦罐里捻起一枚炒得焦香的栗子，指尖一弹——那栗子不偏不倚，正打在你胸口，又落进你掌里，兀自温热。",
+      { say: "南宫婉", emo: "cold", tone: "语气淡得听不出情绪", text: "听说……前几日有位押丹药的黄枫谷女修，在你这队里停了好一会儿。盯着你看的。" },
+      { say: "南宫婉", tone: "拨了拨火，没看你", text: "前线人多眼杂。韩师弟的『艳福』，倒比你那点修为来得显眼。" },
+      { aside: "你被这没头没脑的一句问得怔住，老老实实想了半天，只当她是提点你前线少惹是非，便郑重应道——" },
+      { say: "韩立", emo: "cold", text: "道友放心。在下伪灵根之身，一向谨言慎行，绝不敢因私废了军务。" },
+      "南宫婉拨火的手一顿，侧过脸深深看了你一眼，那眼神里似有千言，最终只化作一声极轻的嗤笑，眉眼间的清冷竟柔和了一瞬。",
+      { say: "南宫婉", emo: "smile", tone: "低声，几不可闻", text: "……木头。" },
+      { aside: "你没听清那两个字。她已敛了神色，将瓦罐往你这边推了推，转身要走——掩月宗另有调遣，她得回西线去了。" },
+      { say: "南宫婉", emo: "cold", text: "栗子给你。——别死在京城。听说你要随征军开赴京城了，那地方水深，比这焦土更杀人。" },
+      { aside: "她白衣一卷，没入营帐间的人流，再没回头。你低头看着掌心那枚渐凉的炒栗子，又看看她留下的半罐——心里某处微微一动，却到底没琢磨明白。仙凡修途各有各的劫，有些情分，你眼下还接不住，也辨不清。（正宫线·留白·此生缓续）" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e2_nangongwan_done");
+      State.setFlag("nangongwan_jingcheng_farewell");   // 正宫线·金鼓原一别（fate 正宫线窗口）
+      Engine.writeLedger("nangongwan_chestnut", "金鼓原营侧重逢南宫婉——她含栗吃醋、旁敲侧击你与黄枫谷女修的传闻，你木讷未解；她留半罐炒栗、叮嘱『别死在京城』，转身赴west线");
+      Engine.addMilestone("魔道争锋·第二幕：金鼓原一别，一枚炒栗子", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+    },
+    choices: [
+      { text: "「……多谢。道友珍重。」（揣好那枚炒栗子）", resolve: "advance" },
+    ],
+  },
+  {
+    id: "modao_e2_jingcheng",
+    skipIf: (s) => s.flags.modao_e2_jingcheng_done,
+    cond: (s) => s.flags.modao_e2_nangongwan_done && !s.flags.modao_e2_jingcheng_done,
+    cg: "departure",
+    bgm: "journey",
+    title: "金鼓原 · 赴京",
+    text: [
+      { scene: "魔道前线 · 拔营" },
+      "金鼓原的相持，到底没等来一场决战。魔道主力忽然回缩，七派征军接令——抽调一部精锐，随大军开赴京城。",
+      { aside: "京城。胥国的心脏。魔道争锋这盘棋，真正的杀招，原来不在这片焦土，而在那座金粉楼台之下。南宫婉那句『别死在京城』，此刻想来，竟是一语成谶的提点。" },
+      "你随宋蒙、刘靖、钟卫娘、武炫几位同袍一道拔营。焦土在身后渐远，前路是天子脚下、暗流汹涌的繁华京华。",
+      { aside: "前线相持的练兵，到此告一段落。你按了按行囊里那捧缴获的傀儡残件，又摸了摸怀中渐凉的炒栗子——这两样，一明一暗，都将在那座京城里，等着各自的回响。（魔道争锋·第二幕·完）" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_e2_jingcheng_done");
+      State.setFlag("modao_act2_done");
+      // 第三幕时锚（京城暗流·待实装）：赴京途中约一月抵京，先留出窗口
+      s.flags.modao_act3_due = State.absMonth() + 1;
+      Engine.writeLedger("modao_to_jingcheng", "金鼓原相持收束，随征军精锐开赴京城——魔道争锋的真正杀招在天子脚下");
+      Engine.addMilestone("魔道争锋·第二幕·完：拔营赴京，京城暗流将起", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+    },
+    choices: [
+      { text: "「赴京。」（魔道争锋·第二幕·完）", resolve: "advance" },
     ],
   },
 ];
