@@ -18,6 +18,8 @@ const ONLY = process.argv[3];
 if (!KEY) { console.error("用法: node scripts/genart.js <OPENROUTER_KEY> [onlyId]"); process.exit(1); }
 
 const MODEL = "google/gemini-2.5-flash-image";
+// 跨平台 curl：Windows 用 curl.exe，Linux/macOS（云机）用 curl
+const CURL = process.platform === "win32" ? "curl.exe" : "curl";
 // 高质量模型（战斗立绘/战斗场景等长期资产——质量优先，按条目 hq:true 启用，不滥用）
 const MODEL_HQ = process.env.GEN_HQ_MODEL || "google/gemini-3-pro-image-preview";
 // 代理：默认走本机 clash(7890)；无代理环境（CI/云机）显式传 GEN_PROXY="" 或 GEN_PROXY=none 直连
@@ -129,6 +131,9 @@ const P_CGS = {
   kuangchang: "黑风岭魔道前线矿场，纵向构图：脚下泥泞矿道自下而上通向半山的露天矿场，征军木栅营垒与战旗层叠，赭褐裸露的灵矿山壁高耸，几架矿车绞盘错落，远处战火狼烟升上阴沉血红的高空，肃杀荒凉的正魔死争战地，无人物",
   kuangdong: "黑风岭地底矿洞坑道，纵向纵深构图：幽暗逼仄的矿道自脚下向深处延伸，两侧岩壁裸露泛幽光的灵矿矿脉与暗红蛛丝，昏黄矿灯火光摇曳，支撑木梁层叠向上，地面碎矿石与塌方乱石，阴森压抑、危机四伏的地底矿窟，无人物",
   jiyuan_shi: "矿洞深处蛛妖巢穴尽头的机缘密室，纵向构图：脚下一座残破熄灭的上古传送阵盘、阵心嵌着一枚古朴玉令，后方墙角一具枯坐的修士骸骨披着残破道袍，侧旁玉匣中静卧一枚泛赤金灵光的灵丹，石壁结着血色蛛丝垂落，幽光点点、机缘暗藏的神秘地底石室，无人物",
+  // 增量G·京城暗流（竖屏专用）
+  jingcheng: "天子脚下胥国京城夜景纵向构图：自脚下繁华青石长街、灯笼连绵的酒楼商铺向画面上方层层推远，尽头是巍峨朱红宫城与飞檐殿宇高耸入夜空、宫灯如星，华灯之下街巷阴影里几道诡谲赤色煞气悄然弥漫，盛世繁华与暗流涌动交织的压抑氛围，无文字无水印",
+  wangfu_yan: "京城馨王府夜宴奢华殿堂纵向纵深构图：自脚下铺陈珍馐玉盏的长案向画面深处的高台主座层层推远，红烛高烧、宫灯流彩、纱幔重重，华服宾客绰约背影（不见正脸），金碧辉煌之下帷幔深处丝丝渗出若有若无的血色妖氛，盛宴与危机并存的诡谲张力，无文字无水印",
 };
 Object.entries(P_SCENES).forEach(([id, prompt]) => {
   DEFS[id + "_p"] = { kind: "scene_p", file: id + "_p", prompt };
@@ -247,6 +252,18 @@ const BATTLE_DEFS = {
   cg_jiyuan_shi: { kind: "cg", hq: true, file: "cg_jiyuan_shi", prompt: "矿洞深处蛛妖巢穴尽头的古旧机缘石室：室心一座残破熄灭的上古传送阵盘、阵纹晦暗、阵心嵌着一枚古朴玉令，墙角一具枯坐的修士骸骨披着残破道袍，一旁玉匣中静卧一枚泛着赤金灵光的灵丹，石壁结着血色蛛丝，幽光点点、机缘暗藏的神秘氛围，无人物" },
   // 长卷全景（scenes/pano_*.png：L3 矿洞战斗轴横移长背景）
   pano_kuangdong: { kind: "pano", hq: true, file: "pano_kuangdong", prompt: "黑风岭地底矿洞的超宽全景横剖长卷：幽深的灵矿矿洞自左向右绵延——左端是塌方碎石封堵的坑道口、断裂的支撑木梁，中段岩壁层层裸露泛着幽光的灵矿矿脉与暗红色蛛丝网、地面散落矿车残骸与碎矿石，右端深处一道古旧封印阵纹在岩壁上崩裂、隐隐透出血色妖光，岩顶垂落钟乳与矿晶，腥甜血气浮动，下沿是连续平整可行走的矿洞岩地，幽暗压抑的地底矿窟妖氛" },
+
+  /* —— 增量G·魔道争锋第三幕·京城暗流（入京/失踪案/馨王府夜宴/血侍铁罗/妖化王管事）—— */
+  // 人物立绘
+  xiaocui: { kind: "portrait", hq: true, prompt: "京城市井卖花小姑娘萧翠儿，约十二三岁的清贫少女，乌黑头发扎成两个利落的小辫、鬓边别一朵小绒花，圆圆的脸蛋透着倔强与机灵，一双大眼睛清澈又藏着早慧的心事，身着洗得发白的青布小袄、系着旧围裙，怀里挽着一只盛满白色栀子花的竹篮，神情既怯生生又透着市井磨砺出的精明懂事" },
+  mengshan_wuyou: { kind: "portrait", hq: true, prompt: "京城散修班底「蒙山五友」群像半身合照（五人并肩，打破单人构图）：五个二三十岁、风霜江湖气的炼气期散修挤在一处——居中一个圆脸憨厚的壮硕汉子咧嘴而笑（领头），左侧一个精瘦机灵的鼠目青年、一个面带刀疤的沉默剑客，右侧一个抱着酒葫芦的络腮胡大汉、一个清秀斯文的年轻书生模样修士，五人皆着半旧杂色的粗布道袍劲装、腰挂各式简陋法器，神情各异却透着市井散修相依为命的江湖热乎气" },
+  // 演出 CG（横版底；竖版 _p 在 P_CGS）
+  cg_jingcheng: { kind: "cg", hq: true, file: "cg_jingcheng", prompt: "天子脚下的胥国京城夜景全景：巍峨的朱红宫城与重重飞檐殿宇矗立于画面远端、宫灯如星，近处是繁华的青石长街与鳞次栉比的酒楼商铺、灯笼连绵成河、车马行人如织，然而华灯之下暗影浮动、几道诡谲的赤色煞气自街巷深井与坊墙阴影间悄然弥漫，盛世繁华与暗流涌动交织的压抑氛围，电影级宽幅夜景，无文字无水印" },
+  cg_wangfu_yan: { kind: "cg", hq: true, file: "cg_wangfu_yan", prompt: "京城馨王府夜宴的奢华殿堂内景：雕梁画栋的王府华厅里红烛高烧、宫灯流彩，长案上珍馐玉盏琳琅、歌姬乐伎的身影绰约于纱幔之后，赴宴的华服宾客觥筹交错（皆为朦胧背影不见正脸），然而满堂金碧辉煌之下却暗藏森冷杀机、一缕若有若无的血色妖氛自帷幔深处丝丝渗出，盛宴与危机并存的诡谲张力，电影级宽幅构图，无文字无水印" },
+  // 战斗全身立绘（battlers/）
+  bt_tieluo: { kind: "battler", hq: true, prompt: "黑煞教血侍铁罗的完整全身战斗立绘：一个三十岁上下精悍阴鸷的男修，玄黑色紧身劲装外罩暗红血纹皮甲、赤足或裹黑布，浑身缠绕着翻腾的血煞赤焰与暗红煞气，双手屈张如利爪、指尖凝着滴血的赤色爪芒，面容冷硬狠戾、眼瞳泛着血光，发丝被煞焰气流向上掀动，姿态低伏蓄势如择人而噬的恶兽，邪修血煞的凶悍压迫感，从头到脚完整入画" },
+  bt_tieluo_mao: { kind: "battler", hq: true, prompt: "黑煞教血侍铁罗以血侍秘术「化血茧」蜕出的狂暴畸变形态完整全身战斗立绘：一个独臂（右臂自肩头齐根断裂、断口翻涌赤血却已凝煞结痂）的男修自破碎血茧中挣出，半边身躯覆满甲壳状的暗红血煞硬壳与暴起的赤色筋脉，仅存的左臂暴长狰狞、化作滴血巨爪，发须皆赤、双目猩红如血珠暴突，面容因蜕变而扭曲狂暴、咧口嘶吼，周身血煞赤焰如茧丝翻卷暴涨，姿态前倾癫狂如濒死反扑的凶兽，独臂血煞畸变的恐怖压迫感，从头到脚完整入画" },
+  bt_wuse: { kind: "battler", hq: true, prompt: "京城五色门妖化门主「王管事」的完整全身战斗立绘：一个本是富态管事的中年男子在妖化中半人半兽——臃肿的身躯撑破华贵的褐色绸面管事袍、裸露处覆盖着土黄褐色的粗粝兽皮甲鳞，双臂暴长、十指化作沉重的兽爪，背脊隆起、面容扭曲狰狞兽化、獠牙外突、双目赤黄凶光毕露，周身腾起浑浊的土黄色妖煞之气与碎石尘暴，体型魁伟如熊罴、姿态狂暴前倾作扑击之势，邪魔妖化的恐怖威压，从头到脚完整入画" },
 };
 Object.assign(DEFS, BATTLE_DEFS);
 
@@ -294,8 +311,8 @@ function genOne(id, def, opts = {}) {
   const bodyFile = path.join(TMP, "_genart.body.json");
   const respFile = path.join(TMP, "_genart.resp.json");
   fs.writeFileSync(bodyFile, body);
-  // 用 curl.exe 出图（本机走代理；无代理环境 GEN_PROXY="" 直连）
-  execFileSync("curl.exe", [
+  // 用 curl 出图（本机走代理；无代理环境 GEN_PROXY="" 直连）
+  execFileSync(CURL, [
     "-s",
     ...(USE_PROXY ? ["-x", PROXY] : []),
     "-X", "POST", "https://openrouter.ai/api/v1/chat/completions",
@@ -338,6 +355,16 @@ function genOne(id, def, opts = {}) {
 function ensurePng(file) {
   const buf = fs.readFileSync(file);
   if (buf.readUInt32BE(0) === 0x89504e47) return;
+  if (process.platform !== "win32") {
+    // 云机无 powershell：用 ImageMagick(convert) 把 JPEG/其它字节转成真 PNG（偶发上游回 JPEG）
+    console.log("  非 PNG 字节（非 Windows，用 convert 转 PNG）…");
+    try { execFileSync("convert", [file, "png:" + file], { stdio: "inherit" }); return; }
+    catch (e) {
+      // 退一步用 Pillow
+      try { execFileSync("python3", ["-c", "import sys;from PIL import Image;Image.open(sys.argv[1]).convert('RGBA').save(sys.argv[1],'PNG')", file], { stdio: "inherit" }); return; }
+      catch (e2) { console.log("  转码失败:", e2.message); return; }
+    }
+  }
   console.log("  非 PNG 字节，自动转码…");
   execFileSync("powershell", ["-ExecutionPolicy", "Bypass", "-File", path.join(__dirname, "jpg2png.ps1"), "-Path", file], { stdio: "inherit" });
 }
@@ -356,7 +383,7 @@ function postProcess(file, def) {
 }
 
 (async () => {
-  const ids = ONLY ? [ONLY] : Object.keys(DEFS);
+  const ids = ONLY ? ONLY.split(",").map(s => s.trim()).filter(Boolean) : Object.keys(DEFS);
   for (const id of ids) {
     if (!DEFS[id]) { console.log("跳过未知 id:", id); continue; }
     process.stdout.write(`生成 ${id} ... `);

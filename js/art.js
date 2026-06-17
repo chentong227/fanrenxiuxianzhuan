@@ -23,6 +23,8 @@
     wushishu: 1, luyunfeng: 1, yeshishu: 1, mashibo: 1, chenqiaoqian: 1,
     nangongwan: 1, lihuayuan: 1, fengyue: 1, zhongwu: 1, hanyunzhi: 1,
     lvtianmeng: 1, xuanle: 1, xueyu_zhizhu: 1, baiyu_zhizhu: 1,
+    // 增量G·魔道争锋第三幕·京城暗流
+    xiaocui: 1, mengshan_wuyou: 1,
   };
   // 已生成的表情变体：{ 人物id: { 表情名: 1 } }
   const EMOS = {
@@ -71,14 +73,16 @@
     bt_dujiao: { face: "l" },
     // 增量E：宣乐（阴手·正面对称永不镜像）、血玉蜘蛛（蛛形对称 c）；灵宠白玉蜘蛛·小白（蛛形对称 c）
     bt_xuanle: { face: "c" }, bt_xueyu_zhizhu: { face: "c" }, bt_baiyu_zhizhu: { face: "c" },
+    // 增量G·京城暗流：血侍铁罗（一阶段）+ 血茧铁罗（化茧狂暴独臂形态·二阶段）+ 妖化王管事
+    bt_tieluo: { face: "c" }, bt_tieluo_mao: { face: "c" }, bt_wuse: { face: "c" },
   };
 
   // 剧情 CG（p:1 = 竖版已生成）
   const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 }, mojiao: {},
     // 增量E·矿道箱庭演出 CG（横版底 + 竖版 _p）
     kuangchang: { p: 1 }, kuangdong: { p: 1 }, jiyuan_shi: { p: 1 },
-    // 增量G·魔道争锋第三幕·京城暗流演出 CG（待 genart 生成，缺图自动回退到场景标题文字）
-    jingcheng: {}, wangfu_yan: {} };
+    // 增量G·魔道争锋第三幕·京城暗流演出 CG（横版底 + 竖版 _p 已生成）
+    jingcheng: { p: 1 }, wangfu_yan: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };
@@ -91,7 +95,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 21,
+    ASSET_VER: 22,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 
