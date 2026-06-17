@@ -84,6 +84,7 @@ const State = {
       milestones: [],         // 道途年表 [{ t, title, kind }]（质变/大件/勋章永久记录）
       beastRumor: null,       // 活跃的异闻妖王 id（听闻在前，深入后山可遇）
       beastRumorClue: 0,      // 异闻寻踪进度（听闻→寻踪→相遇：随月份逐渐逼近真相）
+      beastRumorClueAt: null, // 上一条线索浮现的绝对月份（隔月铺陈：两条线索至少相隔 2 月）
       slainBeasts: [],        // 已伏诛的异闻妖王（不再重复出没）
       revealedRealm: 0,       // 藏拙：示人境界（真实境界=realmIndex；差值=深藏的层数）
       skills: { alchemy: 0, scouting: 0 },   // 杂学熟练度：药理 / 探知（嗑瓜子轴）
@@ -154,6 +155,7 @@ const State = {
     if (!d.milestones) d.milestones = [];
     if (d.beastRumor === undefined) d.beastRumor = null;
     if (d.beastRumorClue === undefined) d.beastRumorClue = 0;
+    if (d.beastRumorClueAt === undefined) d.beastRumorClueAt = null;
     if (!d.slainBeasts) d.slainBeasts = [];
     if (d.revealedRealm == null) d.revealedRealm = d.realmIndex;   // 老档：示人=真实（未藏过）
     if (d.zhuanImprint == null) d.zhuanImprint = 1;   // 三转重元功·乘性印记（增6）

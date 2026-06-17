@@ -73,7 +73,7 @@ DATA.items = {
     desc: "安神定志，平复心境、压制心魔。", effect: { mood: 40, demon: -20 } },
   // 小绿瓶催熟灵药服食 —— 韩立逆袭的核心
   lingyao_dan:  { name: "灵乳灵药", rarity: "rare", type: "pill",
-    desc: "小绿瓶催熟的珍稀灵药，灵气浓郁。服之大补修为，是韩立瞒着墨大夫精进的本钱。", effect: { cul: 120, sp: 40 } },
+    desc: "小绿瓶催熟的珍稀灵药，灵气浓郁。服之大补修为，是韩立瞒着墨大夫精进的本钱。", effect: { cul: 60, sp: 40 } },
   zhuji_dan:    { name: "筑基丹",   rarity: "epic", type: "pill",
     desc: "突破练气、凝聚灵根成基的无价之宝。入谷那日你曾握过一枚——它离开掌心的模样，你记到今天。（练气十一层后，于洞府行「尝试突破」冲击筑基）", effect: {} },
   lingcao:      { name: "灵草",     rarity: "common", type: "material",
