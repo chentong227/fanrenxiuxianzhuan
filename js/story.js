@@ -2662,8 +2662,8 @@ const STORY = [
         guide: {
           tag: "再别天南篇 · 终",
           title: "下一程：初入星海",
-          hint: "古阵将你抛入乱星海。在这里，你将拾回跌境暂失的修为，并一举踏入结丹之境——此乃后续『初入星海篇』之事，敬候续作窗口实装。",
-          cta: "（章末定格·眺望乱星海）",
+          hint: "古阵将你抛入乱星海。茫茫妖海、孤身一人——你将自孤岛立身，拾回跌境暂失的修为，一步步叩问结丹之境。初入星海篇，自这片海平线上展开。",
+          cta: "（踏入乱星海·初入星海篇·启）",
         },
       },
     ],
@@ -2682,7 +2682,389 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("success");
     },
     choices: [
-      { text: "（眺望乱星海·章末定格——再别天南篇·终）", next: "end" },
+      { text: "（踏浪而行——初入星海篇·启）", resolve: "advance" },
+    ],
+  },
+
+  /* ===================== 初入星海篇 · 第一/二幕（增量5）=====================
+   * 第一幕·孤岛立身（落海→魁星岛镇妖台擂台→小寰岛闭关）
+   * 第二幕·镇妖大典惊变（极限斩杀婴鲤兽·雷鹏破封·风希斩雷鹏夺翅材料·救小紫灵·乱星海大乱）。
+   * 复用：fieldCycle / sides[] / waves / objective:survive / SideUnit（曲魂）/ cutscene 原语——零新增系统。
+   * 越阶范式（A2·balance.js 不动）：韩立筑基后期巅峰（realmBand≈2.4），越阶 ×0.45；雷鹏/风希＝元婴·仅 cutscene。
+   * 考据见 docs/lore-churu-xinghai.md / docs/churu-xinghai-design.md（动漫年番原创·镇妖大典）。 */
+
+  // —— 第一幕①·落海·低阶妖兽遭遇（fieldCycle 海域相位·神识强/修为弱反差·凡人味开局）——
+  {
+    id: "starsea_a1_open",
+    skipIf: (s) => s.flags.starsea_yaoshou_done,
+    cond: (s) => s.flags.arc4_complete && !s.flags.starsea_yaoshou_done,
+    cg: "luanxinghai",
+    bgm: "tense",
+    title: "初入星海 · 落海",
+    objTitle: "落海 · 海中遇袭",
+    objHint: "你与曲魂随古阵乱流跌入乱星海。咸涩海水里，一头低阶妖兽循着气血味扑来——神识虽在、落海修为却虚，先稳住阵脚活下来。",
+    text: [
+      { scene: "乱星海 · 近岛海域" },
+      { cam: "zoom", scale: 1.05, ms: 300 },
+      "咸涩的海水呛入口鼻。你在浪头里浮沉，灵力被这冰凉海水搅得滞涩——落海这一摔，到底虚了几分修为。好在曲魂·身外化身随你一同被抛了出来，黑煞血刃在水里划开一道暗芒，护在你身侧。",
+      "你定下神，神识如网铺开——海面之下，一道幽影正循着你逸散的气血味，悄无声息地逼近。",
+      { fx: "lightning", at: "left", elem: "shui", ms: 280 },
+      { sfx: "splash" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「神识尚在，修为却虚……也罢。这片海的第一课，便拿你来开。」" },
+      { aside: "举目皆是陌生的妖海。身后是再回不去的天南，身前是吉凶未卜的星海万里——可活下去，永远是第一位的。" },
+    ],
+    onArrive(s) {
+      s.activeChapter = "starsea";   // 切入初入星海篇（章名/境界上限由此读；落海仍在海中，不跳魁星岛）
+      s.location = "luanxinghai";
+      if (!s.flags.starsea_entered) {
+        State.setFlag("starsea_entered");
+        Engine.writeLedger("starsea_entered", "初入星海·落海——古阵乱流将韩立与曲魂抛入乱星海近岛海域，落海修为暂虚、神识犹在；一头低阶妖兽循血味来袭。孤岛立身，自此一战开篇。");
+        Engine.addMilestone("初入星海·落海：携曲魂坠入乱星海", "starsea");
+      }
+    },
+    choices: [
+      { text: "神识锁定·先发制人——斩了这头海兽！", hint: "fieldCycle·海域相位·曲魂并肩；越阶轴内恒定", resolve: "starsea_yaoshou_fight" },
+    ],
+  },
+
+  // —— 第一幕②·登临魁星岛魁星城（海岛异域风·内外海世界观铺陈·乌丑反派露出）——
+  {
+    id: "starsea_a1_kuixing",
+    skipIf: (s) => s.flags.starsea_kuixing_done,
+    cond: (s) => s.flags.starsea_yaoshou_done && !s.flags.starsea_kuixing_done,
+    bgm: "journey",
+    title: "初入星海 · 登临魁星岛",
+    objTitle: "登岛 · 魁星城",
+    objHint: "斩退海兽，你随洋流漂至一座外星岛——魁星岛。城中巨像高耸、坊市喧嚣，「内海人修、外海妖修」之说第一次在你耳边铺开；一个黑袍人的目光，曾不动声色地掠过你。",
+    text: [
+      { scene: "魁星岛 · 魁星城" },
+      "斩退那头海兽，你伏在一截浮木上随洋流漂了三日，终于望见一座岛影破开海雾——巨大的石像高踞港口，俯瞰着楼宇层叠、帆樯如林的一座海城。魁星岛，魁星城。",
+      { cam: "pan", to: { x: 0, y: -4 }, ms: 1400 },
+      "坊市里南腔北调，灵石叮当。你听人议论：这片乱星海以一道大阵划作内外——内星海是人修的地盘，外星海则是万千妖兽的猎场；而魁星岛，正悬在内外之交的边角上。",
+      { say: "魁星城散修", tone: "low", text: "「外来的散修？落难漂上岛的多了去了。想在魁星岛落脚，没点本事、没座靠山，连块礁石都轮不到你。」" },
+      { aside: "孑然一身、人地两生。要在这片海立住脚，先得有个能遮风的去处——和一身藏得住的本事。" },
+      "你正盘算，一道黑袍身影自巷口掠过，目光在你身上若有若无地停了一瞬，又淡淡移开。你心头莫名一凛——那点幽冷的气息，不像善类。",
+      { fx: "flash", at: "center", color: "#3a2a55", ms: 220 },
+      "未及多想，岛上坐地豪族顾家的管事却寻上了你：顾家正与人争一桩跨海商路的经商权，急需一位「面生、底细干净」的修士，替他们上镇妖台擂台走一遭。报酬，正是你眼下最缺的——魁星岛居留。",
+    ],
+    onArrive(s) {
+      s.location = "kuixing_island";
+      State.setFlag("starsea_kuixing_done");
+      Engine.meetNpc("gu_family", "顾家管事递来一枚居留玉牌作定：「替我顾家擂台胜了那一场，魁星岛便有阁下一席之地。」");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "见闻：乱星海以大阵划内外——内星海人修聚居、外星海妖兽纵横；魁星岛悬于内外之交，鱼龙混杂。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      { text: "接下顾家之邀，登镇妖台。", hint: "藏拙立身·凡人味发育", resolve: "advance" },
+    ],
+  },
+
+  // —— 第一幕③·镇妖台擂台 1v1（演示「藏拙」机制·炼气五层假苦战胜八层·猥琐发育）——
+  {
+    id: "starsea_a1_leitai",
+    skipIf: (s) => s.flags.starsea_leitai_done,
+    cond: (s) => s.flags.starsea_kuixing_done && !s.flags.starsea_leitai_done,
+    bgm: "combat",
+    title: "初入星海 · 镇妖台擂台",
+    objTitle: "擂台 · 藏拙险胜",
+    objHint: "替顾家上镇妖台。对手不过炼气八层，你却是藏了真境的筑基——要赢，更要赢得「狼狈」：露半分锋芒，便要惹来不必要的觊觎。",
+    text: [
+      { scene: "魁星岛 · 镇妖台" },
+      "镇妖台高三丈，四周看客如堵。对家请来的打手是个炼气八层的精瘦汉子，灵光外放、气势汹汹。台下窃窃私语，都说顾家这回怕是要输。",
+      { say: "韩立", emo: "cold", tone: "low", text: "「筑基之身压炼气八层，本是手到擒来。可锋芒一露，便要招来比这擂台凶险百倍的麻烦……藏拙，藏拙。」" },
+      "你故意只引动炼气五层的灵力，把一身真元死死压在丹田里，与那汉子缠斗得险象环生——格挡时踉跄半步，还击时似强弩之末，引得台下一阵阵惊呼。",
+      { fx: "burst", at: "center", elem: "jin", ms: 260 },
+      { sfx: "hit" },
+      { aside: "凡人堆里摸爬滚打出来的本事，从不只是斗法——更是「让人小看你」的火候。这一身狼狈，演得比那汉子的灵光还要费神。" },
+    ],
+    onArrive(s) {
+      s.location = "kuixing_island";
+    },
+    choices: [
+      { text: "佯作力竭·一招险胜——既要赢，也要赢得不起眼。", hint: "藏拙叙事·单挑·筑基压炼气八层", resolve: "starsea_leitai_fight" },
+    ],
+  },
+
+  // —— 第一幕④·获魁星岛居留·寻小寰岛开洞府（新 home·灵气稀薄的孤岛）——
+  {
+    id: "starsea_a1_xiaohuan",
+    skipIf: (s) => s.flags.starsea_xiaohuan_done,
+    cond: (s) => s.flags.starsea_leitai_done && !s.flags.starsea_xiaohuan_done,
+    bgm: "journey",
+    title: "初入星海 · 小寰岛洞府",
+    objTitle: "立身 · 小寰岛",
+    objHint: "擂台险胜，顾家赢了经商权，你也换来了魁星岛居留。寻一座荒僻外岛安身——小寰岛，灵气稀薄、人迹罕至，却正合你藏身重修。",
+    text: [
+      { scene: "魁星岛 · 小寰岛航路" },
+      "顾家如愿夺了那桩经商权，按约把一枚居留玉牌交到你手里。台上那场「苦战」反倒成了护身符——人人只当你是个修为平平、运气尚可的落难散修。",
+      "你不愿在魁星城的眼皮底下久留，向人打听了一座僻处外缘的孤岛——小寰岛。岛小、灵气稀薄、连个常住的修士都没有，正合你的心意。",
+      { cam: "pan", to: { x: 0, y: -3 }, ms: 1200 },
+      "你在岛上择了一处背风的山腹，布下简陋禁制，开出一座洞府。海风呜咽，唯有曲魂的黑影静立一侧，与你相伴。",
+      { aside: "独岛、独修、唯一具身外化身相伴。这份孤独，是落难者的清苦，却也是一段苦修最好的火候。" },
+    ],
+    onArrive(s) {
+      s.location = "xiaohuan_island";
+      State.setFlag("starsea_xiaohuan_done");
+      State.setFlag("kuixing_resident");   // 镇妖台居留兜底（擂台胜处已置；此处确保小寰岛解锁）
+    },
+    choices: [
+      { text: "于小寰岛安身，闭关重修。", hint: "新 home·灵气稀薄", resolve: "advance" },
+    ],
+  },
+
+  // —— 第一幕⑤·闭关苦修二十载（叙事压缩·拾回筑基后期巅峰·三转一转·纯叙事不动数值）——
+  {
+    id: "starsea_a1_biguan",
+    skipIf: (s) => s.flags.starsea_biguan_done,
+    cond: (s) => s.flags.starsea_xiaohuan_done && !s.flags.starsea_biguan_done,
+    bgm: "journey",
+    title: "初入星海 · 闭关二十载",
+    objTitle: "苦修 · 拾回巅峰",
+    objHint: "小寰岛灵气虽薄，胜在清静。二十载寒暑，你一寸寸拾回落海暂失的修为，行三转重元功之一转——重修一遍，根基反比从前更纯。",
+    text: [
+      { scene: "小寰岛 · 洞府" },
+      { cam: "zoom", scale: 1.04, ms: 300 },
+      "二十载寒暑，在小寰岛的潮声里悄然流过。",
+      "灵气稀薄，你便以耐心补拙：青元剑诀一层层重新筑起，三转重元功行至一转——散功重修这一遭，看似跌回入门，真元却淬炼得比从前更精纯几分。落海所失的那点修为，也终于一寸寸拾了回来，重回筑基后期巅峰。",
+      { fx: "material", at: "center", elem: "mu", ms: 600 },
+      { sfx: "cast" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「二十年……总算把根基重新夯实了。这一回重修过的真元，比当年更听使唤。」" },
+      { aside: "孤岛一隅，二十年如一日。曲魂静立洞府之侧，从不言语，却让这份清苦的苦修，多了一丝不至于太冷的暖意。" },
+    ],
+    onArrive(s) {
+      s.location = "xiaohuan_island";
+      State.setFlag("starsea_biguan_done");
+      Engine.addMilestone("初入星海·一幕：小寰岛闭关二十载，拾回筑基后期巅峰（三转一转）", "starsea");
+      Engine.writeLedger("starsea_biguan", "初入星海·孤岛立身——小寰岛闭关苦修二十载，行三转重元功一转，散功重修而真元愈纯，拾回落海暂失之修为，重回筑基后期巅峰。纯叙事·不动数值。");
+    },
+    choices: [
+      { text: "出关——该往魁星城走一遭了。", hint: "孤岛立身·一幕终", resolve: "advance" },
+    ],
+  },
+
+  // —— 第二幕①·魁星城寻药未果·再遇文樯·听闻镇妖大典与降尘丹·途中擦肩小紫灵 ——
+  {
+    id: "starsea_a2_wenqiang",
+    skipIf: (s) => s.flags.starsea_wenqiang_done,
+    cond: (s) => s.flags.starsea_biguan_done && !s.flags.starsea_wenqiang_done,
+    bgm: "journey",
+    title: "镇妖大典 · 再遇文樯",
+    objTitle: "引线 · 降尘丹",
+    objHint: "出关入魁星城遍寻结丹灵药（雪灵水、天火液）皆无果。一座坊市里，你竟撞见旧识文樯——他要拉你同赴六连殿的镇妖大典，去搏那降低结丹门槛的榜首奖：降尘丹。",
+    text: [
+      { scene: "魁星城 · 天工坊市" },
+      "出关之后，你入魁星城遍访丹铺药行，想寻结丹所需的雪灵水、天火液——可这两味灵药价比连城，有市无货，问得你一筹莫展。",
+      "正失意间，一道熟悉的声音在身后响起。",
+      { say: "文樯", tone: "soft", text: "「这位道友的背影……韩道友？真是你！当年一别，竟在这乱星海的魁星城重逢，缘分不浅啊。」" },
+      "竟是文樯——昔年的一面之识，文思月之父，如今也漂泊在这片星海。故人乡音，叫这陌生的海城都暖了几分。",
+      { say: "文樯", tone: "soft", text: "「韩道友也为结丹灵药犯难？正巧——六连殿要在魁星岛办一场镇妖大典，榜首之奖是一枚『降尘丹』，能降一分结丹门槛！你我联手报名，未必没有一搏之力。」" },
+      "你心中一动：降尘丹，正是叩开结丹之门的一线契机。当下与文樯约定，同往六连殿报名。",
+      { fx: "flash", at: "center", color: "#caa6ff", ms: 220 },
+      "随文樯穿过人潮时，一个抱着乐器的紫衣小女孩与你擦肩而过。你心头莫名一颤——那张脸，竟生出一种说不清、道不明的熟悉感，仿佛在很久很久以前便已相识。可那女孩很快没入人流，再寻不见了。",
+      { aside: "那点熟悉，像一缕够不着的旧梦。你摇摇头，把它压下——眼下，先是大典与降尘丹。" },
+    ],
+    onArrive(s) {
+      s.location = "kuixing_island";
+      State.setFlag("starsea_wenqiang_done");
+      Engine.meetNpc("wen_qiang", "「韩道友肯与我同往，这镇妖大典便多了三分底气。」文樯抚须而笑。");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "魁星岛风传：六连殿将办『镇妖大典』，榜首奖降尘丹（可降结丹门槛），群修云集、妖兽为彩——各方势力俱已动身。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      { text: "与文樯同往，报名镇妖大典。", hint: "引线落点·韩立与曲魂同组", resolve: "advance" },
+    ],
+  },
+
+  // —— 第二幕②·镇妖大典擂台开场（六连殿·罗马斗兽场·嘉宾席妙音门一家·观众席风希/乌丑）——
+  {
+    id: "starsea_a2_dadian",
+    skipIf: (s) => s.flags.starsea_dadian_done,
+    cond: (s) => s.flags.starsea_wenqiang_done && !s.flags.starsea_dadian_done,
+    bgm: "tense",
+    title: "镇妖大典 · 擂台开场",
+    objTitle: "大典 · 婴鲤兽登场",
+    objHint: "镇妖大典在六连殿的斗兽场开场。嘉宾席上坐着妙音门掌门一家与苗、古二位长老，观众席里隐着风希与那黑袍人。轮到你这一组——对手，竟是一头越级五阶的婴鲤兽。",
+    text: [
+      { scene: "魁星岛 · 镇妖大典斗兽场" },
+      { cam: "pan", to: { x: 0, y: -5 }, ms: 1500 },
+      "镇妖台筑成一座环形斗兽场，层层看台坐满了观礼的修士。台心的禁制幽幽流转，封着大典用作彩头的妖兽。",
+      "嘉宾席上，妙音门掌门携夫人、女儿端坐其间，六连殿的苗、古两位长老分列左右；观众席的阴影里，一个白衣妖修「大善人」风希含笑而坐，离他不远，那道黑袍身影也赫然在列。",
+      { say: "冯三娘", tone: "stern", text: "「报名第六组的两位道友？我是六连殿冯三娘，这一阵的领队。你们这组抽到的彩头不轻——是头越级的婴鲤兽，幼体便堪比六阶。诸位且听我阵图调度，万勿轻敌。」" },
+      { fx: "burst", at: "center", elem: "shui", ms: 280 },
+      { sfx: "thunder" },
+      "禁制开启，一头浑身赤鳞、双目猩红的巨兽自台心水牢中翻涌而出——婴鲤兽！才是幼体，那扑面而来的妖威便压得满场修士呼吸一窒。",
+      { say: "韩立", emo: "cold", tone: "low", text: "「越级五阶……正面硬撼是取死之道。」（你眼神微动，曲魂的黑影悄然没入人群。）「冯领队尽管布阵困它——真正的杀招，待它力竭时再出。」" },
+      { aside: "众目睽睽，强敌环伺。这一战，不只为降尘丹——更是在风希、乌丑那等人物眼皮底下，露多少、藏多少的分寸。" },
+    ],
+    onArrive(s) {
+      s.location = "kuixing_island";
+      State.setFlag("starsea_dadian_done");
+      Engine.meetNpc("feng_sanniang", "「第六组听我号令——阵图既起，便是生死与共。」冯三娘按剑而立。");
+      Engine.meetNpc("miaoyin_zhangmen", "妙音门掌门远远朝场中颔首致意，雍容温雅，一家三口同坐嘉宾席。");
+    },
+    choices: [
+      { text: "应冯三娘列阵·入场迎敌——这头越级凶兽，且看怎么困、怎么杀。", hint: "列阵入场·下一节即极限斩杀", resolve: "advance" },
+    ],
+  },
+
+  // —— 第二幕③·极限斩杀婴鲤兽（sides[冯三娘+曲魂]＋waves[婴鲤兽幼体→困兽暴走]＋fieldCycle 水罡＋越阶斩杀）——
+  {
+    id: "starsea_a2_yingli",
+    skipIf: (s) => s.flags.starsea_yingli_done,
+    cond: (s) => s.flags.starsea_dadian_done && !s.flags.starsea_yingli_done,
+    bgm: "boss",
+    title: "镇妖大典 · 极限斩杀",
+    objTitle: "困兽 · 越级斩杀",
+    objHint: "众修法阵不能伤其分毫、损失惨重。你与曲魂后发，借冯三娘的阵图困住越级的婴鲤兽——待它力竭，便是极限斩杀、夺彩之时。",
+    text: [
+      { scene: "斗兽场 · 困兽阵心" },
+      "婴鲤兽狂暴突进，赤鳞水箭与狂涛尾扫横扫全场，众修的法器击在它鳞甲上只溅起一片火星，转眼便有数人被掀飞重伤。冯三娘的阵图艰难合拢，却难伤其分毫。",
+      { fx: "lightning", at: "center", elem: "shui", ms: 300 },
+      { sfx: "thunder" },
+      { say: "冯三娘", tone: "anxious", text: "「困不住多久！它越级的蛮力太强——谁能给我一击致命的机会？！」" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「机会，我来制造。」" },
+      "你与曲魂一直按兵不动，只待这一刻——巨兽力竭、阵图收束的须臾之隙。黑煞血刃与你的剑光自两翼同时没入它的命门！",
+      { aside: "越级而战，从不靠硬碰硬。耗它、困它、算准那一线之机——这，才是凡人韩立的杀法。" },
+    ],
+    onArrive(s) {
+      s.location = "kuixing_island";
+    },
+    choices: [
+      { text: "阵心已合·力竭即斩——曲魂并刃，极限斩杀！", hint: "越级 ×0.45·后发困杀·夺彩", resolve: "starsea_yingli_fight" },
+    ],
+  },
+
+  // —— 第二幕④⑤·大典惊变（雷鹏破封屠戮·风希斩雷鹏夺双翅离场·非可玩 cutscene）——
+  {
+    id: "starsea_a2_jingbian",
+    skipIf: (s) => s.flags.starsea_jingbian_done,
+    cond: (s) => s.flags.starsea_yingli_done && !s.flags.starsea_jingbian_done,
+    cg: "luanxinghai",
+    bgm: "boss",
+    title: "镇妖大典 · 惊变",
+    objTitle: "惊变 · 雷鹏破封",
+    objHint: "夺彩的喝彩未落，镇妖台中心的禁制骤然炸裂——逆星盟的黑袍人勾结妖修风希、六连殿一长老反水，放出了被星宫双圣镇压百年的上代妖兽之王·十级雷鹏。",
+    text: [
+      { scene: "镇妖台 · 中央禁制" },
+      "你斩落婴鲤兽，满场喝彩还未落下——",
+      { cam: "shake", ms: 400 },
+      { fx: "burst", at: "center", elem: "jin", ms: 320 },
+      { sfx: "thunder" },
+      "镇妖台正中那道幽幽流转了百年的禁制，竟毫无征兆地自内炸裂！碎光冲霄数十里。",
+      "那黑袍人——逆星盟乌丑——立于裂口之上，狞笑出声；他身侧，白衣风希负手而立；六连殿一名长老竟也反水相助，三道身影合力撕开了封印的最后一线。",
+      { say: "乌丑", emo: "cold", tone: "cold", text: "「镇压了百年的旧主，也该出来透透气了。诸位，便拿这一场镇妖大典，给它陪葬罢！」" },
+      { cam: "zoom", scale: 1.2, ms: 600 },
+      { fx: "lightning", at: "center", elem: "jin", ms: 360 },
+      { sfx: "thunder" },
+      "封印之下，一声撼动海天的鹏唳炸响——一头通体雷光、双翅垂天的神禽冲天而起！上代妖兽之王，十级雷鹏！被星宫双圣镇压在镇妖台下整整百年的它，此刻睥睨众生，眸中尽是百年屈辱化成的滔天恨意。",
+      { say: "雷鹏", tone: "angry", text: "「噫——！百年之囚，今日尽数还来！」" },
+      { cam: "shake", ms: 500 },
+      { fx: "lightning", at: "left", elem: "jin", ms: 300 },
+      { fx: "lightning", at: "right", elem: "jin", ms: 300 },
+      { sfx: "thunder" },
+      "疾雷双翅一振，雷罡横扫，看台轰然崩塌；它一爪踏碎了镇压自己百年的星宫双圣石像，电芒过处，修士成片殒落。镇妖大典的盛景，顷刻化作修罗炼狱。同一刻，台心裂口轰然洞开——内外星海的通道，竟被一并打通了！",
+      { wait: 500 },
+      { scene: "炼狱 · 风希出手" },
+      "便在这屠戮无人能挡之际，那位白衣「大善人」风希终于动了。",
+      { say: "风希", emo: "cold", tone: "low", text: "「上代之王又如何？这身雷骨、这对疾雷双翅……正是我炼制风雷翅的绝佳之材。莫怪。」" },
+      { cam: "zoom", scale: 1.25, ms: 700 },
+      { fx: "burst", at: "center", elem: "jin", ms: 400 },
+      { sfx: "thunder" },
+      "元婴期裂风兽化人的真正修为骤然爆发，风刃如海。雷鹏虽悍，终究困兽百年、力有不逮——一场惊天动地的妖王对决之后，雷鹏哀鸣坠落。风希探手一抄，竟生生斩落、夺走了那对垂天的疾雷双翅，身形一晃，没入打通的星海通道，飘然离场。",
+      { aside: "雷鹏的双翅，正是风雷翅之材——风希取了材料便走，炼制之事，显然另有图谋。这一笔，你默默记下了。" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「元婴之上的厮杀……我连插手的余地都没有。当务之急，是从这场大乱里活着出去。」" },
+    ],
+    onArrive(s) {
+      s.location = "kuixing_island";
+      State.setFlag("starsea_jingbian_done");
+      Engine.meetNpc("wuchou", "逆星盟黑袍·乌丑——炸开镇妖台禁制、放出雷鹏的元凶之一，幽冷狠辣。");
+      Engine.meetNpc("fengxi", "妖修『大善人』风希——元婴期裂风兽化人，斩雷鹏、夺其双翅（风雷翅之材料）后飘然离场。");
+      Engine.writeLedger("starsea_jingbian", "镇妖大典惊变——逆星盟乌丑勾结妖修风希、六连殿长老反水，炸开镇妖台禁制，放出镇压百年的十级雷鹏并打通内外星海通道；雷鹏破封屠戮、踩碎星宫双圣石像，旋为风希斩杀、夺走双翅（风雷翅之材料）离场。本篇仅得材料线索，炼制留外海风云篇。");
+      Engine.addMilestone("镇妖大典惊变：雷鹏破封·风希斩雷鹏夺翅（风雷翅材料钩）", "starsea");
+    },
+    choices: [
+      { text: "（雷鹏陨、风希去——这场大乱，才刚刚开始）", hint: "脚本化史诗群乱·非可玩战", resolve: "advance" },
+    ],
+  },
+
+  // —— 第二幕⑥·妙音门主殉难·救小紫灵·斩逆星盟古长老脱身（objective:survive 护送逃亡＋精英战）——
+  {
+    id: "starsea_a2_jiuziling",
+    skipIf: (s) => s.flags.starsea_jiuziling_done,
+    cond: (s) => s.flags.starsea_jingbian_done && !s.flags.starsea_jiuziling_done,
+    bgm: "boss",
+    title: "镇妖大典 · 救小紫灵",
+    objTitle: "护送 · 斩古长老脱身",
+    objHint: "雷鹏的余威里，妙音门门主夫妇为护女儿力竭殉难。那紫衣小女孩自高台坠落——正是与你擦肩的「莫名熟悉」之人。逆星盟古长老趁乱拦杀，你须护住她、斩长老、杀出重围。",
+    text: [
+      { scene: "崩塌的看台 · 坠落" },
+      "雷鹏的余波犹在，崩塌的看台间一片哀嚎。嘉宾高台上，妙音门掌门夫妇以血肉之躯护住女儿，被横扫的雷罡击中，力竭殒落——坠落前，那位母亲用尽最后气力，将女儿向台下安全处奋力一掷。",
+      { say: "妙音门掌门", tone: "weak", text: "「凝儿……活下去……」" },
+      { fx: "lightning", at: "center", elem: "jin", ms: 300 },
+      { sfx: "thunder" },
+      "那紫衣小女孩自高台跌落，惊惶无措——正是先前与你擦肩、令你莫名心颤的那张脸！电光火石间，你身形已动，稳稳将她接在臂弯。",
+      { say: "汪凝", tone: "weak", text: "「爹……娘……」（小女孩泪眼婆娑，却死死攥住了你的衣袖。）" },
+      "未及喘息，一道阴冷剑罡破空而至——逆星盟古长老不知何时已盯上这边，假丹之威、筑基巅峰的人修，挟血遁追命之术拦住了你的去路。",
+      { say: "古长老", emo: "cold", tone: "cold", text: "「妙音门的余孽，留不得。小子，把人交出来，或可饶你一命。」" },
+      { say: "韩立", emo: "cold", tone: "low", text: "「她我护定了。要拦——便先问过我剑，和我身侧这位的刃。」" },
+      { aside: "怀中是一条托付给你的性命。护住她、杀出去——曲魂在侧，这一程逃亡，你不会孤身。" },
+    ],
+    onArrive(s) {
+      s.location = "kuixing_island";
+    },
+    choices: [
+      { text: "护住紫灵·曲魂断后——斩古长老，杀出重围！", hint: "objective:survive 护送逃亡＋精英战", resolve: "starsea_jiuziling_fight" },
+    ],
+  },
+
+  // —— 第二幕⑦·内星海防御大阵失效·乱星海大乱·遁出魁星岛海域（增量5 末·接外星海致富）——
+  {
+    id: "starsea_a2_luan",
+    skipIf: (s) => s.flags.starsea_luan_done,
+    cond: (s) => s.flags.starsea_jiuziling_done && !s.flags.starsea_luan_done,
+    cg: "luanxinghai",
+    bgm: "sorrow",
+    title: "镇妖大典 · 乱星海大乱",
+    objTitle: "大乱 · 遁出魁星岛",
+    objHint: "内外星海通道既开、防御大阵失效，外海妖兽汹涌涌入内海——乱星海大乱。你携小紫灵，趁这滔天乱局，遁出了魁星岛海域。",
+    text: [
+      { scene: "乱星海 · 魁星岛外海" },
+      { cam: "pan", to: { x: 0, y: -6 }, ms: 1600 },
+      "斩开古长老的拦截，你护着紫灵杀出重围。身后的魁星岛已成一片火海——内外星海的通道既被打通，内海防御大阵随之失效，外海的妖兽如黑潮般汹涌涌入。乱星海，大乱了。",
+      { fx: "burst", at: "center", elem: "shui", ms: 320 },
+      { sfx: "splash" },
+      "你借着这场吞天的乱局掩护，驾起遁光，载着惊魂未定的小女孩，一头扎进茫茫外海，将魁星岛的火光与喊杀，远远抛在身后。",
+      { say: "汪凝", tone: "soft", text: "「……谢谢你，大哥哥。我叫汪凝。」（小女孩怯生生抬头，那双眼睛，又叫你心头泛起那缕说不清的熟悉。）" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「先离了这是非之地再说。这片海要乱上好一阵了——乱中，也未必没有机缘。」" },
+      { aside: "降尘丹到手、雷鹏与风希的因果落下、怀里多了一条要护的性命。一场大乱，把所有人都卷向未知的海域——而你，已嗅到了乱中取利的气息。" },
+      {
+        guide: {
+          tag: "初入星海篇 · 第一/二幕 暂告段落",
+          title: "下一程：外星海 · 顺乱致富",
+          hint: "内外星海通道已开、乱星海大乱。你携紫灵遁入外海——接下来，将以霓裳草引妖、噬金虫群猎杀，积攒妖丹硬通货发家致富（外星海致富线·后续窗口实装）。",
+          cta: "（遁入外海·乱中取利）",
+        },
+      },
+    ],
+    onArrive(s) {
+      s.location = "waixinghai";
+      State.setFlag("starsea_luan_done");
+      State.setFlag("luanxinghai_chaos");   // 内外海通道开·解锁外星海猎场
+      Engine.writeLedger("starsea_luan", "乱星海大乱——内外星海通道打通、内海防御大阵失效，外海妖兽涌入内海。韩立携小紫灵（汪凝）趁乱遁出魁星岛海域，奔赴外星海。初入星海篇第一/二幕（孤岛立身·镇妖大典惊变）至此收束。");
+      Engine.addMilestone("初入星海·二幕终：乱星海大乱，携紫灵遁出魁星岛海域", "starsea");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "巨变：镇妖台禁制被炸，雷鹏破封、内外星海通道洞开——内海防御大阵失效，外海妖兽汹涌涌入，乱星海大乱。" });
+      s.worldNews.push({ t, kind: "rumor", text: "传闻：星宫震怒，大长老金魁已动身——只待乱局稍定，便要孤身示威极阴岛，着手收复内星海。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      { text: "（携紫灵·遁入外海——乱中取利，自此开始）", hint: "孤岛立身·镇妖大典惊变·暂告段落", resolve: "advance" },
     ],
   },
 ];
