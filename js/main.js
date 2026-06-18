@@ -190,7 +190,7 @@ const Main = {
     //    克制教学+材质反应）+ 战中采集热点 + 空层（升空/俯击/击落）+ 全套底牌 + 分功法特效
     try {
       const q = new URLSearchParams(location.search);
-      if (q.get("demo")) {
+      if (q.get("demo") && q.get("demo") !== "palace") {
         State.create("韩立", DATA.fixedRootId);
         const s = State.data;
         s.realmIndex = 10;   // 练气十一层
@@ -262,6 +262,44 @@ const Main = {
         }, 300);
       }
     } catch (e) { console.error("demo 失败", e); }
+
+    // —— 皇宫决战演武场：?demo=palace ——（增量H·复用正经流程的皇宫三组对位群战录制入口）
+    //    韩立＋黄枫谷三同袍（刘靖/宋蒙/钟卫娘）vs 黑煞教血侍×3，皇城宫门夜战底图 + 全员立绘。
+    //    [&climax=1] 直接进「阵成决战·万象星河」高潮（fieldCycle 六相 + 二阶段假丹 boss）。
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get("demo") === "palace") {
+        State.create("韩立", DATA.fixedRootId);
+        const s = State.data;
+        s.realmIndex = 10;   // 练气十一层
+        s.hpMax = 250; s.hp = 250;
+        s.spirit = (DATA.realms[10] || {}).spMax || 200;
+        s.technique = "changchun"; s.name = "韩立";
+        s.spells = ["tuna", "huti", "ningshen", "zhayan", "weidu", "huodan", "qingzhu_jian", "zimu_ren", "ruyi_hualan"];
+        State.give("jinguang_zhuan", 1); State.give("jinguang_zhuan_charge", 2);
+        State.give("huixue_dan", 2); State.give("dingshen_fu", 2);
+        if (s.flags) s.flags.liujing_survived = true;   // 演武：刘靖在场（拖时/决战并肩）
+        State.setFlag("dayan_learned");
+        State.setFlag("fly_unlocked");   // 解锁腾空/雷遁（便于录制飞控+雷电）
+        s.storyStage = STORY.length;     // 演武场不跑剧情
+        this.enterGame();
+        const climax = !!q.get("climax");
+        setTimeout(() => {
+          if (climax) Engine.startXuwangFight();   // 万象星河高潮
+          else Engine.startSantuanFight();         // 皇宫三组对位群战开幕
+          // 录制增益：满神雷+雷遁瞬移（飞控/雷电特效拉满），即时上屏
+          if (Engine._combat) {
+            const p = Engine._combat.player;
+            p.charges = { shenlei: { name: "辟邪神雷", cur: 9, max: 9 } };
+            p.blink = true;
+            ["shenlei_pi", "shenlei_fujian", "leidun"].forEach(id => {
+              if (!p.spells.includes(id)) p.spells.push(id);
+            });
+            UI.renderCombat(Engine._combat, Engine._combatMeta);
+          }
+        }, 300);
+      }
+    } catch (e) { console.error("demo=palace 失败", e); }
 
     // —— 嘉元城可操作 demo：?citydemo=1 直接进嘉元城地点屏（仿演武场，免跑剧情）——
     //    一键进城；底部切换条在三段剧情态间来回切，亲手看复访变迁（描述/告示/风声随 flag 改写）。

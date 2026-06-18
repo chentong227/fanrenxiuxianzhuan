@@ -3551,7 +3551,7 @@ const Engine = {
           ] },
       ],
     });
-    this._combatMeta = { type: "santuan" };
+    this._combatMeta = Art.has("huanggong") ? { type: "santuan", sceneBg: "huanggong" } : { type: "santuan" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("刘靖长剑出鞘、剑指皇城深处：「韩师弟，三组分头缠住血侍——杀开一条道，直取贼首！」");
@@ -3600,7 +3600,7 @@ const Engine = {
       W: 15, lanes: 2,
       sides,
     });
-    this._combatMeta = { type: "tuoshi" };
+    this._combatMeta = Art.has("huanggong") ? { type: "tuoshi", sceneBg: "huanggong" } : { type: "tuoshi" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("宋蒙、钟卫娘急退布阵：「拖住他！我们叼旗布阵——只须六息工夫，颠倒五行阵成，便能反制此獠！」");
@@ -3655,7 +3655,7 @@ const Engine = {
       W: 15, lanes: 2,
       sides,
     });
-    this._combatMeta = { type: "xuwang_final" };
+    this._combatMeta = Art.has("huanggong") ? { type: "xuwang_final", sceneBg: "huanggong" } : { type: "xuwang_final" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("「阵成——压！」师兄妹齐声厉喝，颠倒五行阵轰然运转，五行之力如山倒灌向胥王。机会只此一次：底牌齐发，趁阵法镇住他的工夫，将这魔道巨擘连肉身带神魂一并轰碎！");
