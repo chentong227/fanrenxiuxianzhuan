@@ -891,6 +891,18 @@ console.log("\n=== 25. 大战场·fronts 声明式战区 + turn 切镜拍 + 跨�
   const cNoSweep = new Combat({ player: mkHan(), enemies: enemies3(), rng: noCrit,
     sides: mkSides(), fronts: mkFronts(), openingSweep: false });
   assert(cNoSweep._sweepOnOpen === false, "openingSweep:false 显式关扫场");
+
+  // 塌线重定向（C3）：某战线我方锚点已倒、本区尚有活敌 → 这些"无主"之敌改投最近仍在交火的战线
+  const c3 = new Combat({ player: mkHan({ hp: 200, hpMax: 200 }), enemies: enemies3(),
+    rng: noCrit, W: 30, lanes: 2, playerPos: 13, sides: mkSides(), fronts: mkFronts() });
+  c3.sides[0].hp = 0;   // 刘靖（左线锚点 at=4）已倒，左线之敌「甲」尚活
+  c3.startRound();
+  assert(c3.aggroTarget(c3.enemies[0]) === c3.sides[1],
+    "塌线重定向：左线我方倒，左线之敌改锁最近活线（中·宋蒙）");
+  assert(c3.enemies[0]._collapsedTo === "side:1", "塌线一次性改投标记（_collapsedTo=side:1）");
+  // 锚点尚在的战线之敌不被重定向（中线宋蒙活着 → 乙仍锁宋蒙·零误伤）
+  assert(c3.aggroTarget(c3.enemies[1]) === c3.sides[1] && !c3.enemies[1]._collapsedTo,
+    "锚点尚在的战线不塌（中线之敌仍锁本线·不误触发）");
 }
 
 console.log(failures === 0 ? "\n全部通过 ✓" : `\n${failures} 项失败 ✗`);

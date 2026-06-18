@@ -847,6 +847,11 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   background: linear-gradient(180deg, transparent, rgba(8,6,4,.3) 55%, rgba(8,6,4,.46));
   pointer-events: none;
 }
+/* 燃点推近（teamfight-camera-design B4）：终结一击/大招/驰援落点——视口极轻一推再松，给"这一下"
+ * 分量感。纯视觉叠加（transform 不改布局、不动 cqh 容器尺寸），动画自复位；origin 偏下贴近地面战团。 */
+@keyframes camPunch { 0% { transform: scale(1); } 26% { transform: scale(1.055); } 100% { transform: scale(1); } }
+.axis-field.cam-punch { transform-origin: 50% 78%; animation: camPunch .62s cubic-bezier(.22,.9,.27,1); }
+@media (prefers-reduced-motion: reduce) { .axis-field.cam-punch { animation: none; } }
 /* 步位刻度层（贴地，透明无框）——浮于立绘上层（雾柱半透明可罩单位=被锁定感），
  * 非可走格不拦点击 */
 .axis-lane {
