@@ -359,6 +359,28 @@ const Main = {
         setTimeout(() => Engine.enterJindiMap(), 300);
       }
     } catch (e) { console.error("debugmap 失败", e); }
+
+    // —— 调试入口：?houshandemo=1 直接进后山野外迷雾舆图（fog 图调试免跑剧情）——
+    //    [&rumor=beast_baihu|beast_wugong|beast_chimu &clue=0..3] 可直链异闻进度，
+    //    实测传闻层预亮巢穴与伏击先手；不带则零传闻、全靠循声寻王。
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get("houshandemo")) {
+        State.create("韩立", DATA.fixedRootId);
+        const s = State.data;
+        s.realmIndex = 6; s.layer = 7; s.hpMax = 180; s.hp = 180;
+        s.spirit = (DATA.realms[6] || {}).spMax || 120;
+        s.spells = ["tuna", "huti", "ningshen", "zhayan", "huodan", "yufeng"];
+        s.technique = "changchun"; s.name = "韩立";
+        State.give("lingshi", 10);
+        s.storyStage = STORY.length;        // demo 不跑剧情
+        s.location = "houshan";
+        const rm = q.get("rumor");
+        if (rm) { s.beastRumor = rm; s.beastRumorClue = parseInt(q.get("clue") || "3", 10); }
+        this.enterGame();
+        setTimeout(() => Engine.enterHoushan(), 300);
+      }
+    } catch (e) { console.error("houshandemo 失败", e); }
   },
 
   /* -------- 测灵根（按权重随机，命定四灵根）-------- */
