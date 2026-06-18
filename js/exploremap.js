@@ -148,6 +148,78 @@
       ],
     },
 
+    /* ====== 彩霞山后山 · L1 野外舆图（七玄门篇·猎王迷雾） ======
+     * P3 野图迁移：旧 explore.js 81 格网格 → 节点图 + 战争迷雾（fog:true）。
+     * 入图整片覆雾，循迹寻王：① 邻接点亮 ② 望狼石登高揭片 ③ 远距感知梯度（兽吼/血腥气）。
+     * 猎物=异闻妖王（WORLD.beastRumors：白额虎王/铁背蜈蚣/赤目狼王）——由 engine 按
+     *  s.beastRumor 注入血食谷那一头；传闻层（applyRumors）按线索进度预亮巢穴并予伏击先手。
+     * 后山无灾厄钟（不渲染钟盘）；clockMax 仅作软预算，把脚程折成耗月。 */
+    houshan_l1: {
+      id: "houshan_l1", kind: "field", fog: true,
+      name: "彩霞山 · 后山深处",
+      subtitle: "雾锁千山 · 循迹寻踪",
+      bg: "houshan",
+      clockMax: 200,
+      ticksPerDay: 6,
+      entry: "linkou",
+      nodes: {
+        linkou:   { name: "后山林口", kind: "exit", x: 50, y: 86, icon: "◈",
+          desc: "七玄门后山的入口。再往里，雾就浓了——采药人轻易不敢深入。" },
+        yaojing:  { name: "采药小径", kind: "gather", x: 27, y: 67, icon: "🌿",
+          desc: "一道被踩出来的浅径，两旁灵草杂生——后山最安稳的一片药。",
+          loot: { lingcao: 2, duyao_cao: 1 }, rich: false },
+        guteng:   { name: "古藤深坡", kind: "gather", x: 73, y: 65, icon: "🌿",
+          desc: "老藤盘结的陡坡，岩缝里嵌着灵石，也藏着毒草——下手得挑。",
+          loot: { lingcao: 1, lingshi: 2 }, rich: false },
+        wanglang: { name: "望狼石", kind: "rest", x: 50, y: 50, icon: "🪨",
+          reveals: ["wulin", "xuegu", "qixi"],
+          lookoutNote: "你攀上望狼石极目四望——雾林的轮廓、那道飘着血腥气的山坳，一时尽收眼底。",
+          desc: "后山中拔地而起的一块巨岩，登顶可俯瞰大半个山坳。猎户旧时在此守夜望狼。" },
+        qixi:     { name: "栖息岩穴", kind: "rest", x: 36, y: 36, icon: "⛺",
+          desc: "一处背风的浅穴，地上还留着旧火堆的灰——后山里难得能喘口气的地方。" },
+        wulin:    { name: "雾林深处", kind: "gather", x: 61, y: 22, icon: "🌫",
+          desc: "雾浓得化不开，灵气与腥气一同弥漫。越往里，越觉得有什么在暗处看着你。",
+          loot: { lingcao: 1, duyao_cao: 2 }, rich: false },
+        xuegu:    { name: "血食谷", kind: "danger", x: 81, y: 30, icon: "🐾", boss: true,
+          desc: "谷中遍地碎骨断角，腥气冲天——那头异兽的食场。再没有比这更凶、也更肥的地方。",
+          loot: { lingshi: 3, lingcao: 2 }, rich: true },
+      },
+      edges: [
+        ["linkou", "yaojing", 1], ["linkou", "guteng", 1],
+        ["yaojing", "wanglang", 1], ["guteng", "wanglang", 1],
+        ["yaojing", "qixi", 2], ["wanglang", "qixi", 1],
+        ["wanglang", "wulin", 2], ["qixi", "wulin", 1],
+        ["wulin", "xuegu", 1],
+      ],
+      // 远距感知梯度：血食谷的兽吼/血腥气——只报方位强弱、不报精确坐标（零传闻也能循声逼近）
+      senseSources: [
+        { node: "xuegu", kind: "roar", bands: [
+          { within: 4, level: 1, text: "风里裹着一丝若有若无的血腥气，自山坳深处飘来。" },
+          { within: 3, level: 2, text: "一声闷雷似的兽吼滚过林梢——那畜生，就在前头不远。" },
+          { within: 2, level: 3, text: "腥风扑面，惊起满林宿鸟。巢穴近了。" },
+          { within: 1, level: 4, text: "碎骨遍地、腥气冲鼻——兽王的食场就在眼前。" },
+        ] },
+      ],
+      // 传闻层：异闻在耳→预亮巢穴与栖踪，并予伏击先手（applyRumors，engine 按线索进度调用）
+      rumors: {
+        beast_baihu:  { nodes: ["xuegu", "wulin"], intel: { lair_route: true },
+          note: "白额虎王盘踞后山深处，踪迹已隐隐可循。" },
+        beast_wugong: { nodes: ["xuegu", "wulin"], intel: { lair_route: true },
+          note: "铁背蜈蚣的巢穴方位，从风声里渐渐明朗。" },
+        beast_chimu:  { nodes: ["xuegu", "wulin"], intel: { lair_route: true },
+          note: "赤目狼王的栖处，循着月下的踪迹已可锁定。" },
+      },
+      // 路途见闻（移动一行字——纯氛围；后山永不随机强战，强战只在血食谷主动猎杀）
+      notes: [
+        "雾贴着林梢流动，三步外枝影模糊。",
+        "脚边的灌木无风自动，又倏地静了。",
+        "远处一声短促的兽鸣，旋即被雾吞没。",
+        "湿泥上压着一行碗大的爪印，往林子深处去了。",
+        "风里有若有若无的药香——灵草就在近旁。",
+        "宿鸟惊起又落下，像是替谁望了一回风。",
+      ],
+    },
+
     /* ====== 墨蛟山洞 · L3 轴式洞窟（与对阵轴同构——探索/布阵/战斗同一条轴） ====== */
     mojiao_cave: {
       id: "mojiao_cave", kind: "cave",
