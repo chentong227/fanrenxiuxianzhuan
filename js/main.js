@@ -296,6 +296,17 @@ const Main = {
               if (!p.spells.includes(id)) p.spells.push(id);
             });
             if (climax) { p.blink = true; if (!p.spells.includes("leidun")) p.spells.push("leidun"); }
+            // —— 演武录制专用·结丹对位档（仅 ?demo=palace 三战场演武；canon santuan_fight 入口不受影响）——
+            //   demo 韩立越级佩青竹蜂云剑(结丹本命法宝 driveRealm:2)+神雷劈/附剑等过装，远胜 canon 筑基本色；
+            //   故只在此演武入口把血侍催至「结丹对位之坚」，换更长更耐看的群战录像（实测均值~13回合·结丹档）。
+            //   主线本身仍用 world.xueshi_zu 原值(筑基档·hp130)、一字不改。伤害一律不碰——实测伤害是悬崖：
+            //   +6% 即孱弱同袍连锁崩盘、胜率塌到三成，唯「耐久」可安全调回合数（见 docs/palace-balance-design.md）。
+            if (!climax) {
+              Engine._combat.enemies.forEach(e => { e.hpMax = 300; e.hp = 300; e.armor = 6; });
+              (Engine._combat.sides || []).forEach(sd => {
+                sd.hpMax = Math.round(sd.hpMax * 1.12); sd.hp = sd.hpMax;   // 鏖战拉长后同袍兜底，免随机崩盘
+              });
+            }
             UI.renderCombat(Engine._combat, Engine._combatMeta);
           }
         }, 300);
