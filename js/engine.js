@@ -3517,12 +3517,27 @@ const Engine = {
     const s = State.data;
     this._nextFightType = "santuan";
     const player = this.playerFighter();
-    const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
+    // 三血侍非克隆（palace-battle-fixme 问题A）：各带专属 art→甲魁梧斧奴/乙枯瘦刺奴/丙精悍链奴
+    //   （ui 渲染优先 "bt_"+art，缺图回退 bt_xueshi）。formation:"pack" 仍是群架队形。
+    const xs = (art) => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack", art });
     this._combat = new CombatAPI.Combat({
       player,
-      enemies: [xs(), xs(), xs()],
+      enemies: [xs("xueshi_a"), xs("xueshi_b"), xs("xueshi_c")],
       maxRounds: 24,
-      W: 13, lanes: 2,
+      W: 17, lanes: 2,
+      // —— 三条战线 / 三个战场（palace-battle-fixme 问题B）——
+      // 拉开战场，三组对位各据一方：左·刘靖×甲，中·宋蒙×乙（韩立居中策应），右·钟卫娘×丙；
+      // aggroSeed 先锁杀意流向→三血侍开战即各扑自己那条线的同袍（成"三条战线"而非一锅端混战）；
+      // crossSupport=已了结当面之敌的同袍横越驰援告急战线（可见的"互相支援"），韩立居中可瞬移跨场补刀。
+      playerPos: 8,
+      sidesPos: [3, 9, 14],      // 刘靖(左) / 宋蒙(中) / 钟卫娘(右)
+      enemiesPos: [5, 11, 16],   // 血侍甲(左) / 血侍乙(中) / 血侍丙(右)
+      aggroSeed: [
+        { e: 0, key: "side:0", amt: 40 },   // 甲 缠 刘靖
+        { e: 1, key: "side:1", amt: 40 },   // 乙 缠 宋蒙
+        { e: 2, key: "side:2", amt: 40 },   // 丙 缠 钟卫娘
+      ],
+      crossSupport: true,
       // 三同袍 side 同场（sides[] 复数化）：人格即打法——
       sides: [
         // 刘靖·除魔卫道之楷模：前压抢攻、剑光凌厉（凤凰符是后话，此战只显其正道剑修本色）
@@ -3554,8 +3569,8 @@ const Engine = {
     this._combatMeta = Art.has("huanggong") ? { type: "santuan", sceneBg: "huanggong" } : { type: "santuan" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("刘靖长剑出鞘、剑指皇城深处：「韩师弟，三组分头缠住血侍——杀开一条道，直取贼首！」");
-    this.log("皇宫大门轰然洞开——黑煞教血侍蜂拥而上。你与刘靖、宋蒙、钟卫娘三组同袍背靠背列开：这一战，是九筑基夜闯皇城的开幕，也是你第一次以「群阵」之姿，与同袍并肩冲杀。", "event");
+    this._combat._log("刘靖长剑出鞘、剑指皇城深处：「左中右三处分头缠住血侍——韩师弟你居中策应，哪条线吃紧便驰援哪边！」");
+    this.log("巍峨宫门轰然洞开、朱墙金瓦下血煞翻腾——三名血侍各扑一方：左厢刘靖缠住魁梧斧奴、中路宋蒙稳压枯瘦刺奴、右翼钟卫娘斗着精悍链奴，三条战线就此拉开。你居中策应：哪条线告急，便横越驰援、瞬移补刀——同袍了结当面之敌也会弃线驰援别处。这是九筑基夜闯皇城的开幕，也是你第一次以「群阵」之姿与同袍并肩冲杀。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
