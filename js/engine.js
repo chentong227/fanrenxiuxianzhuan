@@ -552,7 +552,7 @@ const Engine = {
     else if (action === "wanbao") { UI.openWanbao(); return; }
     else if (action === "alchemy") this.alchemy();
     else if (action === "investigate") this.investigate();
-    else if (action === "explore") { this.enterExplore("houshan_explore"); return; }
+    else if (action === "explore") { this.enterHoushan(); return; }
     else if (action === "board") { this.cityRead("board"); return; }
     else if (action === "rumor") { this.cityRead("rumor"); return; }
     else if (action === "travel") { UI.openTravel(); return; }
@@ -1363,6 +1363,75 @@ const Engine = {
     if (UI.renderAll) UI.renderAll();
   },
 
+  /* ===========================================================
+   *  后山 · L1 野外迷雾舆图（七玄门篇·猎王迷雾）
+   *  P3 野图迁移：旧 explore.js 81 格网格 → 节点图 + 战争迷雾（fog:true）。
+   *  入图整片覆雾，循迹寻王：① 邻接点亮 ② 望狼石登高揭片 ③ 远距感知梯度（兽吼/血腥气）。
+   *  传闻层（异闻线索进度）按信息经济预亮巢穴并予伏击先手——只降雾，绝不增删世界。
+   * =========================================================== */
+  enterHoushan() {
+    const s = State.data;
+    if (s.combat) { this.toast("酣战之中，无暇他顾"); return; }
+    s.exmap = ExploreMap.start("houshan_l1", { flags: s.flags });
+    if (!s.exmap) { this.toast("此地暂不可探"); return; }
+    this._applyHoushanRumors();   // 异闻在耳→按线索进度预亮巢穴（信息经济）
+    this.log("你拨开后山口的荆棘，雾气扑面而来——再往里，便没有现成的路了。", "event");
+    if (UI.openExmap) UI.openExmap();
+    this._exmapSenseHint();       // 入口先递一句血腥气方位（诚实预告而非精确雷达）
+    State.save();
+  },
+
+  // 传闻层（applyRumors）：异闻线索越多，越省摸索。clue<2 一无所知（循声自寻）；
+  // clue≥2 知栖踪（预亮雾林）；clue 满（≥3）知巢穴与路数（预亮血食谷 + 伏击先手）。
+  _applyHoushanRumors() {
+    const s = State.data, x = s.exmap;
+    if (!x || !s.beastRumor) return;
+    const rdef = ((ExploreMap.MAPS.houshan_l1 || {}).rumors || {})[s.beastRumor];
+    if (!rdef) return;
+    const clue = s.beastRumorClue || 0;
+    if (clue < 2) return;
+    const nodes = clue >= 3 ? rdef.nodes : ["wulin"];
+    const intel = clue >= 3 ? rdef.intel : null;
+    const r = ExploreMap.applyRumors(x, [{ nodes, intel, note: rdef.note }]);
+    if (r.ok && UI.exmapNote) {
+      UI.exmapNote(rdef.note + (intel ? "——它的巢与路数，你已了然于胸。" : "——栖踪已现，巢穴仍需循声摸索。"), "good");
+    }
+  },
+
+  // 远距感知读数：当前节点对最强危险源的方位强弱（一行预告，不报精确坐标）
+  _exmapSenseHint() {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const sf = ExploreMap.senseField(x);
+    if (sf && UI.exmapNote) UI.exmapNote(`${sf.text}（${sf.dir}）`, sf.level >= 3 ? "warn" : "desc");
+  },
+
+  // 巢穴猎杀：在血食谷主动出击（异闻妖王即此处那一头）。传闻在握＝伏击先机。
+  exmapHunt() {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const f = ExploreMap.cur(x);
+    const map = ExploreMap.mapOf(f);
+    const node = map.nodes[f.node];
+    if (!node || node.kind !== "danger" || f.hunted[f.node]) { this.toast("此处已无猎可寻", true); return; }
+    const beast = (s.beastRumor && WORLD.enemies[s.beastRumor]) ? s.beastRumor : (map.beastEnemy || "wild_wolf");
+    const ambush = !!(f.intel && f.intel.lair_route);
+    this._exmapFightReturn = true;
+    this._nextFightType = beast;
+    if (UI.closeExmap) UI.closeExmap();
+    this._caveFightCfg = (typeof Art !== "undefined" && Art.has && Art.has("houshan")) ? { sceneBg: "houshan" } : null;
+    this.startEncounterFight(beast);
+    this._caveFightCfg = null;
+    if (ambush && this._combat && this._combat.enemies[0]) {
+      const e = this._combat.enemies[0];
+      const cut = Math.round(e.hpMax * 0.12);
+      e.hp = Math.max(1, e.hp - cut);
+      e.exposed = 1;   // 破绽暴露一回合（伏击先机）
+      if (this._combat._log) this._combat._log(`你循着传闻摸清了它的巢与路数——伏击得手！${e.name} 当头中创（气血-${cut}，破绽大开）。`);
+      this.log("【伏击】传闻里的那些弱点，这一刻全派上了用场。", "good");
+    }
+  },
+
   // 统一解释舆图事件（travel/stay/gather/readLore 共用）
   _exmapEvents(events) {
     const s = State.data, x = s.exmap;
@@ -1378,6 +1447,14 @@ const Engine = {
       } else if (ev.type === "lore") {
         this.log(`【血色禁地】${ev.text}`, "good");
         if (UI.exmapNote) UI.exmapNote("残阵之眼睁开——全图轮廓与那道杀气的路线，尽收识海。", "good");
+      } else if (ev.type === "lookout") {
+        // 登高揭片（后山·望狼石）：山坳里的去处一时尽收眼底
+        if (UI.exmapNote) UI.exmapNote(ev.text, "good");
+        if (typeof Sfx !== "undefined") Sfx.play("chime");
+      } else if (ev.type === "sense") {
+        // 远距感知梯度（后山·兽吼/血腥气）：只报方位强弱，不报精确坐标
+        if (UI.exmapNote) UI.exmapNote(`${ev.text}（${ev.dir}）`, ev.level >= 3 ? "warn" : "desc");
+        if (typeof Sfx !== "undefined" && ev.level >= 3) Sfx.play("danger");
       } else if (ev.type === "loot") {
         const names = Object.entries(ev.loot).map(([k, n]) => `${DATA.items[k] ? DATA.items[k].name : k}×${n}`).join("、");
         this.toast(`采得：${names}`);
@@ -1813,12 +1890,28 @@ const Engine = {
   finishExmap(reason) {
     const s = State.data, x = s.exmap;
     if (!x) return;
+    const isFog = !!(ExploreMap.MAPS[x.stack[0].mapId] || {}).fog;   // 后山野外迷雾图：无灾厄钟、脚程折耗月
     const gained = [];
     Object.entries(x.bag).forEach(([k, n]) => {
       if (n > 0) { State.give(k, n); gained.push(`${DATA.items[k] ? DATA.items[k].name : k}×${n}`); }
     });
+    const fogClock = x.stack[0].clock || 0;
     s.exmap = null;
     delete s._caveSnap;
+    if (isFog) {
+      if (UI.closeExmap) UI.closeExmap();
+      const summary = gained.length ? `清点行囊：${gained.join("、")}。` : "行囊空空。";
+      this.passTime(Math.max(1, Math.round(fogClock * 0.5)));   // 脚程折耗月（与旧网格 finishExplore 同量级）
+      this.log(`你循原路退出后山，雾气在身后缓缓合拢。${summary}`, "event");
+      s.flags.adventured = true;
+      if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
+      s.skills.scouting += 2;
+      this.checkLifespan();
+      this.checkStory();
+      State.save();
+      UI.renderAll();
+      return;
+    }
     State.setFlag("jindi_left");
     if (UI.closeExmap) UI.closeExmap();
     this.passTime(1);
@@ -4532,10 +4625,18 @@ const Engine = {
         this.checkLifespan();
         if (s.exmap) {
           const inCave = s.exmap.stack.length > 1;
+          const isFog = !!(ExploreMap.MAPS[s.exmap.stack[0].mapId] || {}).fog;   // 后山野外迷雾图
           if (win && meta.enemyName === "墨蛟") {
             // 决战告捷：出洞出图，潭边戏（mojiao_after）由主线接管
             this.finishExmap("victory");
             return;
+          }
+          if (win && isFog) {
+            // 后山猎杀告捷：巢穴的猎物伏诛，血食谷归于沉寂——回图可搜刮、自行离山
+            const f = ExploreMap.cur(s.exmap);
+            f.hunted[f.node] = true;
+            this.log("血食谷重归沉寂。那头盘踞后山的凶兽，终成你剑下亡魂——谷中遍地骸骨，正可细细搜刮。", "good");
+            if (UI.exmapNote) UI.exmapNote("血食谷归于死寂——巢穴空了，腥气散了。", "good");
           }
           if (!win && inCave && s._caveSnap) {
             // 洞中败北：从洞口印记重来（进洞前的一切如旧）
@@ -4553,6 +4654,11 @@ const Engine = {
             const f = ExploreMap.cur(x);
             f.node = ExploreMap.mapOf(f).entry;
             this.log(`封岳翻走你袋中${robbed > 0 ? `主药${robbed}株` : "所有值钱物什"}，冷笑一声没下杀手：「杂役的命，不值我脏靴子。」——你拖着伤躲回了血幕裂口。`, "bad");
+          } else if (!win && !inCave && isFog) {
+            // 后山猎败：负伤退出血食谷，退回林口（猎物仍在，可调息再来）
+            const f = ExploreMap.cur(s.exmap);
+            f.node = ExploreMap.mapOf(f).entry;
+            this.log("你负伤退出血食谷，那畜生的吼声仍在身后林子里回荡——这一场，败了。退回林口，且容你喘口气。", "bad");
           }
           State.save();
           if (s.hp > 0 && s.exmap) { UI.openExmap && UI.openExmap(); return; }

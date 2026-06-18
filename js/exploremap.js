@@ -313,7 +313,8 @@
         f.expose = 0; f.taken = {}; f.preps = {}; f.introDone = false;
       }
       // 战争迷雾（map.fog 选启）：四态可见性——glimpsed 窥见 / rumored 风闻；visited 已至沿用 f.visited
-      if (map.fog) { f.glimpsed = {}; f.rumored = {}; f.senseBand = {}; }
+      // hunted：巢穴猎物已伏诛（与 cleared「采尽」分开记——先猎杀，方可搜刮）
+      if (map.fog) { f.glimpsed = {}; f.rumored = {}; f.senseBand = {}; f.hunted = {}; }
       if (map.entry) f.visited[map.entry] = true;
       if (map.fog && map.entry) this._revealFrom(f, map, map.entry, null);   // 入口即点亮四邻（+登高揭片）
       return f;

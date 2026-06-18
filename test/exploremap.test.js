@@ -190,5 +190,65 @@ console.log("== 11. 钟吾/菡云芝在场时间表 ==");
   assert(hua.presence[0] === 12, "菡云芝：第三日抵达花圃");
 }
 
+console.log("== 12. 后山 L1·战争迷雾：四态可见性 + 三揭法 + 传闻层 ==");
+{
+  // 12a. 入图整片覆雾，仅入口与四邻可见（邻接点亮）
+  const x = EM.start("houshan_l1", { flags: {} });
+  const map = EM.mapOf(EM.cur(x));
+  assert(map.fog === true && EM.cur(x).node === "linkou", "后山入图（fog 图·入口=后山林口）");
+  assert(EM.fogState(x, "linkou") === "visited", "入口=已至");
+  assert(EM.fogState(x, "yaojing") === "glimpsed" && EM.fogState(x, "guteng") === "glimpsed", "入口四邻=窥见");
+  assert(EM.fogState(x, "wanglang") === "unknown" && EM.fogState(x, "xuegu") === "unknown", "远处节点=未知（覆雾不可达）");
+}
+{
+  // 12b. 远距感知梯度：入口处隐约血腥气（弱），逼近巢穴渐强（只报方位强弱）
+  const x = EM.start("houshan_l1", { flags: {} });
+  const sf0 = EM.senseField(x);
+  assert(sf0 && sf0.level === 1 && /方$/.test(sf0.dir), `入口·弱感知（level=${sf0.level}, dir=${sf0.dir}）`);
+  EM.travel(x, "yaojing"); EM.travel(x, "wanglang"); const r = EM.travel(x, "wulin");
+  const sfN = EM.senseField(x);
+  assert(sfN && sfN.level === 4, `逼近血食谷·感知最烈（level=${sfN.level}）`);
+  assert(r.events.some(e => e.type === "sense"), "跨档触发感知鸣示（兽吼/血腥气）");
+}
+{
+  // 12c. 登高揭片：望狼石一望，揭开山坳深处数处去处
+  const x = EM.start("houshan_l1", { flags: {} });
+  EM.travel(x, "yaojing");
+  const r = EM.travel(x, "wanglang");
+  const lk = r.events.find(e => e.type === "lookout");
+  assert(lk && lk.reveals.includes("xuegu"), "望狼石登高=揭片事件（含血食谷）");
+  assert(EM.fogState(x, "xuegu") === "glimpsed" && EM.fogState(x, "wulin") === "glimpsed", "登高后远处节点升为窥见");
+}
+{
+  // 12d. 邻接点亮：走一步，新节点四邻随之显形
+  const x = EM.start("houshan_l1", { flags: {} });
+  assert(EM.fogState(x, "qixi") === "unknown", "栖息岩穴起初未知");
+  EM.travel(x, "yaojing");
+  assert(EM.fogState(x, "qixi") === "glimpsed", "抵采药小径后·栖息岩穴升为窥见");
+}
+{
+  // 12e. 传闻层：只降雾、不增删世界——预亮巢穴为风闻 + 落情报红利（伏击资格）
+  const x = EM.start("houshan_l1", { flags: {} });
+  const res = EM.applyRumors(x, ["beast_chimu"]);
+  assert(res.ok, "异闻在耳=可降雾");
+  assert(EM.fogState(x, "xuegu") === "rumored", "巢穴预亮为风闻（知其所在，未亲至）");
+  assert(EM.cur(x).intel.lair_route === true, "落情报红利=伏击资格（lair_route）");
+  // 风闻不改世界：节点定义与战利原样
+  assert(EM.mapOf(EM.cur(x)).nodes.xuegu.boss === true, "传闻层零增删（血食谷 boss 定义不变）");
+}
+{
+  // 12f. 巢穴搜刮：血食谷最肥（rich），其余节点药薄
+  const x = EM.start("houshan_l1", { flags: {} });
+  EM.travel(x, "yaojing"); EM.travel(x, "wanglang"); EM.travel(x, "wulin"); EM.travel(x, "xuegu");
+  const r = EM.gather(x);
+  assert(r.ok && x.bag.lingshi === 3, `血食谷搜刮丰收（bag=${JSON.stringify(x.bag)}）`);
+}
+{
+  // 12g. 零回归：非 fog 图（血色禁地）一切照旧——全显、无感知
+  const x = EM.start("xueshi_l1", { flags: {} });
+  assert(EM.fogState(x, "liechang") === "visited", "无雾图·fogState 恒为已至（不影响血色禁地）");
+  assert(EM.senseField(x) === null, "无雾图·无远距感知（零回归）");
+}
+
 console.log(`\n========== 舆图引擎：${fail === 0 ? "全部通过 ✓" : fail + " 项失败 ✗"}（${pass} 项） ==========`);
 process.exit(fail ? 1 : 0);
