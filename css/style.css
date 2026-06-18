@@ -363,6 +363,23 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .btn-action[data-action="breakthrough"] { color: var(--gold); border-color: rgba(212,176,106,0.5); }
 .btn-action[data-action="breakthrough"]:hover { background: rgba(212,176,106,0.12); color: var(--gold-bright); }
 
+/* 修为满、可突破：主面板修为条与「尝试突破」按钮脉冲高亮，明确"可突破"（M6）*/
+.bar-group.bt-ready .bar-fill.cul { animation: culReadyPulse 1.6s ease-in-out infinite; }
+@keyframes culReadyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212,176,106,0); filter: brightness(1); }
+  50% { box-shadow: 0 0 9px 1px rgba(212,176,106,.75); filter: brightness(1.2); }
+}
+.bt-ready-tag { color: var(--gold-bright); font-weight: 600; animation: btTagBlink 1.6s ease-in-out infinite; }
+@keyframes btTagBlink { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+.btn-action.btn-bt-ready { animation: guideFocus 1.6s ease-in-out infinite; border-color: var(--gold-bright) !important; }
+@media (prefers-reduced-motion: reduce) {
+  .bar-group.bt-ready .bar-fill.cul, .bt-ready-tag, .btn-action.btn-bt-ready { animation: none; }
+}
+
+/* 闭关弹窗：「至本层圆满」与固定档之间的分隔，凸显推荐项（M3）*/
+.btn-tofull { font-weight: 600; }
+.seclusion-divider { text-align: center; color: var(--ink-faint); font-size: 11px; letter-spacing: 2px; margin: 4px 0 2px; }
+
 /* ===== 背包 ===== */
 .inventory { display: flex; flex-direction: column; gap: 6px; }
 .inv-item {
