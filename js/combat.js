@@ -142,6 +142,12 @@
     leidun:     { name: "雷遁", mp: 5, range: [0, 0], type: "buff", quick: true, source: "treasure", elem: "mu",
                 chargeCost: { id: "shenlei", n: 1 }, blinkMove: true, needTrait: "fenglei",
                 desc: "化一道银弧穿亚空间而行——本回合可瞬移到场上任意空位、无视挡线困足（瞬发）。需御「风雷翅」方可施展。耗神雷一道。韩跑跑的本钱。" },
+    // 飞遁·掠（teamfight-camera-design C1）：大战场专属脚力——足底遁光一掠贴地横越整片战场，
+    //   本回合落点随心（占主行动、不耗神雷、无需风雷翅）。这是"我一直左右飞遁碰别的战场、穿场驰援"的本钱；
+    //   freeBlink=绕过雷遁的风雷翅门槛；只在 fronts 团战里自动授予（_layoutFronts 末尾 grant），日常单挑不污染手牌。
+    feidun_lue: { name: "飞遁·掠", mp: 2, range: [0, 0], type: "buff", source: "art", elem: "mu",
+                blinkMove: true, freeBlink: true,
+                desc: "足底遁光一掠、贴地疾掠——本回合可横越整片战场、落点随心，穿场驰援近在咫尺（占主行动、不耗神雷）。" },
 
     /* —— 噬金虫·四用法（初入星海篇·#5 用户裁决：复用神雷 chargeCost 共享池）——
      * 一窝灵虫四种调遣，同抽一池"灵机"（charges.shijinchong），打一分少一分、耗尽则哑火——取舍即战术。
@@ -343,6 +349,10 @@
       //   多战区默认开（可被 cfg.crossSupport 显式关）——“互相协助、自由协作”靠这一口。
       this.crossSupport = cfg.crossSupport != null ? !!cfg.crossSupport
         : !!(this._fronts && this._fronts.length >= 2);
+      // 开场扫场（teamfight-camera-design B3）：多战线团战开战时镜头横扫各战区亮一遍再落回韩立——
+      //   "一眼看清三摊架在哪"。多战区默认开（日常单挑无 fronts 不扰），cfg.openingSweep 显式开/关。
+      this._sweepOnOpen = cfg.openingSweep != null ? !!cfg.openingSweep
+        : !!(this._fronts && this._fronts.length >= 2);
       // 初始仇恨播种（多组对位锁线/钓怪）：开战前先定杀意流向——三组对位才成"三条战线"而非一锅端混战
       //   形如 [{ e:敌序号, key:"side:0"|"player", amt:数值 }]；须在 _rollEnemyIntents 之前
       if (cfg.aggroSeed) cfg.aggroSeed.forEach(seed => {
@@ -391,6 +401,12 @@
         });
         this._fronts.push({ name: f.name || null, at: f.at, allyKey, enemyIdxs });
       });
+      // 授「飞遁·掠」（C1）：大战场里玩家须能左右穿场驰援——团战自动入手牌（占主行动·不耗神雷·无需风雷翅），
+      //   日常单挑不授（不污染手牌）。cfg.grantFeidun:false 可显式关。
+      if (this.player && Array.isArray(this.player.spells)
+        && cfg.grantFeidun !== false && !this.player.spells.includes("feidun_lue")) {
+        this.player.spells = ["feidun_lue"].concat(this.player.spells);
+      }
     }
     _makeSideFighter(s) {
       const f = new Fighter({
@@ -1126,7 +1142,7 @@
       if (sp.quick && this._pQuickUsed) return { ok: false, reason: "本回合瞬发牌已用" };
       if (!sp.quick && this._pActsUsed >= this._pActsMax) return { ok: false, reason: "本回合主行动已用——可打瞬发牌或结束回合" };
       if ((sp.mp || 0) > this.player.mp) return { ok: false, reason: "灵力不济，催动不了" };
-      if (sp.blinkMove && !this.player.blink) return { ok: false, reason: "需御「风雷翅」方能雷遁穿空（尚未解锁）" };
+      if (sp.blinkMove && !sp.freeBlink && !this.player.blink) return { ok: false, reason: "需御「风雷翅」方能雷遁穿空（尚未解锁）" };
       const target = this.enemies[targetIndex];
       if (sp.type === "zone" && !sp.selfZone && opts.cell != null) {
         // 择地布阵：射程量到所点之格，不看敌人站哪
@@ -1205,8 +1221,10 @@
       if (sp.blinkMove) {
         this.player._blinkTurn = true;
         this._pMoved = 0;   // 穿亚空间：本回合移动上限放大到全场（落点随心、长距离瞬移——只看落点空否）
-        this._log(`你周身银光一闪、整个人没入亚空间——本回合穿空遁走、无视挡线困足，落点随心（移动范围大增）！`);
-        this._emitFx("player", "miss", "雷遁");
+        this._log(sp.freeBlink
+          ? `你足底遁光一掠、贴地疾掠——本回合可横越整片战场、落点随心，哪条战线吃紧便穿场驰援！`
+          : `你周身银光一闪、整个人没入亚空间——本回合穿空遁走、无视挡线困足，落点随心（移动范围大增）！`);
+        this._emitFx("player", "miss", sp.name);
         this._checkEnd();
         return { ok: true };
       }
