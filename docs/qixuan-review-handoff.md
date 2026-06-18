@@ -3,6 +3,21 @@
 > 目的：让任何账号 / 任何 agent 都能**无缝接着这次审阅**——不用重玩、不用重新搭环境。
 > 本文件 + 测试存档 + 审阅报告 三件套同分支维护，每个 checkpoint 一起更新并 push。
 
+---
+
+## 0. 当用户说「继续审阅」时，接手 agent 照此做（TL;DR）
+
+1. 进仓库 `chentong227/fanrenxiuxianzhuan`，切分支 `devin/qixuan-review`，`git pull`。
+2. 起服务器：`node scripts/_serve.js 8011` → 开 Chrome `http://127.0.0.1:8011/index.html`。
+3. F12 → Ctrl+Shift+M → 选 **iPhone 14 Pro Max（430×932，DPR3）**（硬性视口，见 R1）。
+4. 控制台粘贴第 2 节那行 `fetch(...)` 读回存档 → 点「读取存档」。校验进度 = 本文件第 1 节「快照」。
+5. **只观察、只记录、不改代码**（R3）。开屏幕录制（结构化注解）。
+6. 从「快照」里的 **下一节点** 继续往后玩（当前 = `zhangtie` 张铁之死）：天命「挚友外出未归」→ 用「打坐调息/闭关」推进数月触发 → 按第 4 节策略与剩余节点清单一路打到 `arc_end`。
+7. 每过一个主线大节点：导出存档（第 5 节命令）+ 更新本文件第 1 节快照 + 往 `docs/playtest-七玄门篇-报告.md` 追加发现 → `git commit && git push`（分支 `devin/qixuan-review`，**不进 main**）。
+8. 全程把发现按「难度/节奏/缺提示/移动端UI/美术v168/战斗/Bug/沉浸」归类，最后给优先级修复清单。
+
+> ⚠️ 已知阻塞（2026-06-18 checkpoint #2）：本机 git 推送代理认证一度失效，commit `25805ff` 暂存在本地未推上去。接手前先确认能 `git push`；若仍失败，本地 commit 历史里已有全部进度，pull 不到就找用户恢复推送权限。
+
 - 仓库：`chentong227/fanrenxiuxianzhuan`
 - 分支：`devin/qixuan-review`
 - 三件套：
