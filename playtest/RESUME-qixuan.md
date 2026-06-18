@@ -12,17 +12,17 @@
 
 | 项 | 值 |
 |---|---|
-| 角色 | 韩立（四伪灵根 si，练气一层 realmIndex=0，修为 cultivation=0） |
-| 时间/年龄 | 第 1 年 1 月，13 岁，寿元 100 |
+| 角色 | 韩立（四伪灵根 si，练气一层 realmIndex=0，修为 cultivation=102） |
+| 时间/年龄 | 第 1 年 7 月 |
 | 位置 | 药庐 yaolu（已拜墨大夫为药童） |
-| 资源 | 纹银 20、灵石 0、青元丹 ×2 |
 | 功法 | 《长春功》changchun 一层 |
-| storyStage | **3 = `intro`（拜师墨大夫）已展示，下一节点 `friends`** |
-| 关键 flag | at_village / joined_sect / met_modafu |
-| 在途任务 | 墨大夫的期许 modafu_deadline（dueAbs=37，约第 37 月前修至练气二层验功） |
+| storyStage | **6 = `bottle`（小绿瓶到手）已展示，下一节点 `secret_cultivate`（暗修·练气四层）** |
+| 关键 flag | at_village / joined_sect / met_modafu / met_friends |
+| 小绿瓶 | bottle.unlocked=true（2 个空地块），已解锁「打理小瓶」行动 |
+| 在途任务 | 天命「暗修精进·修到练气四层」 + 限时「墨大夫的期许·练气二层」 |
 | activeChapter | qixuan |
 
-**下一步要做的事**：从 `intro` 往后推 —— 需把修为练到 **40**（或外出历练 `adventured`）才会弹出 `friends`（结识厉飞雨）。
+**下一步要做的事（后续会话）**：从 `bottle` 往后推 —— 用「打理小瓶」催熟灵药 + 闭关，把《长春功》修到 **练气四层** 触发 `secret_cultivate`，再往后是张铁之死 / 反杀墨大夫。本会话按用户指定**到 bottle 即停**。
 
 ---
 
