@@ -2,15 +2,15 @@
   "name": "韩立",
   "rootId": "si",
   "realmIndex": 0,
-  "cultivation": 0,
-  "spirit": 60,
+  "cultivation": 102,
+  "spirit": 16,
   "poolBonus": 0,
   "sense": 5,
   "body": 8,
   "zhuanImprint": 1,
   "hp": 100,
   "hpMax": 100,
-  "mood": 100,
+  "mood": 82,
   "moodMax": 100,
   "demon": 0,
   "speed": 10,
@@ -18,13 +18,14 @@
   "lifespan": 100,
   "age": 13,
   "year": 1,
-  "month": 1,
+  "month": 7,
   "stones": 0,
   "silver": 20,
   "location": "yaolu",
   "flightId": "none",
   "inventory": {
-    "qingyuan_dan": 2
+    "qingyuan_dan": 2,
+    "lingcao": 2
   },
   "spells": [
     "tuna",
@@ -55,7 +56,8 @@
   "flags": {
     "at_village": true,
     "joined_sect": true,
-    "met_modafu": true
+    "met_modafu": true,
+    "met_friends": true
   },
   "firedFortunes": [],
   "tasks": [
@@ -68,10 +70,19 @@
   "leads": [],
   "heardLeads": [],
   "timeline": [],
-  "storyStage": 3,
+  "storyStage": 6,
   "bottle": {
-    "unlocked": false,
-    "plots": []
+    "unlocked": true,
+    "plots": [
+      {
+        "crop": null,
+        "growth": 0
+      },
+      {
+        "crop": null,
+        "growth": 0
+      }
+    ]
   },
   "log": [
     {
@@ -109,17 +120,59 @@
       "t": "第1年1月",
       "body": "【新任务·墨大夫的期许】墨大夫初授《长春功》，盼你早日修至练气二层验功。届时按例重赏，莫要懈怠。（期限 24 个月）",
       "kind": "event"
+    },
+    {
+      "id": 1,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">拜师 · 墨大夫</div><div class=\"seg-scene\">· 七玄门 · 药庐 ·</div><p class=\"seg-narr\">选拔的喧嚣散去，你和张铁被一名枯瘦老者叫到跟前。他便是门中以医毒闻名、性情古怪的墨大夫。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/modafu.png?v=26\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">墨大夫</span><span class=\"dlg-tone\">打量着你，忽然咳了两声</span></div>\n          <div class=\"dlg-text\">你二人资质平平，却有股不肯认命的韧劲……也罢，就留在我药庐做个药童吧。</div>\n        </div>\n      </div><p class=\"seg-narr\">他枯枝似的手指递来一卷泛黄的功法。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/modafu.png?v=26\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">墨大夫</span></div>\n          <div class=\"dlg-text\">这《长春功》，你且用心修习。每练成一层，我便赏你纹银。</div>\n        </div>\n      </div><p class=\"seg-aside\">纹银……家里若能宽裕些就好了。你压下心头的念头，恭敬接过。</p><p class=\"seg-narr\">自此你住进药庐，日里辨药煎药，闲时打坐修《长春功》。修仙之路，就在这草药的苦香里，悄然开端。</p>"
+    },
+    {
+      "id": 2,
+      "t": "第1年7月",
+      "body": "【风声】门里传开了：丹房昨夜失窃，丢了一批养元丹。管事们脸色铁青。",
+      "kind": "sys"
+    },
+    {
+      "id": 3,
+      "t": "第1年7月",
+      "body": "你闭关 6 月，潜心苦修《长春功》。修为+102。丹田之内灵力已近圆满，似可尝试突破。",
+      "kind": "good"
+    },
+    {
+      "id": 4,
+      "t": "第1年7月",
+      "body": "【结识】你结识了「厉飞雨」（好友 · 武学有成）。爽朗仗义的同门师兄，武学有成。　——已录入「人物图鉴」。",
+      "kind": "event"
+    },
+    {
+      "id": 5,
+      "t": "第1年7月",
+      "kind": "story",
+      "body": "<div class=\"title\">同门之谊</div><div class=\"seg-scene\">· 演武厅 ·</div><p class=\"seg-narr\">药庐之外，你结识了同门厉飞雨——一个武学有成、性子爽朗的师兄。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/lifeiyu.png?v=26\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">厉飞雨</span><span class=\"dlg-tone\">拍着你肩膀大笑</span></div>\n          <div class=\"dlg-text\">韩立，你这记性简直是天才！我练了三月的招式，你看两遍就会了！</div>\n        </div>\n      </div><p class=\"seg-aside\">你笑而不语。这哪是什么天才——是《长春功》练到些火候后，记忆愈发清明罢了。这等隐秘，自然不能与人说。</p><p class=\"seg-narr\">张铁却没这般顺遂。他无论如何引气不入体，《长春功》死死卡在第一层。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/modafu.png?v=26\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">墨大夫</span><span class=\"dlg-tone\">摇头</span></div>\n          <div class=\"dlg-text\">你这身子骨，不是修仙的料。改修武体吧，练练象甲功，强身健骨也好。</div>\n        </div>\n      </div><p class=\"seg-narr\">张铁憨憨地应了，没半分怨言。三人意气相投，结为好友——这七玄门的日子，总算有了些暖意。</p>"
+    },
+    {
+      "id": 6,
+      "t": "第1年7月",
+      "kind": "story",
+      "body": "<div class=\"title\">神秘小瓶</div><p class=\"seg-narr\">一次外出，你于无意间得了一只不起眼的小绿瓶。</p><p class=\"seg-narr\">瓶中残留着几滴神秘绿液。你试着将一株枯萎灵草投入瓶内——</p><p class=\"seg-narr\">不过一夜，那灵草竟抽枝展叶，灵气盎然，仿佛被催着长了整整一季！</p><p class=\"seg-narr\">你心头剧跳，强压下狂喜。此物若善加利用……以你这平庸的四灵根，未必没有出头之日。此事，断不可让任何人知晓。</p>"
     }
   ],
-  "worldNews": [],
+  "worldNews": [
+    {
+      "t": "第1年7月",
+      "kind": "rumor",
+      "text": "门里传开了：丹房昨夜失窃，丢了一批养元丹。管事们脸色铁青。"
+    }
+  ],
   "npcFates": [
     {
       "id": "s_li",
       "name": "散修·李恒",
       "apt": 1.05,
       "realm": 3,
-      "cul": 0,
-      "age": 38,
+      "cul": 38.502655081389776,
+      "age": 38.500000000000014,
       "lifespan": 108,
       "status": "alive",
       "desperate": false
@@ -129,8 +182,8 @@
       "name": "散修·王矮子",
       "apt": 0.7,
       "realm": 5,
-      "cul": 0,
-      "age": 50,
+      "cul": 24.977959448757947,
+      "age": 50.500000000000014,
       "lifespan": 116,
       "status": "alive",
       "desperate": false
@@ -140,8 +193,8 @@
       "name": "游方·赵越",
       "apt": 0.85,
       "realm": 2,
-      "cul": 0,
-      "age": 32,
+      "cul": 33.4082463516553,
+      "age": 32.500000000000014,
       "lifespan": 104,
       "status": "alive",
       "desperate": false
@@ -151,8 +204,8 @@
       "name": "七玄弟子·钱通",
       "apt": 0.95,
       "realm": 4,
-      "cul": 0,
-      "age": 44,
+      "cul": 33.863175034663406,
+      "age": 44.500000000000014,
       "lifespan": 112,
       "status": "alive",
       "desperate": false
@@ -162,8 +215,8 @@
       "name": "七玄弟子·孙礼",
       "apt": 0.6,
       "realm": 6,
-      "cul": 0,
-      "age": 56,
+      "cul": 22.78309086479338,
+      "age": 56.500000000000014,
       "lifespan": 120,
       "status": "alive",
       "desperate": false
@@ -173,8 +226,8 @@
       "name": "黄枫散人·周牧",
       "apt": 1.25,
       "realm": 8,
-      "cul": 0,
-      "age": 68,
+      "cul": 42.81622218586463,
+      "age": 68.49999999999997,
       "lifespan": 128,
       "status": "alive",
       "desperate": false
@@ -184,8 +237,8 @@
       "name": "散修·冯婆婆",
       "apt": 0.5,
       "realm": 7,
-      "cul": 0,
-      "age": 62,
+      "cul": 17.1768798753373,
+      "age": 62.500000000000014,
       "lifespan": 124,
       "status": "alive",
       "desperate": false
@@ -195,8 +248,8 @@
       "name": "散修·陈九",
       "apt": 0.9,
       "realm": 1,
-      "cul": 0,
-      "age": 26,
+      "cul": 28.141839736648247,
+      "age": 26.499999999999993,
       "lifespan": 100,
       "status": "alive",
       "desperate": false
@@ -209,9 +262,10 @@
   "aidCd": -99,
   "metNpcs": [
     "zhangtie",
-    "modafu"
+    "modafu",
+    "lifeiyu"
   ],
-  "pendingEvent": "intro",
+  "pendingEvent": null,
   "explore": null,
   "exmap": null,
   "benchTreasures": [],
@@ -230,7 +284,11 @@
   },
   "intel": {},
   "intelMoves": {},
-  "ripple": null,
+  "ripple": {
+    "id": "pill_theft",
+    "stage": 0,
+    "nextAbs": 21
+  },
   "rippleWindow": null,
   "doneRipples": [],
   "fame": 0,

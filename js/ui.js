@@ -693,8 +693,10 @@ const UI = {
 
     // 演出即引导：落幕时指定的行动按钮脉冲高亮一次（指明"该点哪个"），消费即清
     const focus = this._pendingFocus; this._pendingFocus = null;
+    // 可突破时「尝试突破」按钮持续脉冲（M6）
+    const btReady = this._btReady();
     box.innerHTML = (acts.length || windowBtn)
-      ? windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
+      ? windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}${btReady && a === "breakthrough" ? " btn-bt-ready" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
       : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>` : "");
     box.querySelectorAll("[data-action]").forEach(btn => {
       btn.addEventListener("click", () => Engine.doAction(btn.dataset.action));
@@ -745,6 +747,23 @@ const UI = {
     this.setBar("hp", s.hp, s.hpMax);
     this.setBar("mood", s.mood, s.moodMax);
     this.setBar("demon", s.demon, 100);
+
+    // 修为满且可突破：修为条脉冲 + 「可突破」角标，免玩家以为"练满了没用"（M6）
+    const btReady = this._btReady();
+    const culGroup = this.el("cul-group");
+    if (culGroup) culGroup.classList.toggle("bt-ready", btReady);
+    const btTag = this.el("cul-bt-tag");
+    if (btTag) btTag.hidden = !btReady;
+  },
+
+  // 本层圆满 + 突破未被其它门槛（功法/秘仪/封顶）挡住 → 给出"可突破"反馈（M6）
+  _btReady() {
+    const s = State.data;
+    const realm = State.realm();
+    if (!s || !realm) return false;
+    if (s.cultivation < realm.culMax) return false;
+    if (typeof Engine === "undefined" || !Engine.canBreakthrough) return false;
+    return !!Engine.canBreakthrough().ok;
   },
 
   setBar(key, val, max) {
@@ -1081,6 +1100,13 @@ const UI = {
     }
   },
 
+  // 全屏推进（M1）：轻触剧情舞台任意处皆可推进；但放过交互控件（跳过/抉择/交互 beat/指路卡），
+  // 由它们各自的按钮处理，避免重复推进或吞掉点击。
+  storyTapAdvance(e) {
+    const t = e && e.target;
+    if (t && t.closest && t.closest("#story-skip, #story-choices, .cut-beat-on, button, a")) return;
+    this.storyAdvance();
+  },
   // 逐句推进：每次轻触显示下一节拍；打字中则先补完；到末尾给出选项。
   // 演出原语（cam/actor/fx/sfx/bgm）是舞台指令，自动连演不阻塞；撞上台词/交互/wait 才停。
   storyAdvance() {
@@ -1168,7 +1194,9 @@ const UI = {
     }
 
     const last = (st.idx >= st.beats.length - 1);
-    if (cue) cue.textContent = last ? "▽ 轻触，到此抉择" : "▽ 轻触继续";
+    // 单选项节点不是真正的「抉择」，措辞用「轻触继续」免期待落差（M8）
+    const hasBranch = ((st.stage.choices || []).length > 1);
+    if (cue) cue.textContent = last ? (hasBranch ? "▽ 轻触，到此抉择" : "▽ 轻触继续") : "▽ 轻触继续";
     this.el("story-choices").innerHTML = "";
   },
 
@@ -1662,9 +1690,10 @@ const UI = {
         ${o.label}　<span style="color:var(--ink-dim);font-size:12px">预计修为+${perMonth * o.m}　${o.note}</span>
       </button>`
     ).join("");
-    // 一键闭关至本层圆满（省去反复点击，但插曲/耗时照常结算）
+    // 一键闭关至本层圆满（省去反复点击，但插曲/耗时照常结算）——置顶+推荐角标+分隔，免与固定档并列看漏（M3）
     const toFullBtn = (toFull > 0 && need > 0 && need < 200)
-      ? `<button class="btn btn-primary" onclick="UI.closeModal(); Engine.doCultivate(${need});">闭关至本层圆满　<span style="font-size:12px;opacity:.85">约 ${need} 月</span></button>`
+      ? `<button class="btn btn-primary btn-tofull" onclick="UI.closeModal(); Engine.doCultivate(${need});">★ 闭关至本层圆满　<span style="font-size:12px;opacity:.85">约 ${need} 月 · 推荐</span></button>
+         <div class="seclusion-divider">— 或按固定时长 —</div>`
       : "";
 
     // 闭关研习功法（持有未习的典籍时）

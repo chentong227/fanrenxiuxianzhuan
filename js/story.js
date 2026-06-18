@@ -81,7 +81,7 @@ const STORY = [
       State.setFlag("met_modafu");
       s.location = "yaolu";
       Engine.meetNpc("modafu", "门中以医毒闻名的怪人，收你为药童。");
-      Engine.assignTask("modafu_deadline", 24);
+      Engine.assignTask("modafu_deadline", 12);
       Engine.toast("你拜入墨大夫门下，习《长春功》");
     },
     choices: [
@@ -95,6 +95,8 @@ const STORY = [
   {
     id: "friends",
     cond: (s) => s.flags.adventured || s.cultivation >= 40,
+    objTitle: "初入门墙",
+    objHint: "潜心闭关修炼，或云游至演武厅/后山「外出历练」——走动之间，自有同门相识。",
     title: "同门之谊",
     text: [
       { scene: "演武厅" },
@@ -117,7 +119,9 @@ const STORY = [
   /* ---- B2 得小绿瓶 ---- */
   {
     id: "bottle",
-    cond: (s) => s.cultivation >= 70 || s.flags.adv_count >= 2,
+    cond: (s) => (s.flags.adv_count || 0) >= 2,
+    objTitle: "外出历练",
+    objHint: "厉飞雨邀你同行——云游至后山「深入探索」或演武厅「切磋武艺」，多走两趟历练，或有意外机缘。",
     cg: "bottle",
     title: "神秘小瓶",
     text: [

@@ -12,23 +12,35 @@
 
 | 项 | 值 |
 |---|---|
-| 角色 | 韩立（四伪灵根 si，练气一层 realmIndex=0，修为 cultivation=0） |
-| 时间/年龄 | 第 1 年 1 月，13 岁，寿元 100 |
+| 角色 | 韩立（四伪灵根 si，练气一层 realmIndex=0，修为 cultivation=102） |
+| 时间/年龄 | 第 1 年 7 月 |
 | 位置 | 药庐 yaolu（已拜墨大夫为药童） |
-| 资源 | 纹银 20、灵石 0、青元丹 ×2 |
 | 功法 | 《长春功》changchun 一层 |
-| storyStage | **3 = `intro`（拜师墨大夫）已展示，下一节点 `friends`** |
-| 关键 flag | at_village / joined_sect / met_modafu |
-| 在途任务 | 墨大夫的期许 modafu_deadline（dueAbs=37，约第 37 月前修至练气二层验功） |
+| storyStage | **6 = `bottle`（小绿瓶到手）已展示，下一节点 `secret_cultivate`（暗修·练气四层）** |
+| 关键 flag | at_village / joined_sect / met_modafu / met_friends |
+| 小绿瓶 | bottle.unlocked=true（2 个空地块），已解锁「打理小瓶」行动 |
+| 在途任务 | 天命「暗修精进·修到练气四层」 + 限时「墨大夫的期许·练气二层」 |
 | activeChapter | qixuan |
 
-**下一步要做的事**：从 `intro` 往后推 —— 需把修为练到 **40**（或外出历练 `adventured`）才会弹出 `friends`（结识厉飞雨）。
+**下一步要做的事（后续会话）**：从 `bottle` 往后推 —— 用「打理小瓶」催熟灵药 + 闭关，把《长春功》修到 **练气四层** 触发 `secret_cultivate`，再往后是张铁之死 / 反杀墨大夫。本会话按用户指定**到 bottle 即停**。
 
 ---
 
 ## 1. 一键恢复存档（任何 agent 接手第一步）
 
-游戏服务在仓库根（本机 `http://localhost:8099/`，存档键 `frxxz_save_v1`）。先把游戏页面打开（iPhone 14 Pro Max 430×932 视口），在 DevTools Console 跑：
+游戏服务在仓库根（本机 `node scripts/_serve.js 8011` → `http://127.0.0.1:8011/`，存档键 `frxxz_save_v1`）。
+
+**最推荐（开局一条命令搞定起服+开页+灌档，幂等）**：
+```bash
+node playtest/session-init.js      # 起 _serve.js(8011) + 经 CDP 开游戏页 + 灌入 save-qixuan.json
+```
+**或（游戏页已开时，只灌档）**：
+```bash
+node playtest/savetool.js load     # 仓库 save-qixuan.json → localStorage → 自动 reload
+```
+回到页面点「读取存档」即进入存档局面（顶栏应显示「第1年1月 · 墨大夫药庐」）。
+
+**或手动**（先把游戏页面打开，iPhone 14 Pro Max 视口），在 DevTools Console 跑：
 
 ```js
 // 从仓库存档恢复并续玩
@@ -107,12 +119,21 @@ State.save(); Engine.checkStory();             // 催出后续节点
 
 1. **接手**：按第 1 节恢复存档 → 切 iPhone 14 Pro Max 视口 → 开 DevTools Console/Network 监控。
 2. **续玩**：按第 2 节节点表从"🟡 当前"往后推，边玩边按第 3 节记录。
-3. **每到里程碑**（如过一个门禁、到张铁之死、反杀墨大夫等）执行落库：
-   - 在 Console 跑第 6 节"导出存档"，把最新 `frxxz_save_v1` 覆盖写回 `playtest/save-qixuan.json`（node Buffer 'utf8' 写，**勿用 PowerShell Set-Content**，中文会乱码）。
-   - 更新本文件第 0 节快照、第 2 节进度勾选、第 3/5 节发现。
-   - 提交并直推（用户 PAT，见第 6 节）。
+3. **每到里程碑**（如过一个门禁、到张铁之死、反杀墨大夫等）执行**验证同步落库 SOP**（详见 `docs/playtest-experience-guide.md` §9，下面是要点）：
+   1. 导出存档：`node playtest/savetool.js dump`（覆盖写 `playtest/save-qixuan.json`，UTF-8）。
+   2. 更新 `playtest/REVIEW-qixuan.md`（本里程碑机制发现）+ 本文件第 0 节快照、第 2 节进度勾选。
+   3. `git add` 上述文件 → `git commit`。
+   4. `git push`（用户 PAT，见第 6 节）。
+   5. **验证同步（过了才算"落库成功"，不许只凭 push 退出码）**：
+      ```bash
+      L=$(git rev-parse HEAD); R=$(git ls-remote origin <你的分支> | cut -f1)
+      [ "$L" = "$R" ] && echo SYNCED || echo "NOT SYNCED -> 重推"
+      git fetch origin >/dev/null && git diff --quiet HEAD origin/<你的分支> && echo CLEAN
+      ```
+      `SYNCED` + `CLEAN` 都出现才算同步成功；任一不符立刻重推。
+   6. 把 `REVIEW-qixuan.md` 本里程碑那段**贴给用户看**。
 4. **录屏**：全程录屏作凭证，关键节点加 `test_start`/`assertion` 注记。
-5. **玩完**：合计 ≥16 条发现 → 汇总报告发用户确认 → 用户点头后再改代码（改后 bump 版本 + 跑回归 + 开 PR，见 AGENTS.md）。
+5. **玩完**：合计 ~15 条机制发现（重点判断是否不合理：难度/节奏/平衡）→ 汇总报告发用户确认 → 用户点头后再改代码（按 `docs/playtest-experience-guide.md` §10「发现→修复 SOP」：查档定位→最小改→`node scripts/bump.js`→跑回归→复玩验证→§9 落库→PAT 开 PR）。
 6. **本任务红线**：审阅期间**只观察不改游戏代码**（P1/P2 静态修复已单独处理）；存档/文档落库是用户显式要求。
 
 ---
@@ -130,20 +151,19 @@ State.save(); Engine.checkStory();             // 催出后续节点
 
 ## 6. 落库工具（导出存档 + 直推）
 
-**A. 导出当前存档覆盖仓库文件**（在游戏页 Console 跑，拿到全文后用 node 写盘）：
-```js
-copy(localStorage.getItem('frxxz_save_v1'));  // 已复制到剪贴板；或 console.log 取全文
-```
-然后在仓库根用 node 写（保证 UTF-8）：
+**A. 导出当前存档覆盖仓库文件**（推荐用脚本，自动保证 UTF-8）：
 ```bash
-node -e 'const fs=require("fs");const o=JSON.parse(process.argv[1]);fs.writeFileSync("playtest/save-qixuan.json",Buffer.from(JSON.stringify(o,null,2),"utf8"));' "$SAVE_JSON_STRING"
+node playtest/savetool.js dump        # localStorage frxxz_save_v1 → playtest/save-qixuan.json（pretty, UTF-8）
 ```
+> 脚本经 CDP（`localhost:29229`）读取游戏页 localStorage；如端口不同用 `CDP_URL=... node playtest/savetool.js dump`。
+> 手动兜底：游戏页 Console 跑 `copy(localStorage.getItem('frxxz_save_v1'))`，再 `node -e '...Buffer.from(...,"utf8")...'` 写盘（**勿用 PowerShell Set-Content**，中文乱码）。
 
-**B. 提交直推**（Devin 对本仓库无写权限，必须用用户 PAT 直推到分支；AGENTS.md）：
+**B. 提交 + 直推 + 验证同步**（Devin 对本仓库无写权限，必须用用户 PAT 直推到分支；AGENTS.md）：
 ```bash
-git add playtest/save-qixuan.json playtest/RESUME-qixuan.md
-git commit -m "playtest(qixuan): checkpoint @ <节点> + 发现 <n> 条"
+git add playtest/save-qixuan.json playtest/REVIEW-qixuan.md playtest/RESUME-qixuan.md
+git commit -m "playtest(qixuan): checkpoint @ <节点> + 机制发现 <n> 条"
 git push https://x-access-token:<PAT>@github.com/chentong227/fanrenxiuxianzhuan.git HEAD:<你的分支>
+# 验证同步（见 §4 步骤 5）：本地 HEAD 必须 == 远端分支 SHA，diff 为空
 ```
 PR 走 GitHub API + PAT(curl)。该仓库无 CI，GitHub Pages 从 main 自动部署。
 

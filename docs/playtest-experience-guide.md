@@ -212,6 +212,82 @@ location.reload();                       // 重载后 Engine.checkStory() 会弹
 
 ---
 
+## 9. 落库续玩模式（持久存档 + 验证同步 SOP）
+
+> **默认 R5「报告/存档不入库」。但当用户明确要求"边玩边把存档和审阅报告落库续玩"时（持久续玩任务），改用本模式。** 目的：进度（存档）+ 成果（报告）每个里程碑都进 git，**任何会话/任何 agent 都能从仓库无损接手，绝不再丢进度**。qixuan 篇即此模式的活实例（见 `playtest/RESUME-qixuan.md`）。
+
+落库续玩模式下，每到一个**里程碑**（过一个剧情门禁 / 到一个关键节点：friends、bottle、张铁之死、反杀墨大夫、arc_end 等）执行下列 **6 步「验证同步落库」SOP**，缺一不可：
+
+1. **导出存档** → 覆盖写仓库存档文件（UTF-8）：
+   ```bash
+   node playtest/savetool.js dump        # localStorage frxxz_save_v1 → playtest/save-qixuan.json
+   ```
+   （脚本经 CDP `localhost:29229` 读游戏页 localStorage；端口不同用 `CDP_URL=...`。手动兜底见 `RESUME-qixuan.md` §6。**勿用 PowerShell Set-Content 写中文存档，会乱码。**）
+2. **更新报告** `playtest/REVIEW-qixuan.md`（本里程碑的机制发现：节点/操作/现象/数值/合理性判断/严重度/建议）+ 续玩交接文档的进度快照。
+3. **提交** `git add` 存档 + 报告 + 交接文档 → `git commit -m "playtest(<篇章>): checkpoint @ <节点> + 机制发现 <n> 条"`。
+4. **直推** `git push`（本仓库 Devin 代理无写权限，用用户 PAT 直推到分支；AGENTS.md）。
+5. **验证同步（关键——过了才算"落库成功"，不许只凭 push 退出码）**：
+   ```bash
+   L=$(git rev-parse HEAD); R=$(git ls-remote origin <branch> | cut -f1)
+   [ "$L" = "$R" ] && echo SYNCED || echo "NOT SYNCED -> 重推"
+   git fetch origin >/dev/null && git diff --quiet HEAD origin/<branch> && echo CLEAN || echo "DIRTY -> 重推"
+   ```
+   必须同时看到 `SYNCED` + `CLEAN`；任一不符立刻重推，**绝不当作已保存**。
+6. **给用户看报告**：把 `REVIEW-qixuan.md` 本里程碑那段贴给用户（`message_user`），让用户实时看到审阅进展。
+
+> 口诀：**「dump → 写报告 → commit → push → 验 SHA 同步 → 贴报告」**。`git ls-remote` 的 SHA 等于本地 `HEAD` 才算进度真落到了 GitHub。
+>
+> 防丢加固：开局一键「起服 + 从仓库存档恢复」已封装成 `node playtest/session-init.js`（见 §11），任何新会话跑这一行就停在仓库存档点。
+
+---
+
+## 10. 发现 → 修复 SOP（玩出问题后怎么改）
+
+> **前提（红线 R3）**：审阅默认**只玩不改**。本节仅在**用户明确点头要修**（"把发现的问题改了""修一下 Mx"）后启用。没点头就只把发现写进 `REVIEW-<篇>.md` 交给用户定夺。
+>
+> 目标：把 `REVIEW-<篇>.md` 里一条带证据的发现，变成一处**最小、可回归、已复玩验证**的代码改动，并按 §9 落库、按 AGENTS.md §四开 PR。**一次只修一条发现，别夹带。**
+
+每条发现按下列 **8 步**闭环：
+
+1. **选发现 + 确认范围**：从 `REVIEW-<篇>.md` 选一条（带节点/操作/现象/严重度）。`message_user` 跟用户确认"就改这条、按这个方向"再动手（尤其涉及数值平衡/剧情门禁的改动）。
+2. **先查档，再定位代码**：先 `grep docs/` 弄清该机制的**设计意图**（别把"有意的设计"当 bug 改飞，见历史事故）；再 `grep js/` 定位代码。常见映射：
+
+   | 发现类型 | 多半在 | 抓手 |
+   |---|---|---|
+   | 剧情节点/过场/分支 | `js/story.js`（节点 `cond`/`skipIf`/`onArrive`）、`js/chapters.js` | 节点 id、flag 名 |
+   | 行动入口/门禁/推进 | `js/engine.js`（`checkStory`/`advanceMonth`）、`js/chapters.js` | 行动名、`State.setFlag` |
+   | 数值/阈值/平衡 | `js/balance.js`（纯函数·读时算）、`js/data.js` | 阈值数字、技能/道具 id（**吃 A2 标度尺**，禁裸 `+N` 平铺） |
+   | 战斗机制/招式 | `js/combat.js`、`js/loadout.js` | 招式 id、`?debugfight=<敌id>` |
+   | UI/热区/移动端布局 | `js/ui.js`、`css/`（注意 ≤640px 媒体查询） | 元素/类名（**改手牌尺寸必连媒体查询一起改**） |
+   | 探索/舆图 | `js/exploremap.js`、`js/ui.js`（renderExmap） | `?debugmap=1` |
+   | 特效 | `js/fx.js` | 配方名、`?fxset=`/`?fxdemo=` |
+
+3. **最小改**：只动这条发现需要的代码，遵守 §四工程惯例——**写/改含中文的文件勿用 PowerShell Set-Content/Out-File**（乱码红线，用专用编辑工具或 node 脚本）；改 `state` schema 必同步 `js/state.js` 的 `_migrate()`；数值改动吃 A2 标度尺（乘性/随境界缩放，禁裸 `+N`）。
+4. **发版**：`node scripts/bump.js <当前+1>`（同步 index.html `?v=`/build + ver.txt；**勿用 PowerShell 改版本号**）。
+5. **跑回归（必须全绿）**：`node test/run.js`（存档迁移）+ 与改动相关的 `test/*.test.js`；**改了战斗/数值必加跑** `node test/scale.bal.js`（A2 标度，5 条断言）、`encounter.bal.js`、`elem.bal.js`、`tier.bal.js`，胜率锚点见 `combat-balance-design.md`。任一不绿就别往下走。
+6. **复玩验证（关键，移动端 iPhone 14 Pro Max 视口）**：`node playtest/session-init.js` 恢复存档 → 走到该发现的节点**复现原现象 → 确认已修好**（用 §6 录屏 + `assertion` 注记当凭证）。把 `REVIEW-<篇>.md` 该条标记 `已修 @ v<新版本>` 并写一句"怎么验证的"。
+7. **落库（§9 验证同步 SOP）**：存档若变先 `node playtest/savetool.js dump`；`git add` 改动的 `js/*`/`css/*`/`index.html`/`ver.txt` + 报告/存档 → commit → **PAT 直推** → 验 `git ls-remote` SHA == 本地 HEAD（`SYNCED` + `CLEAN` 才算落库成功）。
+8. **开/更新 PR**：本仓库 Devin 代理无写权，PR 走 **PAT + GitHub API（curl）**，详见 AGENTS.md §四「落 main 上线」。无 CI；合 main 后 GitHub Pages 自动部署，验 `curl https://chentong227.github.io/fanrenxiuxianzhuan/ver.txt?cb=<随机>` = 新版本号。
+
+> 口诀：**「查档定位 → 最小改 → bump → 回归全绿 → 复玩验证 → 落库验同步 → PR」**。修完务必回到游戏里把那条发现**亲自复现确认消失**，别只信测试绿。
+
+---
+
+## 11. 开局一键：起服 + 恢复存档（`session-init`）+ 蓝图
+
+任何会话接手 playtest，**第一条命令**：
+
+```bash
+node playtest/session-init.js          # 起 _serve.js(8011) + 经 CDP 开游戏页 + 恢复仓库存档
+# 可选：--port 8011 / --save playtest/save-<篇>.json / --no-restore（只起服不灌档）
+```
+
+它把三步合一（幂等，可反复跑）：①起 `scripts/_serve.js`（端口已在服就跳过）→ ②经 CDP（`localhost:29229`）开/复用游戏页 → ③`savetool.js load` 把仓库存档灌进 localStorage 并 reload。跑完回游戏页点「读取存档」即进存档局面，再切 **iPhone 14 Pro Max 视口**开玩。非 Devin 机（无 CDP）会跳过开页，提示你自己开页后跑 `node playtest/savetool.js load`。
+
+**蓝图（blueprint）现状与边界**：仓库零依赖、`node` 即用，故蓝图 `initialize`/`maintenance` 无需装东西；蓝图 `knowledge.startup` 记的就是上面这行 `session-init`。⚠ **蓝图不能真正"开局自动起进程"**——`initialize` 只持久化文件改动、进程不会留到会话启动，`maintenance` 只作为上下文呈现给 agent 不自动执行。所以"开局即停在存档点"的可靠实现 = **本 `session-init.js`（已随仓库提交）+ 蓝图 `knowledge.startup` 提示 + Playbook 第 1 步调用它**，而非指望蓝图后台拉起服务。
+
+---
+
 ## 附 · 换篇章复用本手册
 
 调研其他篇章时，仅需替换：

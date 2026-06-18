@@ -620,6 +620,7 @@ const Engine = {
     this.passTime(WORLD.activities.spar.timeCost);
     s.body += 1;
     s.flags.adventured = true;
+    s.flags.adv_count = (s.flags.adv_count || 0) + 1;   // 出门切磋亦是历练（计入外出历练次数）
     s.mood = clamp(s.mood + 5, 0, s.moodMax);
     // 剑意修行链：与人对剑是练剑的正途
     let swordNote = "";
@@ -714,11 +715,16 @@ const Engine = {
     let price = shop[itemId];
     if (!price) return;
     // 黑市窗口（涟漪链）：赃丹贱卖
-    if (itemId === "qingyuan_dan" && s.rippleWindow && s.rippleWindow.id === "cheap_pills") price = 3;
+    const blackMarketPill = (itemId === "qingyuan_dan" && s.rippleWindow && s.rippleWindow.id === "cheap_pills");
+    if (blackMarketPill) price = 3;
     if (s.silver < price) { this.toast("纹银不足", true); return; }
     s.silver -= price;
     State.give(itemId, 1);
     this.log(`你花了 ${price} 两纹银，购得「${DATA.items[itemId].name}」。`, "event");
+    // 风声挂钩主线（M10）：暗修在身时，丹房失窃的赃丹成了你瞒着墨大夫积攒修为的省心之资
+    if (blackMarketPill && s.bottle && s.bottle.unlocked) {
+      this.log("这批丹房失窃流出的赃丹，正好填进你瞒着墨大夫的暗修——别人眼里的烫手赃货，于你却是省下的光阴。", "event");
+    }
     State.save();
     UI.renderAll();
     UI.openMarket();
