@@ -1,0 +1,251 @@
+{
+  "name": "韩立",
+  "rootId": "si",
+  "realmIndex": 0,
+  "cultivation": 0,
+  "spirit": 60,
+  "poolBonus": 0,
+  "sense": 5,
+  "body": 8,
+  "zhuanImprint": 1,
+  "hp": 100,
+  "hpMax": 100,
+  "mood": 100,
+  "moodMax": 100,
+  "demon": 0,
+  "speed": 10,
+  "insight": 6,
+  "lifespan": 100,
+  "age": 13,
+  "year": 1,
+  "month": 1,
+  "stones": 0,
+  "silver": 20,
+  "location": "yaolu",
+  "flightId": "none",
+  "inventory": {
+    "qingyuan_dan": 2
+  },
+  "spells": [
+    "tuna",
+    "huti",
+    "ningshen",
+    "zhayan",
+    "weidu"
+  ],
+  "technique": "changchun",
+  "auxTechniques": [],
+  "learnedTechniques": [
+    "changchun"
+  ],
+  "techLayers": {
+    "changchun": 1
+  },
+  "knownSkills": [
+    "tuna",
+    "huti",
+    "ningshen",
+    "zhayan",
+    "weidu"
+  ],
+  "activeChapter": "qixuan",
+  "unlockedChapters": [
+    "qixuan"
+  ],
+  "flags": {
+    "at_village": true,
+    "joined_sect": true,
+    "met_modafu": true
+  },
+  "firedFortunes": [],
+  "tasks": [
+    {
+      "id": "modafu_deadline",
+      "dueAbs": 37
+    }
+  ],
+  "dynQuests": [],
+  "leads": [],
+  "heardLeads": [],
+  "timeline": [],
+  "storyStage": 3,
+  "bottle": {
+    "unlocked": false,
+    "plots": []
+  },
+  "log": [
+    {
+      "id": 1,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">青牛镇 · 韩家</div><p class=\"seg-narr\">你叫韩立，青牛镇韩家老二。家中清贫，几亩薄田勉强糊口，年成不好时连盐都吃不起。</p><p class=\"seg-narr\">这年，在七玄门做事的三叔回乡省亲。他见你机灵懂事，私下对你爹娘提议——</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/sanshu.png?v=26\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">三叔</span><span class=\"dlg-tone\">压低了声音，带着几分得意</span></div>\n          <div class=\"dlg-text\">七玄门正招收记名弟子，管吃管住，每月还有例钱。二郎这孩子机灵，何不让他去碰碰运气？</div>\n        </div>\n      </div><p class=\"seg-narr\">爹娘犹豫，你却已动了心——若能进了那高门大派，家里的日子或许就能好过些。</p>"
+    },
+    {
+      "id": 2,
+      "t": "第1年1月",
+      "body": "【结识】你结识了「张铁」（同乡挚友 · 习武）。你与他一见投缘，结伴同行。　——已录入「人物图鉴」。",
+      "kind": "event"
+    },
+    {
+      "id": 3,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">赴 考</div><p class=\"seg-narr\">出了青牛镇，山路迢迢。同行的还有几个各乡来应试的少年。</p><p class=\"seg-narr\">其中一个虎背熊腰、憨厚老实的少年叫张铁，与你一见投缘。一路上你俩互相照应，渐成好友。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/zhangtie.png?v=26\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">张铁</span><span class=\"dlg-tone\">挠着头</span></div>\n          <div class=\"dlg-text\">听说七玄门收徒极严，十个里取不了一个。</div>\n        </div>\n      </div><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/zhangtie.png?v=26\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">张铁</span></div>\n          <div class=\"dlg-text\">不过……总得试试不是？我娘说了，考上了顿顿有白面馍。</div>\n        </div>\n      </div><p class=\"seg-aside\">顿顿有白面馍……这倒是和我想到一块儿去了。</p>"
+    },
+    {
+      "id": 4,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">七玄门 · 入门选拔</div><p class=\"seg-narr\">七玄门依山而建，气派非凡。选拔场上人头攒动，你和张铁夹在其中，显得格外不起眼。</p><p class=\"seg-narr\">测筋骨、考悟性、试胆识……你二人资质平平，初试竟未能入选。</p><p class=\"seg-narr\">眼看就要被刷下，你不肯认命，硬着头皮求得一个补考的机会。半年后再试，凭着一股韧劲，你和张铁终于挤进了记名弟子的名册。</p>"
+    },
+    {
+      "id": 5,
+      "t": "第1年1月",
+      "body": "【结识】你结识了「墨大夫」（授业之师 · 医毒）。门中以医毒闻名的怪人，收你为药童。　——已录入「人物图鉴」。",
+      "kind": "event"
+    },
+    {
+      "id": 6,
+      "t": "第1年1月",
+      "body": "【新任务·墨大夫的期许】墨大夫初授《长春功》，盼你早日修至练气二层验功。届时按例重赏，莫要懈怠。（期限 24 个月）",
+      "kind": "event"
+    }
+  ],
+  "worldNews": [],
+  "npcFates": [
+    {
+      "id": "s_li",
+      "name": "散修·李恒",
+      "apt": 1.05,
+      "realm": 3,
+      "cul": 0,
+      "age": 38,
+      "lifespan": 108,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "s_wang",
+      "name": "散修·王矮子",
+      "apt": 0.7,
+      "realm": 5,
+      "cul": 0,
+      "age": 50,
+      "lifespan": 116,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "s_zhao",
+      "name": "游方·赵越",
+      "apt": 0.85,
+      "realm": 2,
+      "cul": 0,
+      "age": 32,
+      "lifespan": 104,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "d_qian",
+      "name": "七玄弟子·钱通",
+      "apt": 0.95,
+      "realm": 4,
+      "cul": 0,
+      "age": 44,
+      "lifespan": 112,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "d_sun",
+      "name": "七玄弟子·孙礼",
+      "apt": 0.6,
+      "realm": 6,
+      "cul": 0,
+      "age": 56,
+      "lifespan": 120,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "e_zhou",
+      "name": "黄枫散人·周牧",
+      "apt": 1.25,
+      "realm": 8,
+      "cul": 0,
+      "age": 68,
+      "lifespan": 128,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "s_feng",
+      "name": "散修·冯婆婆",
+      "apt": 0.5,
+      "realm": 7,
+      "cul": 0,
+      "age": 62,
+      "lifespan": 124,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "s_chen",
+      "name": "散修·陈九",
+      "apt": 0.9,
+      "realm": 1,
+      "cul": 0,
+      "age": 26,
+      "lifespan": 100,
+      "status": "alive",
+      "desperate": false
+    }
+  ],
+  "relations": {},
+  "npcCd": {},
+  "npcGifts": {},
+  "keepsakes": [],
+  "aidCd": -99,
+  "metNpcs": [
+    "zhangtie",
+    "modafu"
+  ],
+  "pendingEvent": "intro",
+  "explore": null,
+  "exmap": null,
+  "benchTreasures": [],
+  "dialogueDone": {},
+  "swordIntent": 0,
+  "swordMastery": false,
+  "milestones": [],
+  "beastRumor": null,
+  "beastRumorClue": 0,
+  "beastRumorClueAt": null,
+  "slainBeasts": [],
+  "revealedRealm": 0,
+  "skills": {
+    "alchemy": 0,
+    "scouting": 0
+  },
+  "intel": {},
+  "intelMoves": {},
+  "ripple": null,
+  "rippleWindow": null,
+  "doneRipples": [],
+  "fame": 0,
+  "medals": {},
+  "sideUnit": null,
+  "intelElems": {},
+  "ledger": {},
+  "journey": null,
+  "gear": {
+    "weapon": null,
+    "armor": null,
+    "accessory": null
+  },
+  "sideTreasures": [],
+  "visitedNodes": [
+    "caixia"
+  ]
+}
