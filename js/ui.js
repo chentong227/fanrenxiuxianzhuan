@@ -3460,6 +3460,47 @@ const UI = {
     });
   },
 
+  /* 对脸列阵（v176）：交火的敌我两阵营单位若在屏上贴到一处（格距≈1、身宽相叠成一坨），
+   * 顺着各自所属侧把彼此推开到一个"对峙空当"——只动演出位(--lx)，占格/射程/移动/平衡一律不碰。
+   * 与 _decrowd 互补：decrowd 只在同排同阵营内防撞；此处专治敌我"对脸"的重叠（跨排也算，
+   * 因为本作 1v1 对峙读作左右对脸而非前后纵深）。每个敌人只对它屏距最近的我方解一次，避免连环推挤；
+   * 韩立是镜头锚点，他涉入对峙时只推敌人、不挪韩立。 */
+  _faceoff(unitsEl, c) {
+    if (!c._fronts || !c._fronts.length) return;   // 仅声明式战区（团战框架）内生效——常规 1vN 战斗排布零回归
+    const track = unitsEl.getBoundingClientRect().width / (this._camZoom || 1);
+    if (!track) return;
+    const GAP = Math.max(54, Math.min(82, track * 0.066));   // 对脸最小间距（略宽于身宽，留出对峙空当）
+    const items = [...unitsEl.querySelectorAll(".axis-unit")]
+      .filter(el => !el.classList.contains("dead"))
+      .map(el => {
+        const lx = parseFloat(getComputedStyle(el).getPropertyValue("--lx")) || 0;   // 已含 decrowd 追加量
+        return {
+          el,
+          foe: el.classList.contains("enemy"),
+          self: el.classList.contains("self"),
+          x: (parseFloat(el.style.left) || 0) / 100 * track + lx,
+          lx,
+        };
+      });
+    const allies = items.filter(o => !o.foe);
+    const foes = items.filter(o => o.foe);
+    if (!allies.length || !foes.length) return;
+    const shove = (o, dx) => { o.lx += dx; o.x += dx; o.el.style.setProperty("--lx", o.lx.toFixed(1) + "px"); };
+    foes.forEach(f => {
+      let best = null;
+      allies.forEach(a => {
+        const ad = Math.abs(f.x - a.x);
+        if (!best || ad < best.ad) best = { a, ad, d: f.x - a.x };
+      });
+      if (!best) return;
+      const need = GAP - best.ad;
+      if (need <= 0) return;
+      const dir = best.d >= 0 ? 1 : -1;   // 敌在我右→敌右推、我左退
+      if (best.a.self) shove(f, dir * need);                       // 韩立锚点不动，全量推敌
+      else { shove(best.a, -dir * (need / 2)); shove(f, dir * (need / 2)); }
+    });
+  },
+
   // 相对朝向：单位是否需要水平镜像（面向"自己正在对付的人"）——玩家盯锁定目标、同道盯最近敌人、
   //   敌人盯最近的我方；被绕背（_backTurned）的敌人保持旧朝向。立绘与身侧剑阵/绕身法宝共用此判定，
   //   保证剑阵随韩立转身一起翻面（修：青竹蜂云剑曾始终朝右、不跟攻击方向）。
@@ -4053,6 +4094,8 @@ const UI = {
     // —— 防撞排布（v87 拥挤重设计）：同高度层单位按屏距扫描，间距不足时右侧者
     //    顺势让开（深排让得多）——规则站位不动，只挪演出排布；血条名牌随之岔开 ——
     this._decrowd(unitsEl, c);
+    // —— 对脸列阵（v176）：再把交火的敌我两阵营从相叠里掰开成"对脸"对峙（演出位，不碰占格/平衡）——
+    this._faceoff(unitsEl, c);
 
     // —— 神识料敌提示条（上膛中优先显示择敌/择地指引）——
     const intentEl = this.el("combat-intent");
