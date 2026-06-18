@@ -2964,7 +2964,7 @@ const UI = {
     add("bt_hanli"); add("bt_hanli_fly");                              // 玩家（含飞姿变体）
     (combat.enemies || []).forEach(e => {
       if (!e) return;
-      add(this._battlerByName(e.name));
+      add(e.art && Art.hasBattler("bt_" + e.art) ? "bt_" + e.art : this._battlerByName(e.name));
       if (this._ghostShade(e)) ["bt_sanxiu", "bt_wuren", "bt_hanli"].some(id => Art.hasBattler(id) && (add(id), true)); // D2 剪影形状
     });
     (combat.sides || (combat.side ? [combat.side] : [])).forEach(u => {
@@ -3451,7 +3451,8 @@ const UI = {
       let bid = null;
       if (isPlayer) bid = Art.hasBattler("bt_hanli") ? "bt_hanli" : null;
       else if (isSide) bid = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
-      else bid = this._battlerByName(u.name);
+      // 敌人也优先读 art 字段（皇宫三血侍非克隆：各实例带 art:"xueshi_a/b/c"），无则按名回退（bt_xueshi 通用）
+      else bid = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
       // 飞行姿态变体（v87）：凌空且 _fly 立绘已入库——换飞姿（双脚前后、衣袂后卷）
       if (bid && (u.alt || 0) === 1 && Art.hasBattler(bid + "_fly")) bid = bid + "_fly";
       if (bid) { figSrc = Art.battlerUrl(bid); figCls = " battler" + (demonized ? " demonized" : ""); }

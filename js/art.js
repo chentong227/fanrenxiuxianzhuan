@@ -88,7 +88,9 @@
     // 增量G·京城暗流：血侍铁罗（一阶段）+ 血茧铁罗（化茧狂暴独臂形态·二阶段）+ 妖化王管事
     bt_tieluo: { face: "c" }, bt_tieluo_mao: { face: "c" }, bt_wuse: { face: "c" },
     // 增量H·皇宫决战：黄枫谷同袍刘靖/宋蒙/钟卫娘（正面对称 c）+ 黑煞教低阶血侍 mook
+    // 血侍三变体（palace-battle-fixme 问题A·非克隆）：甲魁梧斧奴 / 乙枯瘦刺奴 / 丙精悍链奴；bt_xueshi 留作回退
     bt_liujing: { face: "c" }, bt_songmeng: { face: "c" }, bt_zhongweiniang: { face: "c" }, bt_xueshi: { face: "c" },
+    bt_xueshi_a: { face: "c" }, bt_xueshi_b: { face: "c" }, bt_xueshi_c: { face: "c" },
     // 初入星海篇·妖兽/人形敌（正面对称构图，永不镜像）；雷鹏=奇观演出走 CG·非可战敌·无战姿
     bt_yingli: { face: "c" }, bt_waihai: { face: "c" }, bt_guzhanglao: { face: "c" },
   };
@@ -117,7 +119,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 25,
+    ASSET_VER: 26,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 

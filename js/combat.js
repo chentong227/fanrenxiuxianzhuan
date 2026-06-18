@@ -231,6 +231,7 @@
       this.mastery = cfg.mastery != null ? cfg.mastery : null;   // AI 熟练度：0 本能/1 老练/2 宗师（境界即经验）
       this.guardMove = cfg.guardMove || null;
       this.introNote = cfg.introNote || null;
+      this.art = cfg.art || null;   // 专属立绘 key（侧位/敌人共用：渲染层 "bt_"+art 优先于按名匹配）
       this._dossier = !!cfg._dossier;
       this.technique = cfg.technique || null;
       this.grade = cfg.grade || 1;
@@ -326,10 +327,19 @@
       // 探索→战斗无缝衔接：站位继承（L3 轴式洞窟——探索格即战斗格）
       if (cfg.playerPos != null) this.player.pos = clampNum(cfg.playerPos, 0, this.W - 1);
       if (cfg.enemyPos != null) this.enemies.forEach((e, i) => { e.pos = clampNum(cfg.enemyPos - i, 0, this.W - 1); });
+      // 逐敌定位（多组对位/三战线用）：把每个敌人摆进各自的战区（覆盖 enemyPos 的统一排布）
+      if (cfg.enemiesPos) cfg.enemiesPos.forEach((p, i) => { if (p != null && this.enemies[i]) this.enemies[i].pos = clampNum(p, 0, this.W - 1); });
       const sposArr = cfg.sidesPos || (cfg.sidePos != null ? [cfg.sidePos] : null);
       this.sides.forEach((s, i) => {
         if (sposArr && sposArr[i] != null) s.pos = clampNum(sposArr[i], 0, this.W - 1);
         else if (cfg.playerPos != null) s.pos = clampNum(this.player.pos + 1 + i, 0, this.W - 1);
+      });
+      // 跨线驰援开关（皇宫三组对位 startSantuanFight）：本方某战线告急时，已了结当面之敌的同袍横越驰援
+      this.crossSupport = !!cfg.crossSupport;
+      // 初始仇恨播种（多组对位锁线/钓怪）：开战前先定杀意流向——三组对位才成"三条战线"而非一锅端混战
+      //   形如 [{ e:敌序号, key:"side:0"|"player", amt:数值 }]；须在 _rollEnemyIntents 之前
+      if (cfg.aggroSeed) cfg.aggroSeed.forEach(seed => {
+        const e = this.enemies[seed.e]; if (e) e.aggro[seed.key] = (e.aggro[seed.key] || 0) + seed.amt;
       });
       // —— AI 熟练度分级（用户裁决"分境界多级 AI"：境界即战斗经验）——
       //    0 本能：按权重乱打（野兽/低阶散修）；1 老练：会抓你的破绽下重手（同阶修士/兽王）；
@@ -1614,11 +1624,27 @@
         return;
       }
 
+      // —— 跨线驰援（crossSupport·皇宫三组对位）：当面之敌已了结（身周 2 格无活敌），
+      //    而别处战线告急（同袍/玩家血<50% 且有敌贴身）——弃线横越、扑杀威胁同袍的血侍。
+      //    既是机制（重定目标 + 真身横移）也是演出（"我来助你"驰援台词）：三战线"互相支援"的燃点。
+      let rescueTi = -1, rescueWard = null;
+      if (this.crossSupport && stance !== "retreat"
+        && !this.enemies.some(e => e.alive && this.dist(e, s) <= 2)) {
+        const wards = [this.player].concat(this.sides.filter(x => x !== s && x.hp > 0));
+        for (const a of wards) {
+          if (a.hp / a.hpMax >= 0.5) continue;
+          const fi = this.enemies.findIndex(e => e.alive && this.dist(e, a) <= 2);
+          if (fi >= 0) { rescueTi = fi; rescueWard = a; break; }
+        }
+      }
+
       // —— 选敌评分（T5 流动战团）：就近接战是天性——你把对手拉到她身边，
       //    她顺手就接；正缠着她的、你点名的、破绽大开的各有权重。
       //    统帅令（focus/spread）依然说到做到：点了谁就缠谁 ——
       let ti = -1;
-      if (this._leadPlan && this._leadPlan.target != null
+      if (rescueTi >= 0) {
+        ti = rescueTi;
+      } else if (this._leadPlan && this._leadPlan.target != null
         && this.enemies[this._leadPlan.target] && this.enemies[this._leadPlan.target].alive) {
         ti = this._leadPlan.target;
       } else {
@@ -1643,9 +1669,27 @@
       if (ti < 0) return;
       let target = this.enemies[ti];
 
-      // —— 接力黑板：场上若有"破绽大开"的敌人（蓄势/扑空/定身），按人格概率改打它 ——
+      // —— 驰援横移：锁定告急战线之敌后，无论近战远程都先真身横越逼近（可见的"驰援"位移）——
+      //    够近了才落到下方正常出招；这一拍只够横越时本回合到此为止。
       const winOf = e => (e._charging || e._whiffed || (e.status && e.status.dingshen > 0));
-      if (!winOf(target)) {
+      if (rescueTi >= 0) {
+        const reach = isMelee ? 1 : 2;
+        let dR = this.dist(s, target);
+        if (dR > reach) {
+          const step = this._stepToward(s, target, this.moveCap(s));
+          if (step != null && step !== s.pos) {
+            s.pos = step; dR = this.dist(s, target);
+            const wn = rescueWard === this.player ? "韩师弟" : rescueWard.name;
+            if (s._rescueSaid !== wn) { this._log(`${s.name} 已了结当面血侍，弃线横越战场驰援——「${wn}，我来接应！」`); s._rescueSaid = wn; }
+            this._emitFx(this._refOf(s), "move", null);
+            this._sideTarget = ti;
+            if (dR > reach) return;
+          }
+        }
+      }
+
+      // —— 接力黑板：场上若有"破绽大开"的敌人（蓄势/扑空/定身），按人格概率改打它（驰援锁线时不改）——
+      if (rescueTi < 0 && !winOf(target)) {
         const wi = this.enemies.findIndex(e => e.alive && winOf(e));
         if (wi >= 0 && this.rng() < 0.4 + persona.aggr * 0.05) { ti = wi; target = this.enemies[wi]; }
       }
