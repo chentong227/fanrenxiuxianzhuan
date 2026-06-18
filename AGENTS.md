@@ -42,6 +42,9 @@
   `technique-tiers.md`、`chapter-template.md`、`ui-reference.md`
 - **进行中**：`combat-redesign.md`（战斗 v2 调研报告）+ `combat-axis-rules.md`
   （对阵轴规则书+纸面推演——待用户拍板，未拍板前不实装）
+- **⚠ 待修复·皇宫决战**：`palace-battle-fixme.md`——**被要求「修复皇宫问题」时先读这份**。
+  增量H 首版（PR #55）已生成皇宫美术+接入正经流程，但用户指出三处待修：①血侍是克隆要做成不同的人
+  ②要「三个战场分别战斗+互相支援」而非单战场混战 ③皇宫底图不能只有地板。含文件/入口地图+验收标准。
 - **舆图五级重制**：`map-redesign-design.md`（区块解锁点亮 + 真实地理锁定 + AI 洗图 +
   字体 + 朝向考据 + 施工顺序）——本稿是 `world-architecture.md` §四·五·补 的落地施工规格。
 
