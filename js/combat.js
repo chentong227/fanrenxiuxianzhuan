@@ -596,6 +596,30 @@
         }
       });
     }
+    // 塌线重定向（teamfight-camera-design C3）：某战线我方锚点已倒、本区尚有活敌——把这些"无主"
+    //   之敌的杀意改投最近仍有活我方的战线，战场由"三摊"自然收束成"两摊→一摊"（导演镜头随之聚焦）。
+    //   一次性改投（_collapsedTo 防每回合重复刷）；只在 fronts/crossSupport 团战里动，老战斗零回归。
+    _redirectOrphanFronts() {
+      if (!this._fronts || this._fronts.length < 2 || !this.crossSupport) return;
+      const allyOf = key => key === "player" ? this.player : this.sides[+(key.split(":")[1] || 0)];
+      const liveFronts = this._fronts.filter(f => { const a = allyOf(f.allyKey); return a && a.hp > 0; });
+      if (!liveFronts.length) return;
+      this._fronts.forEach(f => {
+        const a = allyOf(f.allyKey);
+        if (a && a.hp > 0) return;   // 锚点尚在，不算塌线
+        const orphans = f.enemyIdxs.map(i => this.enemies[i]).filter(e => e && e.alive && !e._collapsedTo);
+        if (!orphans.length) return;
+        const tgt = liveFronts.slice().sort((x, y) => Math.abs(x.at - f.at) - Math.abs(y.at - f.at))[0];
+        if (!tgt) return;
+        orphans.forEach(e => {
+          e.aggro = e.aggro || {};
+          e.aggro[tgt.allyKey] = (e.aggro[tgt.allyKey] || 0) + 150;   // 改锁最近活线锚点
+          e._collapsedTo = tgt.allyKey;
+        });
+        const tn = tgt.name || (allyOf(tgt.allyKey) ? allyOf(tgt.allyKey).name : "邻线");
+        this._log(`${f.name || "一线"}我方已倒，余下凶徒循着杀气涌向「${tn}」——战线塌作一处！`);
+      });
+    }
     /* 开口的同道（T4 多侧位）：统帅优先，其次第一个活着的 ally */
     _allyVoice() {
       if (this._leadBy && this._leadBy.hp > 0) return this._leadBy;
@@ -1032,6 +1056,8 @@
       }
       // —— 仇恨流转（T0/T4 多侧位）：旧仇衰减 + 守势嘲讽 + 贴身压力 ——
       this._decayAggro();
+      this._redirectOrphanFronts();   // 塌线重定向（C3）：锚点已倒的战线之敌改投最近活线
+
       this.enemies.forEach(e => {
         if (!e.alive) return;
         // 贴身压力：脸贴脸的人很难被无视
@@ -1692,6 +1718,19 @@
           if (fi >= 0) { rescueTi = fi; rescueWard = a; break; }
         }
       }
+      // 塌线收束（teamfight-camera-design C3）：自己这条线已清空（身周 2 格无活敌）、别处仍在交火——
+      //   疾遁并入最近的交火战线（而非按 moveCap 蜗牛爬）。保留"自己线没清完不许跑"的约束（身周有敌即不触发）。
+      //   优先级最低：只在无血危同袍可救（rescueTi<0）时才并线，绝不抢真·驰援。
+      if (rescueTi < 0 && this.crossSupport && stance !== "retreat"
+        && !this.enemies.some(e => e.alive && this.dist(e, s) <= 2)) {
+        let best = -1, bestD = Infinity;
+        this.enemies.forEach((e, i) => {
+          if (!e.alive) return;
+          const d = this.dist(s, e);
+          if (d > 2 && d < bestD) { bestD = d; best = i; }
+        });
+        if (best >= 0) rescueTi = best;   // converge：纯并线，rescueWard 留空（台词走"并线"分支）
+      }
 
       // —— 选敌评分（T5 流动战团）：就近接战是天性——你把对手拉到她身边，
       //    她顺手就接；正缠着她的、你点名的、破绽大开的各有权重。
@@ -1736,8 +1775,12 @@
           const step = this._stepToward(s, target, this.W);
           if (step != null && step !== s.pos) {
             s.pos = step; dR = this.dist(s, target);
-            const wn = rescueWard === this.player ? "韩师弟" : rescueWard.name;
-            if (s._rescueSaid !== wn) { this._log(`${s.name} 已了结当面血侍，弃线横越战场驰援——「${wn}，我来接应！」`); s._rescueSaid = wn; }
+            if (rescueWard) {   // 真·驰援：奔向血危同袍（点名报到）
+              const wn = rescueWard === this.player ? "韩师弟" : rescueWard.name;
+              if (s._rescueSaid !== wn) { this._log(`${s.name} 已了结当面血侍，弃线横越战场驰援——「${wn}，我来接应！」`); s._rescueSaid = wn; }
+            } else if (s._rescueSaid !== "_converge") {   // 塌线收束（C3）：本线清空、横越并入交火战线
+              this._log(`${s.name} 这边血侍已清，足底遁光一掠、横越战场并入交火的战线！`); s._rescueSaid = "_converge";
+            }
             this._emitFx(this._refOf(s), "move", null, { from, to: s.pos, dash: 1 });   // 含 from/to 供镜头跟拍
             this._sideTarget = ti;
             if (dR > reach) return;

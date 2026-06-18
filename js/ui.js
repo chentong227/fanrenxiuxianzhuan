@@ -3227,13 +3227,13 @@ const UI = {
         else { const ref = actor; setTimeout(() => this._camPeek(c, ref), at); }
       }
       // turn 拍只为切镜、不出飘字：宽轴给镜头一点行进/停顿时间（衔接自然），随即跳过
-      if (f.kind === "turn") { if (c.W > 13) delay += 220; continue; }
+      if (f.kind === "turn") { if (c.W > 13) delay += this.DIRECTOR.turnHold; continue; }
       // 驰援疾遁位移拍（B2）：镜头跟到落点 to，与立绘横掠同拍——长镜头跟拍（非位移拍照旧）
       if (f.kind === "move" && f.dash && typeof f.to === "number" && c.W > 13) {
         const to = f.to, at = delay;
-        setTimeout(() => this._camPeekCell(c, to), at);
+        setTimeout(() => { this._camPeekCell(c, to); this._camPunch(); }, at);   // 落点跟拍 + 轻推近（燃点 B4）
         lastPeek = f.ref;
-        delay += 360;
+        delay += this.DIRECTOR.dashFollowLag;
         continue;
       }
       // —— 全局重演出：趁虚时停金字 / 蓄势释放大字压屏（蓄势全开加白金屏闪+震屏）——
@@ -3244,7 +3244,7 @@ const UI = {
           g.className = "fx-global " + (f.kind === "ult" ? "fxg-ult" : "fxg-exploit");
           g.innerHTML = `<span class="fxg-text">${f.text || ""}</span>`;
           if (typeof Sfx !== "undefined") Sfx.play(f.kind === "ult" ? "bell" : "danger");
-          if (f.kind === "ult" && fxReady) { Fx.flash("#ffe9ad", 220, .36); Fx.shake(10); }
+          if (f.kind === "ult" && fxReady) { Fx.flash("#ffe9ad", 220, .36); Fx.shake(10); this._camPunch(); }   // 大招：屏闪+震屏+轻推近（燃点 B4）
           clearTimeout(this._fxgTimer);
           this._fxgTimer = setTimeout(() => { g.hidden = true; g.className = "fx-global"; }, f.kind === "ult" ? 1200 : 850);
         }, delay);
@@ -3285,6 +3285,7 @@ const UI = {
       if (f.kind === "slay") {
         setTimeout(() => {
           if (typeof Sfx !== "undefined") Sfx.play("die");
+          this._camPunch();   // 终结一击：镜头轻推近（燃点 B4），叠在水墨慢放之上
           anchor.classList.add("slaying");
           const burst = document.createElement("div");
           burst.className = "ink-burst";
@@ -4659,6 +4660,34 @@ const UI = {
   // 热点图标（探索轴/战斗轴共用——同轴一体，开打了东西也还在那）
   _hotIcon(name) { return /主药|老株/.test(name) ? "🌿" : /灵石/.test(name) ? "💎" : "🌱"; },
 
+  // 镜头导演参数（teamfight-camera-design §7 手感微调）：把所有"节拍/距离/时长"常数集中一处，
+  //   一处即可统调演出节奏（用户原话"切镜要丝滑、不晕镜、衔接自然"）。改这里调全局手感。
+  DIRECTOR: {
+    view: 13,            // 宽轴基线视野（格）——与 renderCombat 死区 V 同源（文档值，跟随处仍内联）
+    deadZone: 2.4,       // 死区半幅（格）：玩家在此区内随便走、镜头不动（文档值）
+    panSlowCells: 5,     // 切镜跨度 > 此格数 → 放慢过渡（大跨度丝滑）
+    panSlowDur: "1.7s",  // 大跨度切镜时长
+    turnHold: 220,       // B1：切到行动者后停顿读秒（ms·宽轴——给镜头行进/停顿，衔接自然）
+    dashFollowLag: 360,  // B2：驰援疾遁落点跟拍延时（ms）
+    sweepLead: 360,      // B3：开场横幅先亮的起手延时（ms）
+    sweepStep: 1200,     // B3：每条战线停留（ms）
+    sweepHoldLast: 1100, // B3：落回韩立停留（ms）
+    punchMs: 620,        // B4 燃点推近：终结一击/大招/驰援落点的轻推近时长（ms）
+  },
+
+  // 燃点推近（teamfight-camera-design B4）：终结一击/大招/驰援落点——镜头极轻一推再松，
+  //   给"这一下"分量感。纯叠加在 axis-field 视口上（transform 不动 _cam/不扰死区跟随、不改布局），
+  //   动画自复位。信条"能不动就不动"：只在燃点用、时长短、幅度小（≈5%），绝不晕镜。
+  _camPunch() {
+    const field = this.el("axis-field");
+    if (!field || this._sweeping) return;   // 开场扫场进行中不抢镜
+    field.classList.remove("cam-punch");
+    void field.offsetWidth;   // 重排：让动画可连续重触发
+    field.classList.add("cam-punch");
+    clearTimeout(this._punchTimer);
+    this._punchTimer = setTimeout(() => field.classList.remove("cam-punch"), this.DIRECTOR.punchMs);
+  },
+
   // 战斗版远端点名：锁定目标在镜头外时，画框边缘亮出名字与方向
   /* ===== 行动者切镜（tactics T6）：回合制的天然优势——谁行动，镜头看谁 =====
    * fx 分拍演出时把镜头平移到行动者（只动 translateX，zoom/沉降/视差沿用当帧快照）；
@@ -4677,22 +4706,22 @@ const UI = {
     let cam = Math.max(0, Math.min(c.W - V, u.pos + 0.5 - V / 2));
     if (Math.abs(cam - cur) < 0.6) return;
     c._cam = cam;
-    const slow = Math.abs(cam - cur) > 5;
+    const slow = Math.abs(cam - cur) > this.DIRECTOR.panSlowCells;
     const shift = (cam / c.W) * 100;
     const camT = (c.W - V) > 0 ? cam / (c.W - V) : 0;
     [this.el("axis-lane"), this.el("axis-units")].forEach(el => {
       if (!el) return;
-      el.style.transitionDuration = slow ? "1.7s" : "";
+      el.style.transitionDuration = slow ? this.DIRECTOR.panSlowDur : "";
       el.style.transform = `translateX(-${shift.toFixed(2)}%)${P.worldY} scale(${P.zoom.toFixed(3)})`;
     });
     const bg = this.el("combat-bg");
     if (bg) {
-      bg.style.transitionDuration = slow ? "1.7s" : "";
+      bg.style.transitionDuration = slow ? this.DIRECTOR.panSlowDur : "";
       bg.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${P.farY} scale(${P.farScale})`;
     }
     const mid = this.el("combat-bgmid");
     if (mid && mid.classList.contains("on")) {
-      mid.style.transitionDuration = slow ? "1.7s" : "";
+      mid.style.transitionDuration = slow ? this.DIRECTOR.panSlowDur : "";
       mid.style.transform = `translateX(${(-camT * 17).toFixed(2)}%)${P.midY} scale(${P.midScale})`;
     }
     // 限速恢复（下一次 renderCombat 的统一时长接管）
@@ -4711,18 +4740,18 @@ const UI = {
     const cam = Math.max(0, Math.min(c.W - V, cell + 0.5 - V / 2));
     if (Math.abs(cam - cur) < 0.6) return;
     c._cam = cam;
-    const slow = Math.abs(cam - cur) > 5;
+    const slow = Math.abs(cam - cur) > this.DIRECTOR.panSlowCells;
     const shift = (cam / c.W) * 100;
     const camT = (c.W - V) > 0 ? cam / (c.W - V) : 0;
     [this.el("axis-lane"), this.el("axis-units")].forEach(el => {
       if (!el) return;
-      el.style.transitionDuration = slow ? "1.7s" : "";
+      el.style.transitionDuration = slow ? this.DIRECTOR.panSlowDur : "";
       el.style.transform = `translateX(-${shift.toFixed(2)}%)${P.worldY} scale(${P.zoom.toFixed(3)})`;
     });
     const bg = this.el("combat-bg");
-    if (bg) { bg.style.transitionDuration = slow ? "1.7s" : ""; bg.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${P.farY} scale(${P.farScale})`; }
+    if (bg) { bg.style.transitionDuration = slow ? this.DIRECTOR.panSlowDur : ""; bg.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${P.farY} scale(${P.farScale})`; }
     const mid = this.el("combat-bgmid");
-    if (mid && mid.classList.contains("on")) { mid.style.transitionDuration = slow ? "1.7s" : ""; mid.style.transform = `translateX(${(-camT * 17).toFixed(2)}%)${P.midY} scale(${P.midScale})`; }
+    if (mid && mid.classList.contains("on")) { mid.style.transitionDuration = slow ? this.DIRECTOR.panSlowDur : ""; mid.style.transform = `translateX(${(-camT * 17).toFixed(2)}%)${P.midY} scale(${P.midScale})`; }
     if (slow) setTimeout(() => {
       [this.el("axis-lane"), this.el("axis-units"), this.el("combat-bg"), this.el("combat-bgmid")]
         .forEach(el => { if (el) el.style.transitionDuration = ""; });
@@ -4750,7 +4779,7 @@ const UI = {
       const mid = this.el("combat-bgmid"); if (mid && mid.classList.contains("on")) { mid.style.transitionDuration = dur + "s"; mid.style.transform = `translateX(${(-camT * 17).toFixed(2)}%)${P.midY} scale(${P.midScale})`; }
     };
     this._sweeping = true;
-    let t = 360;   // 起手稍候：让开场横幅先亮
+    let t = this.DIRECTOR.sweepLead;   // 起手稍候：让开场横幅先亮
     seq.forEach((f, i) => {
       const last = i === seq.length - 1;
       setTimeout(() => {
@@ -4758,7 +4787,7 @@ const UI = {
         if (!last && f.name) this._fightFarCue(f.name + (f.at <= c.W / 2 ? " ◀" : " ▶"), f.at <= c.W / 2);
         else this._fightFarCue(null);
       }, t);
-      t += last ? 1100 : 1200;
+      t += last ? this.DIRECTOR.sweepHoldLast : this.DIRECTOR.sweepStep;
     });
     // 收尾：交回 renderCombat 的统一时长接管
     setTimeout(() => {
