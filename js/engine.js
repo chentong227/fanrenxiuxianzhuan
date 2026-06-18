@@ -1429,6 +1429,7 @@ const Engine = {
       e.exposed = 1;   // 破绽暴露一回合（伏击先机）
       if (this._combat._log) this._combat._log(`你循着传闻摸清了它的巢与路数——伏击得手！${e.name} 当头中创（气血-${cut}，破绽大开）。`);
       this.log("【伏击】传闻里的那些弱点，这一刻全派上了用场。", "good");
+      if (typeof UI !== "undefined" && UI.renderCombat) UI.renderCombat(this._combat, this._combatMeta);
     }
   },
 
