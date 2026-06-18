@@ -2867,7 +2867,7 @@ const UI = {
       if (lg) { lg.hidden = !lg.hidden; if (!lg.hidden) lg.scrollTop = lg.scrollHeight; }
     };
     const lg0 = this.el("combat-log"); if (lg0) lg0.hidden = true;
-    this._combatTarget = combat.enemies.findIndex(e => e.alive);
+    this._combatTarget = this._nearestEnemyIdx(combat);   // 默认锁最近活敌（宽场不默认打远处那个）
     this._combatLogLen = combat.log.length;
     if (typeof Sfx !== "undefined") {
       Sfx.play("danger");
@@ -3210,20 +3210,23 @@ const UI = {
     c._fx.length = 0;
     let delay = 0;
     const fxReady = typeof Fx !== "undefined" && Fx.ensure(this.el("axis-field"));
-    // 行动者切镜（T6）：谁出手镜头看谁（与该拍演出同拍递镜）；
-    // 同一行动者连续多拍只切一次——镜头能不动就不动（晕镜的反义词）
+    // 行动者切镜（T6）：镜头守在“韩立的视角/战线”，不追远摊——能不动就不动（反晕镜）。
+    //   只有韩立本人、或离他足够近（同一摊交火）的行动者才递镜；远处战线靠画框徽标提示、
+    //   玩家点一下才巡过去。这样镜头不再在 30 格上左右乱甩、看不清“谁打谁”。
     let lastPeek = null;
     for (const f of fx) {
       // 行动者切镜（B1 镜头导演·teamfight-camera-design §3.B）：
-      //   turn 拍＝谁的回合就把镜头先拖给谁（含其随后的走位/驰援位移）；fxcast 的 from 作兜底。
+      //   turn 拍＝该行动者的回合；fxcast 的 from 作兜底。仅当其在韩立视角带内才跟。
       const actor = f.kind === "turn" ? f.ref : ((f.kind === "fxcast" && f.from) ? f.from : null);
-      if (actor && actor !== lastPeek) {
+      let peeked = false;
+      if (actor && actor !== lastPeek && this._peekWorthy(c, actor)) {
         lastPeek = actor;
         const at = delay;
         setTimeout(() => this._camPeek(c, actor), at);   // 切镜先拖给行动者（含其随后逐格走位）
+        peeked = true;
       }
-      // turn 拍只为切镜、不出飘字：宽轴给镜头一点行进/停顿时间（衔接自然），随即跳过
-      if (f.kind === "turn") { if (c.W > 13) delay += this.DIRECTOR.turnHold; continue; }
+      // turn 拍只为切镜、不出飘字：真切了镜才给行进+驻留（turnHold），远摊没切镜只给极短节拍（turnBeat）
+      if (f.kind === "turn") { if (c.W > 13) delay += peeked ? this.DIRECTOR.turnHold : this.DIRECTOR.turnBeat; continue; }
       // —— 全局重演出：趁虚时停金字 / 蓄势释放大字压屏（蓄势全开加白金屏闪+震屏）——
       if (f.ref === "global") {
         const g = this.el("fx-global");
@@ -3384,10 +3387,22 @@ const UI = {
     this._armed = null;
     Engine.combatCastAt(a.id, i);
   },
-  // 当前有效目标（首个存活兜底）
+  // 当前有效目标（默认锁“离韩立最近的活敌”兜底——宽场三战线下，绝不默认去打老远那个）
   curTarget(c) {
     if (this._combatTarget != null && c.enemies[this._combatTarget] && c.enemies[this._combatTarget].alive) return this._combatTarget;
-    return c.enemies.findIndex(e => e.alive);
+    return this._nearestEnemyIdx(c);
+  },
+  // 离韩立最近的活敌索引（同距取先手序在前者）；无活敌返回 -1
+  _nearestEnemyIdx(c) {
+    if (!c || !c.enemies) return -1;
+    const px = (c.player && typeof c.player.pos === "number") ? c.player.pos : 0;
+    let best = -1, bestD = Infinity;
+    c.enemies.forEach((e, i) => {
+      if (!e || !e.alive) return;
+      const d = Math.abs((typeof e.pos === "number" ? e.pos : px) - px);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
   },
 
   // 神识料敌：根据意图类型给出"该如何应对"的提示（看穿意图=真决策，三型攻防语言）
@@ -3445,6 +3460,39 @@ const UI = {
     });
   },
 
+  // 相对朝向：单位是否需要水平镜像（面向"自己正在对付的人"）——玩家盯锁定目标、同道盯最近敌人、
+  //   敌人盯最近的我方；被绕背（_backTurned）的敌人保持旧朝向。立绘与身侧剑阵/绕身法宝共用此判定，
+  //   保证剑阵随韩立转身一起翻面（修：青竹蜂云剑曾始终朝右、不跟攻击方向）。
+  _faceFlipped(c, u, opts, isPlayer, isSide) {
+    if (typeof Art === "undefined" || !Art.battlerFace) return false;
+    const bid2 = (() => {
+      let b = null;
+      if (isPlayer) b = Art.hasBattler("bt_hanli") ? "bt_hanli" : null;
+      else if (isSide) b = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
+      else b = this._battlerByName(u.name);
+      if (b && (u.alt || 0) === 1 && Art.hasBattler(b + "_fly")) b = b + "_fly";
+      return b;
+    })();
+    const face = bid2 ? Art.battlerFace(bid2) : "r";
+    if (face === "c") return false;
+    let oppPos = null;
+    if (isPlayer) {
+      const te = (opts.target >= 0 && c.enemies[opts.target] && c.enemies[opts.target].alive)
+        ? c.enemies[opts.target]
+        : (c.enemies[this._nearestEnemyIdx(c)] || { pos: c.W - 1 });
+      oppPos = te.pos;
+    } else if (isSide) {
+      const te = c.enemies.find(e => e.alive) || { pos: c.W - 1 };
+      oppPos = te.pos;
+    } else {
+      const foes = [c.player].concat(c.side && c.side.hp > 0 ? [c.side] : []);
+      const near = foes.reduce((a, b) => Math.abs(b.pos - u.pos) < Math.abs(a.pos - u.pos) ? b : a);
+      oppPos = u._backTurned ? (u.pos + (near.pos > u.pos ? -1 : 1)) : near.pos;
+    }
+    if (oppPos === u.pos) return false;
+    const want = u.pos < oppPos ? "r" : "l";
+    return face !== want;
+  },
   // 单位 sprite（轴上立绘）：立绘/玉牌 + 脚下血条 + 头顶意图气泡 + 身侧悬浮法器
   _axisSprite(c, u, opts) {
     const isPlayer = u === c.player;
@@ -3502,6 +3550,9 @@ const UI = {
     }
     if (u.status && u.status.poison) badges.push(`<span class="au-mark mk-poison">毒${u.status.poison.dmg}</span>`);
     if (u.status && u.status.dingshen > 0) badges.push(`<span class="au-mark mk-hold">定</span>`);
+    // 朝向（立绘 + 身侧剑阵/绕身法宝共用此判定，剑阵随转身一起翻面）
+    const faceFlipped = this._faceFlipped(c, u, opts, isPlayer, isSide);
+    const fl = faceFlipped ? " flipped" : "";
     // 身侧悬浮法器（觅长生式拥有感）：已装备的武器/护身法器化作灵光绕身
     let orbit = "";
     if (isPlayer && typeof State !== "undefined" && State.gearOf) {
@@ -3525,9 +3576,9 @@ const UI = {
         const leiExtra = lei
           ? '<i class="lei-aura"></i>' + '<i class="lei-bolt"></i>'.repeat(6) + '<i class="lei-orbit"></i><i class="lei-orbit lo2"></i>'
           : '';
-        orbit = `<div class="au-swords ${lei ? "lei" : "arc"}">${'<i class="sw"><b></b></i>'.repeat(10)}${leiExtra}</div>`;
+        orbit = `<div class="au-swords ${lei ? "lei" : "arc"}${fl}">${'<i class="sw"><b></b></i>'.repeat(10)}${leiExtra}</div>`;
       } else if (hasMainTre) {
-        orbit = `<div class="au-blades">${'<i class="bld"></i>'.repeat(9)}</div>`;
+        orbit = `<div class="au-blades${fl}">${'<i class="bld"></i>'.repeat(9)}</div>`;
       } else if (wName) {
         orbs.push(`<span class="orb orb-w" title="${wName}">${sealChar(wName)}</span>`);
       }
@@ -3550,42 +3601,8 @@ const UI = {
       }).join("");
       orbit += `<div class="au-floats">${toks}</div>`;
     }
-    // 相对朝向：每个单位都面向"自己正在对付的人"——玩家盯锁定目标、同道盯最近敌人、
-    // 敌人盯最近的我方；被绕背（_backTurned）的敌人保持旧朝向——背门是真的背对着你
-    let flip = "";
-    if (typeof Art !== "undefined" && Art.battlerFace) {
-      const bid2 = (() => {
-        let b = null;
-        if (isPlayer) b = Art.hasBattler("bt_hanli") ? "bt_hanli" : null;
-        else if (isSide) b = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
-        else b = this._battlerByName(u.name);
-        if (b && (u.alt || 0) === 1 && Art.hasBattler(b + "_fly")) b = b + "_fly";   // 飞姿用飞姿的朝向元数据
-        return b;
-      })();
-      // 素材朝向：战斗立绘有注册元数据；半身像回退按"右向"处理（与旧版敌方镜像观感一致）
-      const face = bid2 ? Art.battlerFace(bid2) : "r";
-      if (face !== "c") {
-        let oppPos = null;
-        if (isPlayer) {
-          const te = (opts.target >= 0 && c.enemies[opts.target] && c.enemies[opts.target].alive)
-            ? c.enemies[opts.target] : (c.enemies.find(e => e.alive) || { pos: c.W - 1 });
-          oppPos = te.pos;
-        } else if (isSide) {
-          const te = c.enemies.find(e => e.alive) || { pos: c.W - 1 };
-          oppPos = te.pos;
-        } else {
-          const foes = [c.player].concat(c.side && c.side.hp > 0 ? [c.side] : []);
-          const near = foes.reduce((a, b) => Math.abs(b.pos - u.pos) < Math.abs(a.pos - u.pos) ? b : a);
-          // 绕背的那一拍它还没回头——朝向反着给（它行动时才转身，与机制一致）
-          oppPos = u._backTurned ? (u.pos + (near.pos > u.pos ? -1 : 1)) : near.pos;
-        }
-        if (oppPos !== u.pos) {
-          const want = u.pos < oppPos ? "r" : "l";
-          if (face !== want) flip = " flipped";
-        }
-      }
-    }
-    if (flip) figCls += " flipped-img";
+    // 相对朝向（已在上方用 _faceFlipped 统一判定：立绘与身侧剑阵共用，转身一起翻面）
+    if (faceFlipped) figCls += " flipped-img";
     const cls = ["axis-unit",
       isPlayer ? "self" : isSide ? "side" : "enemy",
       u.alive === false || u.hp <= 0 ? "dead" : "",
@@ -3638,6 +3655,8 @@ const UI = {
             cur.querySelectorAll(".lei-aura, .lei-bolt, .lei-orbit").forEach(n => n.remove());
             if (willLei) nxt.querySelectorAll(".lei-aura, .lei-bolt, .lei-orbit").forEach(n => cur.appendChild(n.cloneNode(true)));
           }
+          // 朝向翻面：剑阵保活（不重建·不“竖一下”），仅原地切 flipped 类——剑阵随韩立转身一起翻
+          cur.classList.toggle("flipped", nxt.classList.contains("flipped"));
           ex._h = html;
           return;
         }
@@ -4651,7 +4670,8 @@ const UI = {
     deadZone: 2.4,       // 死区半幅（格）：玩家在此区内随便走、镜头不动（文档值）
     panSlowCells: 5,     // 切镜跨度 > 此格数 → 放慢过渡（大跨度丝滑）
     panSlowDur: "1.7s",  // 大跨度切镜时长
-    turnHold: 220,       // B1：切到行动者后停顿读秒（ms·宽轴——给镜头行进/停顿，衔接自然）
+    turnHold: 460,       // B1：真切了镜的那一拍——给镜头行进+落定驻留（ms·宽轴），看清“谁打谁”再走下一拍
+    turnBeat: 90,        // B1：没切镜的远摊回合——只给极短节拍掠过，不拖镜、不空等（反“拖来拖去”）
     dashFollowLag: 360,  // B2：驰援疾遁落点跟拍延时（ms）
     sweepLead: 360,      // B3：开场横幅先亮的起手延时（ms）
     sweepStep: 1200,     // B3：每条战线停留（ms）
@@ -4677,11 +4697,27 @@ const UI = {
    * fx 分拍演出时把镜头平移到行动者（只动 translateX，zoom/沉降/视差沿用当帧快照）；
    * 行动者已在画面中带（±2.5 格余量）则纹丝不动——镜头能不动就不动（晕镜的反义词）。
    * 大跨度（>5 格）自动放慢过渡（1.7s）——"切镜要丝滑，不要又晕又看不清"（用户原话） */
-  _camPeek(c, ref) {
-    if (!c || c.W <= 13 || !this._camParts || typeof c._cam !== "number") return;
-    const u = ref === "player" ? c.player
+  // 解析切镜引用 → 单位（player / side[:i] / enemy:i）
+  _refUnit(c, ref) {
+    if (!c) return null;
+    return ref === "player" ? c.player
       : /^side/.test(ref || "") ? (c.sides ? c.sides[+(ref.split(":")[1] || 0)] : c.side)
       : /^enemy:/.test(ref || "") ? c.enemies[+ref.split(":")[1]] : null;
+  },
+  // 该行动者值不值得递镜（B1 反晕镜）：窄场永远跟（老逻辑无碍）；宽场只跟“韩立视角带内”的——
+  //   韩立本人必跟；其余单位只有离韩立够近（同一摊交火，半个视野内）才跟。远摊不追，交由画框徽标提示。
+  _peekWorthy(c, ref) {
+    if (!c || c.W <= 13) return true;
+    if (ref === "player") return true;
+    const u = this._refUnit(c, ref);
+    if (!u || typeof u.pos !== "number" || (u.hp != null && u.hp <= 0)) return false;
+    const px = (c.player && typeof c.player.pos === "number") ? c.player.pos : 0;
+    const V = (this._camParts && this._camParts.V) ? this._camParts.V : this.DIRECTOR.view;
+    return Math.abs(u.pos - px) <= (V / 2 - 1.5);
+  },
+  _camPeek(c, ref) {
+    if (!c || c.W <= 13 || !this._camParts || typeof c._cam !== "number") return;
+    const u = this._refUnit(c, ref);
     if (!u || (u.hp != null && u.hp <= 0 && ref !== "player")) return;
     const P = this._camParts, V = P.V;
     const cur = c._cam;
