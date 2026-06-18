@@ -14,19 +14,20 @@
  *   {actor:id, enter:"left|right", exit:true, emote:"…", name:"展示名"}
  *   {fx:"flash|shake|burst|lightning|ribbon|swordRing|trail|material",
  *        at:"left|right|center", from, to, elem, color, n, ...}
- *   {sfx:"name"}  {bgm:"track"}  {wait: ms | "click"}
+ *   {sfx:"name"}  {bgm:"track"}  {amb:"night|firefly|candle|wind|rain|market" | null}  {wait: ms | "click"}
+ *        amb=环境床（夜虫/萤火/烛火/风/雨…）：演出/夜景里它领奏、BGM 自动退位；amb:null=收床。
  *   {beat:{kind:"window|choice", prompt, action, ms, onHit, onMiss, choices}}  ← 交互
  *   {guide:{tag, title, hint, focus, cta}}  ← 演出即引导：切章/切图落幕时顺势告诉玩家"下一步去干嘛"
  *        focus=落幕后高亮的行动 id（在地点屏脉冲一下，指明该点哪个按钮）。
  *
- * 节奏：演出 op（cam/actor/fx/sfx/bgm）是"舞台指令"，自动连演不阻塞，直到撞上
+ * 节奏：演出 op（cam/actor/fx/sfx/bgm/amb）是"舞台指令"，自动连演不阻塞，直到撞上
  *   一句台词/场景，或显式 {wait} / 交互 beat 才停下等玩家。可随时跳过（Cutscene.clear()）。
  * ============================================================ */
 (function (root) {
   "use strict";
 
   // 自动连演（非阻塞）的舞台指令键；其余原语各自处理
-  const PLAY_OPS = ["cam", "actor", "fx", "sfx", "bgm", "wait"];
+  const PLAY_OPS = ["cam", "actor", "fx", "sfx", "bgm", "amb", "wait"];
 
   function selfName() {
     try { return (root.State && root.State.data && root.State.data.name) || "韩立"; }
@@ -64,6 +65,7 @@
         if (has(seg, "fx"))  { beats.push({ kind: "op", op: "fx", spec: seg }); continue; }
         if (has(seg, "sfx")) { beats.push({ kind: "op", op: "sfx", sfx: seg.sfx }); continue; }
         if (has(seg, "bgm")) { beats.push({ kind: "op", op: "bgm", bgm: seg.bgm }); continue; }
+        if (has(seg, "amb")) { beats.push({ kind: "op", op: "amb", amb: seg.amb, opts: seg.opts }); continue; }
         if (has(seg, "wait")) { beats.push({ kind: "op", op: "wait", wait: seg.wait }); continue; }
 
         // —— 演出即引导（落幕指路；阻塞，等玩家确认）——
@@ -102,6 +104,7 @@
           case "fx":    this._fx(beat.spec, ctx); return null;
           case "sfx":   if (root.Sfx && root.Sfx.play) root.Sfx.play(beat.sfx); return null;
           case "bgm":   if (root.Sfx && root.Sfx.bgm) root.Sfx.bgm(beat.bgm); return null;
+          case "amb":   if (root.Sfx && root.Sfx.ambient) { if (beat.amb) root.Sfx.ambient(beat.amb, beat.opts || {}); else if (root.Sfx.ambientStop) root.Sfx.ambientStop(); } return null;
           case "wait":  return (beat.wait === "click") ? null : { auto: +beat.wait || 600 };
         }
       } catch (e) {}

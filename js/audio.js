@@ -4,6 +4,7 @@
  * 审美基调（见 docs/art-direction.md）：玉磬、翻纸、剑鸣、古钟——
  * 一切音效克制、短促、低音量，是"气口"不是"轰炸"。
  *  - Sfx.play(name)：合成音效（静音开关持久化）
+ *  - Sfx.ambient(id)/ambientStop()：地点/演出环境床（夜虫/萤火/烛火/风/雨，文件优先+程序合成兜底）
  *  - Sfx.playBgm(url) / stopBgm()：背景乐接口（资源后补，缺省静默）
  * ============================================================ */
 (function (root) {
@@ -258,6 +259,114 @@
     resume() { const t = this.track; this.track = null; if (t) this.start(t); },
   };
 
+  /* ============ 环境床 AMB（地点/演出环境声，零资源程序合成）============
+   * 与 BGM 独立、可并存：BGM 是"曲"，环境床是"景"（夜虫/萤火/烛火/夜风/檐雨/市集远喧）。
+   * 设计准则（docs/audio-design.md）：极低音量垫底、是"夜色"不是"配乐"；演出/夜景里它领奏、
+   * BGM 自动退到极低（duckBgm），出演出即恢复——正是"夜里不一直放音乐"那股安静劲儿。
+   * 持续床=loop 噪声 buffer 经滤波（风/火/雨嘶），间歇事件=调度器叠短音（虫鸣/噼啪/水滴）。
+   * 文件优先 assets/audio/amb_<id>.<ext>（genmusic/Lyria 产出），缺失/失败→本引擎兜底。 */
+  const AMB = {
+    id: null, _timer: null, _master: null, _nodes: [],
+    _gain(c) {
+      if (!this._master) { this._master = c.createGain(); this._master.gain.value = 1; this._master.connect(c.destination); }
+      return this._master;
+    },
+    // 持续噪声床（loop）：经滤波 + 可选缓慢起伏（让风/火"活"起来）
+    _bed(c, { band = null, low = null, hp = null, gain = 0.02, lfo = 0 }) {
+      const len = Math.floor(c.sampleRate * 2);
+      const buf = c.createBuffer(1, len, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = c.createBufferSource(); src.buffer = buf; src.loop = true;
+      let node = src;
+      if (hp)   { const f = c.createBiquadFilter(); f.type = "highpass"; f.frequency.value = hp;   node.connect(f); node = f; }
+      if (band) { const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = band; f.Q.value = 0.7; node.connect(f); node = f; }
+      if (low)  { const f = c.createBiquadFilter(); f.type = "lowpass";  f.frequency.value = low;  node.connect(f); node = f; }
+      const g = c.createGain(); g.gain.value = gain;
+      node.connect(g); g.connect(this._gain(c));
+      src.start(); this._nodes.push(src, g);
+      if (lfo) {
+        const osc = c.createOscillator(), og = c.createGain();
+        osc.type = "sine"; osc.frequency.value = lfo; og.gain.value = gain * 0.6;
+        osc.connect(og); og.connect(g.gain); osc.start(); this._nodes.push(osc, og);
+      }
+      return g;
+    },
+    // 间歇事件用短音/短噪（接 master，受 duck/静音统辖）
+    _tone(c, { freq = 440, type = "sine", dur = 0.2, gain = 0.01, slideTo = null, delay = 0 }) {
+      const o = c.createOscillator(), g = c.createGain();
+      const t0 = c.currentTime + delay;
+      o.type = type; o.frequency.setValueAtTime(freq, t0);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(gain, t0 + Math.min(0.03, dur * 0.3));
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(this._gain(c));
+      o.start(t0); o.stop(t0 + dur + 0.03);
+    },
+    _pip(c, { band = 4200, dur = 0.03, gain = 0.008, delay = 0 }) {
+      const t0 = c.currentTime + delay;
+      const len = Math.max(1, Math.floor(c.sampleRate * dur));
+      const buf = c.createBuffer(1, len, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = c.createBufferSource(); src.buffer = buf;
+      const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = band; f.Q.value = 6;
+      const g = c.createGain(); g.gain.setValueAtTime(gain, t0); g.gain.exponentialRampToValueAtTime(0.0005, t0 + dur);
+      src.connect(f); f.connect(g); g.connect(this._gain(c));
+      src.start(t0);
+    },
+    _cricket(c, soft) {   // 虫鸣：一串细颤（band 噪短脉冲列）
+      const base = 4100 + Math.random() * 1100;
+      const reps = 3 + Math.floor(Math.random() * 4);
+      const gap = 0.05 + Math.random() * 0.03;
+      const g = soft ? 0.005 : 0.0085;
+      const lead = Math.random() * 0.25;
+      for (let k = 0; k < reps; k++) this._pip(c, { band: base, dur: 0.028, gain: g, delay: lead + k * gap });
+    },
+    _frog(c)    { this._tone(c, { freq: 150, slideTo: 96, type: "sawtooth", dur: 0.18, gain: 0.008, delay: Math.random() * 0.3 }); },
+    _crackle(c) {   // 烛火噼啪
+      const n = 1 + Math.floor(Math.random() * 2);
+      for (let k = 0; k < n; k++) this._pip(c, { band: 1500 + Math.random() * 1400, dur: 0.025, gain: 0.01, delay: Math.random() * 0.4 + k * 0.06 });
+    },
+    _shimmer(c) { this._tone(c, { freq: 2300 + Math.random() * 900, type: "sine", dur: 0.5, gain: 0.0035, delay: Math.random() * 0.3 }); },
+    _drip(c)    { this._tone(c, { freq: 2100 + Math.random() * 500, slideTo: 900, type: "sine", dur: 0.07, gain: 0.009, delay: Math.random() * 0.4 }); },
+    _farBell(c) { this._tone(c, { freq: 760 + Math.random() * 240, type: "sine", dur: 0.5, gain: 0.004, delay: Math.random() * 0.3 }); },
+
+    start(id) {
+      if (this.id === id) return;
+      this.stop();
+      this.id = id;
+      if (muted) return;            // 静音时只记 id，解除后 resume
+      const c = ac(); if (!c) return;
+      // 持续床
+      if (id === "night" || id === "firefly") this._bed(c, { low: 380, gain: 0.011, lfo: 0.06 });
+      else if (id === "wind")   this._bed(c, { low: 620, gain: 0.02, lfo: 0.09 });
+      else if (id === "candle") this._bed(c, { low: 900, gain: 0.006 });
+      else if (id === "rain")   { this._bed(c, { band: 3800, gain: 0.024 }); this._bed(c, { low: 1100, gain: 0.01, lfo: 0.07 }); }
+      else if (id === "market") this._bed(c, { band: 560, gain: 0.012, lfo: 0.12 });
+      // 间歇事件调度
+      const tick = () => {
+        if (muted || this.id !== id) return;
+        const cc = ac(); if (!cc) return;
+        if (id === "night")        { if (Math.random() < 0.75) this._cricket(cc, false); if (Math.random() < 0.12) this._frog(cc); }
+        else if (id === "firefly") { if (Math.random() < 0.6)  this._cricket(cc, true);  if (Math.random() < 0.4)  this._shimmer(cc); }
+        else if (id === "candle")  { if (Math.random() < 0.5)  this._crackle(cc); }
+        else if (id === "rain")    { if (Math.random() < 0.45) this._drip(cc); }
+        else if (id === "market")  { if (Math.random() < 0.22) this._farBell(cc); }
+      };
+      tick();
+      this._timer = setInterval(tick, 700);
+    },
+    stop() {
+      if (this._timer) { clearInterval(this._timer); this._timer = null; }
+      this._nodes.forEach(n => { try { if (n.stop) n.stop(); } catch (e) {} try { if (n.disconnect) n.disconnect(); } catch (e) {} });
+      this._nodes = [];
+      this.id = null;
+    },
+    resume() { const i = this.id; this.id = null; if (i) this.start(i); },
+  };
+
   /* ============ BGM 文件轨（Lyria 生成，assets/audio/bgm_<track>.mp3）============
    * 九轨（参考动画配乐气质）：daily 药庐古琴 / town 市井琵琶 / journey 行旅笛弦 /
    * fair 集市筝铃 / combat 战鼓急弦 / boss 太鼓号角 / tense 阴冷悬疑 /
@@ -267,6 +376,23 @@
   const FALLBACK = { town: "daily", journey: "daily", fair: "daily", boss: "combat", sorrow: "tense", triumph: null };
   let curTrack = null;
 
+  /* ============ 环境床状态 + BGM 让位（duck）============
+   * 环境床领奏时把当前 BGM（文件轨 + 合成轨）压到极低，出演出/收床即恢复。 */
+  let ambEl = null;
+  let curAmb = null;
+  let bgmDucked = false, bgmBaseVol = null;
+  function duckBgm() {
+    if (bgmDucked) return; bgmDucked = true;
+    if (bgmEl) { bgmBaseVol = bgmEl.volume; try { bgmEl.volume = Math.max(0, bgmEl.volume * 0.16); } catch (e) {} }
+    try { if (BGM._master) BGM._master.gain.setTargetAtTime(0.16, ac().currentTime, 0.4); } catch (e) {}
+  }
+  function unduckBgm() {
+    if (!bgmDucked) return; bgmDucked = false;
+    if (bgmEl && bgmBaseVol != null) { try { bgmEl.volume = bgmBaseVol; } catch (e) {} }
+    bgmBaseVol = null;
+    try { if (BGM._master) BGM._master.gain.setTargetAtTime(1, ac().currentTime, 0.4); } catch (e) {}
+  }
+
   const Sfx = {
     enabled() { return !muted; },
     toggle() {
@@ -274,8 +400,15 @@
       try { localStorage.setItem(KEY, muted ? "off" : "on"); } catch (e) {}
       if (muted && bgmEl) { bgmEl.pause(); }
       if (!muted && bgmEl) { bgmEl.play().catch(() => {}); }
-      if (muted) { const t = BGM.track; BGM.stop(); BGM.track = t; }   // 记轨停声
-      else if (bgmEl == null) BGM.resume();
+      if (muted && ambEl) { ambEl.pause(); }
+      if (!muted && ambEl) { ambEl.play().catch(() => {}); }
+      if (muted) {
+        const t = BGM.track; BGM.stop(); BGM.track = t;                  // 记轨停声
+        const a = AMB.id; try { AMB.stop(); } catch (e) {} AMB.id = a;   // 记环境床停声
+      } else {
+        if (bgmEl == null) BGM.resume();
+        if (ambEl == null && AMB.id) AMB.resume();
+      }
       return !muted;
     },
     play(name) {
@@ -311,6 +444,35 @@
       try { BGM.start(track); } catch (e) {}
     },
     bgmStop() { this.stopBgm(); try { BGM.stop(); } catch (e) {} curTrack = null; },
+    /* 环境床：地点/演出环境声（与 BGM 独立并存；文件优先 + 程序合成兜底）。
+     * id: "night"|"firefly"|"candle"|"wind"|"rain"|"market"；传 null/false=收床。
+     * opts: {vol, duck:false 关 BGM 让位, force 强制重起}。同 id 幂等。*/
+    ambient(id, opts = {}) {
+      if (curAmb === id && !opts.force) return;
+      if (!id) { this.ambientStop(); return; }
+      curAmb = id;
+      this._ambStopFile();
+      try { AMB.stop(); } catch (e) {}
+      try {
+        const url = `assets/audio/amb_${id}.mp3`;
+        const el = new window.Audio(url);
+        el._src = url; el.loop = true; el.volume = opts.vol != null ? opts.vol : 0.4;
+        el.onerror = () => {   // 文件缺失/失败：回退程序合成兜底（不静默）
+          if (ambEl === el) { ambEl = null; if (curAmb === id) { try { AMB.start(id); } catch (e) {} } }
+        };
+        ambEl = el;
+        if (!muted) el.play().catch(() => {});
+      } catch (e) { try { AMB.start(id); } catch (e2) {} }
+      // 环境床领奏：压低 BGM（演出/夜景"不一直放音乐"）
+      if (opts.duck !== false) duckBgm(); else unduckBgm();
+    },
+    ambientStop() {
+      this._ambStopFile();
+      try { AMB.stop(); } catch (e) {}
+      curAmb = null;
+      unduckBgm();
+    },
+    _ambStopFile() { if (ambEl) { try { ambEl.pause(); } catch (e) {} ambEl = null; } },
     // 旧接口（资源后补；文件缺失静默）
     playBgm(url, vol = 0.25) {
       try {

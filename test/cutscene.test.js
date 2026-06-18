@@ -58,6 +58,22 @@ console.log("== 2. 演出原语编译（cam/actor/fx/sfx/bgm/wait）==");
   assert(CS.hasStaging(stage) === true, "含原语 hasStaging=true");
 }
 
+console.log("== 2b. 环境床 amb 原语（夜虫/烛火夜晚感；演出不一直放 BGM）==");
+{
+  const stage = { text: [
+    { amb: "night" },
+    { amb: "candle", opts: { vol: 0.5 } },
+    { amb: null },
+  ] };
+  const b = CS.compile(stage);
+  assert(JSON.stringify(kinds(stage)) === JSON.stringify(["op:amb", "op:amb", "op:amb"]), "amb 识别为 op");
+  assert(b[0].amb === "night", "amb 载 id");
+  assert(b[1].amb === "candle" && b[1].opts && b[1].opts.vol === 0.5, "amb 载 opts（vol）");
+  assert(b[2].amb === null, "amb:null 载为收床 op");
+  assert(CS.hasStaging(stage) === true, "含 amb hasStaging=true");
+  assert(CS.isBlocking({ kind: "op", op: "amb" }) === false, "amb 不阻塞（舞台指令自动连演）");
+}
+
 console.log("== 3. 交互 beat（对象=交互；字符串=停顿，二者不混淆）==");
 {
   const stage = { text: [
@@ -113,6 +129,8 @@ console.log("== 6. run/runBeat 无 DOM/FX/audio 时 fail-soft ==");
   // 缺 Sfx/Fx 全局：静默不抛
   assert(CS.run({ kind: "op", op: "sfx", sfx: "danger" }, {}) === null, "sfx 缺依赖→null 不抛");
   assert(CS.run({ kind: "op", op: "bgm", bgm: "tense" }, {}) === null, "bgm 缺依赖→null 不抛");
+  assert(CS.run({ kind: "op", op: "amb", amb: "night" }, {}) === null, "amb 缺 Sfx→null 不抛");
+  assert(CS.run({ kind: "op", op: "amb", amb: null }, {}) === null, "amb:null 缺 Sfx→null 不抛");
   assert(CS.run({ kind: "op", op: "fx", spec: { fx: "burst", at: "center" } }, {}) === null, "fx 缺 FX→null 不抛");
   assert(CS.run({ kind: "op", op: "cam", cam: "hold" }, {}) === null, "cam hold→null");
   // wait 定时 → 交回调度器

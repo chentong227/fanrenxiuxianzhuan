@@ -1309,6 +1309,8 @@ const UI = {
     if (this._cutTimer) { clearTimeout(this._cutTimer); this._cutTimer = null; }
     // 收束演出：清计时、复位镜头、退跳过键（演出瞬态不入存档）
     if (typeof Cutscene !== "undefined") { Cutscene.clear(); Cutscene.resetCam(this._storyCtx()); }
+    // 收束环境床：演出落幕即收夜色、恢复 BGM（地点级常驻留待昼夜系统接管）
+    if (typeof Sfx !== "undefined" && Sfx.ambientStop) Sfx.ambientStop();
     const skip = this.el("story-skip"); if (skip) skip.hidden = true;
     const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
     this._archiveStory(stage);
