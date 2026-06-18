@@ -52,6 +52,8 @@
     // 战斗场景底图（对阵轴战场：下半幅开阔地面，横版专用；v90 起为舞台盒构图——
     // 两翼近景收口环抱+中央开阔，"人被环境包住"）
     bt_forest: {}, bt_road: {}, bt_valley: {}, bt_night: {},
+    // 增量H·魔道争锋第四幕·皇宫决战战场底图（夜·皇城宫门广场；非 bt_ 前缀→中性 biome 无色偏）
+    huanggong: {},
     // 前景遮挡条带（v90）：近景失焦草石（透明 PNG），压在全部单位之前——最快视差层。
     // 分场景配色：前景与底图地面同色才像"长在地里"（fg_combat=通用回退）
     fg_combat: {}, fg_forest: {}, fg_road: {}, fg_night: {},
@@ -85,6 +87,8 @@
     bt_xuanle: { face: "c" }, bt_xueyu_zhizhu: { face: "c" }, bt_baiyu_zhizhu: { face: "c" },
     // 增量G·京城暗流：血侍铁罗（一阶段）+ 血茧铁罗（化茧狂暴独臂形态·二阶段）+ 妖化王管事
     bt_tieluo: { face: "c" }, bt_tieluo_mao: { face: "c" }, bt_wuse: { face: "c" },
+    // 增量H·皇宫决战：黄枫谷同袍刘靖/宋蒙/钟卫娘（正面对称 c）+ 黑煞教低阶血侍 mook
+    bt_liujing: { face: "c" }, bt_songmeng: { face: "c" }, bt_zhongweiniang: { face: "c" }, bt_xueshi: { face: "c" },
     // 初入星海篇·妖兽/人形敌（正面对称构图，永不镜像）；雷鹏=奇观演出走 CG·非可战敌·无战姿
     bt_yingli: { face: "c" }, bt_waihai: { face: "c" }, bt_guzhanglao: { face: "c" },
   };
@@ -113,7 +117,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 24,
+    ASSET_VER: 25,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 
