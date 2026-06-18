@@ -4369,7 +4369,84 @@ const UI = {
     if (isCave) { this._renderExmapScene(x, f); return; }
     const map = ExploreMap.mapOf(f);
     if (map && map.peaceful) { this._renderStrongholdField(x, f); return; }  // 据点：和平节点图（不动血色路径）
+    if (map && map.fog) { this._renderFogField(x, f); return; }              // 后山：野外战争迷雾（与血色禁地隔离）
     this._renderExmapField(x, f);
+  },
+
+  /* ---------- 后山·野外战争迷雾舆图渲染（fog:true：四态可见性 + 远距感知梯度） ----------
+   * 与血色禁地 _renderExmapField 完全隔离，零回归。无灾厄钟；钟盘位换感知梯度副标。
+   * 四态：unknown 覆雾不画 / glimpsed 窥见（雾影问号）/ rumored 风闻（标出·知其所在）/ visited 已至全显。 */
+  _renderFogField(x, f) {
+    const map = ExploreMap.mapOf(f);
+    const bg = this.el("exmap-bg");
+    const bgUrl = Art.sceneUrl(map.bg, { landscape: true });
+    if (bgUrl && bg.dataset.cur !== bgUrl) { bg.style.backgroundImage = `url('${bgUrl}')`; bg.dataset.cur = bgUrl; }
+
+    this.el("exmap-title").textContent = map.name;
+    // 钟盘位：后山无灾厄钟——换成远距感知梯度（最强危险源的方位强弱，一行预告）
+    const sf = ExploreMap.senseField(x);
+    this.el("exmap-clock").innerHTML = sf
+      ? `<span class="exclk-sense${sf.level >= 3 ? " strong" : ""}">${"⚠".repeat(Math.min(3, sf.level))} 腥气·${sf.dir}</span>`
+      : `<span class="exclk-peace">${map.subtitle || "雾锁千山"}</span>`;
+
+    const opts = ExploreMap.options(x);
+    const optMap = {};
+    opts.forEach(o => { optMap[o.id] = o; });
+    const st = id => ExploreMap.fogState(x, id);
+
+    // 连线：两端都不在雾中（fogState !== unknown）才画
+    const svg = this.el("exmap-edges");
+    let lines = "";
+    (map.edges || []).forEach(([a, b]) => {
+      if (st(a) === "unknown" || st(b) === "unknown") return;
+      const na = map.nodes[a], nb = map.nodes[b];
+      const isOpt = (a === f.node && optMap[b]) || (b === f.node && optMap[a]);
+      lines += `<line x1="${na.x}" y1="${na.y}" x2="${nb.x}" y2="${nb.y}" class="exedge${isOpt ? " reach" : ""}"/>`;
+    });
+    svg.innerHTML = lines;
+
+    // 节点（按四态渲染）
+    const box = this.el("exmap-nodes");
+    let html = "";
+    Object.entries(map.nodes).forEach(([id, n]) => {
+      const state = st(id);
+      if (state === "unknown") return;                  // 覆雾：不画
+      const here = id === f.node;
+      const opt = optMap[id];
+      let cls = "exnode";
+      if (here) cls += " here";
+      if (opt && !here) cls += " reach";
+      if (f.cleared[id]) cls += " cleared";
+      if (state === "glimpsed" && !here) cls += " ghost";    // 窥见：雾影
+      if (state === "rumored" && !here) cls += " rumored";   // 风闻：标出
+      let mark = "";
+      if (state === "rumored" && !f.hunted[id]) mark = `<span class="exrisk sense">闻</span>`;
+      else if (n.kind === "danger" && !f.hunted[id]) mark = `<span class="exrisk lair">凶</span>`;
+      const cost = (opt && !here) ? `<span class="excost">${opt.cost}钟</span>` : "";
+      const click = (opt && !here) ? `onclick="Engine.exmapTravel('${id}')"` : "";
+      const nm = (state === "glimpsed" && !here) ? "？" : n.name;   // 窥见只见轮廓，未识其名
+      html += `<div class="${cls}" style="left:${n.x}%;top:${n.y}%" ${click}>
+        <span class="exicon">${n.icon || "·"}</span>
+        <span class="exname">${nm}</span>${cost}${mark}
+      </div>`;
+    });
+    const cn = map.nodes[f.node];
+    html += `<div class="expawn" style="left:${cn.x}%;top:${cn.y}%"><img src="${Art.url("hanli") || ""}" alt=""></div>`;
+    box.innerHTML = html;
+
+    // 行动条：按当前节点给动作（先猎杀方可搜刮；歇脚回灵；林口离山）
+    const node = map.nodes[f.node];
+    const acts = [];
+    if (node.kind === "danger" && !f.hunted[f.node]) {
+      const beast = (State.data.beastRumor && WORLD.enemies[State.data.beastRumor]) ? WORLD.enemies[State.data.beastRumor].name : "盘踞的凶兽";
+      acts.push(`<button class="btn btn-warn" onclick="Engine.exmapHunt()">猎杀「${beast}」</button>`);
+    } else if (node.loot && !f.cleared[f.node]) {
+      acts.push(`<button class="btn" onclick="Engine.exmapGather()">${node.kind === "danger" ? "搜刮（1钟）" : "采集（1钟）"}</button>`);
+    }
+    if (node.kind === "rest") acts.push(`<button class="btn" onclick="Engine.exmapStay(1)">打坐调息（1钟）</button>`);
+    if (node.kind === "exit") acts.push(`<button class="btn btn-warn" onclick="Engine.finishExmap('leave')">离开后山</button>`);
+    if (node.kind !== "rest" && node.kind !== "exit") acts.push(`<button class="btn btn-ghost" onclick="Engine.exmapStay(1)">驻足观察（1钟）</button>`);
+    this.el("exmap-actions").innerHTML = acts.join("");
   },
 
   /* ---------- 据点节点图渲染（和平：地标全亮·无钟无巡逻·复访变迁） ----------

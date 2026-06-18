@@ -3617,6 +3617,9 @@ html, body { touch-action: manipulation; }
 @keyframes exwarn-pulse { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
 /* 据点（和平）副标：无灾厄钟，市井风物一行 */
 .exclk-peace { font-size: 13px; color: #d8c39a; letter-spacing: 2px; opacity: .9; }
+/* 后山·远距感知梯度（钟盘位）：兽吼/血腥气方位强弱——越逼近越烈 */
+.exclk-sense { font-size: 13px; color: #e0a9a0; letter-spacing: 1px; text-shadow: 0 0 8px rgba(180, 60, 50, .5); }
+.exclk-sense.strong { color: #f0908a; animation: exwarn-pulse 1.8s ease-in-out infinite; }
 
 .exmap-edges { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 .exedge { stroke: rgba(214, 196, 168, .28); stroke-width: .35; stroke-dasharray: 1.4 1.6; }
@@ -3657,6 +3660,11 @@ html, body { touch-action: manipulation; }
 .exrisk.shadow { background: rgba(120, 70, 18, .92); border-color: rgba(255, 180, 100, .55); box-shadow: 0 0 10px rgba(200, 130, 40, .5); }
 .exrisk.lair { animation: none; opacity: .92; }
 .exrisk.boss { background: rgba(70, 14, 40, .95); border-color: rgba(220, 100, 160, .55); animation: none; }
+/* 后山·风闻（异闻预亮的栖踪/巢穴）：紫调标记，与「凶」区分（信息≠现实） */
+.exrisk.sense { background: rgba(86, 44, 120, .92); border-color: rgba(186, 146, 232, .6); box-shadow: 0 0 10px rgba(130, 90, 210, .5); animation: none; }
+/* 后山·风闻节点：标出（知其所在），虚线紫边——尚未亲至，故非实线 */
+.exnode.rumored { opacity: .85; border-style: dashed; border-color: rgba(168, 134, 224, .6); }
+.exnode.rumored .exname { color: #d2c2ec; }
 
 .expawn {
   position: absolute; z-index: 3; width: 40px; height: 40px; border-radius: 50%;
