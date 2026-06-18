@@ -3524,20 +3524,18 @@ const Engine = {
       player,
       enemies: [xs("xueshi_a"), xs("xueshi_b"), xs("xueshi_c")],
       maxRounds: 24,
-      W: 17, lanes: 2,
-      // —— 三条战线 / 三个战场（palace-battle-fixme 问题B）——
-      // 拉开战场，三组对位各据一方：左·刘靖×甲，中·宋蒙×乙（韩立居中策应），右·钟卫娘×丙；
-      // aggroSeed 先锁杀意流向→三血侍开战即各扑自己那条线的同袍（成"三条战线"而非一锅端混战）；
-      // crossSupport=已了结当面之敌的同袍横越驰援告急战线（可见的"互相支援"），韩立居中可瞬移跨场补刀。
-      playerPos: 8,
-      sidesPos: [3, 9, 14],      // 刘靖(左) / 宋蒙(中) / 钟卫娘(右)
-      enemiesPos: [5, 11, 16],   // 血侍甲(左) / 血侍乙(中) / 血侍丙(右)
-      aggroSeed: [
-        { e: 0, key: "side:0", amt: 40 },   // 甲 缠 刘靖
-        { e: 1, key: "side:1", amt: 40 },   // 乙 缠 宋蒙
-        { e: 2, key: "side:2", amt: 40 },   // 丙 缠 钟卫娘
+      // —— 30 格大战场·三战区声明式布局（palace-battle-fixme 问题B / teamfight-camera-design §3·§5）——
+      //   报一张 fronts 表即得整片大战场：引擎据此自动落位 + 锁线（本区血侍杀意锁本区同袍）+
+      //   默认开跨场驰援 + 暴露 _fronts 给镜头导演层。左·刘靖×甲(4) / 中·宋蒙×乙(15) / 右·钟卫娘×丙(26)，
+      //   三战区间各留 ~9 格缓冲空地——韩立居中策应(13)，左右飞遁穿场补刀；W=30>13 触发宽轴巡游相机
+      //   （队友行动时 turn 拍把镜头自然拖过去，衔接顺滑）。以后复杂团战只换这张 fronts 表即复用同款演出。
+      W: 30, lanes: 2,
+      playerPos: 13,
+      fronts: [
+        { ally: "side:0", enemies: [0], at: 4,  name: "左·刘靖" },
+        { ally: "side:1", enemies: [1], at: 15, name: "中·宋蒙" },
+        { ally: "side:2", enemies: [2], at: 26, name: "右·钟卫娘" },
       ],
-      crossSupport: true,
       // 三同袍 side 同场（sides[] 复数化）：人格即打法——
       sides: [
         // 刘靖·除魔卫道之楷模：前压抢攻、剑光凌厉（凤凰符是后话，此战只显其正道剑修本色）

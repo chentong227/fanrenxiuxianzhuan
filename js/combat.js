@@ -298,7 +298,8 @@
       this._fieldPhase = null;
       // —— 轴战场：格数随战斗规格（v95 大战场小人物：标准 11，多敌/boss 15——
       //    战场大→走位与射程才有意义；突破=心象方寸不变）——
-      this.W = cfg.W || (this.mode === "breakthrough" ? 5
+      this.W = cfg.W || (cfg.fronts && cfg.fronts.length ? this._frontsWidth(cfg.fronts)
+        : this.mode === "breakthrough" ? 5
         : (this.enemies.length >= 2 || cfg.boss) ? 15 : 11);
       // —— 排数（2.5 排制）：与 W 同源——都由"真实战场有多大"决定（洞窟2/旷野3/大战4）
       this.L = Math.max(2, cfg.lanes || 2);
@@ -334,8 +335,14 @@
         if (sposArr && sposArr[i] != null) s.pos = clampNum(sposArr[i], 0, this.W - 1);
         else if (cfg.playerPos != null) s.pos = clampNum(this.player.pos + 1 + i, 0, this.W - 1);
       });
-      // 跨线驰援开关（皇宫三组对位 startSantuanFight）：本方某战线告急时，已了结当面之敌的同袍横越驰援
-      this.crossSupport = !!cfg.crossSupport;
+      // —— 战区（front）声明式布局（teamfight-camera-design §3.A/D）：报一张战线表即得整片大战场——
+      //    自动落位（我方锚点 at，敌人右贴 at+1…）＋锁线（本区敌人杀意锁本区我方）＋暴露 _fronts 给 UI 导演层。
+      //    以后所有复杂团战只填 fronts:[{ally,enemies,at,name}] 即复用同款效果；不填的老战斗零回归。
+      if (cfg.fronts && cfg.fronts.length) this._layoutFronts(cfg);
+      // 跨线驰援开关（皇宫三组对位 startSantuanFight）：本方某战线告急时，已了结当面之敌的同袍横越驰援。
+      //   多战区默认开（可被 cfg.crossSupport 显式关）——“互相协助、自由协作”靠这一口。
+      this.crossSupport = cfg.crossSupport != null ? !!cfg.crossSupport
+        : !!(this._fronts && this._fronts.length >= 2);
       // 初始仇恨播种（多组对位锁线/钓怪）：开战前先定杀意流向——三组对位才成"三条战线"而非一锅端混战
       //   形如 [{ e:敌序号, key:"side:0"|"player", amt:数值 }]；须在 _rollEnemyIntents 之前
       if (cfg.aggroSeed) cfg.aggroSeed.forEach(seed => {
@@ -356,6 +363,35 @@
       this._rollEnemyIntents();
     }
 
+    // 战区表→战场宽度：我方锚点 at，敌人右贴 at+1…at+n；取最右占格 +2 留白，下限 14 触发宽轴巡游相机。
+    _frontsWidth(fronts) {
+      let maxCell = 0;
+      fronts.forEach(f => {
+        const n = (f.enemies || []).length;
+        maxCell = Math.max(maxCell, (f.at || 0) + n);
+      });
+      return Math.max(14, maxCell + 2);
+    }
+    // 战区表→落位+锁线（声明式大战场的引擎落点）。allyKey: "player" | "side:N"。
+    _layoutFronts(cfg) {
+      this._fronts = [];
+      cfg.fronts.forEach(f => {
+        const allyKey = f.ally || "player";
+        const si = allyKey === "player" ? -1 : +(allyKey.split(":")[1] || 0);
+        const ally = si < 0 ? this.player : this.sides[si];
+        if (ally) ally.pos = clampNum(f.at, 0, this.W - 1);
+        const akey = si < 0 ? "player" : "side:" + si;   // aggro 账本键（side 一律用 side:N）
+        const enemyIdxs = [];
+        (f.enemies || []).forEach((ei, k) => {
+          const e = this.enemies[ei];
+          if (!e) return;
+          e.pos = clampNum(f.at + 1 + k, 0, this.W - 1);
+          (e.aggro || (e.aggro = {}))[akey] = (e.aggro[akey] || 0) + 120;   // 锁线：本区敌人咬本区我方
+          enemyIdxs.push(ei);
+        });
+        this._fronts.push({ name: f.name || null, at: f.at, allyKey, enemyIdxs });
+      });
+    }
     _makeSideFighter(s) {
       const f = new Fighter({
         name: s.name, hp: s.hp, hpMax: s.hpMax, team: "player",
@@ -1584,6 +1620,7 @@
     }
     _sideActOne(s, sideIdx) {
       this._actorRef = this._refOf(s);   // 切镜（T6）：谁行动，镜头看谁
+      if (this.W > 13) this._emitFx(this._refOf(s), "turn", null);   // 导演（B1）：本拍先把镜头交给行动者，再演他的走位/出手
       const stance = s.stance || "follow";
       const persona = (s.sideRef && s.sideRef.persona) || { aggr: 5, prot: 5, kite: 0 };
       const isMelee = !s.moves || s.moves.every(m => !m.range || m.range[1] <= 1);
@@ -1676,12 +1713,14 @@
         const reach = isMelee ? 1 : 2;
         let dR = this.dist(s, target);
         if (dR > reach) {
-          const step = this._stepToward(s, target, this.moveCap(s));
+          const from = s.pos;
+          // 驰援疾遁（C2）：御剑/纵跃一拍横越整片缓冲带，covering 直抵告急战区（非 moveCap 慢爬）。
+          const step = this._stepToward(s, target, this.W);
           if (step != null && step !== s.pos) {
             s.pos = step; dR = this.dist(s, target);
             const wn = rescueWard === this.player ? "韩师弟" : rescueWard.name;
             if (s._rescueSaid !== wn) { this._log(`${s.name} 已了结当面血侍，弃线横越战场驰援——「${wn}，我来接应！」`); s._rescueSaid = wn; }
-            this._emitFx(this._refOf(s), "move", null);
+            this._emitFx(this._refOf(s), "move", null, { from, to: s.pos, dash: 1 });   // 含 from/to 供镜头跟拍
             this._sideTarget = ti;
             if (dR > reach) return;
           }
@@ -1854,6 +1893,7 @@
       e._whiffed = false;   // 趁虚窗口关闭：收招硬直只持续到它再次出手
       e._backTurned = false;   // 它转过身来了——绕后窗口关闭
       this._actorRef = "enemy:" + this.enemies.indexOf(e);   // 切镜：行动者镜头（T6）
+      if (this.W > 13) this._emitFx("enemy:" + this.enemies.indexOf(e), "turn", null);   // 导演（B1）：镜头先拖到行动的敌人
       const prey = this.aggroTarget(e);
       const a = e.intent || { name: e.atkName || "攻击", dmg: e.atk || 8, soul: e.soulAtk, pierce: e.pierceAtk, kind: "normal", mp: 0, range: [1, 3] };
       // —— 阵型纪律（T3 pack）：从者离领队太远先归队（队形带 ±2 格）——

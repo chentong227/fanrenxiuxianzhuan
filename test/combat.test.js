@@ -807,5 +807,67 @@ console.log("\n=== 24. 真·颠倒五行阵：逐回合相位轮转 + 阵力反�
   assert(c.player.shield >= 20, `佐助相位给玩家护盾（盾 ${c.player.shield}）`);
 }
 
+console.log("\n=== 25. 大战场·fronts 声明式战区 + turn 切镜拍 + 跨场驰援疾遁（teamfight-camera-design）===");
+{
+  const allyMv = (nm, el) => [{ name: nm, dmg: 18, weight: 12, elem: el, range: [1, 2] }];
+  const mkSides = () => ([
+    { id: "a0", name: "刘靖", kind: "ally", hp: 138, hpMax: 138, guard: 0.28, elem: "jin",
+      persona: { aggr: 8, prot: 4, kite: 1 }, moves: allyMv("除魔剑光", "jin") },
+    { id: "a1", name: "宋蒙", kind: "ally", hp: 150, hpMax: 150, guard: 0.38, elem: "tu",
+      persona: { aggr: 4, prot: 8, kite: 2 }, moves: allyMv("重元珠击", "tu") },
+    { id: "a2", name: "钟卫娘", kind: "ally", hp: 108, hpMax: 108, guard: 0.18, elem: "huo",
+      persona: { aggr: 8, prot: 2, kite: 3 }, moves: allyMv("烈焰掌", "huo") },
+  ]);
+  const mkFronts = () => ([
+    { ally: "side:0", enemies: [0], at: 4,  name: "左" },
+    { ally: "side:1", enemies: [1], at: 15, name: "中" },
+    { ally: "side:2", enemies: [2], at: 26, name: "右" },
+  ]);
+  const enemies3 = () => [dummy({ name: "甲", hp: 90, atk: 12 }),
+                          dummy({ name: "乙", hp: 90, atk: 12 }),
+                          dummy({ name: "丙", hp: 90, atk: 12 })];
+
+  // 声明式布局：W=30、锚点落位、敌人右贴、锁线、_fronts 元数据、crossSupport 自动开
+  const c = new Combat({ player: mkHan({ hp: 200, hpMax: 200 }), enemies: enemies3(),
+    rng: noCrit, W: 30, lanes: 2, playerPos: 13, sides: mkSides(), fronts: mkFronts() });
+  assert(c.W === 30 && c.player.pos === 13, `大战场 W=30·韩立居中 pos=13（${c.W}/${c.player.pos}）`);
+  assert(c.sides[0].pos === 4 && c.sides[1].pos === 15 && c.sides[2].pos === 26,
+    `三同袍锚点 4/15/26（${c.sides.map(s => s.pos).join("/")}）`);
+  assert(c.enemies[0].pos === 5 && c.enemies[1].pos === 16 && c.enemies[2].pos === 27,
+    `三敌右贴 5/16/27（${c.enemies.map(e => e.pos).join("/")}）`);
+  assert(c.aggroTarget(c.enemies[0]) === c.sides[0]
+    && c.aggroTarget(c.enemies[2]) === c.sides[2], "锁线：本区敌人杀意锁本区同袍");
+  assert(c._fronts && c._fronts.length === 3 && c._fronts[2].at === 26, "_fronts 三战区元数据暴露给导演层");
+  assert(c.crossSupport === true, "fronts≥2 自动开 crossSupport");
+
+  // W 自适应（不显式给 W）：取最右占格 +2，下限 14
+  const cAuto = new Combat({ player: mkHan(), enemies: enemies3(), rng: noCrit,
+    sides: mkSides(), fronts: mkFronts() });
+  assert(cAuto.W === 29, `W 自适应=29（最右敌 27 +2 留白，实=${cAuto.W}）`);
+
+  // turn 切镜拍：W>13 时每个侧位/敌人行动前发 turn 拍（喂 flushCombatFx 的镜头导演）
+  c.startRound(); c.endRound();
+  const turns = (c._fx || []).filter(f => f.kind === "turn");
+  assert(turns.length >= 3 && turns.every(t => /^(player|side|enemy)/.test(t.ref)),
+    `本回合 turn 拍≥3 且 ref 合法（${turns.length}）`);
+
+  // 窄场不发 turn 拍（零回归：旧战斗 W≤13 不受导演层影响）
+  const cNarrow = new Combat({ player: mkHan(), enemies: [dummy()], rng: noCrit,
+    sides: [mkSides()[0]], W: 11, playerPos: 2, enemyPos: 6, sidesPos: [3] });
+  cNarrow.startRound(); cNarrow.endRound();
+  assert(!(cNarrow._fx || []).some(f => f.kind === "turn"), "窄场 W≤13 不发 turn 拍（零回归）");
+
+  // 跨场驰援疾遁：同袍清掉当面之敌后，横越缓冲带去救告急战线（非 moveCap 慢爬）
+  const c2 = new Combat({ player: mkHan({ hp: 200, hpMax: 200 }), enemies: enemies3(),
+    rng: noCrit, W: 30, lanes: 2, playerPos: 13, sides: mkSides(), fronts: mkFronts() });
+  c2.enemies[0].hp = 0; c2.enemies[0].alive = false;          // 刘靖那条线已清
+  c2.sides[2].hp = Math.floor(c2.sides[2].hpMax * 0.3);       // 钟卫娘告急
+  c2.startRound();
+  const from0 = c2.sides[0].pos;
+  c2.endRound();
+  assert(c2.sides[0].pos > from0 + 3, `刘靖驰援疾遁横越（${from0}→${c2.sides[0].pos}，跨度>3）`);
+  assert((c2._fx || []).some(f => f.kind === "move" && f.dash), "驰援发 dash 位移拍（含 from/to）");
+}
+
 console.log(failures === 0 ? "\n全部通过 ✓" : `\n${failures} 项失败 ✗`);
 process.exit(failures ? 1 : 0);
