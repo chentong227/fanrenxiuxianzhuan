@@ -2887,6 +2887,8 @@ const UI = {
     this._warmCombatArt(combat, meta);
     this.renderCombat(combat, meta);
     this._flashCombatBanner(meta, combat);
+    // 开场扫场（B3）：多战线团战横扫各战区一遍再落回韩立（_frontSweep 自带多战线/宽轴守卫）
+    this._frontSweep(combat);
   },
 
   // 敌人名 → 立绘（剧情人物用其立绘；心魔用业障之人的脸，无业障用韩立暗影）
@@ -3217,11 +3219,23 @@ const UI = {
       const actor = f.kind === "turn" ? f.ref : ((f.kind === "fxcast" && f.from) ? f.from : null);
       if (actor && actor !== lastPeek) {
         lastPeek = actor;
-        const ref = actor, at = delay;
-        setTimeout(() => this._camPeek(c, ref), at);
+        const at = delay;
+        // 真跟拍长镜头（B2）：行动者本拍若将「驰援疾遁」长程横越，镜头先停其起点(from)，
+        //   待 move·dash 拍再跟到落点(to)——镜头与立绘横掠同行，而非瞬切落点。
+        const dashAhead = fx.find(g => g.kind === "move" && g.dash && g.ref === actor && typeof g.from === "number");
+        if (dashAhead) { const o = dashAhead.from; setTimeout(() => this._camPeekCell(c, o), at); }
+        else { const ref = actor; setTimeout(() => this._camPeek(c, ref), at); }
       }
       // turn 拍只为切镜、不出飘字：宽轴给镜头一点行进/停顿时间（衔接自然），随即跳过
       if (f.kind === "turn") { if (c.W > 13) delay += 220; continue; }
+      // 驰援疾遁位移拍（B2）：镜头跟到落点 to，与立绘横掠同拍——长镜头跟拍（非位移拍照旧）
+      if (f.kind === "move" && f.dash && typeof f.to === "number" && c.W > 13) {
+        const to = f.to, at = delay;
+        setTimeout(() => this._camPeekCell(c, to), at);
+        lastPeek = f.ref;
+        delay += 360;
+        continue;
+      }
       // —— 全局重演出：趁虚时停金字 / 蓄势释放大字压屏（蓄势全开加白金屏闪+震屏）——
       if (f.ref === "global") {
         const g = this.el("fx-global");
@@ -3999,11 +4013,17 @@ const UI = {
           fgEl.style.transform = `translateX(${(-camT * 30).toFixed(2)}%)${fgY}`;
         }
       }
-      // 锁定目标在镜头外：画框边缘点名+血量读数（远端战团摘要——它在那头打到几成，一眼可知）
-      const cueHp = te2 ? Math.max(0, Math.round(te2.hp / te2.hpMax * 100)) : 0;
-      this._fightFarCue(te2 && te2.pos + 0.5 > cam + V ? `${te2.name} ${cueHp}% ▶`
-        : te2 && te2.pos + 0.5 < cam ? `◀ ${te2.name} ${cueHp}%` : null,
-        te2 && te2.pos + 0.5 < cam);
+      // 多战线（fronts≥2）：用可点击的战区摘要徽标巡场（B5）取代单一锁定目标 cue；
+      //   单战线沿用旧远端点名（锁定目标出画时画框边缘亮名+血量）。
+      if (c._fronts && c._fronts.length >= 2) {
+        this._fightFarCue(null);
+      } else {
+        const cueHp = te2 ? Math.max(0, Math.round(te2.hp / te2.hpMax * 100)) : 0;
+        this._fightFarCue(te2 && te2.pos + 0.5 > cam + V ? `${te2.name} ${cueHp}% ▶`
+          : te2 && te2.pos + 0.5 < cam ? `◀ ${te2.name} ${cueHp}%` : null,
+          te2 && te2.pos + 0.5 < cam);
+      }
+      this._frontCues(c, cam, V);
     } else {
       [laneEl2, unitsEl].forEach(el => {
         el.style.width = "";
@@ -4018,6 +4038,8 @@ const UI = {
       }
       if (fgEl && fgEl.classList.contains("on")) fgEl.style.transform = fgY.trim();
       this._fightFarCue(null);
+      const fcWrap = this.el("axis-field") && this.el("axis-field").querySelector(".front-cues");
+      if (fcWrap) fcWrap.remove();
     }
 
     // —— 防撞排布（v87 拥挤重设计）：同高度层单位按屏距扫描，间距不足时右侧者
@@ -4116,7 +4138,10 @@ const UI = {
     // 神雷类特色资源技（chargeCost.id==="shenlei"）不入法宝/法术/瞬发栏——统一走辟邪神雷单卡三选；
     // 噬金虫四用法（chargeCost.id==="shijinchong"）则照常入法宝栏（主攻/图标卡），共享池由 canAfford 自动哑火。
     const treasures = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source === "treasure" && !(SP[id].chargeCost && SP[id].chargeCost.id !== "shijinchong"));
-    const mains = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source !== "treasure");
+    // 飞遁·掠（C1）单列「遁」键：大战场穿场脚力，不挤占法术 8 格（同雷遁走专属位的处置）。
+    const dunArts = p.spells.filter(id => SP[id] && SP[id].blinkMove && SP[id].freeBlink && !SP[id].chargeCost);
+    const mains = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source !== "treasure"
+      && !(SP[id].blinkMove && SP[id].freeBlink));
     const quicks = p.spells.filter(id => SP[id] && SP[id].quick && !SP[id].chargeCost);
     // 主攻法宝=兵器(gear weapon)所授攻击法宝，余者首张攻击法宝兜底；主防法宝=首张护体法宝。
     // 此二者占左侧详细卡(靠左、写全)；其余法宝(子母刃等特效型/悬浮祭出位)一律走右侧图标两排(L1/L2)。
@@ -4188,6 +4213,7 @@ const UI = {
           + (iconTre.length ? `<div class="arsenal-side">${iconTre.map(treIcon).join("")}</div>` : "")
           + `</div>`
         : "")
+      + (dunArts.length ? `<div class="dun-row">${dunArts.map(id => spellBtn(id, "dun-skill", null)).join("")}</div>` : "")
       + `<div class="spell-grid spell8"><span class="zone-tag">法术</span>${mains8.map(id => spellBtn(id)).join("")}`
       + (mainsAll.length > 8 ? `<span class="zone-overflow" title="出战法术上限 8——洞府中重新编排">+${mainsAll.length - 8} 未出战</span>` : "")
       + `</div>`;
@@ -4676,6 +4702,72 @@ const UI = {
     }, 1750);
   },
 
+  // 按格切镜（B2 跟拍长镜头用）：镜头平移到指定格——同 _camPeek 的死区/限速数学，
+  //   但锁定的是"某一格"而非某单位（驰援疾遁分两拍：先停起点 from、再跟落点 to）。
+  _camPeekCell(c, cell) {
+    if (!c || c.W <= 13 || !this._camParts || typeof c._cam !== "number" || typeof cell !== "number") return;
+    const P = this._camParts, V = P.V, cur = c._cam;
+    if (cell + 0.5 >= cur + 2.5 && cell + 0.5 <= cur + V - 2.5) return;   // 已在画面中带：不动镜
+    const cam = Math.max(0, Math.min(c.W - V, cell + 0.5 - V / 2));
+    if (Math.abs(cam - cur) < 0.6) return;
+    c._cam = cam;
+    const slow = Math.abs(cam - cur) > 5;
+    const shift = (cam / c.W) * 100;
+    const camT = (c.W - V) > 0 ? cam / (c.W - V) : 0;
+    [this.el("axis-lane"), this.el("axis-units")].forEach(el => {
+      if (!el) return;
+      el.style.transitionDuration = slow ? "1.7s" : "";
+      el.style.transform = `translateX(-${shift.toFixed(2)}%)${P.worldY} scale(${P.zoom.toFixed(3)})`;
+    });
+    const bg = this.el("combat-bg");
+    if (bg) { bg.style.transitionDuration = slow ? "1.7s" : ""; bg.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${P.farY} scale(${P.farScale})`; }
+    const mid = this.el("combat-bgmid");
+    if (mid && mid.classList.contains("on")) { mid.style.transitionDuration = slow ? "1.7s" : ""; mid.style.transform = `translateX(${(-camT * 17).toFixed(2)}%)${P.midY} scale(${P.midScale})`; }
+    if (slow) setTimeout(() => {
+      [this.el("axis-lane"), this.el("axis-units"), this.el("combat-bg"), this.el("combat-bgmid")]
+        .forEach(el => { if (el) el.style.transitionDuration = ""; });
+    }, 1750);
+  },
+
+  // 开场扫场（teamfight-camera-design B3）：多战线团战开战时镜头横扫各战区——
+  //   首尾战线各亮一拍（飘出战线名），再落回韩立。让玩家开局即"看清三摊架在哪"。
+  //   纯演出：只动镜头 _cam，玩家一交互即由 renderCombat 死区接管，绝不夺操作。
+  _frontSweep(c) {
+    if (!c || c.W <= 13 || !this._camParts || typeof c._cam !== "number") return;
+    if (!c._sweepOnOpen || !c._fronts || c._fronts.length < 2) return;
+    const P = this._camParts, V = P.V;
+    const layers = () => [this.el("axis-lane"), this.el("axis-units")];
+    // 按位置排序的战线锚点：最左→最右→韩立收束
+    const sorted = c._fronts.slice().sort((a, b) => a.at - b.at);
+    const seq = [sorted[0], sorted[sorted.length - 1], { at: c.player.pos, name: null }];
+    const panTo = (cell, dur) => {
+      const cam = Math.max(0, Math.min(c.W - V, cell + 0.5 - V / 2));
+      c._cam = cam;
+      const shift = (cam / c.W) * 100;
+      const camT = (c.W - V) > 0 ? cam / (c.W - V) : 0;
+      layers().forEach(el => { if (el) { el.style.transitionDuration = dur + "s"; el.style.transform = `translateX(-${shift.toFixed(2)}%)${P.worldY} scale(${P.zoom.toFixed(3)})`; } });
+      const bg = this.el("combat-bg"); if (bg) { bg.style.transitionDuration = dur + "s"; bg.style.transform = `translateX(${(-camT * 9).toFixed(2)}%)${P.farY} scale(${P.farScale})`; }
+      const mid = this.el("combat-bgmid"); if (mid && mid.classList.contains("on")) { mid.style.transitionDuration = dur + "s"; mid.style.transform = `translateX(${(-camT * 17).toFixed(2)}%)${P.midY} scale(${P.midScale})`; }
+    };
+    this._sweeping = true;
+    let t = 360;   // 起手稍候：让开场横幅先亮
+    seq.forEach((f, i) => {
+      const last = i === seq.length - 1;
+      setTimeout(() => {
+        panTo(f.at, last ? 1.0 : 1.1);
+        if (!last && f.name) this._fightFarCue(f.name + (f.at <= c.W / 2 ? " ◀" : " ▶"), f.at <= c.W / 2);
+        else this._fightFarCue(null);
+      }, t);
+      t += last ? 1100 : 1200;
+    });
+    // 收尾：交回 renderCombat 的统一时长接管
+    setTimeout(() => {
+      this._sweeping = false;
+      [this.el("axis-lane"), this.el("axis-units"), this.el("combat-bg"), this.el("combat-bgmid")]
+        .forEach(el => { if (el) el.style.transitionDuration = ""; });
+    }, t + 120);
+  },
+
   _fightFarCue(text, leftSide) {
     const field = this.el("axis-field");
     if (!field) return;
@@ -4689,6 +4781,51 @@ const UI = {
     cue.hidden = false;
     cue.textContent = text;
     cue.classList.toggle("left", !!leftSide);
+  },
+
+  // 多战线摘要徽标（teamfight-camera-design B5）：镜头外的各战区在画框边缘列名+血量/状态，
+  //   点击即把镜头巡过去（_camPeek，纯演出·不耗回合·不夺操作）。无 fronts/单战线则清空。
+  _frontCues(c, cam, V) {
+    const field = this.el("axis-field");
+    if (!field) return;
+    let wrap = field.querySelector(".front-cues");
+    if (!c._fronts || c._fronts.length < 2 || typeof cam !== "number") {
+      if (wrap) wrap.remove();
+      return;
+    }
+    if (!wrap) { wrap = document.createElement("div"); wrap.className = "front-cues"; field.appendChild(wrap); }
+    const left = [], right = [];
+    c._fronts.forEach((f, idx) => {
+      const focus = f.at + 0.5;
+      const offL = focus < cam + 0.5, offR = focus > cam + V - 0.5;
+      if (!offL && !offR) return;
+      const ally = f.allyKey === "player" ? c.player
+        : (c.sides ? c.sides[+(f.allyKey.split(":")[1] || 0)] : null);
+      const live = f.enemyIdxs.filter(ei => c.enemies[ei] && c.enemies[ei].alive).length;
+      const cleared = live === 0;
+      const down = ally && ally.hp != null && ally.hp <= 0;
+      const hp = ally && ally.hpMax ? Math.max(0, Math.round(ally.hp / ally.hpMax * 100)) : 0;
+      const nm = f.name || (ally ? ally.name : "战线");
+      const side = offL ? "left" : "right";
+      const body = cleared ? `${nm} 已清` : down ? `${nm} 告急` : `${nm} ${hp}%`;
+      const txt = side === "left" ? "◀ " + body : body + " ▶";
+      const cls = ["front-cue", (!cleared && !down && hp <= 35) || down ? "danger" : "", cleared ? "cleared" : ""].join(" ");
+      (side === "left" ? left : right).push(
+        `<button class="${cls}" onclick="UI.peekFront(${idx})">${txt}</button>`);
+    });
+    wrap.innerHTML = (left.length ? `<div class="fc-col left">${left.join("")}</div>` : "")
+      + (right.length ? `<div class="fc-col right">${right.join("")}</div>` : "");
+  },
+  // 点徽标巡场：镜头巡到该战区我方锚点（我方已倒则看本区尚存之敌）——纯切镜，不耗回合
+  peekFront(idx) {
+    const c = Engine && Engine._combat;
+    if (!c || !c._fronts || !c._fronts[idx]) return;
+    const f = c._fronts[idx];
+    const ally = f.allyKey === "player" ? c.player
+      : (c.sides ? c.sides[+(f.allyKey.split(":")[1] || 0)] : null);
+    if (ally && ally.hp > 0) { this._camPeek(c, f.allyKey); return; }
+    const le = f.enemyIdxs.find(ei => c.enemies[ei] && c.enemies[ei].alive);
+    if (le != null) this._camPeek(c, "enemy:" + le);
   },
 
   // 放置模式：选布置物 → 点格落位
