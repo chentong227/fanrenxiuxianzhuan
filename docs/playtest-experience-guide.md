@@ -212,6 +212,35 @@ location.reload();                       // 重载后 Engine.checkStory() 会弹
 
 ---
 
+## 9. 落库续玩模式（持久存档 + 验证同步 SOP）
+
+> **默认 R5「报告/存档不入库」。但当用户明确要求"边玩边把存档和审阅报告落库续玩"时（持久续玩任务），改用本模式。** 目的：进度（存档）+ 成果（报告）每个里程碑都进 git，**任何会话/任何 agent 都能从仓库无损接手，绝不再丢进度**。qixuan 篇即此模式的活实例（见 `playtest/RESUME-qixuan.md`）。
+
+落库续玩模式下，每到一个**里程碑**（过一个剧情门禁 / 到一个关键节点：friends、bottle、张铁之死、反杀墨大夫、arc_end 等）执行下列 **6 步「验证同步落库」SOP**，缺一不可：
+
+1. **导出存档** → 覆盖写仓库存档文件（UTF-8）：
+   ```bash
+   node playtest/savetool.js dump        # localStorage frxxz_save_v1 → playtest/save-qixuan.json
+   ```
+   （脚本经 CDP `localhost:29229` 读游戏页 localStorage；端口不同用 `CDP_URL=...`。手动兜底见 `RESUME-qixuan.md` §6。**勿用 PowerShell Set-Content 写中文存档，会乱码。**）
+2. **更新报告** `playtest/REVIEW-qixuan.md`（本里程碑的机制发现：节点/操作/现象/数值/合理性判断/严重度/建议）+ 续玩交接文档的进度快照。
+3. **提交** `git add` 存档 + 报告 + 交接文档 → `git commit -m "playtest(<篇章>): checkpoint @ <节点> + 机制发现 <n> 条"`。
+4. **直推** `git push`（本仓库 Devin 代理无写权限，用用户 PAT 直推到分支；AGENTS.md）。
+5. **验证同步（关键——过了才算"落库成功"，不许只凭 push 退出码）**：
+   ```bash
+   L=$(git rev-parse HEAD); R=$(git ls-remote origin <branch> | cut -f1)
+   [ "$L" = "$R" ] && echo SYNCED || echo "NOT SYNCED -> 重推"
+   git fetch origin >/dev/null && git diff --quiet HEAD origin/<branch> && echo CLEAN || echo "DIRTY -> 重推"
+   ```
+   必须同时看到 `SYNCED` + `CLEAN`；任一不符立刻重推，**绝不当作已保存**。
+6. **给用户看报告**：把 `REVIEW-qixuan.md` 本里程碑那段贴给用户（`message_user`），让用户实时看到审阅进展。
+
+> 口诀：**「dump → 写报告 → commit → push → 验 SHA 同步 → 贴报告」**。`git ls-remote` 的 SHA 等于本地 `HEAD` 才算进度真落到了 GitHub。
+>
+> 防丢加固（可选，强烈推荐）：把"起服 + 自动从仓库存档恢复"写进环境蓝图（blueprint），让任何新会话开局即停在仓库存档点。
+
+---
+
 ## 附 · 换篇章复用本手册
 
 调研其他篇章时，仅需替换：

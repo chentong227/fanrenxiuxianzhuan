@@ -82,6 +82,12 @@
   Chrome DevTools → 设备模式（Ctrl+Shift+M）→ 设备下拉选「iPhone 14 Pro Max」。
   默认就以手机竖屏单列布局为准（≤640px 切顶栏「舆图＋⋯」+ 底部导航「见闻/行动/韩立」），
   桌面宽屏只作旁证。新 UI/特效/地图改动验收必须先在此视口确认手机端适配无误。
+- **⚠ 游玩体验审阅 / 落库续玩（被要求"玩一遍找机制问题""续玩审阅"时必读）**：通用流程见
+  `docs/playtest-experience-guide.md`（红线/启动/篇章 golden-path/观察清单/报告模板）。
+  **用户要求"边玩边把存档+审阅报告落库续玩"时**，按该手册 **§9「落库续玩模式·验证同步 SOP」**——
+  每个里程碑：`node playtest/savetool.js dump` 导存档 → 写 `playtest/REVIEW-<篇>.md` 机制发现 →
+  commit → push → **验 `git ls-remote` SHA == 本地 HEAD（过了才算落库成功，绝不只凭 push 退出码）** →
+  把报告贴给用户。活实例（七玄门篇）交接见 `playtest/RESUME-qixuan.md`（存档 `playtest/save-qixuan.json`）。
 - **美术**：`node scripts/genart.js`（生图：立绘/场景/CG/表情，含竖版 `_p`）；
   `node scripts/cutout.js`（抠图）；`node scripts/cropbars.js`（裁黑边）；
   `node scripts/genmusic.js`（Lyria BGM）。资产目录 assets/{portraits,scenes,cg,maps}。
