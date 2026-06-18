@@ -240,7 +240,10 @@
         f.pos = map.playerPos != null ? map.playerPos : 1;
         f.expose = 0; f.taken = {}; f.preps = {}; f.introDone = false;
       }
+      // 战争迷雾（map.fog 选启）：四态可见性——glimpsed 窥见 / rumored 风闻；visited 已至沿用 f.visited
+      if (map.fog) { f.glimpsed = {}; f.rumored = {}; f.senseBand = {}; }
       if (map.entry) f.visited[map.entry] = true;
+      if (map.fog && map.entry) this._revealFrom(f, map, map.entry, null);   // 入口即点亮四邻（+登高揭片）
       return f;
     },
 
@@ -305,6 +308,112 @@
       return out;
     },
 
+    /* ---------- 战争迷雾（map.fog）：四态可见性 + 三揭法 + 传闻层 ----------
+     * 客观/迷雾/传闻三层各司其职（信息 ≠ 现实）。非 fog 图全部短路，零回归。 */
+
+    // 抵达一个节点时揭雾：① 邻接点亮（四邻升为窥见）② 登高揭片（node.reveals）
+    _revealFrom(f, map, nodeId, events) {
+      if (!map.fog || !f.glimpsed) return;
+      this._neighbors(map, nodeId).forEach(nb => { if (f.visited[nb.id] !== true) f.glimpsed[nb.id] = true; });
+      const node = map.nodes[nodeId];
+      if (node && node.reveals) {
+        let any = false;
+        node.reveals.forEach(id => {
+          if (map.nodes[id] && f.visited[id] !== true && !f.glimpsed[id]) { f.glimpsed[id] = true; any = true; }
+        });
+        if (any && events) events.push({ type: "lookout", text: node.lookoutNote || "登高一望，山坳里的去处尽收眼底。", reveals: node.reveals });
+      }
+    },
+
+    // 抵达揭雾 + 远距感知梯度（极深兽吼/血腥气：报方位与强弱，不报精确坐标）
+    _fogArrive(x, f, map, nodeId, events) {
+      if (!map.fog) return;
+      this._revealFrom(f, map, nodeId, events);
+      (map.senseSources || []).forEach((src, si) => {
+        const d = this._dist(map, nodeId, src.node);
+        const band = (src.bands || []).filter(b => d <= b.within).sort((a, b) => a.within - b.within)[0];
+        if (!band) return;
+        const prev = f.senseBand[si];
+        if (prev == null || band.within < prev) {   // 只在"逼近一档"时鸣一次（跨档才触发，同档不复鸣）
+          f.senseBand[si] = band.within;
+          if (events) events.push({ type: "sense", text: band.text, kind: src.kind,
+                                    dir: this._dir(map, nodeId, src.node), level: band.level || 1 });
+        }
+      });
+    },
+
+    // 图上两节点的跳数（BFS·用于感知梯度强弱分档）
+    _dist(map, from, to) {
+      if (from === to) return 0;
+      const seen = { [from]: true }; let frontier = [from], d = 0;
+      while (frontier.length) {
+        d++; const next = [];
+        for (const id of frontier) {
+          for (const nb of this._neighbors(map, id)) {
+            if (seen[nb.id]) continue;
+            if (nb.id === to) return d;
+            seen[nb.id] = true; next.push(nb.id);
+          }
+        }
+        frontier = next;
+      }
+      return Infinity;
+    },
+
+    // 由坐标算八向罗盘（只给方位，不给坐标——诚实预告而非精确雷达）
+    _dir(map, fromId, toId) {
+      const a = map.nodes[fromId], b = map.nodes[toId];
+      if (!a || !b) return "";
+      const dx = b.x - a.x, dy = a.y - b.y;   // 屏幕 y 向下，翻成世界 y 向上
+      if (dx === 0 && dy === 0) return "近在咫尺";
+      const ang = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+      return ["东", "东北", "北", "西北", "西", "西南", "南", "东南"][Math.round(ang / 45) % 8] + "方";
+    },
+
+    // 节点四态：unknown 未知 / glimpsed 窥见 / rumored 风闻 / visited 已至
+    fogState(x, nodeId) {
+      const f = this.cur(x), map = this.mapOf(f);
+      if (!map.fog) return "visited";              // 无雾图：一切照旧全显
+      if (f.visited[nodeId] === true) return "visited";
+      if (f.rumored && f.rumored[nodeId]) return "rumored";
+      if (f.glimpsed && f.glimpsed[nodeId]) return "glimpsed";
+      if (f.visited[nodeId]) return "glimpsed";    // 读阵等"只在图上见过"
+      return "unknown";
+    },
+
+    // 远距感知读数（当前节点对最强危险源的感知：方位 + 强弱 + 一行预告）
+    senseField(x) {
+      const f = this.cur(x), map = this.mapOf(f);
+      if (!map.fog || !map.senseSources) return null;
+      let best = null;
+      for (const src of map.senseSources) {
+        const d = this._dist(map, f.node, src.node);
+        const band = (src.bands || []).filter(b => d <= b.within).sort((a, b) => a.within - b.within)[0];
+        if (!band) continue;
+        const lvl = band.level || 1;
+        if (!best || lvl > best.level) best = { src: src.node, kind: src.kind, dist: d, level: lvl,
+                                                text: band.text, dir: this._dir(map, f.node, src.node) };
+      }
+      return best;
+    },
+
+    // 传闻层：只降雾、绝不增删世界。把若干节点预亮为"风闻"，并落情报红利（intel）。
+    // rumors: [ ruleId | { nodes:[...], intel:{...}, note } ]——字符串走 map.rumors 查表。
+    applyRumors(x, rumors) {
+      const f = this.cur(x), map = this.mapOf(f);
+      if (!map.fog) return { ok: false, reason: "此图无雾可降" };
+      f.rumored = f.rumored || {};
+      const applied = [];
+      (rumors || []).forEach(r => {
+        const def = (typeof r === "string") ? (map.rumors || {})[r] : r;
+        if (!def) return;
+        (def.nodes || []).forEach(id => { if (map.nodes[id] && f.visited[id] !== true) f.rumored[id] = true; });
+        if (def.intel) Object.assign(f.intel, def.intel);
+        applied.push({ id: (typeof r === "string") ? r : null, note: def.note, nodes: def.nodes || [] });
+      });
+      return { ok: true, applied };
+    },
+
     // 巡逻者当前/下一步位置（杀气阴影=诚实预告）
     patrolAt(x) {
       const f = x.stack[0], map = MAPS[f.mapId];
@@ -352,6 +461,7 @@
       f.node = nodeId;
       const firstVisit = !f.visited[nodeId];
       f.visited[nodeId] = true;
+      this._fogArrive(x, f, map, nodeId, events);   // 迷雾：邻接点亮 + 登高揭片 + 远距感知梯度（map.fog 才生效）
 
       // 钟先走（移动的代价），血幕可能恰好在此刻吞节点
       const timeup = this._tickClock(x, nb.cost, events);
