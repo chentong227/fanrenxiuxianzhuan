@@ -3212,12 +3212,16 @@ const UI = {
     // 同一行动者连续多拍只切一次——镜头能不动就不动（晕镜的反义词）
     let lastPeek = null;
     for (const f of fx) {
-      const actor = (f.kind === "fxcast" && f.from) ? f.from : null;
+      // 行动者切镜（B1 镜头导演·teamfight-camera-design §3.B）：
+      //   turn 拍＝谁的回合就把镜头先拖给谁（含其随后的走位/驰援位移）；fxcast 的 from 作兜底。
+      const actor = f.kind === "turn" ? f.ref : ((f.kind === "fxcast" && f.from) ? f.from : null);
       if (actor && actor !== lastPeek) {
         lastPeek = actor;
         const ref = actor, at = delay;
         setTimeout(() => this._camPeek(c, ref), at);
       }
+      // turn 拍只为切镜、不出飘字：宽轴给镜头一点行进/停顿时间（衔接自然），随即跳过
+      if (f.kind === "turn") { if (c.W > 13) delay += 220; continue; }
       // —— 全局重演出：趁虚时停金字 / 蓄势释放大字压屏（蓄势全开加白金屏闪+震屏）——
       if (f.ref === "global") {
         const g = this.el("fx-global");
