@@ -1841,18 +1841,6 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .shenlei-strip .sl-opt.off { opacity: .3; cursor: not-allowed; }
 .spell-grid .spell-btn.treasure .sname { font-size: 12px; }
 
-/* 飞遁·掠（C1）专属「遁」键：大战场穿场脚力单列一窄排——银青遁光皮肤，
- * 与法术 8 格分开（同雷遁不占格的处置），上膛即布满全场可落点的青色涟漪 */
-.dun-row { display: flex; align-items: center; gap: 4px; padding: 1px 1px 2px; }
-.dun-row .spell-btn.dun-skill {
-  width: auto; min-width: 132px; padding: 1px 8px 1px 3px; gap: 4px; font-size: 11px; border-radius: 7px;
-  background: linear-gradient(135deg, rgba(150,210,200,.16), rgba(70,120,150,.10));
-  border: 1px solid rgba(150,210,205,.55);
-}
-.dun-row .spell-btn.dun-skill .seal { width: 20px; height: 20px; font-size: 11px; border-width: 1px; }
-.dun-row .spell-btn.dun-skill.armed { box-shadow: 0 0 10px rgba(150,220,210,.7); border-color: rgba(180,235,225,.9); }
-.dun-row .spell-btn.dun-skill .sname { font-size: 11px; }
-.dun-row .spell-btn.dun-skill .scost { font-size: 9px; }
 
 /* ===== 法宝排版（v103 用户裁决 L1/L2）：左详细(主攻/主防) + 右图标(特效型/悬浮，两排) ===== */
 .arsenal { display: flex; align-items: stretch; gap: 6px; }

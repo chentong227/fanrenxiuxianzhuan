@@ -280,21 +280,22 @@ const Main = {
         State.give("huixue_dan", 2); State.give("dingshen_fu", 2);
         if (s.flags) s.flags.liujing_survived = true;   // 演武：刘靖在场（拖时/决战并肩）
         State.setFlag("dayan_learned");
-        State.setFlag("fly_unlocked");   // 解锁腾空/雷遁（便于录制飞控+雷电）
         s.storyStage = STORY.length;     // 演武场不跑剧情
-        this.enterGame();
         const climax = !!q.get("climax");
+        if (climax) State.setFlag("fly_unlocked");   // 阵成决战录制：解锁腾空/雷遁拉满飞控+雷电
+        this.enterGame();
         setTimeout(() => {
           if (climax) Engine.startXuwangFight();   // 万象星河高潮
           else Engine.startSantuanFight();         // 皇宫三组对位群战开幕
-          // 录制增益：满神雷+雷遁瞬移（飞控/雷电特效拉满），即时上屏
+          // 神雷底牌：阵成决战(climax)放满神雷+雷遁瞬移把雷电特效拉满；
+          //   皇宫三战场(santuan)则保持筑基本色——逐格移动、无瞬遁（体验「正常靠拢/配合」，teamfight 修订）。
           if (Engine._combat) {
             const p = Engine._combat.player;
             p.charges = { shenlei: { name: "辟邪神雷", cur: 9, max: 9 } };
-            p.blink = true;
-            ["shenlei_pi", "shenlei_fujian", "leidun"].forEach(id => {
+            ["shenlei_pi", "shenlei_fujian"].forEach(id => {
               if (!p.spells.includes(id)) p.spells.push(id);
             });
+            if (climax) { p.blink = true; if (!p.spells.includes("leidun")) p.spells.push("leidun"); }
             UI.renderCombat(Engine._combat, Engine._combatMeta);
           }
         }, 300);

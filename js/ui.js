@@ -3220,22 +3220,10 @@ const UI = {
       if (actor && actor !== lastPeek) {
         lastPeek = actor;
         const at = delay;
-        // 真跟拍长镜头（B2）：行动者本拍若将「驰援疾遁」长程横越，镜头先停其起点(from)，
-        //   待 move·dash 拍再跟到落点(to)——镜头与立绘横掠同行，而非瞬切落点。
-        const dashAhead = fx.find(g => g.kind === "move" && g.dash && g.ref === actor && typeof g.from === "number");
-        if (dashAhead) { const o = dashAhead.from; setTimeout(() => this._camPeekCell(c, o), at); }
-        else { const ref = actor; setTimeout(() => this._camPeek(c, ref), at); }
+        setTimeout(() => this._camPeek(c, actor), at);   // 切镜先拖给行动者（含其随后逐格走位）
       }
       // turn 拍只为切镜、不出飘字：宽轴给镜头一点行进/停顿时间（衔接自然），随即跳过
       if (f.kind === "turn") { if (c.W > 13) delay += this.DIRECTOR.turnHold; continue; }
-      // 驰援疾遁位移拍（B2）：镜头跟到落点 to，与立绘横掠同拍——长镜头跟拍（非位移拍照旧）
-      if (f.kind === "move" && f.dash && typeof f.to === "number" && c.W > 13) {
-        const to = f.to, at = delay;
-        setTimeout(() => { this._camPeekCell(c, to); this._camPunch(); }, at);   // 落点跟拍 + 轻推近（燃点 B4）
-        lastPeek = f.ref;
-        delay += this.DIRECTOR.dashFollowLag;
-        continue;
-      }
       // —— 全局重演出：趁虚时停金字 / 蓄势释放大字压屏（蓄势全开加白金屏闪+震屏）——
       if (f.ref === "global") {
         const g = this.el("fx-global");
@@ -4139,10 +4127,7 @@ const UI = {
     // 神雷类特色资源技（chargeCost.id==="shenlei"）不入法宝/法术/瞬发栏——统一走辟邪神雷单卡三选；
     // 噬金虫四用法（chargeCost.id==="shijinchong"）则照常入法宝栏（主攻/图标卡），共享池由 canAfford 自动哑火。
     const treasures = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source === "treasure" && !(SP[id].chargeCost && SP[id].chargeCost.id !== "shijinchong"));
-    // 飞遁·掠（C1）单列「遁」键：大战场穿场脚力，不挤占法术 8 格（同雷遁走专属位的处置）。
-    const dunArts = p.spells.filter(id => SP[id] && SP[id].blinkMove && SP[id].freeBlink && !SP[id].chargeCost);
-    const mains = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source !== "treasure"
-      && !(SP[id].blinkMove && SP[id].freeBlink));
+    const mains = p.spells.filter(id => SP[id] && !SP[id].quick && SP[id].source !== "treasure");
     const quicks = p.spells.filter(id => SP[id] && SP[id].quick && !SP[id].chargeCost);
     // 主攻法宝=兵器(gear weapon)所授攻击法宝，余者首张攻击法宝兜底；主防法宝=首张护体法宝。
     // 此二者占左侧详细卡(靠左、写全)；其余法宝(子母刃等特效型/悬浮祭出位)一律走右侧图标两排(L1/L2)。
@@ -4214,7 +4199,6 @@ const UI = {
           + (iconTre.length ? `<div class="arsenal-side">${iconTre.map(treIcon).join("")}</div>` : "")
           + `</div>`
         : "")
-      + (dunArts.length ? `<div class="dun-row">${dunArts.map(id => spellBtn(id, "dun-skill", null)).join("")}</div>` : "")
       + `<div class="spell-grid spell8"><span class="zone-tag">法术</span>${mains8.map(id => spellBtn(id)).join("")}`
       + (mainsAll.length > 8 ? `<span class="zone-overflow" title="出战法术上限 8——洞府中重新编排">+${mainsAll.length - 8} 未出战</span>` : "")
       + `</div>`;

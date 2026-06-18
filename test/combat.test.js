@@ -807,7 +807,7 @@ console.log("\n=== 24. 真·颠倒五行阵：逐回合相位轮转 + 阵力反�
   assert(c.player.shield >= 20, `佐助相位给玩家护盾（盾 ${c.player.shield}）`);
 }
 
-console.log("\n=== 25. 大战场·fronts 声明式战区 + turn 切镜拍 + 跨场驰援疾遁（teamfight-camera-design）===");
+console.log("\n=== 25. 大战场·fronts 声明式战区 + turn 切镜拍 + 跨线赶援（grounded·复用配合系统）===");
 {
   const allyMv = (nm, el) => [{ name: nm, dmg: 18, weight: 12, elem: el, range: [1, 2] }];
   const mkSides = () => ([
@@ -862,28 +862,16 @@ console.log("\n=== 25. 大战场·fronts 声明式战区 + turn 切镜拍 + 跨�
     rng: noCrit, W: 30, lanes: 2, playerPos: 13, sides: mkSides(), fronts: mkFronts() });
   c2.enemies[0].hp = 0; c2.enemies[0].alive = false;          // 刘靖那条线已清
   c2.sides[2].hp = Math.floor(c2.sides[2].hpMax * 0.3);       // 钟卫娘告急
+  const cap0 = c2.moveCap(c2.sides[0]);
   c2.startRound();
   const from0 = c2.sides[0].pos;
   c2.endRound();
-  assert(c2.sides[0].pos > from0 + 3, `刘靖驰援疾遁横越（${from0}→${c2.sides[0].pos}，跨度>3）`);
-  assert((c2._fx || []).some(f => f.kind === "move" && f.dash), "驰援发 dash 位移拍（含 from/to）");
+  const moved0 = c2.sides[0].pos - from0;
+  assert(moved0 > 0 && moved0 <= cap0, `刘靖朝告急战线逐格赶援（${from0}→${c2.sides[0].pos}，单回合位移 ${moved0}≤moveCap ${cap0}）`);
+  assert(!(c2._fx || []).some(f => f.kind === "move" && f.dash), "不再发瞬移/横越 dash 位移拍（grounded·正常脚程）");
 
-  // 飞遁·掠（C1）：大战场自动授玩家穿场脚力；无风雷翅亦可施（freeBlink）、占主行动、不耗神雷
-  assert(c.player.spells.includes("feidun_lue"), "fronts 团战自动授玩家「飞遁·掠」");
-  assert(!c.player.blink, "前置：本测玩家未御风雷翅（无 blink）");
-  c.startRound();
-  const usedActs0 = c._pActsUsed;
-  const fr = c.cast("feidun_lue");
-  assert(fr.ok && c.player._blinkTurn, "无风雷翅亦可施飞遁·掠（freeBlink 绕过门槛）→ 本回合穿空");
-  assert(c._pActsUsed === usedActs0 + 1, "飞遁·掠占一记主行动（非瞬发）");
-  assert(c.movableCells(c.player).length > 13, `穿空后可达范围放大到全场（${c.movableCells(c.player).length} 格）`);
-  // 日常单挑（无 fronts）不授飞遁·掠（不污染手牌·零回归）
+  // 日常单挑（无 fronts·零回归基线；后续扫场断言复用 cSolo）
   const cSolo = new Combat({ player: mkHan(), enemies: [dummy()], rng: noCrit, W: 11, playerPos: 2, enemyPos: 6 });
-  assert(!cSolo.player.spells.includes("feidun_lue"), "无 fronts 单挑不授飞遁·掠（不污染手牌）");
-  // 显式 grantFeidun:false 可关
-  const cNoGrant = new Combat({ player: mkHan(), enemies: enemies3(), rng: noCrit,
-    sides: mkSides(), fronts: mkFronts(), grantFeidun: false });
-  assert(!cNoGrant.player.spells.includes("feidun_lue"), "grantFeidun:false 显式不授");
 
   // 开场扫场标记（B3）：多战线默认开；cfg.openingSweep 可显式开/关；窄场单挑不开
   assert(c._sweepOnOpen === true, "多战线默认开开场扫场（_sweepOnOpen）");
