@@ -1109,16 +1109,32 @@ const Engine = {
     if (s.combat) { this.toast("酣战之中，无暇他顾"); return; }
     const cfg = DATA.exploreSites[siteId];
     if (typeof Explore === "undefined" || !cfg) { this.toast("此地暂不可探"); return; }
-    // 异闻链：身负异闻时，深处的"妖兽王"即异闻中的那一头（听闻在前，名实一致）
     // 探知熟练度：走得多了，眼睛和神识都更尖（暗室更易察觉，老手视野更阔）
     if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
     const xcfg = Object.assign({}, cfg, {
       senseVal: s.sense + Math.floor((s.skills.scouting || 0) / 8),
       sightRadius: (cfg.sightRadius || 1) + ((s.skills.scouting || 0) >= 16 ? 1 : 0),
     });
-    if (s.beastRumor && WORLD.enemies[s.beastRumor]) xcfg.bossEnemy = s.beastRumor;
+    // 妖王客观恒在：妖王本就盘踞栖地（beastHabitat），与"听没听过异闻"无关——
+    //  · 身负异闻 → 名实一致 + 预知层（线索/弱点先至，深处必遇其名）；
+    //  · 未闻异闻 → 仍可能在深处撞见（按 beastHabitatChance），只是事先不知（无预知、不弹听闻语）。
+    // 已伏诛者退出栖地池；非栖地点（如血色禁地·墨蛟）保留其自有 boss 配置，不受异闻牵动。
+    let foreknown = false;
+    if (cfg.beastHabitat) {
+      const slain = s.slainBeasts || [];
+      if (s.beastRumor && WORLD.enemies[s.beastRumor] && !slain.includes(s.beastRumor)) {
+        xcfg.bossEnemy = s.beastRumor;
+        foreknown = true;
+      } else {
+        const pool = (WORLD.beastRumors || []).filter(r => !slain.includes(r.id) && WORLD.enemies[r.id]);
+        const chance = cfg.beastHabitatChance != null ? cfg.beastHabitatChance : 0.3;
+        if (pool.length && Math.random() < chance) {
+          xcfg.bossEnemy = pool[Math.floor(Math.random() * pool.length)].id;
+        }
+      }
+    }
     s.explore = Explore.generate(xcfg, Math.random);
-    if (s.beastRumor && WORLD.enemies[s.beastRumor]) {
+    if (foreknown) {
       Explore._log(s.explore, `异闻在耳——「${WORLD.enemies[s.beastRumor].name}」就盘踞在此地深处。猎，或不猎？`);
     }
     UI.openExplore(s.explore);
