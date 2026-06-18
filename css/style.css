@@ -1169,6 +1169,17 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .au-blades .bld:nth-child(7) { right: -6px;  top: 34%; rotate: 8deg;  animation-delay: -1.2s; }
 .au-blades .bld:nth-child(8) { right: -18px; top: 46%; rotate: 18deg; animation-delay: -1.8s; }
 .au-blades .bld:nth-child(9) { right: -10px; top: 58%; rotate: 6deg;  animation-delay: -2.4s; }
+/* 朝向镜像（持刃者面向左侧之敌时）：左右互换（left↔right）、rotate 取反——整阵随转身翻面。
+ * 用 left/right:auto 显式解除原约束，避免 left+right 双设导致的过约束。 */
+.au-blades.flipped .bld:nth-child(1) { right: auto; left: 3px;   rotate: -10deg; }
+.au-blades.flipped .bld:nth-child(2) { left: auto;  right: -16px; rotate: 16deg; }
+.au-blades.flipped .bld:nth-child(3) { left: auto;  right: -8px;  rotate: 10deg; }
+.au-blades.flipped .bld:nth-child(4) { left: auto;  right: -19px; rotate: 20deg; }
+.au-blades.flipped .bld:nth-child(5) { left: auto;  right: -5px;  rotate: 6deg; }
+.au-blades.flipped .bld:nth-child(6) { right: auto; left: -14px;  rotate: -14deg; }
+.au-blades.flipped .bld:nth-child(7) { right: auto; left: -6px;   rotate: -8deg; }
+.au-blades.flipped .bld:nth-child(8) { right: auto; left: -18px;  rotate: -18deg; }
+.au-blades.flipped .bld:nth-child(9) { right: auto; left: -10px;  rotate: -6deg; }
 @keyframes bladeBob { 0%,100% { translate: 0 0; opacity: .95; } 50% { translate: 0 -6px; opacity: .75; } }
 /* 催刃出袭闭环（复用通用协议 --strike-x/y）：八子刃各自从绕身位汇聚射向目标 → 命中 → 归位
  * （不再飞出 270px 消失）。刃保留各自静态朝向飞行（不改 rotate，避免与 nth-child 写死值跳变） */
@@ -1413,6 +1424,19 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .au-swords .sw:nth-child(8)  { left: 80%; top: 20%; --r: -91deg; scale: .68;  opacity: .76; --hd: 5.5s; --hdelay: 0s; --boltd: -.18s; z-index: -1; }
 .au-swords .sw:nth-child(9)  { left: 82%; top: 64%; --r: -89deg; scale: .7;   opacity: .78; --hd: 5.5s; --hdelay: 0s; --boltd: -.07s; z-index: -1; }
 .au-swords .sw:nth-child(10) { left: 90%; top: 42%; --r: -91deg; scale: .62;  opacity: .72; --hd: 5.5s; --hdelay: 0s; --boltd: -.14s; z-index: -1; }
+/* 朝向镜像（韩立面向左侧之敌时）：水平翻转整阵=每柄 left→100%-left、--r 取反（剑尖随之指向左侧）。
+ * ⚠ 不给 .au-swords 容器加 transform（会建堆叠上下文、毁掉剑与立绘的 z 较量），只逐柄改 left/--r。
+ * 其余 scale/z-index/opacity/--hd… 沿用上面基准规则（本组特异性更高，只覆写 left 与 --r）。 */
+.au-swords.flipped .sw:nth-child(1)  { left: 88%; --r: 90deg; }
+.au-swords.flipped .sw:nth-child(2)  { left: 80%; --r: 92deg; }
+.au-swords.flipped .sw:nth-child(3)  { left: 77%; --r: 88deg; }
+.au-swords.flipped .sw:nth-child(4)  { left: 65%; --r: 91deg; }
+.au-swords.flipped .sw:nth-child(5)  { left: 63%; --r: 89deg; }
+.au-swords.flipped .sw:nth-child(6)  { left: 35%; --r: 91deg; }
+.au-swords.flipped .sw:nth-child(7)  { left: 37%; --r: 89deg; }
+.au-swords.flipped .sw:nth-child(8)  { left: 20%; --r: 91deg; }
+.au-swords.flipped .sw:nth-child(9)  { left: 18%; --r: 89deg; }
+.au-swords.flipped .sw:nth-child(10) { left: 10%; --r: 91deg; }
 
 /* ===== 剑刃乱舞·劈砍闭环（problem 4）：每把剑沿"各自的弧线"穿透敌身→过冲到敌后→划大弧绕回 =====
  * JS _launchOrbit 给每把剑注入：--strike-x/y（自身中心→各自穿透点的位移，撒在敌身各处）、
