@@ -48,7 +48,7 @@
     yaolu: { p: 1 }, houshan: { p: 1 }, town: { p: 1 }, wuting: { p: 1 },
     qingniu: { p: 1 }, road: { p: 1 }, shanmen: { p: 1 }, miju: { p: 1 },
     jiayuan_city: { p: 1 }, tainan_fair: { p: 1 }, huangfeng_gate: { p: 1 },
-    baiyao_yuan: {},
+    baiyao_yuan: { p: 1 },
     // 战斗场景底图（对阵轴战场：下半幅开阔地面，横版专用；v90 起为舞台盒构图——
     // 两翼近景收口环抱+中央开阔，"人被环境包住"）
     bt_forest: {}, bt_road: {}, bt_valley: {}, bt_night: {},
@@ -58,7 +58,7 @@
     // 三层分级制（v88）：_far=无立物远景层；_mid=中景物件透明条带（人物身后独立视差）
     bt_road_far: {}, bt_road_mid: {},
     // 血色禁地与地火之屋
-    xueshi_jindi: {}, dihuo_wu: {},
+    xueshi_jindi: { p: 1 }, dihuo_wu: { p: 1 },
     // 长卷全景（21:9 横向卷轴底图——镜头横移时背景跟着退，探索轴/战斗轴共用）
     pano_dongku: {}, pano_xueshi: {},
     // 增量E·矿道箱庭：矿洞 L3 战斗轴横移长背景
