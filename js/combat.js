@@ -142,12 +142,6 @@
     leidun:     { name: "雷遁", mp: 5, range: [0, 0], type: "buff", quick: true, source: "treasure", elem: "mu",
                 chargeCost: { id: "shenlei", n: 1 }, blinkMove: true, needTrait: "fenglei",
                 desc: "化一道银弧穿亚空间而行——本回合可瞬移到场上任意空位、无视挡线困足（瞬发）。需御「风雷翅」方可施展。耗神雷一道。韩跑跑的本钱。" },
-    // 飞遁·掠（teamfight-camera-design C1）：大战场专属脚力——足底遁光一掠贴地横越整片战场，
-    //   本回合落点随心（占主行动、不耗神雷、无需风雷翅）。这是"我一直左右飞遁碰别的战场、穿场驰援"的本钱；
-    //   freeBlink=绕过雷遁的风雷翅门槛；只在 fronts 团战里自动授予（_layoutFronts 末尾 grant），日常单挑不污染手牌。
-    feidun_lue: { name: "飞遁·掠", mp: 2, range: [0, 0], type: "buff", source: "art", elem: "mu",
-                blinkMove: true, freeBlink: true,
-                desc: "足底遁光一掠、贴地疾掠——本回合可横越整片战场、落点随心，穿场驰援近在咫尺（占主行动、不耗神雷）。" },
 
     /* —— 噬金虫·四用法（初入星海篇·#5 用户裁决：复用神雷 chargeCost 共享池）——
      * 一窝灵虫四种调遣，同抽一池"灵机"（charges.shijinchong），打一分少一分、耗尽则哑火——取舍即战术。
@@ -401,12 +395,6 @@
         });
         this._fronts.push({ name: f.name || null, at: f.at, allyKey, enemyIdxs });
       });
-      // 授「飞遁·掠」（C1）：大战场里玩家须能左右穿场驰援——团战自动入手牌（占主行动·不耗神雷·无需风雷翅），
-      //   日常单挑不授（不污染手牌）。cfg.grantFeidun:false 可显式关。
-      if (this.player && Array.isArray(this.player.spells)
-        && cfg.grantFeidun !== false && !this.player.spells.includes("feidun_lue")) {
-        this.player.spells = ["feidun_lue"].concat(this.player.spells);
-      }
     }
     _makeSideFighter(s) {
       const f = new Fighter({
@@ -1168,7 +1156,7 @@
       if (sp.quick && this._pQuickUsed) return { ok: false, reason: "本回合瞬发牌已用" };
       if (!sp.quick && this._pActsUsed >= this._pActsMax) return { ok: false, reason: "本回合主行动已用——可打瞬发牌或结束回合" };
       if ((sp.mp || 0) > this.player.mp) return { ok: false, reason: "灵力不济，催动不了" };
-      if (sp.blinkMove && !sp.freeBlink && !this.player.blink) return { ok: false, reason: "需御「风雷翅」方能雷遁穿空（尚未解锁）" };
+      if (sp.blinkMove && !this.player.blink) return { ok: false, reason: "需御「风雷翅」方能雷遁穿空（尚未解锁）" };
       const target = this.enemies[targetIndex];
       if (sp.type === "zone" && !sp.selfZone && opts.cell != null) {
         // 择地布阵：射程量到所点之格，不看敌人站哪
@@ -1247,9 +1235,7 @@
       if (sp.blinkMove) {
         this.player._blinkTurn = true;
         this._pMoved = 0;   // 穿亚空间：本回合移动上限放大到全场（落点随心、长距离瞬移——只看落点空否）
-        this._log(sp.freeBlink
-          ? `你足底遁光一掠、贴地疾掠——本回合可横越整片战场、落点随心，哪条战线吃紧便穿场驰援！`
-          : `你周身银光一闪、整个人没入亚空间——本回合穿空遁走、无视挡线困足，落点随心（移动范围大增）！`);
+        this._log(`你周身银光一闪、整个人没入亚空间——本回合穿空遁走、无视挡线困足，落点随心（移动范围大增）！`);
         this._emitFx("player", "miss", sp.name);
         this._checkEnd();
         return { ok: true };
@@ -1705,9 +1691,9 @@
         return;
       }
 
-      // —— 跨线驰援（crossSupport·皇宫三组对位）：当面之敌已了结（身周 2 格无活敌），
-      //    而别处战线告急（同袍/玩家血<50% 且有敌贴身）——弃线横越、扑杀威胁同袍的血侍。
-      //    既是机制（重定目标 + 真身横移）也是演出（"我来助你"驰援台词）：三战线"互相支援"的燃点。
+      // —— 跨线赶援倾向（crossSupport·皇宫三组对位）：当面之敌已了结（身周 2 格无活敌），
+      //    而别处战线告急（同袍/玩家血<50% 且有敌贴身）——AI 重定目标、提步赶去扑杀威胁同袍的血侍。
+      //    复用现有配合系统：只改「打谁」的倾向，移动仍走正常脚程（moveCap）、不瞬移横越。
       let rescueTi = -1, rescueWard = null;
       if (this.crossSupport && stance !== "retreat"
         && !this.enemies.some(e => e.alive && this.dist(e, s) <= 2)) {
@@ -1719,8 +1705,8 @@
         }
       }
       // 塌线收束（teamfight-camera-design C3）：自己这条线已清空（身周 2 格无活敌）、别处仍在交火——
-      //   疾遁并入最近的交火战线（而非按 moveCap 蜗牛爬）。保留"自己线没清完不许跑"的约束（身周有敌即不触发）。
-      //   优先级最低：只在无血危同袍可救（rescueTi<0）时才并线，绝不抢真·驰援。
+      //   AI 倾向就近并入最近的交火战线（提步走正常脚程 moveCap、不瞬移）。保留「自己线没清完不许跑」的约束。
+      //   优先级最低：只在无血危同袍可救（rescueTi<0）时才并线，绝不抢真·赶援。
       if (rescueTi < 0 && this.crossSupport && stance !== "retreat"
         && !this.enemies.some(e => e.alive && this.dist(e, s) <= 2)) {
         let best = -1, bestD = Infinity;
@@ -1762,32 +1748,29 @@
       if (ti < 0) ti = this._firstAliveEnemy();
       if (ti < 0) return;
       let target = this.enemies[ti];
-
-      // —— 驰援横移：锁定告急战线之敌后，无论近战远程都先真身横越逼近（可见的"驰援"位移）——
-      //    够近了才落到下方正常出招；这一拍只够横越时本回合到此为止。
+      // —— 跨线赶援（grounded·复用配合系统）：锁定别处战线的目标后，朝它逐格挪近（与普通靠拢同一套
+      //    moveCap，绝不瞬移/横越）——镜头靠 turn 拍自然跟过去。够近了才落到下方正常出招。
       const winOf = e => (e._charging || e._whiffed || (e.status && e.status.dingshen > 0));
       if (rescueTi >= 0) {
         const reach = isMelee ? 1 : 2;
         let dR = this.dist(s, target);
         if (dR > reach) {
-          const from = s.pos;
-          // 驰援疾遁（C2）：御剑/纵跃一拍横越整片缓冲带，covering 直抵告急战区（非 moveCap 慢爬）。
-          const step = this._stepToward(s, target, this.W);
-          if (step != null && step !== s.pos) {
-            s.pos = step; dR = this.dist(s, target);
-            if (rescueWard) {   // 真·驰援：奔向血危同袍（点名报到）
+          const step = this._stepToward(s, target, this.moveCap(s));   // 正常脚程（非全场瞬移）
+          if (step != null && step !== s.pos) { s.pos = step; dR = this.dist(s, target); }
+          this._sideTarget = ti;
+          if (dR > reach) {
+            if (rescueWard) {
               const wn = rescueWard === this.player ? "韩师弟" : rescueWard.name;
-              if (s._rescueSaid !== wn) { this._log(`${s.name} 已了结当面血侍，弃线横越战场驰援——「${wn}，我来接应！」`); s._rescueSaid = wn; }
-            } else if (s._rescueSaid !== "_converge") {   // 塌线收束（C3）：本线清空、横越并入交火战线
-              this._log(`${s.name} 这边血侍已清，足底遁光一掠、横越战场并入交火的战线！`); s._rescueSaid = "_converge";
+              if (s._rescueSaid !== wn) { this._log(`${s.name} 了结当面血侍，提步赶去接应 ${wn}！`); s._rescueSaid = wn; }
+              else this._log(`${s.name} 朝 ${wn} 那头赶去……`);
+            } else {
+              if (s._rescueSaid !== "_converge") { this._log(`${s.name} 这边血侍已清、提步赶往交火处打配合！`); s._rescueSaid = "_converge"; }
+              else this._log(`${s.name} 向 ${target.name} 逼近。`);
             }
-            this._emitFx(this._refOf(s), "move", null, { from, to: s.pos, dash: 1 });   // 含 from/to 供镜头跟拍
-            this._sideTarget = ti;
-            if (dR > reach) return;
+            return;
           }
         }
       }
-
       // —— 接力黑板：场上若有"破绽大开"的敌人（蓄势/扑空/定身），按人格概率改打它（驰援锁线时不改）——
       if (rescueTi < 0 && !winOf(target)) {
         const wi = this.enemies.findIndex(e => e.alive && winOf(e));
