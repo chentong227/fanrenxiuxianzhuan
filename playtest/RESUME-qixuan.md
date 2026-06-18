@@ -30,7 +30,11 @@
 
 游戏服务在仓库根（本机 `node scripts/_serve.js 8011` → `http://127.0.0.1:8011/`，存档键 `frxxz_save_v1`）。
 
-**推荐（脚本一行，免手动 Console）**：先在浏览器开着游戏页，然后跑
+**最推荐（开局一条命令搞定起服+开页+灌档，幂等）**：
+```bash
+node playtest/session-init.js      # 起 _serve.js(8011) + 经 CDP 开游戏页 + 灌入 save-qixuan.json
+```
+**或（游戏页已开时，只灌档）**：
 ```bash
 node playtest/savetool.js load     # 仓库 save-qixuan.json → localStorage → 自动 reload
 ```
@@ -129,7 +133,7 @@ State.save(); Engine.checkStory();             // 催出后续节点
       `SYNCED` + `CLEAN` 都出现才算同步成功；任一不符立刻重推。
    6. 把 `REVIEW-qixuan.md` 本里程碑那段**贴给用户看**。
 4. **录屏**：全程录屏作凭证，关键节点加 `test_start`/`assertion` 注记。
-5. **玩完**：合计 ~15 条机制发现（重点判断是否不合理：难度/节奏/平衡）→ 汇总报告发用户确认 → 用户点头后再改代码（改后 bump 版本 + 跑回归 + 开 PR，见 AGENTS.md）。
+5. **玩完**：合计 ~15 条机制发现（重点判断是否不合理：难度/节奏/平衡）→ 汇总报告发用户确认 → 用户点头后再改代码（按 `docs/playtest-experience-guide.md` §10「发现→修复 SOP」：查档定位→最小改→`node scripts/bump.js`→跑回归→复玩验证→§9 落库→PAT 开 PR）。
 6. **本任务红线**：审阅期间**只观察不改游戏代码**（P1/P2 静态修复已单独处理）；存档/文档落库是用户显式要求。
 
 ---

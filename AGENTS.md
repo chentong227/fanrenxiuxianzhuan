@@ -5,6 +5,24 @@
 
 ---
 
+## 〇、总入口（触发词 → 读哪份文档 → 怎么做）
+
+> **接手第一件事**：在下表按用户的话对号入座，先读"读哪份"列的文档再动手。不确定就先读本文件 §一/§二。
+
+| 用户大致这么说（触发词） | 这是什么任务 | 先读 | 怎么做（一句话流程） |
+|---|---|---|---|
+| 「**去真实地玩一下**」「玩一遍找机制问题」「续玩审阅」「玩到 X 就停」 | 游玩体验审阅：**玩→找→落库→（可选）修** | `docs/playtest-experience-guide.md`（通用手册：红线/启动/golden-path/观察清单/报告模板/§9 落库 SOP/§10 修复 SOP）+ `playtest/RESUME-<篇>.md`（活实例存档与续玩进度，当前=`RESUME-qixuan.md`） | 开局 `node playtest/session-init.js`（起服+恢复存档，§11）→ 切 iPhone 14 Pro Max 视口 → 按 golden-path 实玩、边玩边把机制发现记进 `playtest/REVIEW-<篇>.md` → 每里程碑按 §9「验证同步落库」→ **用户要修才**按 §10 修复 SOP。也可直接触发 Playbook **「去真实地玩一下」**。 |
+| 「**把发现的问题改了**」「修一下 M3/某条发现」 | 按审阅发现改代码 | `docs/playtest-experience-guide.md` **§10 发现→修复 SOP** + 对应 `playtest/REVIEW-<篇>.md` | 选一条发现→查档定位 js→最小改→`node scripts/bump.js`→跑回归全绿→复玩验证→§9 落库→PAT 开 PR。 |
+| 「**修复皇宫问题**」 | 皇宫决战返修 | `docs/palace-battle-fixme.md`（含文件/入口地图+验收标准） | 按该档三处待修改，bump+跑测+PR。 |
+| 「**发版 / 上线 / 推到 main**」 | 发布 | 本文件 **§四「⚠ 落 main 上线」** | bump→PAT 推特性分支→PAT 走 GitHub API 开/合 PR→验线上 `ver.txt`。 |
+| 「**改战斗 / 数值 / 平衡**」「造新法宝/功法/敌人」 | 平衡改动 | 本文件 **§四「A2 承重墙·数值标度尺」** + `docs/combat-balance-design.md` | 吃已校准标度尺（几何 realmBand、禁裸 `+N`、driveRealm）→改→`node test/scale.bal.js` 等 `*.bal.js` 全绿。 |
+| 「**推进剧情 / 造下一篇章**」 | 内容推进 | `docs/roadmap.md` + 对应篇章 design（如 `huangfeng-design.md`/`modao-design.md`）+ §一考据红线 | ≥2 源交叉考据→吃 A2 尺→实装→E2E `node test/journey.test.js` 全绿。 |
+| 接手时**上下文被压缩/摘要**、或不知从何下手 | 通用接手 | 本文件 **§一 考据方法论 + §二 档案地图（必读档案全文读）** | 先读档再动手；任何事实不确定一律回查 `docs/`，绝不凭记忆写设定。 |
+
+**铁律速记**（详见对应章节）：① 移动端基准 = iPhone 14 Pro Max（430×932 DPR3，§四）；② 写含中文的文件**勿用 PowerShell Set-Content/Out-File**（乱码红线，§四）；③ 本仓库 Devin 代理**无写权**，落库/开 PR **必须用用户 PAT**（§四、§10 步 7-8）；④ 审阅默认**只玩不改**（R3），用户点头才进 §10 修复。
+
+---
+
 ## 一、考据方法论（最高红线，违者全错）
 
 1. **动漫版为唯一剧情与情感锚点**；小说只用于补全动漫未拍的细节（战斗手段、数值逻辑）。
