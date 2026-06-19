@@ -175,4 +175,4 @@
   - 明确**要**：field recording / foley / ambience / nature SFX / no music；具体场景词（"crickets chirping at night, soft", "candle flame crackle, faint", "low night wind", "water dripping from eaves"）；**可循环、极低动态、长尾**。
   - 验收：盲听应像"环境实录"而非"配乐"；若 Lyria 这类**生乐**模型本质难产出纯音效，改走**纯环境音/SFX 数据源**或**强化程序合成兜底**（虫鸣=带通噪脉冲、烛火=低频噼啪、夜风=低通噪缓动），audio.js 已是"文件优先、合成兜底"，二者择优。
 - **音量**：守 art-direction"音是气口不是轰炸"，极低、压在 BGM 之下。
-- **更新（2026-06-19 · 作者拍板）**：夜床 `night` 定调改走"**舒缓暖音垫 + 极淡远处虫声/夜风**"的安静夜景（"夜晚不必只有干虫鸣，舒缓平静也是夜"）。用 Lyria 生的 90s 无缝循环成品作文件床（`assets/audio/amb_night.mp3`；`audio.js` 的 `AMB_FILES` 含 `night`），文件缺失/加载失败回退程序合成。**仅 `night` 覆盖 R2 的"纯音效"定位**；`firefly/candle/wind/rain/market` 仍按 R2 走程序合成/纯 SFX 音源，待逐个定调后再入文件名单。
+- **更新（2026-06-19 · 作者拍板）**：环境床定调改走"**舒缓暖音垫为底 + 各自极淡场景细节**"，**六床全部文件优先**（"夜晚不必只有干虫鸣，舒缓平静也是夜"），**定向覆盖 R2 的"纯音效"定位**。落库 `assets/audio/amb_{night,firefly,candle,wind,rain,market}.mp3`，`audio.js` 的 `AMB_FILES` 含全部六者，文件缺失/加载失败回退本引擎对应程序合成（不静默）。基调统一（暖音垫=夜床锁定的 glass pad）：night 远处稀虫/夜风、firefly 微光+稀虫、candle 暖底+极淡不刺耳火光、wind 低缓夜风、rain 檐雨嘶+稀落檐滴、market 远处人语+稀疏远钟。细节层为纯 numpy 合成（非 Lyria）的噪声/带噪短事件，随机间隔、无固定音高串联——实测包络周期性 ≈0.13（无节拍栅格）。

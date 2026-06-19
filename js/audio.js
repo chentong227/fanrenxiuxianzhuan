@@ -385,13 +385,13 @@
   let curTrack = null;
 
   /* ============ 环境床文件清单（文件优先名单）============
-   * 仅这些 id 走文件 assets/audio/amb_<id>.mp3；其余环境床一律走程序合成（AMB 引擎）。
-   * night：定为"舒缓暖音垫 + 极淡远处虫声/夜风"的安静夜床（非干虫鸣），走文件；
-   *   文件缺失/加载失败时回退本引擎的程序合成（纯噪声床+噪事件），不静默。
-   * 其余 id（firefly/candle/wind/rain/market）暂无可用录音，直接走程序合成兜底——
-   *   google/lyria-3-clip 本质是生乐模型，干环境音易混旋律/节拍（见 docs/audio-design.md §七），
-   *   故除已定基调的 night 外暂不入文件名单；后续接入真实 field-recording 资源再逐个加入。 */
-  const AMB_FILES = ["night"];
+   * 这些 id 走文件 assets/audio/amb_<id>.mp3；不在名单的 id 一律走程序合成（AMB 引擎）。
+   * 六床统一基调：以"舒缓暖音垫"为底（夜床定下的安静基调）+ 各自极淡的场景细节——
+   *   night 远处稀虫/夜风、firefly 微光+稀虫、candle 暖底+极淡不刺耳火光、wind 低缓夜风、
+   *   rain 檐雨嘶+稀落檐滴、market 远处人语+稀疏远钟。细节层为纯噪声/带噪短事件（随机间隔、
+   *   无固定音高串联），结构上不可能出旋律或节拍（覆盖设计稿 §10 R2 的"纯音效"定位）。
+   * 任一文件缺失/加载失败时，回退本引擎对应 id 的程序合成（不静默）。 */
+  const AMB_FILES = ["night", "firefly", "candle", "wind", "rain", "market"];
 
   /* ============ 环境床状态 + BGM 让位（duck）============
    * 环境床领奏时把当前 BGM（文件轨 + 合成轨）压到极低，出演出/收床即恢复。 */
