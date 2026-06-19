@@ -4599,11 +4599,11 @@ const Engine = {
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         // 曲魂幡到手：张铁尸傀自此随你驱使（侧位单位 v0——挚友之尸，为你而战）
         if (!s.sideUnit) {
-          s.sideUnit = { id: "zhangtie_corpse", name: "铁奴·张铁", hp: 70, hpMax: 70, atk: 12,
+          s.sideUnit = { id: "zhangtie_corpse", name: "曲魂", hp: 70, hpMax: 70, atk: 12,
                          atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
           this.log("你拾起墨大夫遗落的「曲魂幡」。幡下尸傀缓缓转向你，躬身待命——那身形，依稀还是当年演武厅里和你过招的少年。自此，张铁的遗蜕将随你出战（历练与遭遇战自动随行）。", "event");
-          this.addMilestone("曲魂幡御尸：铁奴随行", "bigitem");
-          this.toast("侧位随行：铁奴·张铁");
+          this.addMilestone("曲魂幡御尸：曲魂随行", "bigitem");
+          this.toast("侧位随行：曲魂");
         }
         s.storyStage += 1;
         this.checkStory();

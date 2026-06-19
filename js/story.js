@@ -507,25 +507,41 @@ const STORY = [
       { say: "墨彩环", emo: "sad", tone: "轻声", text: "韩立……凡人，就真的不能修仙吗？" },
       "你答不上来。你也曾是凡人——你拼了命才摸到这条路的门槛。而对她来说，这条路生来就是断的。",
       { say: "墨彩环", text: "对了，你要找修仙的人吧？我听爹提过——岚州最南的太南山里，每隔几年有个「太南小会」，是修仙人的集市。算日子，快开了。" },
-      "当夜，你独自登上后库房顶，取出了那杆曲魂幡。",
-      { aside: "墨府需要一道不走的影子，而张铁……让他守着师妹们安稳度日，总好过随我在刀口上飘零。" },
-      "幡下的身影立在檐角的阴影里，像一座沉默的碑。「张铁，」你轻声说，「替我护着这家人。」它没有回答，只是握紧了拳。",
-      "墨彩环不知道檐上多了什么。她只觉得那夜之后，府里格外安心。",
+      "当夜，你独自登上后库房顶，取出了那杆曲魂幡。幡下的身影立在檐角的阴影里，像一座沉默的碑——那是张铁的遗蜕，如今唤作曲魂。",
+      { aside: "带它走，刀口上多一分照应；留它下来，墨府便有一道不走的影子，护这一家人安稳度日。该如何决断？" },
     ],
     onArrive(s) {
       State.setFlag("han_du_cured");
       State.give("nuanyang_yu", 1);
-      // 曲魂留府（动漫线，固定剧情）：墨府之危的长护——此因将在燕家堡/京城篇结果，
-      // 更埋着曲魂被夺舍、奇虫榜入手的远线（combat-arsenal §人界兵器谱）
-      Engine.writeLedger("quhun_left_mo", "将曲魂（张铁遗蜕）留在墨府护卫");
-      if (s.sideUnit && s.sideUnit.id === "zhangtie_corpse") s.sideUnit = null;
       Engine.addMilestone("寒毒得解：暖阳宝玉（墨彩环的嫁妆）", "bigitem");
-      Engine.addMilestone("曲魂留府：一道不走的影子", "deed");
       Engine.addFame(8, "嘉元城里，墨府来了位深藏不露的韩公子");
-      Engine.toast("曲魂留守墨府（侧位空缺——修仙路上，再觅新的依仗）");
     },
+    // 抉择：曲魂随行 / 留府（动漫线）。留府埋燕家堡·京城篇远线（曲魂夺舍·奇虫榜）；
+    // 随行则侧位不空。两路皆辞别墨府、南下太南山（修仙人的集市「太南小会」将开）。
     choices: [
-      { text: "辞别墨府，南下太南山", hint: "修仙人的集市，快开了；远行之前，或可再回趟青牛镇" },
+      {
+        text: "留曲魂驻守墨府——一道不走的影子，护这一家人",
+        hint: "侧位将空缺；墨府从此有靠，此因将在燕家堡／京城篇结果（动漫线）",
+        effect(s) {
+          State.setFlag("quhun_stay_jiayuan");
+          Engine.writeLedger("quhun_left_mo", "将曲魂（张铁遗蜕）留在墨府护卫");
+          if (s.sideUnit && s.sideUnit.id === "zhangtie_corpse") s.sideUnit = null;
+          Engine.addMilestone("曲魂留府：一道不走的影子", "deed");
+          Engine.toast("曲魂留守墨府（侧位空缺——修仙路上，再觅新的依仗）");
+          return { text: "「张铁，」你轻声唤它，「替我护着这家人。」它没有回答，只是握紧了拳，立回檐角的阴影里。墨彩环不知道檐上多了什么——她只觉得那夜之后，府里格外安心。\n你辞别墨府，南下太南山。", kind: "good" };
+        },
+      },
+      {
+        text: "带曲魂同行——刀口上飘零，也好有个照应",
+        hint: "侧位随行不变；墨府的安危，只能托付给你退散豺狗的余威",
+        effect(s) {
+          Engine.writeLedger("quhun_with_han", "将曲魂（张铁遗蜕）带在身边，继续同行");
+          if (s.sideUnit && s.sideUnit.id === "zhangtie_corpse") s.sideUnit.carry = true;
+          Engine.addMilestone("曲魂随行：挚友之蜕，仍在身侧", "deed");
+          Engine.toast("曲魂随行（侧位：刀口上多一分照应）");
+          return { text: "你收起曲魂幡，檐角的身影无声落回你影子里——张铁这一回，仍跟着你走。你最后望了一眼墨府的灯火，转身没入夜色，南下太南山。", kind: "good" };
+        },
+      },
     ],
   },
 
@@ -946,7 +962,9 @@ const STORY = [
   {
     id: "jindi_meeting",
     cg: "huangfeng_dadian",
-    cond: (s) => s.flags.xueshi_due && State.absMonth() >= s.flags.xueshi_due && s.realmIndex >= 10 && !s.flags.xueshi_opened,
+    // 门槛软化·双路触发：练气十一层是踏入血幕的硬门槛（杂役入禁地的命线）——一旦达成即可参选，
+    // 不必空等大比日历到点（旧 absMonth>=xueshi_due 那路会卡出天命栏「约余0月」的死等）。
+    cond: (s) => !s.flags.xueshi_opened && !!s.flags.xueshi_due && s.realmIndex >= 10,
     bgm: "tense",
     objTitle: "大比时节",
     objHint: "血色禁地开启在即——名额之争，今日在大殿见分晓。",
