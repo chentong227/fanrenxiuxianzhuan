@@ -19,7 +19,7 @@
     hanli: 1, modafu: 1, lifeiyu: 1, zhangtie: 1,
     xiaosuanpan: 1, jiatianlong: 1, jinguang: 1,
     nongfu: 1, sanxiu: 1, langzhong: 1, biaoshi: 1, langhao: 1,
-    sanshu: 1, tienu: 1, mocaihuan: 1, wanxiaoshan: 1,
+    sanshu: 1, tienu: 1, xiangzhili: 1, mocaihuan: 1, wanxiaoshan: 1,
     wushishu: 1, luyunfeng: 1, yeshishu: 1, mashibo: 1, chenqiaoqian: 1,
     nangongwan: 1, lihuayuan: 1, fengyue: 1, zhongwu: 1, hanyunzhi: 1,
     lvtianmeng: 1, xuanle: 1, xueyu_zhizhu: 1, baiyu_zhizhu: 1,
@@ -99,6 +99,14 @@
   const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 }, mojiao: {},
     // 增量E·矿道箱庭演出 CG（横版底 + 竖版 _p）
     kuangchang: { p: 1 }, kuangdong: { p: 1 }, jiyuan_shi: { p: 1 },
+    // §4 全量演出 CG 补绘（七玄门/嘉元/升仙/太南/黄枫谷/战王蝉燕家堡/皇宫决战/再别天南）——横版底 + 竖版 _p
+    qixuan_ye: { p: 1 }, mofu: { p: 1 }, xianhui_tai: { p: 1 }, tainan_lin: { p: 1 },
+    huangfeng_zhishi: { p: 1 }, huangfeng_lin: { p: 1 }, huangfeng_dadian: { p: 1 },
+    yanjia_jiaochang: { p: 1 }, yanjia_xueye: { p: 1 }, yanjia_kuiwei: { p: 1 }, yanjia_canyuan: { p: 1 },
+    huanggong_men: { p: 1 }, xuechi_dian: { p: 1 },
+    jiayuan_guandao: { p: 1 }, jiayuan_inn: { p: 1 }, jingshi_huashen: { p: 1 }, luanshipo: { p: 1 },
+    jingu_yuan: { p: 1 }, hushan_zhen: { p: 1 }, yuanwu_diku: { p: 1 },
+    chuansong_zhen: { p: 1 }, kuangdong_kou: { p: 1 },
     // 增量G·魔道争锋第三幕·京城暗流演出 CG（横版底 + 竖版 _p 已生成）
     jingcheng: { p: 1 }, wangfu_yan: { p: 1 },
     // 再别天南篇·章末定格·首见乱星海（横版底 + 竖版 _p）
@@ -119,7 +127,7 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 26,
+    ASSET_VER: 27,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 
