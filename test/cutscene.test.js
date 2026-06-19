@@ -74,6 +74,30 @@ console.log("== 2b. 环境床 amb 原语（夜虫/烛火夜晚感；演出不一
   assert(CS.isBlocking({ kind: "op", op: "amb" }) === false, "amb 不阻塞（舞台指令自动连演）");
 }
 
+console.log("== 2c. 演出态镜头差速视差（多平面：远景 ctx.far 按 FAR_K 减幅同步）==");
+{
+  const mk = () => ({ style: {} });
+  const bg = mk(), far = mk();
+  const ctx = { bg, far };
+  CS.resetCam(ctx);
+  // pan：中景全幅位移；远景同向但仅取 0.42 幅度（差出来的那截＝纵深视差）+ 基准放大 1.08
+  CS._cam({ cam: "pan", to: { x: -10, y: 4 }, ms: 1000 }, ctx);
+  assert(bg.style.transform === "translate(-10.000%, 4.000%) scale(1.0000)", "pan：中景全幅位移");
+  assert(far.style.transform === "translate(-4.200%, 1.680%) scale(1.0800)", "pan：远景减幅位移(×0.42)+基准放大1.08");
+  // zoom：推拉幅度也按 k 收敛——中景 scale=1.2，远景仅 1.08×(1+0.2×0.42)=1.1707
+  CS.resetCam(ctx);
+  CS._cam({ cam: "zoom", scale: 1.2, ms: 800 }, ctx);
+  assert(bg.style.transform === "translate(0.000%, 0.000%) scale(1.2000)", "zoom：中景全幅推近");
+  assert(far.style.transform === "translate(0.000%, 0.000%) scale(1.1707)", "zoom：远景推近更少（纵深）");
+  // resetCam 清两层 inline transform（远景回落 CSS 基准 scale(1.08)）
+  CS.resetCam(ctx);
+  assert(bg.style.transform === "" && far.style.transform === "", "resetCam 清空 bg/far inline transform");
+  // 向后兼容：无 far 层（旧 DOM/无头）不抛，中景照常移动（零回归）
+  const bg2 = mk();
+  CS._cam({ cam: "pan", to: { x: 5, y: 0 }, ms: 500 }, { bg: bg2 });
+  assert(bg2.style.transform === "translate(5.000%, 0.000%) scale(1.0000)", "无 far：退化单层，中景照常移动，零回归");
+}
+
 console.log("== 3. 交互 beat（对象=交互；字符串=停顿，二者不混淆）==");
 {
   const stage = { text: [

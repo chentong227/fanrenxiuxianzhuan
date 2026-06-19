@@ -3267,12 +3267,27 @@ html, body { touch-action: manipulation; }
 }
 @keyframes storyFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* 演出远景视差面（B1·演出态多平面）：与背景同图但"推远"——更糊更暗更大；
+ * 镜头 pan/zoom 时由 cutscene._cam 以更小幅度位移/缩放（背景全幅、远景减幅），
+ * 于背景层移动时在边缘"露出"＝一次推镜里的纵深差速视差（aerial perspective）。
+ * 静止态被不透明的背景层完全盖住＝零观感变化；仅演出态(.on)点亮，旁白单层零回归。
+ * inset 略负 + 基准放大 1.08：pan 时不露黑边。真·切图分层就位后可在其上叠 layers。 */
+.story-far {
+  position: absolute; inset: -7%; background-size: cover; background-position: center;
+  opacity: 0; transition: opacity .5s ease;
+  filter: saturate(.62) brightness(.46) blur(3px);
+  transform: scale(1.08);
+  will-change: transform; backface-visibility: hidden; pointer-events: none;
+  z-index: 0;
+}
+.story-far.on { opacity: 1; }
 /* 场景背景（虚化压暗，做氛围）*/
 .story-bg {
   position: absolute; inset: 0; background-size: cover; background-position: center;
   opacity: 0; transition: opacity .4s ease;
   filter: saturate(.9) brightness(.62);
   will-change: transform; backface-visibility: hidden;
+  z-index: 1;
 }
 /* kenBurns 收敛到 1.04→1.0：保留推镜电影感，终态回到原始分辨率（不糊） */
 .story-bg.on { opacity: 1; animation: kenBurns 14s ease-out forwards; }

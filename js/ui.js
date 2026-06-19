@@ -962,6 +962,9 @@ const UI = {
       Cutscene.resetCam(this._storyCtx());
       const staged = Cutscene.hasStaging(stage);
       if (bg) bg.classList.toggle("story-cam", staged);
+      // 演出态点亮远景视差面（B1·演出态多平面）：镜头 op 时随 _cam 差速位移＝纵深
+      const far = this.el("story-far");
+      if (far) far.classList.toggle("on", staged && !!far.style.backgroundImage);
       if (staged && typeof Fx !== "undefined" && Fx.ensure) Fx.ensure(overlay);
     } else if (bg) { bg.classList.remove("story-cam"); }
     if (skip) skip.hidden = false;
@@ -1053,8 +1056,15 @@ const UI = {
       const loc = State.location();
       if (loc) url = Art.locUrl(loc);
     }
-    if (url) { bg.style.backgroundImage = `url("${url}")`; bg.classList.add("on"); }
-    else { bg.style.backgroundImage = ""; bg.classList.remove("on"); }
+    // 远景视差面与背景同图（程序化"推远"，无需切图；真·分层切图就位后可在其上叠 layers）
+    const far = this.el("story-far");
+    if (url) {
+      bg.style.backgroundImage = `url("${url}")`; bg.classList.add("on");
+      if (far) far.style.backgroundImage = `url("${url}")`;
+    } else {
+      bg.style.backgroundImage = ""; bg.classList.remove("on");
+      if (far) { far.style.backgroundImage = ""; far.classList.remove("on"); }
+    }
   },
 
   // 打字机逐字显示；点击时若在打字 → 立即完成本句
@@ -1193,6 +1203,7 @@ const UI = {
   _storyCtx() {
     return {
       bg: this.el("story-bg"),
+      far: this.el("story-far"),
       left: this.el("story-portrait-left"),
       right: this.el("story-portrait-right"),
       host: this.el("story-overlay"),
@@ -1330,6 +1341,7 @@ const UI = {
     if (typeof Sfx !== "undefined" && Sfx.ambientStop) Sfx.ambientStop();
     const skip = this.el("story-skip"); if (skip) skip.hidden = true;
     const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
+    const far = this.el("story-far"); if (far) far.classList.remove("on");
     this._archiveStory(stage);
     this.el("story-overlay").hidden = true;
     document.body.classList.remove("story-on");

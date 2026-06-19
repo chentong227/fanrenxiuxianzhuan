@@ -111,7 +111,10 @@
       return null;
     },
 
-    /* 镜头（沿用箱庭 L3"变换即镜头"：对背景层施 transform；震屏走 FX）*/
+    /* 镜头（沿用箱庭 L3"变换即镜头"：对背景层施 transform；震屏走 FX）。
+     * 演出态多平面（B1 演出态差速视差）：中景背景 ctx.bg 全幅位移/推拉，远景气面
+     * ctx.far 以更小幅度（FAR_K）同向同步——同一镜头里两平面"差速"，背景移动时远景
+     * 在边缘露出＝纵深视差。无 far 层（旧 DOM / 无头测试）时退化为单层，零回归。*/
     _cam(beat, ctx) {
       const bg = ctx && ctx.bg;
       const cam = beat.cam || "hold";
@@ -122,8 +125,20 @@
       const st = this._camState || (this._camState = { x: 0, y: 0, s: 1 });
       if (cam === "pan" && beat.to) { st.x = +beat.to.x || 0; st.y = +beat.to.y || 0; }
       if (cam === "zoom") { st.s = beat.scale != null ? +beat.scale : 1.12; }
-      bg.style.transition = `transform ${beat.ms || 900}ms ease`;
-      bg.style.transform = `translate(${st.x}%, ${st.y}%) scale(${st.s})`;
+      const ms = beat.ms || 900;
+      this._applyCam(bg, st, 1, ms, 1);                                       // 中景：全幅（与旧版逐字等价）
+      if (ctx && ctx.far) this._applyCam(ctx.far, st, this.FAR_K, ms, 1.08);  // 远景：减幅 + 基准放大 1.08
+    },
+    FAR_K: 0.42,   // 远景差速系数：位移/推拉幅度取背景的 ~42%，差出来的那截＝视差
+    /* 对一层施"镜头变换"：位移取 camState×k，推拉幅度也按 k 收敛（远景动得更少）。
+     * base=该层基准缩放（远景 1.08，使其略大、pan 时不露黑边且永远盖住背景边缘）。*/
+    _applyCam(el, st, k, ms, base) {
+      if (!el) return;
+      const b = base || 1;
+      const tx = (st.x * k).toFixed(3), ty = (st.y * k).toFixed(3);
+      const sc = (b * (1 + (st.s - 1) * k)).toFixed(4);
+      el.style.transition = `transform ${ms || 900}ms ease`;
+      el.style.transform = `translate(${tx}%, ${ty}%) scale(${sc})`;
     },
     _focus(at, ctx) {
       if (!ctx) return;
@@ -136,6 +151,8 @@
       this._camState = { x: 0, y: 0, s: 1 };
       const bg = ctx && ctx.bg;
       if (bg) { bg.style.transition = ""; bg.style.transform = ""; }
+      const far = ctx && ctx.far;   // 远景面回零（清 inline transform，回落 CSS 基准 scale(1.08)）
+      if (far) { far.style.transition = ""; far.style.transform = ""; }
     },
 
     /* 立绘进退场（委托 Art 取图；放进既有左右立绘位）*/
