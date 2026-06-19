@@ -92,13 +92,16 @@ const UI = {
     // 血色禁地日历锚：年级倒计时常驻——大帆里的每一月，都在为那一天攒
     const sx = State.data;
     if (sx && sx.flags && sx.flags.xueshi_due && !sx.flags.xueshi_opened) {
-      const left = Math.max(0, sx.flags.xueshi_due - State.absMonth());
+      const left = sx.flags.xueshi_due - State.absMonth();
       const ready = sx.realmIndex >= 10;
+      const season = left > 0 ? `大比时节约余 ${left} 月` : "大比时节已至";
       fate += `<div class="obj-task" style="border-left-color:var(--cinnabar)">
         <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">血禁</span>
         <b>血色禁地 · 大比时节</b>
-        <span class="obj-left">约余 ${left} 月</span>
-        <span class="obj-hint">${ready ? "修为已够（练气十一层）——届时名额之争，看你的了" : "入选门槛：练气十一层（修炼/后篇是正路）"}</span>
+        <span class="obj-left">${season}</span>
+        <span class="obj-hint">${ready
+          ? "修为已够（练气十一层）——去万宝楼坊市备货走一趟（顺道听廊下向之礼一席话），名额之会便在山门大殿见分晓。"
+          : "入选两事：① 修为到练气十一层（修炼／长春功后篇是正路）　② 去万宝楼坊市备货，顺道听向之礼指点门道。修为到了即可参选，不必赶时间。"}</span>
       </div>`;
     }
     if (tasks.length) {
@@ -346,6 +349,8 @@ const UI = {
         <span class="ln-plate">${met ? n.name : "陌生人"}<span class="lr">${n.role}</span></span>
       </div>`;
     }).join("");
+    // 据点人数驱动立绘缩放（手机端按人数自适应，挤而不溢、不压地名）
+    box.style.setProperty("--ln-n", locals.length);
   },
 
   // 点在场人物：打开「交互轮盘」（立绘居中，左绿善意/右红敌对）
@@ -1513,7 +1518,7 @@ const UI = {
   _npcIdByName(name) {
     if (!name) return null;
     // 剧情专属人物（不在大世界 NPC 名册中）
-    const extra = { "三叔": "sanshu", "铁奴": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan",
+    const extra = { "三叔": "sanshu", "铁奴": "tienu", "曲魂": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan",
       "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo", "陈巧倩": "chenqiaoqian" };
     if (extra[name]) return extra[name];
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
@@ -3049,7 +3054,7 @@ const UI = {
       if (/张铁/.test(name)) return "zhangtie";
       return "hanli";
     }
-    if (/铁奴/.test(name)) return Art.has("tienu") ? "tienu" : "zhangtie";
+    if (/曲魂|铁奴/.test(name)) return Art.has("tienu") ? "tienu" : "zhangtie";
     if (/张铁/.test(name)) return "zhangtie";
     const all = (typeof WORLD !== "undefined" && WORLD.npcs) ? WORLD.npcs : [];
     for (const n of all) { if (name.indexOf(n.name) >= 0 && Art.has(n.id)) return n.id; }
@@ -3065,7 +3070,7 @@ const UI = {
       [/陆云风/, "bt_luyunfeng"],
       [/金光上人/, "bt_jinguang"],
       [/墨大夫/, "bt_modafu"],
-      [/铁奴|张铁尸傀/, "bt_tienu"],
+      [/曲魂|铁奴|张铁尸傀/, "bt_tienu"],
       [/万小山/, "bt_wanxiaoshan"],
       [/余子童/, "bt_yuzitong"],       // 元神残魂：半透明青白魂体专属立绘（剪影仍作兜底）
       [/墨蛟/, "bt_mojiao"],

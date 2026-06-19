@@ -301,6 +301,11 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   assert(s.pendingEvent === "chen_after", `林中事了一幕触发（${s.pendingEvent}）`);
   Engine.chooseStory(sandbox.STORY[s.storyStage], 1);
   assert(s.ledger.chen_remember && !s.ledger.chen_wangchen, "不喂忘尘丹：她记得你（命途道岔写账）");
+  // 门槛软化·双路触发：反杀陆云风即练气十一层——名额大会随 chen_after 自动开启（无须空等大比日历）。
+  assert(s.pendingEvent === "jindi_meeting", `名额大会即触发（练气十一层即开，${s.pendingEvent}）`);
+  assert(s.flags.xueshi_opened, "名额 onArrive 已置 xueshi_opened");
+  assert(s.metNpcs.includes("nangongwan") && s.metNpcs.includes("lihuayuan"), "南宫婉/李化元入图鉴");
+  s.pendingEvent = null;   // 名额已开；下面先验法器装备系统，稍后再“踏入血幕”
 
   // —— 法器装备系统：千年灵草变现 → 万宝楼买金蚨子母刃 → 装备（属性+技能+特性）——
   assert(s.flightId === "qingye_fazhan", "入谷已领青叶法器（第一件飞行法器）");
@@ -334,15 +339,10 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
 console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇收口 ===");
 {
   const s = State.data;
-  s.pendingEvent = null;
-  // —— 名额大会（日历锚到期+练气十一层）——
   s.realmIndex = 10;
-  s.flags.xueshi_due = State.absMonth();   // 锚到期
-  Engine.checkStory();
-  assert(s.pendingEvent === "jindi_meeting", `名额大会触发（${s.pendingEvent}）`);
+  // 名额大会已在 chen_after 后自动开启（门槛软化，见上）——此处径直“踏入血幕”开 L1 舆图。
+  assert(s.flags.xueshi_opened, "名额已开（练气十一层即触发，无大比日历空等）");
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "jindi_meeting"), 0);
-  assert(s.flags.xueshi_opened, "名额到手（xueshi_opened）");
-  assert(s.metNpcs.includes("nangongwan") && s.metNpcs.includes("lihuayuan"), "南宫婉/李化元入图鉴");
   // —— 五日禁地（v3 舆图）：选择"踏入血幕"即开 L1 ——
   assert(s.exmap && s.exmap.stack.length === 1, "踏入血幕：L1 舆图已开（exmap 会话）");
   const EM = sandbox.ExploreMap;

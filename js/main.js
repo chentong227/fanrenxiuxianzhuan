@@ -137,7 +137,7 @@ const Main = {
         State.give("jinguang_zhuan", 1); State.give("jinguang_zhuan_charge", 3);
         State.give("huixue_dan", 2); State.give("huiyuan_dan", 2); State.give("dingshen_fu", 2);
         State.give("zhenqi_kunzu", 2); State.give("zhenqi_juling", 1);
-        if (q.get("side")) s.sideUnit = { id: "zhangtie_corpse", name: "铁奴·张铁", kind: "corpse", hp: 70, hpMax: 70, atk: 12, atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
+        if (q.get("side")) s.sideUnit = { id: "zhangtie_corpse", name: "曲魂", kind: "corpse", hp: 70, hpMax: 70, atk: 12, atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
         if (q.get("fly")) State.setFlag("fly_unlocked");   // 空层调试：?fly=1 解锁腾空
         this.enterGame();
         setTimeout(() => Engine.startEncounterFight(foe), 300);

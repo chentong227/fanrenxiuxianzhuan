@@ -179,8 +179,8 @@ const State = {
     if (d.poolBonus == null) d.poolBonus = (d.realmIndex || 0) * 2;
     if (!d.visitedNodes) d.visitedNodes = ["caixia"];
     // 老档补发：已反杀墨大夫者，曲魂幡尸傀随行
-    if (d.flags && d.flags.modafu_dead && !d.sideUnit) {
-      d.sideUnit = { id: "zhangtie_corpse", name: "铁奴·张铁", hp: 70, hpMax: 70, atk: 12,
+    if (d.flags && d.flags.modafu_dead && !d.sideUnit && !d.flags.quhun_stay_jiayuan) {
+      d.sideUnit = { id: "zhangtie_corpse", name: "曲魂", hp: 70, hpMax: 70, atk: 12,
                      atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
     }
     // 老档补发：已杀金光上人者，金光砖入袋
