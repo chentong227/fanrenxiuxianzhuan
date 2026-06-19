@@ -50,7 +50,8 @@ WORLD.locations = [
     desc: "门派后山，灵草丛生，亦有野兽与低阶修士出没。深入其间，自有采药、机缘与凶险。",
     travelCost: 2,
     map: { x: 72, y: 28 },
-    env: { outdoor: true },   // 山野户外：随季——冬雪/夏雨/余晴（落粒子+染色，让地图活）
+    // 山野户外：随季——冬雪/夏雨/余晴（落粒子+染色）；2.5D 前景＝近景枝叶框（不被染、快漂），远雾偏淡
+    env: { outdoor: true, depth: { fg: "forest", far: 0.4 } },
     actions: ["explore"],
     encounters: [
       { id: "herb", weight: 38, kind: "gather" },
@@ -99,7 +100,9 @@ WORLD.locations = [
     desc: "墨大夫秘不示人的密室。阴气森森，似藏着不可告人的秘密。",
     travelCost: 2,
     map: { x: 58, y: 48 },
-    env: { phase: "night", weather: "fog", amb: null },   // 阴气森森：夜雾冷色诡谧，amb:null 静默不放床（留 tense BGM）
+    // 阴气森森：夜雾冷色诡谧，amb:null 静默不放床（留 tense BGM）；
+    // 2.5D 前景＝近景洞口岩壁框（"从洞里往外看"的纵深，不被染、快漂），远雾偏浓
+    env: { phase: "night", weather: "fog", amb: null, depth: { fg: "cave", far: 0.6 } },
     actions: ["investigate"],
     unlock: (s) => s.flags.qi_layer_4,   // 修到练气四层、起疑后才会去探
     encounters: [],

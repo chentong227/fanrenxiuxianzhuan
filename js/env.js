@@ -77,6 +77,17 @@
       };
     },
 
+    // 地点 → 2.5D 纵深配置（前景分层，docs/staging-experience-design.md §3 B1 / §10 R1）。
+    //   返回 {fg, far[, layers]} 或 null（不配置＝单层背景，零回归）。
+    //   · fg   = 前景框层类型（"cave"/"forest"/"interior"/…）——近景遮挡，不被天气/时辰染。
+    //   · far  = 远景雾强度 0..1（默认 0.5），驱动 CSS 远景气层（空气透视）。
+    //   · layers = 预留：[{src, depth}] 真分层切图就位后逐层差速位移（资产未齐时走程序化前景/远雾兜底）。
+    depthFor(loc) {
+      const e = loc && loc.env;
+      if (e && e.depth && typeof e.depth === "object") return e.depth;
+      return null;
+    },
+
     // 地点 → 环境床 id（夜→夜虫 / 雨→檐滴 …）。返回 null=不放床、照常 BGM。
     //   地点 env.amb 显式覆盖（含显式 null=诡谧静默，如密室）；否则按天气、再按时辰推。
     ambientFor(loc, now) {
@@ -97,6 +108,11 @@
       this._ensureLayer(stageEl, "scene-weather");
       stageEl.dataset.phase = r.phase;
       stageEl.dataset.weather = r.weather;
+      // 2.5D 纵深骨架（§10 R1）：配了 depth 的地点开前景分层，data-fg 驱动前景框层；
+      //   未配置＝单层背景，data-depth/fg 清空，CSS 不开远雾/前景框（零回归）。
+      const d = this.depthFor(loc);
+      stageEl.dataset.depth = d ? "on" : "";
+      stageEl.dataset.fg = (d && typeof d.fg === "string") ? d.fg : "";
       return r;
     },
     _ensureLayer(stageEl, cls) {

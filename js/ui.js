@@ -251,8 +251,18 @@ const UI = {
     bg.style.backgroundImage = url ? `url("${url}")` : "";
     bg.classList.toggle("has-img", !!url);
 
-    // 昼夜·天气骨架：把时辰/天气写到舞台（驱动 CSS 染色 tint + 氛围粒子）
-    if (typeof Env !== "undefined") { const stg = this.el("scene-stage"); if (stg) Env.apply(stg, loc); }
+    // 昼夜·天气骨架 + 2.5D 纵深（前景分层）：把时辰/天气/纵深写到舞台
+    //  （驱动 CSS 染色 tint + 氛围粒子 + 远景气层/前景框层差速漂移）
+    if (typeof Env !== "undefined") {
+      const stg = this.el("scene-stage");
+      if (stg) {
+        Env.apply(stg, loc);
+        // 喂底图给远景层（程序化前景框不依赖切图，远雾按地点 far 强度调浓淡）
+        stg.style.setProperty("--scene-img", url ? `url("${url}")` : "none");
+        const d = Env.depthFor ? Env.depthFor(loc) : null;
+        stg.style.setProperty("--scene-far", (d && d.far != null) ? String(d.far) : "0.5");
+      }
+    }
 
     // 过场地点 / 待决剧情 / 战斗：不显示前往按钮（不能乱走）
     if (loc.scene || s.pendingEvent || s.combat) {
