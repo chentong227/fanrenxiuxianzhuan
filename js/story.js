@@ -3135,6 +3135,7 @@ const STORY = [
   // —— 第一幕③·镇妖台擂台 1v1（演示「藏拙」机制·炼气五层假苦战胜八层·猥琐发育）——
   {
     id: "starsea_a1_leitai",
+    cg: "leitai",
     skipIf: (s) => s.flags.starsea_leitai_done,
     cond: (s) => s.flags.starsea_kuixing_done && !s.flags.starsea_leitai_done,
     bgm: "combat",
@@ -3221,6 +3222,7 @@ const STORY = [
   // —— 第二幕①·魁星城寻药未果·再遇文樯·听闻镇妖大典与降尘丹·途中擦肩小紫灵 ——
   {
     id: "starsea_a2_wenqiang",
+    cg: "wenqiang",
     skipIf: (s) => s.flags.starsea_wenqiang_done,
     cond: (s) => s.flags.starsea_biguan_done && !s.flags.starsea_wenqiang_done,
     bgm: "journey",
@@ -3289,6 +3291,7 @@ const STORY = [
   // —— 第二幕③·极限斩杀婴鲤兽（sides[冯三娘+曲魂]＋waves[婴鲤兽幼体→困兽暴走]＋fieldCycle 水罡＋越阶斩杀）——
   {
     id: "starsea_a2_yingli",
+    cg: "yingli",
     skipIf: (s) => s.flags.starsea_yingli_done,
     cond: (s) => s.flags.starsea_dadian_done && !s.flags.starsea_yingli_done,
     bgm: "boss",
@@ -3453,6 +3456,7 @@ const STORY = [
   // —— 第三幕①·顺乱出海·外星海猎场（携紫灵漂泊·决意猎妖积丹）——
   {
     id: "starsea_a3_chuhai",
+    cg: "chuhai",
     skipIf: (s) => s.flags.starsea_chuhai_done,
     cond: (s) => s.flags.starsea_luan_done && !s.flags.starsea_chuhai_done,
     bgm: "journey",
@@ -3482,6 +3486,7 @@ const STORY = [
   // —— 第三幕②·偶得噬金虫·霓裳草引妖之法（授噬金虫→四用法入战）——
   {
     id: "starsea_a3_shijin",
+    cg: "shijin",
     skipIf: (s) => s.flags.starsea_shijin_done,
     cond: (s) => s.flags.starsea_chuhai_done && !s.flags.starsea_shijin_done,
     bgm: "journey",
@@ -3546,6 +3551,7 @@ const STORY = [
   // —— 第三幕④·金魁示威极阴岛·星宫收复内星海（背景演出·worldNews·#背景强者三态）——
   {
     id: "starsea_a3_jinkui",
+    cg: "jinkui",
     skipIf: (s) => s.flags.starsea_jinkui_done,
     cond: (s) => s.flags.starsea_zhifu_done && !s.flags.starsea_jinkui_done,
     bgm: "boss",
@@ -3592,6 +3598,7 @@ const STORY = [
   // —— 第四幕①·落户内海第一都会·天星城（星宫治下·人修文明中心）——
   {
     id: "starsea_a4_tianxing",
+    cg: "tianxing",
     skipIf: (s) => s.flags.starsea_tianxing_done,
     cond: (s) => s.flags.starsea_jinkui_done && !s.flags.starsea_tianxing_done,
     bgm: "town",
@@ -3621,6 +3628,7 @@ const STORY = [
   // —— 第四幕②·集齐结丹资粮（雪灵水/天火液补齐＋大衍诀三层蓄力·神识淬炼大成）——
   {
     id: "starsea_a4_ziliang",
+    cg: "ziliang",
     skipIf: (s) => s.flags.starsea_ziliang_done,
     cond: (s) => s.flags.starsea_tianxing_done && !s.flags.starsea_ziliang_done,
     bgm: "journey",
@@ -3700,6 +3708,7 @@ const STORY = [
   // —— 第四幕④·择吉叩关引导（觅长生式·准备-择时·框可玩渡劫·等玩家真破 16→17）——
   {
     id: "starsea_a4_jieguan",
+    cg: "jieguan",
     skipIf: (s) => s.flags.starsea_jieguan_done,
     cond: (s) => s.flags.starsea_jiedan_fail_done && !s.flags.starsea_jieguan_done,
     bgm: "tense",
