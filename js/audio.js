@@ -382,6 +382,7 @@
    * 文件缺失/加载失败 → 回退合成轨（FALLBACK 映射）。 */
   const BGM_FILES = ["daily", "town", "journey", "fair", "combat", "boss", "tense", "sorrow", "triumph"];
   const FALLBACK = { town: "daily", journey: "daily", fair: "daily", boss: "combat", sorrow: "tense", triumph: null };
+  const KNOWN_TRACKS = BGM_FILES;   // C3 切轨校验：合法轨名白名单（九轨即全部；daily/combat/tense 另带合成兜底）
   let curTrack = null;
 
   /* ============ 环境床文件清单（文件优先名单）============
@@ -476,8 +477,18 @@
       try { const c = ac(); if (c) RECIPES[name](c); } catch (e) {}
       if (DUCK_SFX[name]) keySfxDuck();   // C2：古钟/天雷等关键 SFX 触发→音乐瞬时让路
     },
+    // 当前轨名（null=未起乐）；切轨校验/调试用
+    curBgm() { return curTrack; },
+    // 合法轨名白名单（副本，外部勿改）；切轨点可据此校验
+    tracks() { return KNOWN_TRACKS.slice(); },
+    isTrack(name) { return KNOWN_TRACKS.includes(name); },
     // 主入口：换 BGM 轨（文件优先，合成兜底；同轨幂等）
     bgm(track, opts = {}) {
+      // C3 切轨校验：未知轨名一律拒绝并告警，不扰动当前播放（防 typo 把正在放的乐切没了）
+      if (!KNOWN_TRACKS.includes(track)) {
+        if (track != null && typeof console !== "undefined" && console.warn) console.warn("[audio] 未知 BGM 轨：" + track + "（已忽略）");
+        return;
+      }
       if (curTrack === track && !opts.force) return;
       curTrack = track;
       if (BGM_FILES.includes(track)) {

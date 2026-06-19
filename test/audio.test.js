@@ -114,5 +114,22 @@ console.log("== 5. 同轨幂等：重复 bgm(同轨) 不新建元素 ==");
   assert(created.length === n, "bgm('combat') 同轨幂等，未新建元素");
 }
 
-console.log(`\n========== 音频 C2：${fail === 0 ? "全通 ✓" : fail + " 项败 ✗"}（${pass} 项）==========`);
+console.log("== 6. C3 切轨校验：未知轨名一律拒绝、不扰动当前播放 ==");
+{
+  assert(typeof Sfx.isTrack === "function" && Sfx.isTrack("boss") && !Sfx.isTrack("nope"),
+    "isTrack：合法轨真、非法轨假");
+  assert(Sfx.tracks().length === 9, "tracks()：九轨白名单");
+  const n = created.length, cur = Sfx.curBgm();   // 当前应为 combat
+  const warns = [];
+  const origWarn = console.warn; console.warn = (m) => warns.push(m);
+  Sfx.bgm("bos");          // typo
+  Sfx.bgm("");             // 空串
+  Sfx.bgm(undefined);      // 漏传
+  console.warn = origWarn;
+  assert(created.length === n, "未知轨：未新建任何音轨元素");
+  assert(Sfx.curBgm() === cur, "未知轨：当前轨名未被改写（不切没）");
+  assert(warns.filter(w => /未知 BGM 轨/.test(w)).length === 2, "typo/空串各告警一次，漏传(null/undefined)静默");
+}
+
+console.log(`\n========== 音频 C2/C3：${fail === 0 ? "全通 ✓" : fail + " 项败 ✗"}（${pass} 项）==========`);
 process.exit(fail ? 1 : 0);

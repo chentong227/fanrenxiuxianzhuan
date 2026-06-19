@@ -84,6 +84,7 @@
 
 ### C3 · 轨道→场景映射校验 —— P1
 - 核对 `ui.js/main.js` 的切轨点（audio-design §三表），保证"该静的时候别打鼓"、进城切 town、决战切 boss、离别切 sorrow。
+- **实现 ✅（P1）**：核对全部切轨点已对齐 §三表——`_bgmForLocation`（town/嘉元城→town、太南集市→fair、密室→tense、旅途→journey、余 daily）；战斗起手按烈度切 boss/tense/combat（`bossFight`=决战/越级/妖王），战罢 `_bgmForLocation` 归位地点轨；舆图 peaceful→town/险境→tense；破关→triumph（单次）；剧情节点 `stage.bgm` 显式切（sorrow/tense…），落幕经 `renderAll→renderLocation` 自动归位。**健壮性**：`Sfx.bgm()` 增**白名单校验**——未知轨名（typo/空串）一律告警忽略、**不扰动当前播放**（不再"切没了"），新增 `Sfx.isTrack/tracks/curBgm` 自省位。`test/audio.test.js` §6 验校验、`test/trackmap.test.js` 逐场景核对映射且产出轨名均在白名单内。
 
 ---
 
