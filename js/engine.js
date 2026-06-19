@@ -5160,6 +5160,96 @@ const Engine = {
     State.save();
     UI.renderAll();
   },
+  /* ============================================================
+   * D1-a 直接坠入·薄封装：演出落幕 → 直挂既有战斗/箱庭，跳过「临战准备」选择屏。
+   *   不新增任何战斗逻辑——startFight(id) 仅按 id→fn 路由表 switch 到既有 startXxxFight()。
+   *   id 取既有 choice.resolve 名（战斗派发的单一事实源），另收几个短别名兼容剧本写法。
+   *   返回 true=已派发；false=未知 id（调用方 fail-soft 退回选择屏，等价旧行为、零回归）。
+   * ============================================================ */
+  _fightRoutes() {
+    if (this.__fightRoutes) return this.__fightRoutes;
+    // encounter 型：统一经 startEncounterFight(type)，before 钩子布置 _nextFightType 之外的临场参数
+    const enc = (type, before) => function () {
+      this._nextFightType = type;
+      if (before) before.call(this);
+      this.startEncounterFight(type);
+      this._caveFightCfg = null;     // 用过即清（仅 xuanle/xueyu 会设；其余本就为空）
+    };
+    const caveCfg = () => (typeof Art !== "undefined" && Art.has && Art.has("pano_kuangdong"))
+      ? { sceneBg: "pano_kuangdong", seamless: true } : null;
+    return (this.__fightRoutes = {
+      // 决战墨大夫（真实三阶段战斗）
+      showdown_win:  function () { this.startShowdownFight(); },
+      showdown_risk: function () { this.startShowdownFight(); },
+      showdown:      function () { this.startShowdownFight(); },   // 别名（剧本简写）
+      // 反杀金光上人
+      jinguang_win:  function () { this.startJinguangFight(); },
+      jinguang:      function () { this.startJinguangFight(); },
+      // 复仇 / 同道并肩
+      revenge_fight:   function () { this.startRevengeFight(); },
+      wan_hunt_fight:  function () { this.startWanHunt(); },
+      luyunfeng_fight: function () { this.startLuyunfengFight(); },
+      // encounter 型（含临场布景/侧援）
+      fengyue_fight:      enc("fengyue"),
+      mojiao_fight:       enc("mojiao", function () { this._sideOverride = this._nangongwanAlly(); }),
+      zhanwangchan_fight: enc("zhanwangchan"),
+      zhanwangchan:       enc("zhanwangchan"),                     // 别名（战王蝉）
+      xuanle_fight:       enc("xuanle",       function () { this._caveFightCfg = caveCfg(); }),
+      xueyu_zhizhu_fight: enc("xueyu_zhizhu", function () { this._caveFightCfg = caveCfg(); }),
+      tieluo_fight:       enc("tieluo"),
+      tieluo2_fight:      enc("tieluo_mao"),
+      wuse_fight:         enc("wuse_menzhu"),
+      // 专用战斗入口
+      moxiu_patrol_fight: function () { this._nextFightType = "patrol"; this.startPatrolFight(); },
+      santuan_fight:      function () { this.startSantuanFight(); },
+      tuoshi_fight:       function () { this.startTuoshiFight(); },
+      xuwang_final_fight: function () { this.startXuwangFight(); },
+      jinbei_fight:    function () { this.startJinbeiFight(); },
+      duoshe_fight:    function () { this.startDuosheFight(); },
+      jingu_fight:     function () { this.startJinguFight(); },
+      hushan_fight:    function () { this.startHushanFight(); },
+      hudao_fight:     function () { this.startHudaoFight(); },
+      kuangdong_fight: function () { this.startKuangdongFight(); },
+      starsea_yaoshou_fight:   function () { this.startStarseaYaoshouFight(); },
+      starsea_leitai_fight:    function () { this.startStarseaLeitaiFight(); },
+      starsea_yingli_fight:    function () { this.startStarseaYingliFight(); },
+      starsea_jiuziling_fight: function () { this.startStarseaJiuzilingFight(); },
+      starsea_waihai_fight:    function () { this.startStarseaWaihaiFight(); },
+    });
+  },
+  hasFight(id) { return !!(id && this._fightRoutes()[id]); },
+  startFight(id) {
+    const fn = id && this._fightRoutes()[id];
+    if (!fn) return false;                 // 未知 id：交回调用方 fail-soft 退回旧选择屏
+    State.data.pendingEvent = null;
+    try { fn.call(this); } catch (e) { return false; }
+    return true;
+  },
+
+  /* —— D1-a 直接坠入·地点/箱庭（薄封装，复用既有地点系统）——
+   *   与 travelTo 区别：剧情驱动的"坠入"，不耗赶路时月、不计遁速（演出已交代位移）。
+   *   目标地点不存在 → 返回 false（调用方 fail-soft 退回选择屏）。
+   *   opts.spot=箱庭内据点（保留位，D2 抵达据点演出实装后接）；opts.arrive=触发抵达演出（保留位）。 */
+  canWarp(locId) {
+    return !!(locId && typeof WORLD !== "undefined" && WORLD.locations && WORLD.locations.some(l => l.id === locId));
+  },
+  gotoLocation(locId, opts) {
+    opts = opts || {};
+    const s = State.data;
+    if (s.combat) return false;
+    const loc = (typeof WORLD !== "undefined" && WORLD.locations) ? WORLD.locations.find(l => l.id === locId) : null;
+    if (!loc) return false;                // 未知目标：fail-soft
+    s.pendingEvent = null;
+    s.location = locId;
+    this.log(`你来到「${loc.name}」。${loc.desc || ""}`, "event");
+    if (typeof this._resolveLeadsAt === "function") this._resolveLeadsAt(locId);
+    this.checkLifespan();
+    this.checkStory();
+    State.save();
+    UI.renderAll();
+    return true;
+  },
+
   // 玩家在剧情选项上做出选择
   chooseStory(stage, choiceIndex) {
     const s = State.data;
