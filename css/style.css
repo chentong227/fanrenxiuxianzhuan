@@ -3614,6 +3614,54 @@ html, body { touch-action: manipulation; }
     linear-gradient(180deg, transparent 55%, rgba(8,16,7,.5) 100%);
   filter: blur(.6px);
 }
+/* 室内/洞府框：药庐·客房——上梁压顶、左右墙体收口、底缘近台暗，暖黑（烛火）；"隔着屋子往里看" */
+.scene-stage[data-fg="interior"] .scene-fg {
+  background:
+    linear-gradient(180deg, rgba(20,12,5,.9) 0%, rgba(22,13,6,.42) 9%, transparent 23%, transparent 70%, rgba(14,8,3,.66) 100%),
+    linear-gradient(90deg, rgba(13,8,3,.84) 0%, rgba(17,10,5,.36) 12%, transparent 27%, transparent 73%, rgba(17,10,5,.36) 88%, rgba(13,8,3,.84) 100%),
+    radial-gradient(122% 82% at 50% 40%, transparent 52%, rgba(8,5,2,.42) 100%);
+  filter: blur(.5px);
+}
+/* 殿堂框：演武厅·大殿——上檐压顶 + 左右石柱（内收两道竖暗带），冷石灰，框出庄重纵深 */
+.scene-stage[data-fg="hall"] .scene-fg {
+  background:
+    linear-gradient(90deg, rgba(11,12,16,.92) 0%, rgba(15,16,21,.6) 5%, transparent 11%, transparent 13%, rgba(22,24,30,.46) 17.5%, transparent 23%, transparent 77%, rgba(22,24,30,.46) 82.5%, transparent 87%, transparent 89%, rgba(15,16,21,.6) 95%, rgba(11,12,16,.92) 100%),
+    linear-gradient(180deg, rgba(12,13,18,.9) 0%, rgba(14,15,20,.44) 13%, transparent 27%, transparent 80%, rgba(10,11,14,.6) 100%);
+  filter: blur(.5px);
+}
+/* 坊市框：集镇·坊市——上沿幌子/檐影 + 两盏暖灯晕，左右轻收，底缘人潮暗；暖红橙、市井活气 */
+.scene-stage[data-fg="market"] .scene-fg {
+  background:
+    radial-gradient(42px 28px at 22% 11%, rgba(255,170,92,.5) 0%, transparent 72%),
+    radial-gradient(46px 30px at 79% 8%, rgba(255,148,70,.45) 0%, transparent 72%),
+    linear-gradient(180deg, rgba(40,18,6,.8) 0%, rgba(46,22,8,.34) 10%, transparent 25%, transparent 72%, rgba(20,10,4,.6) 100%),
+    linear-gradient(90deg, rgba(24,12,5,.72) 0%, transparent 16%, transparent 84%, rgba(24,12,5,.72) 100%);
+  filter: blur(.5px);
+}
+/* 山野框：户外山坡/崖——底两角近岩压上、底缘暗，顶部留白交远景气层渲染空气透视；冷青灰、开阔 */
+.scene-stage[data-fg="mountain"] .scene-fg {
+  background:
+    radial-gradient(72% 54% at -6% 113%, rgba(28,30,36,.92) 0%, rgba(28,30,36,.5) 42%, transparent 70%),
+    radial-gradient(72% 54% at 106% 111%, rgba(24,27,33,.9) 0%, rgba(24,27,33,.48) 42%, transparent 70%),
+    linear-gradient(180deg, transparent 58%, rgba(18,20,26,.5) 100%);
+  filter: blur(.6px);
+}
+/* 水景框：湖/海/星海——底缘水汀近暗 + 两角岸影，叠一抹冷碧水气；近岸实、远水虚 */
+.scene-stage[data-fg="water"] .scene-fg {
+  background:
+    radial-gradient(52% 40% at 11% 116%, rgba(10,28,26,.85) 0%, transparent 64%),
+    radial-gradient(48% 38% at 90% 118%, rgba(8,24,24,.8) 0%, transparent 64%),
+    linear-gradient(180deg, transparent 60%, rgba(8,20,24,.5) 86%, rgba(5,14,18,.78) 100%),
+    linear-gradient(180deg, rgba(40,72,92,.1) 0%, transparent 36%);
+  filter: blur(.6px);
+}
+/* 纯雾框：秘境/深谷——四缘灰白雾气向内合拢、不作硬框，强模糊读作"近处一片朦胧"；空灵 */
+.scene-stage[data-fg="mist"] .scene-fg {
+  background:
+    radial-gradient(120% 100% at 50% 50%, transparent 30%, rgba(150,160,175,.22) 62%, rgba(120,132,150,.5) 100%),
+    linear-gradient(180deg, rgba(150,160,175,.34) 0%, transparent 26%, transparent 70%, rgba(120,130,148,.4) 100%);
+  filter: blur(1px);
+}
 
 /* 粒子近大远小：纵深地点在快漂的前景层叠一层"大而快"的近景粒子（远景仍走 .scene-weather 的小粒子）*/
 .scene-stage[data-depth="on"][data-weather="snow"] .scene-fg::after,

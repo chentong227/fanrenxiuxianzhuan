@@ -119,5 +119,26 @@ console.log("== 7. 2.5D 纵深（前景分层）：depthFor 解析 + apply 写 d
   assert(stage.dataset.depth === "" && stage.dataset.fg === "", "切到未配置地点 → 清空 data-depth/data-fg（单层）");
 }
 
+console.log("== 8. 前景框预设库（FG_PRESETS）：清单完整 + 未知预设回退 ==");
+{
+  Env.clear();
+  const want = ["cave", "interior", "hall", "market", "forest", "mountain", "water", "mist"];
+  assert(want.every(k => Env.FG_PRESETS.includes(k)) && Env.FG_PRESETS.length === want.length,
+    "FG_PRESETS=8 预设齐全（洞/室内/殿堂/坊市/林/山/水/雾）");
+  assert(Env.isFgPreset("hall") === true && Env.isFgPreset("market") === true, "isFgPreset 命中库内预设");
+  assert(Env.isFgPreset("castle") === false && Env.isFgPreset("") === false && Env.isFgPreset(null) === false,
+    "未知/空/非串 → 非预设");
+
+  const stage = { dataset: {}, ownerDocument: { createElement: () => ({ className: "" }) },
+    _c: [{ className: "scene-veil" }],
+    querySelector(sel) { const c = sel.replace(".", ""); return this._c.find(x => x.className === c) || null; },
+    insertBefore(el) { this._c.push(el); }, appendChild(el) { this._c.push(el); } };
+  Env.apply(stage, { id: "wuting", env: { depth: { fg: "hall", far: 0.32 } } }, { month: 4 });
+  assert(stage.dataset.depth === "on" && stage.dataset.fg === "hall", "演武厅 apply → data-depth=on / data-fg=hall");
+  // 配了 depth 但 fg 不在库内：仍开纵深（远景气层），但 data-fg 留空＝不画框（防错配）
+  Env.apply(stage, { id: "weird", env: { depth: { fg: "castle", far: 0.5 } } }, { month: 4 });
+  assert(stage.dataset.depth === "on" && stage.dataset.fg === "", "未知 fg → depth 仍 on、data-fg 清空（不画错框）");
+}
+
 console.log(`\n========== env.js: ${fail === 0 ? "全部通过 ✓" : fail + " 项失败 ✗"}（${pass} 过）==========\n`);
 process.exit(fail === 0 ? 0 : 1);

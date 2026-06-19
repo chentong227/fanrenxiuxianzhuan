@@ -39,7 +39,8 @@ WORLD.locations = [
     travelCost: 1,
     map: { x: 50, y: 58 },
     home: true,   // 洞府/居所：闭关、调息、突破之所
-    env: { phase: "night", amb: "night" },   // 潜修洞府：夜里安静，夜虫领奏（韩立入门那股劲儿，不一直放乐）
+    // 潜修洞府：夜里安静，夜虫领奏（韩立入门那股劲儿，不一直放乐）；2.5D 前景＝室内框（梁柱收口·暖黑），远雾偏淡
+    env: { phase: "night", amb: "night", depth: { fg: "interior", far: 0.3 } },
     actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
     encounters: [],
   },
@@ -68,6 +69,8 @@ WORLD.locations = [
     desc: "门中弟子切磋武艺之处。厉飞雨常在此。可与同门切磋、打探门派内外的风声。",
     travelCost: 2,
     map: { x: 38, y: 40 },
+    // 殿堂切磋：2.5D 前景＝演武厅殿堂框（上檐+左右石柱），远雾偏淡
+    env: { depth: { fg: "hall", far: 0.32 } },
     actions: ["spar"],
     encounters: [
       { id: "spar_lifei", weight: 26, kind: "story_hint" },
@@ -84,6 +87,8 @@ WORLD.locations = [
     desc: "七玄门山下的凡俗集镇。可用纹银采买丹药材料，听市井传闻，会会南来北往的人。",
     travelCost: 3,
     map: { x: 28, y: 78 },
+    // 凡俗集镇：2.5D 前景＝坊市框（幌子檐影+暖灯晕），远雾中等（街市烟火气）
+    env: { depth: { fg: "market", far: 0.4 } },
     actions: ["market"],
     encounters: [
       { id: "merchant", weight: 28, kind: "market" },
@@ -142,6 +147,8 @@ WORLD.locations = [
     desc: "太南山深谷中的修仙者集市。摊位上灵光隐现，往来者皆遮掩行藏——凡人勿近之地，你头一回置身真正的修仙人之间。",
     travelCost: 1,
     map: { x: 50, y: 60 },
+    // 深谷修仙集市：2.5D 前景＝纯雾框（四缘灰白雾气合拢·灵光隐现），远雾极浓
+    env: { depth: { fg: "mist", far: 0.68 } },
     actions: ["fair", "rest", "cultivate"],
     encounters: [],
   },
@@ -166,6 +173,8 @@ WORLD.locations = [
     travelCost: 1,
     map: { x: 64, y: 58 },
     unlock: (s) => s.flags.yaoyuan_started,
+    // 向阳坡灵田：2.5D 前景＝山野框（底两角近岩·开阔），远雾偏浓（山间空气透视）
+    env: { depth: { fg: "mountain", far: 0.5 } },
     actions: ["yaoyuan", "gather", "rest"],
     encounters: [],
   },
@@ -273,6 +282,8 @@ WORLD.locations = [
     name: "外星海猎场",
     desc: "内星海防御大阵失效后，韩立顺势远赴外星海猎妖取丹。这片海域妖兽横行、人迹罕至，却也遍地是财——以霓裳草引妖、放噬金虫群猎杀，六七级妖丹论颗装袋，正是他发家结丹的资粮。",
     travelCost: 3,
+    // 外星海猎场：2.5D 前景＝水景框（底缘水汀+两角岸影·冷碧），远雾偏浓（海天一色）
+    env: { depth: { fg: "water", far: 0.55 } },
     actions: ["rest", "cultivate"],
     map: { x: 81, y: 53 },
     unlock: (s) => !!(s.flags && s.flags.luanxinghai_chaos),
