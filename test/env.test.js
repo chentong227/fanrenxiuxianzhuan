@@ -98,5 +98,26 @@ console.log("== 6. apply 写 data-phase/data-weather + 建两层（假 DOM）=="
   assert(Env.apply(null, {}) === null, "缺 stageEl→null 不抛");
 }
 
+console.log("== 7. 2.5D 纵深（前景分层）：depthFor 解析 + apply 写 data-depth/data-fg ==");
+{
+  Env.clear();
+  assert(Env.depthFor({ id: "plain" }) === null, "未配置 depth → null（单层零回归）");
+  const miju = { id: "miju", env: { phase: "night", weather: "fog", amb: null, depth: { fg: "cave", far: 0.6 } } };
+  const dm = Env.depthFor(miju);
+  assert(dm && dm.fg === "cave" && dm.far === 0.6, "密室 depth={fg:cave,far:.6}");
+  const houshan = { id: "houshan", env: { outdoor: true, depth: { fg: "forest", far: 0.4 } } };
+  assert(Env.depthFor(houshan).fg === "forest", "后山 depth.fg=forest");
+
+  // apply 写 data-depth/data-fg（复用 §6 的假 DOM 形态）
+  const stage = { dataset: {}, ownerDocument: { createElement: () => ({ className: "" }) },
+    _c: [{ className: "scene-veil" }],
+    querySelector(sel) { const c = sel.replace(".", ""); return this._c.find(x => x.className === c) || null; },
+    insertBefore(el) { this._c.push(el); }, appendChild(el) { this._c.push(el); } };
+  Env.apply(stage, miju, { month: 6 });
+  assert(stage.dataset.depth === "on" && stage.dataset.fg === "cave", "密室 apply → data-depth=on / data-fg=cave");
+  Env.apply(stage, { id: "plain" }, { month: 6 });
+  assert(stage.dataset.depth === "" && stage.dataset.fg === "", "切到未配置地点 → 清空 data-depth/data-fg（单层）");
+}
+
 console.log(`\n========== env.js: ${fail === 0 ? "全部通过 ✓" : fail + " 项失败 ✗"}（${pass} 过）==========\n`);
 process.exit(fail === 0 ? 0 : 1);
