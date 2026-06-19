@@ -264,11 +264,12 @@
    * 设计准则（docs/audio-design.md）：极低音量垫底、是"夜色"不是"配乐"；演出/夜景里它领奏、
    * BGM 自动退到极低（duckBgm），出演出即恢复——正是"夜里不一直放音乐"那股安静劲儿。
    * 持续床=loop 噪声 buffer 经滤波（风/火/雨嘶），间歇事件=调度器叠短音（虫鸣/噼啪/水滴）。
-   * 文件优先 assets/audio/amb_<id>.<ext>（genmusic/Lyria 产出），缺失/失败→本引擎兜底。 */
+   * 全程纯噪声/带噪短脉冲，结构上无固定音高串联＝不可能出旋律或节拍，可无限循环、极低动态。
+   * 文件优先 assets/audio/amb_<id>.<ext>（见 AMB_FILES）；无真实录音的 id 直接走本引擎。 */
   const AMB = {
-    id: null, _timer: null, _master: null, _nodes: [],
+    id: null, _timer: null, _master: null, _nodes: [], _dest: null,
     _gain(c) {
-      if (!this._master) { this._master = c.createGain(); this._master.gain.value = 1; this._master.connect(c.destination); }
+      if (!this._master) { this._master = c.createGain(); this._master.gain.value = 1; this._master.connect(this._dest || c.destination); }
       return this._master;
     },
     // 持续噪声床（loop）：经滤波 + 可选缓慢起伏（让风/火"活"起来）
@@ -340,7 +341,10 @@
       if (muted) return;            // 静音时只记 id，解除后 resume
       const c = ac(); if (!c) return;
       // 持续床
-      if (id === "night" || id === "firefly") this._bed(c, { low: 380, gain: 0.011, lfo: 0.06 });
+      if (id === "night" || id === "firefly") {
+        this._bed(c, { low: 380, gain: 0.011, lfo: 0.06 });
+        this._bed(c, { band: 4800, gain: 0.0045, lfo: 0.05 });   // 远处虫鸣垫底（层层叠叠的背景沙沙）
+      }
       else if (id === "wind")   this._bed(c, { low: 620, gain: 0.02, lfo: 0.09 });
       else if (id === "candle") this._bed(c, { low: 900, gain: 0.006 });
       else if (id === "rain")   { this._bed(c, { band: 3800, gain: 0.024 }); this._bed(c, { low: 1100, gain: 0.01, lfo: 0.07 }); }
@@ -349,17 +353,21 @@
       const tick = () => {
         if (muted || this.id !== id) return;
         const cc = ac(); if (!cc) return;
-        if (id === "night")        { if (Math.random() < 0.75) this._cricket(cc, false); if (Math.random() < 0.12) this._frog(cc); }
+        if (id === "night")        { this._cricket(cc, false); if (Math.random() < 0.5) this._cricket(cc, Math.random() < 0.5); if (Math.random() < 0.12) this._frog(cc); }
         else if (id === "firefly") { if (Math.random() < 0.6)  this._cricket(cc, true);  if (Math.random() < 0.4)  this._shimmer(cc); }
-        else if (id === "candle")  { if (Math.random() < 0.5)  this._crackle(cc); }
+        else if (id === "candle")  { if (Math.random() < 0.55) this._crackle(cc); }
         else if (id === "rain")    { if (Math.random() < 0.45) this._drip(cc); }
         else if (id === "market")  { if (Math.random() < 0.22) this._farBell(cc); }
       };
-      tick();
-      this._timer = setInterval(tick, 700);
+      // 自调度 + 去网格抖动：间隔随机 360..880ms，避免固定节奏听感（更像自然此起彼伏）
+      const loop = () => {
+        tick();
+        if (this.id === id && !muted) this._timer = setTimeout(loop, 360 + Math.random() * 520);
+      };
+      loop();
     },
     stop() {
-      if (this._timer) { clearInterval(this._timer); this._timer = null; }
+      if (this._timer) { clearTimeout(this._timer); this._timer = null; }
       this._nodes.forEach(n => { try { if (n.stop) n.stop(); } catch (e) {} try { if (n.disconnect) n.disconnect(); } catch (e) {} });
       this._nodes = [];
       this.id = null;
@@ -375,6 +383,14 @@
   const BGM_FILES = ["daily", "town", "journey", "fair", "combat", "boss", "tense", "sorrow", "triumph"];
   const FALLBACK = { town: "daily", journey: "daily", fair: "daily", boss: "combat", sorrow: "tense", triumph: null };
   let curTrack = null;
+
+  /* ============ 真实环境录音清单（文件优先名单）============
+   * 仅这些 id 走文件 assets/audio/amb_<id>.mp3；其余环境床一律走程序合成（AMB 引擎）。
+   * 现况为空：google/lyria-3-clip 本质是生乐模型，即便提示"无旋律/无节拍/field-recording"
+   * 仍混入旋律线与节拍（实测见 docs/audio-design.md §七），不是"景"是"曲"——故环境床全部
+   * 走合成兜底（纯噪声床+短噪事件，无旋律无节拍、可无限循环）。后续若接入真实 field-recording
+   * 资源，把对应 id 加进来即恢复"文件优先"。 */
+  const AMB_FILES = [];
 
   /* ============ 环境床状态 + BGM 让位（duck）============
    * 环境床领奏时把当前 BGM（文件轨 + 合成轨）压到极低，出演出/收床即恢复。 */
@@ -455,16 +471,20 @@
       curAmb = id;
       this._ambStopFile();
       try { AMB.stop(); } catch (e) {}
-      try {
-        const url = `assets/audio/amb_${id}.mp3`;
-        const el = new window.Audio(url);
-        el._src = url; el.loop = true; el.volume = opts.vol != null ? opts.vol : 0.4;
-        el.onerror = () => {   // 文件缺失/失败：回退程序合成兜底（不静默）
-          if (ambEl === el) { ambEl = null; if (curAmb === id) { try { AMB.start(id); } catch (e) {} } }
-        };
-        ambEl = el;
-        if (!muted) el.play().catch(() => {});
-      } catch (e) { try { AMB.start(id); } catch (e2) {} }
+      if (AMB_FILES.includes(id)) {   // 有真实录音→文件优先，缺失/失败回退合成
+        try {
+          const url = `assets/audio/amb_${id}.mp3`;
+          const el = new window.Audio(url);
+          el._src = url; el.loop = true; el.volume = opts.vol != null ? opts.vol : 0.4;
+          el.onerror = () => {
+            if (ambEl === el) { ambEl = null; if (curAmb === id) { try { AMB.start(id); } catch (e) {} } }
+          };
+          ambEl = el;
+          if (!muted) el.play().catch(() => {});
+        } catch (e) { try { AMB.start(id); } catch (e2) {} }
+      } else {                        // 无真实录音→直接程序合成（默认全部，无旋律无节拍）
+        try { AMB.start(id); } catch (e) {}
+      }
       // 环境床领奏：压低 BGM（演出/夜景"不一直放音乐"）
       if (opts.duck !== false) duckBgm(); else unduckBgm();
     },
@@ -501,5 +521,8 @@
   }
 
   root.Sfx = Sfx;
+  // 调试/离线试听钩子：仅当显式置 root.__FRXXZ_AUDIO_DEBUG__ 时暴露内部引擎（生产默认不挂，无副作用）。
+  // 配合 AMB._dest 可把环境床改接 MediaStreamDestination 录样，做"无旋律"质量核验。
+  try { if (root.__FRXXZ_AUDIO_DEBUG__) { Sfx._amb = AMB; Sfx._bgm = BGM; } } catch (e) {}
   if (typeof module !== "undefined" && module.exports) module.exports = Sfx;
 })(typeof window !== "undefined" ? window : globalThis);

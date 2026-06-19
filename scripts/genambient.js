@@ -7,6 +7,12 @@
  * 环境床 = "景"不是"曲"：夜虫/萤火/烛火/夜风/檐雨/市集远喧，
  * 无明显旋律无节拍、极简留白、垫底环境声，演出/夜景里它领奏、BGM 自动退位。
  * 与 genmusic.js 同构（同模型/同 SSE 解析/同代理约定）。
+ *
+ * ⚠ 实测结论（R2，2026-06）：google/lyria-3-clip 本质是生乐模型，即便下方提示词写满
+ *   no melody/no beat/field-recording 的硬否定，产出仍残留低频旋律线 + 规律节拍（频谱图
+ *   见 docs/audio-design.md §七）。因此引擎当前不采用本脚本产物——audio.js 的 AMB_FILES
+ *   置空、环境床全部走程序合成（纯噪声床+短噪事件，结构上无旋律无节拍）。
+ *   本脚本保留备用：若日后接入真正的环境音/SFX 模型，改 MODEL 重生即可恢复"文件优先"。
  * ============================================================ */
 const fs = require("fs");
 const path = require("path");
@@ -30,7 +36,12 @@ const SUFFIX = process.env.CAND_SUFFIX || "";
 const OUTDIR = OUT_SUBDIR ? path.join(OUT, OUT_SUBDIR) : OUT;
 if (!fs.existsSync(OUTDIR)) fs.mkdirSync(OUTDIR, { recursive: true });
 
-const COMMON = "环境氛围声景（field-recording 风格的 ambience），无明显旋律、无节拍、无鼓点、无乐器演奏，极简留白只作场景底噪，30秒无缝循环（首尾衔接平滑、无渐入渐出突变），音量克制内敛，48kHz高品质";
+// 硬否定（英文更易被模型当约束吃进去）：禁一切音乐性要素，只要纯自然环境声。
+const COMMON = "Pure environmental SOUND EFFECT / field recording, absolutely NOT music. "
+  + "No melody, no musical notes, no pitched tones, no bassline, no chords, no harmony, "
+  + "no rhythm, no beat, no percussion, no drums, no instruments, no synth pads, no drone. "
+  + "Just raw natural ambience. Seamless 30-second loop, very quiet, minimal low dynamics, 48kHz. "
+  + "环境氛围声景：无旋律、无节拍、无乐器，极简留白只作场景底噪。内容：";
 
 const TRACKS = {
   // 夜虫（夜晚感主床）：韩立入门/深夜剧情
@@ -53,7 +64,7 @@ function genOne(id, prompt) {
     model: MODEL,
     stream: true,
     modalities: ["audio", "text"],
-    messages: [{ role: "user", content: `${COMMON}。内容：${prompt}。` }],
+    messages: [{ role: "user", content: `${COMMON}${prompt}` }],
   });
   const bodyFile = path.join(TMP, "_genamb.body.json");
   const respFile = path.join(TMP, "_genamb.sse.txt");
