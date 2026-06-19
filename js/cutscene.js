@@ -63,7 +63,7 @@
     hasStaging(stage) {
       const t = (stage && stage.text) || [];
       return t.some(s => s && typeof s === "object" &&
-        (PLAY_OPS.some(k => has(s, k)) || (s.beat && typeof s.beat === "object")));
+        (PLAY_OPS.some(k => has(s, k)) || has(s, "fight") || has(s, "warp") || (s.beat && typeof s.beat === "object")));
     },
 
     /* §9-6 名场面回廊：把一段"含演出"的剧情节点登记进可重温列表（纯函数，可无头测试）。
@@ -122,6 +122,10 @@
 
         // —— 交互 beat（对象形式；阻塞，等玩家操作）——
         if (seg.beat && typeof seg.beat === "object") { beats.push({ kind: "beat", beat: seg.beat }); continue; }
+        // —— D1-a 终止拍·直接坠入：{fight:id}/{warp:locId} 让演出落幕直挂战斗/箱庭，跳过「临战准备」选择屏 ——
+        //    编译为 kind:"drop"（终止拍）；ui 落幕调度时直接坠入，未知目标 → fail-soft 退回选择屏（零回归）。
+        if (has(seg, "fight")) { beats.push({ kind: "drop", drop: "fight", fight: seg.fight, prep: !!seg.prep, guard: seg.guard || null }); continue; }
+        if (has(seg, "warp"))  { beats.push({ kind: "drop", drop: "warp", warp: seg.warp, spot: seg.spot, arrive: !!seg.arrive, guard: seg.guard || null }); continue; }
 
         // —— 旧剧情卡（向后兼容，逐字打字台词层）——
         if (seg.scene) { beats.push({ kind: "scene", text: seg.scene }); continue; }
@@ -138,6 +142,7 @@
     isBlocking(beat) {
       if (!beat) return true;
       if (beat.kind === "op") return beat.op === "wait" && beat.wait === "click";
+      if (beat.kind === "drop") return false;   // 终止拍：由 ui 直接调度坠入，非等玩家轻触
       return true;   // narr/say/aside/scene/beat 都等玩家
     },
 
