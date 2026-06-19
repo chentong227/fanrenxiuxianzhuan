@@ -404,6 +404,7 @@
   const DUCK_K = 0.16;        // 环境床/演出领奏时 BGM 让位系数（约 −16dB）
   const SFX_DUCK_K = 0.5;     // 关键 SFX（古钟/天雷）瞬时让路：−6dB
   const DUCK_SFX = { bell: 1, thunder: 1 };   // 触发瞬时 ducking 的关键音效
+  const HAPTIC_SFX = { bell: "bell", thunder: "heavy" };   // §9-3：关键音效同步手机轻震（古钟=两记/天雷=重震）
 
   // 文件轨音量缓变（Audio 元素无 GainNode，用定时器 tween volume）；同元素重入自动接管旧 tween。
   // 用于：换轨交叉淡化、duck/unduck 平滑、关键 SFX 瞬时让路。
@@ -476,6 +477,7 @@
       lastPlay[name] = now;
       try { const c = ac(); if (c) RECIPES[name](c); } catch (e) {}
       if (DUCK_SFX[name]) keySfxDuck();   // C2：古钟/天雷等关键 SFX 触发→音乐瞬时让路
+      if (HAPTIC_SFX[name] && root.Fx && root.Fx.haptic) root.Fx.haptic(HAPTIC_SFX[name]);   // §9-3：关键 SFX 同步手机轻震
     },
     // 当前轨名（null=未起乐）；切轨校验/调试用
     curBgm() { return curTrack; },

@@ -82,6 +82,9 @@
     // —— B3 hit-stop 顿帧（§B3）——
     _frozenUntil: 0,        // <now 之前都按 dt=0 渲染（画面凝住）；玩家决定性一击专用
     _hsTimer: 0,            // 解冻定时器（撤 .fx-hitstop class）
+    // —— §9-3 手机触觉反馈（navigator.vibrate）——
+    _haptics: null,         // null=未读；true/false=开关（localStorage 持久，体验设置可翻）
+    _HAPTIC: { tap: 10, hit: 16, heavy: [18, 28, 40], breakthrough: [24, 40, 24, 40, 60], bell: [12, 70, 12] },
 
 
     /* ---------- 装配 ---------- */
@@ -219,7 +222,32 @@
         clearTimeout(this._hsTimer);
         this._hsTimer = setTimeout(() => h.classList.remove("fx-hitstop"), ms);
       }
+      this.haptic("heavy");   // §9-3：决定性一击同步一记重震＝顿帧 + 物理反馈
       this._run();   // 维持 RAF：哪怕只有立绘在动，也要把这几帧"冻"住
+    },
+
+    /* §9-3 手机触觉反馈：突破/暴击/重击/古钟 轻震（零资源、移动端代入感；配合 hit-stop=真物理打击感）。
+       能力缺失（桌面/不支持 vibrate）/ 关闭 / reduced-motion → 静默跳过。
+       pattern：预设名（tap/hit/heavy/breakthrough/bell）或自定义 ms / [ms,…]。 */
+    hapticsOn() {
+      if (this._haptics === null) {
+        this._haptics = true;
+        try { if (typeof window !== "undefined" && window.localStorage && window.localStorage.getItem("fx_haptics") === "off") this._haptics = false; } catch (e) {}
+      }
+      return this._haptics;
+    },
+    setHaptics(on) {
+      this._haptics = !!on;
+      try { if (typeof window !== "undefined" && window.localStorage) window.localStorage.setItem("fx_haptics", on ? "on" : "off"); } catch (e) {}
+    },
+    haptic(pattern = "hit") {
+      if (!this.hapticsOn()) return;
+      if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+      if (typeof window !== "undefined" && window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const p = (typeof pattern === "string") ? this._HAPTIC[pattern] : pattern;
+      if (p == null) return;
+      try { navigator.vibrate(p); } catch (e) {}
     },
 
     /* ---------- B2 常驻/idle 氛围粒子（叠在静图上，复用粒子池 + _budget/_degraded） ----------

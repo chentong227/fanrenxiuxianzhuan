@@ -195,6 +195,8 @@
       if (kind === "ambient") { if (FX.ambient) FX.ambient(spec.preset || "dust", spec); return; }
       // B3 hit-stop 顿帧：{fx:"hitStop", ms:80}（决定性一击专用；常配合先一记 {fx:"shake"}）
       if (kind === "hitStop" || kind === "hitstop") { if (FX.hitStop) FX.hitStop(spec.ms || 80); return; }
+      // §9-3 手机触觉反馈：{fx:"haptic", pattern:"bell|heavy|breakthrough|hit|tap"}（名场面/古钟点用）
+      if (kind === "haptic") { if (FX.haptic) FX.haptic(spec.pattern || "hit"); return; }
       const p = A(spec.at || "center");
       if (kind === "burst")     { if (p) FX.burst(p.x, p.y, elem, spec.n || 16, spec); return; }
       if (kind === "lightning") { if (p) FX.lightning(p.x, p.y, spec); return; }

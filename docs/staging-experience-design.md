@@ -24,7 +24,7 @@
 |--------|--------------------|------------------|
 | **演出推进器** `js/cutscene.js` | 原语 `cam/actor/fx/sfx/bgm/wait/beat/guide`；`compile()` 纯函数（可无头测）；`run/runBeat/runGuide`；`_cam` 对 `#story-bg` 施 `translate+scale`；`beat:{kind:"window\|choice"}`（伺机出手/抉择）**已落地** | 分层视差、环境声触发、hit-stop、视频 |
 | **演出舞台 DOM**（`ui.js _storyCtx`） | `bg=#story-bg`、左右立绘位、`fxHost=#story-overlay`、`beatHost=#story-choices`、`anchor()` | `#story-bg` 仍是**单层**背景 → 视差要拆层 |
-| **特效引擎** `js/fx.js` | `flash/shake/burst/lightning/material/swordRing/ribbon/trail` + `ensure(host)`；`_budget`/`_degraded` 性能护栏；**常驻氛围粒 `ambient(ash/dust/spirit/beam)`（P1·B2）+ `hitStop(ms)` 顿帧（P1·B3）已落地** | — |
+| **特效引擎** `js/fx.js` | `flash/shake/burst/lightning/material/swordRing/ribbon/trail` + `ensure(host)`；`_budget`/`_degraded` 性能护栏；**常驻氛围粒 `ambient(ash/dust/spirit/beam)`（P1·B2）+ `hitStop(ms)` 顿帧（P1·B3）+ `haptic(pattern)` 手机触觉反馈（P1·§9-3）已落地** | — |
 | **音频** `js/audio.js` | 合成 SFX 全套 + 合成 BGM(`daily/combat/tense`) + 9 条文件轨；**古钟 `bell` 已有**；**六环境床文件优先（P0·C1）+ 换轨 600ms 交叉淡化 + ducking（P1·C2）已落地** | — |
 | **设计档** | cutscene/audio/fx/art 四份已成体系 | 本稿做"升级增补"，不另立门户 |
 
@@ -142,6 +142,7 @@
 1. **昼夜 · 天气系统**（和"地点级环境声"天生一对）：地点带 `时辰`（晨/昼/暮/夜）+ `天气`（晴/雨/雪/雾），一次投入驱动三件事——①场景染色 tint（墨黑烛金内的冷暖偏移）②环境床切换（昼:鸟鸣市声 / 夜:虫鸣萤火 / 雨:檐滴）③可选氛围粒子（雨丝/落叶/飞雪）。**让整张地图"活"，不止演出。**
 2. **动态立绘微动**（idle 呼吸/眨眼/发丝衣袂）：纯 CSS、≤400ms 循环微幅，让立绘"活着"；配合视差，名场面质感拉满。**守 IP 红线：不碰大幅人物动作。**
 3. **手机触觉反馈** `navigator.vibrate`：突破/暴击/重击/古钟 轻震，零资源、手机代入感暴涨；配合 hit-stop = 真物理打击感。
+   - **实现 ✅（P1·§9-3）**：`Fx.haptic(pattern)`——预设 `tap/hit/heavy/breakthrough/bell`（或自定义 `ms`/`[ms,…]`）。三道守卫：能力缺失（桌面/不支持 `vibrate`）、`Fx.setHaptics(false)` 关闭（`localStorage:fx_haptics` 持久，留给 §9-9 体验设置翻）、`prefers-reduced-motion`（兼无障碍）——任一命中即静默跳过。接线：`Fx.hitStop()` 决定性一击同步一记 `heavy`（顿帧＋物理反馈合拍）；`Sfx.play()` 关键音效 `bell` 古钟→`bell` 震、`thunder` 天雷→`heavy` 震（`HAPTIC_SFX` 表）；演出原语 `{fx:"haptic", pattern}` 供名场面点触。头测 `test/haptic.test.js` 覆盖预设/守卫/开关持久化/hit-stop 与古钟接线。
 
 ### 第二梯队（深化战斗与情感）
 4. **敌人意图预告（telegraph）+ 伺机出手**：回合制战棋深度——预告敌人下一手（蓄力/破绽），玩家"看破→屏息→反制"。把 `beat:{window}` 从演出延伸进战斗核心。
