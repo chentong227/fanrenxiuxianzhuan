@@ -147,6 +147,7 @@
 ### 第二梯队（深化战斗与情感）
 4. **敌人意图预告（telegraph）+ 伺机出手**：回合制战棋深度——预告敌人下一手（蓄力/破绽），玩家"看破→屏息→反制"。把 `beat:{window}` 从演出延伸进战斗核心。
 5. **危局氛围（低血/濒死）**：屏幕边缘暗红脉动 + 心跳低鼓 + 音乐 duck，绝境感。
+   - **实现 ✅（P1.5·§9-5）**：`renderCombat` 按玩家气血分档——≤28% 危局(`.peril`)、≤12% 濒死(`.brink`)，战毕/转危为安即收（`closeCombat` 也强制清）。**视觉**：`#combat-overlay.peril::after` 纯屏幕边框血晕（inset box-shadow 集中四缘 + 极淡 radial 收口、`pointer-events:none` 不挡操作），`@keyframes peril-pulse` 呼吸脉动（濒死 0.85s 更急更浓）；`prefers-reduced-motion` 去脉动留静态血框。**音**：`Sfx.peril(level)` 心跳低鼓——极低频双跳(lub-dub) `tone(60→36Hz)+`(50→32Hz)`，危局 ~1s/濒死 ~0.64s 一记；**刻意不动全局 duck**（那是环境床/演出领奏的 `bgmDucked`，复用会互踩），心跳作加法层叠在 BGM 之上＝"音是气口不是轰炸"；同档幂等、静音空转不发声。头测 `test/audio.test.js §7` 覆盖起/收/幂等/分档/静音空转。
 6. **名场面回廊（演出回放）**：叙事日志里可重温关键演出（已有 `_archiveStory` 底子），情感回报 + QoL。
 
 ### 第三梯队（锦上添花）

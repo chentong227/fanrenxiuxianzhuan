@@ -535,6 +535,25 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
     radial-gradient(ellipse at 50% 36%, transparent 46%, rgba(8,6,4,.5) 100%),
     linear-gradient(180deg, rgba(8,6,4,.58) 0%, rgba(8,6,4,.14) 20%, rgba(8,6,4,.1) 48%, rgba(8,6,4,.84) 84%);
 }
+/* ===== §9-5 危局氛围：血线告危时屏幕"边缘暗红脉动"=====
+ * 玩家气血 ≤28%(.peril) 起、≤12%(.brink) 更急更浓。纯屏幕边框血晕(inset box-shadow 集中在四缘
+ * + 极淡 radial 收口)，中央战场与操作台留白不糊——pointer-events:none 不挡任何点击。
+ * 配合 audio.js Sfx.peril() 的心跳低鼓＝绝境感。尊重 reduced-motion：去脉动、留静态血框。 */
+.combat-overlay.peril::after {
+  content: ""; position: absolute; inset: 0; z-index: 8; pointer-events: none;
+  box-shadow: inset 0 0 88px 16px rgba(122,8,8,.42), inset 0 0 220px 56px rgba(78,0,0,.26);
+  background: radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(86,0,0,.22) 100%);
+  animation: peril-pulse 1.5s ease-in-out infinite;
+}
+.combat-overlay.brink::after {
+  box-shadow: inset 0 0 108px 24px rgba(152,6,6,.56), inset 0 0 248px 78px rgba(96,0,0,.36);
+  background: radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(112,0,0,.32) 100%);
+  animation-duration: .85s;
+}
+@keyframes peril-pulse { 0%,100% { opacity: .42; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .combat-overlay.peril::after, .combat-overlay.brink::after { animation: none; opacity: .82; }
+}
 /* ===== 升空天幕（v110「真有飞在天上的感觉」核心）=====
  * 用户痛点：升空时画面只是人物略微抬起，文案说"天地倏然开阔"，画面却几乎没开阔——远景底图
  * 超采样(farScale 1.10+)只下沉 ~1%，顶部根本没让出"天"。这里补上那片缺席的天：一张只盖场景区

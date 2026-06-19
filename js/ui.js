@@ -3064,6 +3064,10 @@ const UI = {
   },
   closeCombat() {
     this.el("combat-overlay").hidden = true;
+    // §9-5 危局氛围收束：撤边缘脉动 + 停心跳低鼓（战斗一关即清，绝不漏到地图）
+    const ov = this.el("combat-overlay"); if (ov) ov.classList.remove("peril", "brink");
+    this._perilLevel = 0;
+    if (typeof Sfx !== "undefined" && Sfx.peril) Sfx.peril(0);
     this._armed = null;
     if (typeof Fx !== "undefined") Fx.clear();
     // 战罢归于地点轨（在哪打完，回哪的声音）
@@ -3929,6 +3933,16 @@ const UI = {
     const adv = target >= 0 ? c.senseVs(c.enemies[target]) : { seeIntent: false };
     const isBT = meta.type === 'breakthrough';
     const p = c.player;
+
+    // —— §9-5 危局氛围：玩家血线告危→屏幕边缘暗红脉动（濒死更急更浓）+ 心跳低鼓 ——
+    //    ≤28% 危局、≤12% 濒死；战毕/转危为安即收。视觉脉动尊重 reduced-motion（CSS 内静态化）。
+    {
+      const ov = this.el("combat-overlay");
+      const frac = (p && p.hpMax) ? p.hp / p.hpMax : 1;
+      const lvl = c.status === "ongoing" ? (frac <= 0.12 ? 2 : frac <= 0.28 ? 1 : 0) : 0;
+      if (ov) { ov.classList.toggle("peril", lvl >= 1); ov.classList.toggle("brink", lvl >= 2); }
+      if (lvl !== this._perilLevel) { this._perilLevel = lvl; if (typeof Sfx !== "undefined" && Sfx.peril) Sfx.peril(lvl); }
+    }
 
     // —— 回合数 ——
     const rd = this.el("combat-round");

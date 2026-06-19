@@ -131,5 +131,41 @@ console.log("== 6. C3 切轨校验：未知轨名一律拒绝、不扰动当前�
   assert(warns.filter(w => /未知 BGM 轨/.test(w)).length === 2, "typo/空串各告警一次，漏传(null/undefined)静默");
 }
 
-console.log(`\n========== 音频 C2/C3：${fail === 0 ? "全通 ✓" : fail + " 项败 ✗"}（${pass} 项）==========`);
+console.log("== 7. §9-5 危局氛围：心跳低鼓控制器（起/收/幂等/分档/静音空转）==");
+{
+  // 计数振荡器创建：一记心跳=2 个 tone（lub-dub）
+  let oscN = 0;
+  const origOsc = FakeCtx.prototype.createOscillator;
+  FakeCtx.prototype.createOscillator = function () { oscN++; return origOsc.call(this); };
+
+  assert(typeof Sfx.peril === "function" && Sfx.perilState() === 0, "初始 perilState=0、peril 可调用");
+
+  oscN = 0;
+  Sfx.peril(1);
+  assert(Sfx.perilState() === 1, "peril(1)→危局档");
+  assert(oscN === 2, `进入即刻一记心跳（2 振荡器，实际 ${oscN}）`);
+  oscN = 0; tick(1);
+  assert(oscN === 2, `循环到点再跳一记（实际 ${oscN}）`);
+
+  oscN = 0; Sfx.peril(1);
+  assert(Sfx.perilState() === 1 && oscN === 0, "同档幂等：不重起、不补跳");
+
+  oscN = 0; Sfx.peril(2);
+  assert(Sfx.perilState() === 2 && oscN === 2, "升档濒死：切档并即刻一记");
+
+  oscN = 0; Sfx.peril(0);
+  assert(Sfx.perilState() === 0, "peril(0)→收");
+  tick(1);
+  assert(oscN === 0, "收档后循环不再发声");
+
+  // 静音空转：mute 下进入危局，循环仍在但不出声
+  Sfx.toggle();                 // → muted
+  oscN = 0; Sfx.peril(2); tick(1);
+  assert(Sfx.perilState() === 2 && oscN === 0, "静音时心跳空转（perilState 仍记档、零振荡器）");
+  Sfx.toggle();                 // 还原
+  Sfx.peril(0);
+  FakeCtx.prototype.createOscillator = origOsc;
+}
+
+console.log(`\n========== 音频 C2/C3 + §9-5：${fail === 0 ? "全通 ✓" : fail + " 项败 ✗"}（${pass} 项）==========`);
 process.exit(fail ? 1 : 0);

@@ -400,6 +400,7 @@
   let ambEl = null;
   let curAmb = null;
   let bgmDucked = false;
+  let perilLevel = 0, perilTimer = 0;   // §9-5 危局氛围：心跳低鼓档位(0 收 /1 危局 /2 濒死)与其循环计时器
   const XFADE_MS = 600;       // 换轨交叉淡化时长（audio-design §2.4：硬切→600ms 软接）
   const DUCK_K = 0.16;        // 环境床/演出领奏时 BGM 让位系数（约 −16dB）
   const SFX_DUCK_K = 0.5;     // 关键 SFX（古钟/天雷）瞬时让路：−6dB
@@ -450,6 +451,15 @@
         m.gain.setTargetAtTime(1, c.currentTime + 0.12, Math.max(0.05, ms / 3000));
       }
     } catch (e) {}
+  }
+
+  // §9-5 危局氛围（音）：极低频双跳心鼓(lub-dub)，叠在 BGM 之上的加法层——
+  // 刻意不动全局 duck（那是环境床/演出领奏的状态），免与之打架；静音时空转不发声。
+  function heartbeat(strong) {
+    const c = ac(); if (!c) return;
+    const g = strong ? 0.10 : 0.07;
+    tone(c, { freq: 60, slideTo: 36, type: "sine", dur: 0.16, gain: g });
+    tone(c, { freq: 50, slideTo: 32, type: "sine", dur: 0.20, gain: g * 0.62, delay: 0.16 });
   }
 
   const Sfx = {
@@ -522,6 +532,21 @@
       try { BGM.start(track); } catch (e) {}
     },
     bgmStop() { this.stopBgm(); try { BGM.stop(); } catch (e) {} curTrack = null; },
+    /* §9-5 危局氛围：玩家血线告危→起心跳低鼓，离开/战毕即收。
+     * level：0 收 / 1 危局(~1s 一跳) / 2 濒死(~0.64s 更急更重)。同档幂等（不重起循环），
+     * 静音时仍空转但不出声；不触全局 duck（加法层，避免与环境床让位状态互踩）。 */
+    peril(level) {
+      level = level | 0;
+      if (level === perilLevel) return;
+      perilLevel = level;
+      try { if (perilTimer) clearInterval(perilTimer); } catch (e) {}
+      perilTimer = 0;
+      if (level <= 0) return;
+      const beat = () => { if (!muted) try { heartbeat(perilLevel >= 2); } catch (e) {} };
+      beat();
+      try { if (typeof setInterval === "function") perilTimer = setInterval(beat, level >= 2 ? 640 : 1000); } catch (e) {}
+    },
+    perilState() { return perilLevel; },
     /* 环境床：地点/演出环境声（与 BGM 独立并存；文件优先 + 程序合成兜底）。
      * id: "night"|"firefly"|"candle"|"wind"|"rain"|"market"；传 null/false=收床。
      * opts: {vol, duck:false 关 BGM 让位, force 强制重起}。同 id 幂等。*/
