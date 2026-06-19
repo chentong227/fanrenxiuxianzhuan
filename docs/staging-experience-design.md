@@ -24,7 +24,7 @@
 |--------|--------------------|------------------|
 | **演出推进器** `js/cutscene.js` | 原语 `cam/actor/fx/sfx/bgm/wait/beat/guide`；`compile()` 纯函数（可无头测）；`run/runBeat/runGuide`；`_cam` 对 `#story-bg` 施 `translate+scale`；`beat:{kind:"window\|choice"}`（伺机出手/抉择）**已落地** | 分层视差、环境声触发、hit-stop、视频 |
 | **演出舞台 DOM**（`ui.js _storyCtx`） | `bg=#story-bg`、左右立绘位、`fxHost=#story-overlay`、`beatHost=#story-choices`、`anchor()` | `#story-bg` 仍是**单层**背景 → 视差要拆层 |
-| **特效引擎** `js/fx.js` | `flash/shake/burst/lightning/material/swordRing/ribbon/trail` + `ensure(host)`；`_budget`/`_degraded` 性能护栏；**常驻氛围粒 `ambient(ash/dust/spirit/beam)` 已落地（P1·B2）** | 无 `hitStop` |
+| **特效引擎** `js/fx.js` | `flash/shake/burst/lightning/material/swordRing/ribbon/trail` + `ensure(host)`；`_budget`/`_degraded` 性能护栏；**常驻氛围粒 `ambient(ash/dust/spirit/beam)`（P1·B2）+ `hitStop(ms)` 顿帧（P1·B3）已落地** | — |
 | **音频** `js/audio.js` | 合成 SFX 全套 + 合成 BGM(`daily/combat/tense`) + 9 条文件轨；**古钟 `bell` 已有** | **无环境床**、无换轨 crossfade、无 ducking |
 | **设计档** | cutscene/audio/fx/art 四份已成体系 | 本稿做"升级增补"，不另立门户 |
 
@@ -60,6 +60,7 @@
 ### B3 · hit-stop + 顿帧 —— P1
 - **做法**：`Fx.hitStop(ms)` 全帧冻结 **60–90ms**，绑在**玩家决定性一击**（`beat:window` 的 `onHit` / 突破最后一下 / 破空金雷）。冻结 + 微震 = 打击感翻倍。
 - **红线**：只在"玩家亲手那一下"，不滥用；总时长压在 ≤90ms。
+- **实现 ✅（P1）**：`Fx.hitStop(ms=80)`——粒子主循环该窗口内强制 `dt=0`（粒子不推进/不老化＝定格），同时给 fx 宿主打 `.fx-hitstop`：宿主＋全部子层（背景/远景/立绘呼吸/震屏）`animation-play-state:paused`，整幕"咔"地凝住；过渡(transition)不动，避免在途镜头被强行收尾跳变。硬封顶 120ms、`prefers-reduced-motion` 直接跳过、`Fx.clear()` 兜底解冻。接法：演出原语 `{fx:"hitStop", ms}`，或 `beat.onHit:{hitStop:true|ms}` 便捷位（**常先 `{fx:"shake"}` 再 hitStop**＝抖到一半被冻）。
 
 ### B4 · 图生视频 `{video}`（只点 3–5 王炸）—— P2，视情况
 - **节点**：升仙大会现身 / 万小山之死 / 破空金雷 / 突破金光 + 你心里第 5 个。

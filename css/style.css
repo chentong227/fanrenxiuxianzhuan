@@ -4089,6 +4089,13 @@ html, body { touch-action: manipulation; }
   78% { translate: calc(var(--fx-shake, 8px) * .3) -1px; }
 }
 .fx-shaking { animation: fxShake .4s ease-out; }
+/* hit-stop 顿帧（B3）：决定性一击的 60–90ms"全帧冻结"。
+ * 宿主自身＋所有子层（背景/远景/立绘呼吸/震屏）的 CSS 动画一并暂停＝画面凝住；
+ * 配合 fx.js 把粒子 dt 置 0，整幕"咔"地定格。常先一记 shake 再 hitStop——抖到一半被冻＝打击感翻倍。
+ * 只暂停 animation（不动 transition），避免在途镜头过渡被强行收尾而跳变。 */
+.fx-hitstop, .fx-hitstop *, .fx-hitstop *::before, .fx-hitstop *::after {
+  animation-play-state: paused !important;
+}
 /* 镜头轨道（战斗宽轴通用）——v90 镜头是"追"不是"绑"：
  * 人物 left 过渡 .42s（人先动），镜头 1.15s 长尾缓动慢半拍跟上——
  * "韩立在画面里走、镜头随后缓缓追"，而不是"世界跟着脚底滑"（用户实锤的体感翻转）。

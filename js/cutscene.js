@@ -193,6 +193,8 @@
       if (kind === "shake") { FX.shake(spec.px || 8); return; }
       // B2 常驻氛围粒：{fx:"ambient", preset:"ash|dust|spirit|beam", ...} / preset:"off" 收
       if (kind === "ambient") { if (FX.ambient) FX.ambient(spec.preset || "dust", spec); return; }
+      // B3 hit-stop 顿帧：{fx:"hitStop", ms:80}（决定性一击专用；常配合先一记 {fx:"shake"}）
+      if (kind === "hitStop" || kind === "hitstop") { if (FX.hitStop) FX.hitStop(spec.ms || 80); return; }
       const p = A(spec.at || "center");
       if (kind === "burst")     { if (p) FX.burst(p.x, p.y, elem, spec.n || 16, spec); return; }
       if (kind === "lightning") { if (p) FX.lightning(p.x, p.y, spec); return; }
@@ -269,6 +271,8 @@
       if (!c) return;
       try {
         if (c.fx && root.Fx) this._fx(typeof c.fx === "string" ? { fx: c.fx, at: "left" } : c.fx, ctx);
+        // B3：决定性一击的顿帧——onHit:{hitStop:true|ms}（配合 fx/shake，画面"咔"地定住一瞬）
+        if (c.hitStop && root.Fx && root.Fx.hitStop) root.Fx.hitStop(c.hitStop === true ? 80 : c.hitStop);
         if (c.sfx && root.Sfx && root.Sfx.play) root.Sfx.play(c.sfx);
         if (c.cam) this._cam({ cam: c.cam, px: c.px, at: c.at, ms: c.ms, to: c.to, scale: c.scale }, ctx);
       } catch (e) {}

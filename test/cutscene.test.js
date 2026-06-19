@@ -192,5 +192,24 @@ console.log("== 6b. B2 氛围粒：{fx:'ambient'} 路由到 Fx.ambient(preset, s
   }
 }
 
+console.log("== 6c. B3 顿帧：{fx:'hitStop'} 路由到 Fx.hitStop(ms)，默认 80、大小写不敏感 ==");
+{
+  const calls = [];
+  const root = (typeof window !== "undefined") ? window : globalThis;
+  const had = Object.prototype.hasOwnProperty.call(root, "Fx");
+  const prev = root.Fx;
+  root.Fx = { ensure() {}, hitStop(ms) { calls.push(ms); } };
+  try {
+    CS.run({ kind: "op", op: "fx", spec: { fx: "hitStop", ms: 70 } }, {});
+    assert(calls.length === 1 && calls[0] === 70, "hitStop：ms 透传 Fx.hitStop");
+    CS.run({ kind: "op", op: "fx", spec: { fx: "hitStop" } }, {});
+    assert(calls[1] === 80, "hitStop 缺 ms→默认 80");
+    CS.run({ kind: "op", op: "fx", spec: { fx: "hitstop", ms: 60 } }, {});
+    assert(calls[2] === 60, "hitStop：小写 'hitstop' 同样路由");
+  } finally {
+    if (had) root.Fx = prev; else delete root.Fx;
+  }
+}
+
 console.log(`\n========== 演出推进器：${fail === 0 ? "全通 ✓" : fail + " 项败 ✗"}（${pass} 项）==========`);
 process.exit(fail ? 1 : 0);

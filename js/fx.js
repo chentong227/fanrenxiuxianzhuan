@@ -79,6 +79,9 @@
     _bloomCap: (typeof window !== "undefined" && window.matchMedia &&
       window.matchMedia("(hover: none), (pointer: coarse)").matches) ? 0 : 1,
     _bxa: null, _bxb: null, // v112 离屏降采样缓冲（1/4、1/8 尺寸）——双线性放大近似高斯
+    // —— B3 hit-stop 顿帧（§B3）——
+    _frozenUntil: 0,        // <now 之前都按 dt=0 渲染（画面凝住）；玩家决定性一击专用
+    _hsTimer: 0,            // 解冻定时器（撤 .fx-hitstop class）
 
 
     /* ---------- 装配 ---------- */
@@ -199,6 +202,24 @@
       this._host.classList.remove("fx-shaking"); void this._host.offsetWidth;
       this._host.classList.add("fx-shaking");
       setTimeout(() => this._host.classList.remove("fx-shaking"), 420);
+    },
+    /* hit-stop 顿帧（B3）：全帧冻结 ms（粒子 dt=0 凝住 + 宿主子层 CSS 动画暂停），
+       只给"玩家决定性一击"用——配合先一记 shake，画面会在抖到一半时被定住＝打击感翻倍。
+       红线：默认 80ms，硬封顶 120（设计 ≤90，留点冗余）；reduced-motion 直接跳过。 */
+    hitStop(ms = 80) {
+      ms = Math.max(0, Math.min(120, ms | 0));
+      if (!ms) return;
+      if (typeof window !== "undefined" && window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const now = (typeof performance !== "undefined") ? performance.now() : Date.now();
+      this._frozenUntil = Math.max(this._frozenUntil, now + ms);
+      const h = this._host;
+      if (h && h.classList) {
+        h.classList.add("fx-hitstop");
+        clearTimeout(this._hsTimer);
+        this._hsTimer = setTimeout(() => h.classList.remove("fx-hitstop"), ms);
+      }
+      this._run();   // 维持 RAF：哪怕只有立绘在动，也要把这几帧"冻"住
     },
 
     /* ---------- B2 常驻/idle 氛围粒子（叠在静图上，复用粒子池 + _budget/_degraded） ----------
@@ -910,7 +931,9 @@
       if (this._raf) return;
       let last = performance.now();
       const step = (now) => {
-        const dt = Math.min(40, now - last); last = now;
+        let dt = Math.min(40, now - last); last = now;
+        // B3 hit-stop：冻结窗口内强制 dt=0（粒子不推进、不老化＝画面凝住）；last 照常走，解冻即顺滑续帧
+        if (this._frozenUntil && now < this._frozenUntil) dt = 0;
         // 性能降档：连续两帧超 34ms → 出粒减半（手机兜底）；回稳则恢复
         // 降档顺序（手机预算）：v112 持续卡顿（连两帧>34ms）先撤泛光（最便宜的纯观感层）并同步减
         // 粒子（v111 填充率第一笔省）→ 仍持续卡顿才把 DPR 降到 1.75（避免特效层比人物"糊一层"）；
@@ -936,7 +959,7 @@
         return false;
       }
       this._fit();
-      if (this._amb) this._ambientTick(dt);   // B2：续发常驻氛围粒（在 _fit 后，本帧即绘）
+      if (this._amb && dt > 0) this._ambientTick(dt);   // B2：续发常驻氛围粒（在 _fit 后，本帧即绘）；hit-stop 冻结帧(dt=0)不出粒
       const dpr = this._dpr, glow = this._glow;
       // v111：两层各自重置坐标系并清屏（lighter 混合）；按实体 _layer 路由到身后/身前
       for (const c of [ctxB, ctxF]) {
@@ -1163,6 +1186,8 @@
 
     clear() {
       this._amb = null; this._ambAcc = 0; this._ambFlag = false;   // B2：收氛围发射器
+      this._frozenUntil = 0; clearTimeout(this._hsTimer);          // B3：解冻 hit-stop
+      if (this._host && this._host.classList) this._host.classList.remove("fx-hitstop");
       this._parts.length = 0; this._bolts.length = 0; this._strokes.length = 0;
       this._swords.length = 0; this._arcs.length = 0;
       if (this._ctx && this._cv) this._ctx.clearRect(0, 0, this._cv.width, this._cv.height);
