@@ -436,6 +436,8 @@
           };
           if (track === "triumph") el.onended = () => { if (bgmEl === el) { bgmEl = null; curTrack = null; } };
           bgmEl = el;
+          // 床领奏时换轨：新轨续压，免得地点级环境床下 BGM 又被顶到原音量
+          if (bgmDucked) { bgmBaseVol = el.volume; try { el.volume = Math.max(0, el.volume * 0.16); } catch (e) {} }
           if (!muted) el.play().catch(() => {});
           return;
         } catch (e) {}

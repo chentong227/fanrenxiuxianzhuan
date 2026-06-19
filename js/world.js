@@ -39,6 +39,7 @@ WORLD.locations = [
     travelCost: 1,
     map: { x: 50, y: 58 },
     home: true,   // 洞府/居所：闭关、调息、突破之所
+    env: { phase: "night", amb: "night" },   // 潜修洞府：夜里安静，夜虫领奏（韩立入门那股劲儿，不一直放乐）
     actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
     encounters: [],
   },
@@ -49,6 +50,7 @@ WORLD.locations = [
     desc: "门派后山，灵草丛生，亦有野兽与低阶修士出没。深入其间，自有采药、机缘与凶险。",
     travelCost: 2,
     map: { x: 72, y: 28 },
+    env: { outdoor: true },   // 山野户外：随季——冬雪/夏雨/余晴（落粒子+染色，让地图活）
     actions: ["explore"],
     encounters: [
       { id: "herb", weight: 38, kind: "gather" },
@@ -97,6 +99,7 @@ WORLD.locations = [
     desc: "墨大夫秘不示人的密室。阴气森森，似藏着不可告人的秘密。",
     travelCost: 2,
     map: { x: 58, y: 48 },
+    env: { phase: "night", weather: "fog", amb: null },   // 阴气森森：夜雾冷色诡谧，amb:null 静默不放床（留 tense BGM）
     actions: ["investigate"],
     unlock: (s) => s.flags.qi_layer_4,   // 修到练气四层、起疑后才会去探
     encounters: [],
