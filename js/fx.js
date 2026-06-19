@@ -34,6 +34,13 @@
   const col = e => ELEM_COLOR[e] || ELEM_COLOR.none;
   const TAU = Math.PI * 2;
   const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = arr => arr[(Math.random() * arr.length) | 0];
+  const hexRgb = (h) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(h || "");
+    if (!m) return [244, 227, 176];
+    const n = parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
 
   /* 辉光精灵图：白色软光斑，按色叠染（globalCompositeOperation lighter 下直接乘色） */
   function makeGlowSprite() {
@@ -58,6 +65,12 @@
     _degraded: 1,           // 降档系数：帧难看时减半出粒
     _dprCap: 2,             // 画布分辨率上限：帧难看时降到 1.75（v111 收窄降幅，回稳复原 2）
     _slowFrames: 0,
+    // —— B2 常驻/idle 氛围粒子（§B2）——
+    _amb: null,             // 当前氛围配置 {preset, interval, cap, color, alpha, speed} | null=停
+    _ambAcc: 0,             // 出粒节拍累加器（按 interval 节流）
+    _ambFlag: false,        // _push 期间置位：把该粒子标记为氛围粒（_amb）以便单独计数/收束
+    _ambCap: (typeof window !== "undefined" && window.matchMedia &&
+      window.matchMedia("(hover: none), (pointer: coarse)").matches) ? 30 : 80,  // 常驻粒上限：手机≤30 / 桌面≤80
     _emitLayer: "front",    // 当前发射层：front=身前(命中/弹道/天雷)，back=身后(光环/护体/地纹)
     _bloom: 1,              // v112 柔光泛光总开关；持续卡顿(连两帧>34ms)置 0，回稳复原
     // v114 设备能力上限：触摸/手机端默认关泛光。实测每帧降采样(_bloomPass 满屏 4 次 drawImage/层×2 层)
@@ -66,6 +79,12 @@
     _bloomCap: (typeof window !== "undefined" && window.matchMedia &&
       window.matchMedia("(hover: none), (pointer: coarse)").matches) ? 0 : 1,
     _bxa: null, _bxb: null, // v112 离屏降采样缓冲（1/4、1/8 尺寸）——双线性放大近似高斯
+    // —— B3 hit-stop 顿帧（§B3）——
+    _frozenUntil: 0,        // <now 之前都按 dt=0 渲染（画面凝住）；玩家决定性一击专用
+    _hsTimer: 0,            // 解冻定时器（撤 .fx-hitstop class）
+    // —— §9-3 手机触觉反馈（navigator.vibrate）——
+    _haptics: null,         // null=未读；true/false=开关（localStorage 持久，体验设置可翻）
+    _HAPTIC: { tap: 10, hit: 16, heavy: [18, 28, 40], breakthrough: [24, 40, 24, 40, 60], bell: [12, 70, 12] },
 
 
     /* ---------- 装配 ---------- */
@@ -134,6 +153,7 @@
     _push(p) {
       if (this._parts.length >= this._budget) return;
       p._layer = this._emitLayer;   // v111：粒子继承当前发射层（身后/身前）
+      if (this._ambFlag) p._amb = true;   // B2：氛围粒标记（独立计数/收束）
       this._parts.push(p);
     },
     /* 发射层切换（v111 身后/身前双层）：在回调内发射的实体打 layer 标记——
@@ -185,6 +205,121 @@
       this._host.classList.remove("fx-shaking"); void this._host.offsetWidth;
       this._host.classList.add("fx-shaking");
       setTimeout(() => this._host.classList.remove("fx-shaking"), 420);
+    },
+    /* hit-stop 顿帧（B3）：全帧冻结 ms（粒子 dt=0 凝住 + 宿主子层 CSS 动画暂停），
+       只给"玩家决定性一击"用——配合先一记 shake，画面会在抖到一半时被定住＝打击感翻倍。
+       红线：默认 80ms，硬封顶 120（设计 ≤90，留点冗余）；reduced-motion 直接跳过。 */
+    hitStop(ms = 80) {
+      ms = Math.max(0, Math.min(120, ms | 0));
+      if (!ms) return;
+      if (typeof window !== "undefined" && window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const now = (typeof performance !== "undefined") ? performance.now() : Date.now();
+      this._frozenUntil = Math.max(this._frozenUntil, now + ms);
+      const h = this._host;
+      if (h && h.classList) {
+        h.classList.add("fx-hitstop");
+        clearTimeout(this._hsTimer);
+        this._hsTimer = setTimeout(() => h.classList.remove("fx-hitstop"), ms);
+      }
+      this.haptic("heavy");   // §9-3：决定性一击同步一记重震＝顿帧 + 物理反馈
+      this._run();   // 维持 RAF：哪怕只有立绘在动，也要把这几帧"冻"住
+    },
+
+    /* §9-3 手机触觉反馈：突破/暴击/重击/古钟 轻震（零资源、移动端代入感；配合 hit-stop=真物理打击感）。
+       能力缺失（桌面/不支持 vibrate）/ 关闭 / reduced-motion → 静默跳过。
+       pattern：预设名（tap/hit/heavy/breakthrough/bell）或自定义 ms / [ms,…]。 */
+    hapticsOn() {
+      if (this._haptics === null) {
+        this._haptics = true;
+        try { if (typeof window !== "undefined" && window.localStorage && window.localStorage.getItem("fx_haptics") === "off") this._haptics = false; } catch (e) {}
+      }
+      return this._haptics;
+    },
+    setHaptics(on) {
+      this._haptics = !!on;
+      try { if (typeof window !== "undefined" && window.localStorage) window.localStorage.setItem("fx_haptics", on ? "on" : "off"); } catch (e) {}
+    },
+    haptic(pattern = "hit") {
+      if (!this.hapticsOn()) return;
+      if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+      if (typeof window !== "undefined" && window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const p = (typeof pattern === "string") ? this._HAPTIC[pattern] : pattern;
+      if (p == null) return;
+      try { navigator.vibrate(p); } catch (e) {}
+    },
+
+    /* ---------- B2 常驻/idle 氛围粒子（叠在静图上，复用粒子池 + _budget/_degraded） ----------
+     * 预设：ash(灰烬·暖)/dust(微尘·中性)/spirit(灵气微光·青)/beam(光束缓扫暗场)。
+     * 全部走"身后层"(z:1，在人物之后)，极淡、慢、微幅——氛围而非视觉中心。
+     * Fx.ambient(preset[,opts]) 起；Fx.ambient(null|"off") 收（beam 立撤、motes 自然淡出）。
+     * 守红线：常驻粒桌面≤80/手机≤30（_ambCap），帧难看时随 _degraded 自动减半。 */
+    ambient(preset, o = {}) {
+      if (!preset || preset === "off" || preset === "none") {
+        this._amb = null;
+        for (const p of this._parts) {
+          if (!p._amb) continue;
+          if (p.beam) p.life = -1;                                  // 下帧过滤掉
+          else if (p.life - p.t > 700) p.life = p.t + rnd(300, 700); // 缩余命，自然散
+        }
+        return;
+      }
+      this._amb = Object.assign({ preset }, o);
+      this._ambAcc = 0;
+      this._run();
+    },
+    _ambEmit(fn) { this._ambFlag = true; this._emit("back", fn); this._ambFlag = false; },
+    _ambSpawn(preset, W, H) {
+      if (preset === "ash") {
+        this.mote(rnd(0, W), rnd(-0.05 * H, H * 0.55), {
+          vx: rnd(-0.06, 0.06), vy: rnd(0.05, 0.16), wob: rnd(6, 12),
+          size: rnd(1.5, 2.6), c: pick(["#d8a566", "#caa46a", "#e0b070"]), life: rnd(4200, 7200),
+        });
+      } else if (preset === "spirit") {
+        this.mote(rnd(0, W), rnd(H * 0.45, H), {
+          vx: rnd(-0.05, 0.05), vy: rnd(-0.32, -0.12), wob: rnd(8, 14),
+          size: rnd(1.8, 3.0), c: pick(["#7fe5d2", "#bff3e8", "#9af0e0"]), life: rnd(3600, 6200),
+        });
+      } else { // dust（默认）
+        this.mote(rnd(0, W), rnd(0, H), {
+          vx: rnd(-0.09, 0.09), vy: rnd(-0.03, 0.02), wob: rnd(5, 9),
+          size: rnd(1.1, 2.0), c: pick(["#c4ccd6", "#b7bfc9", "#d3d8df"]), life: rnd(5000, 8200),
+        });
+      }
+    },
+    _ambientTick(dt) {
+      const A = this._amb; if (!A) return;
+      const W = this._w, H = this._h; if (!W || !H) return;
+      if (A.preset === "beam") {
+        let beam = null;
+        for (const p of this._parts) if (p._amb && p.beam) { beam = p; break; }
+        if (!beam) {
+          this._ambEmit(() => this._push({
+            beam: true, x: -0.2 * W, bw: Math.max(48, W * 0.11),
+            rgb: hexRgb(A.color || "#f4e3b0"), baseA: (A.alpha != null ? A.alpha : 0.10),
+            t: 0, life: 1e12,
+          }));
+          for (const p of this._parts) if (p._amb && p.beam) { beam = p; break; }
+        }
+        if (beam) {
+          beam.bw = Math.max(48, W * 0.11);
+          beam.x += (A.speed || (W / 13000)) * dt;                  // 全宽约 13s 扫一遍
+          if (beam.x > W + beam.bw) beam.x = -beam.bw;
+        }
+        return;
+      }
+      const cap = Math.max(4, Math.round((A.cap || this._ambCap) * this._degraded));
+      let n = 0; for (const p of this._parts) if (p._amb) n++;
+      const interval = A.interval || 240;
+      this._ambAcc += dt;
+      let guard = 0;
+      while (n < cap && this._ambAcc >= interval && guard++ < 8) {
+        this._ambAcc -= interval;
+        this._ambEmit(() => this._ambSpawn(A.preset, W, H));
+        n++;
+      }
+      if (this._ambAcc > interval * 4) this._ambAcc = interval;     // 切后台久了别一次性爆发
     },
 
     /* ---------- 高阶效果（配方的积木） ---------- */
@@ -824,7 +959,9 @@
       if (this._raf) return;
       let last = performance.now();
       const step = (now) => {
-        const dt = Math.min(40, now - last); last = now;
+        let dt = Math.min(40, now - last); last = now;
+        // B3 hit-stop：冻结窗口内强制 dt=0（粒子不推进、不老化＝画面凝住）；last 照常走，解冻即顺滑续帧
+        if (this._frozenUntil && now < this._frozenUntil) dt = 0;
         // 性能降档：连续两帧超 34ms → 出粒减半（手机兜底）；回稳则恢复
         // 降档顺序（手机预算）：v112 持续卡顿（连两帧>34ms）先撤泛光（最便宜的纯观感层）并同步减
         // 粒子（v111 填充率第一笔省）→ 仍持续卡顿才把 DPR 降到 1.75（避免特效层比人物"糊一层"）；
@@ -843,12 +980,14 @@
     },
     _frame(dt) {
       const ctxF = this._ctx, ctxB = this._ctxBack;
-      if (!ctxF || (!this._parts.length && !this._bolts.length && !this._strokes.length && !this._swords.length && !this._arcs.length)) {
+      // 无任何实体且未开氛围发射器 → 收循环（开了 _amb 则保活并续粒）
+      if (!ctxF || (!this._amb && !this._parts.length && !this._bolts.length && !this._strokes.length && !this._swords.length && !this._arcs.length)) {
         if (ctxF && this._cv) ctxF.clearRect(0, 0, this._cv.width, this._cv.height);
         if (ctxB && this._cvBack) ctxB.clearRect(0, 0, this._cvBack.width, this._cvBack.height);
         return false;
       }
       this._fit();
+      if (this._amb && dt > 0) this._ambientTick(dt);   // B2：续发常驻氛围粒（在 _fit 后，本帧即绘）；hit-stop 冻结帧(dt=0)不出粒
       const dpr = this._dpr, glow = this._glow;
       // v111：两层各自重置坐标系并清屏（lighter 混合）；按实体 _layer 路由到身后/身前
       for (const c of [ctxB, ctxF]) {
@@ -954,6 +1093,22 @@
       for (const p of this._parts) {
         const ctx = pick(p);
         if (p.t < 0) continue;
+        if (p.beam) {
+          // B2 光束：软竖向渐变带缓扫，屏缘淡入淡出（lighter 加亮＝暗场里的一束光）
+          const bx = p.x, bw = p.bw, W2 = this._w, H2 = this._h;
+          const ef = Math.max(0, Math.min(1, Math.min((bx + bw) / (bw * 2), (W2 - bx + bw) / (bw * 2))));
+          const a = p.baseA * ef;
+          if (a > 0.004) {
+            const [r, g0, b0] = p.rgb;
+            const grd = ctx.createLinearGradient(bx - bw, 0, bx + bw, 0);
+            grd.addColorStop(0, `rgba(${r},${g0},${b0},0)`);
+            grd.addColorStop(0.5, `rgba(${r},${g0},${b0},${a.toFixed(3)})`);
+            grd.addColorStop(1, `rgba(${r},${g0},${b0},0)`);
+            ctx.globalAlpha = 1; ctx.fillStyle = grd;
+            ctx.fillRect(bx - bw, 0, bw * 2, H2);
+          }
+          continue;
+        }
         const k = 1 - p.t / p.life;
         if (p.rect) {
           // 全屏调色闪光：始终走身前层（盖全画面，不能只染背景）
@@ -1058,6 +1213,9 @@
     },
 
     clear() {
+      this._amb = null; this._ambAcc = 0; this._ambFlag = false;   // B2：收氛围发射器
+      this._frozenUntil = 0; clearTimeout(this._hsTimer);          // B3：解冻 hit-stop
+      if (this._host && this._host.classList) this._host.classList.remove("fx-hitstop");
       this._parts.length = 0; this._bolts.length = 0; this._strokes.length = 0;
       this._swords.length = 0; this._arcs.length = 0;
       if (this._ctx && this._cv) this._ctx.clearRect(0, 0, this._cv.width, this._cv.height);

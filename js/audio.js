@@ -382,31 +382,84 @@
    * 文件缺失/加载失败 → 回退合成轨（FALLBACK 映射）。 */
   const BGM_FILES = ["daily", "town", "journey", "fair", "combat", "boss", "tense", "sorrow", "triumph"];
   const FALLBACK = { town: "daily", journey: "daily", fair: "daily", boss: "combat", sorrow: "tense", triumph: null };
+  const KNOWN_TRACKS = BGM_FILES;   // C3 切轨校验：合法轨名白名单（九轨即全部；daily/combat/tense 另带合成兜底）
   let curTrack = null;
 
-  /* ============ 真实环境录音清单（文件优先名单）============
-   * 仅这些 id 走文件 assets/audio/amb_<id>.mp3；其余环境床一律走程序合成（AMB 引擎）。
-   * 现况为空：google/lyria-3-clip 本质是生乐模型，即便提示"无旋律/无节拍/field-recording"
-   * 仍混入旋律线与节拍（实测见 docs/audio-design.md §七），不是"景"是"曲"——故环境床全部
-   * 走合成兜底（纯噪声床+短噪事件，无旋律无节拍、可无限循环）。后续若接入真实 field-recording
-   * 资源，把对应 id 加进来即恢复"文件优先"。 */
-  const AMB_FILES = [];
+  /* ============ 环境床文件清单（文件优先名单）============
+   * 这些 id 走文件 assets/audio/amb_<id>.mp3；不在名单的 id 一律走程序合成（AMB 引擎）。
+   * 六床统一基调：以"舒缓暖音垫"为底（夜床定下的安静基调）+ 各自极淡的场景细节——
+   *   night 远处稀虫/夜风、firefly 微光+稀虫、candle 暖底+极淡不刺耳火光、wind 低缓夜风、
+   *   rain 檐雨嘶+稀落檐滴、market 远处人语+稀疏远钟。细节层为纯噪声/带噪短事件（随机间隔、
+   *   无固定音高串联），结构上不可能出旋律或节拍（覆盖设计稿 §10 R2 的"纯音效"定位）。
+   * 任一文件缺失/加载失败时，回退本引擎对应 id 的程序合成（不静默）。 */
+  const AMB_FILES = ["night", "firefly", "candle", "wind", "rain", "market"];
 
-  /* ============ 环境床状态 + BGM 让位（duck）============
-   * 环境床领奏时把当前 BGM（文件轨 + 合成轨）压到极低，出演出/收床即恢复。 */
+  /* ============ 环境床状态 + BGM 让位（duck）+ 换轨交叉淡化（C2）============
+   * 环境床/演出领奏时把当前 BGM（文件轨 + 合成轨）压到极低；换轨 600ms 交叉淡化（不再硬切）；
+   * 关键 SFX（古钟/天雷）触发时音乐瞬时 −6dB 让路。出演出/收床即恢复。 */
   let ambEl = null;
   let curAmb = null;
-  let bgmDucked = false, bgmBaseVol = null;
+  let bgmDucked = false;
+  let perilLevel = 0, perilTimer = 0;   // §9-5 危局氛围：心跳低鼓档位(0 收 /1 危局 /2 濒死)与其循环计时器
+  const XFADE_MS = 600;       // 换轨交叉淡化时长（audio-design §2.4：硬切→600ms 软接）
+  const DUCK_K = 0.16;        // 环境床/演出领奏时 BGM 让位系数（约 −16dB）
+  const SFX_DUCK_K = 0.5;     // 关键 SFX（古钟/天雷）瞬时让路：−6dB
+  const DUCK_SFX = { bell: 1, thunder: 1 };   // 触发瞬时 ducking 的关键音效
+  const HAPTIC_SFX = { bell: "bell", thunder: "heavy" };   // §9-3：关键音效同步手机轻震（古钟=两记/天雷=重震）
+
+  // 文件轨音量缓变（Audio 元素无 GainNode，用定时器 tween volume）；同元素重入自动接管旧 tween。
+  // 用于：换轨交叉淡化、duck/unduck 平滑、关键 SFX 瞬时让路。
+  function fadeVol(el, to, ms, done) {
+    if (!el) { if (done) done(); return; }
+    try { clearInterval(el._fade); } catch (e) {}
+    to = Math.max(0, Math.min(1, to));
+    const from = (typeof el.volume === "number") ? el.volume : to;
+    const dur = Math.max(1, ms | 0);
+    const clock = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const t0 = clock();
+    el._fade = setInterval(() => {
+      const k = Math.min(1, (clock() - t0) / dur);
+      try { el.volume = from + (to - from) * k; } catch (e) {}
+      if (k >= 1) { try { clearInterval(el._fade); } catch (e) {} el._fade = 0; if (done) done(); }
+    }, 40);
+  }
+
   function duckBgm() {
     if (bgmDucked) return; bgmDucked = true;
-    if (bgmEl) { bgmBaseVol = bgmEl.volume; try { bgmEl.volume = Math.max(0, bgmEl.volume * 0.16); } catch (e) {} }
-    try { if (BGM._master) BGM._master.gain.setTargetAtTime(0.16, ac().currentTime, 0.4); } catch (e) {}
+    if (bgmEl) { const base = (bgmEl._vol != null ? bgmEl._vol : bgmEl.volume); fadeVol(bgmEl, base * DUCK_K, 240); }
+    try { if (BGM._master) BGM._master.gain.setTargetAtTime(DUCK_K, ac().currentTime, 0.4); } catch (e) {}
   }
   function unduckBgm() {
     if (!bgmDucked) return; bgmDucked = false;
-    if (bgmEl && bgmBaseVol != null) { try { bgmEl.volume = bgmBaseVol; } catch (e) {} }
-    bgmBaseVol = null;
+    if (bgmEl) { const base = (bgmEl._vol != null ? bgmEl._vol : bgmEl.volume); fadeVol(bgmEl, base, 320); }
     try { if (BGM._master) BGM._master.gain.setTargetAtTime(1, ac().currentTime, 0.4); } catch (e) {}
+  }
+
+  // 关键 SFX 让路（C2 ducking）：古钟/天雷触发时音乐瞬时 −6dB（~80ms 落、~ms 缓回），听感更清。
+  // 已被环境床压低(bgmDucked)时不再叠（音乐本就很轻），避免越压越低/抖动。
+  function keySfxDuck(ms = 520) {
+    if (muted || bgmDucked) return;
+    if (bgmEl) {
+      const base = (bgmEl._vol != null ? bgmEl._vol : bgmEl.volume);
+      fadeVol(bgmEl, base * SFX_DUCK_K, 80, () => fadeVol(bgmEl, base, ms));
+    }
+    try {
+      const c = ac(), m = BGM._master;
+      if (c && m) {
+        m.gain.cancelScheduledValues(c.currentTime);
+        m.gain.setTargetAtTime(SFX_DUCK_K, c.currentTime, 0.025);
+        m.gain.setTargetAtTime(1, c.currentTime + 0.12, Math.max(0.05, ms / 3000));
+      }
+    } catch (e) {}
+  }
+
+  // §9-5 危局氛围（音）：极低频双跳心鼓(lub-dub)，叠在 BGM 之上的加法层——
+  // 刻意不动全局 duck（那是环境床/演出领奏的状态），免与之打架；静音时空转不发声。
+  function heartbeat(strong) {
+    const c = ac(); if (!c) return;
+    const g = strong ? 0.10 : 0.07;
+    tone(c, { freq: 60, slideTo: 36, type: "sine", dur: 0.16, gain: g });
+    tone(c, { freq: 50, slideTo: 32, type: "sine", dur: 0.20, gain: g * 0.62, delay: 0.16 });
   }
 
   const Sfx = {
@@ -433,18 +486,32 @@
       if (lastPlay[name] && now - lastPlay[name] < 70) return;   // 同音去抖
       lastPlay[name] = now;
       try { const c = ac(); if (c) RECIPES[name](c); } catch (e) {}
+      if (DUCK_SFX[name]) keySfxDuck();   // C2：古钟/天雷等关键 SFX 触发→音乐瞬时让路
+      if (HAPTIC_SFX[name] && root.Fx && root.Fx.haptic) root.Fx.haptic(HAPTIC_SFX[name]);   // §9-3：关键 SFX 同步手机轻震
     },
+    // 当前轨名（null=未起乐）；切轨校验/调试用
+    curBgm() { return curTrack; },
+    // 合法轨名白名单（副本，外部勿改）；切轨点可据此校验
+    tracks() { return KNOWN_TRACKS.slice(); },
+    isTrack(name) { return KNOWN_TRACKS.includes(name); },
     // 主入口：换 BGM 轨（文件优先，合成兜底；同轨幂等）
     bgm(track, opts = {}) {
+      // C3 切轨校验：未知轨名一律拒绝并告警，不扰动当前播放（防 typo 把正在放的乐切没了）
+      if (!KNOWN_TRACKS.includes(track)) {
+        if (track != null && typeof console !== "undefined" && console.warn) console.warn("[audio] 未知 BGM 轨：" + track + "（已忽略）");
+        return;
+      }
       if (curTrack === track && !opts.force) return;
       curTrack = track;
       if (BGM_FILES.includes(track)) {
         const url = `assets/audio/bgm_${track}.mp3`;
         try {
-          this.stopBgm();
           BGM.stop();   // 合成轨让位
+          const old = bgmEl;                                   // 旧文件轨：交叉淡出后收掉（不再硬切）
           const el = new window.Audio(url);
-          el._src = url; el.loop = track !== "triumph"; el.volume = opts.vol != null ? opts.vol : 0.3;
+          const baseVol = opts.vol != null ? opts.vol : 0.3;
+          el._src = url; el._vol = baseVol; el.loop = track !== "triumph";
+          el.volume = 0;                                       // 从静音淡入
           el.onerror = () => {   // 文件缺失：回退合成
             if (bgmEl === el) bgmEl = null;
             const fb = FALLBACK[track] !== undefined ? FALLBACK[track] : track;
@@ -452,9 +519,12 @@
           };
           if (track === "triumph") el.onended = () => { if (bgmEl === el) { bgmEl = null; curTrack = null; } };
           bgmEl = el;
-          // 床领奏时换轨：新轨续压，免得地点级环境床下 BGM 又被顶到原音量
-          if (bgmDucked) { bgmBaseVol = el.volume; try { el.volume = Math.max(0, el.volume * 0.16); } catch (e) {} }
           if (!muted) el.play().catch(() => {});
+          // C2 交叉淡化：旧轨 600ms 淡出收掉，新轨同时从 0 升到目标；床领奏(bgmDucked)时新轨续压
+          const fade = opts.fade != null ? opts.fade : XFADE_MS;
+          const target = bgmDucked ? baseVol * DUCK_K : baseVol;
+          if (old && old !== el) fadeVol(old, 0, fade, () => { try { old.pause(); } catch (e) {} });
+          fadeVol(el, target, fade);
           return;
         } catch (e) {}
       }
@@ -462,6 +532,21 @@
       try { BGM.start(track); } catch (e) {}
     },
     bgmStop() { this.stopBgm(); try { BGM.stop(); } catch (e) {} curTrack = null; },
+    /* §9-5 危局氛围：玩家血线告危→起心跳低鼓，离开/战毕即收。
+     * level：0 收 / 1 危局(~1s 一跳) / 2 濒死(~0.64s 更急更重)。同档幂等（不重起循环），
+     * 静音时仍空转但不出声；不触全局 duck（加法层，避免与环境床让位状态互踩）。 */
+    peril(level) {
+      level = level | 0;
+      if (level === perilLevel) return;
+      perilLevel = level;
+      try { if (perilTimer) clearInterval(perilTimer); } catch (e) {}
+      perilTimer = 0;
+      if (level <= 0) return;
+      const beat = () => { if (!muted) try { heartbeat(perilLevel >= 2); } catch (e) {} };
+      beat();
+      try { if (typeof setInterval === "function") perilTimer = setInterval(beat, level >= 2 ? 640 : 1000); } catch (e) {}
+    },
+    perilState() { return perilLevel; },
     /* 环境床：地点/演出环境声（与 BGM 独立并存；文件优先 + 程序合成兜底）。
      * id: "night"|"firefly"|"candle"|"wind"|"rain"|"market"；传 null/false=收床。
      * opts: {vol, duck:false 关 BGM 让位, force 强制重起}。同 id 幂等。*/

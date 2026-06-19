@@ -65,6 +65,7 @@ const State = {
       },
 
       log: [],                // 叙事记录（仅保留最近若干条）
+      scenes: [],             // §9-6 名场面回廊：已演完的"含演出"剧情节点 [{ id, title, t, cg }]，可在风云录重温
       worldNews: [],          // 风云录（世间修士命途事件）
       npcFates: [],           // NPC 命途模拟状态
       relations: {},          // 与各 NPC 的关系值（好感/仇怨）

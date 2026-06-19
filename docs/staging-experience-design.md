@@ -24,8 +24,8 @@
 |--------|--------------------|------------------|
 | **演出推进器** `js/cutscene.js` | 原语 `cam/actor/fx/sfx/bgm/wait/beat/guide`；`compile()` 纯函数（可无头测）；`run/runBeat/runGuide`；`_cam` 对 `#story-bg` 施 `translate+scale`；`beat:{kind:"window\|choice"}`（伺机出手/抉择）**已落地** | 分层视差、环境声触发、hit-stop、视频 |
 | **演出舞台 DOM**（`ui.js _storyCtx`） | `bg=#story-bg`、左右立绘位、`fxHost=#story-overlay`、`beatHost=#story-choices`、`anchor()` | `#story-bg` 仍是**单层**背景 → 视差要拆层 |
-| **特效引擎** `js/fx.js` | `flash/shake/burst/lightning/material/swordRing/ribbon/trail` + `ensure(host)`；`_budget`/`_degraded` 性能护栏 | 无"常驻氛围粒子"预设；无 `hitStop` |
-| **音频** `js/audio.js` | 合成 SFX 全套 + 合成 BGM(`daily/combat/tense`) + 9 条文件轨；**古钟 `bell` 已有** | **无环境床**、无换轨 crossfade、无 ducking |
+| **特效引擎** `js/fx.js` | `flash/shake/burst/lightning/material/swordRing/ribbon/trail` + `ensure(host)`；`_budget`/`_degraded` 性能护栏；**常驻氛围粒 `ambient(ash/dust/spirit/beam)`（P1·B2）+ `hitStop(ms)` 顿帧（P1·B3）+ `haptic(pattern)` 手机触觉反馈（P1·§9-3）已落地** | — |
+| **音频** `js/audio.js` | 合成 SFX 全套 + 合成 BGM(`daily/combat/tense`) + 9 条文件轨；**古钟 `bell` 已有**；**六环境床文件优先（P0·C1）+ 换轨 600ms 交叉淡化 + ducking（P1·C2）已落地** | — |
 | **设计档** | cutscene/audio/fx/art 四份已成体系 | 本稿做"升级增补"，不另立门户 |
 
 ---
@@ -55,10 +55,12 @@
 - **做法**：`fx.js` 增"常驻/idle 氛围"发射器（灰烬/尘/灵气微光飘动、光束缓扫暗场），**复用现有粒子池 + `_budget`/`_degraded`**。
 - **接口（拟）**：复用现有 `fx` 原语：`{fx:"ambient", preset:"ash|dust|spirit|beam", ...}`（**不新开原语**）。
 - **预算**：常驻粒子桌面 ≤80 / 手机 ≤30，帧难看时 `_degraded` 自动减半。
+- **实现 ✅（P1）**：`Fx.ambient(preset[,opts])` 起、`Fx.ambient(null|"off")` 收（beam 立撤、motes 缩余命自然散）；走身后层(z:1，在人物之后)，全部极淡慢飘。预算闸 `_ambCap`（手机 30/桌面 80）× `_degraded` 节流，按 `interval` 出粒（beam 单实体缓扫、屏缘淡入淡出）。原语 `{fx:"ambient", preset, interval?, cap?, color?, alpha?, speed?}` 已接 `cutscene._fx`；演出落幕（`UI.storyChoose`）即 `Fx.ambient(null)` 收束、`Fx.clear()` 兜底。
 
 ### B3 · hit-stop + 顿帧 —— P1
 - **做法**：`Fx.hitStop(ms)` 全帧冻结 **60–90ms**，绑在**玩家决定性一击**（`beat:window` 的 `onHit` / 突破最后一下 / 破空金雷）。冻结 + 微震 = 打击感翻倍。
 - **红线**：只在"玩家亲手那一下"，不滥用；总时长压在 ≤90ms。
+- **实现 ✅（P1）**：`Fx.hitStop(ms=80)`——粒子主循环该窗口内强制 `dt=0`（粒子不推进/不老化＝定格），同时给 fx 宿主打 `.fx-hitstop`：宿主＋全部子层（背景/远景/立绘呼吸/震屏）`animation-play-state:paused`，整幕"咔"地凝住；过渡(transition)不动，避免在途镜头被强行收尾跳变。硬封顶 120ms、`prefers-reduced-motion` 直接跳过、`Fx.clear()` 兜底解冻。接法：演出原语 `{fx:"hitStop", ms}`，或 `beat.onHit:{hitStop:true|ms}` 便捷位（**常先 `{fx:"shake"}` 再 hitStop**＝抖到一半被冻）。
 
 ### B4 · 图生视频 `{video}`（只点 3–5 王炸）—— P2，视情况
 - **节点**：升仙大会现身 / 万小山之死 / 破空金雷 / 突破金光 + 你心里第 5 个。
@@ -78,9 +80,11 @@
 - 换轨 **600ms 交叉淡化**（现在是硬切，战斗↔日常尤其突兀；audio-design §2.4）。
 - 战斗按烈度叠层（铺垫→对峙→决战）。
 - **ducking**：古钟/天雷等关键 SFX 触发时，音乐瞬时 −6dB 让路，听感更清。
+- **实现 ✅（P1）**：`audio.js` 新增 `fadeVol(el,to,ms)`（Audio 元素无 GainNode，用 40ms tick 缓变 volume）。`Sfx.bgm(track)` 换轨改为**交叉淡化**——旧文件轨 600ms 淡出后 `pause()`、新轨同时从 0 淡入到目标（床领奏中则续压到 ×0.16）；同轨幂等不重建。环境床/演出领奏 `duckBgm()/unduckBgm()` 改用 `fadeVol` 平滑（文件轨 240ms 落 / 320ms 回，合成轨 `setTargetAtTime`）。关键 SFX（`bell` 古钟 / `thunder` 天雷，`DUCK_SFX` 表）经 `keySfxDuck()` 触发**瞬时 −6dB 让路**（~80ms 落、~520ms 缓回；已被床压低时不叠）。头测 `test/audio.test.js` 覆盖换轨淡入/交叉淡出/关键 SFX 让路/起收床 duck/同轨幂等。
 
 ### C3 · 轨道→场景映射校验 —— P1
 - 核对 `ui.js/main.js` 的切轨点（audio-design §三表），保证"该静的时候别打鼓"、进城切 town、决战切 boss、离别切 sorrow。
+- **实现 ✅（P1）**：核对全部切轨点已对齐 §三表——`_bgmForLocation`（town/嘉元城→town、太南集市→fair、密室→tense、旅途→journey、余 daily）；战斗起手按烈度切 boss/tense/combat（`bossFight`=决战/越级/妖王），战罢 `_bgmForLocation` 归位地点轨；舆图 peaceful→town/险境→tense；破关→triumph（单次）；剧情节点 `stage.bgm` 显式切（sorrow/tense…），落幕经 `renderAll→renderLocation` 自动归位。**健壮性**：`Sfx.bgm()` 增**白名单校验**——未知轨名（typo/空串）一律告警忽略、**不扰动当前播放**（不再"切没了"），新增 `Sfx.isTrack/tracks/curBgm` 自省位。`test/audio.test.js` §6 验校验、`test/trackmap.test.js` 逐场景核对映射且产出轨名均在白名单内。
 
 ---
 
@@ -138,11 +142,14 @@
 1. **昼夜 · 天气系统**（和"地点级环境声"天生一对）：地点带 `时辰`（晨/昼/暮/夜）+ `天气`（晴/雨/雪/雾），一次投入驱动三件事——①场景染色 tint（墨黑烛金内的冷暖偏移）②环境床切换（昼:鸟鸣市声 / 夜:虫鸣萤火 / 雨:檐滴）③可选氛围粒子（雨丝/落叶/飞雪）。**让整张地图"活"，不止演出。**
 2. **动态立绘微动**（idle 呼吸/眨眼/发丝衣袂）：纯 CSS、≤400ms 循环微幅，让立绘"活着"；配合视差，名场面质感拉满。**守 IP 红线：不碰大幅人物动作。**
 3. **手机触觉反馈** `navigator.vibrate`：突破/暴击/重击/古钟 轻震，零资源、手机代入感暴涨；配合 hit-stop = 真物理打击感。
+   - **实现 ✅（P1·§9-3）**：`Fx.haptic(pattern)`——预设 `tap/hit/heavy/breakthrough/bell`（或自定义 `ms`/`[ms,…]`）。三道守卫：能力缺失（桌面/不支持 `vibrate`）、`Fx.setHaptics(false)` 关闭（`localStorage:fx_haptics` 持久，留给 §9-9 体验设置翻）、`prefers-reduced-motion`（兼无障碍）——任一命中即静默跳过。接线：`Fx.hitStop()` 决定性一击同步一记 `heavy`（顿帧＋物理反馈合拍）；`Sfx.play()` 关键音效 `bell` 古钟→`bell` 震、`thunder` 天雷→`heavy` 震（`HAPTIC_SFX` 表）；演出原语 `{fx:"haptic", pattern}` 供名场面点触。头测 `test/haptic.test.js` 覆盖预设/守卫/开关持久化/hit-stop 与古钟接线。
 
 ### 第二梯队（深化战斗与情感）
 4. **敌人意图预告（telegraph）+ 伺机出手**：回合制战棋深度——预告敌人下一手（蓄力/破绽），玩家"看破→屏息→反制"。把 `beat:{window}` 从演出延伸进战斗核心。
 5. **危局氛围（低血/濒死）**：屏幕边缘暗红脉动 + 心跳低鼓 + 音乐 duck，绝境感。
+   - **实现 ✅（P1.5·§9-5）**：`renderCombat` 按玩家气血分档——≤28% 危局(`.peril`)、≤12% 濒死(`.brink`)，战毕/转危为安即收（`closeCombat` 也强制清）。**视觉**：`#combat-overlay.peril::after` 纯屏幕边框血晕（inset box-shadow 集中四缘 + 极淡 radial 收口、`pointer-events:none` 不挡操作），`@keyframes peril-pulse` 呼吸脉动（濒死 0.85s 更急更浓）；`prefers-reduced-motion` 去脉动留静态血框。**音**：`Sfx.peril(level)` 心跳低鼓——极低频双跳(lub-dub) `tone(60→36Hz)+`(50→32Hz)`，危局 ~1s/濒死 ~0.64s 一记；**刻意不动全局 duck**（那是环境床/演出领奏的 `bgmDucked`，复用会互踩），心跳作加法层叠在 BGM 之上＝"音是气口不是轰炸"；同档幂等、静音空转不发声。头测 `test/audio.test.js §7` 覆盖起/收/幂等/分档/静音空转。
 6. **名场面回廊（演出回放）**：叙事日志里可重温关键演出（已有 `_archiveStory` 底子），情感回报 + QoL。
+   - **实现 ✅（P1.5·§9-6）**：**收录**——`_archiveStory` 落日志的同时，凡 `Cutscene.hasStaging(stage)===true`（含 cam/actor/fx/sfx/bgm/amb/wait 或交互 beat）且有稳定 `id` 的节点，经纯函数 `Cutscene.recordScene(list, stage, {t})` 登记进 `State.data.scenes`（按 id 去重、最近置末、限容 60、不就地改入参）；纯文字对白不算名场面、不收录。**入口**——风云录(`openChronicle`) 新增「名场面回廊」一栏，每条可点 `UI.replayScene(id)`。**回放**——复用整套演出调度：`renderStory(stage, {replay:true})` 走 `_story.replay` 路径，镜头/立绘/特效/声/环境床/台词原样重演；唯①交互 beat 是玩法非演出→回放里自动演"命中那一手"的 fx/镜头/反应台词（`Cutscene._react(onHit)`，零输入续演）②落幕指路 guide 是导航→回放里跳过（不脉冲地点按钮）。重温**绝不动剧情指针/不结算/不写存档**：落幕只给「再看一次/合上回廊」，`closeReplay` 拆演出层、收床、复位镜头、回落地点轨。头测 `test/replay.test.js` 覆盖名场面判定/条目结构/去重置末/限容/纯净。
 
 ### 第三梯队（锦上添花）
 7. **空间音 / 声相 pan**：左/右立绘说话时音相偏移，配真实音效 = 临场感。
@@ -166,6 +173,7 @@
 - **要做**：把 B1 提到 P0 最前——把地点/演出背景从**单层**拆成 **天/远景/前景** 多层，`cam` 时各层按 `depth` 差速位移；**地点屏也要分层**（不止演出几幕）。染色应叠在分层之上、并允许**前景层不被染**（近处实、远处虚），而不是一张全屏滤镜。
 - **退一步的兜底**：若分层资产一时不齐，至少**提升染色/粒子质量**——景深渐变（近处不压暗）、染色限定中远景、粒子近大远小，避免"纯滤镜"观感。
 - **红线不变**：只微动、不糊脸、≤400ms、手机性能（粒子守 `_budget`/`_degraded`）。
+- **更新（2026-06-19 · B1 演出态镜头差速视差落地）**：演出舞台由**单层** `#story-bg` 升级为**双平面**——`#story-far`（远景气面，z-index 0；与背景同图，程序化"推远"：`blur(3px)` + 压暗 + 基准 `scale(1.08)` + `inset:-7%`）置于 `#story-bg`（中景，z-index 1）之下。`cutscene.js` 的 `_cam` 改为对两平面**差速施 transform**：中景全幅 `translate+scale`，远景按 `FAR_K=0.42` 取约 42% 幅度（位移与推拉同向但更小），背景移动时远景在边缘"露出"＝一次推镜里的纵深视差（aerial perspective）。**向后兼容**：无 `far`（旧 DOM / 无头测试）退化为单层，零回归（中景 transform 与旧版逐字等价）；静止态远景被不透明中景完全盖住＝零观感变化，仅演出态 `.on` 点亮。立绘层（z-index 2）不受影响，沿用既有 in/out/quake/speak-bump。`cutscene.test.js` 增 §2c 验证差速数值与单层退化；15 套测试 + run.js 全绿。**仍待**：真·切图多层（`{scene, layers:[{src,depth}]}`，等 CG 切片资产）与**地点屏**真分层（当前地点屏为程序化前景框 8 预设 + 远景气层，非按 depth 差速的实体切图）。
 
 ### R2 · 环境音是"音乐"，要的是"音效"（代入感，不是又一条 BGM）
 - **现象**：P0-1 用 Lyria 生成的 `amb_night` / `amb_firefly` / `amb_candle` 听起来**是有旋律的音乐**，跟想要的**环境音效（虫鸣 / 烛火噼啪 / 夜风 / 檐滴）差距很大**。
@@ -175,3 +183,4 @@
   - 明确**要**：field recording / foley / ambience / nature SFX / no music；具体场景词（"crickets chirping at night, soft", "candle flame crackle, faint", "low night wind", "water dripping from eaves"）；**可循环、极低动态、长尾**。
   - 验收：盲听应像"环境实录"而非"配乐"；若 Lyria 这类**生乐**模型本质难产出纯音效，改走**纯环境音/SFX 数据源**或**强化程序合成兜底**（虫鸣=带通噪脉冲、烛火=低频噼啪、夜风=低通噪缓动），audio.js 已是"文件优先、合成兜底"，二者择优。
 - **音量**：守 art-direction"音是气口不是轰炸"，极低、压在 BGM 之下。
+- **更新（2026-06-19 · 作者拍板）**：环境床定调改走"**舒缓暖音垫为底 + 各自极淡场景细节**"，**六床全部文件优先**（"夜晚不必只有干虫鸣，舒缓平静也是夜"），**定向覆盖 R2 的"纯音效"定位**。落库 `assets/audio/amb_{night,firefly,candle,wind,rain,market}.mp3`，`audio.js` 的 `AMB_FILES` 含全部六者，文件缺失/加载失败回退本引擎对应程序合成（不静默）。基调统一（暖音垫=夜床锁定的 glass pad）：night 远处稀虫/夜风、firefly 微光+稀虫、candle 暖底+极淡不刺耳火光、wind 低缓夜风、rain 檐雨嘶+稀落檐滴、market 远处人语+稀疏远钟。细节层为纯 numpy 合成（非 Lyria）的噪声/带噪短事件，随机间隔、无固定音高串联——实测包络周期性 ≈0.13（无节拍栅格）。

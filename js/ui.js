@@ -937,13 +937,14 @@ const UI = {
   },
 
   /* -------- 剧情卡渲染（视觉小说式：大立绘 + 逐句推进）-------- */
-  renderStory(stage) {
+  renderStory(stage, opts) {
+    opts = opts || {};
     const overlay = this.el("story-overlay");
     // 兜底：若剧情舞台 DOM 缺失，退回把整段剧情写入叙事日志并直接出选项，绝不卡住
     if (!overlay) { this._renderStoryFallback(stage); return; }
     // 将 stage.text 的混合段落解析成统一的"演出节拍"序列
     const beats = this._buildStoryBeats(stage);
-    this._story = { stage, beats, idx: -1 };
+    this._story = { stage, beats, idx: -1, replay: !!opts.replay };
     overlay.hidden = false;
     document.body.classList.add("story-on");
     // 剧情配乐：节点可指定 bgm 轨（sorrow 离殇/tense 阴谋/triumph 扬眉……）
@@ -962,11 +963,14 @@ const UI = {
       Cutscene.resetCam(this._storyCtx());
       const staged = Cutscene.hasStaging(stage);
       if (bg) bg.classList.toggle("story-cam", staged);
+      // 演出态点亮远景视差面（B1·演出态多平面）：镜头 op 时随 _cam 差速位移＝纵深
+      const far = this.el("story-far");
+      if (far) far.classList.toggle("on", staged && !!far.style.backgroundImage);
       if (staged && typeof Fx !== "undefined" && Fx.ensure) Fx.ensure(overlay);
     } else if (bg) { bg.classList.remove("story-cam"); }
     if (skip) skip.hidden = false;
-    // 败北重试：剧情已看过，跳过题字与正文直达抉择（免重复演出之扰）
-    if (typeof Engine !== "undefined" && Engine._retryStage) {
+    // 败北重试：剧情已看过，跳过题字与正文直达抉择（免重复演出之扰）。重温(replay)不走此径。
+    if (!opts.replay && typeof Engine !== "undefined" && Engine._retryStage) {
       Engine._retryStage = false;
       this._story.idx = beats.length;
       const stageName = this.el("story-stage-name");
@@ -1053,8 +1057,15 @@ const UI = {
       const loc = State.location();
       if (loc) url = Art.locUrl(loc);
     }
-    if (url) { bg.style.backgroundImage = `url("${url}")`; bg.classList.add("on"); }
-    else { bg.style.backgroundImage = ""; bg.classList.remove("on"); }
+    // 远景视差面与背景同图（程序化"推远"，无需切图；真·分层切图就位后可在其上叠 layers）
+    const far = this.el("story-far");
+    if (url) {
+      bg.style.backgroundImage = `url("${url}")`; bg.classList.add("on");
+      if (far) far.style.backgroundImage = `url("${url}")`;
+    } else {
+      bg.style.backgroundImage = ""; bg.classList.remove("on");
+      if (far) { far.style.backgroundImage = ""; far.classList.remove("on"); }
+    }
   },
 
   // 打字机逐字显示；点击时若在打字 → 立即完成本句
@@ -1124,6 +1135,15 @@ const UI = {
         continue;                     // 非阻塞舞台指令：立即连演下一拍
       }
       if (b.kind === "beat") {
+        // §9-6 重温：交互 beat 是玩法而非名场面本身——回放里不要求反应，直接演"命中"那一手的
+        //   特效/镜头/反应台词，把climax 的视觉重现出来，然后续演（auto-play，零输入）。
+        if (st.replay) {
+          const spec = (b.beat) || {};
+          const c = spec.onHit || (spec.choices && spec.choices[0]) || {};
+          if (typeof Cutscene !== "undefined" && Cutscene._react) Cutscene._react(c, this._storyCtx());
+          if (c && c.line) st.beats.splice(st.idx + 1, 0, { kind: "narr", text: c.line });
+          st.idx++; continue;
+        }
         st.beatActive = true;
         if (typeof Cutscene !== "undefined" && Cutscene.runBeat) {
           Cutscene.runBeat(b, this._storyCtx(), (res) => {
@@ -1137,6 +1157,7 @@ const UI = {
         st.beatActive = false; st.idx++; continue;   // 无演出模块：跳过交互
       }
       if (b.kind === "guide") {       // 演出即引导：落幕指路卡，玩家确认后续演／落幕
+        if (st.replay) { st.idx++; continue; }   // §9-6 重温：落幕指路是导航，回放里跳过（不脉冲地点按钮）
         st.beatActive = true;
         if (typeof Cutscene !== "undefined" && Cutscene.runGuide) {
           Cutscene.runGuide(b, this._storyCtx(), (res) => {
@@ -1185,7 +1206,7 @@ const UI = {
     }
 
     const last = (st.idx >= st.beats.length - 1);
-    if (cue) cue.textContent = last ? "▽ 轻触，到此抉择" : "▽ 轻触继续";
+    if (cue) cue.textContent = last ? (st.replay ? "▽ 轻触，重温毕" : "▽ 轻触，到此抉择") : "▽ 轻触继续";
     this.el("story-choices").innerHTML = "";
   },
 
@@ -1193,6 +1214,7 @@ const UI = {
   _storyCtx() {
     return {
       bg: this.el("story-bg"),
+      far: this.el("story-far"),
       left: this.el("story-portrait-left"),
       right: this.el("story-portrait-right"),
       host: this.el("story-overlay"),
@@ -1237,7 +1259,7 @@ const UI = {
     if (rbox.dataset.set !== hKey) {
       const hurl = (typeof Art !== "undefined") ? Art.url("hanli", hanliEmo) : null;
       if (hurl) {
-        rbox.innerHTML = `<img src="${hurl}" alt="韩立" />`;
+        rbox.innerHTML = `<div class="pb"><img src="${hurl}" alt="韩立" /></div>`;
         rbox.dataset.set = hKey;
         if (hanliEmo) this._portraitPop(rbox);   // 换表情：小弹跳（看见变化）
       }
@@ -1249,7 +1271,7 @@ const UI = {
       const url = id && typeof Art !== "undefined" ? Art.url(id, emo) : null;
       const lKey = (who || "") + (emo || "");
       if (url && st && st.leftKey !== lKey) {
-        lbox.innerHTML = `<img src="${url}" alt="${who}" />`;
+        lbox.innerHTML = `<div class="pb"><img src="${url}" alt="${who}" /></div>`;
         if (st) { st.leftNpc = who; st.leftKey = lKey; }
         if (emo) this._portraitPop(lbox);
       }
@@ -1294,6 +1316,14 @@ const UI = {
     const cue = this.el("story-cue"); if (cue) cue.textContent = "";
     const box = this.el("story-choices");
     box.classList.remove("cut-beat-on");
+    // §9-6 名场面回廊·重温落幕：不出剧情抉择（不结算、不推进指针），只给"再看/合上"
+    if (st.replay) {
+      box.innerHTML =
+        `<div class="replay-end">名场面 · 重温毕</div>` +
+        `<button class="choice" onclick="UI.replayScene('${stage.id}')">↻ 再看一次</button>` +
+        `<button class="choice" onclick="UI.closeReplay()">合上回廊</button>`;
+      return;
+    }
     // 战斗类抉择前的「临战准备」一览
     const isFight = (stage.choices || []).some(c => c.resolve);
     let prepHtml = "";
@@ -1328,13 +1358,44 @@ const UI = {
     if (typeof Cutscene !== "undefined") { Cutscene.clear(); Cutscene.resetCam(this._storyCtx()); }
     // 收束环境床：演出落幕即收夜色、恢复 BGM（地点级常驻留待昼夜系统接管）
     if (typeof Sfx !== "undefined" && Sfx.ambientStop) Sfx.ambientStop();
+    // 收束氛围粒（B2）：演出落幕即停常驻发射器（beam 立撤、motes 自然淡出）
+    if (typeof Fx !== "undefined" && Fx.ambient) Fx.ambient(null);
     const skip = this.el("story-skip"); if (skip) skip.hidden = true;
     const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
+    const far = this.el("story-far"); if (far) far.classList.remove("on");
     this._archiveStory(stage);
     this.el("story-overlay").hidden = true;
     document.body.classList.remove("story-on");
     this._story = null;
     Engine.chooseStory(STORY[State.data.storyStage], i);
+  },
+
+  // §9-6 名场面回廊：从风云录里点一段名场面 → 原汁原味重演那段演出（只观赏，不改剧情/不结算）。
+  // 复用整套演出调度（renderStory 的 replay 路径）：镜头/立绘/特效/声/环境床/台词全数重播；
+  // 交互 beat 自动演命中那一手、落幕指路跳过。重温落幕只给"再看一次/合上"。
+  replayScene(id) {
+    if (typeof STORY === "undefined") return;
+    const stage = STORY.find(s => s && s.id === id);
+    if (!stage) return;
+    this.closeModal();
+    this.renderStory(stage, { replay: true });
+  },
+
+  // 重温落幕：拆演出层、收环境床/氛围粒、复位镜头，回落地点轨——绝不动剧情指针与存档。
+  closeReplay() {
+    if (this._titleTimer) { clearTimeout(this._titleTimer); this._titleTimer = null; }
+    if (this._typeTimer) { clearInterval(this._typeTimer); this._typeTimer = null; }
+    if (this._cutTimer) { clearTimeout(this._cutTimer); this._cutTimer = null; }
+    if (typeof Cutscene !== "undefined") { Cutscene.clear(); Cutscene.resetCam(this._storyCtx()); }
+    if (typeof Sfx !== "undefined" && Sfx.ambientStop) Sfx.ambientStop();
+    if (typeof Fx !== "undefined" && Fx.ambient) Fx.ambient(null);
+    const skip = this.el("story-skip"); if (skip) skip.hidden = true;
+    const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
+    const far = this.el("story-far"); if (far) far.classList.remove("on");
+    const ov = this.el("story-overlay"); if (ov) ov.hidden = true;
+    document.body.classList.remove("story-on");
+    this._story = null;
+    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(this._bgmForLocation(State.location()));
   },
 
   // 把已演完的剧情正文沉淀进叙事日志（持久，可回看）
@@ -1344,6 +1405,9 @@ const UI = {
     const id = (Engine._logSeq = (Engine._logSeq || 0) + 1);
     s.log.push({ id, t: `第${s.year}年${s.month}月`, kind: "story", body: `<div class="title">${stage.title}</div>${bodyHtml}` });
     if (s.log.length > 60) s.log.shift();
+    // §9-6 名场面回廊：含演出的节点同时登记进可重温列表（纯文字对白不收）
+    if (typeof Cutscene !== "undefined" && Cutscene.recordScene)
+      s.scenes = Cutscene.recordScene(s.scenes, stage, { t: `第${s.year}年${s.month}月` });
   },
 
   // 剧情演出：解析一段叙事单元（字符串=旁白；对象=对话/心理/强调/场景）
@@ -2015,12 +2079,23 @@ const UI = {
         <span class="fame-val">${f.fame}</span>
       </div>`).join("");
     const myFameNote = (s.fame || 0) > 0 ? "" : `<p style="color:var(--ink-faint);font-size:12px;margin:4px 0 0">你尚籍籍无名——伏诛异闻、赢得漂亮、惊世一战，名声自来。</p>`;
+    // §9-6 名场面回廊：已演完的"含演出"剧情可在此原样重温（最近见到的在前）
+    const scenes = (s.scenes || []).slice().reverse();
+    const scenesHtml = scenes.length
+      ? scenes.map(sc => `<button class="scene-row tappable" onclick="UI.replayScene('${sc.id}')">
+          <span class="scene-play">▶</span>
+          <span class="scene-name">${sc.title || sc.id}</span>
+          <span class="chron-t">${sc.t || ""}</span>
+        </button>`).join("")
+      : `<div class="inv-empty">尚无名场面——经历一段有演出的剧情后，便可在此重温。</div>`;
 
     this.openModal(`
       <h2>风云录 · 道途</h2>
       <h3 class="panel-title" style="margin-top:8px">风云榜（彩霞山座次）</h3>
       <div class="fame-stone">${boardHtml}</div>
       ${myFameNote}
+      <h3 class="panel-title" style="margin-top:8px">名场面回廊（重温关键演出）</h3>
+      <div class="scene-gallery">${scenesHtml}</div>
       <h3 class="panel-title" style="margin-top:8px">道途年表（你挣来的每一步）</h3>
       <div class="chronicle">${msHtml}</div>
       <h3 class="panel-title">前路（已知的远方）</h3>
@@ -3050,6 +3125,10 @@ const UI = {
   },
   closeCombat() {
     this.el("combat-overlay").hidden = true;
+    // §9-5 危局氛围收束：撤边缘脉动 + 停心跳低鼓（战斗一关即清，绝不漏到地图）
+    const ov = this.el("combat-overlay"); if (ov) ov.classList.remove("peril", "brink");
+    this._perilLevel = 0;
+    if (typeof Sfx !== "undefined" && Sfx.peril) Sfx.peril(0);
     this._armed = null;
     if (typeof Fx !== "undefined") Fx.clear();
     // 战罢归于地点轨（在哪打完，回哪的声音）
@@ -3915,6 +3994,16 @@ const UI = {
     const adv = target >= 0 ? c.senseVs(c.enemies[target]) : { seeIntent: false };
     const isBT = meta.type === 'breakthrough';
     const p = c.player;
+
+    // —— §9-5 危局氛围：玩家血线告危→屏幕边缘暗红脉动（濒死更急更浓）+ 心跳低鼓 ——
+    //    ≤28% 危局、≤12% 濒死；战毕/转危为安即收。视觉脉动尊重 reduced-motion（CSS 内静态化）。
+    {
+      const ov = this.el("combat-overlay");
+      const frac = (p && p.hpMax) ? p.hp / p.hpMax : 1;
+      const lvl = c.status === "ongoing" ? (frac <= 0.12 ? 2 : frac <= 0.28 ? 1 : 0) : 0;
+      if (ov) { ov.classList.toggle("peril", lvl >= 1); ov.classList.toggle("brink", lvl >= 2); }
+      if (lvl !== this._perilLevel) { this._perilLevel = lvl; if (typeof Sfx !== "undefined" && Sfx.peril) Sfx.peril(lvl); }
+    }
 
     // —— 回合数 ——
     const rd = this.el("combat-round");

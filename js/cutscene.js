@@ -45,6 +45,22 @@
         (PLAY_OPS.some(k => has(s, k)) || (s.beat && typeof s.beat === "object")));
     },
 
+    /* §9-6 名场面回廊：把一段"含演出"的剧情节点登记进可重温列表（纯函数，可无头测试）。
+     * 仅收含演出原语且有稳定 id 的节点（纯文字对白不算名场面）；按 id 去重、最近重温/最新见到的置末；
+     * 超 cap（默认 60）淘汰最旧。返回新列表（不就地改入参）。meta:{t,cg} 为可选标注。 */
+    recordScene(list, stage, meta, cap) {
+      const out = Array.isArray(list) ? list.slice() : [];
+      if (!stage || !stage.id || !this.hasStaging(stage)) return out;
+      const ent = { id: stage.id, title: stage.title || stage.id,
+        t: (meta && meta.t) || "", cg: (meta && meta.cg) || stage.cg || "" };
+      const i = out.findIndex(e => e && e.id === ent.id);
+      if (i >= 0) out.splice(i, 1);
+      out.push(ent);
+      const max = cap || 60;
+      while (out.length > max) out.shift();
+      return out;
+    },
+
     /* —— 编译：text[]（混排）→ 统一节拍序列（纯函数，可无头测试）—— */
     compile(stage) {
       const beats = [];
@@ -111,7 +127,10 @@
       return null;
     },
 
-    /* 镜头（沿用箱庭 L3"变换即镜头"：对背景层施 transform；震屏走 FX）*/
+    /* 镜头（沿用箱庭 L3"变换即镜头"：对背景层施 transform；震屏走 FX）。
+     * 演出态多平面（B1 演出态差速视差）：中景背景 ctx.bg 全幅位移/推拉，远景气面
+     * ctx.far 以更小幅度（FAR_K）同向同步——同一镜头里两平面"差速"，背景移动时远景
+     * 在边缘露出＝纵深视差。无 far 层（旧 DOM / 无头测试）时退化为单层，零回归。*/
     _cam(beat, ctx) {
       const bg = ctx && ctx.bg;
       const cam = beat.cam || "hold";
@@ -122,8 +141,20 @@
       const st = this._camState || (this._camState = { x: 0, y: 0, s: 1 });
       if (cam === "pan" && beat.to) { st.x = +beat.to.x || 0; st.y = +beat.to.y || 0; }
       if (cam === "zoom") { st.s = beat.scale != null ? +beat.scale : 1.12; }
-      bg.style.transition = `transform ${beat.ms || 900}ms ease`;
-      bg.style.transform = `translate(${st.x}%, ${st.y}%) scale(${st.s})`;
+      const ms = beat.ms || 900;
+      this._applyCam(bg, st, 1, ms, 1);                                       // 中景：全幅（与旧版逐字等价）
+      if (ctx && ctx.far) this._applyCam(ctx.far, st, this.FAR_K, ms, 1.08);  // 远景：减幅 + 基准放大 1.08
+    },
+    FAR_K: 0.42,   // 远景差速系数：位移/推拉幅度取背景的 ~42%，差出来的那截＝视差
+    /* 对一层施"镜头变换"：位移取 camState×k，推拉幅度也按 k 收敛（远景动得更少）。
+     * base=该层基准缩放（远景 1.08，使其略大、pan 时不露黑边且永远盖住背景边缘）。*/
+    _applyCam(el, st, k, ms, base) {
+      if (!el) return;
+      const b = base || 1;
+      const tx = (st.x * k).toFixed(3), ty = (st.y * k).toFixed(3);
+      const sc = (b * (1 + (st.s - 1) * k)).toFixed(4);
+      el.style.transition = `transform ${ms || 900}ms ease`;
+      el.style.transform = `translate(${tx}%, ${ty}%) scale(${sc})`;
     },
     _focus(at, ctx) {
       if (!ctx) return;
@@ -136,6 +167,8 @@
       this._camState = { x: 0, y: 0, s: 1 };
       const bg = ctx && ctx.bg;
       if (bg) { bg.style.transition = ""; bg.style.transform = ""; }
+      const far = ctx && ctx.far;   // 远景面回零（清 inline transform，回落 CSS 基准 scale(1.08)）
+      if (far) { far.style.transition = ""; far.style.transform = ""; }
     },
 
     /* 立绘进退场（委托 Art 取图；放进既有左右立绘位）*/
@@ -154,7 +187,7 @@
       }
       const url = (root.Art && root.Art.url) ? root.Art.url(id, beat.emote) : null;
       if (url) {
-        box.innerHTML = `<img src="${url}" alt="${beat.name || id}" />`;
+        box.innerHTML = `<div class="pb"><img src="${url}" alt="${beat.name || id}" /></div>`;  // .pb＝idle 呼吸层（§9-2）
         box.dataset.set = id + (beat.emote || "");
         box.classList.add("on");
         box.classList.remove("dim");
@@ -174,6 +207,12 @@
       const elem = spec.elem || "none";
       if (kind === "flash") { FX.flash(spec.color || "#fff", spec.ms || 160, spec.alpha != null ? spec.alpha : 0.5); return; }
       if (kind === "shake") { FX.shake(spec.px || 8); return; }
+      // B2 常驻氛围粒：{fx:"ambient", preset:"ash|dust|spirit|beam", ...} / preset:"off" 收
+      if (kind === "ambient") { if (FX.ambient) FX.ambient(spec.preset || "dust", spec); return; }
+      // B3 hit-stop 顿帧：{fx:"hitStop", ms:80}（决定性一击专用；常配合先一记 {fx:"shake"}）
+      if (kind === "hitStop" || kind === "hitstop") { if (FX.hitStop) FX.hitStop(spec.ms || 80); return; }
+      // §9-3 手机触觉反馈：{fx:"haptic", pattern:"bell|heavy|breakthrough|hit|tap"}（名场面/古钟点用）
+      if (kind === "haptic") { if (FX.haptic) FX.haptic(spec.pattern || "hit"); return; }
       const p = A(spec.at || "center");
       if (kind === "burst")     { if (p) FX.burst(p.x, p.y, elem, spec.n || 16, spec); return; }
       if (kind === "lightning") { if (p) FX.lightning(p.x, p.y, spec); return; }
@@ -250,6 +289,8 @@
       if (!c) return;
       try {
         if (c.fx && root.Fx) this._fx(typeof c.fx === "string" ? { fx: c.fx, at: "left" } : c.fx, ctx);
+        // B3：决定性一击的顿帧——onHit:{hitStop:true|ms}（配合 fx/shake，画面"咔"地定住一瞬）
+        if (c.hitStop && root.Fx && root.Fx.hitStop) root.Fx.hitStop(c.hitStop === true ? 80 : c.hitStop);
         if (c.sfx && root.Sfx && root.Sfx.play) root.Sfx.play(c.sfx);
         if (c.cam) this._cam({ cam: c.cam, px: c.px, at: c.at, ms: c.ms, to: c.to, scale: c.scale }, ctx);
       } catch (e) {}

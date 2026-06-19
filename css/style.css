@@ -535,6 +535,25 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
     radial-gradient(ellipse at 50% 36%, transparent 46%, rgba(8,6,4,.5) 100%),
     linear-gradient(180deg, rgba(8,6,4,.58) 0%, rgba(8,6,4,.14) 20%, rgba(8,6,4,.1) 48%, rgba(8,6,4,.84) 84%);
 }
+/* ===== §9-5 危局氛围：血线告危时屏幕"边缘暗红脉动"=====
+ * 玩家气血 ≤28%(.peril) 起、≤12%(.brink) 更急更浓。纯屏幕边框血晕(inset box-shadow 集中在四缘
+ * + 极淡 radial 收口)，中央战场与操作台留白不糊——pointer-events:none 不挡任何点击。
+ * 配合 audio.js Sfx.peril() 的心跳低鼓＝绝境感。尊重 reduced-motion：去脉动、留静态血框。 */
+.combat-overlay.peril::after {
+  content: ""; position: absolute; inset: 0; z-index: 8; pointer-events: none;
+  box-shadow: inset 0 0 88px 16px rgba(122,8,8,.42), inset 0 0 220px 56px rgba(78,0,0,.26);
+  background: radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(86,0,0,.22) 100%);
+  animation: peril-pulse 1.5s ease-in-out infinite;
+}
+.combat-overlay.brink::after {
+  box-shadow: inset 0 0 108px 24px rgba(152,6,6,.56), inset 0 0 248px 78px rgba(96,0,0,.36);
+  background: radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(112,0,0,.32) 100%);
+  animation-duration: .85s;
+}
+@keyframes peril-pulse { 0%,100% { opacity: .42; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .combat-overlay.peril::after, .combat-overlay.brink::after { animation: none; opacity: .82; }
+}
 /* ===== 升空天幕（v110「真有飞在天上的感觉」核心）=====
  * 用户痛点：升空时画面只是人物略微抬起，文案说"天地倏然开阔"，画面却几乎没开阔——远景底图
  * 超采样(farScale 1.10+)只下沉 ~1%，顶部根本没让出"天"。这里补上那片缺席的天：一张只盖场景区
@@ -2181,6 +2200,22 @@ html, body { touch-action: manipulation; }
 .chron-item.desperate { border-left-color: var(--purple); }
 .chron-item.fortune { border-left-color: var(--blue); }
 
+/* ===== §9-6 名场面回廊（风云录里重温关键演出）===== */
+.scene-gallery { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.scene-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 8px 10px; border-radius: 6px; font: inherit; color: var(--ink);
+  background: var(--bg-panel-2); border: 1px solid var(--border); border-left: 2px solid var(--gold);
+  cursor: pointer; transition: background .15s ease, border-color .15s ease, transform .08s ease;
+}
+.scene-row:hover { background: rgba(166, 77, 58, 0.10); border-left-color: var(--gold-bright, var(--gold)); }
+.scene-row:active { transform: translateY(1px); }
+.scene-play { color: var(--gold); font-size: 12px; flex: none; }
+.scene-name { flex: 1 1 auto; font-size: 13px; line-height: 1.5; }
+.scene-row .chron-t { color: var(--ink-dim); font-size: 11px; flex: none; }
+/* 重温落幕条 */
+.replay-end { text-align: center; color: var(--gold); font-size: 13px; letter-spacing: 2px; margin-bottom: 8px; }
+
 /* ===== 人物图鉴 ===== */
 .codex { display: flex; flex-direction: column; gap: 8px; }
 .codex-card { background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; }
@@ -3267,12 +3302,27 @@ html, body { touch-action: manipulation; }
 }
 @keyframes storyFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* 演出远景视差面（B1·演出态多平面）：与背景同图但"推远"——更糊更暗更大；
+ * 镜头 pan/zoom 时由 cutscene._cam 以更小幅度位移/缩放（背景全幅、远景减幅），
+ * 于背景层移动时在边缘"露出"＝一次推镜里的纵深差速视差（aerial perspective）。
+ * 静止态被不透明的背景层完全盖住＝零观感变化；仅演出态(.on)点亮，旁白单层零回归。
+ * inset 略负 + 基准放大 1.08：pan 时不露黑边。真·切图分层就位后可在其上叠 layers。 */
+.story-far {
+  position: absolute; inset: -7%; background-size: cover; background-position: center;
+  opacity: 0; transition: opacity .5s ease;
+  filter: saturate(.62) brightness(.46) blur(3px);
+  transform: scale(1.08);
+  will-change: transform; backface-visibility: hidden; pointer-events: none;
+  z-index: 0;
+}
+.story-far.on { opacity: 1; }
 /* 场景背景（虚化压暗，做氛围）*/
 .story-bg {
   position: absolute; inset: 0; background-size: cover; background-position: center;
   opacity: 0; transition: opacity .4s ease;
   filter: saturate(.9) brightness(.62);
   will-change: transform; backface-visibility: hidden;
+  z-index: 1;
 }
 /* kenBurns 收敛到 1.04→1.0：保留推镜电影感，终态回到原始分辨率（不糊） */
 .story-bg.on { opacity: 1; animation: kenBurns 14s ease-out forwards; }
@@ -3342,6 +3392,22 @@ html, body { touch-action: manipulation; }
 .story-portrait.right { right: -7%; }
 .story-portrait.left.dim  { transform: scaleX(-1) scale(.97); }
 .story-portrait.right.dim { transform: scale(.97); }
+/* 立绘 idle 微动（§9-2 立绘微动）：在 .story-portrait（外层＝进退/震/scaleX 镜像）与 img（entrance/emoPop）
+ * 之间插一层 .pb 作"呼吸"——慢循环、微幅、transform-origin 落在脚底（脚不动＝活人站在地上）。
+ * 三者动画分属不同元素，transform 各管各、自然叠加、互不覆盖：外层震屏/进退、.pb 呼吸、img 入场/表情。
+ * 守 IP 红线：只微幅起伏（≤1.2% 缩放、≤0.55% 位移、≤0.22° 摆），不碰大幅人物动作；
+ * 左右错速避免双人"同呼吸"的诡异同步；prefers-reduced-motion 时停（无障碍）。 */
+.story-portrait .pb {
+  height: 100%; display: inline-block; vertical-align: bottom;
+  transform-origin: 50% 100%; will-change: transform;
+}
+.story-portrait.on .pb { animation: portraitBreath 3.8s ease-in-out infinite; }
+.story-portrait.right.on .pb { animation-duration: 4.3s; }
+@keyframes portraitBreath {
+  0%, 100% { transform: translateY(0) scaleY(1) rotate(0deg); }
+  50%      { transform: translateY(-0.55%) scaleY(1.012) rotate(.22deg); }
+}
+@media (prefers-reduced-motion: reduce) { .story-portrait .pb { animation: none; } }
 
 /* 对话框：底部一条，轻触推进 */
 .story-dialog {
@@ -4058,6 +4124,13 @@ html, body { touch-action: manipulation; }
   78% { translate: calc(var(--fx-shake, 8px) * .3) -1px; }
 }
 .fx-shaking { animation: fxShake .4s ease-out; }
+/* hit-stop 顿帧（B3）：决定性一击的 60–90ms"全帧冻结"。
+ * 宿主自身＋所有子层（背景/远景/立绘呼吸/震屏）的 CSS 动画一并暂停＝画面凝住；
+ * 配合 fx.js 把粒子 dt 置 0，整幕"咔"地定格。常先一记 shake 再 hitStop——抖到一半被冻＝打击感翻倍。
+ * 只暂停 animation（不动 transition），避免在途镜头过渡被强行收尾而跳变。 */
+.fx-hitstop, .fx-hitstop *, .fx-hitstop *::before, .fx-hitstop *::after {
+  animation-play-state: paused !important;
+}
 /* 镜头轨道（战斗宽轴通用）——v90 镜头是"追"不是"绑"：
  * 人物 left 过渡 .42s（人先动），镜头 1.15s 长尾缓动慢半拍跟上——
  * "韩立在画面里走、镜头随后缓缓追"，而不是"世界跟着脚底滑"（用户实锤的体感翻转）。
