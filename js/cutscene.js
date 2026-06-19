@@ -171,7 +171,7 @@
       }
       const url = (root.Art && root.Art.url) ? root.Art.url(id, beat.emote) : null;
       if (url) {
-        box.innerHTML = `<img src="${url}" alt="${beat.name || id}" />`;
+        box.innerHTML = `<div class="pb"><img src="${url}" alt="${beat.name || id}" /></div>`;  // .pb＝idle 呼吸层（§9-2）
         box.dataset.set = id + (beat.emote || "");
         box.classList.add("on");
         box.classList.remove("dim");

@@ -3357,6 +3357,22 @@ html, body { touch-action: manipulation; }
 .story-portrait.right { right: -7%; }
 .story-portrait.left.dim  { transform: scaleX(-1) scale(.97); }
 .story-portrait.right.dim { transform: scale(.97); }
+/* 立绘 idle 微动（§9-2 立绘微动）：在 .story-portrait（外层＝进退/震/scaleX 镜像）与 img（entrance/emoPop）
+ * 之间插一层 .pb 作"呼吸"——慢循环、微幅、transform-origin 落在脚底（脚不动＝活人站在地上）。
+ * 三者动画分属不同元素，transform 各管各、自然叠加、互不覆盖：外层震屏/进退、.pb 呼吸、img 入场/表情。
+ * 守 IP 红线：只微幅起伏（≤1.2% 缩放、≤0.55% 位移、≤0.22° 摆），不碰大幅人物动作；
+ * 左右错速避免双人"同呼吸"的诡异同步；prefers-reduced-motion 时停（无障碍）。 */
+.story-portrait .pb {
+  height: 100%; display: inline-block; vertical-align: bottom;
+  transform-origin: 50% 100%; will-change: transform;
+}
+.story-portrait.on .pb { animation: portraitBreath 3.8s ease-in-out infinite; }
+.story-portrait.right.on .pb { animation-duration: 4.3s; }
+@keyframes portraitBreath {
+  0%, 100% { transform: translateY(0) scaleY(1) rotate(0deg); }
+  50%      { transform: translateY(-0.55%) scaleY(1.012) rotate(.22deg); }
+}
+@media (prefers-reduced-motion: reduce) { .story-portrait .pb { animation: none; } }
 
 /* 对话框：底部一条，轻触推进 */
 .story-dialog {

@@ -1248,7 +1248,7 @@ const UI = {
     if (rbox.dataset.set !== hKey) {
       const hurl = (typeof Art !== "undefined") ? Art.url("hanli", hanliEmo) : null;
       if (hurl) {
-        rbox.innerHTML = `<img src="${hurl}" alt="韩立" />`;
+        rbox.innerHTML = `<div class="pb"><img src="${hurl}" alt="韩立" /></div>`;
         rbox.dataset.set = hKey;
         if (hanliEmo) this._portraitPop(rbox);   // 换表情：小弹跳（看见变化）
       }
@@ -1260,7 +1260,7 @@ const UI = {
       const url = id && typeof Art !== "undefined" ? Art.url(id, emo) : null;
       const lKey = (who || "") + (emo || "");
       if (url && st && st.leftKey !== lKey) {
-        lbox.innerHTML = `<img src="${url}" alt="${who}" />`;
+        lbox.innerHTML = `<div class="pb"><img src="${url}" alt="${who}" /></div>`;
         if (st) { st.leftNpc = who; st.leftKey = lKey; }
         if (emo) this._portraitPop(lbox);
       }
