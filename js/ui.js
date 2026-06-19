@@ -1339,6 +1339,8 @@ const UI = {
     if (typeof Cutscene !== "undefined") { Cutscene.clear(); Cutscene.resetCam(this._storyCtx()); }
     // 收束环境床：演出落幕即收夜色、恢复 BGM（地点级常驻留待昼夜系统接管）
     if (typeof Sfx !== "undefined" && Sfx.ambientStop) Sfx.ambientStop();
+    // 收束氛围粒（B2）：演出落幕即停常驻发射器（beam 立撤、motes 自然淡出）
+    if (typeof Fx !== "undefined" && Fx.ambient) Fx.ambient(null);
     const skip = this.el("story-skip"); if (skip) skip.hidden = true;
     const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
     const far = this.el("story-far"); if (far) far.classList.remove("on");

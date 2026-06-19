@@ -172,5 +172,25 @@ console.log("== 6. run/runBeat 无 DOM/FX/audio 时 fail-soft ==");
   assert(true, "resetCam()/clear() 无参不抛");
 }
 
+console.log("== 6b. B2 氛围粒：{fx:'ambient'} 路由到 Fx.ambient(preset, spec) ==");
+{
+  const calls = [];
+  const root = (typeof window !== "undefined") ? window : globalThis;
+  const had = Object.prototype.hasOwnProperty.call(root, "Fx");
+  const prev = root.Fx;
+  root.Fx = { ensure() {}, ambient(preset, spec) { calls.push([preset, spec]); } };
+  try {
+    CS.run({ kind: "op", op: "fx", spec: { fx: "ambient", preset: "spirit", interval: 200 } }, {});
+    assert(calls.length === 1 && calls[0][0] === "spirit", "ambient 起：preset 透传 Fx.ambient");
+    assert(calls[0][1] && calls[0][1].interval === 200, "ambient 起：整条 spec 透传（含 interval 等参）");
+    CS.run({ kind: "op", op: "fx", spec: { fx: "ambient", preset: "off" } }, {});
+    assert(calls.length === 2 && calls[1][0] === "off", "ambient 收：preset:'off' 透传");
+    CS.run({ kind: "op", op: "fx", spec: { fx: "ambient" } }, {});
+    assert(calls[2][0] === "dust", "ambient 缺 preset→默认 dust");
+  } finally {
+    if (had) root.Fx = prev; else delete root.Fx;
+  }
+}
+
 console.log(`\n========== 演出推进器：${fail === 0 ? "全通 ✓" : fail + " 项败 ✗"}（${pass} 项）==========`);
 process.exit(fail ? 1 : 0);

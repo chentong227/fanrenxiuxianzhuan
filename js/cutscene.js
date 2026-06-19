@@ -191,6 +191,8 @@
       const elem = spec.elem || "none";
       if (kind === "flash") { FX.flash(spec.color || "#fff", spec.ms || 160, spec.alpha != null ? spec.alpha : 0.5); return; }
       if (kind === "shake") { FX.shake(spec.px || 8); return; }
+      // B2 常驻氛围粒：{fx:"ambient", preset:"ash|dust|spirit|beam", ...} / preset:"off" 收
+      if (kind === "ambient") { if (FX.ambient) FX.ambient(spec.preset || "dust", spec); return; }
       const p = A(spec.at || "center");
       if (kind === "burst")     { if (p) FX.burst(p.x, p.y, elem, spec.n || 16, spec); return; }
       if (kind === "lightning") { if (p) FX.lightning(p.x, p.y, spec); return; }

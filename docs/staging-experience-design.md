@@ -24,7 +24,7 @@
 |--------|--------------------|------------------|
 | **演出推进器** `js/cutscene.js` | 原语 `cam/actor/fx/sfx/bgm/wait/beat/guide`；`compile()` 纯函数（可无头测）；`run/runBeat/runGuide`；`_cam` 对 `#story-bg` 施 `translate+scale`；`beat:{kind:"window\|choice"}`（伺机出手/抉择）**已落地** | 分层视差、环境声触发、hit-stop、视频 |
 | **演出舞台 DOM**（`ui.js _storyCtx`） | `bg=#story-bg`、左右立绘位、`fxHost=#story-overlay`、`beatHost=#story-choices`、`anchor()` | `#story-bg` 仍是**单层**背景 → 视差要拆层 |
-| **特效引擎** `js/fx.js` | `flash/shake/burst/lightning/material/swordRing/ribbon/trail` + `ensure(host)`；`_budget`/`_degraded` 性能护栏 | 无"常驻氛围粒子"预设；无 `hitStop` |
+| **特效引擎** `js/fx.js` | `flash/shake/burst/lightning/material/swordRing/ribbon/trail` + `ensure(host)`；`_budget`/`_degraded` 性能护栏；**常驻氛围粒 `ambient(ash/dust/spirit/beam)` 已落地（P1·B2）** | 无 `hitStop` |
 | **音频** `js/audio.js` | 合成 SFX 全套 + 合成 BGM(`daily/combat/tense`) + 9 条文件轨；**古钟 `bell` 已有** | **无环境床**、无换轨 crossfade、无 ducking |
 | **设计档** | cutscene/audio/fx/art 四份已成体系 | 本稿做"升级增补"，不另立门户 |
 
@@ -55,6 +55,7 @@
 - **做法**：`fx.js` 增"常驻/idle 氛围"发射器（灰烬/尘/灵气微光飘动、光束缓扫暗场），**复用现有粒子池 + `_budget`/`_degraded`**。
 - **接口（拟）**：复用现有 `fx` 原语：`{fx:"ambient", preset:"ash|dust|spirit|beam", ...}`（**不新开原语**）。
 - **预算**：常驻粒子桌面 ≤80 / 手机 ≤30，帧难看时 `_degraded` 自动减半。
+- **实现 ✅（P1）**：`Fx.ambient(preset[,opts])` 起、`Fx.ambient(null|"off")` 收（beam 立撤、motes 缩余命自然散）；走身后层(z:1，在人物之后)，全部极淡慢飘。预算闸 `_ambCap`（手机 30/桌面 80）× `_degraded` 节流，按 `interval` 出粒（beam 单实体缓扫、屏缘淡入淡出）。原语 `{fx:"ambient", preset, interval?, cap?, color?, alpha?, speed?}` 已接 `cutscene._fx`；演出落幕（`UI.storyChoose`）即 `Fx.ambient(null)` 收束、`Fx.clear()` 兜底。
 
 ### B3 · hit-stop + 顿帧 —— P1
 - **做法**：`Fx.hitStop(ms)` 全帧冻结 **60–90ms**，绑在**玩家决定性一击**（`beat:window` 的 `onHit` / 突破最后一下 / 破空金雷）。冻结 + 微震 = 打击感翻倍。
