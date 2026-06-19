@@ -138,6 +138,43 @@ console.log("== 4b. 演出即引导 guide：编译为引导节拍 + runGuide 落
   assert(got && got.focus === "rest", "runGuide 无 host→同步 done({focus})");
 }
 
+console.log("== 4c. D1-a 终止拍·直接坠入：{fight}/{warp} 编译为 drop（落幕直挂战斗/箱庭）==");
+{
+  // {fight}：终止拍，载 id + prep + guard（演出落幕直接进战斗，跳过临战准备选择屏）
+  const sf = { text: [
+    "剑光乍起",
+    { shot: "shock" },
+    { fight: "zhanwangchan", prep: true, guard: { item: "duyao_cao", min: 1, hint: "破甲的钩子该出鞘了" } },
+  ] };
+  const bf = CS.compile(sf);
+  const last = bf[bf.length - 1];
+  assert(last.kind === "drop" && last.drop === "fight", "{fight}→kind:drop drop:fight");
+  assert(last.fight === "zhanwangchan", "{fight} 载战斗 id");
+  assert(last.prep === true && last.guard && last.guard.hint === "破甲的钩子该出鞘了", "{fight} 载 prep/guard（含 hint）");
+  assert(bf[0].kind === "narr" && bf[1].op === "cam", "终止拍前的旁白/运镜照常编译（顺序保留）");
+
+  // {warp}：终止拍，载 locId + spot + arrive（演出落幕坠入地点/箱庭）
+  const sw = { text: [{ warp: "qixuanmen", spot: "yanwuting", arrive: true }] };
+  const bw = CS.compile(sw);
+  assert(bw.length === 1 && bw[0].kind === "drop" && bw[0].drop === "warp", "{warp}→kind:drop drop:warp");
+  assert(bw[0].warp === "qixuanmen" && bw[0].spot === "yanwuting" && bw[0].arrive === true, "{warp} 载 locId/spot/arrive");
+
+  // prep/guard/spot/arrive 缺省：fail-soft 默认（prep=false、guard=null、arrive=false）
+  const b2 = CS.compile({ text: [{ fight: "showdown_win" }] });
+  assert(b2[0].prep === false && b2[0].guard === null, "{fight} 缺省 prep=false/guard=null");
+  const b3 = CS.compile({ text: [{ warp: "houshan" }] });
+  assert(b3[0].arrive === false && b3[0].spot === undefined, "{warp} 缺省 arrive=false/spot=undefined");
+
+  // 坠入拍是终止拍但不阻塞（由 ui 直接调度，非等玩家轻触）
+  assert(CS.isBlocking({ kind: "drop", drop: "fight", fight: "x" }) === false, "drop 不阻塞（ui 直接坠入）");
+
+  // 含坠入拍即名场面（可重温）：hasStaging=true、recordScene 收录
+  assert(CS.hasStaging(sf) === true, "含 {fight} hasStaging=true");
+  assert(CS.hasStaging({ text: [{ warp: "houshan" }] }) === true, "含 {warp} hasStaging=true");
+  const rec = CS.recordScene([], Object.assign({ id: "yanjia_boss", title: "战王蝉" }, sf));
+  assert(rec.length === 1 && rec[0].id === "yanjia_boss", "坠入名场面入回廊（recordScene 收录）");
+}
+
 console.log("== 5. 边界：空/异常输入不抛 ==");
 {
   assert(CS.compile(undefined).length === 0, "compile(undefined)=空");
