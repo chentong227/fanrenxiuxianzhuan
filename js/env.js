@@ -26,6 +26,12 @@
     PHASE_CN: { dawn: "晨", day: "昼", dusk: "暮", night: "夜" },
     WEATHER_CN: { clear: "晴", rain: "雨", snow: "雪", fog: "雾" },
 
+    // 2.5D 前景框预设库（纯 CSS·近景遮挡，docs/depth-presets.md）——值即 data-fg，CSS 据此画框。
+    //   接入＝地点 env.depth.fg 选一个 + far(0..1) 调远雾；不在表内＝不画框（仅远景气层，data-fg 留空）。
+    FG_PRESETS: ["cave", "interior", "hall", "market", "forest", "mountain", "water", "mist"],
+    FG_PRESET_CN: { cave: "洞窟", interior: "室内/洞府", hall: "殿堂", market: "坊市", forest: "林", mountain: "山野", water: "水景", mist: "纯雾" },
+    isFgPreset(fg) { return typeof fg === "string" && this.FG_PRESETS.includes(fg); },
+
     // 演出/调试覆盖（null=按地点解析）。set/clear 由演出或调试驱动。
     _override: { phase: null, weather: null },
 
@@ -79,7 +85,7 @@
 
     // 地点 → 2.5D 纵深配置（前景分层，docs/staging-experience-design.md §3 B1 / §10 R1）。
     //   返回 {fg, far[, layers]} 或 null（不配置＝单层背景，零回归）。
-    //   · fg   = 前景框层类型（"cave"/"forest"/"interior"/…）——近景遮挡，不被天气/时辰染。
+    //   · fg   = 前景框预设（见 FG_PRESETS：cave/interior/hall/market/forest/mountain/water/mist）——近景遮挡，不被天气/时辰染。
     //   · far  = 远景雾强度 0..1（默认 0.5），驱动 CSS 远景气层（空气透视）。
     //   · layers = 预留：[{src, depth}] 真分层切图就位后逐层差速位移（资产未齐时走程序化前景/远雾兜底）。
     depthFor(loc) {
@@ -112,7 +118,8 @@
       //   未配置＝单层背景，data-depth/fg 清空，CSS 不开远雾/前景框（零回归）。
       const d = this.depthFor(loc);
       stageEl.dataset.depth = d ? "on" : "";
-      stageEl.dataset.fg = (d && typeof d.fg === "string") ? d.fg : "";
+      // fg 仅认预设库内的值（防错配）：未知/缺省＝不画前景框（仍开远景气层，data-fg 留空）
+      stageEl.dataset.fg = (d && this.isFgPreset(d.fg)) ? d.fg : "";
       return r;
     },
     _ensureLayer(stageEl, cls) {
