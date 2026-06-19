@@ -123,6 +123,8 @@ WORLD.locations = [
     travelCost: 1,
     map: { x: 50, y: 60 },
     home: true,   // 旅居：可调息休整（墨府客房）
+    // 岚州第一大城·街市喧腾：2.5D 前景＝坊市框（幌子檐影+暖灯晕），远雾中等（城郭烟尘）
+    env: { depth: { fg: "market", far: 0.42 } },
     actions: ["market", "board", "rumor", "rest", "cultivate"],
     // 城味行动名（一眼区别七玄门）：长街/告示/风声 把繁华与暗流用市井语写活
     actionLabels: {
@@ -162,6 +164,8 @@ WORLD.locations = [
     travelCost: 1,
     map: { x: 38, y: 36 },
     home: true,
+    // 外门居所·潜修洞天：2.5D 前景＝室内框（梁柱收口·暖黑），远雾偏淡
+    env: { depth: { fg: "interior", far: 0.34 } },
     actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
     encounters: [],
   },
@@ -186,6 +190,8 @@ WORLD.locations = [
     travelCost: 1,
     map: { x: 30, y: 64 },
     unlock: (s) => s.flags.yaoyuan_started,
+    // 谷中坊市·万宝楼飞檐：2.5D 前景＝坊市框（飞檐幌影+暖灯晕），远雾中等
+    env: { depth: { fg: "market", far: 0.42 } },
     actions: ["wanbao", "rest"],
     encounters: [],
   },
@@ -201,6 +207,8 @@ WORLD.locations = [
     travelCost: 2,
     map: { x: 50, y: 30 },
     unlock: (s) => s.flags.dongfu_done,
+    // 邻国百艺坊·炼器炉火：2.5D 前景＝坊市框（街尾檐影+炉火暖晕），远雾中等
+    env: { depth: { fg: "market", far: 0.4 } },
     actions: ["rest"],
     encounters: [],
   },
@@ -222,6 +230,8 @@ WORLD.locations = [
     desc: "燕家堡一夜血战后，你随溃退的正道残部退守前线营地。七派强征入伍的旗令已下——且闭关调息、等候征调，下一道军令不知落在天南哪一处的矿道。（第一幕·烽火征调随后续版本开启）",
     travelCost: 1,
     home: true,
+    // 前线待命营·闭关调息：2.5D 前景＝营帐内框（梁柱收口·沉黑），远雾偏浓（前线肃杀）
+    env: { depth: { fg: "interior", far: 0.42 } },
     actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
     encounters: [],
   },
@@ -256,6 +266,8 @@ WORLD.locations = [
     desc: "乱星海西南缘的一座外星岛，韩立携曲魂落海后登陆的首站。岛上顾家坐地经营，镇妖台擂台日日有妖兽相搏——藏拙赢上一场，便能换得一纸居留。逆星盟的黑袍乌丑，也在这岛上鬼祟出没。",
     travelCost: 1,
     home: true,
+    // 乱星海外岛·镇妖台：2.5D 前景＝水景框（底缘水汀+两角岸影·冷碧），远雾偏浓（海天一色）
+    env: { depth: { fg: "water", far: 0.5 } },
     actions: ["cultivate", "rest", "bottle"],
     map: { x: 27, y: 67 },
     encounters: [],
@@ -266,6 +278,8 @@ WORLD.locations = [
     desc: "一座荒僻无人的外岛，韩立择此辟洞府闭关。借三转重元功散功重修、一转之后真元愈纯，筑基修为重攀巅峰；岛畔礁缝里那只贪金的灵虫，日后便是他护身的噬金虫。",
     travelCost: 2,
     home: true,
+    // 荒岛洞府·岛畔礁缝：2.5D 前景＝水景框（底缘礁汀+冷碧水气），远雾偏浓（孤岛海雾）
+    env: { depth: { fg: "water", far: 0.5 } },
     actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
     map: { x: 15, y: 45 },
     unlock: (s) => !!(s.flags && s.flags.kuixing_resident),
@@ -301,6 +315,8 @@ WORLD.locations = [
     desc: "内星海中枢的修仙大都会，星宫治下、坊市林立。韩立携外海挣下的妖丹与降尘丹返此苦修叩关——首番结丹铩羽，再以觅长生之姿择吉布坛、九死渡劫，终成金丹大成。",
     travelCost: 3,
     home: true,
+    // 内星海中枢大都会·坊市林立：2.5D 前景＝坊市框（飞檐幌影+暖灯晕），远雾偏浓（星海都会）
+    env: { depth: { fg: "market", far: 0.45 } },
     actions: ["cultivate", "breakthrough", "rest", "alchemy"],
     map: { x: 52, y: 36 },
     unlock: (s) => !!(s.flags && s.flags.tianxing_open),
