@@ -796,6 +796,23 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   35% { transform: translateY(-5px); }
   100% { transform: translateY(0); }
 }
+/* 左侧 NPC 立绘镜像（scaleX(-1) 面朝主角）：震/呼吸顶起动画须保留镜像，
+   否则发言瞬间立绘会翻回默认朝向、落幕又翻回——朝向闪跳。与 portrait-out 同法（左侧专用关键帧）。 */
+.story-portrait.left.quake { animation-name: portraitQuakeL; }
+@keyframes portraitQuakeL {
+  0%, 100% { transform: scaleX(-1) translateX(0); }
+  15% { transform: scaleX(-1) translateX(-7px) rotate(-0.6deg); }
+  30% { transform: scaleX(-1) translateX(6px) rotate(0.5deg); }
+  45% { transform: scaleX(-1) translateX(-5px); }
+  60% { transform: scaleX(-1) translateX(4px); }
+  75% { transform: scaleX(-1) translateX(-2px); }
+}
+.story-portrait.left.speak-bump { animation-name: speakBumpL; }
+@keyframes speakBumpL {
+  0% { transform: scaleX(-1) translateY(0); }
+  35% { transform: scaleX(-1) translateY(-5px); }
+  100% { transform: scaleX(-1) translateY(0); }
+}
 .story-portrait.emo-pop img { animation: emoPop .4s cubic-bezier(.34,1.56,.64,1); }
 @keyframes emoPop {
   0% { transform: scale(.96); filter: brightness(1.25); }
