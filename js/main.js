@@ -13,6 +13,9 @@ const Main = {
       localStorage.removeItem("frxxz_art_cfg_v1");
     } catch (e) {}
 
+    // §9 体验设置：把"动效强度"档落到 body class（CSS 据此静态化 idle 动画）
+    if (typeof Settings !== "undefined" && Settings.applyMotionClass) Settings.applyMotionClass();
+
     // —— 角色创建：测灵根 ——
     UI.el("btn-test-root").addEventListener("click", () => this.testRoot());
     UI.el("btn-start").addEventListener("click", () => this.startGame());

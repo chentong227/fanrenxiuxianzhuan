@@ -211,5 +211,38 @@ console.log("== 6c. B3 顿帧：{fx:'hitStop'} 路由到 Fx.hitStop(ms)，默认
   }
 }
 
+console.log("== 8. §8 运镜分镜预设：{shot} 展开为 cam 原语 + 覆盖 ==");
+{
+  const a = CS.compile({ text: [{ shot: "pushIn" }] });
+  assert(a.length === 1 && a[0].kind === "op" && a[0].op === "cam" && a[0].cam === "zoom" && a[0].scale === 1.14, "pushIn→一拍 cam:zoom scale1.14");
+  const b = CS.compile({ text: [{ shot: "shock" }] });
+  assert(b.length === 2 && b[0].cam === "zoom" && b[1].cam === "shake" && b[1].px === 9, "shock→zoom+shake 两拍");
+  const c = CS.compile({ text: [{ shot: "pushIn", ms: 500, scale: 1.3 }] });
+  assert(c[0].ms === 500 && c[0].scale === 1.3, "pushIn 覆盖 ms/scale 生效");
+  const d = CS.compile({ text: [{ shot: "panLeft", scale: 1.9, ms: 700 }] });
+  assert(d[0].cam === "pan" && d[0].ms === 700 && d[0].scale === undefined, "panLeft：只收 ms、忽略 scale（不污染语义）");
+  const e = CS.compile({ text: [{ shot: "nope" }, "旁白"] });
+  assert(e.length === 1 && e[0].kind === "narr", "未知 shot→跳过、不崩、旁白照常");
+  const want = ["pushIn","pullOut","panLeft","panRight","tiltUp","tiltDown","trackLeft","trackRight","establish","shock","focusLeft","focusRight","reset"];
+  assert(want.every(k => Array.isArray(CS.SHOTS[k])), "SHOTS 预设库齐备（13 条）");
+}
+
+console.log("== 8b. §9 演出速度：_dur 按设置缩放（无 Settings→1×）==");
+{
+  const root = (typeof window !== "undefined") ? window : globalThis;
+  const had = Object.prototype.hasOwnProperty.call(root, "Settings");
+  const prev = root.Settings;
+  delete root.Settings;
+  try {
+    assert(CS._dur(900) === 900, "无 Settings→1×（900→900）");
+    root.Settings = { speedScale: () => 0.5 };
+    assert(CS._dur(900) === 450 && CS._dur(600) === 300, "speedScale 0.5×→时长减半");
+    root.Settings = { speedScale: () => 1.5 };
+    assert(CS._dur(600) === 900, "speedScale 1.5×→时长拉长");
+  } finally {
+    if (had) root.Settings = prev; else delete root.Settings;
+  }
+}
+
 console.log(`\n========== 演出推进器：${fail === 0 ? "全通 ✓" : fail + " 项败 ✗"}（${pass} 项）==========`);
 process.exit(fail ? 1 : 0);

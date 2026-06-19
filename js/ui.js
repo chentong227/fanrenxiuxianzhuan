@@ -1008,7 +1008,8 @@ const UI = {
       this.storyAdvance();
     };
     card.onclick = (e) => { e.stopPropagation(); begin(); };
-    this._titleTimer = setTimeout(begin, 1500);
+    const tsc = (typeof Settings !== "undefined" && Settings.speedScale) ? Settings.speedScale() : 1;
+    this._titleTimer = setTimeout(begin, Math.round(1500 * tsc));
   },
 
   // 降级渲染（无 overlay 时）：把剧情写进右侧叙事区并在下方出选项
@@ -1083,16 +1084,19 @@ const UI = {
     el.appendChild(span);
     if (st) st.typing = true;
     let i = 0;
+    // §9 演出速度：逐字间隔按设置缩放（默认 26ms；慢×1.5 / 快×0.6 / 极快×0.35）
+    const sc = (typeof Settings !== "undefined" && Settings.speedScale) ? Settings.speedScale() : 1;
+    const tick = Math.max(6, Math.round(26 * sc));
     this._typeTimer = setInterval(() => {
       i += 1;
       span.textContent = full.slice(0, i);
-      // 打字机轻嗒：每3字一声，标点不响（气口）
-      if (typeof Sfx !== "undefined" && i % 3 === 0 && !/[，。！？…—、；：]/.test(full[i - 1] || "")) Sfx.play("type");
+      // 打字机轻嗒：每3字一声，标点不响（气口）；§7 按说话人立绘左右偏声相
+      if (typeof Sfx !== "undefined" && i % 3 === 0 && !/[，。！？…—、；：]/.test(full[i - 1] || "")) Sfx.play("type", { pan: this._sayPan || 0 });
       if (i >= full.length) {
         clearInterval(this._typeTimer); this._typeTimer = null;
         if (st) st.typing = false;
       }
-    }, 26);
+    }, tick);
   },
   // 立即完成当前打字
   _typeFinish() {
@@ -1181,6 +1185,10 @@ const UI = {
     const stageName = this.el("story-stage-name");
     if (stageName) stageName.textContent = st.stage.title || "";
     if (typeof Sfx !== "undefined") Sfx.play("page");
+
+    // §7 声相：双人相对立绘——韩立(右)+0.45 / 对话 NPC(左)−0.45 / 旁白·心声·场景=居中
+    const selfSpeak = b.who && (b.who === (State.data && State.data.name) || b.who === "韩立");
+    this._sayPan = (b.kind === "say") ? (selfSpeak ? 0.45 : -0.45) : 0;
 
     const speakerEl = this.el("story-speaker");
     const textEl = this.el("story-text");
@@ -5257,10 +5265,53 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTechniques()">功法 · 配装</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTreasury()">法宝 · 装备位</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openLLMSettings()">活世界（实时对谈）</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openExpSettings()">体验设置（演出·动效·震动）</button>
         <button class="btn btn-secondary" onclick="if(typeof Sfx!=='undefined'){Sfx.toggle();} UI.openSystemMenu();">音效：${soundOn ? "开" : "关"}（点击切换）</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); State.save() ? UI.toast('已存档') : UI.toast('存档失败', true)">存档</button>
         <button class="btn btn-ghost" onclick="UI.closeModal(); Main.toCreate()">回主菜单</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">返回</button>
+      </div>
+    `);
+  },
+
+  /* -------- §9 体验设置（演出速度 / 动效强度 / 震动）-------- */
+  openExpSettings() {
+    if (typeof Settings === "undefined") { this.openSystemMenu(); return; }
+    const seg = (label, val, cur, call) =>
+      `<button class="set-opt${val === cur ? " on" : ""}" onclick="${call}">${label}</button>`;
+    const spd = Settings.speed();
+    const mot = Settings.motion();
+    const hap = Settings.haptics();
+    const hapSupported = Settings.hapticsSupported();
+    const sysReduced = Settings.prefersReduced();
+    this.openModal(`
+      <h2>体验设置</h2>
+      <div class="settings">
+        <div class="set-row">
+          <div class="set-label">演出速度<span class="set-hint">台词逐字 / 镜头 / 停顿的快慢</span></div>
+          <div class="set-opts">
+            ${[0,1,2,3].map(i => seg(Settings.speedLabel(i), i, spd, `Settings.setSpeed(${i}); UI.openExpSettings()`)).join("")}
+          </div>
+        </div>
+        <div class="set-row">
+          <div class="set-label">动效强度<span class="set-hint">震屏 / 顿帧 / 常驻氛围粒${sysReduced ? "　·　系统已开启“减少动效”" : ""}</span></div>
+          <div class="set-opts">
+            ${seg("满", "full", mot, "Settings.setMotion('full'); UI.openExpSettings()")}
+            ${seg("简", "lite", mot, "Settings.setMotion('lite'); UI.openExpSettings()")}
+            ${seg("关", "off", mot, "Settings.setMotion('off'); UI.openExpSettings()")}
+          </div>
+        </div>
+        <div class="set-row">
+          <div class="set-label">震动反馈<span class="set-hint">${hapSupported ? "重击 / 突破 / 古钟 的手机轻震" : "本设备不支持振动"}</span></div>
+          <div class="set-opts">
+            ${seg("开", true, hapSupported ? hap : null, "Settings.setHaptics(true); UI.openExpSettings()")}
+            ${seg("关", false, hapSupported ? hap : null, "Settings.setHaptics(false); UI.openExpSettings()")}
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="UI.closeModal(); UI.openSystemMenu()">返回系统</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal()">完成</button>
       </div>
     `);
   },

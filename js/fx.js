@@ -198,9 +198,21 @@
       this._push({ rect: true, c: color, a: alpha, life: dur, t: 0 });
       this._run();
     },
+    /* §9 动效强度统一判定：优先取 Settings（含用户"关动效"），回退系统 reduced-motion。*/
+    _reduced() {
+      const S = (typeof window !== "undefined") && window.Settings;
+      if (S && S.reduceMotion) return S.reduceMotion();
+      return typeof window !== "undefined" && window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    },
+    _lite() {
+      const S = (typeof window !== "undefined") && window.Settings;
+      return !!(S && S.liteMotion && S.liteMotion());
+    },
     /* 震屏 */
     shake(px = 8) {
       if (!this._host) return;
+      if (this._reduced()) return;            // §9 关动效：不震屏（无障碍/晕动）
       this._host.style.setProperty("--fx-shake", px + "px");
       this._host.classList.remove("fx-shaking"); void this._host.offsetWidth;
       this._host.classList.add("fx-shaking");
@@ -212,8 +224,7 @@
     hitStop(ms = 80) {
       ms = Math.max(0, Math.min(120, ms | 0));
       if (!ms) return;
-      if (typeof window !== "undefined" && window.matchMedia &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (this._reduced() || this._lite()) { this.haptic("heavy"); return; }  // §9 关/简动效：不冻帧（仍留一记触觉）
       const now = (typeof performance !== "undefined") ? performance.now() : Date.now();
       this._frozenUntil = Math.max(this._frozenUntil, now + ms);
       const h = this._host;
@@ -256,6 +267,7 @@
      * Fx.ambient(preset[,opts]) 起；Fx.ambient(null|"off") 收（beam 立撤、motes 自然淡出）。
      * 守红线：常驻粒桌面≤80/手机≤30（_ambCap），帧难看时随 _degraded 自动减半。 */
     ambient(preset, o = {}) {
+      if (preset && preset !== "off" && preset !== "none" && this._reduced()) preset = "off";  // §9 关动效：不起常驻氛围粒
       if (!preset || preset === "off" || preset === "none") {
         this._amb = null;
         for (const p of this._parts) {
