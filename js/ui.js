@@ -2909,11 +2909,15 @@ const UI = {
               : `<span style="color:var(--ink-faint);font-size:12px">无货</span>`}
     </div>`;
     }).join("");
-    // 向之礼：在坊市闲坐的"老杂役"——他的指点分文不取
+    // 向之礼：在坊市廊下晒太阳的"老杂役"——他的指点分文不取
+    const xiangUrl = (typeof Art !== "undefined") ? Art.url("xiangzhili") : null;
+    const xiangFace = xiangUrl
+      ? `<img src="${xiangUrl}" alt="向之礼" style="width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:top;vertical-align:middle;margin-right:6px;border:1px solid var(--line)" />`
+      : "";
     const xiang = s.flags.xueshi_intel
-      ? `<p style="color:var(--jade-bright);font-size:12px">向之礼的指点你记在心里：血色主药在禁地，名额看修为（练气十一层）与大比时节。</p>`
+      ? `<div class="market-item"><span>${xiangFace}<span style="color:var(--jade-bright);font-size:12px">向之礼的指点你记在心里：血色主药在禁地，名额看修为（练气十一层）与大比时节。</span></span></div>`
       : `<div class="market-item">
-          <span><span class="iname">廊下晒太阳的向老头</span><span style="color:var(--ink-dim);font-size:12px">　他朝你招了招手，似乎有话要说。</span></span>
+          <span>${xiangFace}<span class="iname">廊下晒太阳的向老头</span><span style="color:var(--ink-dim);font-size:12px">　他朝你招了招手，似乎有话要说。</span></span>
           <button class="btn btn-mini" onclick="Engine.xiangIntel()">上前听他闲谈</button>
         </div>`;
     this.openModal(`

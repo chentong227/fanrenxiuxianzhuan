@@ -1323,10 +1323,10 @@ WORLD.npcs = [
     where: ["fangshi"], cond: (s) => s.flags.yaoyuan_started,
   },
   {
-    id: "xiangzhili", name: "向之礼", role: "谷中老修 · 深不可测",
-    bio: "常在坊市与药园间闲逛的青衫老修，自称练气杂役，谷中无人在意他。可他随口一句闲谈，往往切中要害——血色禁地的门道，他熟稔得不像个杂役。你直觉：此老身上的平静，深得见不到底。",
+    id: "xiangzhili", name: "向之礼", role: "坊市老修 · 深不可测",
+    bio: "常在黄枫谷坊市廊下晒太阳的青衫老修，自称练气杂役，谷中无人在意他。可他随口一句闲谈，往往切中要害——血色禁地的门道，他熟稔得不像个杂役。你直觉：此老身上那股平静，深得见不到底。",
     lines: ["小友又在攒家底？嗯，是个稳当性子。", "血色禁地么……去得，也回得来——只看你贪不贪。", "（他眯眼晒着太阳，仿佛谷中百年风雨都与他无关）"],
-    where: ["fangshi", "baiyao_yuan"], cond: (s) => s.flags.yaoyuan_started,
+    where: ["fangshi"], cond: (s) => s.flags.yaoyuan_started,
   },
   {
     id: "nangongwan", name: "南宫婉", role: "掩月宗 · 天之骄女",

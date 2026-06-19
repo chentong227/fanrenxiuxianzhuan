@@ -161,6 +161,7 @@ const STORY = [
   /* ---- B4 张铁之死 ---- */
   {
     id: "zhangtie",
+    cg: "qixuan_ye",
     cond: (s) => s.flags.zhangtie_fated,
     objTitle: "挚友外出未归",
     objHint: "张铁奉命外出，归期将至。静待时日，留意他的下落。",
@@ -196,6 +197,7 @@ const STORY = [
   /* ---- B5 夺舍真相 → 决战准备 ---- */
   {
     id: "showdown_prep",
+    cg: "qixuan_ye",
     cond: (s) => s.flags.zhangtie_dead,
     title: "夺舍之谋",
     text: [
@@ -406,6 +408,7 @@ const STORY = [
    * ============================================================ */
   {
     id: "mo_arrive",
+    cg: "mofu",
     cond: (s) => s.flags.arc1_complete && s.location === "jiayuan_city" && !s.flags.mo_met,
     objTitle: "南下嘉元城",
     objHint: "寒毒在身——点顶栏「舆图」择嘉元城启程，持遗信投墨府求暖阳宝玉。",
@@ -446,6 +449,7 @@ const STORY = [
   },
   {
     id: "mo_crisis",
+    cg: "mofu",
     cond: (s) => s.flags.mo_met && !s.flags.mo_warned && (s.flags.mo_months || 0) >= 1,
     objTitle: "墨府客居",
     objHint: "在墨府住下（嘉元城内调息/修炼度月）——这座没了主心骨的宅院，正被许多双眼睛盯着。",
@@ -620,6 +624,7 @@ const STORY = [
    * ============================================================ */
   {
     id: "xianhui_open",
+    cg: "xianhui_tai",
     cond: (s) => s.flags.qingwen_seen && State.absMonth() >= (s.flags.xianhui_due || 0) && s.location === "tainan_fair" && !s.flags.xianhui_done,
     objTitle: "升仙大会",
     objHint: "七派联合收徒的大会就在太南山——在太南谷等到会期（修炼/赶集度月皆可）。",
@@ -652,6 +657,7 @@ const STORY = [
   },
   {
     id: "wan_death",
+    cg: "tainan_lin",
     cond: (s) => s.flags.xianhui_done && !s.flags.wan_avenged,
     bgm: "sorrow",
     title: "暮色森林 · 故人之血",
@@ -752,6 +758,7 @@ const STORY = [
   },
   {
     id: "hf_duodan",
+    cg: "huangfeng_zhishi",
     cond: (s) => s.flags.hf_arrived && !s.flags.zhuji_dan_stolen,
     bgm: "tense",
     title: "得丹 · 夺丹",
@@ -860,6 +867,7 @@ const STORY = [
    * ============================================================ */
   {
     id: "chen_rescue",
+    cg: "huangfeng_lin",
     cond: (s) => s.flags.yaoyuan_started && s.realmIndex >= 10 && (s.flags.fangshi_visited || 0) >= 1 && !s.flags.luyunfeng_dead,
     bgm: "tense",
     objTitle: "山雨欲来",
@@ -937,6 +945,7 @@ const STORY = [
    * ============================================================ */
   {
     id: "jindi_meeting",
+    cg: "huangfeng_dadian",
     cond: (s) => s.flags.xueshi_due && State.absMonth() >= s.flags.xueshi_due && s.realmIndex >= 10 && !s.flags.xueshi_opened,
     bgm: "tense",
     objTitle: "大比时节",
@@ -1093,6 +1102,7 @@ const STORY = [
    * ============================================================ */
   {
     id: "qingyuan_gift",
+    cg: "huangfeng_dadian",
     skipIf: (s) => s.flags.qingyuan_given,
     cond: (s) => State.realm().tier === "foundation" && !s.flags.qingyuan_given,
     title: "筑基 · 青元剑诀",
@@ -1285,6 +1295,7 @@ const STORY = [
   },
   {
     id: "yanjia_reunion",
+    cg: "yanjia_jiaochang",
     skipIf: (s) => s.flags.yanjia_reunion_done,
     cond: (s) => s.flags.yanjia_summoned && !s.flags.yanjia_reunion_done,
     bgm: "sorrow",
@@ -1320,6 +1331,7 @@ const STORY = [
   },
   {
     id: "yanjia_boss",
+    cg: "yanjia_xueye",
     skipIf: (s) => s.flags.yanjia_boss_done,
     cond: (s) => s.flags.yanjia_reunion_done && !s.flags.yanjia_boss_done,
     bgm: "boss",
@@ -1344,6 +1356,7 @@ const STORY = [
   },
   {
     id: "yanjia_escape",
+    cg: "yanjia_kuiwei",
     skipIf: (s) => s.flags.yanjia_done,
     cond: (s) => s.flags.yanjia_boss_done && !s.flags.yanjia_done,
     bgm: "triumph",
@@ -2000,7 +2013,7 @@ const STORY = [
     id: "modao_e4_santuan",
     skipIf: (s) => s.flags.modao_e4_santuan_done,
     cond: (s) => s.flags.modao_e4_shenxun_done && !s.flags.modao_e4_santuan_done,
-    cg: "jingcheng",
+    cg: "huanggong_men",
     bgm: "boss",
     title: "皇宫决战 · 三组对位群架",
     objTitle: "群架·杀开一条道",
@@ -2023,7 +2036,7 @@ const STORY = [
     id: "modao_e4_dive",
     skipIf: (s) => s.flags.modao_e4_dive_done,
     cond: (s) => s.flags.modao_e4_santuan_done && !s.flags.modao_e4_dive_done,
-    cg: "jingcheng",
+    cg: "xuechi_dian",
     bgm: "tense",
     title: "皇宫决战 · 血池大殿",
     objTitle: "杀至最底",
@@ -2058,7 +2071,7 @@ const STORY = [
     id: "modao_e4_liujing_live",
     skipIf: (s) => s.flags.modao_e4_liujing_done || !(s.flags.jingcheng_intel >= 2),
     cond: (s) => s.flags.modao_e4_dive_done && s.flags.jingcheng_intel >= 2,
-    cg: "jingcheng",
+    cg: "xuechi_dian",
     bgm: "tense",
     title: "皇宫决战 · 阴手·示警",
     objTitle: "喝破伏兵",
@@ -2090,7 +2103,7 @@ const STORY = [
     id: "modao_e4_liujing_die",
     skipIf: (s) => s.flags.modao_e4_liujing_done,
     cond: (s) => s.flags.modao_e4_dive_done,
-    cg: "jingcheng",
+    cg: "xuechi_dian",
     bgm: "sorrow",
     title: "皇宫决战 · 阴手·身陨",
     objTitle: "猝不及防",
@@ -2121,7 +2134,7 @@ const STORY = [
     id: "modao_e4_xuwang",
     skipIf: (s) => s.flags.modao_e4_xuwang_done,
     cond: (s) => s.flags.modao_e4_liujing_done && !s.flags.modao_e4_xuwang_done,
-    cg: "jingcheng",
+    cg: "xuechi_dian",
     bgm: "boss",
     title: "皇宫决战 · 胥王现身",
     objTitle: "且战且退",
@@ -2160,7 +2173,7 @@ const STORY = [
     id: "modao_e4b_tuoshi",
     skipIf: (s) => s.flags.modao_e4b_tuoshi_done,
     cond: (s) => s.flags.modao_e4_xuwang_done && State.absMonth() >= (s.flags.modao_e4b_due || 0),
-    cg: "jingcheng",
+    cg: "xuechi_dian",
     bgm: "boss",
     title: "皇宫决战 · 拖时布阵",
     objTitle: "且战且退·拖住他",
@@ -2186,7 +2199,7 @@ const STORY = [
     id: "modao_e4b_zhencheng",
     skipIf: (s) => s.flags.modao_e4b_xuwang_done,
     cond: (s) => s.flags.modao_e4b_tuoshi_done && !s.flags.modao_e4b_xuwang_done,
-    cg: "jingcheng",
+    cg: "xuechi_dian",
     bgm: "boss",
     title: "皇宫决战 · 阵成·反制",
     objTitle: "颠倒五行·反制",
@@ -2215,7 +2228,7 @@ const STORY = [
     id: "modao_e4b_finale_live",
     skipIf: (s) => s.flags.modao_e4b_finale_done || !s.flags.liujing_survived,
     cond: (s) => s.flags.modao_e4b_xuwang_done && s.flags.liujing_survived,
-    cg: "jingcheng",
+    cg: "xuechi_dian",
     bgm: "triumph",
     title: "皇宫决战 · 真凰符·终结",
     objTitle: "毕其功于一役",
@@ -2250,7 +2263,7 @@ const STORY = [
     id: "modao_e4b_finale_die",
     skipIf: (s) => s.flags.modao_e4b_finale_done,
     cond: (s) => s.flags.modao_e4b_xuwang_done,
-    cg: "jingcheng",
+    cg: "xuechi_dian",
     bgm: "triumph",
     title: "皇宫决战 · 真凰符·终结",
     objTitle: "为刘师兄·了结此獠",
@@ -2284,7 +2297,7 @@ const STORY = [
     id: "modao_e4b_likjing",
     skipIf: (s) => s.flags.modao_e4_done,
     cond: (s) => s.flags.modao_e4b_finale_done && !s.flags.modao_e4_done,
-    cg: "jingcheng",
+    cg: "xuechi_dian",
     bgm: "journey",
     title: "皇宫决战 · 离京",
     objTitle: "尘埃落定·离京",
@@ -2330,7 +2343,7 @@ const STORY = [
     id: "zaibie_open",
     skipIf: (s) => s.flags.zaibie_open_done,
     cond: (s) => s.flags.modao_e4_done && !s.flags.zaibie_open_done,
-    cg: "jiyuan_shi",
+    cg: "jiayuan_guandao",
     bgm: "journey",
     title: "再别天南 · 回天南",
     objTitle: "南返嘉元城",
@@ -2364,6 +2377,7 @@ const STORY = [
   // ——【曲魂·身外化身】开篇一步祭炼：以玄阴诀祭曲魂为身外化身，装黑煞教主血刃·达假丹境——
   {
     id: "zaibie_quhun_refine",
+    cg: "jingshi_huashen",
     skipIf: (s) => s.flags.zaibie_quhun_done,
     cond: (s) => s.flags.zaibie_open_done && !s.flags.zaibie_quhun_done,
     bgm: "tense",
@@ -2411,7 +2425,7 @@ const STORY = [
     id: "zaibie_a1_jinbei",
     skipIf: (s) => s.flags.zaibie_jinbei_done,
     cond: (s) => s.flags.zaibie_quhun_done && !s.flags.zaibie_jinbei_done,
-    cg: "jiyuan_shi",
+    cg: "luanshipo",
     bgm: "boss",
     title: "再别天南 · 金背妖螂",
     objTitle: "御灵宗拦路·金背妖螂",
@@ -2435,7 +2449,7 @@ const STORY = [
     id: "zaibie_a1_duoshe",
     skipIf: (s) => s.flags.zaibie_duoshe_done,
     cond: (s) => s.flags.zaibie_jinbei_done && !s.flags.zaibie_duoshe_done,
-    cg: "duoshe",
+    cg: "luanshipo",
     bgm: "boss",
     title: "再别天南 · 夺剑",
     objTitle: "夺御灵宗夺舍者之绿煌剑",
@@ -2459,6 +2473,7 @@ const STORY = [
   // ——【Act1 收束·过渡 Act2】得绿煌剑·奇虫榜玉简；金鼓原战火传来——
   {
     id: "zaibie_a1_after",
+    cg: "jiayuan_inn",
     skipIf: (s) => s.flags.zaibie_a1_after_done,
     cond: (s) => s.flags.zaibie_duoshe_done && !s.flags.zaibie_a1_after_done,
     bgm: "tense",
@@ -2495,7 +2510,7 @@ const STORY = [
     id: "zaibie_a2_jingu",
     skipIf: (s) => s.flags.zaibie_jingu_done,
     cond: (s) => s.flags.zaibie_a1_after_done && !s.flags.zaibie_jingu_done,
-    cg: "kuangchang",
+    cg: "jingu_yuan",
     bgm: "combat",
     title: "再别天南 · 金鼓原决战",
     objTitle: "金鼓原·擒贼先擒王",
@@ -2522,7 +2537,7 @@ const STORY = [
     id: "zaibie_a2_hushan",
     skipIf: (s) => s.flags.zaibie_hushan_done,
     cond: (s) => s.flags.zaibie_jingu_done && !s.flags.zaibie_hushan_done,
-    cg: "kuangchang",
+    cg: "hushan_zhen",
     bgm: "boss",
     title: "再别天南 · 护山大阵",
     objTitle: "死守阵脚·待阵成",
@@ -2543,6 +2558,7 @@ const STORY = [
   // ——【Act2 收束】李化元燃命殉道（cutscene·sorrow）——
   {
     id: "zaibie_a2_lihuayuan",
+    cg: "hushan_zhen",
     skipIf: (s) => s.flags.zaibie_lhy_done,
     cond: (s) => s.flags.zaibie_hushan_done && !s.flags.zaibie_lhy_done,
     bgm: "sorrow",
@@ -2576,6 +2592,7 @@ const STORY = [
   // ——【Act3·亡命元武】齐云霄已殁·辛如音耗血修阵·赠古阵图纸——
   {
     id: "zaibie_a3_yuanwu",
+    cg: "yuanwu_diku",
     skipIf: (s) => s.flags.zaibie_a3_done,
     cond: (s) => s.flags.zaibie_lhy_done && !s.flags.zaibie_a3_done,
     bgm: "sorrow",
@@ -2612,6 +2629,7 @@ const STORY = [
   // ——【Act4·再别天南·其一】三人护道战（objective:survive；南宫婉/陈巧倩护道）——
   {
     id: "zaibie_a4_hudao",
+    cg: "yanjia_canyuan",
     skipIf: (s) => s.flags.zaibie_hudao_done,
     cond: (s) => s.flags.zaibie_a3_done && !s.flags.zaibie_hudao_done,
     bgm: "combat",
@@ -2635,6 +2653,7 @@ const STORY = [
   // ——【Act4·再别天南·其二】吸修跌境·纯演出（不动数值）——
   {
     id: "zaibie_a4_diejing",
+    cg: "yanjia_canyuan",
     skipIf: (s) => s.flags.zaibie_diejing_done,
     cond: (s) => s.flags.zaibie_hudao_done && !s.flags.zaibie_diejing_done,
     bgm: "sorrow",
@@ -2666,6 +2685,7 @@ const STORY = [
   // ——【Act4·再别天南·其三】南宫婉赠灵石——
   {
     id: "zaibie_a4_lingshi",
+    cg: "kuangdong_kou",
     skipIf: (s) => s.flags.zaibie_lingshi_done,
     cond: (s) => s.flags.zaibie_diejing_done && !s.flags.zaibie_lingshi_done,
     bgm: "sorrow",
@@ -2697,7 +2717,7 @@ const STORY = [
     id: "zaibie_a4_kuangdong",
     skipIf: (s) => s.flags.zaibie_kuangdong_done,
     cond: (s) => s.flags.zaibie_lingshi_done && !s.flags.zaibie_kuangdong_done,
-    cg: "kuangdong",
+    cg: "chuansong_zhen",
     bgm: "boss",
     title: "再别天南 · 矿洞拖时",
     objTitle: "死守洞口·待古阵启",
@@ -2722,7 +2742,7 @@ const STORY = [
     id: "zaibie_cut1_likai",
     skipIf: (s) => s.flags.zaibie_likai_done,
     cond: (s) => s.flags.zaibie_kuangdong_done && !s.flags.zaibie_likai_done,
-    cg: "kuangdong",
+    cg: "chuansong_zhen",
     bgm: "boss",
     title: "再别天南 · 离开天南",
     objTitle: "大挪移令·强启古阵",
