@@ -393,21 +393,61 @@
    * 任一文件缺失/加载失败时，回退本引擎对应 id 的程序合成（不静默）。 */
   const AMB_FILES = ["night", "firefly", "candle", "wind", "rain", "market"];
 
-  /* ============ 环境床状态 + BGM 让位（duck）============
-   * 环境床领奏时把当前 BGM（文件轨 + 合成轨）压到极低，出演出/收床即恢复。 */
+  /* ============ 环境床状态 + BGM 让位（duck）+ 换轨交叉淡化（C2）============
+   * 环境床/演出领奏时把当前 BGM（文件轨 + 合成轨）压到极低；换轨 600ms 交叉淡化（不再硬切）；
+   * 关键 SFX（古钟/天雷）触发时音乐瞬时 −6dB 让路。出演出/收床即恢复。 */
   let ambEl = null;
   let curAmb = null;
-  let bgmDucked = false, bgmBaseVol = null;
+  let bgmDucked = false;
+  const XFADE_MS = 600;       // 换轨交叉淡化时长（audio-design §2.4：硬切→600ms 软接）
+  const DUCK_K = 0.16;        // 环境床/演出领奏时 BGM 让位系数（约 −16dB）
+  const SFX_DUCK_K = 0.5;     // 关键 SFX（古钟/天雷）瞬时让路：−6dB
+  const DUCK_SFX = { bell: 1, thunder: 1 };   // 触发瞬时 ducking 的关键音效
+
+  // 文件轨音量缓变（Audio 元素无 GainNode，用定时器 tween volume）；同元素重入自动接管旧 tween。
+  // 用于：换轨交叉淡化、duck/unduck 平滑、关键 SFX 瞬时让路。
+  function fadeVol(el, to, ms, done) {
+    if (!el) { if (done) done(); return; }
+    try { clearInterval(el._fade); } catch (e) {}
+    to = Math.max(0, Math.min(1, to));
+    const from = (typeof el.volume === "number") ? el.volume : to;
+    const dur = Math.max(1, ms | 0);
+    const clock = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const t0 = clock();
+    el._fade = setInterval(() => {
+      const k = Math.min(1, (clock() - t0) / dur);
+      try { el.volume = from + (to - from) * k; } catch (e) {}
+      if (k >= 1) { try { clearInterval(el._fade); } catch (e) {} el._fade = 0; if (done) done(); }
+    }, 40);
+  }
+
   function duckBgm() {
     if (bgmDucked) return; bgmDucked = true;
-    if (bgmEl) { bgmBaseVol = bgmEl.volume; try { bgmEl.volume = Math.max(0, bgmEl.volume * 0.16); } catch (e) {} }
-    try { if (BGM._master) BGM._master.gain.setTargetAtTime(0.16, ac().currentTime, 0.4); } catch (e) {}
+    if (bgmEl) { const base = (bgmEl._vol != null ? bgmEl._vol : bgmEl.volume); fadeVol(bgmEl, base * DUCK_K, 240); }
+    try { if (BGM._master) BGM._master.gain.setTargetAtTime(DUCK_K, ac().currentTime, 0.4); } catch (e) {}
   }
   function unduckBgm() {
     if (!bgmDucked) return; bgmDucked = false;
-    if (bgmEl && bgmBaseVol != null) { try { bgmEl.volume = bgmBaseVol; } catch (e) {} }
-    bgmBaseVol = null;
+    if (bgmEl) { const base = (bgmEl._vol != null ? bgmEl._vol : bgmEl.volume); fadeVol(bgmEl, base, 320); }
     try { if (BGM._master) BGM._master.gain.setTargetAtTime(1, ac().currentTime, 0.4); } catch (e) {}
+  }
+
+  // 关键 SFX 让路（C2 ducking）：古钟/天雷触发时音乐瞬时 −6dB（~80ms 落、~ms 缓回），听感更清。
+  // 已被环境床压低(bgmDucked)时不再叠（音乐本就很轻），避免越压越低/抖动。
+  function keySfxDuck(ms = 520) {
+    if (muted || bgmDucked) return;
+    if (bgmEl) {
+      const base = (bgmEl._vol != null ? bgmEl._vol : bgmEl.volume);
+      fadeVol(bgmEl, base * SFX_DUCK_K, 80, () => fadeVol(bgmEl, base, ms));
+    }
+    try {
+      const c = ac(), m = BGM._master;
+      if (c && m) {
+        m.gain.cancelScheduledValues(c.currentTime);
+        m.gain.setTargetAtTime(SFX_DUCK_K, c.currentTime, 0.025);
+        m.gain.setTargetAtTime(1, c.currentTime + 0.12, Math.max(0.05, ms / 3000));
+      }
+    } catch (e) {}
   }
 
   const Sfx = {
@@ -434,6 +474,7 @@
       if (lastPlay[name] && now - lastPlay[name] < 70) return;   // 同音去抖
       lastPlay[name] = now;
       try { const c = ac(); if (c) RECIPES[name](c); } catch (e) {}
+      if (DUCK_SFX[name]) keySfxDuck();   // C2：古钟/天雷等关键 SFX 触发→音乐瞬时让路
     },
     // 主入口：换 BGM 轨（文件优先，合成兜底；同轨幂等）
     bgm(track, opts = {}) {
@@ -442,10 +483,12 @@
       if (BGM_FILES.includes(track)) {
         const url = `assets/audio/bgm_${track}.mp3`;
         try {
-          this.stopBgm();
           BGM.stop();   // 合成轨让位
+          const old = bgmEl;                                   // 旧文件轨：交叉淡出后收掉（不再硬切）
           const el = new window.Audio(url);
-          el._src = url; el.loop = track !== "triumph"; el.volume = opts.vol != null ? opts.vol : 0.3;
+          const baseVol = opts.vol != null ? opts.vol : 0.3;
+          el._src = url; el._vol = baseVol; el.loop = track !== "triumph";
+          el.volume = 0;                                       // 从静音淡入
           el.onerror = () => {   // 文件缺失：回退合成
             if (bgmEl === el) bgmEl = null;
             const fb = FALLBACK[track] !== undefined ? FALLBACK[track] : track;
@@ -453,9 +496,12 @@
           };
           if (track === "triumph") el.onended = () => { if (bgmEl === el) { bgmEl = null; curTrack = null; } };
           bgmEl = el;
-          // 床领奏时换轨：新轨续压，免得地点级环境床下 BGM 又被顶到原音量
-          if (bgmDucked) { bgmBaseVol = el.volume; try { el.volume = Math.max(0, el.volume * 0.16); } catch (e) {} }
           if (!muted) el.play().catch(() => {});
+          // C2 交叉淡化：旧轨 600ms 淡出收掉，新轨同时从 0 升到目标；床领奏(bgmDucked)时新轨续压
+          const fade = opts.fade != null ? opts.fade : XFADE_MS;
+          const target = bgmDucked ? baseVol * DUCK_K : baseVol;
+          if (old && old !== el) fadeVol(old, 0, fade, () => { try { old.pause(); } catch (e) {} });
+          fadeVol(el, target, fade);
           return;
         } catch (e) {}
       }

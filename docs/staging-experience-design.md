@@ -25,7 +25,7 @@
 | **演出推进器** `js/cutscene.js` | 原语 `cam/actor/fx/sfx/bgm/wait/beat/guide`；`compile()` 纯函数（可无头测）；`run/runBeat/runGuide`；`_cam` 对 `#story-bg` 施 `translate+scale`；`beat:{kind:"window\|choice"}`（伺机出手/抉择）**已落地** | 分层视差、环境声触发、hit-stop、视频 |
 | **演出舞台 DOM**（`ui.js _storyCtx`） | `bg=#story-bg`、左右立绘位、`fxHost=#story-overlay`、`beatHost=#story-choices`、`anchor()` | `#story-bg` 仍是**单层**背景 → 视差要拆层 |
 | **特效引擎** `js/fx.js` | `flash/shake/burst/lightning/material/swordRing/ribbon/trail` + `ensure(host)`；`_budget`/`_degraded` 性能护栏；**常驻氛围粒 `ambient(ash/dust/spirit/beam)`（P1·B2）+ `hitStop(ms)` 顿帧（P1·B3）已落地** | — |
-| **音频** `js/audio.js` | 合成 SFX 全套 + 合成 BGM(`daily/combat/tense`) + 9 条文件轨；**古钟 `bell` 已有** | **无环境床**、无换轨 crossfade、无 ducking |
+| **音频** `js/audio.js` | 合成 SFX 全套 + 合成 BGM(`daily/combat/tense`) + 9 条文件轨；**古钟 `bell` 已有**；**六环境床文件优先（P0·C1）+ 换轨 600ms 交叉淡化 + ducking（P1·C2）已落地** | — |
 | **设计档** | cutscene/audio/fx/art 四份已成体系 | 本稿做"升级增补"，不另立门户 |
 
 ---
@@ -80,6 +80,7 @@
 - 换轨 **600ms 交叉淡化**（现在是硬切，战斗↔日常尤其突兀；audio-design §2.4）。
 - 战斗按烈度叠层（铺垫→对峙→决战）。
 - **ducking**：古钟/天雷等关键 SFX 触发时，音乐瞬时 −6dB 让路，听感更清。
+- **实现 ✅（P1）**：`audio.js` 新增 `fadeVol(el,to,ms)`（Audio 元素无 GainNode，用 40ms tick 缓变 volume）。`Sfx.bgm(track)` 换轨改为**交叉淡化**——旧文件轨 600ms 淡出后 `pause()`、新轨同时从 0 淡入到目标（床领奏中则续压到 ×0.16）；同轨幂等不重建。环境床/演出领奏 `duckBgm()/unduckBgm()` 改用 `fadeVol` 平滑（文件轨 240ms 落 / 320ms 回，合成轨 `setTargetAtTime`）。关键 SFX（`bell` 古钟 / `thunder` 天雷，`DUCK_SFX` 表）经 `keySfxDuck()` 触发**瞬时 −6dB 让路**（~80ms 落、~520ms 缓回；已被床压低时不叠）。头测 `test/audio.test.js` 覆盖换轨淡入/交叉淡出/关键 SFX 让路/起收床 duck/同轨幂等。
 
 ### C3 · 轨道→场景映射校验 —— P1
 - 核对 `ui.js/main.js` 的切轨点（audio-design §三表），保证"该静的时候别打鼓"、进城切 town、决战切 boss、离别切 sorrow。
