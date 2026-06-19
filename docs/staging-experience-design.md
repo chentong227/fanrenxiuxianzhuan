@@ -91,6 +91,7 @@
 ## 5. 游戏体验（更广，承接已有设计档）
 
 - **D1 交互演出扩展**（cutscene-design §四）：在已有 `beat:{window\|choice}` 上扩 `hold-breath`（屏息/隐蔽）、`spectate`（观战）、`choice-QTE`——把操作嵌进高潮，"演出即操作"。
+  - **D1-a 直接坠入战斗/箱庭（新增设计 · 待实装）**：补一条"演出落幕（或中途）**不经中间选择屏**、直接坠入战斗或箱庭"的原语 `{fight:id}` / `{warp:locId,spot}`。现状是"演出落幕→弹『临战准备』选择屏→点按钮才进战斗"（`resolve:` 经 `Engine.chooseStory` 分发到 `startXxxFight()`，中间有缝）；本项把这道缝抹平。详细规格见 `docs/staging-scene-plan.md` §5。
 - **D2 据点抵达演出 + 据点节点图**（cutscene-design §五）：嘉元城打样，治你说的"据点没区别"。**代入感收益最大，但工作量也最大**（含 exploremap 据点化），建议独立排期。
 - **D3 演出即引导 `guide`**：已落地，多用——落幕时顺势告诉玩家"下一步去干嘛"，降迷路。
 
