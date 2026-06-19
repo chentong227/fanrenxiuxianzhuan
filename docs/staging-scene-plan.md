@@ -136,3 +136,53 @@
 5. 嘉元城后半（`xianhui_open`/`wan_death`）→ 黄枫谷血色禁地 → 再别零星 依次补齐。
 
 > 每批补完：跑 `node test/run.js` + `test/*.test.js` 保绿（`hasStaging`/`recordScene`/`compile` 已有用例）→ `node scripts/bump.js` 提版本同步缓存戳 → PR。
+
+---
+
+## 5. D1-a 演出即操作：直接坠入战斗/箱庭（设计 · 待实装）
+
+> 对应 `docs/staging-experience-design.md` §5 D1-a。**本节是设计规格，不是已实装功能**——把"演出落幕 → 弹『临战准备』选择屏 → 点按钮才进战斗"这道缝抹平，让演出最后一拍**直接坠入**战斗 / 箱庭。
+
+### 5.1 现状链路（为什么有缝）
+
+- **演出→战斗**：节点 `choices[].resolve:"xxx_fight"` → `Engine.chooseStory(stage, i)` 分发到 `startShowdownFight()`/`startJinguangFight()`/`startZhanwangchanFight()` 等（`js/engine.js` 约 5164–5236）。战斗类抉择前 UI 还会渲一块「临战准备」面板（`js/ui.js` 约 1336）。→ **演出与战斗之间隔着一块选择屏**。
+- **战斗→演出**：已无缝——战毕 `Engine.checkStory()` 按 flag 拾起后续节点直接 `UI.renderStory(stage)` 续演（`js/engine.js` 约 5016–5028）。**此方向无需改**。
+- **演出→箱庭**：节点带 `where:`/`cg:`，落幕回到地点/箱庭屏，再靠 `{guide:{focus}}` 脉冲高亮"下一步该点的按钮"。→ 有指引的交接，但同样隔着落幕这道缝。
+- **演出内嵌操作**：`{beat:{kind:"window|choice"}}` 已支持（`mo_crisis` 飞针、`showdown`），是"演出即操作"的轻量档；D1-a 补的是"直接坠入"重量档。
+
+### 5.2 新增原语（拟）
+
+两条原语放在节点 `text[]` 的**最后一拍**（落幕坠入），或经交互 `beat.onHit/onMiss` 触发（中途坠入）：
+
+```js
+// ① 演出 → 战斗：落幕直接进战斗，跳过「临战准备」选择屏
+{ fight: "zhanwangchan",            // 必填：战斗 id（对应 startXxxFight 的注册名，见下表）
+  prep: true,                       // 选填：是否仍先闪一眼临战准备一览（默认 false=纯无缝）
+  guard: { item: "duyao_cao", min: 1, hint: "毒草越足越稳" } }  // 选填：坠入前的底牌提示（前置到演出里说，不再做成拦路选择）
+
+// ② 演出 → 箱庭：落幕直接进某据点箱庭的指定点（接「持续类」D2 据点抵达演出）
+{ warp: "jiayuan_city",             // 必填：目标地点 id
+  spot: "mo_fu",                    // 选填：箱庭内落点/锚点
+  arrive: true }                    // 选填：是否触发该据点的「抵达演出」（D2）
+```
+
+### 5.3 实装要点（不改战斗/箱庭系统，只在演出落幕挂钩）
+
+- `cutscene.js`：`compile()` 识别 `{fight}`/`{warp}` 为**终止拍**（curtain hook），落幕回调里**不渲 `choices`**，直接调度坠入。
+- `{fight:id}` → 落幕调 `Engine.startFight(id)`（薄封装：内部 switch 到既有 `startShowdownFight`/`startJinguangFight`/`startZhanwangchanFight`/`startHudaoFight`… 用一张 `id→fn` 表，**复用现有战斗入口，零新增战斗逻辑**）。`guard` 只做"提示"不做"拦路"。
+- `{warp:locId,spot}` → 落幕调 `Engine.gotoLocation(locId, {spot})`（复用现有地点/箱庭进入路径）；`arrive:true` 时再触发该据点的 D2 抵达演出节点。
+- **fail-soft**：`fight` id 不在表里 / `warp` 目标不存在 → 退回现有"选择屏"路径（等价旧行为），**零回归**。
+- **可跳过**：与其它演出一致，坠入前的运镜/台词受"演出速度"缩放、可 `Cutscene.clear()` 跳过，但坠入动作本身不可被"跳过"误触发两次（加 `_dropped` 幂等位）。
+- **名场面回廊**：含 `{fight}`/`{warp}` 的回放节点，回放时**只演到坠入前一拍**（回廊不结算、不进战斗），落幕给「↻再看/合上」——与现有 `replay:true` 语义一致。
+
+### 5.4 首批接入目标
+
+| 节点 | 坠入 | 原语 |
+|---|---|---|
+| `yanjia_boss`「战王蝉破阵」 | → 战斗 | `{fight:"zhanwangchan", guard:{item:"…", hint:"破甲的钩子该出鞘了"}}` |
+| `showdown`「夺舍之夜」 | → 战斗 | `{fight:"showdown_win", guard:{hint:"毒草/暗器带得越多越稳"}}` |
+| `jinguang_fight`「暗算金光上人」 | → 战斗 | `{fight:"jinguang_win"}` |
+| `modao_e4_xuwang`/`finale` | → 战斗 | 皇宫决战连演的坠入拍 |
+| （D2 就绪后）据点节点 | → 箱庭 | `{warp:locId, spot, arrive:true}` |
+
+> 测试：`cutscene.test.js` 增 D1-a 用例（`compile` 识别 `{fight}`/`{warp}` 为终止拍、未知 id fail-soft 退回选择屏、`replay` 只演到坠入前）；`engine.test`（如有）补 `startFight(id)` 路由表。实装闭环同 §4 末。
