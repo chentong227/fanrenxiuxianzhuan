@@ -1173,10 +1173,51 @@ const UI = {
         }
         st.beatActive = false; st.idx++; continue;
       }
+      if (b.kind === "drop") {        // D1-a 终止拍：演出落幕直接坠入战斗/箱庭，跳过「临战准备」选择屏
+        if (st.replay) { st.idx++; continue; }   // §9-6 重温：只演到坠入前一拍、不结算（坠入是玩法不是名场面）
+        this._storyDrop(b);
+        return;
+      }
       this._renderTextBeat(b);        // 台词层：渲染并等轻触
       return;
     }
     this._storyShowChoices();
+  },
+
+  // D1-a 直接坠入：演出落幕直挂战斗/箱庭。未知目标 → fail-soft 退回旧选择屏（临战准备+抉择），零回归。
+  // _dropped 幂等位：避免"跳过"或重复轻触误触发两次坠入。
+  _storyDrop(b) {
+    const st = this._story; if (!st || st._dropped) return;
+    const stage = st.stage;
+    // 可行性预检：未知 fight id / warp 目标不存在 → 不坠入，退回旧选择屏（绝不空白、不崩）
+    let feasible = false;
+    if (b.drop === "fight") feasible = !!(typeof Engine !== "undefined" && Engine.hasFight && Engine.hasFight(b.fight));
+    else if (b.drop === "warp") feasible = !!(typeof Engine !== "undefined" && Engine.canWarp && Engine.canWarp(b.warp));
+    if (!feasible) { this._storyShowChoices(); return; }   // 等价旧行为：临战准备 + 抉择按钮
+    st._dropped = true;
+    // 收束演出层（同 storyChoose：清计时、复位镜头、收环境床/氛围粒、退跳过键）
+    if (this._titleTimer) { clearTimeout(this._titleTimer); this._titleTimer = null; }
+    if (this._typeTimer) { clearInterval(this._typeTimer); this._typeTimer = null; }
+    if (this._cutTimer) { clearTimeout(this._cutTimer); this._cutTimer = null; }
+    if (typeof Cutscene !== "undefined") { Cutscene.clear(); Cutscene.resetCam(this._storyCtx()); }
+    if (typeof Sfx !== "undefined" && Sfx.ambientStop) Sfx.ambientStop();
+    if (typeof Fx !== "undefined" && Fx.ambient) Fx.ambient(null);
+    const skip = this.el("story-skip"); if (skip) skip.hidden = true;
+    const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
+    const far = this.el("story-far"); if (far) far.classList.remove("on");
+    this._archiveStory(stage);        // 名场面入风云录「名场面回廊」（可重温），同 storyChoose
+    this.el("story-overlay").hidden = true;
+    document.body.classList.remove("story-on");
+    this._story = null;
+    // guard.hint：落幕坠入前顺势提示底牌（不阻塞、不拦截）
+    if (b.guard && b.guard.hint && typeof Engine !== "undefined" && Engine.toast) Engine.toast(b.guard.hint);
+    // 坠入（薄封装；理论上预检已过，仍兜底——极端失败重渲该卡走旧选择屏）
+    let ok = false;
+    try {
+      if (b.drop === "fight") ok = Engine.startFight(b.fight);
+      else if (b.drop === "warp") ok = Engine.gotoLocation(b.warp, { spot: b.spot, arrive: b.arrive });
+    } catch (e) { ok = false; }
+    if (!ok) { try { this.renderStory(stage); } catch (e) {} }
   },
 
   // 渲染一条台词层节拍（narr/say/aside/scene）：打字机出字 + 立绘
@@ -1248,6 +1289,9 @@ const UI = {
     const card = this.el("story-titlecard"); if (card) card.classList.remove("show");
     st.titling = false; st.typing = false; st.beatActive = false;
     st.idx = st.beats.length;
+    // D1-a：终止拍节点——跳过演出也直接坠入（不弹临战准备选择屏）；不可行/重温则 _storyDrop 内部退回旧路径
+    const drop = !st.replay && !st._dropped && st.beats.find(x => x && x.kind === "drop");
+    if (drop) { this._storyDrop(drop); return; }
     this._storyShowChoices();
   },
 
@@ -1424,7 +1468,7 @@ const UI = {
     if (seg.scene) return `<div class="seg-scene">· ${seg.scene} ·</div>`;
     if (seg.aside) return `<p class="seg-aside">${seg.aside}</p>`;       // 心理独白
     if (typeof seg.beat === "string") return `<div class="seg-beat">${seg.beat || "……"}</div>`; // 停顿/留白
-    if (seg.cam || seg.actor || seg.fx || seg.sfx || seg.bgm || seg.wait || seg.guide || (seg.beat && typeof seg.beat === "object")) return ""; // 演出原语/引导不入日志
+    if (seg.cam || seg.actor || seg.fx || seg.sfx || seg.bgm || seg.wait || seg.guide || seg.fight || seg.warp || (seg.beat && typeof seg.beat === "object")) return ""; // 演出原语/引导/坠入拍不入日志
     if (seg.say) {
       const who = seg.say;
       const self = (who === State.data.name || who === "韩立");
