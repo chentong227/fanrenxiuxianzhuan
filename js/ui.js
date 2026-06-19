@@ -231,6 +231,10 @@ const UI = {
     const inStory = !!(this._story && !this.el("story-overlay").hidden);
     if (typeof Sfx !== "undefined" && Sfx.bgm && !State.data.combat && !inStory) {
       Sfx.bgm(this._bgmForLocation(loc));
+      // 地点级环境床（昼夜·天气骨架）：夜→夜虫 / 雨→檐滴，领奏并压低 BGM；无床则收束、照常奏乐
+      const amb = (typeof Env !== "undefined") ? Env.ambientFor(loc) : null;
+      if (amb && Sfx.ambient) Sfx.ambient(amb);
+      else if (Sfx.ambientStop) Sfx.ambientStop();
     }
   },
 
@@ -246,6 +250,9 @@ const UI = {
     const url = (typeof Art !== "undefined") ? Art.locUrl(loc) : null;
     bg.style.backgroundImage = url ? `url("${url}")` : "";
     bg.classList.toggle("has-img", !!url);
+
+    // 昼夜·天气骨架：把时辰/天气写到舞台（驱动 CSS 染色 tint + 氛围粒子）
+    if (typeof Env !== "undefined") { const stg = this.el("scene-stage"); if (stg) Env.apply(stg, loc); }
 
     // 过场地点 / 待决剧情 / 战斗：不显示前往按钮（不能乱走）
     if (loc.scene || s.pendingEvent || s.combat) {
