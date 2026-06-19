@@ -103,7 +103,7 @@
 | **P0** | **C1 环境床（地点级 + 真实音源走 key，程序合成兜底）** + **§9-1 昼夜/天气骨架** + **B1 分层视差（升级 `{scene}`+复用 `{cam}`）** | 改动小、贴美学、不踩 IP/性能坑；"先 1+4" + 让整张地图都活起来 |
 | **P1** | **§9-2 立绘微动** + **§9-3 手机触觉反馈** + B2 氛围粒子 + B3 hit-stop + C2 crossfade/ducking + C3 切轨校验 | 在 P0 地基上叠"质感"与名场面临门一脚 |
 | **P1.5** | **§9-4 敌意预告+伺机出手** + **§9-5 危局氛围** + **§9-6 名场面回廊** | 深化战斗与情感 |
-| **P2** | **§9-7 空间音声相 pan** + **§9-8 运镜分镜预设库** + **§9-9 体验设置项** | 锦上添花、收尾 |
+| **P2 ✅** | **§9-7 空间音声相 pan** + **§9-8 运镜分镜预设库** + **§9-9 体验设置项** | 锦上添花、收尾（三项均已实装，见 §9 第三梯队各条「实现 ✅（P2）」） |
 | **持续** | D2 据点演出（P0/P1 全部扎实后，一个个做） | 大块、要美术/资产 |
 | **暂缓** | B4 图生视频 | 你定：视频不急，先把优化做好 |
 
@@ -153,8 +153,11 @@
 
 ### 第三梯队（锦上添花）
 7. **空间音 / 声相 pan**：左/右立绘说话时音相偏移，配真实音效 = 临场感。
+   - **实现 ✅（P2·§9-7）**：`audio.js` 合成原语 `tone/noise` 的最终落点改经 `panOut(c,g)`——`play(name,{pan})` 把 `pan∈[-1,1]`（左负右正）临时置入模块级 `_sfxPan`，配方同步建节点时一并读到，经 `StereoPanner` 偏声相后落 `destination`；`pan=0` 或环境不支持 `createStereoPanner` 时直连（零回归）。接线：`ui.js _renderTextBeat` 按双人相对立绘定位说话人——韩立(右) `+0.45` / 对话 NPC(左) `−0.45` / 旁白·心声·场景=居中，写入 `this._sayPan`，打字机逐字轻嗒 `Sfx.play("type",{pan})` 即从说话人那一侧发声＝"谁在说话，声音偏向谁"。头测 `test/audio.test.js §8` 覆盖建 panner/钳制/无 pan 直连。
 8. **运镜分镜预设库**：推/拉/摇/跟 等电影化镜头预设，作者拖一个就用——名场面产能 + 一致性。
+   - **实现 ✅（P2·§9-8）**：`cutscene.js` 新增 `SHOTS` 预设库（13 条：`pushIn/pullOut/panLeft/panRight/tiltUp/tiltDown/trackLeft/trackRight/establish/shock/focusLeft/focusRight/reset`），每条＝一串 `cam` 原语；作者在 `text:[]` 写 `{shot:"pushIn"}` 即在 `compile()` 展开为对应 cam 拍，**复用既有 `_cam` 差速视差（B1 双平面）与 `_dur` 速度缩放**，不另起镜头系统。可带 `ms/scale/to/px/at` 覆盖，且**仅覆盖该预设本就含有的键**（不给 pan 拍塞 scale，避免污染语义）；未知预设名安全跳过。头测 `test/cutscene.test.js §8` 覆盖单/多拍展开、覆盖语义、未知名跳过、全表齐备。
 9. **体验设置项**：演出速度 / 动效强度 / 震动开关（兼无障碍）。
+   - **实现 ✅（P2·§9-9）**：新增 `js/settings.js`（`Settings` 模块，localStorage 持久 + 全程 typeof 守卫可无头测）：①**演出速度** `set_story_speed`（慢×1.5 / 正常×1 / 快×0.6 / 极快×0.35）——`speedScale()` 缩放打字逐字间隔(`ui.js` 26ms 基准)、题字卡停留(1500ms)、`cutscene._dur()`(镜头 ms / wait / cam 自走计时)；②**动效强度** `set_motion`（满 / 简 / 关）——`reduceMotion()`(关 或 系统 `prefers-reduced-motion`)拦 `Fx.shake/hitStop/ambient`，`liteMotion()`(简)砍顿帧，`applyMotionClass()` 给 `body` 挂 `motion-off/lite` 让 CSS 静态化 idle 动画（与既有 `@media reduced-motion` 并列）；③**震动反馈**——委托 `Fx.setHaptics`（单一真相源 `fx_haptics`，不双写）+ `navigator.vibrate` 能力探测。入口：系统菜单(`openSystemMenu`)新增「体验设置」→ `UI.openExpSettings()` 分档面板（当前档高亮、即点即存即生效）；开机 `Main.init` 调 `applyMotionClass` 复原。头测 `test/settings.test.js` 覆盖默认/钳制/落盘/速度系数/动效并联无障碍/震动委托。
 
 ### 红线提醒（"尽量高级"也不越界）
 - 不做全身大幅人物动画、不糊脸（动漫版唯一正典）。

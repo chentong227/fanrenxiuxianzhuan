@@ -11,6 +11,8 @@
  *
  * 演出原语（text:[] 里与旧段落混排）：
  *   {cam:"pan|zoom|focus|shake|hold", to:{x,y}, at:"left|right|center", ms, scale, px}
+ *   {shot:"pushIn|pullOut|panLeft|panRight|tiltUp|tiltDown|trackLeft|trackRight|establish|shock|focusLeft|focusRight|reset"}
+ *        §8 运镜分镜预设：一行展开为成套 cam 原语；可带 ms/scale/to/px 覆盖（见 SHOTS）。
  *   {actor:id, enter:"left|right", exit:true, emote:"…", name:"展示名"}
  *   {fx:"flash|shake|burst|lightning|ribbon|swordRing|trail|material",
  *        at:"left|right|center", from, to, elem, color, n, ...}
@@ -37,6 +39,25 @@
 
   const Cutscene = {
     _timers: [],
+
+    /* §8 运镜分镜预设库：电影化镜头一行调用（每条＝一串 cam 原语，复用 compile/_cam 差速视差）。
+     * 作者写 {shot:"pushIn"} 即可，可加 {ms}/{scale}/{to}/{px} 覆盖。设计：守 ≤400ms? 否——运镜
+     * 是"演出时长"非交互延迟，可长（≤1.6s）；但全部走 _dur 受"演出速度"设置缩放、随时可跳。 */
+    SHOTS: {
+      pushIn:    [{ cam: "zoom", scale: 1.14, ms: 1100 }],                 // 推近（情绪聚拢）
+      pullOut:   [{ cam: "zoom", scale: 1.0,  ms: 1100 }],                 // 拉远（释怀/收束）
+      panLeft:   [{ cam: "pan",  to: { x: 3 },  ms: 1200 }],               // 摇向左
+      panRight:  [{ cam: "pan",  to: { x: -3 }, ms: 1200 }],               // 摇向右
+      tiltUp:    [{ cam: "pan",  to: { y: 3 },  ms: 1200 }],               // 上摇（仰望天/高处）
+      tiltDown:  [{ cam: "pan",  to: { y: -3 }, ms: 1200 }],               // 下摇
+      trackLeft: [{ cam: "pan",  to: { x: 5 },  ms: 1800 }],               // 跟移·左（缓长）
+      trackRight:[{ cam: "pan",  to: { x: -5 }, ms: 1800 }],               // 跟移·右（缓长）
+      establish: [{ cam: "zoom", scale: 1.0, ms: 200 }, { cam: "zoom", scale: 1.10, ms: 1600 }], // 定场→缓推
+      shock:     [{ cam: "zoom", scale: 1.18, ms: 240 }, { cam: "shake", px: 9 }],                // 惊变：猛推+震
+      focusLeft: [{ cam: "focus", at: "left" }],                          // 聚左（另一侧压暗）
+      focusRight:[{ cam: "focus", at: "right" }],                         // 聚右
+      reset:     [{ cam: "pan", to: { x: 0, y: 0 }, ms: 700 }, { cam: "zoom", scale: 1.0, ms: 700 }], // 复位归零
+    },
 
     /* 含演出原语？（决定是否需挂 FX 叠层、走演出调度） */
     hasStaging(stage) {
@@ -68,6 +89,18 @@
       for (const seg of segs) {
         if (typeof seg === "string") { beats.push({ kind: "narr", text: seg }); continue; }
         if (!seg || typeof seg !== "object") continue;
+
+        // —— §8 运镜分镜预设：{shot:"pushIn|…"} 展开为一串 cam 原语（作者拖一个就用）——
+        //    可带 ms/scale/to/px/at 覆盖（仅覆盖该预设本就含有的键，避免给 pan 塞 scale 之类）。
+        if (has(seg, "shot")) {
+          const arr = this.SHOTS[seg.shot];
+          if (arr) for (const raw of arr) {
+            const c = Object.assign({}, raw);
+            for (const k of ["ms", "scale", "px", "to", "at"]) if (has(seg, k) && has(c, k)) c[k] = seg[k];
+            beats.push({ kind: "op", op: "cam", cam: c.cam, to: c.to, at: c.at, ms: c.ms, scale: c.scale, px: c.px });
+          }
+          continue;
+        }
 
         // —— 演出原语（舞台指令）——
         if (has(seg, "cam")) {
@@ -115,16 +148,25 @@
       try {
         if (!beat || beat.kind !== "op") return null;
         switch (beat.op) {
-          case "cam":   this._cam(beat, ctx); return beat.ms ? { auto: beat.ms } : null;
+          case "cam":   this._cam(beat, ctx); return beat.ms ? { auto: this._dur(beat.ms) } : null;
           case "actor": this._actor(beat, ctx); return null;
           case "fx":    this._fx(beat.spec, ctx); return null;
           case "sfx":   if (root.Sfx && root.Sfx.play) root.Sfx.play(beat.sfx); return null;
           case "bgm":   if (root.Sfx && root.Sfx.bgm) root.Sfx.bgm(beat.bgm); return null;
           case "amb":   if (root.Sfx && root.Sfx.ambient) { if (beat.amb) root.Sfx.ambient(beat.amb, beat.opts || {}); else if (root.Sfx.ambientStop) root.Sfx.ambientStop(); } return null;
-          case "wait":  return (beat.wait === "click") ? null : { auto: +beat.wait || 600 };
+          case "wait":  return (beat.wait === "click") ? null : { auto: this._dur(+beat.wait || 600) };
         }
       } catch (e) {}
       return null;
+    },
+
+    /* §9 演出速度：把"演出时长"按设置档缩放（>1 更慢、<1 更快；无 Settings 时 1×）。
+     * 镜头 CSS 过渡 ms 与其 auto 续拍用同一缩放值＝视觉收尾与续拍同步，不脱节。 */
+    _dur(ms) {
+      const n = +ms || 0;
+      const S = root.Settings;
+      const sc = (S && S.speedScale) ? S.speedScale() : 1;
+      return Math.max(0, Math.round(n * sc));
     },
 
     /* 镜头（沿用箱庭 L3"变换即镜头"：对背景层施 transform；震屏走 FX）。
@@ -141,7 +183,7 @@
       const st = this._camState || (this._camState = { x: 0, y: 0, s: 1 });
       if (cam === "pan" && beat.to) { st.x = +beat.to.x || 0; st.y = +beat.to.y || 0; }
       if (cam === "zoom") { st.s = beat.scale != null ? +beat.scale : 1.12; }
-      const ms = beat.ms || 900;
+      const ms = beat.ms ? this._dur(beat.ms) : 900;
       this._applyCam(bg, st, 1, ms, 1);                                       // 中景：全幅（与旧版逐字等价）
       if (ctx && ctx.far) this._applyCam(ctx.far, st, this.FAR_K, ms, 1.08);  // 远景：减幅 + 基准放大 1.08
     },

@@ -23,6 +23,19 @@
     return ctx;
   }
 
+  // §7 空间音/声相：合成 SFX 的最终落点——pan≠0 时经 StereoPanner 偏左右，否则直连。
+  //   _sfxPan 由 play(name,{pan}) 在同步执行配方期间临时置位（配方内建节点都会读到）。
+  let _sfxPan = 0;
+  function panOut(c, g) {
+    if (_sfxPan && c.createStereoPanner) {
+      const p = c.createStereoPanner();
+      p.pan.value = Math.max(-1, Math.min(1, _sfxPan));
+      g.connect(p); p.connect(c.destination);
+    } else {
+      g.connect(c.destination);
+    }
+  }
+
   // —— 合成原语 ——
   function tone(c, { freq = 440, type = "sine", dur = 0.3, gain = 0.07, decay = true, slideTo = null, delay = 0 }) {
     const o = c.createOscillator(), g = c.createGain();
@@ -31,7 +44,7 @@
     if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t0 + dur);
     g.gain.setValueAtTime(gain, t0);
     if (decay) g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
-    o.connect(g); g.connect(c.destination);
+    o.connect(g); panOut(c, g);
     o.start(t0); o.stop(t0 + dur + 0.02);
   }
   function noise(c, { dur = 0.15, gain = 0.05, band = null, low = null, delay = 0 }) {
@@ -46,7 +59,7 @@
     if (low) { const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = low; node.connect(f); node = f; }
     const g = c.createGain(); g.gain.setValueAtTime(gain, t0);
     g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
-    node.connect(g); g.connect(c.destination);
+    node.connect(g); panOut(c, g);
     src.start(t0);
   }
 
@@ -480,12 +493,14 @@
       }
       return !muted;
     },
-    play(name) {
+    play(name, opts) {
       if (muted || !RECIPES[name]) return;
       const now = Date.now();
       if (lastPlay[name] && now - lastPlay[name] < 70) return;   // 同音去抖
       lastPlay[name] = now;
-      try { const c = ac(); if (c) RECIPES[name](c); } catch (e) {}
+      // §7 声相：opts.pan∈[-1,1]（左负右正）；配方同步建节点，置位→执行→复位即可。
+      const pan = (opts && typeof opts.pan === "number") ? Math.max(-1, Math.min(1, opts.pan)) : 0;
+      try { const c = ac(); if (c) { _sfxPan = pan; try { RECIPES[name](c); } finally { _sfxPan = 0; } } } catch (e) { _sfxPan = 0; }
       if (DUCK_SFX[name]) keySfxDuck();   // C2：古钟/天雷等关键 SFX 触发→音乐瞬时让路
       if (HAPTIC_SFX[name] && root.Fx && root.Fx.haptic) root.Fx.haptic(HAPTIC_SFX[name]);   // §9-3：关键 SFX 同步手机轻震
     },

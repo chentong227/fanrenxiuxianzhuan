@@ -2216,6 +2216,35 @@ html, body { touch-action: manipulation; }
 /* 重温落幕条 */
 .replay-end { text-align: center; color: var(--gold); font-size: 13px; letter-spacing: 2px; margin-bottom: 8px; }
 
+/* ===== §9 体验设置（演出速度 / 动效强度 / 震动）===== */
+.settings { display: flex; flex-direction: column; gap: 14px; margin: 6px 0 14px; }
+.set-row { display: flex; flex-direction: column; gap: 7px; }
+.set-label { font-size: 14px; color: var(--ink); font-weight: 600; }
+.set-hint { display: block; font-size: 11px; color: var(--ink-dim); font-weight: 400; margin-top: 2px; }
+.set-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.set-opt {
+  flex: 1 1 0; min-width: 56px; padding: 8px 6px; border-radius: 6px; font: inherit; font-size: 13px;
+  color: var(--ink-dim); background: var(--bg-panel-2); border: 1px solid var(--border);
+  cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.set-opt:hover { color: var(--ink); border-color: var(--gold); }
+.set-opt.on {
+  color: var(--bg, #1a1410); background: var(--gold); border-color: var(--gold);
+  font-weight: 600; box-shadow: 0 0 0 1px var(--gold) inset;
+}
+
+/* §9 动效强度=关：把各处 idle/装饰动画静态化（与 @media prefers-reduced-motion 并列的手动闸）。
+ * 与上文各 reduced-motion 块逐条对应；JS 侧的震屏/顿帧/常驻氛围粒已由 Settings.reduceMotion() 拦截。 */
+body.motion-off .combat-overlay.peril::after,
+body.motion-off .combat-overlay.brink::after { animation: none; opacity: .82; }
+body.motion-off .axis-field.cam-punch { animation: none; }
+body.motion-off .cloud-shroud .fog-drift { animation: none !important; }
+body.motion-off .story-portrait .pb { animation: none; }
+body.motion-off .scene-stage[data-weather] .scene-weather { animation: none !important; }
+body.motion-off .scene-stage[data-depth="on"] .scene-far,
+body.motion-off .scene-stage[data-depth="on"] .scene-fg,
+body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none !important; }
+
 /* ===== 人物图鉴 ===== */
 .codex { display: flex; flex-direction: column; gap: 8px; }
 .codex-card { background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; }

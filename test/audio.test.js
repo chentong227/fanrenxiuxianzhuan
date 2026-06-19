@@ -47,6 +47,8 @@ FakeCtx.prototype.createOscillator = () => ({ type: "", frequency: { setValueAtT
 FakeCtx.prototype.createBuffer = (ch, len) => ({ getChannelData: () => new Float32Array(len) });
 FakeCtx.prototype.createBufferSource = () => ({ buffer: null, connect() {}, start() {} });
 FakeCtx.prototype.createBiquadFilter = () => ({ type: "", frequency: { value: 0 }, Q: { value: 0 }, connect() {} });
+const panners = [];   // §7：记录每次 createStereoPanner 的 pan 值
+FakeCtx.prototype.createStereoPanner = () => { const p = { pan: { value: 0 }, connect() {} }; panners.push(p); return p; };
 
 const sandbox = {
   console, Math, Date, Promise, Float32Array,
@@ -167,5 +169,23 @@ console.log("== 7. §9-5 危局氛围：心跳低鼓控制器（起/收/幂等/�
   FakeCtx.prototype.createOscillator = origOsc;
 }
 
-console.log(`\n========== 音频 C2/C3 + §9-5：${fail === 0 ? "全通 ✓" : fail + " 项败 ✗"}（${pass} 项）==========`);
+console.log("== 8. §7 空间音/声相：play(name,{pan}) 经 StereoPanner 偏左右 ==");
+{
+  // 确保未静音（前面 peril 段已还原，这里防御性确认）
+  if (!Sfx.enabled()) Sfx.toggle();
+  panners.length = 0;
+  Sfx.play("type", { pan: -0.45 });
+  assert(panners.length >= 1 && near(panners[0].pan.value, -0.45), "pan:-0.45→建 StereoPanner、值≈-0.45（NPC 在左）");
+  panners.length = 0;
+  Sfx.play("click", { pan: 0.45 });   // 换音名避开 70ms 去抖
+  assert(panners.length >= 1 && near(panners[0].pan.value, 0.45), "pan:+0.45→偏右（韩立在右）");
+  panners.length = 0;
+  Sfx.play("page");                    // 无 pan：直连、不建 panner
+  assert(panners.length === 0, "无 pan→不建 StereoPanner（居中直连）");
+  panners.length = 0;
+  Sfx.play("heal", { pan: 9 });        // 越界钳到 [-1,1]
+  assert(panners.length >= 1 && near(panners[0].pan.value, 1), "pan 越界→钳到 1");
+}
+
+console.log(`\n========== 音频 C2/C3 + §9-5 + §7：${fail === 0 ? "全通 ✓" : fail + " 项败 ✗"}（${pass} 项）==========`);
 process.exit(fail ? 1 : 0);
