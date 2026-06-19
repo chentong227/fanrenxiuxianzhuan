@@ -19,16 +19,22 @@ WORLD.locations = [
   {
     id: "qingniu", arc: "qixuan", scene: true,
     name: "青牛镇", desc: "你的家乡，一个贫苦的小山村。",
+    // 家乡小山村：2.5D 前景＝山野框（底两角近岩·开阔），远雾中等（村郊远岭）
+    env: { depth: { fg: "mountain", far: 0.42 } },
     travelCost: 1, actions: [], encounters: [],
   },
   {
     id: "road", arc: "qixuan", scene: true,
     name: "赴考山路", desc: "通往七玄门的迢迢山路。",
+    // 赴考山路：2.5D 前景＝山野框（底两角近岩·开阔），远雾偏浓（迢迢远山）
+    env: { depth: { fg: "mountain", far: 0.5 } },
     travelCost: 1, actions: [], encounters: [],
   },
   {
     id: "shanmen", arc: "qixuan", scene: true,
     name: "七玄门 · 山门", desc: "气派非凡的仙门，你将在此参加入门选拔。",
+    // 气派仙门·山门：2.5D 前景＝殿堂框（上檐+左右石柱·庄重），远雾偏淡
+    env: { depth: { fg: "hall", far: 0.34 } },
     travelCost: 1, actions: [], encounters: [],
   },
   {
@@ -220,6 +226,8 @@ WORLD.locations = [
     id: "yanjiabao", arc: "modao", scene: true,
     name: "燕家堡",
     desc: "魔道入侵前夜，天南正道七派齐聚的临时大堡。堡墙旌旗猎猎，堡内人心惶惶——李化元一纸调令，连你这伪灵根筑基也压了进来。堡外妖氛冲天，魔道巨擘战王蝉，正在破阵。",
+    // 御魔临时大堡·堡内：2.5D 前景＝殿堂框（上檐+左右石柱·庄重肃然），远雾偏浓（堡外妖氛）
+    env: { depth: { fg: "hall", far: 0.4 } },
     travelCost: 1, actions: [], encounters: [],
   },
   /* 魔道前线·待命营：燕家堡血战后随正道残部退守的前线据点。非过场（home:true 出闭关/调息），
@@ -242,18 +250,24 @@ WORLD.locations = [
     id: "jinguyuan", arc: "zaibie", scene: true,
     name: "金鼓原",
     desc: "天南正道与魔道大军决战的旷野——战鼓如雷、血染黄沙。黑煞教倾巢而出，灵兽山倒戈反水，正道节节败退。李化元燃尽残命布下的护山大阵，是这溃局里最后一道光。",
+    // 决战旷野·黄沙：2.5D 前景＝山野框（底两角近岩·开阔），远雾极浓（战尘弥漫·空气透视）
+    env: { depth: { fg: "mountain", far: 0.58 } },
     travelCost: 1, actions: [], encounters: [],
   },
   {
     id: "yuekuang", arc: "zaibie", scene: true,
     name: "越国矿洞 · 古传送阵",
     desc: "胥国边陲一座废弃矿洞的最深处，藏着一座尘封万载的古传送阵。残破的阵纹仍透着幽光——辛如音耗尽精血补全的修复图纸、加上大挪移令，便能强启这跨域大阵，一步踏出天南。身后，魔道的追兵已踏碎洞口。",
+    // 废弃矿洞最深处·古传送阵：2.5D 前景＝洞口岩壁框（"从洞里往外看"的纵深），远雾极浓（幽深矿道）
+    env: { depth: { fg: "cave", far: 0.6 } },
     travelCost: 1, actions: [], encounters: [],
   },
   {
     id: "luanxinghai", arc: "zaibie", scene: true,
     name: "乱星海",
     desc: "古阵崩毁的洪流把你抛入一片无边无际的汪洋——海天一色，星罗万岛，妖氛弥漫天际。这便是传说中的乱星海，天南以东的无尽海域。你孤身一人，落在了一个全然陌生的天地。",
+    // 无边汪洋·海天一色：2.5D 前景＝水景框（底缘水汀+两角岸影·冷碧），远雾极浓（海天一色）
+    env: { depth: { fg: "water", far: 0.6 } },
     travelCost: 1, actions: [], encounters: [],
   },
 
@@ -289,6 +303,8 @@ WORLD.locations = [
     id: "xinghai_tongdao", arc: "starsea", scene: true,
     name: "内外星海通道",
     desc: "镇妖大典惊变之夜，乌丑勾结风希、六连殿反水长老炸开镇妖台，连同封镇百年的雷鹏一并放出，更轰开了这道内外星海之间的天然壁障。自此外海妖兽长驱涌入内海，乱星海大乱由此而起。",
+    // 内外星海天然壁障·通道：2.5D 前景＝水景框（底缘水汀+两角岸影·冷碧），远雾极浓（海雾迷蒙）
+    env: { depth: { fg: "water", far: 0.6 } },
     travelCost: 1, actions: [], encounters: [],
   },
   {
@@ -307,6 +323,8 @@ WORLD.locations = [
     id: "jiyin_island", arc: "starsea", scene: true,
     name: "极阴岛",
     desc: "逆星盟极阴祖师一脉的老巢、乌丑的根脚所在。星宫大长老金魁孤身踏临、当众示威、一炮轰碎此岛——这是星宫着手收复内星海的起点，也是乱星海风云再变的先声（背景演出）。",
+    // 极阴祖师老巢·阴森：2.5D 前景＝纯雾框（四缘灰白雾气合拢·阴翳），远雾极浓
+    env: { depth: { fg: "mist", far: 0.6 } },
     travelCost: 1, actions: [], encounters: [],
   },
   {
