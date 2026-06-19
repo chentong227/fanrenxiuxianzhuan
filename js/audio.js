@@ -384,13 +384,14 @@
   const FALLBACK = { town: "daily", journey: "daily", fair: "daily", boss: "combat", sorrow: "tense", triumph: null };
   let curTrack = null;
 
-  /* ============ 真实环境录音清单（文件优先名单）============
+  /* ============ 环境床文件清单（文件优先名单）============
    * 仅这些 id 走文件 assets/audio/amb_<id>.mp3；其余环境床一律走程序合成（AMB 引擎）。
-   * 现况为空：google/lyria-3-clip 本质是生乐模型，即便提示"无旋律/无节拍/field-recording"
-   * 仍混入旋律线与节拍（实测见 docs/audio-design.md §七），不是"景"是"曲"——故环境床全部
-   * 走合成兜底（纯噪声床+短噪事件，无旋律无节拍、可无限循环）。后续若接入真实 field-recording
-   * 资源，把对应 id 加进来即恢复"文件优先"。 */
-  const AMB_FILES = [];
+   * night：定为"舒缓暖音垫 + 极淡远处虫声/夜风"的安静夜床（非干虫鸣），走文件；
+   *   文件缺失/加载失败时回退本引擎的程序合成（纯噪声床+噪事件），不静默。
+   * 其余 id（firefly/candle/wind/rain/market）暂无可用录音，直接走程序合成兜底——
+   *   google/lyria-3-clip 本质是生乐模型，干环境音易混旋律/节拍（见 docs/audio-design.md §七），
+   *   故除已定基调的 night 外暂不入文件名单；后续接入真实 field-recording 资源再逐个加入。 */
+  const AMB_FILES = ["night"];
 
   /* ============ 环境床状态 + BGM 让位（duck）============
    * 环境床领奏时把当前 BGM（文件轨 + 合成轨）压到极低，出演出/收床即恢复。 */
