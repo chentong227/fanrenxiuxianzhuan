@@ -2200,6 +2200,22 @@ html, body { touch-action: manipulation; }
 .chron-item.desperate { border-left-color: var(--purple); }
 .chron-item.fortune { border-left-color: var(--blue); }
 
+/* ===== §9-6 名场面回廊（风云录里重温关键演出）===== */
+.scene-gallery { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.scene-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 8px 10px; border-radius: 6px; font: inherit; color: var(--ink);
+  background: var(--bg-panel-2); border: 1px solid var(--border); border-left: 2px solid var(--gold);
+  cursor: pointer; transition: background .15s ease, border-color .15s ease, transform .08s ease;
+}
+.scene-row:hover { background: rgba(166, 77, 58, 0.10); border-left-color: var(--gold-bright, var(--gold)); }
+.scene-row:active { transform: translateY(1px); }
+.scene-play { color: var(--gold); font-size: 12px; flex: none; }
+.scene-name { flex: 1 1 auto; font-size: 13px; line-height: 1.5; }
+.scene-row .chron-t { color: var(--ink-dim); font-size: 11px; flex: none; }
+/* 重温落幕条 */
+.replay-end { text-align: center; color: var(--gold); font-size: 13px; letter-spacing: 2px; margin-bottom: 8px; }
+
 /* ===== 人物图鉴 ===== */
 .codex { display: flex; flex-direction: column; gap: 8px; }
 .codex-card { background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; }

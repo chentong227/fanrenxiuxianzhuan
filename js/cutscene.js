@@ -45,6 +45,22 @@
         (PLAY_OPS.some(k => has(s, k)) || (s.beat && typeof s.beat === "object")));
     },
 
+    /* §9-6 名场面回廊：把一段"含演出"的剧情节点登记进可重温列表（纯函数，可无头测试）。
+     * 仅收含演出原语且有稳定 id 的节点（纯文字对白不算名场面）；按 id 去重、最近重温/最新见到的置末；
+     * 超 cap（默认 60）淘汰最旧。返回新列表（不就地改入参）。meta:{t,cg} 为可选标注。 */
+    recordScene(list, stage, meta, cap) {
+      const out = Array.isArray(list) ? list.slice() : [];
+      if (!stage || !stage.id || !this.hasStaging(stage)) return out;
+      const ent = { id: stage.id, title: stage.title || stage.id,
+        t: (meta && meta.t) || "", cg: (meta && meta.cg) || stage.cg || "" };
+      const i = out.findIndex(e => e && e.id === ent.id);
+      if (i >= 0) out.splice(i, 1);
+      out.push(ent);
+      const max = cap || 60;
+      while (out.length > max) out.shift();
+      return out;
+    },
+
     /* —— 编译：text[]（混排）→ 统一节拍序列（纯函数，可无头测试）—— */
     compile(stage) {
       const beats = [];

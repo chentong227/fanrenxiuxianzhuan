@@ -149,6 +149,7 @@
 5. **危局氛围（低血/濒死）**：屏幕边缘暗红脉动 + 心跳低鼓 + 音乐 duck，绝境感。
    - **实现 ✅（P1.5·§9-5）**：`renderCombat` 按玩家气血分档——≤28% 危局(`.peril`)、≤12% 濒死(`.brink`)，战毕/转危为安即收（`closeCombat` 也强制清）。**视觉**：`#combat-overlay.peril::after` 纯屏幕边框血晕（inset box-shadow 集中四缘 + 极淡 radial 收口、`pointer-events:none` 不挡操作），`@keyframes peril-pulse` 呼吸脉动（濒死 0.85s 更急更浓）；`prefers-reduced-motion` 去脉动留静态血框。**音**：`Sfx.peril(level)` 心跳低鼓——极低频双跳(lub-dub) `tone(60→36Hz)+`(50→32Hz)`，危局 ~1s/濒死 ~0.64s 一记；**刻意不动全局 duck**（那是环境床/演出领奏的 `bgmDucked`，复用会互踩），心跳作加法层叠在 BGM 之上＝"音是气口不是轰炸"；同档幂等、静音空转不发声。头测 `test/audio.test.js §7` 覆盖起/收/幂等/分档/静音空转。
 6. **名场面回廊（演出回放）**：叙事日志里可重温关键演出（已有 `_archiveStory` 底子），情感回报 + QoL。
+   - **实现 ✅（P1.5·§9-6）**：**收录**——`_archiveStory` 落日志的同时，凡 `Cutscene.hasStaging(stage)===true`（含 cam/actor/fx/sfx/bgm/amb/wait 或交互 beat）且有稳定 `id` 的节点，经纯函数 `Cutscene.recordScene(list, stage, {t})` 登记进 `State.data.scenes`（按 id 去重、最近置末、限容 60、不就地改入参）；纯文字对白不算名场面、不收录。**入口**——风云录(`openChronicle`) 新增「名场面回廊」一栏，每条可点 `UI.replayScene(id)`。**回放**——复用整套演出调度：`renderStory(stage, {replay:true})` 走 `_story.replay` 路径，镜头/立绘/特效/声/环境床/台词原样重演；唯①交互 beat 是玩法非演出→回放里自动演"命中那一手"的 fx/镜头/反应台词（`Cutscene._react(onHit)`，零输入续演）②落幕指路 guide 是导航→回放里跳过（不脉冲地点按钮）。重温**绝不动剧情指针/不结算/不写存档**：落幕只给「再看一次/合上回廊」，`closeReplay` 拆演出层、收床、复位镜头、回落地点轨。头测 `test/replay.test.js` 覆盖名场面判定/条目结构/去重置末/限容/纯净。
 
 ### 第三梯队（锦上添花）
 7. **空间音 / 声相 pan**：左/右立绘说话时音相偏移，配真实音效 = 临场感。
