@@ -975,6 +975,11 @@ const UI = {
       if (staged && typeof Fx !== "undefined" && Fx.ensure) Fx.ensure(overlay);
     } else if (bg) { bg.classList.remove("story-cam"); }
     if (skip) skip.hidden = false;
+    // 全屏轻触推进：CG/立绘/背景区也可点击推进对话（移动端习惯）
+    overlay.onclick = (e) => {
+      if (e.target.closest(".story-skip") || e.target.closest(".story-choices") || e.target.closest("button")) return;
+      this.storyAdvance();
+    };
     // 败北重试：剧情已看过，跳过题字与正文直达抉择（免重复演出之扰）。重温(replay)不走此径。
     if (!opts.replay && typeof Engine !== "undefined" && Engine._retryStage) {
       Engine._retryStage = false;

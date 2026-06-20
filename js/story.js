@@ -236,6 +236,8 @@ const STORY = [
       { shot: "focusLeft" },
       { say: "韩立", tone: "心中冷然", text: "想夺我的身子……得先问过我手里的毒。" },
       "一张死局，就此铺开。只等那夺舍之夜降临。",
+      { beat: "——" },
+      "（战斗入门：你与敌人在一维轴上对峙。每回合可先移动再出招——走近了「眨眼剑法」才够得着，远距离用「暗器飞针」；灵力耗尽可「凝息回元」，但会露出破绽。毒草淬刀、暗器破甲是你最大的底牌，多多准备。）",
     ],
     onArrive(s) {
       State.setFlag("showdown_ready");
@@ -270,7 +272,7 @@ const STORY = [
       { wait: 500 },
       "眨眼剑法、催熟的剧毒、藏在袖中的暗器，还有这数年隐忍苦修的功力……全得用上。成败，就在今夜。",
       { beat: "——" },
-      "（铁奴百毒不侵，须正面破之；余子童元神非血肉，唯运功镇魂可灭。备得越足，胜算越大。）",
+      "（铁奴百毒不侵，须正面破之；余子童元神非血肉，唯运功镇魂可灭。备得越足，胜算越大。移动靠近敌人后再出招！）",
       { shot: "shock" },
       // D1-a 终止拍：落幕直接坠入三阶段决战，跳过「临战准备」选择屏（choices 仅作 fail-soft 退路）
       { fight: "showdown_win", guard: { hint: "毒草/暗器带得越多越稳" } },
@@ -309,11 +311,13 @@ const STORY = [
       State.give("ningshen_dan", 2);
       State.setFlag("got_quhun");
       State.setFlag("is_modafu");
+      Engine.meetNpc("lifeiyu", "爽朗仗义的同门师兄，武学有成。");
       Engine.assignTask("wolf_raid", 12);
+      s.month += 36;
       Engine.toast("你顶替墨大夫身份，得曲魂相随。继续修炼以备将来");
     },
     choices: [
-      { text: "深藏功与名，静待时机", hint: "继续修炼，提升修为", next: true },
+      { text: "深藏功与名，静待时机", hint: "继续修炼，提升修为。去「演武厅」打探局势", next: true },
     ],
   },
 

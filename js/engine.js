@@ -2987,9 +2987,9 @@ const Engine = {
       // 飞行档（depth-design D2/D3）：境界即高度——升空高度/视野/凌空身法三联动。
       // 练气·乘器=1（勉强离地），筑基·御器=1，结丹·御空=2，元婴·遁光=3（分档细调归 flight-ladder F0）
       airGrade: Math.max(1, Math.min(3, Chapters.realmTier())),
-      // fail-forward：决战每败一次=看破对方几分路数，再战伤害+8%（至多+24%）——
+      // fail-forward：决战每败一次=看破对方几分路数，再战伤害+5%（至多+15%）——
       // 韩立吃的每次亏都是学费（爽文契约：失败向前走）
-      dmgBonus: 1 + Math.min(3, (s.flags[`losses_${this._nextFightType || ""}`] || 0)) * 0.08,
+      dmgBonus: 1 + Math.min(3, (s.flags[`losses_${this._nextFightType || ""}`] || 0)) * 0.05,
       // 底牌：平时准备的毒草、暗器、符箓带进战斗（准备内化进战斗）。
       // 探索中：临时袋里刚采的毒草/暗器当场可用（multiply-design 乘法D——采集即底牌）
       pouch: (() => {
@@ -3373,13 +3373,15 @@ const Engine = {
       enemies: [this._applyDossier(modafu)],
       waves: [[tienu], [yuhun]],
       maxRounds: 16,
+      W: 7, playerPos: 2, enemyPos: 5,
     });
 
     this._combatMeta = { type: "showdown" };
     s.combat = true;
     this._combat.startRound();
     const duCount = State.count("duyao_cao"), anCount = State.count("anqi");
-    this.log(`夺舍之夜，决战开始！你怀揣 毒草×${duCount}、暗器×${anCount} 作底牌——能否反杀，全看准备。`, "event");
+    const fuCount = State.count("huoshe_fu");
+    this.log(`夺舍之夜，决战开始！底牌：毒草×${duCount}（淬刀持续毒伤）、暗器×${anCount}（破甲远攻）${fuCount ? `、火蛇符×${fuCount}（瞬发不占行动）` : ""}。能否反杀，全看准备。`, "event");
     // 扮猪吃虎的兑现时刻：深藏的修为在此一刻尽数亮出（藏得越深，雷霆越烈）
     const hidden = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
     if (hidden >= 1) {
@@ -3419,6 +3421,7 @@ const Engine = {
       enemies: [this._applyDossier(jinguang)],
       maxRounds: 18,
       side: this.sideUnitFor("jinguang"),   // 动漫考据：伏杀金光上人，韩立放出了张铁尸傀
+      playerPos: 5, enemyPos: 8,
     });
     // 金钟罩护体：开局即有厚护盾，暗器(破甲)与毒(持续)是破局关键；金钟罩为法宝护体，不随回合消退
     this._combat.enemies[0].shield = 40;
@@ -4612,7 +4615,7 @@ const Engine = {
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
         s.demon = clamp(s.demon + 20, 0, 100);
         s.flags.losses_showdown = (s.flags.losses_showdown || 0) + 1;
-        const bonus = Math.min(3, s.flags.losses_showdown) * 8;
+        const bonus = Math.min(3, s.flags.losses_showdown) * 5;
         this.log(`决战失利，你身受重伤(气血-${dmg})狼狈遁走。但这一败没有白吃——你看破了对方几分路数（再战伤害+${bonus}%）。回去备足毒草暗器，再来！`, "bad");
         s.pendingEvent = "showdown";
         this._retryAfterLoss = "showdown";   // 战斗状态彻底清理后再开重试剧情卡（防卡死）
@@ -4639,7 +4642,7 @@ const Engine = {
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
         s.demon = clamp(s.demon + 18, 0, 100);
         s.flags.losses_jinguang = (s.flags.losses_jinguang || 0) + 1;
-        const bonus = Math.min(3, s.flags.losses_jinguang) * 8;
+        const bonus = Math.min(3, s.flags.losses_jinguang) * 5;
         this.log(`你低估了金光上人的金钟罩，反被其重创(气血-${dmg})，狼狈遁走。但你记住了他的招路（再战伤害+${bonus}%）——备足毒草暗器，再寻战机！`, "bad");
         s.pendingEvent = "jinguang_fight";
         this._retryAfterLoss = "jinguang_fight";
