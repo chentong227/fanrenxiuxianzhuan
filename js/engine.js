@@ -2341,6 +2341,11 @@ const Engine = {
     s.spirit = clamp(s.spirit - 14 * months, 0, realm.spMax);
     // 心境随枯坐缓降，心魔随苦修渐生（时长越久越明显）
     s.mood = clamp(s.mood - 3 * months, 0, s.moodMax);
+    // 心境安稳时，苦修本身可缓释心魔（水磨功夫——修为不只是灵力，也是心性）
+    if (!lowMood && s.demon > 0) {
+      const decay = Math.min(s.demon, Math.max(1, Math.floor(months * 1.5)));
+      s.demon = clamp(s.demon - decay, 0, 100);
+    }
     // 心境告急时，走火入魔几率显著升高
     let demonChance = clamp(0.12 + months * 0.02, 0, 0.5);
     if (lowMood) demonChance += 0.25;
@@ -2709,7 +2714,7 @@ const Engine = {
     s.spirit = clamp(s.spirit + Math.round(realm.spMax * 0.5), 0, realm.spMax);
     s.hp = clamp(s.hp + 25, 0, s.hpMax);
     s.mood = clamp(s.mood + 12, 0, s.moodMax);
-    s.demon = clamp(s.demon - 6, 0, 100);
+    s.demon = clamp(s.demon - 8, 0, 100);
     if (!silent) this.log("你盘膝打坐，调息养神。灵力、气血与心境皆有恢复。", "event");
   },
 
@@ -2895,7 +2900,9 @@ const Engine = {
         s.cultivation = Math.max(0, s.cultivation - loss);
         const dmg = 15 + Math.floor(Math.random() * 15);
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
-        s.demon = clamp(s.demon + 12, 0, 100);
+        // 心魔增长递减：心魔已高时，失败带来的额外心魔冲击趋缓（你已见过最深的恐惧）
+        const demonGain = Math.max(3, Math.round(12 * (1 - s.demon / 150)));
+        s.demon = clamp(s.demon + demonGain, 0, 100);
         s.mood = clamp(s.mood - 15, 0, s.moodMax);
         this.log(`心魔未能降伏，灵力逆冲——突破失败！修为-${loss}，气血-${dmg}，心魔滋长。`, "bad");
         this.toast("突破失败，反受其害", true);
