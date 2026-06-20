@@ -967,10 +967,10 @@ const Engine = {
     } else {
       this.toast(`${item.name} 到手`);
     }
-    this.checkStory();
+    const triggered = this.checkStory();
     State.save();
     UI.renderAll();
-    UI.openFair();
+    if (!triggered) UI.openFair();
   },
   fairSell(itemId) {
     const s = State.data;
@@ -3458,11 +3458,14 @@ const Engine = {
     this._nextFightType = "revenge";
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;   // 复仇战满血上场（对齐决战；破"残血重进"死亡螺旋）
+    // 兜底：连败 2 次以上削弱敌人，保证新手也能通过
+    const losses = s.flags.losses_revenge || 0;
+    const nerf = losses >= 2 ? 0.55 : 1;
     const mk = (name, hp, atk) => ({
-      name, hp, sense: 4, speed: 8, agility: 3, move: 1, mp: 48, qiLayer: 2, elem: "tu", tactics: "cunning",
+      name, hp: Math.round(hp * nerf), sense: 4, speed: 8, agility: 3, move: 1, mp: 48, qiLayer: 2, elem: "tu", tactics: "cunning",
       attacks: [
-        { name: "法器斩", dmg: atk, kind: "normal", weight: 12, elem: "tu", mp: 6 },
-        { name: "土遁刺", dmg: atk - 3, kind: "pierce", weight: 6, elem: "tu", mp: 7 },
+        { name: "法器斩", dmg: Math.round(atk * nerf), kind: "normal", weight: 12, elem: "tu", mp: 6 },
+        { name: "土遁刺", dmg: Math.round((atk - 3) * nerf), kind: "pierce", weight: 6, elem: "tu", mp: 7 },
       ],
     });
     this._combat = new CombatAPI.Combat({
@@ -3474,6 +3477,7 @@ const Engine = {
     s.combat = true;
     this._combat.startRound();
     this._combat._log("三人中最年轻的那个看清你的眼神，掉头就跑——剩下两人狞笑着围了上来。");
+    if (losses >= 2) this._combat._log("你深吸一口气——前几次交手已摸清了他们的路数，这回从容得多。");
     this.log("【复仇】杀万小山者，二人当面，一人遁走。先收眼前的账。", "bad");
     this.writeLedger("sanxiu_escaped", "杀万小山的第三名散修当场遁走");
     UI.openCombat(this._combat, this._combatMeta);
@@ -4032,6 +4036,7 @@ const Engine = {
     this._combat = new CombatAPI.Combat({
       player,
       enemies: [wolf, Object.assign({}, WORLD.enemies.wild_wolf)],
+      W: 9,
       maxRounds: 14,
       side: { id: "wanxiaoshan", name: "万小山", kind: "ally", art: "wanxiaoshan",
               hp: 60, hpMax: 60, guard: 0.15, elem: "huo",
@@ -4178,7 +4183,16 @@ const Engine = {
   combatEndRound() {
     if (!this._combat) return;
     if (typeof UI !== "undefined") UI._armed = null;   // 收手：上膛的法术不跨回合
-    this._combat.endRound();
+    // 新手引导：追踪连续未攻击回合数，3 回合未出手弹提示
+    const c = this._combat;
+    const attacked = c._pActsUsed > 0 || c._pQuickUsed;
+    if (attacked) { c._idleRounds = 0; }
+    else { c._idleRounds = (c._idleRounds || 0) + 1; }
+    if (c._idleRounds >= 3 && !c._idleHinted) {
+      c._idleHinted = true;
+      this.toast("试试点击法术按钮攻击敌人");
+    }
+    c.endRound();
     if (typeof UI !== "undefined" && UI.flushCombatFx) UI.flushCombatFx(this._combat);
     if (this._combat.status !== "ongoing") { this._combatOver(); return; }
     this._combat.startRound();
@@ -5122,12 +5136,13 @@ const Engine = {
       s.storyStage += 1;
       next = STORY[s.storyStage];
     }
-    if (!next) return;
+    if (!next) return false;
     // 阶段 0 无 cond，直接触发；其余需满足 cond
-    if (next.cond && !next.cond(s)) return;
+    if (next.cond && !next.cond(s)) return false;
     // 地点门禁：若该阶段指定了触发地点，须身在其处（开放世界——走到对的地方剧情才发生）
-    if (next.where && next.where !== s.location) return;
+    if (next.where && next.where !== s.location) return false;
     this.playStage(next);
+    return true;
   },
 
   // 当前际遇指引：告诉玩家下一段主线的触发条件（开放世界的"目标"提示）
