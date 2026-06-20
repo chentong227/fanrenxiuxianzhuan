@@ -30,7 +30,51 @@
     // 初入星海篇·全量补绘：魁星岛旧识/妙音门/六连殿/逆星盟/妖修/星宫
     wen_qiang: 1, wang_ning: 1, feng_sanniang: 1, gu_family: 1,
     miaoyin_zhangmen: 1, wuchou: 1, fengxi: 1, jinkui: 1,
+    // v213·韩立分期立绘（练气→筑基→结丹三级换装）＋ 曲魂身外化身
+    hanli_zhuji: 1, hanli_zhuji_xing: 1, hanli_yexing: 1,
+    hanli_jindan: 1, hanli_jindan_changfu: 1, hanli_jindan_jinzhuang: 1,
+    hanli_wentianren: 1, hanli_jindan_kouguan: 1, quhun_huashen: 1,
   };
+
+  // —— v213 三级换装：境界默认 / 场景强制 / 手动窗口 ——
+  // 文艺名（游戏内显示名；ID 仅技术用途）。改名只动本表，不影响 ID/资产。
+  const SKIN_NAMES = {
+    hanli: "七玄黄衫",
+    hanli_zhuji: "青衿白霞",
+    hanli_zhuji_xing: "风尘玄旅",
+    hanli_yexing: "玄甲夜行",
+    hanli_jindan: "青竹小轩",
+    hanli_jindan_changfu: "皎月闲云",
+    hanli_jindan_jinzhuang: "银甲凌霜",
+    hanli_wentianren: "玄氅金戈",
+    hanli_jindan_kouguan: "月白叩关",
+    quhun_huashen: "玄笠化身",
+  };
+  // 境界默认头像（按 State.realm().tier）
+  const REALM_DEFAULT = { qi: "hanli", foundation: "hanli_zhuji", core: "hanli_jindan" };
+  const REALM_ORDER = { qi: 0, foundation: 1, core: 2, nascent: 3 };
+  // 手动换装窗口的渐进解锁：达到 tier 即解锁；带 flag 者剧情点亮可提前解锁（二者取或，永不锁死）。
+  const SKIN_UNLOCK = {
+    hanli_zhuji:            { tier: "foundation" },
+    hanli_zhuji_xing:       { tier: "foundation" },
+    hanli_yexing:           { tier: "foundation", flag: "skin_yexing" },
+    hanli_jindan:           { tier: "core" },
+    hanli_jindan_changfu:   { tier: "core" },
+    hanli_jindan_jinzhuang: { tier: "core" },
+    hanli_jindan_kouguan:   { tier: "core", flag: "skin_kouguan" },
+    hanli_wentianren:       { tier: "core", flag: "skin_wentianren" },
+  };
+  // 当前境界 tier（无 State/无存档时退回练气；任何异常都兜底，保证无头测试不崩）
+  function curTier() {
+    try {
+      if (root.State && root.State.data && root.State.realm) {
+        const r = root.State.realm();
+        if (r && r.tier) return r.tier;
+      }
+    } catch (e) {}
+    return "qi";
+  }
+  function realmDefaultId() { return REALM_DEFAULT[curTier()] || "hanli"; }
   // 已生成的表情变体：{ 人物id: { 表情名: 1 } }
   const EMOS = {
     hanli: { cold: 1, smile: 1 },
@@ -79,6 +123,14 @@
     bt_bandit: { face: "c" }, bt_wuren: { face: "l" }, bt_sanxiu: { face: "c" },
     bt_yelang: { face: "r" }, bt_yuzitong: { face: "c" },   // 野狼帮打手头偏画右(r)；余子童元神正面对称(c)永不镜像
     bt_hanli: { face: "r" }, bt_hanli_fly: { face: "r" },
+    bt_hanli_zhuji: { face: "r" }, bt_hanli_zhuji_fly: { face: "r" },
+    bt_hanli_zhuji_xing: { face: "r" }, bt_hanli_zhuji_xing_fly: { face: "r" },
+    bt_hanli_yexing: { face: "r" }, bt_hanli_yexing_fly: { face: "r" },
+    bt_hanli_jindan: { face: "r" }, bt_hanli_jindan_fly: { face: "r" },
+    bt_hanli_jindan_changfu: { face: "r" }, bt_hanli_jindan_changfu_fly: { face: "r" },
+    bt_hanli_jindan_jinzhuang: { face: "r" }, bt_hanli_jindan_jinzhuang_fly: { face: "r" },
+    bt_hanli_wentianren: { face: "r" }, bt_hanli_wentianren_fly: { face: "r" },
+    bt_hanli_jindan_kouguan: { face: "r" }, bt_hanli_jindan_kouguan_fly: { face: "r" },
     bt_luyunfeng: { face: "c" }, bt_jinguang: { face: "c" },
     bt_modafu: { face: "c" }, bt_tienu: { face: "c" }, bt_wanxiaoshan: { face: "c" },
     bt_mojiao: { face: "l" }, bt_nangongwan: { face: "l" },   // 南宫婉飞姿=复用站姿（用户裁决：v2 与站姿无异+抠图白圈，弃）
@@ -93,6 +145,18 @@
     bt_xueshi_a: { face: "c" }, bt_xueshi_b: { face: "c" }, bt_xueshi_c: { face: "c" },
     // 初入星海篇·妖兽/人形敌（正面对称构图，永不镜像）；雷鹏=奇观演出走 CG·非可战敌·无战姿
     bt_yingli: { face: "c" }, bt_waihai: { face: "c" }, bt_guzhanglao: { face: "c" },
+  };
+
+  const HERO_BATTLERS = {
+    hanli: "bt_hanli",
+    hanli_zhuji: "bt_hanli_zhuji",
+    hanli_zhuji_xing: "bt_hanli_zhuji_xing",
+    hanli_yexing: "bt_hanli_yexing",
+    hanli_jindan: "bt_hanli_jindan",
+    hanli_jindan_changfu: "bt_hanli_jindan_changfu",
+    hanli_jindan_jinzhuang: "bt_hanli_jindan_jinzhuang",
+    hanli_wentianren: "bt_hanli_wentianren",
+    hanli_jindan_kouguan: "bt_hanli_jindan_kouguan",
   };
 
   // 剧情 CG（p:1 = 竖版已生成）
@@ -127,9 +191,44 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 27,
+    ASSET_VER: 28,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
+
+    // —— v213 三级换装解析器 ——
+    // 韩立最终立绘 ID：手动选择(State.data.heroSkin) > 境界默认。
+    // （场景强制 beat.portrait_override / node.heroSkin 由 cutscene/ui 在调用前叠加，优先级最高。）
+    heroId() {
+      const manual = root.State && root.State.data && root.State.data.heroSkin;
+      if (manual && PORTRAITS[manual]) return manual;
+      return realmDefaultId();
+    },
+    heroBattlerId() {
+      const id = this.heroId();
+      const bid = HERO_BATTLERS[id] || "bt_hanli";
+      return BATTLERS[bid] ? bid : "bt_hanli";
+    },
+    // 曲魂立绘：练成身外化身且未留嘉园 → 玄笠化身；否则仍为尸傀。
+    quhunId() {
+      const d = root.State && root.State.data;
+      if (d && d.flags && d.flags.quhun_avatar && !d.flags.quhun_stay_jiayuan) return "quhun_huashen";
+      return "tienu";
+    },
+    // 立绘文艺名（游戏内显示名；缺省回退 ID）
+    skinName(id) { return SKIN_NAMES[id] || id; },
+    // 手动换装窗口可选皮肤：基础黄衫恒在，其余按当前境界 tier + 剧情 flag 渐进解锁。
+    heroSkinsUnlocked() {
+      const out = [{ id: "hanli", name: SKIN_NAMES.hanli }];
+      const rank = REALM_ORDER[curTier()] || 0;
+      const flags = (root.State && root.State.data && root.State.data.flags) || {};
+      for (const id of Object.keys(SKIN_UNLOCK)) {
+        const u = SKIN_UNLOCK[id];
+        const tierOk = (REALM_ORDER[u.tier] || 0) <= rank;
+        const flagOk = !!(u.flag && flags[u.flag]);
+        if (tierOk || flagOk) out.push({ id, name: SKIN_NAMES[id] || id });
+      }
+      return out;
+    },
 
     // 人物立绘：emo 可选（无该表情变体则回退基础版）
     url(id, emo) {
@@ -234,6 +333,7 @@
     onUpdate() {},
 
     _PORTRAITS: PORTRAITS, _EMOS: EMOS, _SCENES: SCENES, _CG: CG, _MAPS: MAPS,
+    _SKIN_NAMES: SKIN_NAMES, _REALM_DEFAULT: REALM_DEFAULT, _SKIN_UNLOCK: SKIN_UNLOCK,
   };
 
   root.Art = Art;

@@ -731,11 +731,12 @@ const UI = {
     const hn = this.el("hero-name"); if (hn) hn.textContent = s.name;
     const ha = this.el("hero-age"); if (ha) ha.textContent = `${s.age} 岁`;
     const hl = this.el("hero-lifespan"); if (hl) hl.textContent = s.lifespan;
-    // 韩立立绘（仓库固定图）
+    // 韩立立绘（v213：跟随三级换装 Art.heroId()；id 变化才重绘）
     const hp = this.el("hero-portrait");
     if (hp && typeof Art !== "undefined") {
-      const url = Art.url("hanli");
-      if (url && !hp.dataset.img) { hp.innerHTML = `<img src="${url}" alt="${s.name}" />`; hp.dataset.img = "1"; }
+      const hid = Art.heroId ? Art.heroId() : "hanli";
+      const url = Art.url(hid);
+      if (url && hp.dataset.img !== hid) { hp.innerHTML = `<img src="${url}" alt="${s.name}" />`; hp.dataset.img = hid; }
     }
   },
 
@@ -1274,6 +1275,7 @@ const UI = {
       host: this.el("story-overlay"),
       fxHost: this.el("story-overlay"),
       beatHost: this.el("story-choices"),
+      node: this._story && this._story.stage,   // v213：当前剧情节点（供 _actor 取 node.heroSkin 场景强制换装）
       anchor: (at) => this._storyAnchor(at),
     };
   },
@@ -1310,11 +1312,14 @@ const UI = {
 
     const self = who && (who === State.data.name || who === "韩立");
 
-    // 右侧固定为韩立立绘（表情可随 emo 切换）
+    // 右侧固定为韩立立绘（v213：id 走三级换装 节点 heroSkin > 手动/境界默认；表情可随 emo 切换）
+    const heroId = (typeof Art !== "undefined" && Art.heroId)
+      ? ((st && st.stage && st.stage.heroSkin) || Art.heroId())
+      : "hanli";
     const hanliEmo = self ? emo : null;
-    const hKey = "hanli" + (hanliEmo || "");
+    const hKey = heroId + (hanliEmo || "");
     if (rbox.dataset.set !== hKey) {
-      const hurl = (typeof Art !== "undefined") ? Art.url("hanli", hanliEmo) : null;
+      const hurl = (typeof Art !== "undefined") ? Art.url(heroId, hanliEmo) : null;
       if (hurl) {
         rbox.innerHTML = `<div class="pb"><img src="${hurl}" alt="韩立" /></div>`;
         rbox.dataset.set = hKey;
@@ -1324,7 +1329,8 @@ const UI = {
 
     // 出场的对话 NPC（非旁白、非主角）→ 放左侧并记住（表情同理）
     if (who && !self) {
-      const id = this._npcIdByName(who);
+      let id = this._npcIdByName(who);
+      if (id === "tienu" && typeof Art !== "undefined" && Art.quhunId) id = Art.quhunId();  // 曲魂→身外化身
       const url = id && typeof Art !== "undefined" ? Art.url(id, emo) : null;
       const lKey = (who || "") + (emo || "");
       if (url && st && st.leftKey !== lKey) {
@@ -1498,7 +1504,8 @@ const UI = {
     const self = (who === State.data.name || who === "韩立");
     // 优先用立绘图片（仓库固定图或已缓存的实时生成图）
     if (typeof Art !== "undefined") {
-      const id = self ? "hanli" : this._npcIdByName(who);
+      let id = self ? (Art.heroId ? Art.heroId() : "hanli") : this._npcIdByName(who);
+      if (id === "tienu" && Art.quhunId) id = Art.quhunId();   // 曲魂→身外化身
       const url = id ? Art.url(id) : null;
       if (url) return { img: url, color: self ? "var(--jade-bright)" : "var(--ink)" };
     }
@@ -3118,7 +3125,8 @@ const UI = {
     if (!combat || typeof Image === "undefined" || typeof Art === "undefined" || !Art.battlerUrl) return;
     const ids = new Set();
     const add = id => { if (id && Art.hasBattler(id)) ids.add(id); };
-    add("bt_hanli"); add("bt_hanli_fly");                              // 玩家（含飞姿变体）
+    const heroBt = Art.heroBattlerId ? Art.heroBattlerId() : "bt_hanli";  // 玩家随当前换装
+    add(heroBt); add(heroBt + "_fly"); add("bt_hanli"); add("bt_hanli_fly"); // 当前造型（含飞姿）+ 基础回退
     (combat.enemies || []).forEach(e => {
       if (!e) return;
       add(e.art && Art.hasBattler("bt_" + e.art) ? "bt_" + e.art : this._battlerByName(e.name));
@@ -3667,7 +3675,7 @@ const UI = {
     if (typeof Art === "undefined" || !Art.battlerFace) return false;
     const bid2 = (() => {
       let b = null;
-      if (isPlayer) b = Art.hasBattler("bt_hanli") ? "bt_hanli" : null;
+      if (isPlayer) b = Art.heroBattlerId ? Art.heroBattlerId() : (Art.hasBattler("bt_hanli") ? "bt_hanli" : null);
       else if (isSide) b = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
       else b = this._battlerByName(u.name);
       if (b && (u.alt || 0) === 1 && Art.hasBattler(b + "_fly")) b = b + "_fly";
@@ -3704,7 +3712,7 @@ const UI = {
     let figSrc = null, figCls = "", figGlyph = null;
     if (typeof Art !== "undefined" && Art.battlerUrl) {
       let bid = null;
-      if (isPlayer) bid = Art.hasBattler("bt_hanli") ? "bt_hanli" : null;
+      if (isPlayer) bid = Art.heroBattlerId ? Art.heroBattlerId() : (Art.hasBattler("bt_hanli") ? "bt_hanli" : null);
       else if (isSide) bid = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
       // 敌人也优先读 art 字段（皇宫三血侍非克隆：各实例带 art:"xueshi_a/b/c"），无则按名回退（bt_xueshi 通用）
       else bid = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
@@ -3713,7 +3721,7 @@ const UI = {
       if (bid) { figSrc = Art.battlerUrl(bid); figCls = " battler" + (demonized ? " demonized" : ""); }
     }
     if (!figSrc) {
-      const aid = isPlayer ? "hanli" : (isSide ? (u.art || null) : this._artIdByName(u.name));
+      const aid = isPlayer ? (Art.heroId ? Art.heroId() : "hanli") : (isSide ? (u.art || null) : this._artIdByName(u.name));
       if (aid && typeof Art !== "undefined" && Art.has && Art.has(aid)) {
         figSrc = Art.url(aid); figCls = demonized ? " demonized" : "";
       } else {
@@ -4769,7 +4777,9 @@ const UI = {
 
     // 单位增量更新：同一拨人只挪位置/转朝向——左右走是滑出来的（CSS 过渡），转身是即时的
     const unitsEl = track.querySelector(".axis-units");
-    const udefs = [{ key: "hanli", art: "bt_hanli", fallback: "hanli", name: "韩立",
+    const heroBt = (typeof Art !== "undefined" && Art.heroBattlerId) ? Art.heroBattlerId() : "bt_hanli";
+    const heroPt = (typeof Art !== "undefined" && Art.heroId) ? Art.heroId() : "hanli";
+    const udefs = [{ key: "hanli:" + heroBt, art: heroBt, fallback: heroPt, name: "韩立",
                      cls: "axis-unit self cave-u", pos: f.pos, facePos: beast ? beast.pos : W - 1 }];
     (map.watchers || []).forEach((wt, wi) => {
       // 朝向：缠斗双方互盯；被惊动后妖兽转头锁你——谁在看你，立绘说了算
@@ -5367,6 +5377,44 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI.closeModal()">完成</button>
       </div>
     `);
+  },
+
+  /* -------- 韩立 · 立绘换装窗口（v213 三级换装·手动层）-------- */
+  openHanliSkin() {
+    if (typeof Art === "undefined" || !Art.heroSkinsUnlocked) return;
+    const skins = Art.heroSkinsUnlocked();
+    const cur = (State.data && State.data.heroSkin) || null;   // 手动选定（null=跟随境界）
+    const showing = Art.heroId();                              // 当前实际显示的 id
+    const card = (id, name, picHtml) => {
+      const selected = (cur ? id === cur : id === "__auto__");
+      const cls = "skin-card" + (selected ? " selected" : "") + (id === "__auto__" ? " skin-auto" : "");
+      const badge = (id !== "__auto__" && id === showing) ? `<span class="skin-cur">显示中</span>` : "";
+      const arg = (id === "__auto__") ? "" : id;
+      return `<div class="${cls}" onclick="UI._pickHanliSkin('${arg}')">
+        <div class="skin-pic">${picHtml}${badge}</div>
+        <div class="skin-name">${name}</div>
+      </div>`;
+    };
+    const autoCard = card("__auto__", "跟随境界", "⚜️");
+    const cards = skins.map(s => {
+      const url = Art.url(s.id);
+      const pic = url ? `<img src="${url}" alt="${s.name}" />` : "🧙";
+      return card(s.id, s.name, pic);
+    }).join("");
+    this.openModal(`
+      <h2>韩立 · 立绘换装</h2>
+      <p style="color:var(--ink-dim);font-size:12px">随修为境界自动更替造型，亦可在此手动选定。剧情关键场景会临时强制对应造型，不影响此处选择。</p>
+      <div class="skin-grid">${autoCard}${cards}</div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">返回</button></div>
+    `, "skin");
+  },
+  _pickHanliSkin(id) {
+    if (!State.data) return;
+    State.data.heroSkin = id || null;   // 空串=恢复跟随境界
+    if (typeof State.save === "function") State.save();
+    this.renderTopbar();
+    this.openHanliSkin();               // 重开刷新选中态
+    if (typeof Art !== "undefined") this.toast(id ? ("已换上 · " + Art.skinName(id)) : "已恢复 · 跟随境界");
   },
 
   /* -------- 通用弹窗 / Toast -------- */

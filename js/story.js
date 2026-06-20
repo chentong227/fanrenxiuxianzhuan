@@ -1576,6 +1576,7 @@ const STORY = [
     cond: (s) => s.flags.modao_e1_conscript_done && !s.flags.modao_e1_betray_done,
     cg: "kuangdong",   // 矿洞坑道
     bgm: "boss",
+    heroSkin: "hanli_yexing",   // v213：矿洞黑吃黑·夜行潜行装（场景强制）
     title: "矿洞黑吃黑 · 阴手现形",
     text: [
       { scene: "黑风岭 · 矿洞深处" },
@@ -1596,6 +1597,7 @@ const STORY = [
     ],
     onArrive(s) {
       State.setFlag("modao_e1_betray_seen");
+      State.setFlag("skin_yexing");   // v213：点亮「玄甲夜行」换装窗口选项
       if (!s.flags.pingtian_got) {
         State.give("pingtian_chi", 1);
         State.setFlag("pingtian_got");
@@ -1613,6 +1615,7 @@ const STORY = [
     cond: (s) => s.flags.modao_e1_betray_done && !s.flags.modao_e1_spider_done,
     cg: "kuangdong",   // 矿洞最深处坑道
     bgm: "boss",
+    heroSkin: "hanli_yexing",   // v213：矿洞最深处·夜行潜行装（场景强制）
     title: "矿洞最深处 · 血玉蜘蛛",
     text: [
       { scene: "黑风岭 · 矿洞最深处" },
@@ -2629,6 +2632,7 @@ const STORY = [
             ],
           };
           State.setFlag("zaibie_quhun_done");
+          State.setFlag("quhun_avatar");   // v213：曲魂立绘自此升级为玄笠化身（Art.quhunId）
           Engine.writeLedger("zaibie_quhun_huashen", "再别天南·身外化身——以玄阴诀祭曲魂为身外化身，装黑煞教主血刃、达假丹之境。乱星海结丹前，战力始终压韩立一头，为本章核心底牌（SideUnit 友军·全程并肩）。");
           Engine.addMilestone("再别天南：曲魂祭成身外化身（假丹·黑煞血刃）", "zaibie");
           return { text: "曲魂·身外化身祭炼功成——假丹之境、执黑煞血刃，自此随你并肩而战。在乱星海结丹之前，它的战力始终压你一头，是你最硬的一张底牌。", kind: "good" };
@@ -3669,6 +3673,7 @@ const STORY = [
     cond: (s) => s.flags.starsea_ziliang_done && !s.flags.starsea_jiedan_fail_done,
     cg: "luanxinghai",
     bgm: "sorrow",
+    heroSkin: "hanli_jindan_kouguan",   // v213：首番结丹叩关·月白叩关装（场景强制）
     title: "天星城 · 首番结丹 · 铩羽",
     objTitle: "屡挫 · 平生执念",
     objHint: "资粮齐备，你迫不及待地引灵入丹田凝丹——可结丹的心魔是平生执念所化，最是难缠。首番叩关，丹未凝成、反遭心魔反噬，铩羽而归。对照曲魂结煞丹的水到渠成，更显这一关之难。",
@@ -3712,6 +3717,7 @@ const STORY = [
     skipIf: (s) => s.flags.starsea_jieguan_done,
     cond: (s) => s.flags.starsea_jiedan_fail_done && !s.flags.starsea_jieguan_done,
     bgm: "tense",
+    heroSkin: "hanli_jindan_kouguan",   // v213：择吉叩关·月白叩关装（场景强制）
     title: "天星城 · 择吉叩关",
     objTitle: "觅长生 · 择时渡劫",
     objHint: "资粮齐备、心魔已伏，只待灵力圆满、择一吉时，亲身去闯结丹关的心魔劫。在天星城洞府「行动→突破」叩关——这一回，胜则金丹大成。",
@@ -3732,6 +3738,7 @@ const STORY = [
     onArrive(s) {
       s.location = "tianxing_city";
       State.setFlag("starsea_jieguan_done");
+      State.setFlag("skin_kouguan");   // v213：点亮「月白叩关」换装窗口选项
       Engine.writeLedger("starsea_jieguan", "初入星海·四幕——勘破首败之心魔、调息至灵力圆满，择吉叩关：于天星城洞府以 bigRealmRites.core 闯结丹关心魔劫（觅长生式·可玩渡劫）。等玩家亲破筑基大圆满→结丹初期（realmIndex 16→17）。");
     },
     choices: [
