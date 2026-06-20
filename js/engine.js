@@ -612,6 +612,11 @@ const Engine = {
     if (Math.random() < 0.4 + (s.skills.alchemy || 0) * 0.01) State.give("duyao_cao", 1);
     s.skills.alchemy += 1;
     this.log(`你在灵草丛中采得灵草 ×${n}` + (s.inventory.duyao_cao ? "，还顺手挖到一株毒草" : "") + `。（药理+1，现 ${s.skills.alchemy}）`, "good");
+    if (s.skills.alchemy === 5 && !s.flags.alchemy_milestone_5) {
+      State.setFlag("alchemy_milestone_5");
+      this.log("【药理渐通】采药日久，你对灵草的辨识已非昔日可比——哪株入药、哪株有毒，一望便知。墨大夫当年教的那些口诀，如今总算融会贯通了。", "good");
+      this.toast("药理小成：辨草识药已有心得");
+    }
   },
 
   /* -------- 切磋（演武厅，可能引出厉飞雨剧情提示）-------- */
@@ -629,6 +634,13 @@ const Engine = {
       if (s.swordIntent === 100 && !s.flags.sword_intent_full) { State.setFlag("sword_intent_full"); this.toast("剑意圆满！可回药庐悟剑"); }
     }
     this.log("你与同门切磋武艺，身法体魄略有精进。厉飞雨笑你进境神速，直呼天才。" + swordNote, "good");
+    // 时间窗口：厉飞雨送别（顶替身份后 8 月内切磋才能触发）
+    if (s.flags.is_modafu && !s.flags.lifeiyu_farewell_done && !s.flags.lifeiyu_window_closed) {
+      State.setFlag("lifeiyu_farewell_done");
+      s.mood = clamp(s.mood + 8, 0, s.moodMax);
+      this.writeLedger("lifeiyu_farewell", "临行前与厉飞雨最后一次切磋——他不知你是谁，但记住了你的剑");
+      this.log("【送别】切磋间厉飞雨忽然红了眼眶：「墨大夫，你的剑……怎么有点像韩立的路子。他走了以后，再没人陪我练了。」你没答话，只是多拆了三招。", "good");
+    }
   },
 
   /* -------- 道途年表：质变/大件/勋章的永久记录 -------- */
@@ -1089,6 +1101,11 @@ const Engine = {
     this.log(dbl
       ? `炉火纯青——这一炉竟得养元丹 ×2！（药理+2，现 ${s.skills.alchemy}）`
       : `你依墨大夫所授丹方，以灵草炼出一枚养元丹。（药理+2，现 ${s.skills.alchemy}）`, "good");
+    if (s.skills.alchemy >= 5 && !s.flags.alchemy_milestone_5) {
+      State.setFlag("alchemy_milestone_5");
+      this.log("【药理渐通】炼药有成，你对药性的理解已非昔日可比——墨大夫当年教的那些口诀，如今总算融会贯通了。", "good");
+      this.toast("药理小成：辨草识药已有心得");
+    }
   },
 
   /* -------- 探查（密室，推进张铁/夺舍线索）-------- */

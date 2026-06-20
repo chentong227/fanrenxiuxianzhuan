@@ -95,6 +95,7 @@ const STORY = [
       s.location = "yaolu";
       Engine.meetNpc("modafu", "门中以医毒闻名的怪人，收你为药童。");
       Engine.assignTask("modafu_deadline", 24);
+      Engine.writeLedger("herb_apprentice", "拜入墨大夫门下学药——辨药煎药的本事，自此处起");
       Engine.toast("你拜入墨大夫门下，习《长春功》");
     },
     choices: [
@@ -124,6 +125,7 @@ const STORY = [
     onArrive(s) {
       State.setFlag("met_friends");
       Engine.meetNpc("lifeiyu", "爽朗仗义的同门师兄，武学有成。");
+      Engine.writeLedger("lifeiyu_bond", "与厉飞雨同门结交——他笑你天才，你谢他仗义");
     },
     choices: [
       { text: "与好友同行历练", hint: "继续", next: true },
@@ -213,6 +215,7 @@ const STORY = [
     onArrive(s) {
       State.setFlag("zhangtie_dead");
       s.demon += 20; s.mood -= 25;
+      Engine.writeLedger("zhangtie_murdered", "张铁被墨大夫炼为铁奴——此仇此恨，刻骨铭心");
       Engine.toast("张铁惨死、炼成铁奴，你心境剧震", true);
     },
     choices: [
@@ -310,6 +313,8 @@ const STORY = [
       State.setFlag("got_quhun");
       State.setFlag("is_modafu");
       Engine.assignTask("wolf_raid", 12);
+      Engine.writeLedger("zhangtie_oath", "对张铁许诺：兄弟再不分离");
+      Engine.scheduleEvent("lifeiyu_farewell_window", 8);
       Engine.toast("你顶替墨大夫身份，得曲魂相随。继续修炼以备将来");
     },
     choices: [
@@ -430,6 +435,7 @@ const STORY = [
       State.give("lingshi", 10);
       State.setFlag("arc1_complete");
       State.setFlag("han_du");   // 寒毒在身：嘉元城主线的驱动力（暖阳宝玉可解）
+      Engine.writeLedger("qixuan_savior", "力挽狂澜救七玄门于危难——虽离山门，此情不忘");
       // 篇章契约：通关解锁下一章
       if (typeof Chapters !== "undefined") {
         const next = Chapters.active().nextChapter;

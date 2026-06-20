@@ -58,6 +58,14 @@ const QUESTS = {
         Engine.log("【时间线】张铁外出已逾归期，却音讯全无……一种不祥的预感涌上你心头。", "bad");
       },
     },
+    // 厉飞雨送别窗口：顶替墨大夫身份后 8 月，厉飞雨受命外出巡哨（再不切磋就没机会了）
+    lifeiyu_farewell_window: {
+      onFire(s) {
+        if (s.flags.lifeiyu_farewell_done) return;
+        State.setFlag("lifeiyu_window_closed");
+        Engine.log("【时间线】厉飞雨受命随师兄外出巡哨，临行前在演武厅张望了许久，终究没等到你。", "desc");
+      },
+    },
   },
 
   /* ---------- 对谈线索目录（规范化）----------
