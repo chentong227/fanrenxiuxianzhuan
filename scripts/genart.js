@@ -26,8 +26,20 @@ const MODEL_HQ = process.env.GEN_HQ_MODEL || "google/gemini-3-pro-image-preview"
 const PROXY = (process.env.GEN_PROXY != null) ? process.env.GEN_PROXY : "http://127.0.0.1:7890";
 const USE_PROXY = PROXY && PROXY !== "none";
 const OUT = path.join(__dirname, "..", "assets");
+const ROOT = path.join(__dirname, "..");
 const TMP = path.join(__dirname, "..", "test");
+// 原图留底：GEN_RAW=1 时只出「未抠的白底原图」到 _raw_uncut/（供人工抠图），不动正式 assets、不做后处理。
+const RAW = process.env.GEN_RAW === "1";
+const RAWDIR = path.join(ROOT, "_raw_uncut");
 if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
+
+// 参考图路径解析：依次尝试 原样/相对仓库根(_refs/..)/相对 assets，返回首个存在的绝对路径。
+function resolveRef(r) {
+  for (const p of [r, path.join(ROOT, r), path.join(OUT, r)]) {
+    if (p && fs.existsSync(p)) return p;
+  }
+  return null;
+}
 
 // 统一画风：忠于《凡人修仙传》动画剧版——3D 渲染电影质感、写实国风仙侠、
 // 柔和暖调布光、半身像、神情含蓄克制。所有人物共享同一画风，保证整体协调、特征鲜明。
@@ -50,6 +62,35 @@ const STYLE_PANO = "《凡人修仙传》动画剧版同款画风，3D渲染电�
 const DEFS = {
   // —— 主要人物立绘（剧版特征锚定，确保识别度）——
   hanli:    { kind: "portrait", prompt: "少年韩立，约十五岁，乌黑长发束成半扎发髻、余发垂肩，眉目清秀沉静，眼神坚毅内敛，身着橄榄黄绿色交领道袍、肩部有菱格暗纹，神情不动声色" },
+  // —— 韩立分期立绘（v213·三级换装：练气→筑基→结丹，按境界默认 + 场景强制 + 手动窗口）——
+  // 均以 baseline assets/portraits/hanli.png 锁脸型/画风/透明底成图管线，再叠造型参考图锁服饰发型气度。
+  hanli_zhuji: { kind: "portrait", hq: true,
+    ref: ["assets/portraits/hanli.png", "_refs/hanli_zhuji_classic.png"],
+    prompt: "筑基期韩立，约二十一岁，褪去稚气、下颌略硬朗、眼神更沉静内敛，乌黑长发束起，身着青/墨绿色交领道袍、肩披一整块完整连续的白色披肩、腕缚护腕，温润而坚毅（筑基最经典造型）；白色披肩是实心布料、边缘平整干净、不要烟雾不要飘带不要飞散白丝不要破碎笔刷边" },
+  hanli_zhuji_xing: { kind: "portrait", hq: true,
+    ref: ["assets/portraits/hanli.png", "_refs/hanli_zhuji_classic.png"],
+    prompt: "筑基期韩立·行旅劲装，约二十二岁，利落束发，身着深蓝/玄色窄袖劲装、束腰革带、肩背一只储物袋，神情警觉沉毅，赶路夜行之姿" },
+  hanli_yexing: { kind: "portrait", hq: true,
+    ref: ["assets/portraits/hanli.png", "_refs/hanli_heiyi.png"],
+    prompt: "韩立·夜行潜行装（无斗笠·长发），高束发，身着黑色鳞纹叠甲战袍、束腰打结、护腕，面容沉毅警觉，夜色低饱和冷调，凌厉隐秘" },
+  hanli_jindan: { kind: "portrait", hq: true,
+    ref: ["assets/portraits/hanli.png", "_refs/hanli_changfu_face.png", "_refs/qq_15118210490.jpg"],
+    prompt: "结丹期韩立·青竹小轩，约二十八九岁，成熟硬朗、颧骨下颌清晰、眼神锐定内蕴威压，齐腰乌黑长发束簪，身着墨绿色外袍＋白色内衫＋白腰封，温文尔雅、气度沉凝（韩立设定无须）" },
+  hanli_jindan_changfu: { kind: "portrait", hq: true, cut: { tol: 8, choke: 1 },
+    ref: ["assets/portraits/hanli.png", "_refs/hanli_changfu_face.png", "_refs/qq_15118210200.jpg"],
+    prompt: "结丹期韩立·常服，约二十八九岁，成熟俊朗、眼神沉静内蕴，披肩乌黑长发，身着月白/银白色交领道袍（交领半敞、不露胸腹）配靛蓝腰带，闲居写意之姿（韩立设定无须）" },
+  hanli_jindan_jinzhuang: { kind: "portrait", hq: true, cut: { tol: 8, choke: 1 },
+    ref: ["_refs/hanli_jindan_jinzhuang_liked.png"],
+    prompt: "结丹期韩立·银纹战袍，约三十岁，完整半身衣柜立绘；严格保持参考图同一张脸、同一发型、同一沉静眼神与银白刺绣战袍气质，补全干净肩袖边缘，身着银白/浅蓝银纹战袍，冷峻克制、可作为战斗装切换（韩立设定无须）" },
+  hanli_wentianren: { kind: "portrait", hq: true,
+    ref: ["assets/portraits/hanli.png", "_refs/hanli_jinlei.png", "_refs/hanli_changfu_face.png"],
+    prompt: "结丹巅峰战姿韩立，约三十岁，乌黑长发飞扬，身着玄黑长袍外披战氅、系浅蓝绶带，手持一杆金光流转的长枪（噬金虫所化），面容凌厉决绝，极阴岛蓝冰窟冷光（韩立设定无须）" },
+  hanli_jindan_kouguan: { kind: "portrait", hq: true, cut: { tol: 8, choke: 1 },
+    ref: ["assets/portraits/hanli.png", "_refs/hanli_changfu_face.png"],
+    prompt: "结丹期韩立·择吉叩关，约三十岁，成熟沉静、气息内蕴威压，乌黑长发束起，身着月白/银白色长袍，肃穆庄重、宝相凝然，冲关在即的内敛张力（韩立设定无须）" },
+  quhun_huashen: { kind: "portrait", hq: true,
+    ref: ["_refs/quhun_huashen.png"],
+    prompt: "曲魂·身外化身（非韩立），黑衣劲装外罩黑色长袍、头戴黑色斗笠（笠檐压低、面容半隐），面色冷峻苍青，手持一柄散发红光的血煞刀，阴森肃杀" },
   modafu:   { kind: "portrait", prompt: "墨大夫，一位清癯矍铄的银发老者，银白长发整齐梳向脑后，蓄花白山羊胡，面容清隽、神色沉静内敛，身着深褐色带金线团纹的医者长袍，手腕戴佛珠，气度不凡而暗藏深意" },
   lifeiyu:  { kind: "portrait", prompt: "少年厉飞雨，约十六岁，乌黑长发高束成顶髻、余发垂落肩背，剑眉星目、面容俊朗，神情沉静自信，身着青灰色交领道袍，身姿挺拔" },
   zhangtie: { kind: "portrait", prompt: "少年张铁，约十六岁，乌黑短发利落，浓眉、面容端正清朗，左脸颊有一道浅疤，神情憨厚温和、老实仗义，身着朴素的灰色粗布短打，体格结实" },
@@ -237,6 +278,38 @@ const BATTLE_DEFS = {
   // （南宫婉飞姿已弃：v2 与站姿无异+抠图白圈——裙装角色飞姿复用站姿即可，省一张图）
   bt_hanli_fly: { kind: "battler", hq: true, ref: "battlers/bt_hanli.png",
                 prompt: "同一人物同一服饰同一姿态的细微变体：少年韩立凌空静悬，身姿与平地站立几乎完全相同——上身保持原样的戒备姿态（一手两指并剑、一手收于腰侧），双脚离地自然下垂、足尖绷直向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬贴近前脚踝，凌空挺立的利落感），道袍下摆与腰带向后轻轻飘起一角，发梢微扬，从容驭气、克制飘逸，无跳跃无大动作" },
+  bt_hanli_zhuji: { kind: "battler", hq: true, ref: "portraits/hanli_zhuji.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰的完整全身战斗像：筑基期韩立，青/墨绿色交领道袍、白色披肩、护腕与腰带完整入画，三分之四侧身而立，一手两指并剑准备御使法器，另一手扣符于腰侧，眼神沉静坚毅，衣摆随气劲微扬，脚部完整不裁切" },
+  bt_hanli_zhuji_fly: { kind: "battler", hq: true, ref: "battlers/bt_hanli_zhuji.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一姿态的细微变体：筑基期韩立凌空静悬，上身保持站姿的戒备掐诀姿态，双脚离地自然下垂、足尖向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬），白色披肩与道袍下摆向后轻飘，从容驭气，无御剑无跳跃无夸张动作" },
+  bt_hanli_zhuji_xing: { kind: "battler", hq: true, holes: true, ref: "portraits/hanli_zhuji_xing.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰的完整全身战斗像：筑基期韩立·行旅劲装，深蓝/玄色窄袖劲装、束腰革带、肩背储物袋，三分之四侧身站立，步伐沉稳警觉，一手掐诀一手按向腰侧符箓，赶路夜行中随时应战的利落姿态，脚部完整不裁切" },
+  bt_hanli_zhuji_xing_fly: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_zhuji_xing.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一姿态的细微变体：行旅劲装韩立凌空静悬，上身保持戒备姿态，双脚离地自然下垂、足尖向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬），衣摆和束带轻轻后飘，从容驭气，无御器无跳跃" },
+  bt_hanli_yexing: { kind: "battler", hq: true, ref: "portraits/hanli_yexing.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰的完整全身战斗像：韩立·玄甲夜行，黑色鳞纹叠甲战袍、束腰绳结、护腕战靴，三分之四侧身低重心而立，一手掐诀一手收在腰侧，警觉潜行、凌厉隐秘的战斗姿态，脚部完整不裁切" },
+  bt_hanli_yexing_fly: { kind: "battler", hq: true, ref: "battlers/bt_hanli_yexing.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一姿态的细微变体：夜行甲装韩立凌空静悬，上身保持低调戒备姿态，双脚离地自然下垂、足尖向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬），黑色衣摆与发梢轻扬，从容御风，无御剑无大动作" },
+  bt_hanli_jindan: { kind: "battler", hq: true, ref: "portraits/hanli_jindan.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰的完整全身战斗像：结丹期韩立·青竹小轩造型，墨绿色外袍、白色内衫、白腰封，三分之四侧身从容而立，一手两指并剑、另一手拢在袖侧，成熟沉凝、内蕴威压，衣摆微扬，脚部完整不裁切" },
+  bt_hanli_jindan_fly: { kind: "battler", hq: true, ref: "battlers/bt_hanli_jindan.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一姿态的细微变体：结丹期韩立凌空静悬，上身保持沉稳掐诀姿态，双脚离地自然下垂、足尖向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬），墨绿外袍与长发轻轻后飘，从容驭气、克制飘逸，无御器无跳跃" },
+  bt_hanli_jindan_changfu: { kind: "battler", hq: true, ref: "portraits/hanli_jindan_changfu.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰的完整全身战斗像：结丹期韩立·月白常服，月白/银白交领道袍与靛蓝腰带完整入画，三分之四侧身从容而立，一手掐诀一手拢袖，闲云气质中暗含锋芒，白袍边缘干净，脚部完整不裁切" },
+  bt_hanli_jindan_changfu_fly: { kind: "battler", hq: true, ref: "battlers/bt_hanli_jindan_changfu.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一姿态的细微变体：月白常服韩立凌空静悬，上身保持从容掐诀姿态，双脚离地自然下垂、足尖向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬），银白袍袖和腰带轻轻后飘，从容御风，无御剑无跳跃" },
+  bt_hanli_jindan_jinzhuang: { kind: "battler", hq: true, holes: true, ref: "portraits/hanli_jindan_jinzhuang.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰的完整全身战斗像：结丹期韩立·银纹战袍，严格保持参考图的脸、发型与银白刺绣战袍气质，补全全身为银白/浅蓝银纹战袍、护腕与战靴，三分之四侧身冷峻而立，一手掐诀一手扣符，战意凌霜，脚部完整不裁切" },
+  bt_hanli_jindan_jinzhuang_fly: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_jindan_jinzhuang.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一姿态的细微变体：银纹战袍韩立凌空静悬，上身保持冷峻戒备姿态，双脚离地自然下垂、足尖向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬），银白战袍下摆与发梢轻扬，从容驭气，无御剑无夸张动作" },
+  bt_hanli_wentianren: { kind: "battler", hq: true, holes: true, ref: "portraits/hanli_wentianren.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰的完整全身战斗像：结丹巅峰韩立·玄氅金戈，玄黑长袍外披战氅、浅蓝绶带，手持一杆金光流转的长枪，三分之四侧身蓄势而立，长发与战氅被冷风掀起，凌厉决绝，脚部完整不裁切" },
+  bt_hanli_wentianren_fly: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_wentianren.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一姿态的细微变体：玄氅金戈韩立凌空静悬，上身与持金枪姿态基本不变，双脚离地自然下垂、足尖向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬），战氅与绶带轻轻后飘，从容御风，无踏剑无大动作" },
+  bt_hanli_jindan_kouguan: { kind: "battler", hq: true, holes: true, ref: "portraits/hanli_jindan_kouguan.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰的完整全身战斗像：结丹期韩立·月白叩关装，银白长袍庄重肃穆，三分之四侧身端正而立，一手两指并剑、一手拢袖，宝相凝然而内敛威压，白袍纹理完整、边缘干净，脚部完整不裁切" },
+  bt_hanli_jindan_kouguan_fly: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_jindan_kouguan.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一姿态的细微变体：月白叩关装韩立凌空静悬，上身保持庄重掐诀姿态，双脚离地自然下垂、足尖向下，两脚一前一后轻轻交叠靠拢（前脚略低、后脚略抬），银白长袍下摆轻轻后飘，从容御风，无御器无跳跃" },
   bt_luyunfeng: { kind: "battler", hq: true, ref: "portraits/luyunfeng.png",
                 prompt: "同一人物的完整全身像：陆云风全身战斗姿态，锦缎滚边青袍倨傲而立，单手负后、另一手两指掐剑诀，一柄青芒小剑悬浮于身前，神情阴鸷睥睨，世家子弟的骄横杀意" },
   bt_jinguang: { kind: "battler", hq: true, ref: "portraits/jinguang.png",
@@ -449,12 +522,21 @@ function genOne(id, def, opts = {}) {
   const style = STYLES[def.kind] || STYLE_SCENE;
   // 参考图编辑（角色一致性变体）：把底图喂进去，prompt 只描述"变什么"
   const content = [];
-  if (def.ref && !opts.noRef) {
-    const refFile = path.join(OUT, def.ref);
-    if (fs.existsSync(refFile)) {
-      const refB64 = fs.readFileSync(refFile).toString("base64");
-      content.push({ type: "image_url", image_url: { url: `data:image/png;base64,${refB64}` } });
+  // ref 归一成数组：每项支持 绝对路径 / 相对仓库根(_refs/..) / 相对 assets；多张同时喂入做多参考 img2img。
+  const refs = def.ref ? (Array.isArray(def.ref) ? def.ref : [def.ref]) : [];
+  if (refs.length && !opts.noRef) {
+    let n = 0;
+    for (const r of refs) {
+      const f = resolveRef(r);
+      if (!f) { console.log(`  [${id}] 参考图未找到，跳过: ${r}`); continue; }
+      const b64 = fs.readFileSync(f).toString("base64");
+      content.push({ type: "image_url", image_url: { url: `data:image/png;base64,${b64}` } });
+      n++;
+    }
+    if (n === 1) {
       content.push({ type: "text", text: `以参考图中的形象为底（保持同一画风、同一体态结构与渲染质感），生成变体：${def.prompt}。${style}。` });
+    } else if (n > 1) {
+      content.push({ type: "text", text: `以上述参考图为底（第一张锁定脸型/画风/渲染质感，其余锁定服饰、发型与气度），生成同一人物的变体：${def.prompt}。${style}。` });
     }
   }
   if (!content.length) content.push({ type: "text", text: `${style}。画面内容：${def.prompt}。` });
@@ -498,7 +580,7 @@ function genOne(id, def, opts = {}) {
     throw new Error("无图片返回: " + JSON.stringify(j).slice(0, 200));
   }
   const b64 = url.split(",")[1];
-  const dir = path.join(OUT, SUBDIR[def.kind] || "");
+  const dir = RAW ? RAWDIR : path.join(OUT, SUBDIR[def.kind] || "");
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const outFile = path.join(dir, (def.file || id) + ".png");
   fs.writeFileSync(outFile, Buffer.from(b64, "base64"));
@@ -529,8 +611,15 @@ function postProcess(file, def) {
     if (def.kind === "portrait" || def.kind === "battler" || def.kind === "midlayer") {
       ensurePng(file);
       const cutArgs = [path.join(__dirname, "cutout.js"), file, file];
-      if (def.guard) cutArgs.push("--guard");   // 白衣/浅色主体：中央保护区防洪泛误吞
+      // 浅色/白银袍：低容差(def.cut.tol，常用8)抠图——靠衣身中间调自然挡住洪泛，既不啃衣边又不留头后白底；
+      // guard 中央保护椭圆会把头后白底圈住抠不掉（叩关事故根因），浅色主体一律改用低容差、不再用 guard。
+      if (def.cut && def.cut.tol != null) cutArgs.push(String(def.cut.tol));
+      if (def.cut && def.cut.choke != null) cutArgs.push("--choke=" + def.cut.choke);
+      if (def.guard) cutArgs.push("--guard");
       execFileSync("node", cutArgs, { stdio: "inherit" });
+      // 抬手/持械造型：洪泛进不去的内部白底孔洞（夹角处困住的纯白背景）抠不掉，
+      // holes:true 再补一道孔洞清理（只删被前景包围、不接触边界的近白岛）。
+      if (def.holes) execFileSync("node", [path.join(__dirname, "holefill.js"), file, file], { stdio: "inherit" });
     } else if (def.kind !== "map") {
       ensurePng(file);
       execFileSync("node", [path.join(__dirname, "cropbars.js"), "--force", file], { stdio: "inherit" });
@@ -543,7 +632,7 @@ function postProcess(file, def) {
   for (const id of ids) {
     if (!DEFS[id]) { console.log("跳过未知 id:", id); continue; }
     process.stdout.write(`生成 ${id} ... `);
-    try { const f = genOne(id, DEFS[id]); console.log("✓"); postProcess(f, DEFS[id]); }
+    try { const f = genOne(id, DEFS[id]); console.log("✓"); if (!RAW) postProcess(f, DEFS[id]); else ensurePng(f); }
     catch (e) { console.log("✗", e.message); }
   }
   console.log("完成。");

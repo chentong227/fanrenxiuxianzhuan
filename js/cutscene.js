@@ -108,7 +108,7 @@
           continue;
         }
         if (has(seg, "actor")) {
-          beats.push({ kind: "op", op: "actor", actor: seg.actor, enter: seg.enter, exit: seg.exit, emote: seg.emote, name: seg.name });
+          beats.push({ kind: "op", op: "actor", actor: seg.actor, enter: seg.enter, exit: seg.exit, emote: seg.emote, name: seg.name, portrait_override: seg.portrait_override });
           continue;
         }
         if (has(seg, "fx"))  { beats.push({ kind: "op", op: "fx", spec: seg }); continue; }
@@ -221,8 +221,17 @@
     /* 立绘进退场（委托 Art 取图；放进既有左右立绘位）*/
     _actor(beat, ctx) {
       if (!ctx) return;
-      const id = beat.actor;
-      const self = id === "hanli" || beat.enter === "right";
+      // 主角立绘三级解析（v213）：场景强制(beat.portrait_override) > 节点(ctx.node.heroSkin) > Art.heroId()(手动/境界默认)。
+      // 曲魂(尸傀 tienu)：练成身外化身则升级为玄笠化身。其余角色不变。
+      const self = beat.actor === "hanli" || beat.enter === "right";
+      let id = beat.actor;
+      if (root.Art) {
+        if (id === "hanli" && root.Art.heroId) {
+          id = beat.portrait_override || (ctx.node && ctx.node.heroSkin) || root.Art.heroId();
+        } else if (id === "tienu" && root.Art.quhunId) {
+          id = root.Art.quhunId();
+        }
+      }
       const box = self ? ctx.right : ctx.left;
       if (!box) return;
       if (beat.exit) {

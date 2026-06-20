@@ -41,6 +41,8 @@ const State = {
       location: "qingniu",    // 当前所在地点（开局在青牛镇）
       flightId: "none",       // 飞行法宝（影响移动速度），默认徒步
 
+      heroSkin: null,         // 手动选定的韩立立绘 ID（null=跟随境界默认；v213 三级换装）
+
       inventory: {},          // { itemId: count }
       spells: ["tuna", "huti", "ningshen", "zhayan", "weidu"], // 长春功一系 + 眨眼剑法 + 喂毒（七玄门篇真实手段）
       technique: DATA.startingTechnique, // 主修功法（本篇恒为长春功）
@@ -175,6 +177,7 @@ const State = {
     if (!d.ledger) d.ledger = {};
     if (d.journey === undefined) d.journey = null;
     if (d.exmap === undefined) d.exmap = null;
+    if (d.heroSkin === undefined) d.heroSkin = null;   // v213 三级换装：手动选定立绘（老档默认跟随境界）
     // 灵力池永久加成（突破水准+特殊境遇累计）。老档按"普通水准"补偿已突破的层数
     if (d.poolBonus == null) d.poolBonus = (d.realmIndex || 0) * 2;
     if (!d.visitedNodes) d.visitedNodes = ["caixia"];
