@@ -39,7 +39,9 @@
 - 数值平衡：`combat-balance-design.md`、`attributes-and-balance.md`、`element-design.md`、`power-design.md`
 - 系统设计：`bigitem-design.md`（大件四问）、`retention-design.md`（爽文契约）、
   `authenticity-design.md`（一致感/世界之真）、`world-design.md`、`randomness-plan.md`、
-  `technique-tiers.md`、`chapter-template.md`、`ui-reference.md`
+  `technique-tiers.md`、`chapter-template.md`、`ui-reference.md`、
+  `build-balance-design.md`（剑道/丹道/阵法三路平衡）、
+  `chapter-systems-manifest.md`（篇章系统推进清单——**开发新篇章时必读**）
 - **进行中**：`combat-redesign.md`（战斗 v2 调研报告）+ `combat-axis-rules.md`
   （对阵轴规则书+纸面推演——待用户拍板，未拍板前不实装）
 - **⚠ 待修复·皇宫决战**：`palace-battle-fixme.md`——**被要求「修复皇宫问题」时先读这份**。
@@ -57,6 +59,12 @@
 - **嗑瓜子**：每回合都有小正反馈；杂学熟练度；不做签到焦虑、不做体力条。
 - **仙凡有别**：凡人命不可扳（只给陪伴窗口），同路人可扶（代价真实），大修士不归你管。
 - **藏拙**：示人境界 ≠ 真实境界，露一手=扬名时刻。
+- **Build 三路**：剑道（layerMul 乘区）/ 丹道（底牌特区）/ 阵法（控场+洞府乘区）三条
+  Build 路线用**时间互斥**做分化——同一个月只能推一条轴。等效时间律校准平衡。
+  完整定义见 `build-balance-design.md`。
+- **系统推进清单**：每章设计文档必须包含 `chapter-systems-manifest.md` 定义的
+  系统推进表（A~E），覆盖 Build 三路 / 因果账本 / 命途道岔 / 时间窗口互斥 / 探索随机化。
+  填不出来=设计缺口，必须补完再实装。实装后必跑四道审计（时间预算/因果链/乘法/等效时间律）。
 
 ## 四、工程惯例
 
