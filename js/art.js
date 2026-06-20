@@ -91,11 +91,6 @@
 
   // 地点场景图临时回退（专属场景图生成前用相似已有场景顶替，消灭黑屏）
   const SCENE_FALLBACK = {
-    fangshi: "tainan_fair",       // 黄枫谷·坊市→太南集市
-    yuanwu: "town",               // 元武国·百艺坊→城镇
-    yanjiabao: "wuting",          // 燕家堡→武厅
-    modao_front: "road",          // 魔道前线·待命营→行军路
-    jinguyuan: "xueshi_jindi",    // 金鼓原→血色禁地
     yuekuang: "miju",             // 越国矿洞→密室
     luanxinghai: "waixinghai",    // 乱星海→外星海
   };
@@ -105,6 +100,9 @@
     qingniu: { p: 1 }, road: { p: 1 }, shanmen: { p: 1 }, miju: { p: 1 },
     jiayuan_city: { p: 1 }, tainan_fair: { p: 1 }, huangfeng_gate: { p: 1 },
     baiyao_yuan: { p: 1 },
+    // P0 黑屏修复·专属场景图已生成
+    fangshi: { p: 1 }, yuanwu: { p: 1 }, yanjiabao: { p: 1 },
+    modao_front: { p: 1 }, jinguyuan: { p: 1 },
     // 战斗场景底图（对阵轴战场：下半幅开阔地面，横版专用；v90 起为舞台盒构图——
     // 两翼近景收口环抱+中央开阔，"人被环境包住"）
     bt_forest: {}, bt_road: {}, bt_valley: {}, bt_night: {},
