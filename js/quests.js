@@ -58,6 +58,14 @@ const QUESTS = {
         Engine.log("【时间线】张铁外出已逾归期，却音讯全无……一种不祥的预感涌上你心头。", "bad");
       },
     },
+    // 互斥窗口：太南小会采买 vs 回嘉元城探墨家（到期未回→窗口关闭）
+    mofu_revisit_window: {
+      onFire(s) {
+        if (s.flags.mofu_revisited) return;
+        State.setFlag("mofu_revisit_closed");
+        Engine.log("【时间线】升仙大会将近，嘉元城路远——再回去看看墨府的念头，只好搁下了。", "desc");
+      },
+    },
   },
 
   /* ---------- 对谈线索目录（规范化）----------

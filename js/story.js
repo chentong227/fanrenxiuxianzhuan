@@ -483,6 +483,7 @@ const STORY = [
       State.setFlag("mo_met");
       if (!s.metNpcs.includes("mocaihuan")) s.metNpcs.push("mocaihuan");
       Engine.addMilestone("嘉元城：墨府投信", "deed");
+      Engine.writeLedger("mofu_arrival", "持墨大夫遗信投嘉元城墨府——初见墨彩环，信中之托由此启");
     },
     choices: [
       { text: "在墨府住下，从长计议", hint: "解毒之事，急不来" },
@@ -526,6 +527,7 @@ const STORY = [
     ],
     onArrive(s) {
       State.setFlag("mo_warned");
+      Engine.writeLedger("mofu_guard", "嘉元城墨府夜退宵小——豺狗暂缩爪，但你终究要走");
     },
     choices: [
       { text: "「夫人，彩环，容我想想。」", hint: "解毒在即，去留之策也该定了" },
@@ -565,6 +567,7 @@ const STORY = [
       State.give("nuanyang_yu", 1);
       Engine.addMilestone("寒毒得解：暖阳宝玉（墨彩环的嫁妆）", "bigitem");
       Engine.addFame(8, "嘉元城里，墨府来了位深藏不露的韩公子");
+      Engine.writeLedger("caihuan_question", "墨彩环之问——凡人就真的不能修仙吗？此问韩立记了一生");
     },
     // 抉择：曲魂随行 / 留府（动漫线）。留府埋燕家堡·京城篇远线（曲魂夺舍·奇虫榜）；
     // 随行则侧位不空。两路皆辞别墨府、南下太南山（修仙人的集市「太南小会」将开）。
@@ -628,6 +631,8 @@ const STORY = [
       if (!s.metNpcs.includes("wanxiaoshan")) s.metNpcs.push("wanxiaoshan");
       Engine.writeLedger("wan_friend", "太南小会上，万小山热心为你引路");
       Engine.addMilestone("太南小会：初入修仙人的世界", "deed");
+      // 互斥窗口：太南小会采买 vs 回嘉元城探墨家
+      Engine.scheduleEvent("mofu_revisit_window", 3);
     },
     choices: [
       { text: "「有劳万兄。」（去逛集市）", hint: "行动栏「赶集」——长春功后篇就在某个摊上" },
@@ -669,6 +674,36 @@ const STORY = [
     },
     choices: [
       { text: "「来日方长。」", hint: "万小山：「对了韩兄，两月后升仙大会就在这太南山开——七派联合收徒！」" },
+    ],
+  },
+
+  /* ---- 互斥窗口：回嘉元城探墨家（3 月窗口，与太南采买争时间）---- */
+  {
+    id: "mofu_revisit",
+    skipIf: (s) => s.flags.mofu_revisited || s.flags.mofu_revisit_closed,
+    cond: (s) => s.flags.qingwen_seen && s.location === "jiayuan_city"
+                 && !s.flags.mofu_revisited && !s.flags.mofu_revisit_closed,
+    title: "嘉元城 · 故地重临",
+    text: [
+      { scene: "嘉元城 · 墨府门前" },
+      { bgm: "town" },
+      { shot: "establish" },
+      "你折回嘉元城，走到墨府门前时，发现门庭比你走时更冷落了几分——但朱漆新刷过，是有人在撑着。",
+      { say: "墨彩环", text: "韩大哥？！你怎么回来了——我还以为你进了那个什么仙门再不会来了呢！" },
+      "她牵着你的袖子叽叽喳喳说了半晌：城里帮派新来了个首领、隔壁铺子的掌柜送了年礼、后院的枣树结了果。",
+      { aside: "都是些凡人的琐碎日子。可听着这些，比山里修炼三个月还安心。" },
+      "墨夫人亲手端来了热汤，你在墨府待了三日。走时，墨彩环硬塞了一包家制的干粮——还有一枚从货郎那儿淘来的暖玉坠。",
+      { say: "墨彩环", tone: "故作轻快", text: "这不值钱啦——就当护身符好了。下次再来，我教你包粽子！" },
+    ],
+    onArrive(s) {
+      State.setFlag("mofu_revisited");
+      s.mood = clamp(s.mood + 12, 0, s.moodMax);
+      State.give("lingcao", 2);
+      Engine.writeLedger("mofu_revisit", "太南小会期间折返嘉元城探望墨家——墨彩环的暖玉坠与干粮");
+      Engine.toast("心境+12（故人重逢的安心）；灵草+2（墨家后院采得）——但赶集的时间少了");
+    },
+    choices: [
+      { text: "辞别墨府，赶回太南谷", hint: "心境恢复了，但在小会采买的时间少了三天（=少一轮赶集机会）" },
     ],
   },
 
@@ -734,6 +769,7 @@ const STORY = [
     onArrive(s) {
       State.setFlag("xianhui_done");
       Engine.addMilestone("升仙大会：测灵璧前，四灵根当众落选", "deed");
+      Engine.writeLedger("linggen_shame", "测灵璧前四灵根当众落选——袖中升仙令未亮，藏拙自此成习");
     },
     choices: [
       { text: "退下高台（袖中令牌，不急在此刻）", hint: "大会散场再做计较" },
@@ -803,6 +839,7 @@ const STORY = [
       State.setFlag("departure_complete");
       Engine.addMilestone("凭升仙令直入黄枫谷（离门远行 · 完）", "showdown");
       Engine.addFame(6, "升仙大会上有人凭升仙令直入黄枫谷");
+      Engine.writeLedger("departure_done", "凡人之路走完——七玄门到嘉元城到太南谷，寒毒解了，朋友埋了，修仙路在脚下");
     },
     choices: [
       { text: "踏入黄枫谷山门", hint: "新的篇章（驻地章：百药园三年）——筑基丹的恩怨，自此开始" },

@@ -612,6 +612,7 @@ const Engine = {
     if (Math.random() < 0.4 + (s.skills.alchemy || 0) * 0.01) State.give("duyao_cao", 1);
     s.skills.alchemy += 1;
     this.log(`你在灵草丛中采得灵草 ×${n}` + (s.inventory.duyao_cao ? "，还顺手挖到一株毒草" : "") + `。（药理+1，现 ${s.skills.alchemy}）`, "good");
+    this._checkAlchemyMilestone(s);
   },
 
   /* -------- 切磋（演武厅，可能引出厉飞雨剧情提示）-------- */
@@ -1089,6 +1090,7 @@ const Engine = {
     this.log(dbl
       ? `炉火纯青——这一炉竟得养元丹 ×2！（药理+2，现 ${s.skills.alchemy}）`
       : `你依墨大夫所授丹方，以灵草炼出一枚养元丹。（药理+2，现 ${s.skills.alchemy}）`, "good");
+    this._checkAlchemyMilestone(s);
   },
 
   /* -------- 探查（密室，推进张铁/夺舍线索）-------- */
@@ -2177,6 +2179,21 @@ const Engine = {
     this.log(`【因果有报】${echoText}（因起于${entry.t}：${entry.label}）`, "good");
     this.addMilestone(`因果：${entry.label} → 今日有报`, "deed");
     return true;
+  },
+
+  /* ---- 丹道雏形提示：药理达到里程碑门槛时提示玩家 ---- */
+  _checkAlchemyMilestone(s) {
+    const alch = (s.skills && s.skills.alchemy) || 0;
+    if (alch >= 5 && !s.flags.alchemy_milestone_5) {
+      State.setFlag("alchemy_milestone_5");
+      this.log("【丹道雏形】日积月累，你对草药的辨识已今非昔比——哪株入药、哪株有毒，一眼便知。墨大夫当年教的那些口诀，如今算是融会贯通了。", "good");
+      this.toast("丹道小成：辨草识药有所得");
+    }
+    if (alch >= 10 && !s.flags.alchemy_milestone_10) {
+      State.setFlag("alchemy_milestone_10");
+      this.log("【丹道雏形】药理渐深，你开始能看出丹方配伍的门道——不只是照方抓药，而是知其然、知其所以然。离自炼养元丹，又近了一步。", "good");
+      this.toast("丹道进阶：配伍之理渐明");
+    }
   },
 
   /* ===========================================================
