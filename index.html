@@ -326,11 +326,11 @@
       <div id="story-far" class="story-far"></div>
       <div id="story-bg" class="story-bg"></div>
       <div class="story-scrim"></div>
-      <div class="story-skip" id="story-skip" onclick="UI.storySkip()" hidden>跳过 ⏭</div>
+      <div class="story-skip" id="story-skip" onclick="event.stopPropagation(); UI.storySkip()" hidden>跳过 ⏭</div>
       <div id="story-portrait-left" class="story-portrait left"></div>
       <div id="story-portrait-right" class="story-portrait right"></div>
       <div class="story-stage-name" id="story-stage-name"></div>
-      <div class="story-dialog" id="story-dialog" onclick="UI.storyAdvance()">
+      <div class="story-dialog" id="story-dialog">
         <div class="story-speaker" id="story-speaker"></div>
         <div class="story-text" id="story-text"></div>
         <div class="story-cue" id="story-cue">▼ 轻触继续</div>

@@ -975,6 +975,11 @@ const UI = {
       if (staged && typeof Fx !== "undefined" && Fx.ensure) Fx.ensure(overlay);
     } else if (bg) { bg.classList.remove("story-cam"); }
     if (skip) skip.hidden = false;
+    // 全屏轻触推进：CG/立绘/背景区也可点击推进对话（移动端习惯）
+    overlay.onclick = (e) => {
+      if (e.target.closest(".story-skip") || e.target.closest(".story-choices") || e.target.closest("button")) return;
+      this.storyAdvance();
+    };
     // 败北重试：剧情已看过，跳过题字与正文直达抉择（免重复演出之扰）。重温(replay)不走此径。
     if (!opts.replay && typeof Engine !== "undefined" && Engine._retryStage) {
       Engine._retryStage = false;
@@ -1337,6 +1342,10 @@ const UI = {
         lbox.innerHTML = `<div class="pb"><img src="${url}" alt="${who}" /></div>`;
         if (st) { st.leftNpc = who; st.leftKey = lKey; }
         if (emo) this._portraitPop(lbox);
+      } else if (!url && st && st.leftNpc !== who) {
+        // 新说话人无立绘：清除上一人的残影，避免张冠李戴
+        lbox.innerHTML = "";
+        if (st) { st.leftNpc = who; st.leftKey = lKey; }
       }
     }
 
@@ -1526,8 +1535,19 @@ const UI = {
     if (!name) return null;
     // 剧情专属人物（不在大世界 NPC 名册中）
     const extra = { "三叔": "sanshu", "铁奴": "tienu", "曲魂": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan",
-      "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo", "陈巧倩": "chenqiaoqian" };
-    if (extra[name]) return extra[name];
+      "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo", "陈巧倩": "chenqiaoqian",
+      "董萱儿": "dongxuaner", "执旗使": "zhiqishi", "南宫婉": "nangongwan", "李化元": "lihuayuan",
+      "封岳": "fengyue", "辛如音": "xinruyin", "冯三娘": "feng_sanniang",
+      "妙音门掌门": "miaoyin_zhangmen", "汪凝": "wang_ning", "血茧铁罗": "tieluo",
+      "黄枫谷掌门": "huangfeng_zhangmen", "御灵宗夺舍者": "yulingzong", "古长老": "gu_family",
+      // P1 §4 补充映射（泛用角色→复用已有立绘）
+      "青纹道人": "sanxiu", "司仪修士": "sanxiu", "刀疤散修": "sanxiu",
+      "接引修士": "sanxiu", "探马": "biaoshi", "秦府老门房": "nongfu", "魁星城散修": "sanxiu" };
+    if (extra[name]) {
+      // 墨彩环立绘分期：燕家堡重逢后换成年版（二三十年过去了）
+      if (name === "墨彩环" && typeof State !== "undefined" && State.data && State.data.flags && State.data.flags.mocaihuan_reunion) return "mocaihuan_mature";
+      return extra[name];
+    }
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
       const n = WORLD.npcs.find(x => x.name === name);
       if (n) return n.id;

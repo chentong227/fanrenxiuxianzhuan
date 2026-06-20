@@ -236,6 +236,8 @@ const STORY = [
       { shot: "focusLeft" },
       { say: "韩立", tone: "心中冷然", text: "想夺我的身子……得先问过我手里的毒。" },
       "一张死局，就此铺开。只等那夺舍之夜降临。",
+      { beat: "——" },
+      "（战斗入门：你与敌人在一维轴上对峙。每回合可先移动再出招——走近了「眨眼剑法」才够得着，远距离用「暗器飞针」；灵力耗尽可「凝息回元」，但会露出破绽。毒草淬刀、暗器破甲是你最大的底牌，多多准备。）",
     ],
     onArrive(s) {
       State.setFlag("showdown_ready");
@@ -270,7 +272,7 @@ const STORY = [
       { wait: 500 },
       "眨眼剑法、催熟的剧毒、藏在袖中的暗器，还有这数年隐忍苦修的功力……全得用上。成败，就在今夜。",
       { beat: "——" },
-      "（铁奴百毒不侵，须正面破之；余子童元神非血肉，唯运功镇魂可灭。备得越足，胜算越大。）",
+      "（铁奴百毒不侵，须正面破之；余子童元神非血肉，唯运功镇魂可灭。备得越足，胜算越大。移动靠近敌人后再出招！）",
       { shot: "shock" },
       // D1-a 终止拍：落幕直接坠入三阶段决战，跳过「临战准备」选择屏（choices 仅作 fail-soft 退路）
       { fight: "showdown_win", guard: { hint: "毒草/暗器带得越多越稳" } },
@@ -309,11 +311,13 @@ const STORY = [
       State.give("ningshen_dan", 2);
       State.setFlag("got_quhun");
       State.setFlag("is_modafu");
+      Engine.meetNpc("lifeiyu", "爽朗仗义的同门师兄，武学有成。");
       Engine.assignTask("wolf_raid", 12);
+      s.month += 36;
       Engine.toast("你顶替墨大夫身份，得曲魂相随。继续修炼以备将来");
     },
     choices: [
-      { text: "深藏功与名，静待时机", hint: "继续修炼，提升修为", next: true },
+      { text: "深藏功与名，静待时机", hint: "继续修炼，提升修为。去「演武厅」打探局势", next: true },
     ],
   },
 
@@ -1268,7 +1272,7 @@ const STORY = [
     cond: (s) => s.flags.qingyuan_given && !s.flags.dongfu_done,
     title: "洞府 · 安身之地",
     text: [
-      { scene: "huangfeng_gate" },
+      { scene: "黄枫谷 · 山门" },
       { amb: "wind" },
       { bgm: "daily" },
       { shot: "establish" },
@@ -1306,6 +1310,7 @@ const STORY = [
      *   where:"yuanwu" 地点门禁——玩家须真北上元武国方触发；发放在此（增量B 仅立项定义）。 */
     id: "qiyunxiao_daigong",
     where: "yuanwu",
+    cg: "yuanwu_diku",
     skipIf: (s) => s.flags.daigong_done,
     cond: (s) => s.flags.dongfu_done && !s.flags.daigong_done,
     objTitle: "北上元武国 · 代工",
@@ -1404,6 +1409,7 @@ const STORY = [
    * ============================================================ */
   {
     id: "yanjia_summon",
+    cg: "huangfeng_dadian",
     skipIf: (s) => s.flags.yanjia_summoned,
     cond: (s) => s.flags.huangfeng_complete && !s.flags.yanjia_summoned,
     bgm: "tense",
@@ -1448,7 +1454,7 @@ const STORY = [
       { sfx: "sword" },
       { shot: "panRight" },
       "校场另一头，一位眉眼高华的红拂门下女修按剑而立，目光在你那柄乌龙夺上停了一瞬——后来你才知她姓董，名萱儿。当年陆云风为攀附的，正是她这条线。",
-      { say: "董萱儿", tone: "cold", text: "伪灵根能筑基，倒是稀奇。战王蝉就要破阵了——活着出了这堡，再论你够不够格同我说话。" },
+      { say: "董萱儿", tone: "娇喔", text: "伪灵根筑基？倒有几分意思。堡外那魔头就快破阵了——你那柄法器看着不俗，待会儿可别让人家失望。" },
     ],
     onArrive(s) {
       Engine.meetNpc("mocaihuan", "墨大夫之女、嘉元城墨府小姐——魔道入侵随家眷避入燕家堡，与你重逢。");
@@ -1482,7 +1488,7 @@ const STORY = [
       { sfx: "landDown" },
       "妖氛冲天，堡墙轰然炸裂——魔道巨擘战王蝉破阵而出！甲胄如铁，双镰开阖，振翅之间裂石分风，正道修士成片倒下。",
       { shot: "pushIn" },
-      { say: "董萱儿", tone: "cold", text: "它的目标是堡心！挡不住它，今夜谁也活不成——韩立，你那柄破甲的钩子，该出鞘了！" },
+      { say: "董萱儿", tone: "急切", text: "它的目标是堡心！挡不住它，今夜谁也活不成——韩立，你那柄破甲的钩子，该出鞘了！" },
       { aside: "诛它？这等魔道巨擘岂是今日的你能诛的。撑过它的杀势、活着退出燕家堡——这一战，只为这一个字：活。" },
       // D1-a 终止拍：落幕直接坠入战王蝉破阵（撑过血线即剧情撤离）
       { fight: "zhanwangchan_fight", guard: { hint: "破甲的钩子该出鞘了" } },

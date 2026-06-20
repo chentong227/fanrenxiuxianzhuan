@@ -25,6 +25,8 @@
     lvtianmeng: 1, xuanle: 1, xueyu_zhizhu: 1, baiyu_zhizhu: 1,
     // 增量G·魔道争锋第三幕·京城暗流
     xiaocui: 1, mengshan_wuyou: 1,
+    // 燕家堡篇·董萱儿（红拂门名门女修）+ 墨彩环成年版
+    dongxuaner: 1, mocaihuan_mature: 1,
     // 再别天南篇·辛如音（阵法大家·赴乱星海之钥）
     xinruyin: 1,
     // 初入星海篇·全量补绘：魁星岛旧识/妙音门/六连殿/逆星盟/妖修/星宫
@@ -34,6 +36,9 @@
     hanli_zhuji: 1, hanli_zhuji_xing: 1, hanli_yexing: 1,
     hanli_jindan: 1, hanli_jindan_changfu: 1, hanli_jindan_jinzhuang: 1,
     hanli_wentianren: 1, hanli_jindan_kouguan: 1, quhun_huashen: 1,
+    // P1 NPC 立绘补全（齐云霄/刘靖/钟卫娘/宋蒙/武炫/铁罗/五色门主/胥王/执旗使）
+    qiyunxiao: 1, liujing: 1, zhongweiniang: 1, songmeng: 1, wuxuan: 1,
+    tieluo: 1, wuse_menzhu: 1, xuwang: 1, zhiqishi: 1,
   };
 
   // —— v213 三级换装：境界默认 / 场景强制 / 手动窗口 ——
@@ -87,12 +92,19 @@
     wang_ning: { sad: 1 },
   };
 
+  // 地点场景图临时回退（专属场景图生成前用相似已有场景顶替，消灭黑屏）
+  // 全部 P0 黑屏已修复，fallback 表清空
+  const SCENE_FALLBACK = {};
   // 场景（p:1 = 竖版已生成，竖屏自动启用）
   const SCENES = {
     yaolu: { p: 1 }, houshan: { p: 1 }, town: { p: 1 }, wuting: { p: 1 },
     qingniu: { p: 1 }, road: { p: 1 }, shanmen: { p: 1 }, miju: { p: 1 },
     jiayuan_city: { p: 1 }, tainan_fair: { p: 1 }, huangfeng_gate: { p: 1 },
     baiyao_yuan: { p: 1 },
+    // P0 黑屏修复·专属场景图已生成
+    fangshi: { p: 1 }, yuanwu: { p: 1 }, yanjiabao: { p: 1 },
+    modao_front: { p: 1 }, jinguyuan: { p: 1 },
+    yuekuang: { p: 1 }, luanxinghai: { p: 1 },
     // 战斗场景底图（对阵轴战场：下半幅开阔地面，横版专用；v90 起为舞台盒构图——
     // 两翼近景收口环抱+中央开阔，"人被环境包住"）
     bt_forest: {}, bt_road: {}, bt_valley: {}, bt_night: {},
@@ -178,7 +190,11 @@
     // 初入星海篇·全量补绘演出 CG（横版底 + 竖版 _p）
     kuixing_land: { p: 1 }, xiaohuan_dongfu: { p: 1 }, sanzhuan: { p: 1 },
     doushouchang: { p: 1 }, leipeng_pofeng: { p: 1 }, jiu_ziling: { p: 1 },
-    waihai_lie: { p: 1 }, jindan: { p: 1 } };
+    waihai_lie: { p: 1 }, jindan: { p: 1 },
+    // 初入星海篇·补注册（资产已就位，漏登记导致黑屏）
+    leitai: { p: 1 }, wenqiang: { p: 1 }, yingli: { p: 1 }, shijin: { p: 1 },
+    chuhai: { p: 1 }, jinkui: { p: 1 }, tianxing: { p: 1 }, ziliang: { p: 1 },
+    jieguan: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };
@@ -251,8 +267,12 @@
       return this._v(`assets/scenes/${id}.png`);
     },
 
-    // 地点配图：直接按地点 id 取图
-    locUrl(loc, opts) { return loc ? this.sceneUrl(loc.id, opts) : null; },
+    // 地点配图：直接按地点 id 取图；无专属场景时回退到 SCENE_FALLBACK 相似场景
+    locUrl(loc, opts) {
+      if (!loc) return null;
+      return this.sceneUrl(loc.id, opts)
+        || (SCENE_FALLBACK[loc.id] ? this.sceneUrl(SCENE_FALLBACK[loc.id], opts) : null);
+    },
 
     // 战斗全身立绘（对阵轴单位图）
     battlerUrl(id) { return BATTLERS[id] ? this._v(`assets/battlers/${id}.png`) : null; },
