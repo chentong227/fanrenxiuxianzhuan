@@ -93,10 +93,8 @@
   };
 
   // 地点场景图临时回退（专属场景图生成前用相似已有场景顶替，消灭黑屏）
-  const SCENE_FALLBACK = {
-    yuekuang: "miju",             // 越国矿洞→密室
-    luanxinghai: "waixinghai",    // 乱星海→外星海
-  };
+  // 全部 P0 黑屏已修复，fallback 表清空
+  const SCENE_FALLBACK = {};
   // 场景（p:1 = 竖版已生成，竖屏自动启用）
   const SCENES = {
     yaolu: { p: 1 }, houshan: { p: 1 }, town: { p: 1 }, wuting: { p: 1 },
@@ -106,6 +104,7 @@
     // P0 黑屏修复·专属场景图已生成
     fangshi: { p: 1 }, yuanwu: { p: 1 }, yanjiabao: { p: 1 },
     modao_front: { p: 1 }, jinguyuan: { p: 1 },
+    yuekuang: { p: 1 }, luanxinghai: { p: 1 },
     // 战斗场景底图（对阵轴战场：下半幅开阔地面，横版专用；v90 起为舞台盒构图——
     // 两翼近景收口环抱+中央开阔，"人被环境包住"）
     bt_forest: {}, bt_road: {}, bt_valley: {}, bt_night: {},

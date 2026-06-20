@@ -1539,7 +1539,10 @@ const UI = {
       "董萱儿": "dongxuaner", "执旗使": "zhiqishi", "南宫婉": "nangongwan", "李化元": "lihuayuan",
       "封岳": "fengyue", "辛如音": "xinruyin", "冯三娘": "feng_sanniang",
       "妙音门掌门": "miaoyin_zhangmen", "汪凝": "wang_ning", "血茧铁罗": "tieluo",
-      "黄枫谷掌门": "huangfeng_zhangmen", "御灵宗夺舍者": "yulingzong", "古长老": "gu_family" };
+      "黄枫谷掌门": "huangfeng_zhangmen", "御灵宗夺舍者": "yulingzong", "古长老": "gu_family",
+      // P1 §4 补充映射（泛用角色→复用已有立绘）
+      "青纹道人": "sanxiu", "司仪修士": "sanxiu", "刀疤散修": "sanxiu",
+      "接引修士": "sanxiu", "探马": "biaoshi", "秦府老门房": "nongfu", "魁星城散修": "sanxiu" };
     if (extra[name]) {
       // 墨彩环立绘分期：燕家堡重逢后换成年版（二三十年过去了）
       if (name === "墨彩环" && typeof State !== "undefined" && State.data && State.data.flags && State.data.flags.mocaihuan_reunion) return "mocaihuan_mature";
