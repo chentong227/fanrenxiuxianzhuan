@@ -1992,7 +1992,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .cost-dot.wx-tu { color: var(--wx-tu); border-color: rgba(194,163,107,.45); }
 .cost-dot.free { color: var(--ink-faint); }
 .spell-btn .spouch { color: var(--jade-bright); }
-.spell-btn .spouch.empty { color: var(--red); }
+.spell-btn .spouch.empty { color: var(--red); font-size: 9px; white-space: nowrap; }
 
 /* 底牌/瞬发行：消耗性手段独立分区（符/丹/阵旗——与灵技体系分离，多牌自动换行） */
 .trump-row {
@@ -4160,7 +4160,7 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 }
 @keyframes armedPulse { from { box-shadow: 0 0 6px rgba(236,217,168,.35); } to { box-shadow: 0 0 16px rgba(236,217,168,.7); } }
 /* 择敌：可选目标灵光勾边脉动（点立绘即放） */
-.axis-unit.targetable { cursor: pointer; }
+.axis-unit.targetable { cursor: pointer; min-width: 56px; }
 .axis-unit.targetable .au-img {
   filter: drop-shadow(0 12px 18px rgba(0,0,0,.66)) drop-shadow(0 0 14px rgba(236,217,168,.75));
   animation: targetGlow .9s ease-in-out infinite alternate;

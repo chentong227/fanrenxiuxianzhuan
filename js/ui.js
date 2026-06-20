@@ -1466,7 +1466,11 @@ const UI = {
     const s = State.data;
     const bodyHtml = (stage.text || []).map(seg => this._renderSegment(seg)).join("");
     const id = (Engine._logSeq = (Engine._logSeq || 0) + 1);
-    s.log.push({ id, t: `第${s.year}年${s.month}月`, kind: "story", body: `<div class="title">${stage.title}</div>${bodyHtml}` });
+    const titleHtml = `<div class="title">${stage.title}</div>`;
+    // 去重：同标题 story 条目折叠（重试战斗时同一 cutscene 不再堆叠）
+    const prev = s.log.findIndex(e => e.kind === "story" && e.body && e.body.startsWith(titleHtml));
+    if (prev >= 0) s.log.splice(prev, 1);
+    s.log.push({ id, t: `第${s.year}年${s.month}月`, kind: "story", body: `${titleHtml}${bodyHtml}` });
     if (s.log.length > 60) s.log.shift();
     // §9-6 名场面回廊：含演出的节点同时登记进可重温列表（纯文字对白不收）
     if (typeof Cutscene !== "undefined" && Cutscene.recordScene)

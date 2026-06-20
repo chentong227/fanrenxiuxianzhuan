@@ -743,6 +743,10 @@ const STORY = [
     id: "wan_death",
     cg: "tainan_lin",
     cond: (s) => s.flags.xianhui_done && !s.flags.wan_avenged,
+    onArrive(s) {
+      State.save();
+      if (!State.count("anqi")) Engine.toast("暗器飞针耗尽——可选「退去后山」补给再战");
+    },
     bgm: "sorrow",
     title: "暮色森林 · 故人之血",
     text: [
