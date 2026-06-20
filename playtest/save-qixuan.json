@@ -1,9 +1,9 @@
 {
   "name": "韩立",
   "rootId": "si",
-  "realmIndex": 0,
-  "cultivation": 0,
-  "spirit": 60,
+  "realmIndex": 5,
+  "cultivation": 130,
+  "spirit": 121,
   "poolBonus": 0,
   "sense": 5,
   "body": 8,
@@ -12,26 +12,37 @@
   "hpMax": 100,
   "mood": 100,
   "moodMax": 100,
-  "demon": 0,
+  "demon": 40,
   "speed": 10,
   "insight": 6,
   "lifespan": 100,
   "age": 13,
   "year": 1,
-  "month": 1,
+  "month": 2,
   "stones": 0,
-  "silver": 20,
-  "location": "yaolu",
+  "silver": 50,
+  "location": "wuting",
   "flightId": "none",
   "inventory": {
-    "qingyuan_dan": 2
+    "qingyuan_dan": 2,
+    "ducao": 5,
+    "lingshi": 15,
+    "ningshen_dan": 2,
+    "duyao_cao": 2,
+    "jinfu": 1,
+    "jinzhong_zhao": 1,
+    "jinguang_zhuan": 1,
+    "jinguang_zhuan_charge": 3,
+    "shengxian_ling": 1
   },
   "spells": [
     "tuna",
     "huti",
     "ningshen",
     "zhayan",
-    "weidu"
+    "weidu",
+    "zhenhun",
+    "feizhen"
   ],
   "technique": "changchun",
   "auxTechniques": [],
@@ -50,25 +61,39 @@
   ],
   "activeChapter": "qixuan",
   "unlockedChapters": [
-    "qixuan"
+    "qixuan",
+    "huangfeng"
   ],
   "flags": {
     "at_village": true,
     "joined_sect": true,
-    "met_modafu": true
+    "met_modafu": true,
+    "zhangtie_fated": true,
+    "zhangtie_dead": true,
+    "showdown_ready": true,
+    "losses_showdown": 1,
+    "modafu_dead": true,
+    "showdown_won": true,
+    "got_quhun": true,
+    "is_modafu": true,
+    "gang_war": true,
+    "jinguang_appeared": true,
+    "jinguang_dead": true,
+    "arc1_complete": true,
+    "han_du": true
   },
   "firedFortunes": [],
   "tasks": [
     {
-      "id": "modafu_deadline",
-      "dueAbs": 37
+      "id": "wolf_raid",
+      "dueAbs": 25
     }
   ],
   "dynQuests": [],
   "leads": [],
   "heardLeads": [],
   "timeline": [],
-  "storyStage": 3,
+  "storyStage": 15,
   "bottle": {
     "unlocked": false,
     "plots": []
@@ -109,6 +134,252 @@
       "t": "第1年1月",
       "body": "【新任务·墨大夫的期许】墨大夫初授《长春功》，盼你早日修至练气二层验功。届时按例重赏，莫要懈怠。（期限 24 个月）",
       "kind": "event"
+    },
+    {
+      "id": 1,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">拜师 · 墨大夫</div><div class=\"seg-scene\">· 七玄门 · 药庐 ·</div><p class=\"seg-narr\">选拔的喧嚣散去，你和张铁被一名枯瘦老者叫到跟前。他便是门中以医毒闻名、性情古怪的墨大夫。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/modafu.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">墨大夫</span><span class=\"dlg-tone\">打量着你，忽然咳了两声</span></div>\n          <div class=\"dlg-text\">你二人资质平平，却有股不肯认命的韧劲……也罢，就留在我药庐做个药童吧。</div>\n        </div>\n      </div><p class=\"seg-narr\">他枯枝似的手指递来一卷泛黄的功法。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/modafu.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">墨大夫</span></div>\n          <div class=\"dlg-text\">这《长春功》，你且用心修习。每练成一层，我便赏你纹银。</div>\n        </div>\n      </div><p class=\"seg-aside\">纹银……家里若能宽裕些就好了。你压下心头的念头，恭敬接过。</p><p class=\"seg-narr\">自此你住进药庐，日里辨药煎药，闲时打坐修《长春功》。修仙之路，就在这草药的苦香里，悄然开端。</p>"
+    },
+    {
+      "id": 2,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">挚友失踪</div><div class=\"seg-scene\">· 数月后 · 深夜 ·</div><p class=\"seg-narr\">练象甲功的张铁奉墨大夫之命外出探查，此后再无音讯。门中只道他离门远游了。</p><p class=\"seg-aside\">可你心里总堵着一块石头。张铁不是那种不辞而别的人。</p><p class=\"seg-narr\">你四处打听，蛛丝马迹却都指向一个令你脊背发凉的方向。直到这一夜，你绕到墨大夫密室之外——</p><div class=\"seg-beat\">……</div><div class=\"dlg-row right\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--jade-bright)\"><img src=\"assets/portraits/hanli.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--jade-bright)\">韩立</span><span class=\"dlg-tone\">几乎脱口，又死死咬住</span></div>\n          <div class=\"dlg-text\">……张铁？</div>\n        </div>\n      </div><p class=\"seg-aside\">挚友早已被害，尸身被魔道之术炼成了无魂的「铁奴」。七玄门的温情，原来从头到尾都是一张网。</p><p class=\"seg-narr\">你退回阴影里，指甲掐进掌心，一声不敢出。这一刻，你彻底认清了脚下这条路有多冷。</p>"
+    },
+    {
+      "id": 3,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">夺舍之谋</div><p class=\"seg-narr\">拼凑起所有线索，那个深埋的真相终于浮出水面：墨大夫这具躯壳里，附着一缕名为「余子童」的修士残魂。</p><p class=\"seg-aside\">余子童元神受损，又夺不了墨大夫这具承不住灵力的凡躯。于是……</p><p class=\"seg-narr\">于是他借墨大夫之手养你、授你《长春功》，把你的身躯一步步炼成最趁手的夺舍容器。等的，就是有朝一日鸠占鹊巢，占了你的身体重获新生。</p><p class=\"seg-aside\">他自以为算无遗策——却不知你早已暗修到练气四层，更不知你手里藏着那只小绿瓶。</p><p class=\"seg-narr\">硬拼，绝无胜算。你不动声色，用小绿瓶催熟墨大夫药圃里的毒草，又日夜苦练那卷诡谲的「眨眼剑法」。</p><div class=\"dlg-row right\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--jade-bright)\"><img src=\"assets/portraits/hanli.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--jade-bright)\">韩立</span><span class=\"dlg-tone\">心中冷然</span></div>\n          <div class=\"dlg-text\">想夺我的身子……得先问过我手里的毒。</div>\n        </div>\n      </div><p class=\"seg-narr\">一张死局，就此铺开。只等那夺舍之夜降临。</p>"
+    },
+    {
+      "id": 4,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">夺舍之夜</div><div class=\"seg-scene\">· 药庐 · 子夜 ·</div><p class=\"seg-narr\">烛火无故熄灭。黑暗里，墨大夫缓缓直起佝偻的背，浑浊的眼睛亮起一种贪婪而陌生的光。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/modafu.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">墨大夫</span><span class=\"dlg-tone\">声音不再苍老，阴冷彻骨</span></div>\n          <div class=\"dlg-text\">乖徒儿，养了你这么些年……这具好皮囊，也该还给为师了。</div>\n        </div>\n      </div><p class=\"seg-aside\">来了。你心跳如鼓，面上却古井无波——这一刻，你已等了太久。</p><p class=\"seg-narr\">眨眼剑法、催熟的剧毒、藏在袖中的暗器，还有这数年隐忍苦修的功力……全得用上。成败，就在今夜。</p><div class=\"seg-beat\">——</div><p class=\"seg-narr\">（铁奴百毒不侵，须正面破之；余子童元神非血肉，唯运功镇魂可灭。备得越足，胜算越大。）</p>"
+    },
+    {
+      "id": 5,
+      "t": "第1年1月",
+      "body": "夺舍之夜，决战开始！你怀揣 毒草×0、暗器×8 作底牌——能否反杀，全看准备。",
+      "kind": "event"
+    },
+    {
+      "id": 6,
+      "t": "第1年1月",
+      "body": "你周身气机轰然炸开——深藏 3 层的修为，今夜终于不必再藏！",
+      "kind": "good"
+    },
+    {
+      "id": 7,
+      "t": "第1年1月",
+      "body": "决战失利，你身受重伤(气血-50)狼狈遁走。但这一败没有白吃——你看破了对方几分路数（再战伤害+8%）。回去备足毒草暗器，再来！",
+      "kind": "bad"
+    },
+    {
+      "id": 8,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">夺舍之夜</div><div class=\"seg-scene\">· 药庐 · 子夜 ·</div><p class=\"seg-narr\">烛火无故熄灭。黑暗里，墨大夫缓缓直起佝偻的背，浑浊的眼睛亮起一种贪婪而陌生的光。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/modafu.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">墨大夫</span><span class=\"dlg-tone\">声音不再苍老，阴冷彻骨</span></div>\n          <div class=\"dlg-text\">乖徒儿，养了你这么些年……这具好皮囊，也该还给为师了。</div>\n        </div>\n      </div><p class=\"seg-aside\">来了。你心跳如鼓，面上却古井无波——这一刻，你已等了太久。</p><p class=\"seg-narr\">眨眼剑法、催熟的剧毒、藏在袖中的暗器，还有这数年隐忍苦修的功力……全得用上。成败，就在今夜。</p><div class=\"seg-beat\">——</div><p class=\"seg-narr\">（铁奴百毒不侵，须正面破之；余子童元神非血肉，唯运功镇魂可灭。备得越足，胜算越大。）</p>"
+    },
+    {
+      "id": 9,
+      "t": "第1年1月",
+      "body": "夺舍之夜，决战开始！你怀揣 毒草×0、暗器×8 作底牌——能否反杀，全看准备。",
+      "kind": "event"
+    },
+    {
+      "id": 10,
+      "t": "第1年1月",
+      "body": "你周身气机轰然炸开——深藏 3 层的修为，今夜终于不必再藏！",
+      "kind": "good"
+    },
+    {
+      "id": 1,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">夺舍之夜</div><div class=\"seg-scene\">· 药庐 · 子夜 ·</div><p class=\"seg-narr\">烛火无故熄灭。黑暗里，墨大夫缓缓直起佝偻的背，浑浊的眼睛亮起一种贪婪而陌生的光。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/modafu.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">墨大夫</span><span class=\"dlg-tone\">声音不再苍老，阴冷彻骨</span></div>\n          <div class=\"dlg-text\">乖徒儿，养了你这么些年……这具好皮囊，也该还给为师了。</div>\n        </div>\n      </div><p class=\"seg-aside\">来了。你心跳如鼓，面上却古井无波——这一刻，你已等了太久。</p><p class=\"seg-narr\">眨眼剑法、催熟的剧毒、藏在袖中的暗器，还有这数年隐忍苦修的功力……全得用上。成败，就在今夜。</p><div class=\"seg-beat\">——</div><p class=\"seg-narr\">（铁奴百毒不侵，须正面破之；余子童元神非血肉，唯运功镇魂可灭。备得越足，胜算越大。）</p>"
+    },
+    {
+      "id": 2,
+      "t": "第1年1月",
+      "body": "夺舍之夜，决战开始！你怀揣 毒草×0、暗器×8 作底牌——能否反杀，全看准备。",
+      "kind": "event"
+    },
+    {
+      "id": 3,
+      "t": "第1年1月",
+      "body": "你周身气机轰然炸开——深藏 3 层的修为，今夜终于不必再藏！",
+      "kind": "good"
+    },
+    {
+      "id": 1,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">夺舍之夜</div><div class=\"seg-scene\">· 药庐 · 子夜 ·</div><p class=\"seg-narr\">烛火无故熄灭。黑暗里，墨大夫缓缓直起佝偻的背，浑浊的眼睛亮起一种贪婪而陌生的光。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/modafu.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">墨大夫</span><span class=\"dlg-tone\">声音不再苍老，阴冷彻骨</span></div>\n          <div class=\"dlg-text\">乖徒儿，养了你这么些年……这具好皮囊，也该还给为师了。</div>\n        </div>\n      </div><p class=\"seg-aside\">来了。你心跳如鼓，面上却古井无波——这一刻，你已等了太久。</p><p class=\"seg-narr\">眨眼剑法、催熟的剧毒、藏在袖中的暗器，还有这数年隐忍苦修的功力……全得用上。成败，就在今夜。</p><div class=\"seg-beat\">——</div><p class=\"seg-narr\">（铁奴百毒不侵，须正面破之；余子童元神非血肉，唯运功镇魂可灭。备得越足，胜算越大。）</p>"
+    },
+    {
+      "id": 2,
+      "t": "第1年1月",
+      "body": "夺舍之夜，决战开始！你怀揣 毒草×0、暗器×8 作底牌——能否反杀，全看准备。",
+      "kind": "event"
+    },
+    {
+      "id": 3,
+      "t": "第1年1月",
+      "body": "你周身气机轰然炸开——深藏 3 层的修为，今夜终于不必再藏！",
+      "kind": "good"
+    },
+    {
+      "id": 4,
+      "t": "第1年1月",
+      "body": "【勋章】「全身而退」——一场恶战，气血几乎无损——赢得干干净净。（首次达成，载入年表）",
+      "kind": "good"
+    },
+    {
+      "id": 5,
+      "t": "第1年1月",
+      "body": "【名声】「全身而退」的事迹传开——江湖名声 +4（现 4）",
+      "kind": "event"
+    },
+    {
+      "id": 6,
+      "t": "第1年1月",
+      "body": "【勋章】「以下克上」——击败修为高过自己的对手——以弱胜强，此为大勇。（首次达成，载入年表）",
+      "kind": "good"
+    },
+    {
+      "id": 7,
+      "t": "第1年1月",
+      "body": "【名声】「以下克上」的事迹传开——江湖名声 +8（现 12）",
+      "kind": "event"
+    },
+    {
+      "id": 8,
+      "t": "第1年1月",
+      "body": "【复盘】本战关键手：「暗器飞针」共建功 134 伤——你的打法立住了。",
+      "kind": "sys"
+    },
+    {
+      "id": 9,
+      "t": "第1年1月",
+      "body": "墨大夫毒发倒地，铁奴被你击碎，余子童的元神也被你以功力生生镇灭！你赢了——靠的是准备、算计与一刻不敢松懈的苦修。",
+      "kind": "good"
+    },
+    {
+      "id": 10,
+      "t": "第1年1月",
+      "body": "【名声】药庐那位韩师傅，深藏不露——江湖名声 +15（现 27）",
+      "kind": "event"
+    },
+    {
+      "id": 11,
+      "t": "第1年1月",
+      "body": "【风云榜】茶馆酒肆间，你的名号已盖过「岳鹿道人（云游散修）」。江湖排座次，你又上了一阶。",
+      "kind": "good"
+    },
+    {
+      "id": 12,
+      "t": "第1年1月",
+      "body": "【新任务·山雨欲来】野狼帮气焰嚣张，时有喽啰袭扰。趁早修炼精进（练气六层），方有底气应对将来的大祸。（期限 12 个月）",
+      "kind": "event"
+    },
+    {
+      "id": 13,
+      "t": "第1年1月",
+      "kind": "story",
+      "body": "<div class=\"title\">李代桃僵</div><p class=\"seg-narr\">墨大夫的尸身渐渐冷却，余子童那缕不甘的残魂也已被你彻底镇灭。药庐里重归死寂。</p><p class=\"seg-aside\">声张吗？不。一个练气小修在七玄门这样的门派眼里，轻如草芥。这桩事，谁都不能知道。</p><p class=\"seg-narr\">你做了一个大胆的决定——索性顶替墨大夫的身份活下去。对外，你仍是那个深居简出、医毒双绝的「墨大夫」；暗里，你是这门中唯一无人知晓的修仙者。</p><p class=\"seg-narr\">你收殓了遗物：储物袋、灵石、灵药、毒方、《长春功》的后续口诀，还有那具沉默的尸傀——日后随你闯荡的「曲魂」。</p><div class=\"dlg-row right\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--jade-bright)\"><img src=\"assets/portraits/hanli.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--jade-bright)\">韩立</span><span class=\"dlg-tone\">对着铜镜里那张陌生的老脸，低声</span></div>\n          <div class=\"dlg-text\">委屈你了，张铁。从今往后，你我兄弟，再不分离。</div>\n        </div>\n      </div><p class=\"seg-narr\">此后数年，你低调行医，潜心修炼，悄悄积蓄着毒、暗器与底牌。山雨欲来，你需要时间。</p>"
+    },
+    {
+      "id": 14,
+      "t": "第1年2月",
+      "body": "【任务达成·墨大夫的期许】你如期修至练气二层，墨大夫捋须微笑，依约赏你纹银三十两。",
+      "kind": "good"
+    },
+    {
+      "id": 15,
+      "t": "第1年2月",
+      "body": "你动身前往「演武厅」，行程耗时 1 月。门中弟子切磋武艺之处。厉飞雨常在此。可与同门切磋、打探门派内外的风声。",
+      "kind": "event"
+    },
+    {
+      "id": 16,
+      "t": "第1年2月",
+      "body": "【结识】你结识了「小算盘」（门中管事弟子）。门中管事弟子，消息灵通。　——已录入「人物图鉴」。",
+      "kind": "event"
+    },
+    {
+      "id": 17,
+      "t": "第1年2月",
+      "body": "【结识】你结识了「贾天龙」（野狼帮帮主）。野狼帮帮主，野心勃勃。　——已录入「人物图鉴」。",
+      "kind": "event"
+    },
+    {
+      "id": 18,
+      "t": "第1年2月",
+      "kind": "story",
+      "body": "<div class=\"title\">野狼帮</div><div class=\"seg-scene\">· 数年后 · 演武厅 ·</div><p class=\"seg-narr\">门外早已不太平。野狼帮在帮主贾天龙麾下日渐坐大，为争夺七玄门治下几座富庶城镇的税赋，与门派屡屡冲突，前后交手十余次，互有死伤。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/xiaosuanpan.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">小算盘</span><span class=\"dlg-tone\">压低声音</span></div>\n          <div class=\"dlg-text\">墨大夫，您是没瞧见……野狼帮那帮人，一次比一次凶。门里三位师叔都坐不住了。</div>\n        </div>\n      </div><p class=\"seg-aside\">起初不过是凡俗江湖的厮杀。可你嗅到一丝不安——贾天龙的野心，似乎不止于几座城镇。</p><p class=\"seg-narr\">山雨欲来，风满楼。气氛一日紧过一日。</p>"
+    },
+    {
+      "id": 19,
+      "t": "第1年2月",
+      "body": "【结识】你结识了「金光上人」（青苓修仙杀手）。贾天龙重金请来的修仙杀手。　——已录入「人物图鉴」。",
+      "kind": "event"
+    },
+    {
+      "id": 20,
+      "t": "第1年2月",
+      "kind": "story",
+      "body": "<div class=\"title\">金光上人</div><div class=\"seg-scene\">· 七玄门 · 校场 ·</div><p class=\"seg-narr\">果然，贾天龙亮出了底牌——他重金请来一名修仙者：青苓来的矮胖和尚，「金光上人」。</p><div class=\"dlg-row left\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--ink)\"><img src=\"assets/portraits/jinguang.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--ink)\">金光上人</span><span class=\"dlg-tone\">金光绕身，睥睨众人</span></div>\n          <div class=\"dlg-text\">七玄门？也配？今日，便让尔等见识见识何为仙法。</div>\n        </div>\n      </div><p class=\"seg-narr\">金符、剑符、金钟罩，道道术法璀璨夺目。三位武艺最高的师叔联手而上——</p><div class=\"seg-beat\">——</div><p class=\"seg-narr\">片刻之间，尽数被击倒在地。门派危在旦夕，眼看就要被血洗。</p><p class=\"seg-aside\">满场绝望。可无人知道，这门中还藏着一个修仙者。那就是你——「墨大夫」。</p>"
+    },
+    {
+      "id": 21,
+      "t": "第1年2月",
+      "kind": "story",
+      "body": "<div class=\"title\">暗算金光上人</div><p class=\"seg-aside\">正面硬拼，你绝非这和尚的对手。但修仙之争，从来不是比谁拳头硬——而是比谁算计更深、准备更足、出手更狠。</p><p class=\"seg-narr\">你以「墨大夫」医者的身份从容近身，谁也不会提防一个佝偻的老药师。就在咫尺之间——</p><div class=\"dlg-row right\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--jade-bright)\"><img src=\"assets/portraits/hanli.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--jade-bright)\">韩立</span><span class=\"dlg-tone\">心中默念</span></div>\n          <div class=\"dlg-text\">金钟罩再固，也挡不住由内而发的毒。</div>\n        </div>\n      </div><p class=\"seg-narr\">催熟的剧毒、淬毒的暗器，尽数招呼上去。一击不中，便是粉身碎骨；可一旦得手……</p>"
+    },
+    {
+      "id": 22,
+      "t": "第1年2月",
+      "body": "金光上人金钟罩护身，寻常攻击难伤分毫！你怀 毒草×2、暗器×6——以毒续伤、以暗器破甲，方有胜机。",
+      "kind": "event"
+    },
+    {
+      "id": 23,
+      "t": "第1年2月",
+      "body": "【复盘】本战关键手：「暗器飞针」共建功 102 伤——你的打法立住了。",
+      "kind": "sys"
+    },
+    {
+      "id": 24,
+      "t": "第1年2月",
+      "body": "金光上人金钟罩虽固，终究敌不过你的毒与暗器。这矮胖和尚至死不信，自己竟栽在一个门派药师手里！七玄门之危，就此解去。",
+      "kind": "good"
+    },
+    {
+      "id": 25,
+      "t": "第1年2月",
+      "body": "【名声】修仙杀手金光上人死于彩霞山——江湖名声 +25（现 52）",
+      "kind": "event"
+    },
+    {
+      "id": 26,
+      "t": "第1年2月",
+      "body": "【风云榜】茶馆酒肆间，你的名号已盖过「厉飞雨（七玄门 · 后起之秀）」。江湖排座次，你又上了一阶。",
+      "kind": "good"
+    },
+    {
+      "id": 27,
+      "t": "第1年2月",
+      "body": "你从他怀中搜出一块巴掌大的金砖，灵光内蕴——正是他赖以成名的符宝「金光砖」！尚余三道充能（灵石可回充）。杀手的凶器，自此是你的底牌。",
+      "kind": "good"
+    },
+    {
+      "id": 28,
+      "t": "第1年2月",
+      "kind": "story",
+      "body": "<div class=\"title\">升仙令 · 离门</div><div class=\"seg-scene\">· 七玄门 · 山门外 ·</div><p class=\"seg-narr\">金光上人到死都瞪大着眼——他怎么也想不通，自己竟会折在一个不起眼的门派药师手里。</p><p class=\"seg-narr\">你从他身上搜得宝物：升仙令、金符、剑符、金钟罩——皆是你做梦都不敢想的修仙之资。</p><p class=\"seg-aside\">尤其这枚「升仙令」……它是踏入更高门派、求取筑基机缘的凭证。我的机会，到了。</p><p class=\"seg-narr\">可夜里收功之时，一缕阴寒自丹田窜起，冻得你指尖发麻——墨大夫临死的冷笑浮上心头。遗书里写得明白：他在传你功法时早埋了寒毒，解药唯有墨家祖传的「暖阳宝玉」。</p><p class=\"seg-aside\">遗书末尾是一行小字：去岚州嘉元城墨府，解你的毒，也……替我安顿好她们。这老鬼，到死还要驱使我。</p><p class=\"seg-narr\">你最后回望了一眼这座困了你数年的七玄门。这里有过暖意，也有过欺骗与杀机。</p><div class=\"dlg-row right\">\n        <div class=\"dlg-portrait has-img\" style=\"--pc:var(--jade-bright)\"><img src=\"assets/portraits/hanli.png?v=28\" alt=\"\" loading=\"lazy\" /></div>\n        <div class=\"dlg-bubble\">\n          <div class=\"dlg-who\"><span class=\"dlg-name\" style=\"color:var(--jade-bright)\">韩立</span><span class=\"dlg-tone\">极轻</span></div>\n          <div class=\"dlg-text\">张铁，飞雨……后会有期。</div>\n        </div>\n      </div><p class=\"seg-narr\">转身，山风扑面。先去嘉元城解毒，再寻修仙人的踪迹——凡人之路，仍在脚下延伸。</p><div class=\"seg-scene\">· 七玄门篇 · 终　——　离门远行 · 启 ·</div>"
     }
   ],
   "worldNews": [],
@@ -118,8 +389,8 @@
       "name": "散修·李恒",
       "apt": 1.05,
       "realm": 3,
-      "cul": 0,
-      "age": 38,
+      "cul": 7.255160391074722,
+      "age": 38.083333333333336,
       "lifespan": 108,
       "status": "alive",
       "desperate": false
@@ -129,8 +400,8 @@
       "name": "散修·王矮子",
       "apt": 0.7,
       "realm": 5,
-      "cul": 0,
-      "age": 50,
+      "cul": 4.223055295429034,
+      "age": 50.083333333333336,
       "lifespan": 116,
       "status": "alive",
       "desperate": false
@@ -140,8 +411,8 @@
       "name": "游方·赵越",
       "apt": 0.85,
       "realm": 2,
-      "cul": 0,
-      "age": 32,
+      "cul": 5.5162743120198865,
+      "age": 32.083333333333336,
       "lifespan": 104,
       "status": "alive",
       "desperate": false
@@ -151,8 +422,8 @@
       "name": "七玄弟子·钱通",
       "apt": 0.95,
       "realm": 4,
-      "cul": 0,
-      "age": 44,
+      "cul": 3.80478685286791,
+      "age": 44.083333333333336,
       "lifespan": 112,
       "status": "alive",
       "desperate": false
@@ -162,8 +433,8 @@
       "name": "七玄弟子·孙礼",
       "apt": 0.6,
       "realm": 6,
-      "cul": 0,
-      "age": 56,
+      "cul": 3.7493903349139055,
+      "age": 56.083333333333336,
       "lifespan": 120,
       "status": "alive",
       "desperate": false
@@ -173,8 +444,8 @@
       "name": "黄枫散人·周牧",
       "apt": 1.25,
       "realm": 8,
-      "cul": 0,
-      "age": 68,
+      "cul": 7.528856431087333,
+      "age": 68.08333333333333,
       "lifespan": 128,
       "status": "alive",
       "desperate": false
@@ -184,8 +455,8 @@
       "name": "散修·冯婆婆",
       "apt": 0.5,
       "realm": 7,
-      "cul": 0,
-      "age": 62,
+      "cul": 2.5365610814021657,
+      "age": 62.083333333333336,
       "lifespan": 124,
       "status": "alive",
       "desperate": false
@@ -195,8 +466,8 @@
       "name": "散修·陈九",
       "apt": 0.9,
       "realm": 1,
-      "cul": 0,
-      "age": 26,
+      "cul": 4.364802053835206,
+      "age": 26.083333333333332,
       "lifespan": 100,
       "status": "alive",
       "desperate": false
@@ -209,16 +480,75 @@
   "aidCd": -99,
   "metNpcs": [
     "zhangtie",
-    "modafu"
+    "modafu",
+    "xiaosuanpan",
+    "jiatianlong",
+    "jinguang"
   ],
-  "pendingEvent": "intro",
+  "pendingEvent": null,
   "explore": null,
   "exmap": null,
   "benchTreasures": [],
   "dialogueDone": {},
   "swordIntent": 0,
   "swordMastery": false,
-  "milestones": [],
+  "milestones": [
+    {
+      "t": "第1年1月 · 13岁",
+      "title": "扮猪吃虎：夺舍之夜亮出练气四层",
+      "kind": "medal"
+    },
+    {
+      "t": "第1年1月 · 13岁",
+      "title": "扮猪吃虎：夺舍之夜亮出练气四层",
+      "kind": "medal"
+    },
+    {
+      "t": "第1年1月 · 13岁",
+      "title": "扮猪吃虎：夺舍之夜亮出练气四层",
+      "kind": "medal"
+    },
+    {
+      "t": "第1年1月 · 13岁",
+      "title": "扮猪吃虎：夺舍之夜亮出练气四层",
+      "kind": "medal"
+    },
+    {
+      "t": "第1年1月 · 13岁",
+      "title": "勋章「全身而退」：一场恶战，气血几乎无损——赢得干干净净。",
+      "kind": "medal"
+    },
+    {
+      "t": "第1年1月 · 13岁",
+      "title": "勋章「以下克上」：击败修为高过自己的对手——以弱胜强，此为大勇。",
+      "kind": "medal"
+    },
+    {
+      "t": "第1年1月 · 13岁",
+      "title": "夺舍之夜：反杀墨大夫（余子童）",
+      "kind": "showdown"
+    },
+    {
+      "t": "第1年1月 · 13岁",
+      "title": "风云榜名次盖过「岳鹿道人」",
+      "kind": "deed"
+    },
+    {
+      "t": "第1年2月 · 13岁",
+      "title": "以下克上：暗算金光上人",
+      "kind": "showdown"
+    },
+    {
+      "t": "第1年2月 · 13岁",
+      "title": "风云榜名次盖过「厉飞雨」",
+      "kind": "deed"
+    },
+    {
+      "t": "第1年2月 · 13岁",
+      "title": "夺得符宝「金光砖」",
+      "kind": "bigitem"
+    }
+  ],
   "beastRumor": null,
   "beastRumorClue": 0,
   "beastRumorClueAt": null,
@@ -228,14 +558,45 @@
     "alchemy": 0,
     "scouting": 0
   },
-  "intel": {},
-  "intelMoves": {},
+  "intel": {
+    "modafu": 1,
+    "jinguang": 1
+  },
+  "intelMoves": {
+    "墨大夫": [
+      "毒掌",
+      "腐骨毒针"
+    ],
+    "余子童元神": [
+      "夺舍侵神"
+    ],
+    "金光上人": [
+      "金符破空",
+      "剑符斩",
+      "金刚伏魔",
+      "金钟罩·重聚"
+    ]
+  },
   "ripple": null,
   "rippleWindow": null,
   "doneRipples": [],
-  "fame": 0,
-  "medals": {},
-  "sideUnit": null,
+  "fame": 52,
+  "medals": {
+    "unscathed": 1,
+    "giant_slayer": 2
+  },
+  "sideUnit": {
+    "id": "zhangtie_corpse",
+    "name": "曲魂",
+    "hp": 48,
+    "hpMax": 70,
+    "atk": 12,
+    "atkName": "尸傀挥击",
+    "nature": "corpse",
+    "guard": 0.3,
+    "status": "ok",
+    "carry": true
+  },
   "intelElems": {},
   "ledger": {},
   "journey": null,
@@ -247,5 +608,64 @@
   "sideTreasures": [],
   "visitedNodes": [
     "caixia"
-  ]
+  ],
+  "heroSkin": null,
+  "scenes": [
+    {
+      "id": "intro",
+      "title": "拜师 · 墨大夫",
+      "t": "第1年1月",
+      "cg": ""
+    },
+    {
+      "id": "zhangtie",
+      "title": "挚友失踪",
+      "t": "第1年1月",
+      "cg": "qixuan_ye"
+    },
+    {
+      "id": "showdown_prep",
+      "title": "夺舍之谋",
+      "t": "第1年1月",
+      "cg": "qixuan_ye"
+    },
+    {
+      "id": "showdown",
+      "title": "夺舍之夜",
+      "t": "第1年1月",
+      "cg": "duoshe"
+    },
+    {
+      "id": "take_identity",
+      "title": "李代桃僵",
+      "t": "第1年1月",
+      "cg": ""
+    },
+    {
+      "id": "gang_conflict",
+      "title": "野狼帮",
+      "t": "第1年2月",
+      "cg": ""
+    },
+    {
+      "id": "jinguang_arrives",
+      "title": "金光上人",
+      "t": "第1年2月",
+      "cg": ""
+    },
+    {
+      "id": "jinguang_fight",
+      "title": "暗算金光上人",
+      "t": "第1年2月",
+      "cg": "jinguang"
+    },
+    {
+      "id": "arc_end",
+      "title": "升仙令 · 离门",
+      "t": "第1年2月",
+      "cg": "departure"
+    }
+  ],
+  "maxHp": 100,
+  "combat": false
 }
