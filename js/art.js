@@ -89,6 +89,16 @@
     wang_ning: { sad: 1 },
   };
 
+  // 地点场景图临时回退（专属场景图生成前用相似已有场景顶替，消灭黑屏）
+  const SCENE_FALLBACK = {
+    fangshi: "tainan_fair",       // 黄枫谷·坊市→太南集市
+    yuanwu: "town",               // 元武国·百艺坊→城镇
+    yanjiabao: "wuting",          // 燕家堡→武厅
+    modao_front: "road",          // 魔道前线·待命营→行军路
+    jinguyuan: "xueshi_jindi",    // 金鼓原→血色禁地
+    yuekuang: "miju",             // 越国矿洞→密室
+    luanxinghai: "waixinghai",    // 乱星海→外星海
+  };
   // 场景（p:1 = 竖版已生成，竖屏自动启用）
   const SCENES = {
     yaolu: { p: 1 }, houshan: { p: 1 }, town: { p: 1 }, wuting: { p: 1 },
@@ -257,8 +267,12 @@
       return this._v(`assets/scenes/${id}.png`);
     },
 
-    // 地点配图：直接按地点 id 取图
-    locUrl(loc, opts) { return loc ? this.sceneUrl(loc.id, opts) : null; },
+    // 地点配图：直接按地点 id 取图；无专属场景时回退到 SCENE_FALLBACK 相似场景
+    locUrl(loc, opts) {
+      if (!loc) return null;
+      return this.sceneUrl(loc.id, opts)
+        || (SCENE_FALLBACK[loc.id] ? this.sceneUrl(SCENE_FALLBACK[loc.id], opts) : null);
+    },
 
     // 战斗全身立绘（对阵轴单位图）
     battlerUrl(id) { return BATTLERS[id] ? this._v(`assets/battlers/${id}.png`) : null; },

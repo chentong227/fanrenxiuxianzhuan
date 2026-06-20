@@ -1536,7 +1536,10 @@ const UI = {
     // 剧情专属人物（不在大世界 NPC 名册中）
     const extra = { "三叔": "sanshu", "铁奴": "tienu", "曲魂": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan",
       "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo", "陈巧倩": "chenqiaoqian",
-      "董萱儿": "dongxuaner", "执旗使": "zhiqishi", "南宫婉": "nangongwan", "李化元": "lihuayuan" };
+      "董萱儿": "dongxuaner", "执旗使": "zhiqishi", "南宫婉": "nangongwan", "李化元": "lihuayuan",
+      "封岳": "fengyue", "辛如音": "xinruyin", "冯三娘": "feng_sanniang",
+      "妙音门掌门": "miaoyin_zhangmen", "汪凝": "wang_ning", "血茧铁罗": "tieluo",
+      "黄枫谷掌门": "huangfeng_zhangmen", "御灵宗夺舍者": "yulingzong", "古长老": "gu_family" };
     if (extra[name]) {
       // 墨彩环立绘分期：燕家堡重逢后换成年版（二三十年过去了）
       if (name === "墨彩环" && typeof State !== "undefined" && State.data && State.data.flags && State.data.flags.mocaihuan_reunion) return "mocaihuan_mature";
