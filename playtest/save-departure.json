@@ -1,0 +1,563 @@
+{
+  "name": {
+    "name": "韩立",
+    "rootId": "si_ling"
+  },
+  "rootId": "si",
+  "realmIndex": 6,
+  "cultivation": 999999,
+  "spirit": 500,
+  "poolBonus": 0,
+  "sense": 5,
+  "body": 8,
+  "zhuanImprint": 1,
+  "hp": 120,
+  "hpMax": 120,
+  "mood": 94,
+  "moodMax": 100,
+  "demon": 0,
+  "speed": 10,
+  "insight": 6,
+  "lifespan": 100,
+  "age": 13,
+  "year": 1,
+  "month": 11,
+  "stones": 0,
+  "silver": 49,
+  "location": "tainan_fair",
+  "flightId": "none",
+  "heroSkin": null,
+  "inventory": {
+    "qingyuan_dan": 2,
+    "shengxian_ling": 1,
+    "nuanyang_yu": 1,
+    "lingshi": 8,
+    "changchun_houpian": 1,
+    "lingcao": 3
+  },
+  "spells": [
+    "tuna",
+    "huti",
+    "ningshen",
+    "zhayan",
+    "weidu"
+  ],
+  "technique": "changchun",
+  "auxTechniques": [],
+  "learnedTechniques": [
+    "changchun",
+    "changchun_full"
+  ],
+  "techLayers": {
+    "changchun": 1,
+    "changchun_full": 1
+  },
+  "knownSkills": [
+    "tuna",
+    "huti",
+    "ningshen",
+    "zhayan",
+    "weidu",
+    "huodan"
+  ],
+  "activeChapter": "qixuan",
+  "unlockedChapters": [
+    "qixuan",
+    "huangfeng"
+  ],
+  "flags": {
+    "arc1_complete": true,
+    "han_du": true,
+    "mo_met": true,
+    "mo_months": 5,
+    "mo_warned": true,
+    "han_du_cured": true,
+    "quhun_stay_jiayuan": true,
+    "wan_met": true,
+    "fair_bought": 1,
+    "qingwen_seen": true,
+    "xianhui_due": 23,
+    "wan_hunt_done": true,
+    "xianhui_done": true,
+    "wan_avenged": true,
+    "departure_complete": true
+  },
+  "firedFortunes": [],
+  "tasks": [],
+  "dynQuests": [],
+  "leads": [],
+  "heardLeads": [],
+  "timeline": [],
+  "storyStage": 24,
+  "bottle": {
+    "unlocked": false,
+    "plots": []
+  },
+  "log": [
+    {
+      "id": 1,
+      "t": "第1年1月",
+      "body": "你收拾行囊，踏上去「嘉元城」的路——约3月行程。江湖路远，晓行夜宿。",
+      "kind": "event"
+    },
+    {
+      "id": 2,
+      "t": "第1年2月",
+      "body": "【旅途】第1月：晓行夜宿，一路无话。嘉元城又近了些。",
+      "kind": "sys"
+    },
+    {
+      "id": 3,
+      "t": "第1年3月",
+      "body": "【旅途】第2月：剪径的毛贼。",
+      "kind": "sys"
+    },
+    {
+      "id": 4,
+      "t": "第1年3月",
+      "body": "【奇遇·旅途 · 剪径的毛贼】废话少说——你撂下行囊，剑已出鞘！",
+      "kind": "bad"
+    },
+    {
+      "id": 5,
+      "t": "第1年3月",
+      "body": "你在墨大夫药庐遭遇「山贼」，斗法一触即发！",
+      "kind": "bad"
+    },
+    {
+      "id": 6,
+      "t": "第1年3月",
+      "body": "【勋章】「全身而退」——一场恶战，气血几乎无损——赢得干干净净。（首次达成，载入年表）",
+      "kind": "good"
+    },
+    {
+      "id": 7,
+      "t": "第1年3月",
+      "body": "【名声】「全身而退」的事迹传开——江湖名声 +4（现 4）",
+      "kind": "event"
+    },
+    {
+      "id": 8,
+      "t": "第1年3月",
+      "body": "战胜「山贼」，得纹银 3 两。",
+      "kind": "good"
+    },
+    {
+      "id": 9,
+      "t": "第1年4月",
+      "body": "【旅途】第3月：破庙夜宿。",
+      "kind": "sys"
+    },
+    {
+      "id": 10,
+      "t": "第1年4月",
+      "body": "【奇遇·旅途 · 破庙夜宿】你拢了堆火，靠着神像打坐到天明。庙里无鬼，心里无事——难得一夜安眠。（心境+4）",
+      "kind": "good"
+    },
+    {
+      "id": 11,
+      "t": "第1年4月",
+      "body": "风尘仆仆，你终于抵达「嘉元城」。",
+      "kind": "good"
+    },
+    {
+      "id": 12,
+      "t": "第1年5月",
+      "body": "【名声】嘉元城里，墨府来了位深藏不露的韩公子——江湖名声 +8（现 12）",
+      "kind": "event"
+    },
+    {
+      "id": 13,
+      "t": "第1年5月",
+      "body": "【因果】将曲魂（张铁遗蜕）留在墨府护卫——此事已了，但未必就此了结。",
+      "kind": "sys"
+    },
+    {
+      "id": 14,
+      "t": "第1年5月",
+      "body": "「张铁，」你轻声唤它，「替我护着这家人。」它没有回答，只是握紧了拳，立回檐角的阴影里。墨彩环不知道檐上多了什么——她只觉得那夜之后，府里格外安心。\n你辞别墨府，南下太南山。",
+      "kind": "good"
+    },
+    {
+      "id": 15,
+      "t": "第1年5月",
+      "body": "你收拾行囊，踏上去「太南谷」的路——约4月行程。江湖路远，晓行夜宿。",
+      "kind": "event"
+    },
+    {
+      "id": 16,
+      "t": "第1年6月",
+      "body": "【旅途】第1月：晓行夜宿，一路无话。太南谷又近了些。",
+      "kind": "sys"
+    },
+    {
+      "id": 17,
+      "t": "第1年7月",
+      "body": "【世间】市集上新到了一批南边的药材，价钱压得很低，药铺掌柜们脸色难看。",
+      "kind": "sys"
+    },
+    {
+      "id": 18,
+      "t": "第1年7月",
+      "body": "【旅途】第2月：晓行夜宿，一路无话。太南谷又近了些。",
+      "kind": "sys"
+    },
+    {
+      "id": 19,
+      "t": "第1年8月",
+      "body": "【旅途】第3月：受伤的行商。",
+      "kind": "sys"
+    },
+    {
+      "id": 20,
+      "t": "第1年8月",
+      "body": "【因果】官道上救了一名遭劫的行商——此事已了，但未必就此了结。",
+      "kind": "sys"
+    },
+    {
+      "id": 21,
+      "t": "第1年8月",
+      "body": "【奇遇·旅途 · 受伤的行商】你以药理止血敷创，救回他一命。行商千恩万谢，硬塞来六两碎银（药理+1，纹银+6）——出门在外，谁还没个难处。",
+      "kind": "good"
+    },
+    {
+      "id": 22,
+      "t": "第1年9月",
+      "body": "【旅途】第4月：晓行夜宿，一路无话。太南谷又近了些。",
+      "kind": "sys"
+    },
+    {
+      "id": 23,
+      "t": "第1年9月",
+      "body": "风尘仆仆，你终于抵达「太南谷」。",
+      "kind": "good"
+    },
+    {
+      "id": 24,
+      "t": "第1年9月",
+      "body": "【因果】太南小会上，万小山热心为你引路——此事已了，但未必就此了结。",
+      "kind": "sys"
+    },
+    {
+      "id": 25,
+      "t": "第1年9月",
+      "body": "【小会】你以灵石×5购得「《长春功》后篇全本」。",
+      "kind": "good"
+    },
+    {
+      "id": 26,
+      "t": "第1年9月",
+      "body": "【小会】卖书的老者把一块灵石塞了回来：「你给多了，我们不占便宜。」（灵石+1）",
+      "kind": "event"
+    },
+    {
+      "id": 27,
+      "t": "第1年9月",
+      "body": "【因果】太南小会上当众揭穿青纹道人的黑手——此事已了，但未必就此了结。",
+      "kind": "sys"
+    },
+    {
+      "id": 28,
+      "t": "第1年10月",
+      "body": "等会期的日子里，万小山拉你搭伴进山采药——撞上了狼群。头一回，有人和你并肩而战。",
+      "kind": "event"
+    },
+    {
+      "id": 29,
+      "t": "第1年10月",
+      "body": "狼群伏诛。万小山一屁股坐在地上直喘，又突然跳起来翻检狼尸：「狼皮！狼皮也值钱！」——说好的五五分账，他硬把六成塞给了你（灵草+3）。",
+      "kind": "good"
+    },
+    {
+      "id": 30,
+      "t": "第1年10月",
+      "body": "【因果】与万小山并肩战过一场（山道狼群）——此事已了，但未必就此了结。",
+      "kind": "sys"
+    },
+    {
+      "id": 31,
+      "t": "第1年11月",
+      "body": "【复仇】杀万小山者，二人当面，一人遁走。先收眼前的账。",
+      "kind": "bad"
+    },
+    {
+      "id": 32,
+      "t": "第1年11月",
+      "body": "【因果】杀万小山的第三名散修当场遁走——此事已了，但未必就此了结。",
+      "kind": "sys"
+    },
+    {
+      "id": 33,
+      "t": "第1年11月",
+      "body": "【名声】屡次「全身而退」，江湖侧目——江湖名声 +2（现 14）",
+      "kind": "event"
+    },
+    {
+      "id": 34,
+      "t": "第1年11月",
+      "body": "两名散修毙命当场。你从他们身上搜出万小山的灵石，一块不少地放回他的行囊——他攥着的那半张符纸，你轻轻取了下来。",
+      "kind": "event"
+    },
+    {
+      "id": 35,
+      "t": "第1年11月",
+      "body": "【因果有报】他曾在集市上把第一张符纸让给你——今日你以两条人命，还了这份热乎气（因起于第1年9月：太南小会上，万小山热心为你引路）",
+      "kind": "good"
+    },
+    {
+      "id": 36,
+      "t": "第1年11月",
+      "body": "【名声】升仙大会上有人凭升仙令直入黄枫谷——江湖名声 +6（现 20）",
+      "kind": "event"
+    }
+  ],
+  "scenes": [],
+  "worldNews": [
+    {
+      "t": "第1年7月",
+      "kind": "world",
+      "text": "市集上新到了一批南边的药材，价钱压得很低，药铺掌柜们脸色难看。"
+    }
+  ],
+  "npcFates": [
+    {
+      "id": "s_li",
+      "name": "散修·李恒",
+      "apt": 1.05,
+      "realm": 3,
+      "cul": 64.19125587689729,
+      "age": 38.83333333333336,
+      "lifespan": 108,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "s_wang",
+      "name": "散修·王矮子",
+      "apt": 0.7,
+      "realm": 5,
+      "cul": 44.67227668157959,
+      "age": 50.83333333333336,
+      "lifespan": 116,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "s_zhao",
+      "name": "游方·赵越",
+      "apt": 0.85,
+      "realm": 2,
+      "cul": 48.55122586299806,
+      "age": 32.83333333333336,
+      "lifespan": 104,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "d_qian",
+      "name": "七玄弟子·钱通",
+      "apt": 0.95,
+      "realm": 4,
+      "cul": 54.33028152708813,
+      "age": 44.83333333333336,
+      "lifespan": 112,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "d_sun",
+      "name": "七玄弟子·孙礼",
+      "apt": 0.6,
+      "realm": 6,
+      "cul": 30.795219142081674,
+      "age": 56.83333333333336,
+      "lifespan": 120,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "e_zhou",
+      "name": "黄枫散人·周牧",
+      "apt": 1.25,
+      "realm": 8,
+      "cul": 78.12819090967092,
+      "age": 68.83333333333329,
+      "lifespan": 128,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "s_feng",
+      "name": "散修·冯婆婆",
+      "apt": 0.5,
+      "realm": 7,
+      "cul": 30.585590217081883,
+      "age": 62.83333333333336,
+      "lifespan": 124,
+      "status": "alive",
+      "desperate": false
+    },
+    {
+      "id": "s_chen",
+      "name": "散修·陈九",
+      "apt": 0.9,
+      "realm": 1,
+      "cul": 56.690316211883555,
+      "age": 26.83333333333332,
+      "lifespan": 100,
+      "status": "alive",
+      "desperate": false
+    }
+  ],
+  "relations": {},
+  "npcCd": {},
+  "npcGifts": {},
+  "keepsakes": [],
+  "aidCd": -99,
+  "metNpcs": [
+    "mocaihuan",
+    "wanxiaoshan"
+  ],
+  "pendingEvent": null,
+  "explore": null,
+  "exmap": null,
+  "benchTreasures": [],
+  "dialogueDone": {},
+  "swordIntent": 0,
+  "swordMastery": false,
+  "milestones": [
+    {
+      "t": "第1年3月 · 13岁",
+      "title": "勋章「全身而退」：一场恶战，气血几乎无损——赢得干干净净。",
+      "kind": "medal"
+    },
+    {
+      "t": "第1年4月 · 13岁",
+      "title": "嘉元城：墨府投信",
+      "kind": "deed"
+    },
+    {
+      "t": "第1年5月 · 13岁",
+      "title": "寒毒得解：暖阳宝玉（墨彩环的嫁妆）",
+      "kind": "bigitem"
+    },
+    {
+      "t": "第1年5月 · 13岁",
+      "title": "曲魂留府：一道不走的影子",
+      "kind": "deed"
+    },
+    {
+      "t": "第1年9月 · 13岁",
+      "title": "太南小会：初入修仙人的世界",
+      "kind": "deed"
+    },
+    {
+      "t": "第1年9月 · 13岁",
+      "title": "太南小会：购得《长春功》后篇全本",
+      "kind": "bigitem"
+    },
+    {
+      "t": "第1年10月 · 13岁",
+      "title": "搭伴探山：头一回有人与你并肩",
+      "kind": "deed"
+    },
+    {
+      "t": "第1年11月 · 13岁",
+      "title": "升仙大会：测灵璧前，四灵根当众落选",
+      "kind": "deed"
+    },
+    {
+      "t": "第1年11月 · 13岁",
+      "title": "林间血债：为万小山复仇（一人遁走）",
+      "kind": "showdown"
+    },
+    {
+      "t": "第1年11月 · 13岁",
+      "title": "因果：太南小会上，万小山热心为你引路 → 今日有报",
+      "kind": "deed"
+    },
+    {
+      "t": "第1年11月 · 13岁",
+      "title": "凭升仙令直入黄枫谷（离门远行 · 完）",
+      "kind": "showdown"
+    }
+  ],
+  "beastRumor": null,
+  "beastRumorClue": 0,
+  "beastRumorClueAt": null,
+  "slainBeasts": [],
+  "revealedRealm": 0,
+  "skills": {
+    "alchemy": 1,
+    "scouting": 2
+  },
+  "intel": {},
+  "intelMoves": {
+    "山贼": [
+      "刀劈",
+      "狠命抡刀"
+    ],
+    "灵狼": [
+      "扑咬",
+      "撕喉",
+      "弓背低嚎"
+    ],
+    "刀疤散修": [
+      "法器斩",
+      "土遁刺"
+    ],
+    "瘦高散修": [
+      "法器斩",
+      "土遁刺"
+    ]
+  },
+  "ripple": null,
+  "rippleWindow": null,
+  "doneRipples": [],
+  "fame": 20,
+  "medals": {
+    "unscathed": 3
+  },
+  "sideUnit": null,
+  "intelElems": {},
+  "ledger": {
+    "quhun_left_mo": {
+      "t": "第1年5月",
+      "label": "将曲魂（张铁遗蜕）留在墨府护卫"
+    },
+    "saved_merchant_road": {
+      "t": "第1年8月",
+      "label": "官道上救了一名遭劫的行商"
+    },
+    "wan_friend": {
+      "t": "第1年9月",
+      "label": "太南小会上，万小山热心为你引路"
+    },
+    "qingwen_grudge": {
+      "t": "第1年9月",
+      "label": "太南小会上当众揭穿青纹道人的黑手"
+    },
+    "wan_hunt_together": {
+      "t": "第1年10月",
+      "label": "与万小山并肩战过一场（山道狼群）"
+    },
+    "sanxiu_escaped": {
+      "t": "第1年11月",
+      "label": "杀万小山的第三名散修当场遁走"
+    }
+  },
+  "journey": null,
+  "gear": {
+    "weapon": null,
+    "armor": null,
+    "accessory": null
+  },
+  "sideTreasures": [],
+  "visitedNodes": [
+    "caixia",
+    "jiayuan",
+    "tainangu"
+  ],
+  "combat": false,
+  "_lastAmbient": "市集上新到了一批南边的药材，价钱压得很低，药铺掌柜们脸色难看。"
+}
