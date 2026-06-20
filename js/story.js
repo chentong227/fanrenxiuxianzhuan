@@ -1268,7 +1268,7 @@ const STORY = [
     cond: (s) => s.flags.qingyuan_given && !s.flags.dongfu_done,
     title: "洞府 · 安身之地",
     text: [
-      { scene: "huangfeng_gate" },
+      { scene: "黄枫谷 · 山门" },
       { amb: "wind" },
       { bgm: "daily" },
       { shot: "establish" },
@@ -1306,6 +1306,7 @@ const STORY = [
      *   where:"yuanwu" 地点门禁——玩家须真北上元武国方触发；发放在此（增量B 仅立项定义）。 */
     id: "qiyunxiao_daigong",
     where: "yuanwu",
+    cg: "yuanwu_diku",
     skipIf: (s) => s.flags.daigong_done,
     cond: (s) => s.flags.dongfu_done && !s.flags.daigong_done,
     objTitle: "北上元武国 · 代工",
@@ -1404,6 +1405,7 @@ const STORY = [
    * ============================================================ */
   {
     id: "yanjia_summon",
+    cg: "huangfeng_dadian",
     skipIf: (s) => s.flags.yanjia_summoned,
     cond: (s) => s.flags.huangfeng_complete && !s.flags.yanjia_summoned,
     bgm: "tense",
@@ -1448,7 +1450,7 @@ const STORY = [
       { sfx: "sword" },
       { shot: "panRight" },
       "校场另一头，一位眉眼高华的红拂门下女修按剑而立，目光在你那柄乌龙夺上停了一瞬——后来你才知她姓董，名萱儿。当年陆云风为攀附的，正是她这条线。",
-      { say: "董萱儿", tone: "cold", text: "伪灵根能筑基，倒是稀奇。战王蝉就要破阵了——活着出了这堡，再论你够不够格同我说话。" },
+      { say: "董萱儿", tone: "娇喔", text: "伪灵根筑基？倒有几分意思。堡外那魔头就快破阵了——你那柄法器看着不俗，待会儿可别让人家失望。" },
     ],
     onArrive(s) {
       Engine.meetNpc("mocaihuan", "墨大夫之女、嘉元城墨府小姐——魔道入侵随家眷避入燕家堡，与你重逢。");
@@ -1482,7 +1484,7 @@ const STORY = [
       { sfx: "landDown" },
       "妖氛冲天，堡墙轰然炸裂——魔道巨擘战王蝉破阵而出！甲胄如铁，双镰开阖，振翅之间裂石分风，正道修士成片倒下。",
       { shot: "pushIn" },
-      { say: "董萱儿", tone: "cold", text: "它的目标是堡心！挡不住它，今夜谁也活不成——韩立，你那柄破甲的钩子，该出鞘了！" },
+      { say: "董萱儿", tone: "急切", text: "它的目标是堡心！挡不住它，今夜谁也活不成——韩立，你那柄破甲的钩子，该出鞘了！" },
       { aside: "诛它？这等魔道巨擘岂是今日的你能诛的。撑过它的杀势、活着退出燕家堡——这一战，只为这一个字：活。" },
       // D1-a 终止拍：落幕直接坠入战王蝉破阵（撑过血线即剧情撤离）
       { fight: "zhanwangchan_fight", guard: { hint: "破甲的钩子该出鞘了" } },

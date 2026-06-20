@@ -25,6 +25,8 @@
     lvtianmeng: 1, xuanle: 1, xueyu_zhizhu: 1, baiyu_zhizhu: 1,
     // 增量G·魔道争锋第三幕·京城暗流
     xiaocui: 1, mengshan_wuyou: 1,
+    // 燕家堡篇·董萱儿（红拂门名门女修）+ 墨彩环成年版
+    dongxuaner: 1, mocaihuan_mature: 1,
     // 再别天南篇·辛如音（阵法大家·赴乱星海之钥）
     xinruyin: 1,
     // 初入星海篇·全量补绘：魁星岛旧识/妙音门/六连殿/逆星盟/妖修/星宫
@@ -178,7 +180,11 @@
     // 初入星海篇·全量补绘演出 CG（横版底 + 竖版 _p）
     kuixing_land: { p: 1 }, xiaohuan_dongfu: { p: 1 }, sanzhuan: { p: 1 },
     doushouchang: { p: 1 }, leipeng_pofeng: { p: 1 }, jiu_ziling: { p: 1 },
-    waihai_lie: { p: 1 }, jindan: { p: 1 } };
+    waihai_lie: { p: 1 }, jindan: { p: 1 },
+    // 初入星海篇·补注册（资产已就位，漏登记导致黑屏）
+    leitai: { p: 1 }, wenqiang: { p: 1 }, yingli: { p: 1 }, shijin: { p: 1 },
+    chuhai: { p: 1 }, jinkui: { p: 1 }, tianxing: { p: 1 }, ziliang: { p: 1 },
+    jieguan: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };

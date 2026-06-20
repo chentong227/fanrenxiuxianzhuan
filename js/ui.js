@@ -1337,6 +1337,10 @@ const UI = {
         lbox.innerHTML = `<div class="pb"><img src="${url}" alt="${who}" /></div>`;
         if (st) { st.leftNpc = who; st.leftKey = lKey; }
         if (emo) this._portraitPop(lbox);
+      } else if (!url && st && st.leftNpc !== who) {
+        // 新说话人无立绘：清除上一人的残影，避免张冠李戴
+        lbox.innerHTML = "";
+        if (st) { st.leftNpc = who; st.leftKey = lKey; }
       }
     }
 
@@ -1526,8 +1530,13 @@ const UI = {
     if (!name) return null;
     // 剧情专属人物（不在大世界 NPC 名册中）
     const extra = { "三叔": "sanshu", "铁奴": "tienu", "曲魂": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan",
-      "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo", "陈巧倩": "chenqiaoqian" };
-    if (extra[name]) return extra[name];
+      "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo", "陈巧倩": "chenqiaoqian",
+      "董萱儿": "dongxuaner", "执旗使": "zhiqishi", "南宫婉": "nangongwan", "李化元": "lihuayuan" };
+    if (extra[name]) {
+      // 墨彩环立绘分期：燕家堡重逢后换成年版（二三十年过去了）
+      if (name === "墨彩环" && typeof State !== "undefined" && State.data && State.data.flags && State.data.flags.mocaihuan_reunion) return "mocaihuan_mature";
+      return extra[name];
+    }
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
       const n = WORLD.npcs.find(x => x.name === name);
       if (n) return n.id;
