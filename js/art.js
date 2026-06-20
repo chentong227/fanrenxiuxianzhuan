@@ -36,6 +36,9 @@
     hanli_zhuji: 1, hanli_zhuji_xing: 1, hanli_yexing: 1,
     hanli_jindan: 1, hanli_jindan_changfu: 1, hanli_jindan_jinzhuang: 1,
     hanli_wentianren: 1, hanli_jindan_kouguan: 1, quhun_huashen: 1,
+    // P1 NPC 立绘补全（齐云霄/刘靖/钟卫娘/宋蒙/武炫/铁罗/五色门主/胥王/执旗使）
+    qiyunxiao: 1, liujing: 1, zhongweiniang: 1, songmeng: 1, wuxuan: 1,
+    tieluo: 1, wuse_menzhu: 1, xuwang: 1, zhiqishi: 1,
   };
 
   // —— v213 三级换装：境界默认 / 场景强制 / 手动窗口 ——
