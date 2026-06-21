@@ -272,14 +272,12 @@ const State = {
     if (realm.tier && realm.tier !== "qi") return 999;
     return realm.layer || 1;
   },
-  // 装备的法器（按槽取 DATA.gear 定义；未达驱使门槛视为未装备）
+  // 装备的法器（按槽取 DATA.gear 定义；越阶催动=灵力消耗倍增，不再硬拦截）
   gearOf(slot) {
     const id = this.data.gear && this.data.gear[slot];
     if (!id) return null;
     const def = DATA.gear && DATA.gear[id];
     if (!def) return null;
-    const layer = this.gateLayer();
-    if (def.minLayer && layer < def.minLayer) return null;   // 修为不够，驱使不动
     return Object.assign({ id }, def);
   },
   /* —— 伴身法宝（v96 三类法宝制：主攻1/主防1/伴身N）——
@@ -296,8 +294,6 @@ const State = {
     if (!id) return null;
     const def = DATA.gear && DATA.gear[id];
     if (!def) return null;
-    const layer = this.gateLayer();
-    if (def.minLayer && layer > 0 && layer < def.minLayer) return null;
     return Object.assign({ id }, def);
   },
   sideTreasures() {

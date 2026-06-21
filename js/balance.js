@@ -170,6 +170,21 @@
       if (layerMul && layerMul !== 1 && source !== "martial" && source !== "treasure") mul *= layerMul;
       return Math.max(1, Math.round(base * mul));
     },
+    /* ---- 法器层级越阶催动（within-realm soft scaling）----
+     * 设计哲学（用户裁决 2026-06-21）："没有什么修为够不够的"——
+     *   修为不够不是"用不了"，而是"灵力消耗倍增"。越阶催动=高消耗换极高爆发（杀手锏设计）。
+     *   元婴法宝筑基催动不了，不是因为系统拦截，而是灵力池不够基础消耗。
+     *   越级获取宝物+越阶催动=剧情+数值双爽感。
+     * gearLayerMpMul：灵力消耗倍率（每差一层 ×1.3 指数增长）
+     *   gap 1 → ×1.3（微增，尝鲜可用）
+     *   gap 3 → ×2.2（显著，杀手锏级）
+     *   gap 5 → ×3.7（极贵，一击倾池）
+     *   gap 10 → ×13.8（灵力池兜不住→自然不可用）
+     */
+    gearLayerMpMul(playerLayer, minLayer) {
+      if (!minLayer || playerLayer >= minLayer) return 1;
+      return Math.pow(1.3, minLayer - playerLayer);
+    },
   };
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }

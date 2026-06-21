@@ -25,7 +25,7 @@ for (const f of ["js/data.js", "js/state.js", "js/chapters.js", "js/balance.js",
   vm.runInContext(code, ctx, { filename: f });
 }
 
-const { State, Engine, WORLD } = sandbox;
+const { State, Engine, WORLD, Balance } = sandbox;
 
 let failures = 0;
 function assert(cond, msg) {
@@ -327,11 +327,13 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   assert(s.hpMax === hpMaxBefore + 30, "玄铁巨盾：气血上限+30");
   const pf2 = Engine.playerFighter();
   assert(pf2.chargeResist === 0.3, "特性「山岳之御」入战（蓄力重击减伤30%）");
-  // 驱使门槛：低修为装不上
+  // 越阶催动：低修为也能装备（灵力消耗倍增，不设硬门槛）
   s.realmIndex = 5;
   Engine.unequipGear("weapon");
   Engine.equipGear("jinfuzi_ren");
-  assert(s.gear.weapon !== "jinfuzi_ren", "练气六层驱使不动顶阶法器（门槛拦截）");
+  assert(s.gear.weapon === "jinfuzi_ren", "练气六层越阶催动顶阶法器（不拦截装备）");
+  const mpMul = Balance.gearLayerMpMul(6, 11);
+  assert(mpMul > 1, `越阶催动灵力消耗倍增（×${mpMul.toFixed(1)}）`);
   s.realmIndex = 10;
 }
 
