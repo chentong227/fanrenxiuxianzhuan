@@ -4256,7 +4256,8 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   box-shadow: 0 0 12px rgba(232, 200, 126, .5);
 }
 .exsc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 9px; }
-.exsc-title { font-family: var(--font-title, serif); font-size: 17px; letter-spacing: 4px; color: #e8c87e; text-shadow: 0 0 14px rgba(232, 200, 126, .25); }
+.exsc-title { font-family: var(--font-title, serif); font-size: 17px; letter-spacing: 4px; color: #e8c87e; text-shadow: 0 0 14px rgba(232, 200, 126, .25); display: flex; align-items: baseline; gap: 8px; }
+.exsc-progress { font-size: 12px; letter-spacing: 1px; color: #a08f74; font-family: var(--font-body, sans-serif); }
 .exsc-sub { display: block; font-size: 11px; color: #a08f74; letter-spacing: .5px; margin-top: 4px; }
 .exsc-p { font-size: 13.5px; line-height: 1.78; color: #d9cab0; margin: 0 0 7px; }
 .exsc-say { font-size: 13.5px; line-height: 1.7; color: #bcd6ef; margin: 4px 0 7px; }

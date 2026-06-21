@@ -3402,15 +3402,33 @@ const UI = {
       if (f.ref === "global") {
         const g = this.el("fx-global");
         if (g) setTimeout(() => {
-          g.hidden = false;
-          g.className = "fx-global " + (f.kind === "ult" ? "fxg-ult" : "fxg-exploit");
-          g.innerHTML = `<span class="fxg-text">${f.text || ""}</span>`;
-          if (typeof Sfx !== "undefined") Sfx.play(f.kind === "ult" ? "bell" : "danger");
-          if (f.kind === "ult" && fxReady) { Fx.flash("#ffe9ad", 220, .36); Fx.shake(10); this._camPunch(); }   // 大招：屏闪+震屏+轻推近（燃点 B4）
-          clearTimeout(this._fxgTimer);
-          this._fxgTimer = setTimeout(() => { g.hidden = true; g.className = "fx-global"; }, f.kind === "ult" ? 1200 : 850);
+          // BOSS 重击震屏：妖兽 BOSS 命中时屏幕震动
+          if (f.kind === "bossHit" && f.text) {
+            if (fxReady) Fx.shake(f.text.shake || 8);
+            g.hidden = true;
+          // BOSS Phase 切换演出：屏闪+重震+压迫感横幅
+          } else if (f.kind === "bossPhase" && f.text) {
+            g.hidden = false;
+            g.className = "fx-global fxg-boss-phase";
+            g.innerHTML = `<span class="fxg-text">${f.text.name || ""} 狂暴化！</span>`;
+            if (typeof Sfx !== "undefined") Sfx.play("danger");
+            if (fxReady) {
+              Fx.flash(f.text.flash || "#1a0000", 350, 0.5);
+              Fx.shake(f.text.shake || 14);
+            }
+            clearTimeout(this._fxgTimer);
+            this._fxgTimer = setTimeout(() => { g.hidden = true; g.className = "fx-global"; }, 1600);
+          } else {
+            g.hidden = false;
+            g.className = "fx-global " + (f.kind === "ult" ? "fxg-ult" : "fxg-exploit");
+            g.innerHTML = `<span class="fxg-text">${f.text || ""}</span>`;
+            if (typeof Sfx !== "undefined") Sfx.play(f.kind === "ult" ? "bell" : "danger");
+            if (f.kind === "ult" && fxReady) { Fx.flash("#ffe9ad", 220, .36); Fx.shake(10); this._camPunch(); }   // 大招：屏闪+震屏+轻推近（燃点 B4）
+            clearTimeout(this._fxgTimer);
+            this._fxgTimer = setTimeout(() => { g.hidden = true; g.className = "fx-global"; }, f.kind === "ult" ? 1200 : 850);
+          }
         }, delay);
-        delay += 320;
+        delay += f.kind === "bossPhase" ? 600 : 320;
         continue;
       }
       const anchor = this._axisAnchor(f.ref);
@@ -4831,7 +4849,7 @@ const UI = {
     let html = `
       <div class="exsc-head">
         <div class="exsc-title-block">
-          <div class="exsc-title">${map.name}</div>
+          <div class="exsc-title">${map.name}<span class="exsc-progress">${f.pos + 1}/${W}</span></div>
           <div class="exsc-sub">走到跟前才能采，选好落点才能布——它没察觉你之前，每一步都是先机。</div>
         </div>
         <div class="exsc-expose${expDanger ? " danger" : ""}" title="贪与稳：每一次出手都可能惊动潭底">
