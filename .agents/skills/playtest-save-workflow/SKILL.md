@@ -19,6 +19,7 @@ description: 凡人修仙传完整游戏测试流程——含8维体验观察、
 3. **R3 只玩不改**：除非用户明确要你修，不要边玩边改代码。
 4. **R4 报告而非臆断**：判断要带**可复现证据**（第几节、什么操作、什么数值），不写空洞主观感受。
 5. **R5 每节点入库**：玩一个关键节点，存一次档，入一次库。绝不攒多个节点再统一提交。
+6. **R6 禁止脚本代玩（硬约束）**：全程必须通过 GUI 点击操作游玩。**严禁**用 `Engine.exmapTravel()`、`Engine.exmapCaveFight()`、`Engine._combat.enemies[].hp = 0` 等 console 命令推进剧情、移动地图、跳过战斗或秒杀敌人。Console 仅限：恢复存档（`localStorage.setItem`）、确认状态（`State.data`）、排查 bug。违反此条等同未做 playtest。
 
 ## 三、环境启动
 
