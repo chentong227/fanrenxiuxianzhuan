@@ -110,12 +110,13 @@
     wulong_duo:  { name: "乌龙夺", mp: 11, range: [1, 3], type: "atk", dmg: 30, pierce: true, source: "treasure", elem: "shui", driveRealm: 1, cd: 1,
                 desc: "齐云霄以墨蛟之角炼成的顶阶攻击法宝：黝黑双钩如蛟探爪，御使凌空绞夺、势大力沉且破甲。继金蚨子母刃之后，韩立筑基期的第二件主战法器。贴身施展不开（-30%）。" },
     /* —— 绿煌剑（再别天南篇·御灵宗夺舍者本命法宝·结丹本命）——
-     * driveRealm:2（结丹方可主驱），韩立筑基越阶强驱、非本命 → driveMul(1,2,false)=0.45（发挥不出结丹本命全威）；
-     * 但基数刻意拔高（base 80：80×realmBand(1)2.4×0.45≈86，略胜乌龙夺72）→ 越阶仍是强力第三主战。配剑影分光术。 */
+     * driveRealm:2（结丹方可主驱）。越阶催动（统一设计）：威能不折、灵力消耗×3——
+     *   筑基强驱打出结丹级爆发（base 80×realmBand(1)2.4=192），但每击吃 13×3=39 灵力（杀手锏：一击倾池）。
+     *   达标后（结丹）灵力回归正常（13 MP），本命法宝另有 ×1.35 伤害加成。 */
     lvhuang_jian: { name: "绿煌剑", mp: 13, range: [1, 4], type: "atk", dmg: 80, pierce: true, source: "treasure", elem: "jin", driveRealm: 2, cd: 1,
-                desc: "御使御灵宗夺舍者的本命古剑·绿煌剑凌空斩落——通体莹绿、剑吟如龙，势大力沉且破甲。这是结丹本命之器，你越阶强驱发挥不出全威（约四五分），却仍冠绝筑基。贴身施展不开（-30%）。" },
+                desc: "御使御灵宗夺舍者的本命古剑·绿煌剑凌空斩落——通体莹绿、剑吟如龙，势大力沉且破甲。这是结丹本命之器，你越阶强驱灵力消耗剧增——但每一击都是结丹级的威能。贴身施展不开（-30%）。" },
     jianying_fenguang: { name: "剑影分光", mp: 11, range: [1, 4], type: "atk", dmg: 26, fixedSegs: 3, source: "treasure", elem: "jin", driveRealm: 2,
-                desc: "绿煌剑所附剑诀：一剑化作三道分光剑影分袭来敌，每道独立结算——越阶强驱虽不全，分影之利却最适缠斗群敌。贴身施展不开（-30%）。" },
+                desc: "绿煌剑所附剑诀：一剑化作三道分光剑影分袭来敌，每道独立结算——越阶强驱灵力剧增，分影之利却最适缠斗群敌。贴身施展不开（-30%）。" },
 
     /* —— 悬浮法宝（驭物特例，combat-arsenal 二·五）——三类法宝制下大多数伴身件
      * 走被动面板，少数"驭物类"保留祭起态（float: { upkeep, auto }）。
@@ -146,7 +147,7 @@
     /* —— 噬金虫·四用法（初入星海篇·#5 用户裁决：复用神雷 chargeCost 共享池）——
      * 一窝灵虫四种调遣，同抽一池"灵机"（charges.shijinchong），打一分少一分、耗尽则哑火——取舍即战术。
      * 正典获得＝外星海致富偶得一窝噬金虫（见 data.js 同名条目）；持虫即四式入战（engine.playerFighter 注入 + 上膛）。
-     * 全 source:"treasure"·driveRealm:2，chargeCost 消耗性底牌穿透越阶门槛（Balance.driveMul 第四参豁免折扣）。 */
+     * 全 source:"treasure"·driveRealm:2，chargeCost 消耗性底牌豁免越阶灵力倍率（Balance.driveMpMul 豁免）。 */
     shijin_fu:    { name: "噬金·附体", mp: 5, range: [0, 0], type: "def", shield: 36, source: "treasure", elem: "jin",
                 chargeCost: { id: "shijinchong", n: 1 },
                 desc: "纵噬金虫附于体表、淬结一层金芒虫甲护身（结盾 36）。耗灵机一分，虫尽则止。" },

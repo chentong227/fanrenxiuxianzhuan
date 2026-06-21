@@ -2966,6 +2966,15 @@ const Engine = {
         if (!spells.includes(sk)) spells.push(sk);
       });
     }
+    // 越阶催动（跨大境界）：driveRealm > realmTier → 灵力消耗倍增（杀手锏设计）
+    const pTier = Chapters.realmTier();
+    const SP = CombatAPI.SPELLS;
+    spells.forEach(sk => {
+      const sp = SP[sk];
+      if (!sp || !sp.driveRealm) return;
+      const dMul = Balance.driveMpMul(pTier, sp.driveRealm, !!sp.chargeCost);
+      if (dMul > 1) gearMpMul[sk] = (gearMpMul[sk] || 1) * dMul;
+    });
     const dunTrait = State.gearTrait("charge_resist");
     return new CombatAPI.Fighter({
       name: s.name,
