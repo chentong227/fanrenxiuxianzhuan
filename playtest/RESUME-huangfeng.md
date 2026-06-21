@@ -6,7 +6,8 @@
 > **结束存档**: playtest/save-starsea-kuixing.json (storyStage=88→106, 初入星海·天星城)  
 > **完成节点**: hf_arrive → … → mojiao_after → qingyuan_gift → dongfu_pick → qiyunxiao_daigong → ye_finale → yanjia_summon → yanjia_reunion → yanjia_boss → yanjia_escape → modao_e1~e4 → zaibie → starsea_a1~a4  
 > **测试人**: Devin (session da79a1a2 + 56477f6f)  
-> **日期**: 2026-06-20 ~ 2026-06-21
+> **日期**: 2026-06-20 ~ 2026-06-21  
+> **GUI 视觉测试**: 移动端录屏 (iPhone 14 Pro Max 430×932) — CG/立绘/UI布局逐帧检查
 
 ---
 
@@ -401,7 +402,7 @@ R9: 71→3 | R10: 御剑刺终结 → 墨蛟 3→0 伏诛
 - **修复**: chooseStory越界守卫，无效索引toast不crash
 - **验证**: 全线82个节点未触发索引越界crash
 
-### P2(新) — 灵力(MP)系统战前不透明
+### P2(新-a) — 灵力(MP)系统战前不透明
 - **现象**: 玩家经历长途story后spirit极低(54/2400=2.25%)，导致战斗MP仅15(最低值)。以15MP应对金鼓原巡逻战(3v1)几乎必败
 - **根因**: `playerFighter().mp = Math.max(15, poolMax * spirit/spMax)`. 长途剧情transitions不回复spirit
 - **复现**: 从storyStage 43直接推进到modao_e2_patrol(storyStage 50)，不执行rest/cultivate
@@ -410,6 +411,18 @@ R9: 71→3 | R10: 御剑刺终结 → 墨蛟 3→0 伏诛
   1. 战前自动检测灵力低于30%时弹出"灵力不足，是否先调息?"提示
   2. 或在major story transition后自动回复spirit到50%
   3. 或在战斗MP面板显示"灵力充盈度"百分比
+
+### P2(新-b) — 星海篇 NPC 对话立绘缺失（🧑 emoji fallback）
+- **现象**: 冯三娘、汪凝、妙音门掌门在故事对话中显示 🧑 emoji，但立绘资源已存在
+- **根因**: `UI._npcIdByName()` 精确匹配 `WORLD.npcs.name` 失败（story `say` 字段用短名，WORLD 用含括号的全名）
+- **影响**: 星海篇 9 处对话无立绘渲染
+- **详见**: 第六节·GUI视觉测试
+
+### P3(新) — 见闻日志重复条目
+- **现象**: "镇妖大典斗兽场·婴鲤兽" 在见闻日志中出现 3 次（应为 1 次）
+- **根因**: `startStarseaYingliFight()` 每次调用（含失败重试）都写 `this.log()`
+- **影响**: 轻度——日志冗余但不影响功能
+- **详见**: 第六节·GUI视觉测试
 
 ---
 
@@ -434,7 +447,66 @@ R9: 71→3 | R10: 御剑刺终结 → 墨蛟 3→0 伏诛
 
 ---
 
-## 六、结论
+## 六、GUI 视觉测试（storyStage 106 · 天星城 · 移动端 430×932）
+
+> **测试方法**: GUI 录屏，人工逐帧观察 CG/立绘/UI 布局  
+> **录屏 ID**: rec-a0704008-fb9b-4350-bffc-5f5818933385  
+> **视口**: iPhone 14 Pro Max (430×932, DPR 3)  
+> **Session**: 56477f6f
+
+### 通过项
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| 底部三栏导航 (见闻/行动/韩立) | ✅ | 430px 布局整洁，tab 切换即时，无溢出 |
+| 角色面板 (韩立 tab) | ✅ | 立绘 hanli_zhuji.png 加载正常，stats bars (修为/灵力/气血/心境/心魔) 比例正确，属性网格对齐 |
+| 储物袋 (道具/材料/丹药/法宝 tabs) | ✅ | 四 tab 切换流畅，物品列表竖向排列无截断 |
+| 行动面板 (天命/机缘/闭关/突破/调息/炼药) | ✅ | 按钮排列整齐，天命描述文本自动换行无溢出 |
+| 舆图 (SVG 地图) | ✅ | 胥国·十三州区域标注渲染正确，节点点击热区精准 |
+| 人物图鉴 (36/45 entries) | ✅ | 卡片列表竖向排列，文字描述可读，无遮挡 |
+| 功法·配装 (主修/辅修 + 技能槽 6/8) | ✅ | 功法卡片 (春/长/青) 颜色标签清晰，技能槽按钮布局正常 |
+| 战斗 UI (斗法) | ✅ | battler sprites、HP bars、技能按钮、射程提示、神识料敌 hint 在 430px 内完整呈现 |
+| CG 背景渲染 (金鼓原/天星城) | ✅ | full-bleed cover image，无拉伸/裁剪异常，文字叠加清晰可读 |
+| 韩立对话立绘 (右侧) | ✅ | hanli_zhuji 立绘正确显示在右侧对话框 |
+| NPC 对话立绘 (左侧) | ✅ | 文樯、乌丑、风希 立绘正确渲染 |
+| NPC 位置卡片 (汪凝) | ✅ | wang_ning.png 在天星城位置面板正确显示，含台词 tooltip |
+| 突破阻止 (修为不足) | ✅ | "修为尚浅，强行突破必败" toast 正确弹出，UI 不崩溃 |
+| 战斗逃跑/结束 | ✅ | combatFlee、_finishCombat 正常退出战斗状态 |
+| 存档/读档 | ✅ | 读取存档按钮正常触发 game load，localStorage 持久化正确 |
+
+### 发现的 Bug
+
+#### P2(新) — 星海篇 NPC 对话立绘缺失（🧑 emoji fallback）
+
+- **现象**: 冯三娘、汪凝、妙音门掌门在故事对话中显示 🧑 emoji 而非其立绘，但立绘文件 (`feng_sanniang.png`, `wang_ning.png`, `miaoyin_zhangmen.png`) 均存在于 `assets/portraits/`
+- **影响**: 9 处对话框显示 🧑 而非人物形象（冯三娘 ×2, 汪凝 ×3, 妙音门掌门 ×1, 古长老 ×1, 雷鹏 ×1, 魁星城散修 ×1）
+- **根因**: `UI._npcIdByName()` (ui.js:1533-1544) 使用 `WORLD.npcs.find(x => x.name === name)` 精确匹配，但：
+  - story `say` 字段使用 `"冯三娘"` → WORLD.npcs.name = `"冯三娘（冯钰）"` → 匹配失败
+  - story `say` 字段使用 `"汪凝"` → WORLD.npcs.name = `"汪凝（小紫灵）"` → 匹配失败  
+  - story `say` 字段使用 `"妙音门掌门"` → WORLD.npcs.name = `"妙音门门主"` → 匹配失败
+- **修复建议**: 在 `_npcIdByName` 的 `extra` map 补录星海篇角色：
+  ```js
+  "冯三娘": "feng_sanniang", "汪凝": "wang_ning", 
+  "妙音门掌门": "miaoyin_zhangmen", "古长老": "gu_family"
+  ```
+  或改 `WORLD.npcs.find()` 为 `startsWith` 模糊匹配
+
+#### P3(新) — 见闻日志重复条目
+
+- **现象**: "镇妖大典斗兽场，越级五阶婴鲤兽破水而出…" 在见闻日志中出现 **3 次**（应为 1 次）
+- **根因**: `startStarseaYingliFight()` (engine.js:4010) 每次调用都执行 `this.log("镇妖大典斗兽场…", "event")`。玩家失败重试时此函数被再次调用，导致同一条日志重复写入
+- **复现**: 婴鲤兽战失败 2 次 → 3 次调用 `startStarseaYingliFight()` → 3 条相同日志
+- **修复建议**: 在 `startStarseaYingliFight()` 开头加重试判断：
+  ```js
+  if (!State.data.flags.losses_ss_yingli) {
+    this.log("镇妖大典斗兽场…", "event");
+  }
+  ```
+  或在所有含 retry 机制的 fight 函数中统一加去重
+
+---
+
+## 七、结论
 
 全线82个故事节点（storyStage 24→106）测试完成，覆盖5大篇章：黄枫谷→燕家堡→魔道争锋(4幕)→再别天南→初入星海。
 
@@ -449,6 +521,9 @@ R9: 71→3 | R10: 御剑刺终结 → 墨蛟 3→0 伏诛
 
 **已修复Bug**（PR #111）：P1突破死循环、P2速战速决guard、P3索引越界。三项均在全线测试中验证通过无回归。
 
-**新发现**：灵力(MP)系统在长途story transition后不透明——玩家spirit低导致战斗MP仅15(最低值)，对新玩家不友好。建议战前自动检测灵力不足时弹出调息提示。
+**GUI 视觉测试新发现**（session 56477f6f）：
+- P2(新-a)：灵力(MP)系统战前不透明——长途story后spirit低→战斗MP仅15→新玩家必败不知原因
+- P2(新-b)：星海篇 NPC 对话立绘缺失——`_npcIdByName()` 精确匹配 WORLD.npcs.name 失败（say 短名 vs WORLD 全名），冯三娘/汪凝/妙音门掌门 显示 🧑 emoji 而非立绘
+- P3(新)：见闻日志重复——婴鲤兽战失败重试时 `this.log()` 重复写入，日志出现 3 次
 
-**结论**：全部已实现内容（至starsea_a4_jindan前，需结丹才触发）在v217版本下可流畅通关，叙事与战斗系统配合默契。准上线状态。
+**结论**：全部已实现内容（至starsea_a4_jindan前，需结丹才触发）在v217版本下可流畅通关。移动端 UI 整体优秀（15/15 检查项通过），叙事与战斗系统配合默契。上述 3 个新发现均为中低优先级，不阻塞上线。
