@@ -2730,7 +2730,9 @@ const Engine = {
     s.spirit = clamp(s.spirit + Math.round(realm.spMax * 0.5), 0, realm.spMax);
     s.hp = clamp(s.hp + 25, 0, s.hpMax);
     s.mood = clamp(s.mood + 12, 0, s.moodMax);
-    s.demon = clamp(s.demon - 8, 0, 100);
+    // 心魔递进消解：心魔越重，调息越要紧（阈值以上额外消减，防止死循环）
+    const demonDrop = 8 + Math.max(0, Math.floor((s.demon - 30) / 10));
+    s.demon = clamp(s.demon - demonDrop, 0, 100);
     if (!silent) this.log("你盘膝打坐，调息养神。灵力、气血与心境皆有恢复。", "event");
   },
 
@@ -2829,7 +2831,10 @@ const Engine = {
       return;
     }
     // 小境界：心魔可控则水到渠成，无须心战
-    const demonHigh = s.demon > Balance.demonTrialThreshold();
+    // 连败保底：每5次连败，心战阈值+15（屡败屡战者终得道心通透）
+    const pity = s.btPity || 0;
+    const threshold = Balance.demonTrialThreshold() + Math.floor(pity / 5) * 15;
+    const demonHigh = s.demon > threshold;
     if (!demonHigh) {
       this.passTime(1);
       const win = Math.random() < this.breakthroughRate();
@@ -2856,6 +2861,7 @@ const Engine = {
       { label: `心境（${s.mood}/${s.moodMax}）`, v: (s.mood / s.moodMax) * 0.15 },
       { label: `心魔拖累（${Math.round(s.demon)}）`, v: -(s.demon / 100) * 0.25 },
       { label: s.spirit < realm.spMax * 0.5 ? "灵力不济（<50%）" : "灵力充盈", v: s.spirit < realm.spMax * 0.5 ? -0.1 : 0 },
+      ...((s.btPity || 0) > 0 ? [{ label: `屡败弥坚（连败${s.btPity}次）`, v: (s.btPity * 0.02) }] : []),
     ];
   },
 
@@ -2864,6 +2870,7 @@ const Engine = {
     const s = State.data;
     const wasBig = this._btWasBig;
     if (win) {
+      s.btPity = 0;   // 突破成功：重置连败保底
       const gains = [];
       const poolBefore = Balance.manaPool(Chapters.realmTier(), State.realm().layer,
         (DATA.techniques[s.technique] || {}).grade || 1, s.poolBonus);
@@ -2901,6 +2908,7 @@ const Engine = {
       this.toast(`突破成功：${nr.name}`);
       this.checkStory();
     } else {
+      s.btPity = (s.btPity || 0) + 1;   // 连败保底：每败一次，下次心战心魔更弱、道心更坚
       if (wasBig) {
         // 大境界渡劫失败：凶险——跌回上一层、重创、心魔暴涨
         const loss = Math.round(s.cultivation * 0.6) + Math.round(State.realm().culMax * 0.3);
@@ -4119,7 +4127,7 @@ const Engine = {
       maxRounds: 18,
       side: this.sideUnitFor("encounter"),
     });
-    this._combatMeta = { type: "luyunfeng" };
+    this._combatMeta = { type: "luyunfeng", canQuick: false };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("陆云风霍然回头，认出你的瞬间杀意全开：「看药园的杂役？！——也好，一起埋了！」");
@@ -4137,7 +4145,8 @@ const Engine = {
 
     // 准备越充分 → 瓶颈越薄、可战回合越多、道心(hp)越足
     const culRatio = clamp(s.cultivation / realm.culMax, 0, 1.2);
-    const daoxin = Math.round(40 + (s.mood / s.moodMax) * 40 - (s.demon / 100) * 25);
+    const pity = s.btPity || 0;
+    const daoxin = Math.round(40 + (s.mood / s.moodMax) * 40 - (s.demon / 100) * 25 + pity * 3);
     const rounds = 6 + Math.floor((s.spirit / realm.spMax) * 4) - Math.floor(s.demon / 25);
 
     // 心魔具象：你最重的业障，就是它的脸（剧情记忆 × 战斗引擎）
@@ -4147,13 +4156,13 @@ const Engine = {
     if (isBig) {
       // 大境界·心魔劫：以秘仪配置为基准，远比小境界凶险
       const rite = opts.rite || this._bigRealmRite() || {};
-      bottleneckHp = Math.round((rite.trialHp || 90) - culRatio * 20);
+      bottleneckHp = Math.max(15, Math.round((rite.trialHp || 90) - culRatio * 20 - pity * 2));
       maxRounds = Math.max(6, (rite.trialRounds || 10) + Math.floor((s.spirit / realm.spMax) * 4) - Math.floor(s.demon / 25));
       demonName = face.name ? `心魔劫 · ${face.name.replace("心魔 · ", "")}` : `${rite.name || (nextRealm ? nextRealm.name : "瓶颈")}·心魔劫`;
       demonAtk = 14;
       intro = `你按秘仪引动天地之力冲击「${nextRealm ? nextRealm.name : "大境界"}」之关，生平执念尽数化作心魔劫扑面而来——成败、生死，皆在此一战！`;
     } else {
-      bottleneckHp = Math.round(40 + s.realmIndex * 14 - culRatio * 22);
+      bottleneckHp = Math.max(15, Math.round(40 + s.realmIndex * 14 - culRatio * 22 - pity * 2));
       maxRounds = Math.max(4, rounds);
       demonName = face.name || `${nextRealm ? nextRealm.name : "瓶颈"}·心魔`;
       demonAtk = 9;
@@ -4172,7 +4181,7 @@ const Engine = {
       maxRounds,
       mode: "breakthrough",
     });
-    this._combatMeta = { type: "breakthrough", big: isBig };
+    this._combatMeta = { type: "breakthrough", big: isBig, canQuick: false };
     s.combat = true;
     this._combat.startRound();
     this.log(intro, "event");
@@ -4294,7 +4303,11 @@ const Engine = {
 
   // 速战速决：碾压局交给 AI 代打（同一引擎无头跑，平衡只此一处）
   combatQuickResolve() {
-    if (!this._combat || !this._combatMeta || !this._combatMeta.canQuick) return;
+    if (!this._combat || !this._combatMeta) return;
+    if (!this._combatMeta.canQuick) {
+      this.toast("此战须亲手应对，不可速决");
+      return;
+    }
     this._combat.autoResolve(this._combat.maxRounds);
     this._combatOver();
   },
@@ -5311,6 +5324,9 @@ const Engine = {
   // 玩家在剧情选项上做出选择
   chooseStory(stage, choiceIndex) {
     const s = State.data;
+    if (!stage || !stage.choices || choiceIndex < 0 || choiceIndex >= stage.choices.length) {
+      this.toast("选项无效"); return;
+    }
     const choice = stage.choices[choiceIndex];
 
     // 需要特定物品的选项
