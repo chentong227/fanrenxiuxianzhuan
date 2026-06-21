@@ -141,19 +141,29 @@
       if (source === "martial") return 1 + (realmTier || 0) * 0.05;
       return this.realmBand(realmTier);
     },
-    /* ---- 法宝驱动门槛 driveRealm + 本命系数 natal（A2 承重墙·读时计算）----
-     * 法宝威力=注入法力，须境界够格方能"驱"得动（"古宝唯元婴可驱"的考据落地）：
-     *  - realmTier < driveRealm：越阶强驱，打折（候选 ×0.45）——练气号驱结丹本命法宝就该弱。
-     *  - realmTier ≥ driveRealm 且 natal：达标本命法宝，吃本命系数（候选 ×1.35，体感"主战"）。
-     *  - 无 driveRealm（寻常法器·练气即可驭）或达标非本命：×1.0，逐字节零扰动。
-     *  - isConsumable（chargeCost 消耗性底牌·特区四通道）：**不吃驱动门槛折扣**——底牌走乘性穿透。
-     * 候选起步值待 scale.bal.js 校准。
+    /* ---- 法宝驱动：本命系数 natal + 越阶催动灵力倍增（统一设计 2026-06-21）----
+     * 设计哲学（用户裁决）：越阶强驱不折威能，只增灵力消耗——
+     *   "修为不够不是用不了，而是灵力更贵。越阶催动=高消耗换极高爆发（杀手锏设计）。"
+     *   元婴法宝筑基催不动，不是系统拦截，而是灵力池不够基础消耗。
+     * driveMul（伤害乘子）：越阶不再折威能（×1.0），仅保留本命加成（×1.35）。
+     * driveMpMul（灵力倍率）：每差一个大境界灵力消耗 ×3（指数增长）。
+     *   1 tier gap → ×3（筑基驱结丹：昂贵但可用=杀手锏）
+     *   2 tier gap → ×9（练气驱结丹：灵力池兜不住→自然不可用）
+     *   消耗性底牌（chargeCost）豁免灵力倍率——底牌走乘性穿透。
      */
     driveMul(realmTier, driveRealm, isNatal, isConsumable) {
-      const dr = driveRealm || 0;
       const rt = realmTier || 0;
-      if (rt < dr) return isConsumable ? 1.0 : 0.45;  // 消耗性底牌豁免门槛折扣
-      return isNatal ? 1.35 : 1.0;                     // 达标本命=主战；寻常达标=无修正
+      const dr = driveRealm || 0;
+      // 越阶不再折威能（统一设计：灵力倍增替代伤害折损）
+      if (rt >= dr && isNatal) return 1.35;             // 达标本命=主战
+      return 1.0;                                       // 越阶/达标非本命/寻常=无伤害修正
+    },
+    driveMpMul(realmTier, driveRealm, isConsumable) {
+      const rt = realmTier || 0;
+      const dr = driveRealm || 0;
+      if (rt >= dr || !dr) return 1;                    // 达标或无门槛
+      if (isConsumable) return 1;                       // 消耗性底牌豁免
+      return Math.pow(3, dr - rt);                      // 每差一档 ×3
     },
     // 功法层数轴：同一门功法逐层精进的"温和"乘子（入门 1.0 → 满层 1.3）。
     // 平缓单调，保证同境界同品阶巅峰>初入，但峰值刻意低于"高一大境界"的跨度（realmScale 一档≥0.35），不喧宾夺主。

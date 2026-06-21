@@ -6,7 +6,7 @@
  *   ③ TTK 带——同阶对局回合数落在稳定带内（每个境界都"能打但要打"，不会 1 招秒、也不会磨不死）。
  *   ④ 元婴同阶致死率不趋零——治"元婴用眨眼只有 20"的根：几何标度下高阶招式占血比≈练气期，
  *      而旧线性标度会塌缩到近零（本测固化这条对比，防回退）。
- *   ⑤ 驱动门槛——练气号驱结丹本命法宝就该弱（×0.45）、达标本命才主战（×1.35）、消耗性底牌不吃折扣。
+ *   ⑤ 驱动门槛——越阶强驱不折威能（×1.0）、灵力消耗倍增（×3/tier）、达标本命主战（×1.35）、消耗性底牌豁免。
  *
  * 高阶敌我皆为"合成同档单位"（HP 与攻击同吃 realmBand，与玩家一把尺子）——本期不造高阶实战内容，
  * 只用尺子验标度不塌缩；高阶实战内容随后续篇章推进时自然吃这把尺子（见 AGENTS.md §四 A2 硬约束）。
@@ -105,17 +105,26 @@ console.log(`  \u00b7 \u7ec3\u6c14\u7728\u773c\u5360\u8840 ${pct(newQi)}\uff1b\u
 assert(newYj >= newQi * 0.8, `\u5143\u5a74\u540c\u9636\u8f7b\u62db\u5360\u8840 \u4e0e\u7ec3\u6c14\u671f\u6301\u5e73\uff08\u65b0 ${pct(newYj)} \u2265 0.8\u00d7 ${pct(newQi)}\uff09\u2014\u2014\u4e0d\u8d8b\u96f6`);
 assert(newYj >= oldYj * 3, `\u65b0\u51e0\u4f55\u6807\u5ea6\u4fee\u590d\u65e7\u7ebf\u6027\u5854\u7f29\uff08\u5143\u5a74\u7728\u773c ${pct(newYj)} \u2265 3\u00d7\u65e7 ${pct(oldYj)}\uff09\u2014\u2014\u6cbb\u201c\u5143\u5a74\u7728\u773c\u53ea\u670920\u201d\u7684\u6839`);
 
-/* ---- 断言⑤：法宝驱动门槛 driveRealm + 本命 natal + 消耗底牌豁免 ---- */
+/* ---- 断言⑤：法宝驱动门槛 driveRealm + 本命 natal + 越阶灵力倍增 + 消耗底牌豁免 ---- */
 console.log("\n[\u2464 \u9a71\u52a8\u95e8\u69db driveRealm + \u672c\u547d natal]");
-const drUnderNatal = B.driveMul(0, 2, true, false);   // \u7ec3\u6c14\u9a71\u7ed3\u4e39\u672c\u547d\u6cd5\u5b9d
-const drMetNatal = B.driveMul(2, 2, true, false);     // \u7ed3\u4e39\u8fbe\u6807\u672c\u547d
-const drConsumable = B.driveMul(0, 2, false, true);   // \u7ec3\u6c14\u9a71\u6d88\u8017\u6027\u5e95\u724c
-const drOrdinary = B.driveMul(0, 0, false, false);    // \u5bfb\u5e38\u6cd5\u5668\uff08\u65e0\u95e8\u69db\uff09
-console.log(`  \u00b7 \u7ec3\u6c14\u9a71\u7ed3\u4e39\u672c\u547d ${drUnderNatal} / \u7ed3\u4e39\u8fbe\u6807\u672c\u547d ${drMetNatal} / \u6d88\u8017\u5e95\u724c ${drConsumable} / \u5bfb\u5e38\u6cd5\u5668 ${drOrdinary}`);
-assert(drUnderNatal <= 0.5, `\u8d8a\u9636\u5f3a\u9a71\u672c\u547d\u6cd5\u5b9d\u6253\u6298\uff08\u00d7${drUnderNatal} \u2264 0.5\uff09\u2014\u2014\u53e4\u5b9d\u552f\u9ad8\u5883\u53ef\u9a71`);
+const drUnder = B.driveMul(0, 2, false, false);       // 练气驱结丹非本命
+const drUnderNatal = B.driveMul(0, 2, true, false);   // 练气驱结丹本命法宝
+const drMetNatal = B.driveMul(2, 2, true, false);     // 结丹达标本命
+const drConsumable = B.driveMul(0, 2, false, true);   // 练气驱消耗性底牌
+const drOrdinary = B.driveMul(0, 0, false, false);    // 寻常法器（无门槛）
+// 灵力倍率（新）
+const mpUnder = B.driveMpMul(0, 2, false);            // 练气驱结丹=×9（差2档）
+const mpMet = B.driveMpMul(2, 2, false);              // 结丹达标=×1
+const mpConsumable = B.driveMpMul(0, 2, true);        // 消耗性底牌豁免=×1
+console.log(`  \u00b7 \u7ec3\u6c14\u9a71\u7ed3\u4e39\u672c\u547d\u4f24\u5bb3${drUnderNatal} / \u7ed3\u4e39\u8fbe\u6807\u672c\u547d ${drMetNatal} / \u6d88\u8017\u5e95\u724c ${drConsumable} / \u5bfb\u5e38\u6cd5\u5668 ${drOrdinary}`);
+console.log(`  \u00b7 \u7075\u529b\u500d\u7387\uff1a\u8d8a\u9636\u00d7${mpUnder} / \u8fbe\u6807\u00d7${mpMet} / \u6d88\u8017\u5e95\u724c\u00d7${mpConsumable}`);
+assert(drUnder === 1.0, `\u8d8a\u9636\u5f3a\u9a71\u4e0d\u6298\u5a01\u80fd\uff08\u00d7${drUnder}\uff09\u2014\u2014\u7edf\u4e00\u8bbe\u8ba1\uff1a\u7075\u529b\u500d\u589e\u66ff\u4ee3\u4f24\u5bb3\u6298\u635f`);
+assert(drUnderNatal === 1.0, `\u8d8a\u9636\u672c\u547d\u6cd5\u5b9d\u4e5f\u4e0d\u6298\u5a01\u80fd\uff08\u00d7${drUnderNatal}\uff09\u2014\u2014\u672c\u547d\u52a0\u6210\u4ec5\u5728\u8fbe\u6807\u65f6\u751f\u6548`);
 assert(drMetNatal >= 1.3, `\u8fbe\u6807\u672c\u547d\u6cd5\u5b9d\u4e3b\u6218\u52a0\u6210\uff08\u00d7${drMetNatal} \u2265 1.3\uff09`);
-assert(drMetNatal / drUnderNatal >= 2.5, `\u8fbe\u6807\u00f7\u8d8a\u9636 \u4ee3\u5dee\u663e\u8457\uff08${(drMetNatal / drUnderNatal).toFixed(2)}x \u2265 2.5\uff09`);
-assert(drConsumable >= 0.99, `\u6d88\u8017\u6027\u5e95\u724c\uff08chargeCost\uff09\u4e0d\u5403\u95e8\u69db\u6298\u6263\uff08\u00d7${drConsumable}\uff09\u2014\u2014\u7279\u533a\u5e95\u724c\u8d70\u4e58\u6027\u7a7f\u900f`);
+assert(mpUnder === 9, `\u8d8a\u9636\u7075\u529b\u6d88\u8017\u00d7${mpUnder}\uff08\u5dee2\u6863\uff1a3\u00b2=9\uff09\u2014\u2014\u8d8a\u9636\u50ac\u52a8=\u9ad8\u6d88\u8017\u6362\u6781\u9ad8\u7206\u53d1`);
+assert(mpMet === 1, `\u8fbe\u6807\u7075\u529b\u6b63\u5e38\uff08\u00d7${mpMet}\uff09`);
+assert(mpConsumable === 1, `\u6d88\u8017\u6027\u5e95\u724c\uff08chargeCost\uff09\u8c41\u514d\u7075\u529b\u500d\u7387\uff08\u00d7${mpConsumable}\uff09\u2014\u2014\u7279\u533a\u5e95\u724c\u8d70\u4e58\u6027\u7a7f\u900f`);
+assert(drConsumable >= 0.99, `\u6d88\u8017\u6027\u5e95\u724c\u4f24\u5bb3\u4e0d\u6298\uff08\u00d7${drConsumable}\uff09`);
 assert(drOrdinary === 1, `\u5bfb\u5e38\u6cd5\u5668\uff08\u65e0 driveRealm\uff09\u9010\u5b57\u8282\u96f6\u6270\u52a8\uff08\u00d7${drOrdinary}\uff09`);
 
 console.log(`\n========== A2 \u6807\u5ea6\u6821\u51c6\uff1a${failures === 0 ? "\u5168\u90e8\u901a\u8fc7 \u2713" : failures + " \u9879\u5931\u8d25 \u2717"} ==========\n`);
