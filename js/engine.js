@@ -813,18 +813,23 @@ const Engine = {
     if (g.floor2) {
       this.addMilestone(`万宝楼二层：购得「${item.name}」`, "bigitem");
       const gdef = DATA.gear[itemId];
-      const canDrive = gdef && (!gdef.minLayer || State.gateLayer() >= gdef.minLayer);
-      this.toast(canDrive ? `${item.name} 到手——修为已够，当即祭起炼化！` : `${item.name} 到手——筑基之后，它才真正属于你`);
+      const layer = State.gateLayer();
+      const canFull = gdef && (!gdef.minLayer || layer >= gdef.minLayer);
+      if (canFull) {
+        this.toast(`${item.name} 到手——修为已够，当即祭起炼化！`);
+      } else if (gdef && gdef.minLayer) {
+        const mpMul = Balance.gearLayerMpMul(layer, gdef.minLayer);
+        this.toast(`${item.name} 到手——越阶催动，灵力消耗×${mpMul.toFixed(1)}！`);
+      } else {
+        this.toast(`${item.name} 到手`);
+      }
     } else {
       this.toast(`${item.name} 到手`);
     }
-    // 法器自动装备：购得即驱使（满足修为门槛时），省去手动跑法宝阁
+    // 法器自动装备：购得即驱使——越阶催动只增灵力消耗，不拦截装备（杀手锏设计）
     const gearDef = DATA.gear[itemId];
     if (gearDef) {
-      const layer = State.gateLayer();
-      if (!gearDef.minLayer || layer >= gearDef.minLayer) {
-        this.equipGear(itemId);
-      }
+      this.equipGear(itemId);
     }
     this.checkStory();
     State.save();
@@ -840,9 +845,10 @@ const Engine = {
     if (!def) { this.toast("此物不可装备"); return; }
     if (!State.count(itemId)) return;
     const layer = State.gateLayer();
+    // 越阶催动：不设硬门槛——修为不够只是灵力消耗倍增（杀手锏设计），不拦截装备
     if (def.minLayer && layer < def.minLayer) {
-      this.toast(`修为不足（需练气${def.minLayer}层方可驱使）`, true);
-      return;
+      const mpMul = Balance.gearLayerMpMul(layer, def.minLayer);
+      this.toast(`越阶催动——灵力消耗×${mpMul.toFixed(1)}`, true);
     }
     if (def.slot === "side") {
       if (!s.sideTreasures) s.sideTreasures = [];
@@ -2939,12 +2945,19 @@ const Engine = {
     });
     // 法器装备：主动技注入（战斗装备类）+被动属性（State.gearBonus 在各处生效）
     // 法宝出战位（bench）：收起的法宝不入战——元婴期不被筑基期法器撑爆手牌
+    // 越阶催动：法器 minLayer > 玩家 layer → 灵力消耗倍增（gearMpMul），威能不折（杀手锏设计）
+    const gearMpMul = {};
+    const pLayer = realm.layer || 1;
     ["weapon", "armor", "accessory"].forEach(slot => {
       const g = State.gearOf(slot);
-      if (g && g.grantSpells) g.grantSpells.forEach(sk => {
-        if ((s.benchTreasures || []).includes(sk)) return;
-        if (!spells.includes(sk)) spells.push(sk);
-      });
+      if (g && g.grantSpells) {
+        const mul = Balance.gearLayerMpMul(pLayer, g.minLayer);
+        g.grantSpells.forEach(sk => {
+          if ((s.benchTreasures || []).includes(sk)) return;
+          if (!spells.includes(sk)) spells.push(sk);
+          if (mul > 1) gearMpMul[sk] = mul;
+        });
+      }
     });
     // 噬金虫·四用法（初入星海篇·#5：复用神雷 chargeCost 共享池）——背包持噬金虫即四式入战
     // （外星海致富偶得后解锁；此前与神雷同理"演武先行·池未上膛"则四式不入手牌）
@@ -2981,6 +2994,7 @@ const Engine = {
       elem: (DATA.techniques[s.technique] || {}).attr || null,   // 道基=主修功法行属（克制语言）
       chargeResist: dunTrait ? (dunTrait.value || 0.3) : 0,
       spells,
+      gearMpMul,   // 越阶催动灵力消耗倍率（spellId → multiplier）
       auxSkills: (typeof Loadout !== "undefined") ? Loadout.auxSkillSet(s) : [],
       technique: s.technique,     // 主修功法（影响同系招式）
       grade: (DATA.techniques[s.technique] || {}).grade || 1,  // 主修功法品阶

@@ -856,10 +856,14 @@ const UI = {
           const skName = (typeof CombatAPI !== "undefined" && CombatAPI.SPELLS[sk]) ? CombatAPI.SPELLS[sk].name : sk;
           actions += `<button class="btn btn-mini" onclick="Engine.toggleBenchTreasure('${sk}'); UI.closeModal();">${benched ? `「${skName}」重新出战` : `收起「${skName}」（不入战斗手牌）`}</button>`;
         });
-      } else if (can) {
-        actions += `<button class="btn btn-primary" onclick="Engine.equipGear('${itemId}'); UI.closeModal();">装备（${gdef.slot === "weapon" ? "武器" : gdef.slot === "armor" ? "护身" : "饰物"}）</button>`;
       } else {
-        actions += `<span style="color:var(--ink-faint);font-size:12px;align-self:center">需练气${gdef.minLayer}层方可驱使</span>`;
+        const slotName = gdef.slot === "weapon" ? "武器" : gdef.slot === "armor" ? "护身" : "饰物";
+        if (!can) {
+          const mpMul = (typeof Balance !== "undefined") ? Balance.gearLayerMpMul(layer, gdef.minLayer) : 1;
+          actions += `<button class="btn btn-primary" onclick="Engine.equipGear('${itemId}'); UI.closeModal();">越阶装备（${slotName}·灵力×${mpMul.toFixed(1)}）</button>`;
+        } else {
+          actions += `<button class="btn btn-primary" onclick="Engine.equipGear('${itemId}'); UI.closeModal();">装备（${slotName}）</button>`;
+        }
       }
       actions += `<button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTreasury();">法宝位一览</button>`;
     }
@@ -876,7 +880,7 @@ const UI = {
         ${bonusTxt ? `<div style="color:var(--jade-bright)">属性：${bonusTxt}</div>` : ""}
         ${spellsTxt ? `<div style="color:var(--gold)">战斗技：${spellsTxt}</div>` : ""}
         ${(gdef.traits || []).map(t => `<div style="color:var(--ink-dim)">特性：${t.desc}</div>`).join("")}
-        <div style="color:var(--ink-faint);font-size:11px;margin-top:4px">驱使门槛：练气${gdef.minLayer || 1}层 · 槽位：${gdef.slot === "weapon" ? "武器" : gdef.slot === "armor" ? "护身" : "饰物"}</div>
+        <div style="color:var(--ink-faint);font-size:11px;margin-top:4px">全效层：练气${gdef.minLayer || 1}层${!can ? `　<span style="color:var(--warn)">越阶催动·灵力×${((typeof Balance !== "undefined") ? Balance.gearLayerMpMul(layer, gdef.minLayer) : 1).toFixed(1)}</span>` : ""} · 槽位：${gdef.slot === "weapon" ? "武器" : gdef.slot === "armor" ? "护身" : "饰物"}</div>
       </div>`;
     }
     // 功法典籍：从背包直达「研习→配装」闭环（治“取得了典籍却不知如何学/用”）
@@ -1654,7 +1658,8 @@ const UI = {
       } else if (can) {
         btns += `<button class="btn btn-mini" onclick="UI._treasuryEquip('${id}')">装备</button>`;
       } else {
-        btns += `<span style="color:var(--ink-faint);font-size:12px">需练气${g.minLayer}层方可驱使</span>`;
+        const mpMul = (typeof Balance !== "undefined") ? Balance.gearLayerMpMul(playerLayer, g.minLayer) : 1;
+        btns += `<button class="btn btn-mini" onclick="UI._treasuryEquip('${id}')">越阶装备（灵力×${mpMul.toFixed(1)}）</button>`;
       }
       return `<div class="tech-item ${equipped ? 'current' : ''}">
         <div class="tech-head"><span class="seal wx-${wx}">${sealChar(name)}</span><b>${name}</b>${equipped ? '<span class="tech-cur">已驭</span>' : ''}</div>
@@ -4333,8 +4338,9 @@ const UI = {
       const noPouch = sp.consume && !(p.pouch[sp.consume] > 0);
       const cdLeft = c.cooldownLeft ? c.cooldownLeft(id) : 0;
       const usable = afford && inR;
+      const eMp = p.spellMp ? p.spellMp(id, sp) : (sp.mp || 0);
       const why = !afford
-        ? (cdLeft > 0 ? `回气${cdLeft}` : noPouch ? "无存货" : (sp.mp || 0) > p.mp ? "灵力不足" : sp.quick && c._pQuickUsed ? "瞬发已用" : "行动已尽")
+        ? (cdLeft > 0 ? `回气${cdLeft}` : noPouch ? "无存货" : eMp > p.mp ? "灵力不足" : sp.quick && c._pQuickUsed ? "瞬发已用" : "行动已尽")
         : (!inR ? "射程外" : "");
       const pouchTxt = (sp.consume ? `<span class="spouch ${noPouch ? 'empty' : ''}">×${p.pouch[sp.consume] || 0}</span>` : "")
         + (why ? `<span class="spouch empty">${why}</span>` : "");
@@ -4350,7 +4356,7 @@ const UI = {
           <span class="role-tag rt-float">${up ? "祭" : "悬"}</span><span class="seal wx-${wx}">${sealChar(sp.name)}</span>
           <span class="sp-body">
             <span class="sname">${sp.name}<span class="srange">${up ? "运转中" : "悬浮"}</span></span>
-            <span class="scost"><span class="cost-dot mp-dot">${up ? `燃灵${sp.float.upkeep}/回` : `灵力${sp.mp}`}</span> ${up ? "点击收回" : "祭起绕身"}</span>
+            <span class="scost"><span class="cost-dot mp-dot">${up ? `燃灵${sp.float.upkeep}/回` : `灵力${eMp}`}</span> ${up ? "点击收回" : "祭起绕身"}</span>
           </span>
         </button>`;
       }
@@ -4360,7 +4366,7 @@ const UI = {
         ${roleTag}<span class="seal ${sp.consume ? 'cinnabar' : 'wx-' + wx}">${sealChar(sp.name)}</span>
         <span class="sp-body">
           <span class="sname">${dispName}<span class="srange">${rangeTxt(sp)}</span></span>
-          <span class="scost"><span class="cost-dot mp-dot">${sp.mp ? `灵力${sp.mp}` : "零耗"}</span> ${dispFx}${pouchTxt}</span>
+          <span class="scost"><span class="cost-dot mp-dot">${eMp > 0 ? `灵力${eMp}` : "零耗"}</span> ${dispFx}${pouchTxt}</span>
         </span>
       </button>`;
     };

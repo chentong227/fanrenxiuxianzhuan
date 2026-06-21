@@ -244,6 +244,7 @@
       // 特色资源（v96 用户裁决"一定要有取舍/耗尽"）：神雷/煞气/符力……
       // { id: { name, cur, max } }——战斗内不回充（池制同源），耗尽则相关手段哑火
       this.charges = cfg.charges || null;
+      this.gearMpMul = cfg.gearMpMul || {};  // 越阶催动灵力消耗倍率（spellId → multiplier）
       this.escaped = false;          // 已遁走离场
       this.intent = null;
       this.attacks = cfg.attacks || null;
@@ -255,6 +256,8 @@
       this.canFlee = cfg.canFlee !== false && !/心魔|劫/.test(this.name || "");
     }
     get alive() { return this.hp > 0 && !this.escaped; }
+    // 越阶催动：法器 minLayer > 玩家 layer 时灵力消耗倍增（杀手锏设计）
+    spellMp(spellId, sp) { return Math.round((sp.mp || 0) * (this.gearMpMul[spellId] || 1)); }
     hasConsumable(id) { return (this.pouch[id] || 0) > 0; }
     takeDamage(dmg, opts = {}) {
       if (this.soulOnly && !opts.soul) return { blocked: true, dealt: 0 };
@@ -508,9 +511,9 @@
       }
       if (p.floats.length >= this.floatSlots(p)) return { ok: false, reason: `神识不济——同时驭使 ${this.floatSlots(p)} 件已是极限` };
       if (this._pActsUsed >= this._pActsMax) return { ok: false, reason: "行动已尽" };
-      if ((sp.mp || 0) > p.mp) return { ok: false, reason: "灵力不足" };
+      if (p.spellMp(spellId, sp) > p.mp) return { ok: false, reason: "灵力不足" };
       this._pActsUsed++;
-      p.mp -= (sp.mp || 0);
+      p.mp -= p.spellMp(spellId, sp);
       p.floats.push(spellId);
       this._log(`你掐诀祭起「${sp.name}」——宝光绕身悬浮，自行运转（燃灵 ${sp.float.upkeep}/回合）！`);
       this._emitFx("player", "miss", "祭起");
@@ -1119,7 +1122,7 @@
       if ((this.player.cooldowns[spellId] || 0) > 0) return false;
       if (sp.quick && this._pQuickUsed) return false;
       if (!sp.quick && this._pActsUsed >= this._pActsMax) return false;
-      if ((sp.mp || 0) > this.player.mp) return false;
+      if (this.player.spellMp(spellId, sp) > this.player.mp) return false;
       // 特色资源（神雷等）：耗尽则手段哑火——取舍即战术
       if (sp.chargeCost) {
         const ch = this.player.charges && this.player.charges[sp.chargeCost.id];
@@ -1155,7 +1158,7 @@
       if ((this.player.cooldowns[spellId] || 0) > 0) return { ok: false, reason: `尚在回气（余${this.player.cooldowns[spellId]}回合）` };
       if (sp.quick && this._pQuickUsed) return { ok: false, reason: "本回合瞬发牌已用" };
       if (!sp.quick && this._pActsUsed >= this._pActsMax) return { ok: false, reason: "本回合主行动已用——可打瞬发牌或结束回合" };
-      if ((sp.mp || 0) > this.player.mp) return { ok: false, reason: "灵力不济，催动不了" };
+      if (this.player.spellMp(spellId, sp) > this.player.mp) return { ok: false, reason: "灵力不济，催动不了" };
       if (sp.blinkMove && !this.player.blink) return { ok: false, reason: "需御「风雷翅」方能雷遁穿空（尚未解锁）" };
       const target = this.enemies[targetIndex];
       if (sp.type === "zone" && !sp.selfZone && opts.cell != null) {
@@ -1190,7 +1193,7 @@
       if (sp.chargeTurns) {
         const ch = this.player._charging;
         if (!ch || ch.spellId !== spellId) {
-          this.player.mp -= (sp.mp || 0);   // 定金先付：被打断=白付（蓄势之险）
+          this.player.mp -= this.player.spellMp(spellId, sp);   // 定金先付：被打断=白付（蓄势之险）
           if (sp.consume) this.player.pouch[sp.consume]--;
           this._pActsUsed += (sp.actCost || 1);
           this.player._charging = { spellId, name: sp.name, left: sp.chargeTurns };
@@ -1217,7 +1220,7 @@
         const ch = this.player.charges && this.player.charges[sp.chargeCost.id];
         if (!ch || ch.cur < sp.chargeCost.n) return { ok: false, reason: `${ch ? ch.name : "灵机"}已耗尽——此手段哑火` };
       }
-      this.player.mp -= (sp.mp || 0);
+      this.player.mp -= this.player.spellMp(spellId, sp);
       this._spendCharge(this.player, sp);
       if (sp.consume) this.player.pouch[sp.consume]--;
       if (sp.oncePerRound) { (this._usedOnce || (this._usedOnce = {}))[spellId] = true; }
