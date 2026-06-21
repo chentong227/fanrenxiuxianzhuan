@@ -1906,7 +1906,9 @@ const UI = {
     const rate = Engine.breakthroughRate();
     const pct = Math.round(rate * 100);
     const cls = rate >= 0.7 ? "high" : rate >= 0.4 ? "mid" : "low";
-    const demonHigh = s.demon > Balance.demonTrialThreshold();
+    const pity = s.btPity || 0;
+    const threshold = Balance.demonTrialThreshold() + Math.floor(pity / 5) * 15;
+    const demonHigh = s.demon > threshold;
 
     // 成功率构成明细：准备的每一项都看得见（准备难=可经营的难）
     const parts = Engine.breakthroughRateParts ? Engine.breakthroughRateParts() : [];
