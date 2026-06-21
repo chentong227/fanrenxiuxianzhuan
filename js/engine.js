@@ -579,6 +579,12 @@ const Engine = {
     s.location = locId;
     this.log(`你动身前往「${loc.name}」，行程耗时 ${cost} 月。${loc.desc}`, "event");
     this._resolveLeadsAt(locId);
+    // 互斥窗口：到达嘉元城时检查墨家探望事件
+    if (locId === "jiayuan_city" && s.flags.qingwen_seen
+        && !s.flags.mofu_revisited && !s.flags.mofu_revisit_closed) {
+      const ev = QUESTS.events.mofu_revisit_arrive;
+      if (ev) ev.onFire(s);
+    }
     this.checkLifespan();
     this.checkStory();
     State.save();

@@ -66,6 +66,19 @@ const QUESTS = {
         Engine.log("【时间线】升仙大会将近，嘉元城路远——再回去看看墨府的念头，只好搁下了。", "desc");
       },
     },
+    // 互斥窗口触发：玩家在窗口期内到达嘉元城时触发墨家探望事件
+    mofu_revisit_arrive: {
+      onFire(s) {
+        if (s.flags.mofu_revisited || s.flags.mofu_revisit_closed) return;
+        if (s.location !== "jiayuan_city") return;
+        State.setFlag("mofu_revisited");
+        s.mood = Math.min(s.mood + 12, s.moodMax || 100);
+        State.give("lingcao", 2);
+        Engine.writeLedger("mofu_revisit", "太南小会期间折返嘉元城探望墨家——墨彩环的暖玉坠与干粮");
+        Engine.log("你折回嘉元城，走到墨府门前时，发现门庭比你走时更冷落了几分——但朱漆新刷过，是有人在撑着。墨彩环牵着你的袖子叽叽喳喳说了半晌：城里帮派新来了个首领、后院的枣树结了果。你在墨府待了三日，走时她硬塞了一包干粮和一枚暖玉坠。「这不值钱啦——就当护身符好了。下次再来，我教你包粽子！」", "good");
+        Engine.toast("心境+12（故人重逢的安心）；灵草+2（墨家后院采得）——但赶集的时间少了");
+      },
+    },
   },
 
   /* ---------- 对谈线索目录（规范化）----------

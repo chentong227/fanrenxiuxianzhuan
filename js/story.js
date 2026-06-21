@@ -677,36 +677,6 @@ const STORY = [
     ],
   },
 
-  /* ---- 互斥窗口：回嘉元城探墨家（3 月窗口，与太南采买争时间）---- */
-  {
-    id: "mofu_revisit",
-    skipIf: (s) => s.flags.mofu_revisited || s.flags.mofu_revisit_closed,
-    cond: (s) => s.flags.qingwen_seen && s.location === "jiayuan_city"
-                 && !s.flags.mofu_revisited && !s.flags.mofu_revisit_closed,
-    title: "嘉元城 · 故地重临",
-    text: [
-      { scene: "嘉元城 · 墨府门前" },
-      { bgm: "town" },
-      { shot: "establish" },
-      "你折回嘉元城，走到墨府门前时，发现门庭比你走时更冷落了几分——但朱漆新刷过，是有人在撑着。",
-      { say: "墨彩环", text: "韩大哥？！你怎么回来了——我还以为你进了那个什么仙门再不会来了呢！" },
-      "她牵着你的袖子叽叽喳喳说了半晌：城里帮派新来了个首领、隔壁铺子的掌柜送了年礼、后院的枣树结了果。",
-      { aside: "都是些凡人的琐碎日子。可听着这些，比山里修炼三个月还安心。" },
-      "墨夫人亲手端来了热汤，你在墨府待了三日。走时，墨彩环硬塞了一包家制的干粮——还有一枚从货郎那儿淘来的暖玉坠。",
-      { say: "墨彩环", tone: "故作轻快", text: "这不值钱啦——就当护身符好了。下次再来，我教你包粽子！" },
-    ],
-    onArrive(s) {
-      State.setFlag("mofu_revisited");
-      s.mood = clamp(s.mood + 12, 0, s.moodMax);
-      State.give("lingcao", 2);
-      Engine.writeLedger("mofu_revisit", "太南小会期间折返嘉元城探望墨家——墨彩环的暖玉坠与干粮");
-      Engine.toast("心境+12（故人重逢的安心）；灵草+2（墨家后院采得）——但赶集的时间少了");
-    },
-    choices: [
-      { text: "辞别墨府，赶回太南谷", hint: "心境恢复了，但在小会采买的时间少了三天（=少一轮赶集机会）" },
-    ],
-  },
-
   /* ---- 等会期：与万小山搭伴探山（同道系统首战——并肩过的人，才死得重）---- */
   {
     id: "wan_hunt",
