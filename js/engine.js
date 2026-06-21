@@ -2967,12 +2967,14 @@ const Engine = {
       });
     }
     // 越阶催动（跨大境界）：driveRealm > realmTier → 灵力消耗倍增（杀手锏设计）
+    // 连续衰减：含小境界（初期/中期/后期/大圆满），大圆满接近达标→灵力倍率更低
     const pTier = Chapters.realmTier();
+    const rLayer = realm.layer || 1;
     const SP = CombatAPI.SPELLS;
     spells.forEach(sk => {
       const sp = SP[sk];
       if (!sp || !sp.driveRealm) return;
-      const dMul = Balance.driveMpMul(pTier, sp.driveRealm, !!sp.chargeCost);
+      const dMul = Balance.driveMpMul(pTier, sp.driveRealm, !!sp.chargeCost, rLayer);
       if (dMul > 1) gearMpMul[sk] = (gearMpMul[sk] || 1) * dMul;
     });
     const dunTrait = State.gearTrait("charge_resist");
@@ -3008,6 +3010,7 @@ const Engine = {
       technique: s.technique,     // 主修功法（影响同系招式）
       grade: (DATA.techniques[s.technique] || {}).grade || 1,  // 主修功法品阶
       realmTier: Chapters.realmTier(),   // 本章大境界序（影响法术成长）
+      realmLayer: realm.layer || 1,    // 小境界层（初期1/中期2/后期3/大圆满4；越阶连续衰减用）
       // 功法层数轴（technique-tiers §5.4）：主修当前层的温和增益，只作用于主修当前层所授招式
       layerMul: (() => {
         const info = State.mainTechLayerInfo(s);

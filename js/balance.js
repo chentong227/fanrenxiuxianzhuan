@@ -141,29 +141,46 @@
       if (source === "martial") return 1 + (realmTier || 0) * 0.05;
       return this.realmBand(realmTier);
     },
-    /* ---- 法宝驱动：本命系数 natal + 越阶催动灵力倍增（统一设计 2026-06-21）----
-     * 设计哲学（用户裁决）：越阶强驱不折威能，只增灵力消耗——
-     *   "修为不够不是用不了，而是灵力更贵。越阶催动=高消耗换极高爆发（杀手锏设计）。"
-     *   元婴法宝筑基催不动，不是系统拦截，而是灵力池不够基础消耗。
-     * driveMul（伤害乘子）：越阶不再折威能（×1.0），仅保留本命加成（×1.35）。
-     * driveMpMul（灵力倍率）：每差一个大境界灵力消耗 ×3（指数增长）。
-     *   1 tier gap → ×3（筑基驱结丹：昂贵但可用=杀手锏）
-     *   2 tier gap → ×9（练气驱结丹：灵力池兜不住→自然不可用）
-     *   消耗性底牌（chargeCost）豁免灵力倍率——底牌走乘性穿透。
+    /* ---- 法宝驱动：越阶连续衰减 + 灵力倍增 + 本命加成（统一设计 2026-06-21）----
+     * 设计哲学（用户裁决）：越阶催动=威能逐级衰减 + 灵力消耗倍增——
+     *   "修为不够不是用不了，而是威力打折、灵力更贵。越阶催动=高消耗换高爆发（杀手锏设计）。"
+     *   别人的本命法宝本身就打折扣（非本命），再加越阶衰减——但仍比同阶法器强出一截。
+     * _driveGap：连续有效距离（含小境界：初期/中期/后期/大圆满）——
+     *   gap = driveRealm - (realmTier + (layer-1)/maxLayers)
+     *   筑基初期驱结丹 gap=1.0，筑基大圆满驱结丹 gap=0.25
+     * driveMul（伤害乘子）：×0.7^gap（连续衰减）
+     *   gap=1.0 → ×0.70（筑基初期驱结丹=杀手锏级）
+     *   gap=0.25 → ×0.92（筑基大圆满=几近达标）
+     *   达标本命 → ×1.35；达标非本命/寻常 → ×1.0。
+     *   消耗性底牌（chargeCost）豁免越阶折扣。
+     * driveMpMul（灵力倍率）：×3^gap（连续倍增）
+     *   gap=1.0 → ×3.0（杀手锏：昂贵但可用）
+     *   gap=0.25 → ×1.32（大圆满：微增，即将达标）
+     *   消耗性底牌豁免灵力倍率。
+     * maxLayers 缺省: 练气(tier0)=13, 筑基+=4。
      */
-    driveMul(realmTier, driveRealm, isNatal, isConsumable) {
+    _driveMaxLayers(tier) { return (tier || 0) === 0 ? 13 : 4; },
+    _driveGap(realmTier, driveRealm, layer) {
       const rt = realmTier || 0;
       const dr = driveRealm || 0;
-      // 越阶不再折威能（统一设计：灵力倍增替代伤害折损）
-      if (rt >= dr && isNatal) return 1.35;             // 达标本命=主战
-      return 1.0;                                       // 越阶/达标非本命/寻常=无伤害修正
+      if (rt >= dr) return 0;
+      const ml = this._driveMaxLayers(rt);
+      const progress = ((layer || 1) - 1) / ml;
+      return dr - (rt + progress);
     },
-    driveMpMul(realmTier, driveRealm, isConsumable) {
+    driveMul(realmTier, driveRealm, isNatal, isConsumable, layer) {
+      const rt = realmTier || 0;
+      const dr = driveRealm || 0;
+      if (rt >= dr) return isNatal ? 1.35 : 1.0;       // 达标本命=主战；达标非本命/寻常=无修正
+      if (isConsumable) return 1.0;                     // 消耗性底牌豁免越阶折扣
+      return Math.pow(0.7, this._driveGap(rt, dr, layer));
+    },
+    driveMpMul(realmTier, driveRealm, isConsumable, layer) {
       const rt = realmTier || 0;
       const dr = driveRealm || 0;
       if (rt >= dr || !dr) return 1;                    // 达标或无门槛
       if (isConsumable) return 1;                       // 消耗性底牌豁免
-      return Math.pow(3, dr - rt);                      // 每差一档 ×3
+      return Math.pow(3, this._driveGap(rt, dr, layer));
     },
     // 功法层数轴：同一门功法逐层精进的"温和"乘子（入门 1.0 → 满层 1.3）。
     // 平缓单调，保证同境界同品阶巅峰>初入，但峰值刻意低于"高一大境界"的跨度（realmScale 一档≥0.35），不喧宾夺主。
