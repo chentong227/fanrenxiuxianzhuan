@@ -313,12 +313,11 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   Engine.wanbaoSell("qiannian_lingcao");
   Engine.wanbaoSell("qiannian_lingcao");
   assert(State.count("lingshi") >= 44, `千年灵草×2变现44灵石（现 ${State.count("lingshi")}）`);
+  const senseBeforeBuy = s.sense;
   Engine.wanbaoBuy("jinfuzi_ren");
   assert(State.count("jinfuzi_ren") === 1, "金蚨子母刃购得（小绿瓶的奇迹=法器的本钱）");
-  const senseBefore = s.sense;
-  Engine.equipGear("jinfuzi_ren");
   assert(s.gear.weapon === "jinfuzi_ren", "武器槽已装备");
-  assert(s.sense === senseBefore + 2, "属性即时结算（神识+2）");
+  assert(s.sense === senseBeforeBuy + 2, "属性即时结算（神识+2）");
   const pf = Engine.playerFighter();
   assert(pf.spells.includes("zimu_ren"), "战斗技「子母双刃」入战（装备授予）");
   // 玄铁巨盾：hpMax+特性
