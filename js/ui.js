@@ -3835,6 +3835,7 @@ const UI = {
     if (faceFlipped) figCls += " flipped-img";
     const cls = ["axis-unit",
       isPlayer ? "self" : isSide ? "side" : "enemy",
+      (!isPlayer && !isSide && u.boss) ? "boss-unit" : "",
       u.alive === false || u.hp <= 0 ? "dead" : "",
       (!isPlayer && !isSide && i === opts.target) ? "target" : "",
       u._charging ? "charging" : "",

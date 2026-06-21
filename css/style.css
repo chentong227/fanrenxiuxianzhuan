@@ -1139,6 +1139,10 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .axis-unit.dead .au-img { animation: none; }
 @keyframes deadFade { to { opacity: 0; visibility: hidden; } }
 .axis-unit.enemy { cursor: pointer; }
+/* BOSS 体型放大：妖兽 BOSS 比普通敌人大一圈（压迫感的视觉基底） */
+.axis-unit.boss-unit .au-img { transform: scale(1.35); transform-origin: bottom center; }
+.axis-unit.boss-unit .au-img.flipped { transform: scale(1.35) scaleX(-1); transform-origin: bottom center; }
+.axis-unit.boss-unit .au-name { font-size: 13px; color: #f0a0a0; text-shadow: 0 0 8px rgba(200, 50, 50, .5); }
 .axis-unit.target .au-name { color: #e8b8a8; }
 /* 接触阴影：踩实地面的关键一笔——所有单位脚下都有椭圆投影。
  * --feet=脚底距容器底（信息条区高度）；--ay 补偿=凌空时影子留在地线上（影在地、人在天） */
