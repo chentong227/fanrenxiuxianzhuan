@@ -812,9 +812,19 @@ const Engine = {
     this.log(`【万宝楼】购得「${item.name}」${g.n > 1 ? `×${g.n}` : ""}（灵石-${g.price}）。`, "event");
     if (g.floor2) {
       this.addMilestone(`万宝楼二层：购得「${item.name}」`, "bigitem");
-      this.toast(`${item.name} 到手——筑基之后，它才真正属于你`);
+      const gdef = DATA.gear[itemId];
+      const canDrive = gdef && (!gdef.minLayer || State.gateLayer() >= gdef.minLayer);
+      this.toast(canDrive ? `${item.name} 到手——修为已够，当即祭起炼化！` : `${item.name} 到手——筑基之后，它才真正属于你`);
     } else {
       this.toast(`${item.name} 到手`);
+    }
+    // 法器自动装备：购得即驱使（满足修为门槛时），省去手动跑法宝阁
+    const gearDef = DATA.gear[itemId];
+    if (gearDef) {
+      const layer = State.gateLayer();
+      if (!gearDef.minLayer || layer >= gearDef.minLayer) {
+        this.equipGear(itemId);
+      }
     }
     this.checkStory();
     State.save();
