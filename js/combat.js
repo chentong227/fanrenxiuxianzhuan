@@ -110,9 +110,9 @@
     wulong_duo:  { name: "乌龙夺", mp: 11, range: [1, 3], type: "atk", dmg: 30, pierce: true, source: "treasure", elem: "shui", driveRealm: 1, cd: 1,
                 desc: "齐云霄以墨蛟之角炼成的顶阶攻击法宝：黝黑双钩如蛟探爪，御使凌空绞夺、势大力沉且破甲。继金蚨子母刃之后，韩立筑基期的第二件主战法器。贴身施展不开（-30%）。" },
     /* —— 绿煌剑（再别天南篇·御灵宗夺舍者本命法宝·结丹本命）——
-     * driveRealm:2（结丹方可主驱）。越阶催动（统一设计）：威能不折、灵力消耗×3——
-     *   筑基强驱打出结丹级爆发（base 80×realmBand(1)2.4=192），但每击吃 13×3=39 灵力（杀手锏：一击倾池）。
-     *   达标后（结丹）灵力回归正常（13 MP），本命法宝另有 ×1.35 伤害加成。 */
+     * driveRealm:2（结丹方可主驱）。越阶催动（统一设计）：威能×0.7^gap + 灵力×3^gap——
+     *   筑基强驱（1档差）：80×2.4×0.7≈134 伤、13×3=39 灵力（杀手锏级，仍冠绝筑基）。
+     *   达标后（结丹）灵力正常（13 MP），非本命×1.0。 */
     lvhuang_jian: { name: "绿煌剑", mp: 13, range: [1, 4], type: "atk", dmg: 80, pierce: true, source: "treasure", elem: "jin", driveRealm: 2, cd: 1,
                 desc: "御使御灵宗夺舍者的本命古剑·绿煌剑凌空斩落——通体莹绿、剑吟如龙，势大力沉且破甲。这是结丹本命之器，你越阶强驱灵力消耗剧增——但每一击都是结丹级的威能。贴身施展不开（-30%）。" },
     jianying_fenguang: { name: "剑影分光", mp: 11, range: [1, 4], type: "atk", dmg: 26, fixedSegs: 3, source: "treasure", elem: "jin", driveRealm: 2,
@@ -1315,7 +1315,7 @@
         baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier, lm);
         // A2 承重墙：法宝驱动门槛 + 本命系数（消耗性底牌 chargeCost 不吃门槛折扣）——读时计算，存档 schema 不变
         if (sp.source === "treasure") {
-          baseDmg = Math.round(baseDmg * Balance.driveMul(caster.realmTier, sp.driveRealm, sp.natal, !!sp.chargeCost));
+          baseDmg = Math.round(baseDmg * Balance.driveMul(caster.realmTier, sp.driveRealm, sp.natal, !!sp.chargeCost, caster.realmLayer));
         }
         baseDmg = Math.max(1, Math.round(baseDmg * auxMul * (caster.dmgBonus || 1)));
         // 贴身惩罚：御物/法术类远程攻击在距离1施展不开（-30%）——武学的主场

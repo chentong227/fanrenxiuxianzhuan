@@ -105,25 +105,34 @@ console.log(`  \u00b7 \u7ec3\u6c14\u7728\u773c\u5360\u8840 ${pct(newQi)}\uff1b\u
 assert(newYj >= newQi * 0.8, `\u5143\u5a74\u540c\u9636\u8f7b\u62db\u5360\u8840 \u4e0e\u7ec3\u6c14\u671f\u6301\u5e73\uff08\u65b0 ${pct(newYj)} \u2265 0.8\u00d7 ${pct(newQi)}\uff09\u2014\u2014\u4e0d\u8d8b\u96f6`);
 assert(newYj >= oldYj * 3, `\u65b0\u51e0\u4f55\u6807\u5ea6\u4fee\u590d\u65e7\u7ebf\u6027\u5854\u7f29\uff08\u5143\u5a74\u7728\u773c ${pct(newYj)} \u2265 3\u00d7\u65e7 ${pct(oldYj)}\uff09\u2014\u2014\u6cbb\u201c\u5143\u5a74\u7728\u773c\u53ea\u670920\u201d\u7684\u6839`);
 
-/* ---- 断言⑤：法宝驱动门槛 driveRealm + 本命 natal + 越阶灵力倍增 + 消耗底牌豁免 ---- */
-console.log("\n[\u2464 \u9a71\u52a8\u95e8\u69db driveRealm + \u672c\u547d natal]");
-const drUnder = B.driveMul(0, 2, false, false);       // 练气驱结丹非本命
-const drUnderNatal = B.driveMul(0, 2, true, false);   // 练气驱结丹本命法宝
-const drMetNatal = B.driveMul(2, 2, true, false);     // 结丹达标本命
-const drConsumable = B.driveMul(0, 2, false, true);   // 练气驱消耗性底牌
-const drOrdinary = B.driveMul(0, 0, false, false);    // 寻常法器（无门槛）
-// 灵力倍率（新）
-const mpUnder = B.driveMpMul(0, 2, false);            // 练气驱结丹=×9（差2档）
-const mpMet = B.driveMpMul(2, 2, false);              // 结丹达标=×1
+/* ---- 断言⑤：法宝驱动门槛 driveRealm + 越阶连续衰减 + 灵力倍增 + 本命 + 消耗底牌豁免 ---- */
+console.log("\n[\u2464 \u9a71\u52a8\u95e8\u69db driveRealm + \u672c\u547d natal\uff08\u8fde\u7eed\u8870\u51cf\uff09]");
+// 伤害乘子（含小境界 layer）
+const drInit  = B.driveMul(1, 2, false, false, 1);    // 筑基初期驱结丹 gap=1.0 → ×0.70
+const drMid   = B.driveMul(1, 2, false, false, 2);    // 筑基中期 gap=0.75 → ×0.74
+const drLate  = B.driveMul(1, 2, false, false, 3);    // 筑基后期 gap=0.50 → ×0.84
+const drPeak  = B.driveMul(1, 2, false, false, 4);    // 筑基大圆满 gap=0.25 → ×0.92
+const drMetNatal = B.driveMul(2, 2, true, false);     // 结丹达标本命=×1.35
+const drMetNonNatal = B.driveMul(2, 2, false, false); // 结丹达标非本命=×1.0
+const drConsumable = B.driveMul(0, 2, false, true);   // 消耗性底牌豁免=×1.0
+const drOrdinary = B.driveMul(0, 0, false, false);    // 寻常法器=×1.0
+// 灵力倍率（含小境界 layer）
+const mpInit = B.driveMpMul(1, 2, false, 1);          // 筑基初期驱结丹 gap=1.0 → ×3.0
+const mpPeak = B.driveMpMul(1, 2, false, 4);          // 筑基大圆满 gap=0.25 → ×1.32
+const mpMet  = B.driveMpMul(2, 2, false);             // 达标=×1
 const mpConsumable = B.driveMpMul(0, 2, true);        // 消耗性底牌豁免=×1
-console.log(`  \u00b7 \u7ec3\u6c14\u9a71\u7ed3\u4e39\u672c\u547d\u4f24\u5bb3${drUnderNatal} / \u7ed3\u4e39\u8fbe\u6807\u672c\u547d ${drMetNatal} / \u6d88\u8017\u5e95\u724c ${drConsumable} / \u5bfb\u5e38\u6cd5\u5668 ${drOrdinary}`);
-console.log(`  \u00b7 \u7075\u529b\u500d\u7387\uff1a\u8d8a\u9636\u00d7${mpUnder} / \u8fbe\u6807\u00d7${mpMet} / \u6d88\u8017\u5e95\u724c\u00d7${mpConsumable}`);
-assert(drUnder === 1.0, `\u8d8a\u9636\u5f3a\u9a71\u4e0d\u6298\u5a01\u80fd\uff08\u00d7${drUnder}\uff09\u2014\u2014\u7edf\u4e00\u8bbe\u8ba1\uff1a\u7075\u529b\u500d\u589e\u66ff\u4ee3\u4f24\u5bb3\u6298\u635f`);
-assert(drUnderNatal === 1.0, `\u8d8a\u9636\u672c\u547d\u6cd5\u5b9d\u4e5f\u4e0d\u6298\u5a01\u80fd\uff08\u00d7${drUnderNatal}\uff09\u2014\u2014\u672c\u547d\u52a0\u6210\u4ec5\u5728\u8fbe\u6807\u65f6\u751f\u6548`);
+console.log(`  \u00b7 \u4f24\u5bb3\uff1a\u7b51\u57fa\u521d\u671f\u00d7${drInit.toFixed(2)} / \u4e2d\u671f\u00d7${drMid.toFixed(2)} / \u540e\u671f\u00d7${drLate.toFixed(2)} / \u5927\u5706\u6ee1\u00d7${drPeak.toFixed(2)} / \u8fbe\u6807\u672c\u547d\u00d7${drMetNatal} / \u975e\u672c\u547d\u00d7${drMetNonNatal}`);
+console.log(`  \u00b7 \u7075\u529b\uff1a\u521d\u671f\u00d7${mpInit.toFixed(2)} / \u5927\u5706\u6ee1\u00d7${mpPeak.toFixed(2)} / \u8fbe\u6807\u00d7${mpMet} / \u5e95\u724c\u00d7${mpConsumable}`);
+assert(Math.abs(drInit - 0.7) < 0.01, `\u7b51\u57fa\u521d\u671f\u8d8a\u9636\u5a01\u80fd\u00d7${drInit.toFixed(2)}\uff08\u2248\u00d70.70\uff09\u2014\u2014\u6740\u624b\u950f\u7ea7\u7206\u53d1`);
+assert(drPeak > drInit, `\u5927\u5706\u6ee1(${drPeak.toFixed(2)}) > \u521d\u671f(${drInit.toFixed(2)})\u2014\u2014\u5c0f\u5883\u754c\u8fde\u7eed\u8870\u51cf`);
+assert(drPeak > 0.85, `\u5927\u5706\u6ee1\u51e0\u8fd1\u8fbe\u6807\uff08\u00d7${drPeak.toFixed(2)} > 0.85\uff09`);
+assert(drInit < drMid && drMid < drLate && drLate < drPeak, `\u521d\u671f<\u4e2d\u671f<\u540e\u671f<\u5927\u5706\u6ee1 \u5355\u8c03\u9012\u589e`);
 assert(drMetNatal >= 1.3, `\u8fbe\u6807\u672c\u547d\u6cd5\u5b9d\u4e3b\u6218\u52a0\u6210\uff08\u00d7${drMetNatal} \u2265 1.3\uff09`);
-assert(mpUnder === 9, `\u8d8a\u9636\u7075\u529b\u6d88\u8017\u00d7${mpUnder}\uff08\u5dee2\u6863\uff1a3\u00b2=9\uff09\u2014\u2014\u8d8a\u9636\u50ac\u52a8=\u9ad8\u6d88\u8017\u6362\u6781\u9ad8\u7206\u53d1`);
+assert(drMetNonNatal === 1.0, `\u8fbe\u6807\u975e\u672c\u547d\u65e0\u4fee\u6b63\uff08\u00d7${drMetNonNatal}\uff09`);
+assert(Math.abs(mpInit - 3.0) < 0.01, `\u7b51\u57fa\u521d\u671f\u7075\u529b\u00d7${mpInit.toFixed(2)}\uff08\u2248\u00d73.0\uff09\u2014\u2014\u6602\u8d35\u4f46\u53ef\u7528`);
+assert(mpPeak < mpInit, `\u5927\u5706\u6ee1\u7075\u529b\u00d7${mpPeak.toFixed(2)} < \u521d\u671f\u00d7${mpInit.toFixed(2)}\u2014\u2014\u63a5\u8fd1\u8fbe\u6807\u7075\u529b\u66f4\u4fbf\u5b9c`);
 assert(mpMet === 1, `\u8fbe\u6807\u7075\u529b\u6b63\u5e38\uff08\u00d7${mpMet}\uff09`);
-assert(mpConsumable === 1, `\u6d88\u8017\u6027\u5e95\u724c\uff08chargeCost\uff09\u8c41\u514d\u7075\u529b\u500d\u7387\uff08\u00d7${mpConsumable}\uff09\u2014\u2014\u7279\u533a\u5e95\u724c\u8d70\u4e58\u6027\u7a7f\u900f`);
+assert(mpConsumable === 1, `\u6d88\u8017\u6027\u5e95\u724c\u8c41\u514d\u7075\u529b\u500d\u7387\uff08\u00d7${mpConsumable}\uff09\u2014\u2014\u7279\u533a\u5e95\u724c\u8d70\u4e58\u6027\u7a7f\u900f`);
 assert(drConsumable >= 0.99, `\u6d88\u8017\u6027\u5e95\u724c\u4f24\u5bb3\u4e0d\u6298\uff08\u00d7${drConsumable}\uff09`);
 assert(drOrdinary === 1, `\u5bfb\u5e38\u6cd5\u5668\uff08\u65e0 driveRealm\uff09\u9010\u5b57\u8282\u96f6\u6270\u52a8\uff08\u00d7${drOrdinary}\uff09`);
 
