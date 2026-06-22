@@ -60,6 +60,7 @@ WORLD.locations = [
     // 山野户外：随季——冬雪/夏雨/余晴（落粒子+染色）；2.5D 前景＝近景枝叶框（不被染、快漂），远雾偏淡
     env: { outdoor: true, depth: { fg: "forest", far: 0.4 } },
     actions: ["explore"],
+    exploreSite: "houshan_explore",
     encounters: [
       { id: "herb", weight: 38, kind: "gather" },
       { id: "duherb", weight: 16, kind: "gather_du" },
@@ -199,6 +200,43 @@ WORLD.locations = [
     // 谷中坊市·万宝楼飞檐：2.5D 前景＝坊市框（飞檐幌影+暖灯晕），远雾中等
     env: { depth: { fg: "market", far: 0.42 } },
     actions: ["wanbao", "rest"],
+    encounters: [],
+  },
+  /* —— 自由探索地点（异闻录·恒在原则的承载：妖材客观盘踞，听闻只叠预知）—— */
+  {
+    id: "wulong_tan",
+    arc: "huangfeng",
+    name: "黄枫谷 · 乌龙潭",
+    desc: "谷外一泓深潭，墨绿潭水终年不冻，阴寒水汽缭绕。潭畔寒烟草自生，潭底据说盘着一条蜕了银甲的角蟒——记名弟子采药、试剑、历练之地。",
+    travelCost: 1,
+    map: { x: 22, y: 46 },
+    unlock: (s) => s.flags.yaoyuan_started,
+    actions: ["explore"],
+    exploreSite: "wulong_tan",
+    encounters: [],
+  },
+  {
+    id: "guwai_lin",
+    arc: "huangfeng",
+    name: "黄枫谷 · 谷外山林",
+    desc: "黄枫谷护山大阵之外的连绵山林，灵雾稀薄、妖物出没。外门记名弟子在此历练采补——林子最深处，盘踞着一头无人能名的妖王。",
+    travelCost: 1,
+    map: { x: 16, y: 28 },
+    unlock: (s) => s.flags.yaoyuan_started,
+    actions: ["explore"],
+    exploreSite: "guwai_lin",
+    encounters: [],
+  },
+  {
+    id: "tainan_yelin",
+    arc: "huangfeng",
+    name: "太南谷 · 野林",
+    desc: "太南小会四周的莽莽野林。修仙集市之外，散修、匪类与寻常妖物在此交错——初出茅庐者试手历练的去处。",
+    travelCost: 1,
+    map: { x: 70, y: 78 },
+    unlock: (s) => s.flags.arc1_complete,
+    actions: ["explore"],
+    exploreSite: "tainan_yelin",
     encounters: [],
   },
 
@@ -363,7 +401,7 @@ WORLD.continent = {
       desc: "镜州第二大山，原名落凤山——传说古时一头五色彩凤落于此地，化作此山。七玄门据此百年，是你修仙路的起点。" },
     { id: "qingniu",  name: "青牛镇",  pos: { x: 26, y: 31 }, locs: [],
       desc: "七玄门治下的小镇，你的家乡就在镇郊五里沟。爹娘的白发，几亩薄田。", months: 1, danger: "低", visit: "home" },
-    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate", "baiyao_yuan", "fangshi"],
+    { id: "huangfeng", name: "黄枫谷", pos: { x: 56, y: 13 }, locs: ["huangfeng_gate", "baiyao_yuan", "fangshi", "wulong_tan", "guwai_lin"],
       faction: "qipai", factionByEpoch: { 1: "neutral" },
       nameByEpoch: { 1: "黄枫谷旧址" }, ruinByEpoch: { 1: true },
       descByEpoch: { 1: "黄枫谷旧址——魔道入侵后，黄枫谷携门人远遁南方北凉国重立山门，太岳山脉深处只余断壁颓垣。" },
@@ -382,7 +420,7 @@ WORLD.continent = {
     { id: "jiayuan",  name: "嘉元城",  pos: { x: 44, y: 60 }, locs: ["jiayuan_city"],
       desc: "岚州第一大城。岚州居胥国之南，沃野产粮，富庶仅次京畿——城中鱼龙混杂，传闻有修仙者出没。", months: 3, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
-    { id: "tainangu", name: "太南谷",  pos: { x: 28, y: 80 }, locs: ["tainan_fair"],
+    { id: "tainangu", name: "太南谷",  pos: { x: 28, y: 80 }, locs: ["tainan_fair", "tainan_yelin"],
       desc: "岚州最南端，广贵城西四十里的太南山中。修仙者的集市「太南小会」每隔数年在此举办，凡人勿近。", months: 4, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
     // —— 胥国七派（L3 宗门级势力，§9）：黄枫谷之外六派——远观剪影（未到访不造假据点），
@@ -924,6 +962,30 @@ WORLD.enemies = {
     reward: { silver: 10 }, namedLoot: { chiyan_langpi: 1, yaodan_1: 1, langya_fang: 2 },
   },
 
+  /* —— 黄枫谷一带的栖地妖王（客观恒在·区域投放；异闻只叠预知，不改其存在）—— */
+  yinjia_jiaomang: {
+    name: "银甲角蟒", hp: 215, sense: 7, speed: 12, agility: 9, move: 2, mp: 65, tactics: "feral", elem: "shui", nature: "beast", armor: 4, stubborn: true,
+    introNote: "乌龙潭蜕甲的角蟒——通体银鳞坚逾精铁，寻常刀剑只留白印。它的「角撞破势」会随你身形追撞，一步躲不开：破甲的钝击（蓄力重招）与雷火之属方能撼动其甲，正面对耗只是徒劳。",
+    attacks: [
+      { name: "银鳞绞缠", dmg: 26, kind: "normal", weight: 12, range: [1, 1] },
+      { name: "角撞破势", dmg: 32, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 4] },
+      { name: "尾扫横击", dmg: 20, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front" },
+      { name: "寒潭水箭", dmg: 16, kind: "normal", weight: 6, elem: "shui", range: [2, 5], mp: 6 },
+    ],
+    reward: { lingshi: 2 }, namedLoot: { yaodan_1: 1 },
+  },
+  guwai_yaowang: {
+    name: "山林妖王", hp: 205, sense: 8, speed: 14, agility: 11, move: 2, mp: 60, tactics: "feral", elem: "mu", nature: "beast", stubborn: true,
+    introNote: "谷外山林深处的无名妖王（考据未定其名，暂以栖地记之）——身形矫健、来去如风。它的扑杀会追着你的身形折转，看准蓄力回合压制，莫与之缠斗。",
+    attacks: [
+      { name: "利爪", dmg: 24, kind: "normal", weight: 12, range: [1, 1] },
+      { name: "贯林扑杀", dmg: 30, kind: "charge", weight: 8, aim: "cell", lunge: true, track: true, range: [1, 4] },
+      { name: "震林吼", dmg: 15, kind: "normal", weight: 6, aim: "zone", zoneSpan: 1, range: [1, 4] },
+      { name: "腾跃扑咬", dmg: 20, kind: "normal", weight: 6, antiAir: true, range: [1, 2] },
+    ],
+    reward: { lingshi: 2 }, namedLoot: { yaodan_1: 1 },
+  },
+
   /* —— 胥王·假丹肉身（增量H下·皇宫决战 phase1）——
    *   胥王褪凡人皮、催血煞秘法跃入假丹境（筑基巅峰）；执残缺法宝「黑血刀」破壁仍困。
    *   拖时布阵战里他强压几人（survive 目标，玩家只需撑住待阵成）；阵成决战里被颠倒五行阵
@@ -1115,26 +1177,41 @@ WORLD.fameBoard = [
 /* 异闻池：投放到风云录/际遇的"有名有姓的猎物"——听闻在前，相遇在后 */
 // clues：听闻→寻踪→相遇 的渐进铺垫（随月份在后山一带逐条浮现，逼近真相、酝酿"代入感"）
 WORLD.beastRumors = [
-  { id: "beast_baihu",  title: "白额虎王噬人",
+  { id: "beast_baihu",  area: "caixia", title: "白额虎王噬人",
     rumor: "集镇炸了锅：又一个采药人没回来。有人在后山深处见过一头白额吊睛猛虎，大如牛犊，眼有灵光。",
     clues: [
       "山民又抬回一具残尸，胸口三道爪痕深可见骨——后山那头白额虎，越发肆无忌惮了。",
       "你在后山溪畔见到一行碗大的虎爪印，泥里还嵌着半截碎裂的猎叉。脚印往密林深处去了。",
       "夜里风送来一声闷雷似的虎啸，惊起满林宿鸟。那畜生，就盘踞在不远处的后山深处。",
     ] },
-  { id: "beast_wugong", title: "铁背蜈蚣成王",
+  { id: "beast_wugong", area: "caixia", title: "铁背蜈蚣成王",
     rumor: "猎户说后山岩缝里的铁背蜈蚣成了气候，甲壳泛着铁光，寻常刀剑斩上去只留一道白印。",
     clues: [
       "采石的力夫慌慌张张跑回镇里，说凿开的岩层里渗出墨绿黏液，腥臭刺鼻——那虫子蜕了壳。",
       "后山一处山坳的草木成片枯黄，地上残留着环节状的拖痕，足有水桶粗细。",
       "你在岩缝里拾到一片脱落的铁背甲壳，入手沉重冰凉，叩之铮然有声。它就蛰伏在这下面。",
     ] },
-  { id: "beast_chimu",  title: "赤目狼王啸月",
+  { id: "beast_chimu",  area: "caixia", title: "赤目狼王啸月",
     rumor: "近来夜半常闻狼啸，凄厉非常。老人们说狼群有了新王，双目赤红，疾如鬼魅。",
     clues: [
       "镇外的羊圈一夜被屠空，只余满地碎骨与赤色兽毛——狼群，是冲着人来的了。",
       "你在后山林间见到狼群环坐的痕迹，正中一行特大的足印——那狼王亲临过此地。",
       "满月之夜，一声长嗥撕开夜幕，群狼齐应。那双赤目，仿佛正从林影里盯着你。",
+    ] },
+  // —— 黄枫谷一带的异闻妖王（area=huangfeng，投放按所在大陆节点分区）——
+  { id: "yinjia_jiaomang", area: "huangfeng", title: "银甲角蟒蜕甲",
+    rumor: "黄枫谷外乌龙潭近来不太平——有记名弟子说，潭底那条角蟒蜕了一层皮，鳞甲泛起银光，刀剑难透。",
+    clues: [
+      "潭边采药的弟子失了踪，只在水线上寻见一片巴掌大的银亮蛇蜕，入手沉若精铁。",
+      "乌龙潭的水位莫名退了三尺，潭心淤泥里翻出条条拖痕——那畜生在潭底挪过窝。",
+      "阴雨夜里潭面腾起白雾，雾中一对幽光浮沉。老人说：银甲怕雷，更怕硬碰硬的钝劲。",
+    ] },
+  { id: "guwai_yaowang", area: "huangfeng", title: "谷外山林·无名妖王",
+    rumor: "谷外历练的记名弟子之间悄悄传着：山林深处有头说不清来历的妖物，凡撞见的，回来都讳莫如深。",
+    clues: [
+      "谷外巡山的弟子又少回来一个，带队的师兄只叮嘱：莫往林子最深处去。",
+      "你在谷外林间见到大片被踏平的灌木，断口齐整，似有巨物反复经行。",
+      "夜风里传来一声谁也认不出的兽吼，林梢惊起一片飞鸟——它就在不远处的林子深处。",
     ] },
 ];
 
@@ -1277,6 +1354,105 @@ if (typeof DATA !== "undefined" && DATA.fuluPlans) {
     });
   });
 }
+
+/* ---------- 异闻录图鉴（恒在原则·七效预知层）----------
+ * 异闻录＝一面图鉴，不是新系统：把游戏里已在跑的三套机制——异闻妖王（beastRumors）、
+ * 涟漪链（Engine._RIPPLES）、情报面纱/剧情（intel·flags）——按「①妖王 ②特殊材料 ③重要情报」
+ * 三类收编成一册可翻阅之录：触发留痕（s.yiwenSeen[]），未触发给一定量引导（guide）。
+ * 恒在：所有异闻/入口客观存在；异闻只叠"预知/助力/赏金"七效（①指路②识弱③召援④悬赏⑤备战⑥避坑⑦借物），非门槛。
+ * 字段：id 唯一；type=beast|material|intel；title 录名；node 落点大陆节点；arc 篇章；
+ *   exist 客观入口（恒在描述）；guide 第一链如何触发/引导（非空）；effects 七效子集；
+ *   link:{kind,id}（kind=beastRumor|ripple|item|story；id 指向真实既有 id 或剧情 flag）；
+ *   doneFlag? 该剧情 flag 为真则记"已了"（材料被消耗、情报一次性时用，避免 count 归零误判）。
+ * 卡态由既有状态派生（slainBeasts/doneRipples/count/ledger/flags + s.yiwenSeen[]，详见 Engine._yiwenState）。
+ */
+WORLD.yiwen = [
+  // —— ① 妖王（异闻妖王 + 剧情大妖；客观盘踞栖地，听闻只叠预知）——
+  { id: "beast_chimu", type: "beast", title: "赤目狼王 · 啸月", node: "caixia", arc: "qixuan",
+    exist: "彩霞山后山深处客观盘踞——纵未听闻，深入后山亦可能撞见，只是事前不知。",
+    guide: "身在彩霞山一带每月或浮风声；深入后山探索寻踪，踪迹了然后于深处一战。",
+    effects: ["指路", "识弱", "悬赏"], link: { kind: "beastRumor", id: "beast_chimu" } },
+  { id: "beast_baihu", type: "beast", title: "白额吊睛虎", node: "caixia", arc: "qixuan",
+    exist: "后山噬人虎王，客观盘踞深林——金风裂爪，凶名久著。",
+    guide: "彩霞山一带听闻其名；后山寻踪，备克其金煞之物再战。",
+    effects: ["指路", "识弱", "悬赏"], link: { kind: "beastRumor", id: "beast_baihu" } },
+  { id: "beast_wugong", type: "beast", title: "铁背蜈蚣王", node: "caixia", arc: "qixuan",
+    exist: "后山岩缝里的厚甲蜈蚣，百毒不侵，客观成王。",
+    guide: "听闻成精之说；后山寻踪，避其毒、破其甲方是正解。",
+    effects: ["指路", "识弱", "悬赏"], link: { kind: "beastRumor", id: "beast_wugong" } },
+  { id: "yinjia_jiaomang", type: "beast", title: "银甲角蟒 · 蜕甲", node: "huangfeng", arc: "huangfeng",
+    exist: "黄枫谷外乌龙潭底盘踞——蜕甲后银鳞坚逾精铁，刀剑难透。",
+    guide: "谷外乌龙潭探索可遇；听闻则知「银甲怕雷，更怕破甲的钝劲」，备破甲手段再战。",
+    effects: ["指路", "识弱", "借物"], link: { kind: "beastRumor", id: "yinjia_jiaomang" } },
+  { id: "guwai_yaowang", type: "beast", title: "谷外山林 · 无名妖王", node: "huangfeng", arc: "huangfeng",
+    exist: "黄枫谷护山大阵之外的山林深处，盘踞一头来历不明的妖王（其名待考据·暂以栖地记之）。",
+    guide: "谷外山林探索可遇；记名弟子间偶有风声，听闻则知其凶名与大致方位。",
+    effects: ["指路", "识弱", "悬赏"], link: { kind: "beastRumor", id: "guwai_yaowang" } },
+  { id: "mojiao", type: "beast", title: "墨蛟 · 血色深潭之主", node: "huangfeng", arc: "huangfeng",
+    exist: "血色禁地深潭之主，剧情固定大妖——角→乌龙夺、皮鳞→神风舟，妖材即大件链入口。",
+    guide: "黄枫谷篇·血色禁地名额大会取得入禁资格→深入禁地洞窟，与南宫婉同道共讨。",
+    effects: ["识弱", "召援", "借物"], link: { kind: "story", id: "mojiao_slain" } },
+
+  // —— ② 特殊材料（复用进大件链 / 丹道；客观可采可取）——
+  { id: "hanyancao", type: "material", title: "寒烟草 · 乌龙潭", node: "huangfeng", arc: "huangfeng",
+    exist: "乌龙潭阴寒水汽中自生的至阴灵草——解热定神之妙材，客观可采。",
+    guide: "黄枫谷外乌龙潭探索采撷；采之需运功御寒，否则寒气侵体、神识发滞。",
+    effects: ["指路", "避坑"], link: { kind: "item", id: "hanyancao" } },
+  { id: "lieyang_hua", type: "material", title: "烈阳花 · 至阳之精", node: "huangfeng", arc: "huangfeng",
+    exist: "血色禁地烈阳花圃中的至阳灵花，客观生长——驱寒温养药剂的要材。",
+    guide: "黄枫谷篇·血色禁地花圃采得；至阳之物，与至阴寒毒相济（菡云芝亦曾相托）。",
+    effects: ["指路", "悬赏"], link: { kind: "item", id: "lieyang_hua" }, doneFlag: "xueshi_opened" },
+  { id: "xueshi_zhuyao", type: "material", title: "血色主药 · 筑基根本", node: "huangfeng", arc: "huangfeng",
+    exist: "血色禁地深处孕育的筑基主药，客观存在——筑基丹三段链的命门。",
+    guide: "黄枫谷篇·血色禁地深潭（墨蛟巢）取得；让丹屈辱→取药→自炼，三段缺一不可。",
+    effects: ["指路", "悬赏"], link: { kind: "item", id: "xueshi_zhuyao" }, doneFlag: "mojiao_slain" },
+  { id: "nuanyang_yu", type: "material", title: "暖阳宝玉 · 解寒毒", node: "jiayuan", arc: "huangfeng",
+    exist: "嘉元城墨家牵动的至宝，客观存在——可解韩立入血色禁地所中的至阴寒毒。",
+    guide: "嘉元城·墨府主线所引；得之解寒毒，方能安然修行。",
+    effects: ["指路", "备战"], link: { kind: "item", id: "nuanyang_yu" }, doneFlag: "han_du_cured" },
+  { id: "qiannian_lingcao", type: "material", title: "千年灵草 · 逆天药引", node: "huangfeng", arc: "huangfeng",
+    exist: "黄枫谷洞府篇所系的千年灵草，客观存在——可遇而非可强求的逆天药引。",
+    guide: "黄枫谷篇·洞府选址后续机缘；千年之材，颠倒五行方能孕育。",
+    effects: ["指路", "借物"], link: { kind: "item", id: "qiannian_lingcao" } },
+
+  // —— ③ 重要情报（涟漪链 / 风险预警 / 强敌·可避）——
+  { id: "hunter_lost", type: "intel", title: "无主药园 · 后山", node: "caixia", arc: "qixuan",
+    exist: "老猎户殁于后山，他生前拾掇的一片药园成了无主之物——客观存在的限时机缘。",
+    guide: "在彩霞山一带行走，涟漪三阶（流言→确证→限时窗口）自会浮现；窗口内赴后山可采。",
+    effects: ["指路", "备战"], link: { kind: "ripple", id: "hunter_lost" } },
+  { id: "pill_theft", type: "intel", title: "黑市贱卖养元丹", node: "caixia", arc: "qixuan",
+    exist: "丹房失窃的赃丹流入山下黑市，价压极低——客观存在的限时低价窗口。",
+    guide: "彩霞山一带涟漪三阶浮现；窗口内赴集镇可拣漏。",
+    effects: ["指路", "避坑"], link: { kind: "ripple", id: "pill_theft" } },
+  { id: "wolf_draft", type: "intel", title: "镖局悬赏剿匪", node: "caixia", arc: "qixuan",
+    exist: "野狼帮挨村抽丁、掐断商路，镖局贴出剿匪赏格——客观存在的悬赏委托。",
+    guide: "彩霞山一带涟漪三阶浮现；揭赏后堵截喽啰，伏诛得赏银、露一手扬名。",
+    effects: ["悬赏", "备战"], link: { kind: "ripple", id: "wolf_draft" } },
+  { id: "shengxian_ling", type: "intel", title: "升仙令 · 入谷凭证", node: "caixia", arc: "qixuan",
+    exist: "黄枫谷纳新的凭证，客观存在——无升仙令者仙门不纳。",
+    guide: "七玄门篇末·金光上人线了结后得；持令方可启程黄枫谷。",
+    effects: ["指路"], link: { kind: "item", id: "shengxian_ling" } },
+  { id: "xueshi_60", type: "intel", title: "血色禁地 · 六十年一开", node: "huangfeng", arc: "huangfeng",
+    exist: "建州北部的血色禁地，每六十年灵气大潮才开一回——客观天时，错过再等一甲子。",
+    guide: "黄枫谷篇·禁地名额大会前自会听闻；这是筑基取药的唯一时窗。",
+    effects: ["备战", "避坑"], link: { kind: "story", id: "xueshi_opened" } },
+  { id: "fengyue", type: "intel", title: "封岳 · 禁地狙杀", node: "huangfeng", arc: "huangfeng",
+    exist: "靠猎杀同门换资粮的狙杀者封岳，客观存在的强敌——可避可战。",
+    guide: "血色禁地中环遭遇；听闻则知其「贯心刺」追身、踏云靴来去如风，可择稳守绕开。",
+    effects: ["避坑", "识弱"], link: { kind: "story", id: "jindi_mid_done" } },
+  { id: "duxiu_zhenghua", type: "intel", title: "毒修争花 · 烈阳花圃", node: "huangfeng", arc: "huangfeng",
+    exist: "血色禁地烈阳花圃中，时有觊觎至阳之花的毒修出没——客观存在的争夺，可避其锋。",
+    guide: "禁地花圃采烈阳花时或遇；听闻则知毒修惯用阴毒、宜速战或避其守候之时。",
+    effects: ["识弱", "备战", "避坑"], link: { kind: "story", id: "xueshi_opened" } },
+  { id: "oyft", type: "intel", title: "欧阳飞天 · 霸王庄〔前路·待考据〕", node: "jiayuan", arc: "huangfeng",
+    exist: "嘉元城一带原著所涉的强敌线索——本作以动漫为锚，此条暂列前路剪影，未落实装。",
+    guide: "〔考据存疑〕动漫版未明拍此战（属原著线，历史上曾误植已废）；待 ≥2 源核定再决定是否落地。",
+    effects: ["识弱", "避坑"], link: { kind: "story", id: "oyft_slain" } },
+  { id: "tainan_map", type: "intel", title: "太南山谷 · 法宝残片传闻", node: "tainangu", arc: "huangfeng",
+    exist: "太南小会上流传的山谷舆图与法宝残片传闻——风声为引，真伪需自辨。",
+    guide: "太南小会·升仙大会期间听闻；属叙事性情报（法宝残片暂为叙事钩子，非实物）。",
+    effects: ["指路", "悬赏"], link: { kind: "story", id: "xianhui_done" } },
+];
 
 /* ---------- 人物名册（忠于动漫的过场/关键人物）----------
  * 不影响主线，纯增世界氛围与代入感；遇见后录入"人物图鉴"。
