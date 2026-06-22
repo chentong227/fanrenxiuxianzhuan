@@ -2783,6 +2783,28 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 .far-jump-key { font-size: 12px; color: var(--gold); letter-spacing: 1px; margin-right: 2px; }
 .far-jump .btn-mini { border-color: var(--gold); color: var(--gold); }
 
+/* —— L4 宗门城·局部图（map-redesign-design.md §10.5）——
+ * 云游=城/宗内据点点状图：复用据点场景作氛围底（saturate/暗压），墨 veil 罩压保钉清晰；
+ * 据点 pin 点状（不加 poly，与 L3 块状/L5 单屏区分）。题头作 胥国 ▸ 七玄门 面包屑。 */
+.travel-crumb { font-size: 12px; color: var(--ink-dim); letter-spacing: 1px; margin: 8px 0 -2px; }
+.travel-crumb .tc-here { color: var(--gold); font-weight: 600; }
+.travel-crumb .tc-tag { color: var(--ink-faint); margin-left: 8px; letter-spacing: 0; }
+.worldmap.localmap { background: #0e151a; }
+.worldmap.localmap .localmap-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: cover; background-position: center;
+  filter: saturate(.68) brightness(.6) contrast(1.02);
+}
+.worldmap.localmap .localmap-veil {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(10,14,18,.16), rgba(8,12,16,.62) 78%),
+    linear-gradient(180deg, rgba(8,12,16,.30), rgba(8,12,16,.5));
+}
+.worldmap.localmap .map-lines { z-index: 1; }
+.worldmap.localmap .map-line { stroke: rgba(232,224,205,.34); }
+.worldmap.localmap .map-pin { z-index: 2; }
+
 /* 大陆层（天南舆图）：全图早见——远方是惦记，不是迷雾 */
 .worldmap.continent {
   background:
@@ -2850,20 +2872,9 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 .cont-gate { margin-top: 8px; font-size: 12px; color: var(--ink-faint); }
 
 /* ============================================================
-   L3 州块（v147 §10.4）：凡俗政区州界——叠在胥国水墨图上（非破坏：淡墨虚线界 + 楷体题字）。
-   区分度：L3＝块状州界，L4＝点状城/宗。点州块/题字＝高亮该州、列其城宗；势力 toggle 独立（钉承势力色）。
+   L3 州（v147 §10.4 → v148 去格子）：州只作分组，不再叠几何州块/州界。
+   地图＝干净的城·宗点状 + 水墨底 + 州名轻量楷体题字（点题字列本州城·宗）；势力 toggle 独立（钉承势力色）。
    ============================================================ */
-.pref-layer {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  z-index: 1; pointer-events: none;   /* 仅 path 收点击，州内空白让位于钉 */
-}
-.pref-block {
-  fill: rgba(60,42,20,.045); stroke: rgba(70,55,35,.40);
-  stroke-width: .5; stroke-dasharray: 2.4 1.8; stroke-linejoin: round;
-  pointer-events: auto; cursor: pointer; transition: fill .15s, stroke .15s;
-}
-.pref-block:hover { fill: rgba(127,180,150,.13); stroke: rgba(46,32,18,.7); }
-.pref-block.sel  { fill: rgba(127,180,150,.18); stroke: var(--gold); stroke-width: .85; stroke-dasharray: none; }
 .pref-label {
   position: absolute; transform: translate(-50%,-50%); z-index: 4;
   font-family: "KaiTi","STKaiti","\6977\4f53",serif;
@@ -2877,10 +2888,6 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   color: #8a5f00; font-weight: 700;
   text-shadow: 0 1px 0 rgba(255,246,205,.95), 0 0 9px rgba(255,222,96,.9), 0 2px 5px rgba(95,60,0,.5);
 }
-/* 选州后：非本州城宗钉退淡，本州钉照常（强调由不退淡体现）；势力色不受影响 */
-.worldmap.continent.pref-sel .map-pin.cont.offpref { opacity: .32; filter: grayscale(.4); }
-.worldmap.continent.pref-sel .map-pin.cont.offpref .pin-label { opacity: .6; }
-.worldmap.continent.pref-sel .map-pin.cont.inpref .pin-dot { transform: scale(1.12); }
 /* 州志里的城宗清单按钮 */
 .pref-cities { margin-top: 7px; font-size: 12px; color: var(--ink-faint); display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
 .pref-city {

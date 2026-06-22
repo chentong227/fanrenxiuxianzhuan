@@ -2594,7 +2594,7 @@ const UI = {
       ${this._atlasCrumbs("yueguo")}
       <h2 class="atlas-title">${C.name} · 十三州</h2>
       <p style="color:var(--ink-dim);font-size:12px">点州名看一州城·宗，点据点可启程——看得见的远方，未必去得了：修为、盘缠、机缘，缺一不可。</p>
-      <div class="worldmap continent${mapUrl ? ' inked' : ''}${on ? ' show-factions' : ''}${selPref ? ' pref-sel' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
+      <div class="worldmap continent${mapUrl ? ' inked' : ''}${on ? ' show-factions' : ''}"${mapUrl ? ` style="background-image:url('${mapUrl}')"` : ''}>
         <div class="map-mist"></div>
         <div class="map-mist far"></div>
         <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
@@ -2609,9 +2609,7 @@ const UI = {
       </div>
     `, "wide");
   },
-  // 多边形 points("x,y x,y…") → SVG path（直线州界，闭合）
-  _polyToPath(poly) { return poly ? "M" + poly.trim().replace(/\s+/g, " L") + "Z" : ""; },
-  // 点州块：切换选中（再点取消）→ 就地重绘（高亮该州、列其城宗）
+  // 点州名：切换选中（再点取消）→ 就地重绘（仅在详情列本州城·宗，不染地图、不高亮钉）
   _prefPick(id) {
     this._selPref = (this._selPref === id) ? null : id;
     this.openContinent();
@@ -2628,7 +2626,7 @@ const UI = {
     let action = "";
     if (n.silhouette) action = `<div class="cont-gate">传说之地——此生若能至，方不负修行。</div>`;
     else if (gateMsg) action = `<div class="cont-gate">道途未通：${gateMsg}</div>`;
-    else if ((n.locs || []).includes(s.location)) action = `<div class="cont-gate" style="color:var(--jade-bright)">你正在此地。</div>`;
+    else if ((n.locs || []).includes(s.location)) action = `<div class="cont-gate" style="color:var(--jade-bright)">你正在此地。${n.localMap ? `　<button class="btn btn-secondary btn-mini" onclick="UI.openTravel()">入内 · 云游 ▸</button>` : ""}</div>`;
     else action = `<div class="cont-gate">旅途约 ${n.months || 2} 月 · 险度${n.danger || "未知"}　
       <button class="btn btn-primary btn-mini" onclick="Engine.startJourney('${n.id}')">启程</button></div>`;
     this.el("cont-detail").innerHTML = `<b>${nm}</b>　${desc}${action}`;
