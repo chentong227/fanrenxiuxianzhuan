@@ -4007,7 +4007,10 @@ const Engine = {
     s.combat = true;
     this._combat.startRound();
     this._combat._log("「众修法阵难伤它分毫，唯有困而后杀。」你与曲魂隐于阵后按兵不动，只待冯三娘的水牢合拢、巨兽力竭的那一线之机。");
-    this.log("镇妖大典斗兽场，越级五阶婴鲤兽破水而出（幼体堪比六阶）。众修法阵不能伤、损失惨重——你与曲魂后发，借冯三娘的困兽阵图层层迟滞，待它困兽暴走、力竭露隙，便是极限斩杀、夺彩之时。", "event");
+    if (!s.flags.logged_ss_yingli) {
+      this.log("镇妖大典斗兽场，越级五阶婴鲤兽破水而出（幼体堪比六阶）。众修法阵不能伤、损失惨重——你与曲魂后发，借冯三娘的困兽阵图层层迟滞，待它困兽暴走、力竭露隙，便是极限斩杀、夺彩之时。", "event");
+      s.flags.logged_ss_yingli = true;
+    }
     UI.openCombat(this._combat, this._combatMeta);
   },
 
