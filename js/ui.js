@@ -1534,7 +1534,8 @@ const UI = {
     if (!name) return null;
     // 剧情专属人物（不在大世界 NPC 名册中）
     const extra = { "三叔": "sanshu", "铁奴": "tienu", "曲魂": "tienu", "张铁（铁奴）": "tienu", "墨彩环": "mocaihuan", "万小山": "wanxiaoshan",
-      "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo", "陈巧倩": "chenqiaoqian" };
+      "吴师叔": "wushishu", "陆云风": "luyunfeng", "叶师叔": "yeshishu", "马师伯": "mashibo", "陈巧倩": "chenqiaoqian",
+      "冯三娘": "feng_sanniang", "冯钰": "feng_sanniang", "汪凝": "wang_ning", "小紫灵": "wang_ning", "乌丑": "wuchou", "妙音门掌门": "miaoyin_zhangmen" };
     if (extra[name]) return extra[name];
     if (typeof WORLD !== "undefined" && WORLD.npcs) {
       const n = WORLD.npcs.find(x => x.name === name);
