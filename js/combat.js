@@ -104,11 +104,11 @@
                 desc: "万宝楼千年药草换得的顶阶法器：一柄母刃居中驭使，八柄子刃随神识分袭（动漫官设一母八子）。子刃两段连斩、每段独立结算，威力随灵力雄厚而涨。贴身施展不开（-30%）。" },
     jujian_zhan: { name: "巨剑斩", mp: 14, range: [1, 3], type: "atk", dmg: 40, pierce: true, source: "treasure", elem: "jin", cd: 2,
                 desc: "御使丈余巨剑凌空斩落，势大力沉且破甲——一剑之威，胜过百剑之繁。催动后须回气两回合。贴身施展不开（-30%）。" },
-    /* —— 乌龙夺（黄枫谷篇·元武国齐云霄以墨蛟之角炼成的顶阶攻击法宝——韩立筑基期第二主战）——
-     * driveRealm:1（筑基方可主驱，A2 §四"新法宝必带 driveRealm"）；非本命（本命=青竹蜂云剑）。
-     * 授予在 story.js 齐云霄代工（增量C）；考据 ≥2 源见 data.js 同名条目注释。 */
-    wulong_duo:  { name: "乌龙夺", mp: 11, range: [1, 3], type: "atk", dmg: 30, pierce: true, source: "treasure", elem: "shui", driveRealm: 1, cd: 1,
-                desc: "齐云霄以墨蛟之角炼成的顶阶攻击法宝：黝黑双钩如蛟探爪，御使凌空绞夺、势大力沉且破甲。继金蚨子母刃之后，韩立筑基期的第二件主战法器。贴身施展不开（-30%）。" },
+    /* —— 乌龙夺（黄枫谷篇·元武国齐云霄以墨蛟之角炼成的四爪带毒攻击法宝——韩立筑基期第二主战）——
+     * 四枚蛟爪分袭连抓、每爪独立结算；爪尖淬水行妖毒，抓痕入体持续掉血。
+     * 非本命（本命=青竹蜂云剑）；授予在 story.js 齐云霄代工（增量C）。 */
+    wulong_zhua: { name: "乌龙夺", mp: 11, range: [1, 3], type: "atk", dmg: 9, fixedSegs: 4, poison: { dmg: 8, turns: 3 }, source: "treasure", elem: "shui", cd: 1,
+                desc: "墨蛟双角炼成的四爪短法宝御空飞出，四枚蛟爪分袭连抓、每爪独立结算；爪尖淬着墨蛟未散的水行妖毒，抓痕入体则毒发持续掉血。御物之技，威力随灵力雄厚而涨。贴身施展不开（-30%）。" },
     /* —— 绿煌剑（再别天南篇·御灵宗夺舍者本命法宝·结丹本命）——
      * driveRealm:2（结丹方可主驱）。越阶催动（统一设计）：威能×0.7^gap + 灵力×3^gap——
      *   筑基强驱（1档差）：80×2.4×0.7≈134 伤、13×3=39 灵力（杀手锏级，仍冠绝筑基）。
@@ -1271,6 +1271,17 @@
     _emitFx(targetRef, kind, text, extra) {
       (this._fx || (this._fx = [])).push(Object.assign({ ref: targetRef, kind, text }, extra || null));
     }
+    // 中毒结算（通用）：嗂毒类减益与“攻击带毒”类武器共用——元神无形/百毒不侵者免疫，余者叠加每回合接毒伤害
+    _applyPoison(caster, target, tref, poison) {
+      if (!poison || !target) return;
+      if (target.soulOnly) { this._log(`${caster.name} 对 ${target.name} 用毒——可元神无形无质，毒物根本无处着力！`); this._emitFx(tref, "miss", "元神无形"); return; }
+      if (target.immunePoison) { this._log(`${caster.name} 对 ${target.name} 用毒，但对方百毒不侵（死物）！`); this._emitFx(tref, "miss", "百毒不侵"); return; }
+      const p = target.status.poison;
+      if (p) { p.dmg += poison.dmg; p.turns = Math.max(p.turns, poison.turns); }
+      else target.status.poison = { dmg: poison.dmg, turns: poison.turns };
+      this._log(`${caster.name} 嗂毒，${target.name} 中毒叠加至 ${target.status.poison.dmg}/回合`);
+      this._emitFx(tref, "poison", "中毒 " + target.status.poison.dmg);
+    }
     _refOf(unit) {
       if (unit === this.player) return "player";
       if (unit.isSide) { const i = this.sides.indexOf(unit); return i > 0 ? `side:${i}` : "side"; }
@@ -1434,6 +1445,8 @@
           this._log(segs > 1
             ? `${caster.name} 施「${sp.name}」——剑光连闪，${segs} 段连环，共造成 ${totalDealt} 伤害！` + (target.shield > 0 ? `（余护体${target.shield}）` : "")
             : `${caster.name} 施「${sp.name}」，对 ${target.name} 造成 ${totalDealt} 伤害` + (target.shield > 0 ? `（余护体${target.shield}）` : ""));
+          // 攻击带毒：命中且破防后毒入伤口（任何带 poison 的攻击技通用——乌龙夺四爪淬毒）
+          if (sp.poison && totalDealt > 0 && target.alive) this._applyPoison(caster, target, tref, sp.poison);
         }
         if (sp.dodgeSelf) caster.dodgeBuff = (caster.dodgeBuff || 0) + sp.dodgeSelf;
         if (sp.buildMomentum) {
@@ -1482,17 +1495,7 @@
           this._emitFx(this._refOf(target), "miss", "定身");
           return;
         }
-        if (sp.poison) {
-          if (target.soulOnly) { this._log(`${caster.name} 对 ${target.name} 用毒——可元神无形无质，毒物根本无处着力！`); this._emitFx(tref, "miss", "元神无形"); }
-          else if (target.immunePoison) { this._log(`${caster.name} 对 ${target.name} 用毒，但对方百毒不侵（死物）！`); this._emitFx(tref, "miss", "百毒不侵"); }
-          else {
-            const p = target.status.poison;
-            if (p) { p.dmg += sp.poison.dmg; p.turns = Math.max(p.turns, sp.poison.turns); }
-            else target.status.poison = { dmg: sp.poison.dmg, turns: sp.poison.turns };
-            this._log(`${caster.name} 喂毒，${target.name} 中毒叠加至 ${target.status.poison.dmg}/回合`);
-            this._emitFx(tref, "poison", "中毒 " + target.status.poison.dmg);
-          }
-        }
+        if (sp.poison) { this._applyPoison(caster, target, tref, sp.poison); }
       } else if (sp.type === "heal") {
         const boost = ((caster.technique === "changchun" || caster.technique === "changchun_full") && sp.school === "mu") ? 1.4 : 1;
         const heal = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.heal * boost), sp.source, caster.grade, caster.realmTier, lm) * auxMul));
