@@ -39,6 +39,11 @@ const QUESTS = {
       progress: (s) => `练气${s.realmIndex + 1}层 / 需练气六层`,
       cond: (s) => s.realmIndex >= 6,
       onFail(s) {
+        // 已入黄枫谷（仙门洞天）则不触发野狼帮夜袭——他们进不来护山大阵
+        if (s.flags.departure_complete) {
+          Engine.log("【任务·山雨欲来】野狼帮的纷扰已是前尘——你身在仙门洞天，那些凡俗帮派再也够不着你了。", "sys");
+          return;
+        }
         Engine.log("【任务·山雨欲来】你迟迟未能精进，野狼帮喽啰摸进药庐寻衅——被迫迎战！", "bad");
         Engine.toast("野狼帮夜袭！", true);
         // 强制战斗（到期触发的强制事件）

@@ -32,12 +32,12 @@ console.log("\n=== 1. 灵力池：整场不刷新、凝息回元亮破绽 ===");
   c.startRound();
   c.player.pos = 2; c.enemies[0].pos = 4;   // 距2：火弹术程内
   const mp0 = c.player.mp;
-  c.cast("huodan", 0);          // 耗10
-  assert(c.player.mp === mp0 - 10, `火弹术耗灵力10（${mp0}→${c.player.mp}）`);
+  c.cast("huodan", 0);          // 耗12
+  assert(c.player.mp === mp0 - 12, `火弹术耗灵力12（${mp0}→${c.player.mp}）`);
   c.endRound(); c.startRound();
-  assert(c.player.mp === mp0 - 10, "回合开始灵力不自动恢复（池制）");
+  assert(c.player.mp === mp0 - 12, "回合开始灵力不自动恢复（池制）");
   const r = c.cast("ningshen", 0);
-  assert(r.ok && c.player.mp === Math.min(c.player.mpMax, mp0 - 10 + 14), "凝息回元+14（不超池上限）");
+  assert(r.ok && c.player.mp === Math.min(c.player.mpMax, mp0 - 12 + 14), "凝息回元+14（不超池上限）");
   assert(c.player.exposed === true, "凝息后破绽毕露（exposed）");
   const dmgTest = c.player.takeDamage(10, {});
   assert(dmgTest.dealt === 13, `破绽中受击+30%（10→${dmgTest.dealt}）`);

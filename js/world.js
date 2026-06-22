@@ -1505,7 +1505,7 @@ WORLD.npcs = [
     id: "wanxiaoshan", name: "万小山", role: "散修 · 修仙世家子弟",
     bio: "修仙世家出身的年轻散修，心善热忱，不谙世事。太南小会上主动为你这个「雏儿」讲解修仙界的门道——他是你在修仙界遇到的第一个好人。",
     lines: ["韩兄，这摊上的符纸是真货，那摊的「灵丹」可千万别碰！", "我家祖上也阔过，传到我这辈就剩这点家底啦，哈哈。", "修仙人多凉薄，韩兄是个例外。"],
-    where: ["tainan_fair"], cond: (s) => s.flags.wan_met,
+    where: ["tainan_fair"], cond: (s) => s.flags.wan_met && !s.flags.wan_avenged,
   },
   {
     id: "wushishu", name: "吴师叔", role: "黄枫谷 · 引路前辈",

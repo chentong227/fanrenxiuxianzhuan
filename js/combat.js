@@ -44,7 +44,7 @@
     weidu:    { name: "喂毒一击", mp: 0, range: [1, 1], type: "debuff", poison: { dmg: 10, turns: 4 }, source: "martial",
                 consume: "duyao_cao",
                 desc: "剑尖淬毒，贴身一击令敌持续中毒。消耗一份毒草。" },
-    feizhen:  { name: "暗器飞针", mp: 0, range: [1, 3], type: "atk", dmg: 22, pierce: true, source: "martial",
+    feizhen:  { name: "暗器飞针", mp: 1, range: [1, 3], type: "atk", dmg: 22, pierce: true, source: "martial",
                 consume: "anqi",
                 desc: "凡人暗器，扬手激射，例不虚发，破甲。消耗一支暗器。" },
 
@@ -54,7 +54,7 @@
                 desc: "凝聚周身功力镇压神魂。唯对元神之敌有效，伤害取决于你的功力。神魂镇压本是鬼魅克星。" },
 
     // 火弹术（长春功后篇所授）：法术=控场补刀位，射程短于御物
-    huodan:   { name: "火弹术", mp: 10, range: [1, 2], type: "atk", dmg: 24, school: "huo", source: "art", elem: "huo",
+    huodan:   { name: "火弹术", mp: 12, range: [1, 2], type: "atk", dmg: 24, school: "huo", source: "art", elem: "huo",
                 desc: "凝火灵之气为弹，激射而出。火气灼金——对金行道基的修士妖兽事半功倍。" },
 
     /* —— 符箓（瞬发牌：一点灵气点燃封存法术，不占主行动）—— */
@@ -64,7 +64,7 @@
                 desc: "符上封存寒冰锥击，扬手即发（瞬发）。水克火——火行凶兽的对策。消耗一张符。" },
 
     // 符宝·金光砖（瞬发大杀器：充能制+冷却——杀手的凶器，如今是你的底牌）
-    jinguang_zhuan: { name: "金光砖", mp: 2, range: [1, 4], type: "atk", dmg: 42, pierce: true, source: "art", elem: "jin",
+    jinguang_zhuan: { name: "金光砖", mp: 3, range: [1, 4], type: "atk", dmg: 42, pierce: true, source: "art", elem: "jin",
                 consume: "jinguang_zhuan_charge", cd: 2, quick: true,
                 desc: "金光上人的符宝遗赠：金光化砖凌空砸落，势大力沉、无视护体（瞬发）。每次催动耗一道充能（灵石可回充），催动后须回气两回合。" },
 

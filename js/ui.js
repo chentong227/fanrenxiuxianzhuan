@@ -3334,6 +3334,7 @@ const UI = {
   },
   closeCombat() {
     this.el("combat-overlay").hidden = true;
+    const outro = this.el("combat-outro"); if (outro) outro.hidden = true;
     // §9-5 危局氛围收束：撤边缘脉动 + 停心跳低鼓（战斗一关即清，绝不漏到地图）
     const ov = this.el("combat-overlay"); if (ov) ov.classList.remove("peril", "brink");
     this._perilLevel = 0;
