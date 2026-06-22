@@ -202,6 +202,15 @@
       noise(c, { dur: 0.18, gain: 0.03, band: 4200 });
       tone(c, { freq: 2400, slideTo: 620, type: "sawtooth", dur: 0.16, gain: 0.02 });
     },
+    // 剑影分光术：群剑分影破空（青元剑诀七层·形A分影多段）——三道错拍掠空 + 群剑共鸣的细吟尾
+    swordSplit(c) {
+      [0, 0.07, 0.14].forEach((d, i) => {
+        noise(c, { dur: 0.14, gain: 0.024 - i * 0.004, band: 4200 - i * 500, delay: d });
+        tone(c, { freq: 2500 - i * 280, slideTo: 640 - i * 80, type: "sawtooth", dur: 0.15, gain: 0.018, delay: d });
+      });
+      tone(c, { freq: 1568, type: "triangle", dur: 0.4, gain: 0.012, delay: 0.1 });   // 群剑共鸣·细吟
+      tone(c, { freq: 2352, dur: 0.3, gain: 0.007, delay: 0.16 });                     // 高泛音
+    },
   };
 
   let lastPlay = {};
@@ -393,10 +402,66 @@
    * fair 集市筝铃 / combat 战鼓急弦 / boss 太鼓号角 / tense 阴冷悬疑 /
    * sorrow 二胡离殇 / triumph 钟磬凯旋（单次不循环）。
    * 文件缺失/加载失败 → 回退合成轨（FALLBACK 映射）。 */
-  const BGM_FILES = ["daily", "town", "journey", "fair", "combat", "boss", "tense", "sorrow", "triumph"];
-  const FALLBACK = { town: "daily", journey: "daily", fair: "daily", boss: "combat", sorrow: "tense", triumph: null };
-  const KNOWN_TRACKS = BGM_FILES;   // C3 切轨校验：合法轨名白名单（九轨即全部；daily/combat/tense 另带合成兜底）
+  const BGM_FILES = ["daily", "town", "journey", "fair", "combat", "combat_wild", "combat_secret", "boss", "tense", "sorrow", "triumph"];
+  const FALLBACK = { town: "daily", journey: "daily", fair: "daily", combat_wild: "combat", combat_secret: "combat", boss: "combat", sorrow: "tense", triumph: null };
+  const KNOWN_TRACKS = BGM_FILES;   // C3 切轨校验：合法轨名白名单
   let curTrack = null;
+
+  // 渐变某 <audio> 的音量到目标值（切轨 crossfade 用）：定步进，结束回调收尾
+  function fadeVol(el, to, ms, onDone) {
+    if (!el) { if (onDone) onDone(); return; }
+    try { if (el._fadeTimer) { clearInterval(el._fadeTimer); el._fadeTimer = null; } } catch (e) {}
+    const from = typeof el.volume === "number" ? el.volume : 0;
+    const steps = Math.max(1, Math.round(ms / 40));
+    let i = 0;
+    el._fadeTimer = setInterval(() => {
+      i++;
+      const v = from + (to - from) * (i / steps);
+      try { el.volume = Math.max(0, Math.min(1, v)); } catch (e) {}
+      if (i >= steps) { clearInterval(el._fadeTimer); el._fadeTimer = null; if (onDone) onDone(); }
+    }, 40);
+  }
+
+  // 文件 BGM 默认音量（源已 -20 LUFS 归一，故不必高；克制基调，降「吵闹」）
+  const BGM_VOL = 0.26;
+
+  // 循环交叉淡化：循环轨结尾 ~lxf 与开头交叉，消除 <audio>.loop 硬跳回开头的接缝突兀。
+  // 自管循环（loop=false）：临近结尾时启同轨新实例淡入、旧实例淡出，无缝衔接。
+  function clearLoop(el) { try { if (el && el._loopTimer) { clearInterval(el._loopTimer); el._loopTimer = null; } } catch (e) {} }
+  function startLoopXfade(el, track, target, lxf) {
+    clearLoop(el);
+    const xfSec = lxf / 1000;
+    el._loopTimer = setInterval(() => {
+      try {
+        if (bgmEl !== el) { clearLoop(el); return; }   // 已换轨/被接管：停表
+        if (muted || el._handoff) return;               // 静音 / 本轮已交叉：不推进
+        const dur = el.duration;
+        if (!dur || !isFinite(dur) || dur <= xfSec * 2) return;
+        if (el.currentTime >= dur - xfSec) {
+          el._handoff = true;
+          const nb = new window.Audio(el._src);
+          nb._src = el._src; nb.onerror = el.onerror;
+          bgmEl = nb;                                   // 新实例接管为当前轨
+          setupLoopEl(nb, track, target, lxf);          // 链上下一轮（含兜底）
+          nb.volume = 0; nb.play().catch(() => {});
+          fadeVol(nb, target, lxf);                     // 新实例淡入
+          fadeVol(el, 0, lxf, () => { try { el.pause(); } catch (e) {} });   // 旧实例淡出收声
+          clearLoop(el);
+        }
+      } catch (e) { clearLoop(el); }
+    }, 60);
+  }
+  // 给循环文件轨挂：loop=false（自管）+ onended 兜底（交叉没接上时硬重启不留静音）+ 循环监视
+  function setupLoopEl(el, track, target, lxf) {
+    el.loop = false;
+    el._handoff = false;
+    el.onended = () => {
+      if (bgmEl !== el || el._handoff) return;
+      try { el.currentTime = 0; el.volume = muted ? 0 : target; if (!muted) el.play().catch(() => {}); } catch (e) {}
+      startLoopXfade(el, track, target, lxf);
+    };
+    startLoopXfade(el, track, target, lxf);
+  }
 
   /* ============ 环境床文件清单（文件优先名单）============
    * 这些 id 走文件 assets/audio/amb_<id>.mp3；不在名单的 id 一律走程序合成（AMB 引擎）。
@@ -509,7 +574,7 @@
     // 合法轨名白名单（副本，外部勿改）；切轨点可据此校验
     tracks() { return KNOWN_TRACKS.slice(); },
     isTrack(name) { return KNOWN_TRACKS.includes(name); },
-    // 主入口：换 BGM 轨（文件优先，合成兜底；同轨幂等）
+    // 主入口：换 BGM 轨（文件优先，合成兜底；同轨幂等；切轨 ~600ms crossfade）
     bgm(track, opts = {}) {
       // C3 切轨校验：未知轨名一律拒绝并告警，不扰动当前播放（防 typo 把正在放的乐切没了）
       if (!KNOWN_TRACKS.includes(track)) {
@@ -518,32 +583,43 @@
       }
       if (curTrack === track && !opts.force) return;
       curTrack = track;
+      const xf = opts.fade != null ? opts.fade : 600;   // 交叉淡化时长（ms）
       if (BGM_FILES.includes(track)) {
         const url = `assets/audio/bgm_${track}.mp3`;
         try {
-          BGM.stop();   // 合成轨让位
-          const old = bgmEl;                                   // 旧文件轨：交叉淡出后收掉（不再硬切）
+          BGM.stop();   // 合成轨让位（合成轨无淡出，直接停）
+          const target = opts.vol != null ? opts.vol : BGM_VOL;
+          const lxf = opts.loopFade != null ? opts.loopFade : 1100;   // 循环交叉时长（ms）
+          const prev = bgmEl;   // 旧文件轨：淡出
+          if (prev) { prev._handoff = true; clearLoop(prev); }        // 旧轨停循环监视，免淡出途中误重启
           const el = new window.Audio(url);
-          const baseVol = opts.vol != null ? opts.vol : 0.3;
-          el._src = url; el._vol = baseVol; el.loop = track !== "triumph";
-          el.volume = 0;                                       // 从静音淡入
+          el._src = url; el.volume = 0;
           el.onerror = () => {   // 文件缺失：回退合成
             if (bgmEl === el) bgmEl = null;
             const fb = FALLBACK[track] !== undefined ? FALLBACK[track] : track;
             if (fb) try { BGM.start(fb); } catch (e) {}
           };
-          if (track === "triumph") el.onended = () => { if (bgmEl === el) { bgmEl = null; curTrack = null; } };
           bgmEl = el;
-          if (!muted) el.play().catch(() => {});
-          // C2 交叉淡化：旧轨 600ms 淡出收掉，新轨同时从 0 升到目标；床领奏(bgmDucked)时新轨续压
-          const fade = opts.fade != null ? opts.fade : XFADE_MS;
-          const target = bgmDucked ? baseVol * DUCK_K : baseVol;
-          if (old && old !== el) fadeVol(old, 0, fade, () => { try { old.pause(); } catch (e) {} });
-          fadeVol(el, target, fade);
+          if (track === "triumph") {   // 凯旋单次不循环
+            el.loop = false;
+            el.onended = () => { if (bgmEl === el) { bgmEl = null; curTrack = null; } };
+          } else {
+            setupLoopEl(el, track, target, lxf);   // 循环交叉淡化（消接缝突兀）
+          }
+          if (muted) {   // 静音：记轨不出声，音量预置好，解除静音由 toggle 起播
+            el.volume = target;
+            if (prev && prev !== el) { try { prev.pause(); } catch (e) {} }
+            return;
+          }
+          el.play().catch(() => {});
+          fadeVol(el, target, xf);                                         // 新轨淡入
+          if (prev && prev !== el) fadeVol(prev, 0, xf, () => { try { prev.pause(); } catch (e) {} });  // 旧轨淡出
           return;
         } catch (e) {}
       }
-      // 非文件轨：直接合成
+      // 非文件轨：淡出旧文件轨后转合成
+      const prev = bgmEl;
+      if (prev) { prev._handoff = true; clearLoop(prev); bgmEl = null; fadeVol(prev, 0, xf, () => { try { prev.pause(); } catch (e) {} }); }
       try { BGM.start(track); } catch (e) {}
     },
     bgmStop() { this.stopBgm(); try { BGM.stop(); } catch (e) {} curTrack = null; },
@@ -607,7 +683,7 @@
         if (!muted) el.play().catch(() => {});
       } catch (e) {}
     },
-    stopBgm() { if (bgmEl) { try { bgmEl.pause(); } catch (e) {} bgmEl = null; } },
+    stopBgm() { if (bgmEl) { clearLoop(bgmEl); try { bgmEl.pause(); } catch (e) {} bgmEl = null; } },
   };
 
   // 通用点击音：按钮/选项等（委托监听，轻量）
