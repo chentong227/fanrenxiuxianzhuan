@@ -148,6 +148,76 @@
       ],
     },
 
+    /* ====== 后山 · L1 野外战争迷雾舆图（七玄门篇·猎王篇） ======
+     * fog:true → 四态可见性（未知/窥见/风闻/已至）+ 三揭法（邻接/瞭望/远距感知）
+     * 无灾厄钟、无巡逻——脚程折耗月（clock 仅作计数，不关节点）
+     * 客观层：血食谷有妖兽王（异闻在耳=那一头）；传闻层：只降雾不增删世界 */
+    houshan_l1: {
+      id: "houshan_l1", kind: "field", fog: true,
+      name: "七玄门后山",
+      subtitle: "雾锁千山 · 猎王之道",
+      bg: "houshan",
+      clockMax: 0,               // 无灾厄钟（脚程折耗月，不关节点）
+      entry: "linkou",
+      nodes: {
+        linkou:   { name: "林口", kind: "exit", x: 50, y: 82, icon: "◈",
+                    desc: "后山入口的林缘。荆棘拨开，雾气便扑面而来——再往里，便没有现成的路了。" },
+        caoyao:   { name: "采药小径", kind: "gather", x: 30, y: 62, icon: "🌿",
+                    desc: "一条隐在灌木间的小径，灵草的气息混着泥土味飘来。",
+                    loot: { lingcao: 2 } },
+        guteng:   { name: "古藤深坡", kind: "gather", x: 72, y: 58, icon: "🌿",
+                    desc: "老藤盘坡，岩缝间生着几株品相不差的灵草——坡陡，脚下得稳。",
+                    loot: { lingcao: 3, duyao_cao: 1 } },
+        wanglang: { name: "望狼石", kind: "lore", x: 50, y: 40, icon: "⛰",
+                    desc: "一块突兀的巨石，登顶可俯瞰半片后山——雾气在此处薄了些。",
+                    reveals: ["wulin", "xuegu", "qixue"],
+                    lookoutNote: "登石一望，雾海翻涌间，林深处的一片阴影与一股血腥气赫然入目。" },
+        qixue:    { name: "栖息岩穴", kind: "rest", x: 22, y: 38, icon: "⛺",
+                    desc: "一处背风的岩洞，地上有旧火堆的痕迹——前人来过后山的证据。" },
+        wulin:    { name: "雾林深处", kind: "gather", x: 68, y: 24, icon: "🌲",
+                    desc: "雾气最浓的地带，能见度不过数丈。灵草的香气和某种腥味交织在一起。",
+                    loot: { lingcao: 3, duyao_cao: 2 } },
+        xuegu:    { name: "血食谷", kind: "danger", x: 48, y: 12, icon: "🩸",
+                    desc: "碎骨遍地、腥气冲鼻——这是后山霸主的食场。那头异闻中的妖兽王，就盘踞在此。",
+                    loot: { lingshi: 3, lingcao: 2 }, rich: true,
+                    beastEnemy: true },
+      },
+      edges: [
+        ["linkou", "caoyao", 1], ["linkou", "guteng", 1],
+        ["caoyao", "guteng", 2], ["caoyao", "qixue", 1], ["caoyao", "wanglang", 1],
+        ["guteng", "wanglang", 1], ["guteng", "wulin", 2],
+        ["wanglang", "wulin", 1], ["wanglang", "qixue", 2],
+        ["wulin", "xuegu", 2], ["qixue", "xuegu", 3],
+      ],
+      // 远距感知梯度：血食谷的兽吼/血腥气——四档由远及近（只报方位强弱，不报精确坐标）
+      senseSources: [
+        { node: "xuegu", kind: "beast", bands: [
+          { within: 5, level: 1, text: "远处隐有兽吼传来，在雾里闷闷地响。" },
+          { within: 4, level: 2, text: "兽吼渐清晰，混着一股若有若无的腥气。" },
+          { within: 2, level: 3, text: "腥风扑面，惊起满林宿鸟。巢穴近了。" },
+          { within: 1, level: 4, text: "碎骨遍地、腥气冲鼻——兽王的食场就在眼前。" },
+        ] },
+      ],
+      // 传闻层：异闻在耳→预亮巢穴与栖踪，并予伏击先手（applyRumors，engine 按线索进度调用）
+      rumors: {
+        beast_baihu:  { nodes: ["xuegu", "wulin"], intel: { lair_route: true },
+          note: "白额虎王盘踞后山深处，踪迹已隐隐可循。" },
+        beast_wugong: { nodes: ["xuegu", "wulin"], intel: { lair_route: true },
+          note: "铁背蜈蚣的巢穴方位，从风声里渐渐明朗。" },
+        beast_chimu:  { nodes: ["xuegu", "wulin"], intel: { lair_route: true },
+          note: "赤目狼王的栖处，循着月下的踪迹已可锁定。" },
+      },
+      // 路途见闻（移动一行字——纯氛围；后山永不随机强战，强战只在血食谷主动猎杀）
+      notes: [
+        "雾贴着林梢流动，三步外枝影模糊。",
+        "脚边的灌木无风自动，又倏地静了。",
+        "远处一声短促的兽鸣，旋即被雾吞没。",
+        "湿泥上压着一行碗大的爪印，往林子深处去了。",
+        "风里有若有若无的药香——灵草就在近旁。",
+        "宿鸟惊起又落下，像是替谁望了一回风。",
+      ],
+    },
+
     /* ====== 墨蛟山洞 · L3 轴式洞窟（与对阵轴同构——探索/布阵/战斗同一条轴） ====== */
     mojiao_cave: {
       id: "mojiao_cave", kind: "cave",
@@ -240,7 +310,11 @@
         f.pos = map.playerPos != null ? map.playerPos : 1;
         f.expose = 0; f.taken = {}; f.preps = {}; f.introDone = false;
       }
+      // 战争迷雾（map.fog 选启）：四态可见性——glimpsed 窥见 / rumored 风闻；visited 已至沿用 f.visited
+      // hunted：巢穴猎物已伏诛（与 cleared「采尽」分开记——先猎杀，方可搜刮）
+      if (map.fog) { f.glimpsed = {}; f.rumored = {}; f.senseBand = {}; f.hunted = {}; }
       if (map.entry) f.visited[map.entry] = true;
+      if (map.fog && map.entry) this._revealFrom(f, map, map.entry, null);   // 入口即点亮四邻（+登高揭片）
       return f;
     },
 
@@ -293,6 +367,112 @@
       });
       if (base.clock >= map.clockMax) { events.push({ type: "timeup" }); return true; }
       return false;
+    },
+
+    /* ---------- 战争迷雾（map.fog）：四态可见性 + 三揭法 + 传闻层 ----------
+     * 客观/迷雾/传闻三层各司其职（信息 ≠ 现实）。非 fog 图全部短路，零回归。 */
+
+    // 抵达一个节点时揭雾：① 邻接点亮（四邻升为窥见）② 登高揭片（node.reveals）
+    _revealFrom(f, map, nodeId, events) {
+      if (!map.fog || !f.glimpsed) return;
+      this._neighbors(map, nodeId).forEach(nb => { if (f.visited[nb.id] !== true) f.glimpsed[nb.id] = true; });
+      const node = map.nodes[nodeId];
+      if (node && node.reveals) {
+        let any = false;
+        node.reveals.forEach(id => {
+          if (map.nodes[id] && f.visited[id] !== true && !f.glimpsed[id]) { f.glimpsed[id] = true; any = true; }
+        });
+        if (any && events) events.push({ type: "lookout", text: node.lookoutNote || "登高一望，山坳里的去处尽收眼底。", reveals: node.reveals });
+      }
+    },
+
+    // 抵达揭雾 + 远距感知梯度（极深兽吼/血腥气：报方位与强弱，不报精确坐标）
+    _fogArrive(x, f, map, nodeId, events) {
+      if (!map.fog) return;
+      this._revealFrom(f, map, nodeId, events);
+      (map.senseSources || []).forEach((src, si) => {
+        const d = this._dist(map, nodeId, src.node);
+        const band = (src.bands || []).filter(b => d <= b.within).sort((a, b) => a.within - b.within)[0];
+        if (!band) return;
+        const prev = f.senseBand[si];
+        if (prev == null || band.within < prev) {   // 只在"逼近一档"时鸣一次（跨档才触发，同档不复鸣）
+          f.senseBand[si] = band.within;
+          if (events) events.push({ type: "sense", text: band.text, kind: src.kind,
+                                    dir: this._dir(map, nodeId, src.node), level: band.level || 1 });
+        }
+      });
+    },
+
+    // 图上两节点的跳数（BFS·用于感知梯度强弱分档）
+    _dist(map, from, to) {
+      if (from === to) return 0;
+      const seen = { [from]: true }; let frontier = [from], d = 0;
+      while (frontier.length) {
+        d++; const next = [];
+        for (const id of frontier) {
+          for (const nb of this._neighbors(map, id)) {
+            if (seen[nb.id]) continue;
+            if (nb.id === to) return d;
+            seen[nb.id] = true; next.push(nb.id);
+          }
+        }
+        frontier = next;
+      }
+      return Infinity;
+    },
+
+    // 由坐标算八向罗盘（只给方位，不给坐标——诚实预告而非精确雷达）
+    _dir(map, fromId, toId) {
+      const a = map.nodes[fromId], b = map.nodes[toId];
+      if (!a || !b) return "";
+      const dx = b.x - a.x, dy = a.y - b.y;   // 屏幕 y 向下，翻成世界 y 向上
+      if (dx === 0 && dy === 0) return "近在咫尺";
+      const ang = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+      return ["东", "东北", "北", "西北", "西", "西南", "南", "东南"][Math.round(ang / 45) % 8] + "方";
+    },
+
+    // 节点四态：unknown 未知 / glimpsed 窥见 / rumored 风闻 / visited 已至
+    fogState(x, nodeId) {
+      const f = this.cur(x), map = this.mapOf(f);
+      if (!map.fog) return "visited";              // 无雾图：一切照旧全显
+      if (f.visited[nodeId] === true) return "visited";
+      if (f.rumored && f.rumored[nodeId]) return "rumored";
+      if (f.glimpsed && f.glimpsed[nodeId]) return "glimpsed";
+      if (f.visited[nodeId]) return "glimpsed";    // 读阵等"只在图上见过"
+      return "unknown";
+    },
+
+    // 远距感知读数（当前节点对最强危险源的感知：方位 + 强弱 + 一行预告）
+    senseField(x) {
+      const f = this.cur(x), map = this.mapOf(f);
+      if (!map.fog || !map.senseSources) return null;
+      let best = null;
+      for (const src of map.senseSources) {
+        const d = this._dist(map, f.node, src.node);
+        const band = (src.bands || []).filter(b => d <= b.within).sort((a, b) => a.within - b.within)[0];
+        if (!band) continue;
+        const lvl = band.level || 1;
+        if (!best || lvl > best.level) best = { src: src.node, kind: src.kind, dist: d, level: lvl,
+                                                text: band.text, dir: this._dir(map, f.node, src.node) };
+      }
+      return best;
+    },
+
+    // 传闻层：只降雾、绝不增删世界。把若干节点预亮为"风闻"，并落情报红利（intel）。
+    // rumors: [ ruleId | { nodes:[...], intel:{...}, note } ]——字符串走 map.rumors 查表。
+    applyRumors(x, rumors) {
+      const f = this.cur(x), map = this.mapOf(f);
+      if (!map.fog) return { ok: false, reason: "此图无雾可降" };
+      f.rumored = f.rumored || {};
+      const applied = [];
+      (rumors || []).forEach(r => {
+        const def = (typeof r === "string") ? (map.rumors || {})[r] : r;
+        if (!def) return;
+        (def.nodes || []).forEach(id => { if (map.nodes[id] && f.visited[id] !== true) f.rumored[id] = true; });
+        if (def.intel) Object.assign(f.intel, def.intel);
+        applied.push({ id: (typeof r === "string") ? r : null, note: def.note, nodes: def.nodes || [] });
+      });
+      return { ok: true, applied };
     },
 
     /* ---------- L1 舆图：选项与移动 ---------- */
@@ -352,6 +532,7 @@
       f.node = nodeId;
       const firstVisit = !f.visited[nodeId];
       f.visited[nodeId] = true;
+      this._fogArrive(x, f, map, nodeId, events);   // 迷雾：邻接点亮 + 登高揭片 + 远距感知梯度（map.fog 才生效）
 
       // 钟先走（移动的代价），血幕可能恰好在此刻吞节点
       const timeup = this._tickClock(x, nb.cost, events);
