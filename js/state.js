@@ -65,6 +65,7 @@ const State = {
         unlocked: false,
         plots: [],            // [{ crop, growth }]
       },
+      fuluPlans: [],          // 已解锁的符箓方案 id（制符 v2，combat-arsenal §3.7）
 
       log: [],                // 叙事记录（仅保留最近若干条）
       scenes: [],             // §9-6 名场面回廊：已演完的"含演出"剧情节点 [{ id, title, t, cg }]，可在风云录重温
@@ -90,7 +91,7 @@ const State = {
       beastRumorClueAt: null, // 上一条线索浮现的绝对月份（隔月铺陈：两条线索至少相隔 2 月）
       slainBeasts: [],        // 已伏诛的异闻妖王（不再重复出没）
       revealedRealm: 0,       // 藏拙：示人境界（真实境界=realmIndex；差值=深藏的层数）
-      skills: { alchemy: 0, scouting: 0 },   // 杂学熟练度：药理 / 探知（嗑瓜子轴）
+      skills: { alchemy: 0, scouting: 0, fulu: 0 },   // 杂学熟练度：药理 / 探知 / 制符（嗑瓜子轴）
       intel: {},              // 情报面纱：{ npcId: 0听闻|1见过出手|2买过底细 }
       intelMoves: {},         // 交手自动补全：{ enemyName: [已见招式名] }
       ripple: null,           // 活跃的涟漪事件链 { id, stage, nextAbs }
@@ -162,7 +163,11 @@ const State = {
     if (!d.slainBeasts) d.slainBeasts = [];
     if (d.revealedRealm == null) d.revealedRealm = d.realmIndex;   // 老档：示人=真实（未藏过）
     if (d.zhuanImprint == null) d.zhuanImprint = 1;   // 三转重元功·乘性印记（增6）
-    if (!d.skills) d.skills = { alchemy: 0, scouting: 0 };
+    if (!d.skills) d.skills = { alchemy: 0, scouting: 0, fulu: 0 };
+    if (d.skills.fulu == null) d.skills.fulu = 0;   // 制符术熟练度（制符 v2）
+    // 随身灵圃 v2：老档兜底（早于小绿瓶的存档无 bottle 字段，惰性初始化）
+    if (!d.bottle) d.bottle = { unlocked: false, plots: [] };
+    if (!d.fuluPlans) d.fuluPlans = [];              // 已解锁符箓方案（制符 v2）
     if (!d.medals) d.medals = {};
     if (!d.intel) d.intel = {};
     if (!d.intelMoves) d.intelMoves = {};

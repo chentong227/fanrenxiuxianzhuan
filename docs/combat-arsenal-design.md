@@ -193,6 +193,14 @@
 **乘法校验（multiply-design 四问）**：①复用图鉴/市场/杂学/底牌四个旧系统相乘，**不立新系统**；
 ②符箓方案点亮即战力补短板（底牌×克制：缺火行→解锁火蛇符方案自产）；③解锁源多样（谈/买/打）喂"远中近惦记"。
 
+**实装状态（周期7 阶段5，代码已落·待 bump 发版）**：
+- `DATA.fuluPlans`：`huoshe_fu`/`hanbing_fu`（灵石 30）+ `dingshen_fu`（灵石 40），每方案 `{result, paper:"fu_zhi", paperN, spirit, name, blurb, src}`，产物全为既有底牌符（无凭空造物）。
+- `Engine.makeFulu(planId)`：需制符笔 `zhifu_bi`（制符台总开关）+ 已解锁方案 + 符纸 `fu_zhi`×paperN + 灵力≥cost；成功率 `min(0.97, 0.6 + skills.fulu*0.02 + insight*0.01)`，成则给符（熟练度高有 ×2 概率），无论成败 `skills.fulu += 2`（杂学引擎）。`Engine.learnFuluPlan(planId, srcText)` 解锁+去重+年表+图鉴点亮。
+- 解锁三源：**购买**（太南小会 `FAIR_GOODS` 符谱条目·火蛇/寒冰，`Engine.fairBuy` plan 分支）、**沟通**（菡云芝烈阳花圃 fortune 相授定身符方案）、**既有买符照旧**（成品符 `_done` 条目入袋）。
+- UI：家中行动「闭关制符 ✎」（`lianfu`，持制符笔 + ≥1 方案才现）→ `UI.openFuluCraft` 弹窗；大件图鉴新增 `fulu`「符箓·方案」类（`zhifu` 制符台锚点 + 每方案 `plan_*` 条目，随解锁点亮）。
+- 成符自动入战：火蛇/寒冰/定身符已在 `loadout.js` TRUMPS/TALISMANS——"背包有货即入战"，零额外接线。
+- 测试：`test/lingpu_fulu.test.js` 覆盖 makeFulu 成败/learnFuluPlan 去重/购谱/图鉴点亮。**ui.js 渲染待浏览器目验。**
+
 ### 3.8 法器装备位落地状态（待定 G：跟剧情一致开 = 黄枫谷）
 
 > 用户裁决：装备位"跟剧情一致开"（黄枫谷）。**代码核定（2026-06-14）：引擎已成型，缺内容 + 接 E。**

@@ -35,6 +35,8 @@ const Main = {
     UI.el("btn-codex").addEventListener("click", () => UI.openCodex());
     const btnAtlas = UI.el("btn-atlas");
     if (btnAtlas) btnAtlas.addEventListener("click", () => UI.openAtlas());
+    const btnBottle = UI.el("btn-bottle");
+    if (btnBottle) btnBottle.addEventListener("click", () => UI.openBottle());
 
     // —— 系统菜单（手机端 ☰）——
     const btnMore = UI.el("btn-more");

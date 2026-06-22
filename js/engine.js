@@ -544,6 +544,7 @@ const Engine = {
     else if (action === "rest") this.rest();
     else if (action === "breakthrough") { UI.openBreakthrough(); return; }
     else if (action === "bottle") { UI.openBottle(); return; }
+    else if (action === "lianfu") { UI.openFuluCraft(); return; }
     else if (action === "gather") this.gather();
     else if (action === "spar") this.spar();
     else if (action === "market") { UI.openMarket(); return; }
@@ -958,26 +959,41 @@ const Engine = {
       rebateText: "卖书的老者把一块灵石塞了回来：「你给多了，我们不占便宜。」" },
     { id: "zhifu_bi", price: 2, once: true, note: "御灵宗女修的旧物" },
     { id: "fu_zhi", price: 1, n: 5, note: "制符根基，提前囤些" },
+    // 符箓方案（制符 v2）：购谱即解锁，自此可自产此符（并入大件图鉴）
+    { id: "huoshe_fu", plan: "huoshe_fu", price: 3, once: true, note: "符谱·火蛇符（购得即可自制）" },
+    { id: "hanbing_fu", plan: "hanbing_fu", price: 3, once: true, note: "符谱·寒冰符（购得即可自制）" },
     { id: "zheling_canbao", price: 3, once: true, note: "藏拙者的至宝" },
-    { id: "huoshe_fu", price: 2, note: "比凡俗集镇地道得多" },
-    { id: "hanbing_fu", price: 2, note: "同上" },
+    { id: "huoshe_fu_done", buy: "huoshe_fu", price: 2, note: "现成符·比凡俗集镇地道得多" },
+    { id: "hanbing_fu_done", buy: "hanbing_fu", price: 2, note: "现成符·同上" },
   ],
   fairBuy(itemId) {
     const s = State.data;
     const g = this.FAIR_GOODS.find(x => x.id === itemId);
     if (!g) return;
-    if (g.once && State.count(itemId) > 0) { this.toast("此物已购得"); return; }
+    // 符箓方案：购谱解锁配方（非入背包），走 learnFuluPlan
+    if (g.plan) {
+      if ((s.fuluPlans || []).includes(g.plan)) { this.toast("此符谱已购得"); return; }
+      if (State.count("lingshi") < g.price) { this.toast(`需要灵石 ×${g.price}`, true); return; }
+      State.take("lingshi", g.price);
+      s.flags.fair_bought = (s.flags.fair_bought || 0) + 1;
+      this.learnFuluPlan(g.plan, `太南小会购得符谱，灵石×${g.price}。`);
+      this.checkStory();
+      State.save(); UI.renderAll(); UI.openFair();
+      return;
+    }
+    const buyId = g.buy || itemId;   // 现成符等：实际入袋的道具 id（与摊位 id 可不同）
+    if (g.once && State.count(buyId) > 0) { this.toast("此物已购得"); return; }
     if (State.count("lingshi") < g.price) { this.toast(`需要灵石 ×${g.price}`, true); return; }
     State.take("lingshi", g.price);
-    State.give(itemId, g.n || 1);
+    State.give(buyId, g.n || 1);
     s.flags.fair_bought = (s.flags.fair_bought || 0) + 1;
-    const item = DATA.items[itemId];
+    const item = DATA.items[buyId];
     this.log(`【小会】你以灵石×${g.price}购得「${item.name}」${g.n > 1 ? `×${g.n}` : ""}。`, "good");
     if (g.rebate) {
       State.give("lingshi", g.rebate);
       this.log(`【小会】${g.rebateText}（灵石+${g.rebate}）`, "event");
     }
-    if (itemId === "changchun_houpian") {
+    if (buyId === "changchun_houpian") {
       this.toast("《长春功·后篇》到手！回洞府闭关研习，八层之路自此开启");
       this.addMilestone("太南小会：购得《长春功》后篇全本", "bigitem");
     } else {
@@ -1611,8 +1627,9 @@ const Engine = {
           State.give("huoshe_fu", 2);
           State.setFlag("hanyunzhi_done");
           Engine.writeLedger("hanyunzhi_flower", "血色禁地中替菡云芝护法采得烈阳花——御灵宗的人情，记下了");
+          Engine.learnFuluPlan("dingshen_fu", "菡云芝在崖下随手画与你看的御灵宗控符法门。");
           Engine._exmapEvents(r.events);
-          return { text: "你按剑立在崖下，神识张开四面——她攀上崖壁，把开得最盛的几朵尽数收入玉盒。\n\n「分你一朵，再加两张火蛇符。」她把东西塞过来，眼睛弯弯，「御灵宗欠你一个人情。人情比符值钱。」\n\n（烈阳花×1、火蛇符×2）", kind: "good" };
+          return { text: "你按剑立在崖下，神识张开四面——她攀上崖壁，把开得最盛的几朵尽数收入玉盒。\n\n「分你一朵，再加两张火蛇符。」她把东西塞过来，眼睛弯弯，「御灵宗欠你一个人情。人情比符值钱。」\n\n临别她又蹲下身，就着崖边的湿泥画了道符纹给你看：「这定身符的法子，你既会运笔，便拿去。」\n\n（烈阳花×1、火蛇符×2，习得「定身符方案」）", kind: "good" };
         }},
         { text: "自顾采花，先走一步", effect: () => {
           State.give("lieyang_hua", 2);
@@ -1624,7 +1641,8 @@ const Engine = {
           State.setFlag("hanyunzhi_done");
           State.setFlag("hanyunzhi_favor");
           Engine.writeLedger("hanyunzhi_flower", "血色禁地中分文不取替菡云芝护法——御灵宗的人情，厚厚记下了");
-          return { text: "她怔了怔，笑出声来：「太南小会那支笔，果然没送错人。」\n\n采完花，她把两张火蛇符硬塞进你手里，又留下一句话：「御灵宗在天南，有人欠你人情。」（火蛇符×2）", kind: "good" };
+          Engine.learnFuluPlan("dingshen_fu", "菡云芝倾囊相授的御灵宗控符法门。");
+          return { text: "她怔了怔，笑出声来：「太南小会那支笔，果然没送错人。」\n\n采完花，她把两张火蛇符硬塞进你手里，又取过一张空符纸，当场运笔画了道定身符纹，连禁锢的诀窍一并讲与你听：「这法子御灵宗不外传——可你不一样。」\n\n临别又留一句：「御灵宗在天南，有人欠你人情。」（火蛇符×2，习得「定身符方案」）", kind: "good" };
         }},
       ],
     };
@@ -5249,6 +5267,7 @@ const Engine = {
     const s = State.data;
     const crop = DATA.bottle.crops[cropId];
     if (!crop) return;
+    if ((s.realmIndex || 0) < (crop.minRealmIdx || 0)) { this.toast("境界未到，参不透此谱"); return; }
     if (!State.take(crop.seed, 1)) { this.toast("缺少种子原料"); return; }
     s.bottle.plots[plotIndex] = { crop: cropId, growth: 0 };
     this.log(`你将${DATA.items[crop.seed].name}投入小绿瓶培育。`, "event");
@@ -5284,6 +5303,56 @@ const Engine = {
     State.save();
     UI.renderBottle();
     UI.renderAll();
+  },
+
+  /* ===========================================================
+   *  符箓自制（制符 v2，combat-arsenal-design.md §3.7）
+   *  复用：符纸(fu_zhi)＝可买消耗品；方案＝大件图鉴可解锁配方；
+   *        制作＝有方案 + 符纸 + 灵力 → 成（无绘画、无材料 grind）。
+   * =========================================================== */
+  hasFuluTable() { return State.count("zhifu_bi") > 0; },
+  learnFuluPlan(planId, srcText) {
+    const s = State.data;
+    const plan = DATA.fuluPlans[planId];
+    if (!plan) return false;
+    if (!s.fuluPlans) s.fuluPlans = [];
+    if (s.fuluPlans.includes(planId)) { this.toast(`已掌握「${plan.name}」`); return false; }
+    s.fuluPlans.push(planId);
+    this.log(`【符箓方案】你参得「${plan.name}」——${srcText || "他日持制符笔、备符纸灵力，便可自画此符。"}`, "good");
+    this.addMilestone(`习得符箓方案：${plan.name}`, "bigitem");
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
+    State.save();
+    UI.renderAll();
+    return true;
+  },
+  makeFulu(planId) {
+    const s = State.data;
+    const plan = DATA.fuluPlans[planId];
+    if (!plan) return;
+    if (!this.hasFuluTable()) { this.toast("尚无制符笔，开不得制符台"); return; }
+    if (!(s.fuluPlans || []).includes(planId)) { this.toast("尚未参透此符方案"); return; }
+    const paperN = plan.paperN || 1;
+    if (State.count(plan.paper) < paperN) { this.toast(`缺少${DATA.items[plan.paper].name}（需${paperN}）`, true); return; }
+    if (s.spirit < plan.spirit) { this.toast("灵力不足以运笔成符", true); return; }
+    State.take(plan.paper, paperN);
+    s.spirit = clamp(s.spirit - plan.spirit, 0, State.realm().spMax);
+    if (!s.skills) s.skills = { alchemy: 0, scouting: 0, fulu: 0 };
+    if (s.skills.fulu == null) s.skills.fulu = 0;
+    const rate = Math.min(0.97, 0.6 + (s.skills.fulu || 0) * 0.02 + (s.insight || 0) * 0.01);
+    s.skills.fulu += 2;
+    const item = DATA.items[plan.result];
+    if (Math.random() < rate) {
+      const dblChance = Math.min(0.3, (s.skills.fulu || 0) * 0.012);
+      const n = Math.random() < dblChance ? 2 : 1;
+      State.give(plan.result, n);
+      this.log(`你以灵力运笔，符纸上灵光一显——「${item.name}」${n > 1 ? `×${n} ` : ""}制成。（制符术+2，现 ${s.skills.fulu}）`, "good");
+      if (typeof Sfx !== "undefined") Sfx.play("bell");
+    } else {
+      this.log(`运笔时灵力一滞，符纹溃散——一张符纸就此作废。（制符术+2，现 ${s.skills.fulu}）`, "bad");
+    }
+    State.save();
+    UI.renderAll();
+    if (typeof UI.openFuluCraft === "function") UI.openFuluCraft();
   },
 
   /* ===========================================================
