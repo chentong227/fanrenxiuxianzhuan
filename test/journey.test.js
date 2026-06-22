@@ -505,7 +505,7 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(State.count("wulong_duo") === 1, "乌龙夺到手（御物·破甲水攻法宝）");
   assert(s.flightId === "shen_feng_zhou", "神风舟到手（御风提速）");
   assert(State.count("wuxing_zhen") === 1, "颠倒五行阵图·基础版到手");
-  assert(State.count("mojiao_jiao") === matBefore.jiao - 1, "墨蛟之角实扣（乌龙夺料）");
+  assert(State.count("mojiao_jiao") === matBefore.jiao, "墨蛟之角已在炼器前消耗（wulong_forge 已扣，代工不再扣）");
   assert(State.count("mojiao_pi") === matBefore.pi - 1, "墨蛟之皮实扣（神风舟料）");
   assert(State.count("qiannian_lingcao") === matBefore.qnc - 1, "千年灵草实扣（颠倒五行阵引）");
   assert(s.flags.daigong_done, "代工完成（daigong_done）");
