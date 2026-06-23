@@ -56,9 +56,9 @@ console.log("\n=== 2. 射程与贴身 ===");
   // 拉近到贴身测贴身惩罚
   c.enemies[0].pos = 2;   // 距1
   const hp0 = c.enemies[0].hp;
-  c.cast("zimu_ren", 0);  // 御物贴身-30%：15→11/段 ×2段
+  c.cast("zimu_ren", 0);  // 御物贴身-30%：7→5/段 ×2段
   const dealt = hp0 - c.enemies[0].hp;
-  assert(dealt === 22, `御物贴身两段共22伤（-30%惩罚，实际${dealt}）`);
+  assert(dealt === 10, `御物贴身两段共10伤（-30%惩罚，实际${dealt}）`);
   const r2 = c.cast("zhayan", 0);
   assert(!r2.ok && /主行动/.test(r2.reason), "主行动每回合一次");
 }
