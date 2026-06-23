@@ -466,9 +466,17 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   let tries = 0;
   while (State.realm().tier !== "foundation" && tries++ < 30) {
     Engine.attemptBreakthrough();
-    if (s.combat && Engine._combat) {   // 心魔劫：直接打赢
-      Engine._combat.enemies.forEach(e => { e.hp = 0; });
-      Engine._combat._checkEnd();
+    if (s.combat && Engine._combat) {   // 心魔劫：直接打赢（含多阶段波次）
+      // 杀完所有波次（大境界心魔劫=三阶段）
+      let guard = 0;
+      while (Engine._combat && Engine._combat.status === "ongoing" && guard++ < 10) {
+        Engine._combat.enemies.forEach(e => { e.hp = 0; });
+        Engine._combat._checkEnd();
+        // 若有波次待刷，手动触发刷波
+        if (Engine._combat.status === "ongoing" && Engine._combat._pendingEnemyWaves && Engine._combat._pendingEnemyWaves.length > 0) {
+          Engine._combat._maybeSpawnWave();
+        }
+      }
       Engine._finishCombat();
     }
     s.cultivation = State.realm().culMax;

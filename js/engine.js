@@ -4034,7 +4034,7 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
-  // —— C4 护山大阵·守阵（objective:survive：撑到李化元燃命布成护山大阵）——
+  // —— C4 护山大阵·守阵（objective:survive·守点型：李化元钉桩阵眼，敌人若贴身则他额外受创）——
   startHushanFight() {
     const s = State.data;
     this._nextFightType = "zb_hushan";
@@ -4055,15 +4055,33 @@ const Engine = {
         winLog: "「成了——护山大阵！」李化元燃尽最后一缕真元，整座山口腾起一道齐天光幕，魔潮被生生挡在阵外。" },
       maxRounds: 6, W: 15, lanes: 2, sides,
     });
+    // 守点型钩子：李化元钉桩阵眼（pos=14），每回合若有敌人贴身则他额外受创——
+    // 玩家须主动拦截、挡线，不能放任敌人涌到阵眼
+    const lihuayuan = sides.find(sd => sd.id === "lihuayuan");
+    this._combat._afterEnemyTick = function() {
+      const li = this.sides.find(sd => sd.id === "lihuayuan");
+      if (!li || li.hp <= 0) return;
+      const adjacent = this.enemies.filter(e => e.alive && this.dist(e, li) <= 1);
+      if (adjacent.length > 0) {
+        const dmg = adjacent.length * 8;
+        li.hp = Math.max(0, li.hp - dmg);
+        this._log(`魔修突至阵眼，李化元分神抵挡、本命真元剧颤（-${dmg}）——挡住他们，别让任何人近阵心！`);
+        if (li.hp <= 0) {
+          this._log("李化元真元断绝、轰然倒地——阵眼失守！");
+          this.status = "lose";
+        }
+      }
+    };
     this._combatMeta = { type: "zb_hushan" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("李化元盘膝阵心、白须无风自动：「韩立、曲魂——给我守住阵脚六息！我以残命换这一道护山大阵，护黄枫谷弟子退走！」");
+    this._combat._log("【守点】李化元钉桩阵眼不可移动——若有魔修突至他身旁，他本命真元将剧震受损。挡住每一波，别让敌人近阵心！");
     this.log("溃局已不可挽。李化元盘坐阵心，燃起本命真元强布「护山大阵」——你与曲魂死守阵脚。这一战不必胜，只须撑住：拖到阵成，黄枫谷的弟子便能退走。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
-  // —— C5 三人护道战（objective:survive：南宫婉/陈巧倩护道；战后吸修跌境·纯演出）——
+  // —— C5 三人护道战（objective:survive·移动型：原地不动则追兵咬住后背受额外伤害）——
   startHudaoFight() {
     const s = State.data;
     this._nextFightType = "zb_hudao";
@@ -4086,15 +4104,32 @@ const Engine = {
         winLog: "三人背靠背、寸土不让，终是撑过了这一波追杀——身后那条退路，护住了。" },
       maxRounds: 6, W: 15, lanes: 2, sides,
     });
+    // 移动型钩子：玩家若本回合未移动则受额外伤害（追兵咬住后背）——
+    // 逼玩家每回合换位，不能原地防御
+    this._combat._lastPlayerPos = player.pos;
+    this._combat._afterEnemyTick = function() {
+      if (this.player.hp <= 0) return;
+      if (this.player.pos === this._lastPlayerPos) {
+        const dmg = 10;
+        this.player.hp = Math.max(0, this.player.hp - dmg);
+        this._log(`原地不动——追兵从身后一刀劈来（-${dmg}）！边打边退，不能站死！`);
+        if (this.player.hp <= 0) {
+          this.deathCause = { by: "追兵", move: "背后一刀" };
+          this.status = "lose";
+        }
+      }
+      this._lastPlayerPos = this.player.pos;
+    };
     this._combatMeta = { type: "zb_hudao" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("南宫婉与陈巧倩一左一右护住你的两翼：「韩立，护住退路——撑住这一波！」曲魂血刃翻飞，替三人挡下扑近的魔修。");
+    this._combat._log("【移动】追兵咬得极紧——每回合须移动换位，原地不动则背后挨刀！边打边退，撑过六息。");
     this.log("追兵咬得极紧。你与南宫婉、陈巧倩三人结阵护道，曲魂当先——撑住这一波追杀，护住身后那条退往矿洞的退路。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
-  // —— C6 矿洞拖时·启阵（objective:survive：辛如音耗血修阵·大挪移令强启古传送阵；胜后接演出①离开天南）——
+  // —— C6 矿洞拖时·启阵（objective:survive·保护型：辛如音修阵中不可阵亡，她死=失败）——
   startKuangdongFight() {
     const s = State.data;
     this._nextFightType = "zb_kuangdong";
@@ -4103,7 +4138,7 @@ const Engine = {
     const leader = Object.assign({}, WORLD.enemies.moxiu_toumu, { formation: "pack", leader: true });
     const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
-    // 辛如音·耗尽精血修阵（低战·叼旗护阵脚，prot 拉满）
+    // 辛如音·耗尽精血修阵（低战·叼旗护阵脚，prot 拉满）——保护对象：她死=传送阵断=败
     sides.push({ id: "xinruyin", name: "辛如音", kind: "ally", art: "xinruyin",
       hp: 88, hpMax: 88, guard: 0.4, elem: "shui",
       persona: { aggr: 2, prot: 9, kite: 1 },
@@ -4117,10 +4152,28 @@ const Engine = {
         winLog: "「阵启了——！」辛如音泣血一喝，古传送阵心爆起一道贯天光柱——大挪移令的契机，只在这一瞬。" },
       maxRounds: 6, W: 15, lanes: 2, sides,
     });
+    // 保护型钩子：辛如音阵亡=传送阵断=败——
+    // 敌人优先追击辛如音（她是最弱目标），玩家须挡线掩护
+    this._combat._afterEnemyTick = function() {
+      const xin = this.sides.find(sd => sd.id === "xinruyin");
+      if (!xin) return;
+      if (xin.hp <= 0) {
+        this._log("辛如音精血耗尽、瘫倒阵心——古传送阵的光柱骤然黯灭！没了她，这阵启不了了。");
+        this.status = "lose";
+      }
+    };
+    // 敌人优先目标偏向辛如音（保护型核心：敌人追最弱目标）
+    this._combat._enemyTargetBias = function(e) {
+      const xin = this.sides.find(sd => sd.id === "xinruyin");
+      if (!xin || xin.hp <= 0) return null;
+      if (this.dist(e, xin) <= 3) return xin;   // 近距离时优先打辛如音
+      return null;
+    };
     this._combatMeta = { type: "zb_kuangdong" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("辛如音瘫坐阵心、指尖泣血，拼着最后一口精血补全那座万载古阵：「韩道友——拖住追兵六息！大挪移令一催，这古传送阵就能送你一步踏出天南！」");
+    this._combat._log("【保护】辛如音是唯一能修古阵之人——她若阵亡，传送阵断，万劫不复。魔修正追击她——挡在他们面前，护住辛如音！");
     this.log("越国矿洞最深处，尘封的古传送阵幽光明灭。辛如音耗尽精血强行修阵，你与曲魂死守洞口——只须拖住追兵，待大挪移令催动古阵，便能离开天南。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
@@ -4396,15 +4449,79 @@ const Engine = {
     const player = this.playerFighter();
     player.hp = Math.max(20, daoxin); player.hpMax = player.hp;
 
-    this._combat = new CombatAPI.Combat({
-      player,
-      enemies: [{ name: demonName, hp: Math.max(20, bottleneckHp),
-                  sense: 5, agility: 0, move: 2, mp: 999,   // 心魔不竭：意志之战没有耗蓝取巧
-                  atkName: "心魔反噬", atk: demonAtk,
-                  introNote: face.taunt || null }],
-      maxRounds,
-      mode: "breakthrough",
-    });
+    if (isBig) {
+      // —— P0-1 心魔战三阶段：执念之相 → 心魔反扑 → 道心一击 ——
+      // 灵力压半：大境界渡劫限制爆发（设计模板 §B）
+      player.mp = Math.round((player.mpMax || player.mp || 0) * 0.5);
+
+      const pHp = player.hpMax;
+      const p1Hp = Math.max(30, Math.round(pHp * 1.5));
+      const p2Hp = Math.max(25, Math.round(pHp * 0.8));
+      const cloneHp = Math.max(15, Math.round(pHp * 0.4));
+      const p3Hp = Math.max(20, Math.round(pHp * 0.5));
+
+      const mkDemon = (name, hp, atk, extra) => Object.assign({
+        name, hp, hpMax: hp, sense: 5, agility: 0, move: 2, mp: 999,
+        atkName: "心魔反噬", atk,
+        introNote: null,
+      }, extra || {});
+
+      // Phase 1: 执念之相——HP×1.5，纯对攻
+      const phase1 = mkDemon(demonName, p1Hp, demonAtk, {
+        introNote: face.taunt || null,
+      });
+
+      // Phase 2: 心魔反扑——本体回血 + 两个心魔分身（clones）
+      // 分身血少但分散玩家输出——须先清分身再集火本体，否则回血压不住
+      const phase2Name = face.name ? face.name.replace("心魔 · ", "心魔劫 · ") : "心魔劫";
+      const phase2 = mkDemon(`${phase2Name}·反扑`, p2Hp, demonAtk, {
+        introNote: "心魔不灭——它汲取你的道心裂隙愈合伤痕，更裂出两道分身围攻！须先清分身、再集火本体——否则回血压不住！",
+        _demonRegen: true,
+      });
+      const cloneA = mkDemon(`${phase2Name}·分身甲`, cloneHp, Math.round(demonAtk * 0.6), {
+        introNote: null,
+      });
+      const cloneB = mkDemon(`${phase2Name}·分身乙`, cloneHp, Math.round(demonAtk * 0.6), {
+        introNote: null,
+      });
+
+      // Phase 3: 道心一击——狂暴（攻击力×1.5），须撑过最后一击
+      const phase3 = mkDemon(`${phase2Name}·狂相`, p3Hp, Math.round(demonAtk * 1.5), {
+        introNote: "心魔濒死反扑——分身尽碎，它将所有执念凝于一击，狂暴之力铺天盖地！撑过这一波，道心即成！",
+        _demonEnrage: true,
+      });
+
+      this._combat = new CombatAPI.Combat({
+        player,
+        enemies: [phase1],
+        waves: [[phase2, cloneA, cloneB], [phase3]],
+        maxRounds: Math.max(12, maxRounds + 6),
+        mode: "breakthrough",
+      });
+      // 心魔回血钩子：Phase 2 每隔一回合回 5% HP
+      this._combat._demonRegenRound = 0;
+      this._combat._afterEnemyTick = function() {
+        const demon = this.enemies.find(e => e._demonRegen);
+        if (!demon || !demon.alive) return;
+        this._demonRegenRound = (this._demonRegenRound || 0) + 1;
+        if (this._demonRegenRound % 2 === 0 && demon.alive) {
+          const heal = Math.round(demon.hpMax * 0.05);
+          demon.hp = Math.min(demon.hpMax, demon.hp + heal);
+          this._log(`心魔汲取道心裂隙愈合伤痕（+${heal}）——须加快输出！`);
+        }
+      };
+    } else {
+      // 小境界心战：保持原样（单阶段）
+      this._combat = new CombatAPI.Combat({
+        player,
+        enemies: [{ name: demonName, hp: Math.max(20, bottleneckHp),
+                    sense: 5, agility: 0, move: 2, mp: 999,
+                    atkName: "心魔反噬", atk: demonAtk,
+                    introNote: face.taunt || null }],
+        maxRounds,
+        mode: "breakthrough",
+      });
+    }
     this._combatMeta = { type: "breakthrough", big: isBig, canQuick: false };
     s.combat = true;
     this._combat.startRound();
