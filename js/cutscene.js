@@ -63,7 +63,7 @@
     hasStaging(stage) {
       const t = (stage && stage.text) || [];
       return t.some(s => s && typeof s === "object" &&
-        (PLAY_OPS.some(k => has(s, k)) || has(s, "fight") || has(s, "warp") || (s.beat && typeof s.beat === "object")));
+        (PLAY_OPS.some(k => has(s, k)) || has(s, "fight") || has(s, "warp") || has(s, "stage") || (s.beat && typeof s.beat === "object")));
     },
 
     /* §9-6 名场面回廊：把一段"含演出"的剧情节点登记进可重温列表（纯函数，可无头测试）。
@@ -117,6 +117,9 @@
         if (has(seg, "amb")) { beats.push({ kind: "op", op: "amb", amb: seg.amb, opts: seg.opts }); continue; }
         if (has(seg, "wait")) { beats.push({ kind: "op", op: "wait", wait: seg.wait }); continue; }
 
+        // —— 箱庭舞台（stage beat）：复用 L3 轴渲染，人物在横版背景上移动/对话/追逐/入战 ——
+        if (has(seg, "stage")) { beats.push({ kind: "stage", stage: seg.stage }); continue; }
+
         // —— 演出即引导（落幕指路；阻塞，等玩家确认）——
         if (seg.guide && typeof seg.guide === "object") { beats.push({ kind: "guide", guide: seg.guide }); continue; }
 
@@ -143,6 +146,7 @@
       if (!beat) return true;
       if (beat.kind === "op") return beat.op === "wait" && beat.wait === "click";
       if (beat.kind === "drop") return false;   // 终止拍：由 ui 直接调度坠入，非等玩家轻触
+      if (beat.kind === "stage") return true;   // 舞台：阻塞（由 Stage 运行器自行调度）
       return true;   // narr/say/aside/scene/beat 都等玩家
     },
 

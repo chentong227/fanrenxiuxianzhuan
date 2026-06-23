@@ -1150,6 +1150,7 @@ const UI = {
     const st = this._story; if (!st) return;
     if (st.titling) return;           // 题字卡期间由卡自己处理
     if (st.beatActive) return;        // 交互 beat 进行中：轻触无效（由 beat 自己结算）
+    if (st.stageActive) { this._stageAdvance(); return; }  // 舞台模式：轻触交给 Stage 运行器
     if (st.typing) { this._typeFinish(); return; }
     if (st.done) return;              // 已到结尾：不再推进（选项已显示）
     this._storyPlayNext();
@@ -1209,6 +1210,11 @@ const UI = {
         this._storyDrop(b);
         return;
       }
+      if (b.kind === "stage") {       // 箱庭舞台：进入横版轴模式
+        if (st.replay) { st.idx++; continue; }   // 重温：跳过舞台（舞台是空间玩法，回放里不演）
+        this._enterStage(b.stage);
+        return;
+      }
       this._renderTextBeat(b);        // 台词层：渲染并等轻触
       return;
     }
@@ -1249,6 +1255,226 @@ const UI = {
       else if (b.drop === "warp") ok = Engine.gotoLocation(b.warp, { spot: b.spot, arrive: b.arrive });
     } catch (e) { ok = false; }
     if (!ok) { try { this.renderStory(stage); } catch (e) {} }
+  },
+
+  // —— 箱庭舞台（Stage Scene）：复用 L3 轴渲染管线，人物在横版背景上移动/对话/追逐/入战 ——
+  // 进入舞台：隐藏 story overlay，显示 stage overlay，初始化 Stage 运行器
+  _enterStage(config) {
+    const st = this._story; if (!st) return;
+    st.beatActive = true;
+    st.stageActive = true;
+
+    // 隐藏 story overlay，显示 stage overlay
+    const storyOv = this.el("story-overlay");
+    if (storyOv) storyOv.style.opacity = "0";
+    const stageOv = this.el("stage-overlay");
+    if (stageOv) { stageOv.hidden = false; stageOv.style.opacity = "1"; }
+
+    // 初始化 Stage 运行器
+    if (typeof Stage === "undefined") { this._exitStage(); return; }
+    Stage.init(config);
+
+    // 渲染背景
+    const bgEl = this.el("stage-bg");
+    if (bgEl && typeof Art !== "undefined") {
+      const url = (Art.sceneUrl && Art.sceneUrl(config.bg, { landscape: true })) ||
+                  (Art.cgUrl && Art.cgUrl(config.bg));
+      if (url) bgEl.style.backgroundImage = `url('${url}')`;
+    }
+
+    // 设置 track 宽度
+    const track = this.el("stage-track");
+    const V = 12;
+    const W = config.W || 15;
+    if (track) track.style.width = ((W / V) * 100) + "%";
+
+    // 初始渲染
+    this._renderStageUnits();
+    this._renderStageLane(false);
+
+    // 启动脚本执行
+    const ctx = {
+      stageEl: stageOv,
+      bgEl: bgEl,
+      trackEl: track,
+      laneEl: this.el("stage-lane"),
+      unitsEl: this.el("stage-units"),
+      bubbleEl: this.el("stage-bubble"),
+      noteEl: this.el("stage-note"),
+      choiceEl: this.el("stage-choice"),
+      renderUnits: (s) => this._renderStageUnits(),
+      renderLane: (s, fm) => this._renderStageLane(fm),
+      renderBubble: (u, text, emo, tone, s) => this._renderStageBubble(u, text, emo, tone, s),
+      dimExcept: (id, s) => this._dimStageExcept(id, s),
+      undimAll: (s) => this._undimStageAll(s),
+      onCgOut: () => this._exitStage(),
+      onCombat: (fightId, snap) => this._stageToCombat(fightId, snap),
+    };
+    Stage.exec(ctx, () => this._exitStage());
+  },
+
+  // 退出舞台：回到 story overlay 续演
+  _exitStage() {
+    const st = this._story; if (!st) return;
+    if (typeof Stage !== "undefined") Stage.destroy();
+
+    // 清理 stage overlay
+    const stageOv = this.el("stage-overlay");
+    if (stageOv) { stageOv.hidden = true; stageOv.style.opacity = ""; }
+    const bgEl = this.el("stage-bg"); if (bgEl) bgEl.style.backgroundImage = "";
+    const bubbleEl = this.el("stage-bubble"); if (bubbleEl) { bubbleEl.innerHTML = ""; bubbleEl.classList.remove("on"); }
+    const noteEl = this.el("stage-note"); if (noteEl) { noteEl.innerHTML = ""; noteEl.classList.remove("on"); }
+    const choiceEl = this.el("stage-choice"); if (choiceEl) { choiceEl.innerHTML = ""; choiceEl.classList.remove("on"); }
+
+    // 恢复 story overlay
+    const storyOv = this.el("story-overlay");
+    if (storyOv) storyOv.style.opacity = "";
+
+    st.beatActive = false;
+    st.stageActive = false;
+    this._storyPlayNext();
+  },
+
+  // 从舞台坠入战斗
+  _stageToCombat(fightId, snap) {
+    const st = this._story; if (!st || st._dropped) return;
+    st._dropped = true;
+    if (typeof Stage !== "undefined") Stage.destroy();
+
+    // 清理 stage overlay
+    const stageOv = this.el("stage-overlay");
+    if (stageOv) { stageOv.hidden = true; }
+    const bgEl = this.el("stage-bg"); if (bgEl) bgEl.style.backgroundImage = "";
+    const bubbleEl = this.el("stage-bubble"); if (bubbleEl) { bubbleEl.innerHTML = ""; bubbleEl.classList.remove("on"); }
+    const noteEl = this.el("stage-note"); if (noteEl) { noteEl.innerHTML = ""; noteEl.classList.remove("on"); }
+    const choiceEl = this.el("stage-choice"); if (choiceEl) { choiceEl.innerHTML = ""; choiceEl.classList.remove("on"); }
+
+    // 收束 story overlay
+    const storyOv = this.el("story-overlay");
+    if (storyOv) storyOv.hidden = true;
+    document.body.classList.remove("story-on");
+    this._story = null;
+
+    // 坠入战斗（可继承轴位置）
+    if (snap && typeof Engine !== "undefined" && Engine.startFightFromStage) {
+      try { Engine.startFightFromStage(fightId, snap); return; } catch (e) {}
+    }
+    if (typeof Engine !== "undefined" && Engine.startFight) {
+      try { Engine.startFight(fightId); return; } catch (e) {}
+    }
+  },
+
+  // 渲染舞台单位（复用 L3 轴单位渲染逻辑）
+  _renderStageUnits() {
+    if (typeof Stage === "undefined" || !Stage._state) return;
+    const s = Stage._state;
+    const unitsEl = this.el("stage-units");
+    if (!unitsEl) return;
+    const W = s.W;
+    const udefs = Object.values(s.units).map(u => ({
+      key: u.id, art: u.art, name: u.name, pos: u.pos, face: u.face,
+      isHero: u.id === "hanli",
+    }));
+    const ukeys = udefs.map(d => d.key).join(",");
+    if (unitsEl.dataset.keys !== ukeys) {
+      unitsEl.dataset.keys = ukeys;
+      unitsEl.innerHTML = udefs.map(d => {
+        const src = (typeof Art !== "undefined" && Art.battlerUrl) ? (Art.battlerUrl(d.art) || Art.url(d.art)) : null;
+        if (!src) return "";
+        const cls = d.isHero ? "axis-unit self stage-u" : "axis-unit enemy stage-u";
+        return `<div class="${cls}" data-k="${d.key}">
+          <img class="au-img battler" src="${src}" alt="">
+          <div class="au-name">${d.name}</div>
+        </div>`;
+      }).join("");
+    }
+    udefs.forEach(d => {
+      const uel = unitsEl.querySelector(`[data-k="${d.key}"]`);
+      if (!uel) return;
+      uel.style.left = ((d.pos + 0.5) / W * 100).toFixed(2) + "%";
+      const img = uel.querySelector(".au-img");
+      if (img) {
+        const flipped = d.face === "l";
+        img.classList.toggle("flipped", flipped);
+      }
+    });
+  },
+
+  // 渲染轴格（可走点位 / 热点 / 布置标记）
+  _renderStageLane(freeMove) {
+    if (typeof Stage === "undefined" || !Stage._state) return;
+    const s = Stage._state;
+    const laneEl = this.el("stage-lane");
+    if (!laneEl) return;
+    const W = s.W;
+    const hero = s.units["hanli"];
+    const heroPos = hero ? hero.pos : 0;
+    let html = "";
+    for (let i = 0; i < W; i++) {
+      const hot = s.hotspots.find(h => h.pos === i && !h.taken);
+      const prepEntry = Object.entries(s.preps).find(([pid, c]) => c === i);
+      const isUnit = Object.values(s.units).some(u => u.pos === i);
+      const canGo = freeMove && !isUnit && i !== heroPos;
+      const cls = ["axis-cell", canGo ? "can-move" : "", prepEntry ? "has-prep" : ""].join(" ").trim();
+      const click = canGo ? `onclick="UI._stageCellClick(${i})"` : "";
+      html += `<div class="${cls}" ${click}>
+        ${prepEntry ? '<span class="cave-prep-mark">阵</span>' : ''}
+        ${hot ? `<span class="cave-hot near">${this._hotIcon(hot.name)}<i>${hot.name}</i></span>` : ''}
+        <i class="dot"></i>
+      </div>`;
+    }
+    laneEl.innerHTML = html;
+  },
+
+  // 自由行走模式下玩家点击格子
+  _stageCellClick(pos) {
+    if (typeof Stage !== "undefined" && Stage._state && Stage._state.freeMove) {
+      Stage.freeMoveClick(pos);
+    }
+  },
+
+  // 渲染对话气泡
+  _renderStageBubble(unit, text, emo, tone, s) {
+    const bubbleEl = this.el("stage-bubble");
+    if (!bubbleEl) return;
+    const W = s.W;
+    const V = 12;
+    const cam = (typeof s._cam === "number") ? s._cam : 0;
+    // 计算单位在视口中的水平百分比
+    const xPct = ((unit.pos + 0.5 - cam) / V) * 100;
+    // 气泡在单位上方
+    const isLeft = xPct < 50;
+    bubbleEl.innerHTML = `<div class="stage-bubble-box${isLeft ? ' left' : ' right'}" style="left: ${Math.max(10, Math.min(80, xPct))}%">
+      <div class="stage-bubble-name">${unit.name}</div>
+      <div class="stage-bubble-text">${text}</div>
+      <div class="stage-bubble-tail"></div>
+    </div>`;
+    bubbleEl.classList.add("on");
+    // 轻触继续提示
+    const noteEl = this.el("stage-note");
+    if (noteEl) { noteEl.innerHTML = '<div class="stage-cue">▽ 轻触继续</div>'; noteEl.classList.add("on"); }
+  },
+
+  // 暗淡非说话者
+  _dimStageExcept(id, s) {
+    const unitsEl = this.el("stage-units");
+    if (!unitsEl) return;
+    unitsEl.querySelectorAll(".axis-unit").forEach(el => {
+      const k = el.dataset.k;
+      el.classList.toggle("dim", k !== id);
+    });
+  },
+
+  // 取消全部暗淡
+  _undimStageAll(s) {
+    const unitsEl = this.el("stage-units");
+    if (!unitsEl) return;
+    unitsEl.querySelectorAll(".axis-unit").forEach(el => el.classList.remove("dim"));
+  },
+
+  // 舞台轻触继续（由 storyAdvance 调用）
+  _stageAdvance() {
+    if (typeof Stage !== "undefined") Stage.advance();
   },
 
   // 渲染一条台词层节拍（narr/say/aside/scene）：打字机出字 + 立绘
@@ -1314,6 +1540,12 @@ const UI = {
   // 随时可跳：清演出计时/镜头，直达本幕抉择
   storySkip() {
     const st = this._story; if (!st || st.done) return;
+    // 舞台模式：跳过舞台，回 story 续演
+    if (st.stageActive) {
+      if (typeof Stage !== "undefined") Stage.skip();
+      this._exitStage();
+      return;
+    }
     if (this._titleTimer) { clearTimeout(this._titleTimer); this._titleTimer = null; }
     if (this._cutTimer) { clearTimeout(this._cutTimer); this._cutTimer = null; }
     if (this._typeTimer) { clearInterval(this._typeTimer); this._typeTimer = null; }
@@ -4435,6 +4667,28 @@ const UI = {
       } else { intentEl.hidden = true; intentEl.innerHTML = ""; }
     }
 
+    // —— 真颠倒五行阵·手动相位选择（fieldManual：每回合玩家选一个未用过的相位激活）——
+    const fcWrap = this.el("combat-fieldcycle");
+    if (fcWrap) {
+      if (c.fieldManual && c.fieldCycle && c.fieldCycle.length && c.status === "ongoing") {
+        const used = c._fieldUsed || [];
+        const applied = !!c._fieldPhaseApplied;
+        const phaseBtn = (ph, i) => {
+          const isUsed = used.includes(i);
+          const canPick = !isUsed && !applied;
+          const cls = ["fc-phase", isUsed ? "used" : "", applied && !isUsed ? "dim" : ""].join(" ").trim();
+          const tag = isUsed ? "已用" : ph.player && ph.player.shield ? "护" : ph.player && ph.player.dodge ? "闪" : ph.player && ph.player.mp ? "回" : "攻";
+          return `<button class="${cls}" ${canPick ? `onclick="Engine.combatFieldPhase(${i})"` : "disabled"} title="${ph.log || ""}">
+            <i class="fc-seal">${ph.name.charAt(0)}</i><span class="fc-name">${ph.name}</span><i class="fc-tag">${tag}</i></button>`;
+        };
+        fcWrap.innerHTML = `<span class="zone-tag zt-field">阵法</span>${c.fieldCycle.map(phaseBtn).join("")}`;
+        fcWrap.hidden = false;
+      } else {
+        fcWrap.hidden = true;
+        fcWrap.innerHTML = "";
+      }
+    }
+
     // —— 灵力池 + 行动经济行 ——
     const mpPct = Math.max(0, p.mp / p.mpMax * 100);
     const acts = (c._pActsMax || 1) - (c._pActsUsed || 0);
@@ -5103,7 +5357,7 @@ const UI = {
   },
 
   // 热点图标（探索轴/战斗轴共用——同轴一体，开打了东西也还在那）
-  _hotIcon(name) { return /主药|老株/.test(name) ? "🌿" : /灵石/.test(name) ? "💎" : "🌱"; },
+  _hotIcon(name) { return /阵旗/.test(name) ? "旗" : /主药|老株/.test(name) ? "🌿" : /灵石/.test(name) ? "💎" : "🌱"; },
 
   // 镜头导演参数（teamfight-camera-design §7 手感微调）：把所有"节拍/距离/时长"常数集中一处，
   //   一处即可统调演出节奏（用户原话"切镜要丝滑、不晕镜、衔接自然"）。改这里调全局手感。
