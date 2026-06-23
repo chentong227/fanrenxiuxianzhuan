@@ -32,6 +32,7 @@
 | multiply-design.md | 乘法设计哲学（新内容=旧系统相乘，不加新系统） |
 | pacing-design.md | 锚-帆节奏模型 + 越阶生存公理 |
 | world-architecture.md | 大世界分层架构/旅途即内容/因果账本 |
+| **gameplay-template.md** | **全游戏玩法填空模板——每个节点（剧情/战斗/探索/时间跳跃/群战）的设计质量标准与审计表。写新内容前必读，按模板填空** |
 
 **按需 grep（用到哪查哪）**：
 - 剧情考据：`lore-七玄门篇.md`、`lore-departure.md`、`lore-序章到黄枫谷.md`、`techniques-lore.md`
@@ -65,6 +66,11 @@
 - **系统推进清单**：每章设计文档必须包含 `chapter-systems-manifest.md` 定义的
   系统推进表（A~E），覆盖 Build 三路 / 因果账本 / 命途道岔 / 时间窗口互斥 / 探索随机化。
   填不出来=设计缺口，必须补完再实装。实装后必跑四道审计（时间预算/因果链/乘法/等效时间律）。
+- **玩法节点质量模板**：`gameplay-template.md` 是全游戏玩法节点的最高级设计规范——
+  **写任何新节点（剧情选择/战斗/探索/时间跳跃/群战）之前必读**。模板定义了 5 类节点的
+  填空字段 + 红线 + 3 套质量审计表（选择质量/战斗质量/篇章质量）。填完审计表才可实装。
+  **agent 工作流**：读 AGENTS.md → 读 gameplay-template.md → 读 chapter-template.md →
+  读 chapter-systems-manifest.md → 按模板填节点 → 跑审计表 → 实装。
 
 ## 四、工程惯例
 
