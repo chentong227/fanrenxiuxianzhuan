@@ -18,23 +18,13 @@ const STORY = [
     title: "青牛镇 · 韩家",
     text: [
       { amb: "wind" },
-      { stage: {
-        bg: "qingniu",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -3 }, ms: 1400 },
+      { cam: "pan", to: { x: 0, y: -3 }, ms: 1400 },
           { narr: "你叫韩立，青牛镇韩家老二。家中清贫，几亩薄田勉强糊口，年成不好时连盐都吃不起。" },
           { narr: "这年，在七玄门做事的三叔回乡省亲。他见你机灵懂事，私下对你爹娘提议——" },
           { cam: "zoom", scale: 1.08, ms: 800 },
           { say: "hanli", tone: "low", text: "「七玄门正招收记名弟子，管吃管住，每月还有例钱。二郎这孩子机灵，何不让他去碰碰运气？」三叔压低了声音，带着几分得意。" },
           { cam: "zoom", scale: 1.0, ms: 600 },
           { narr: "爹娘犹豫，你却已动了心——若能进了那高门大派，家里的日子或许就能好过些。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) { State.setFlag("at_village"); },
     choices: [
@@ -54,24 +44,9 @@ const STORY = [
       { amb: "wind" },
       "出了青牛镇，山路迢迢。同行的还有几个各乡来应试的少年。",
       "其中一个虎背熊腰、憨厚老实的少年叫张铁，与你一见投缘。一路上你俩互相照应，渐成好友。",
-      { stage: {
-        bg: "road",
-        W: 14,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "zhangtie", art: "zhangtie", pos: 4, name: "张铁", face: "r" },
-        ],
-        script: [
-          { move: "hanli", to: 5, ms: 2200 },
-          { move: "zhangtie", to: 7, ms: 2200 },
-          { say: "zhangtie", text: "听说七玄门收徒极严，十个里取不了一个。" },
-          { move: "hanli", to: 8, ms: 2200 },
-          { move: "zhangtie", to: 10, ms: 2200 },
+      { say: "zhangtie", text: "听说七玄门收徒极严，十个里取不了一个。" },
           { say: "zhangtie", text: "不过……总得试试不是？我娘说了，考上了顿顿有白面馍。" },
           { narr: "顿顿有白面馍……这倒是和我想到一块儿去了。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     choices: [
       { text: "与张铁结伴，同赴选拔", hint: "继续", next: true },
@@ -84,21 +59,11 @@ const STORY = [
     title: "七玄门 · 入门选拔",
     onArrive(s) { s.location = "shanmen"; State.setFlag("joined_sect"); },
     text: [
-      { stage: {
-        bg: "shanmen",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 4, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -4 }, ms: 1400 },
+      { cam: "pan", to: { x: 0, y: -4 }, ms: 1400 },
           { narr: "七玄门依山而建，气派非凡。选拔场上人头攒动，你和张铁夹在其中，显得格外不起眼。" },
           { narr: "测筋骨、考悟性、试胆识……你二人资质平平，初试竟未能入选。" },
           { cam: "zoom", scale: 1.08, ms: 800 },
           { narr: "眼看就要被刷下，你不肯认命，硬着头皮求得一个补考的机会。半年后再试，凭着一股韧劲，你和张铁终于挤进了记名弟子的名册。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     choices: [
       { text: "入门记名，正式踏入七玄门", hint: "继续", next: true },
@@ -113,24 +78,13 @@ const STORY = [
       { scene: "七玄门 · 药庐" },
       { amb: "candle" },
       "选拔的喧嚣散去，你和张铁被一名枯瘦老者叫到跟前。他便是门中以医毒闻名、性情古怪的墨大夫。",
-      { stage: {
-        bg: "yaolu",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "modafu", art: "bt_modafu", pos: 7, name: "墨大夫", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.06, ms: 1000 },
+      { cam: "zoom", scale: 1.06, ms: 1000 },
           { say: "modafu", tone: "low", text: "你二人资质平平，却有股不肯认命的韧劲……也罢，就留在我药庐做个药童吧。" },
           { sfx: "page" },
           { narr: "他枯枝似的手指递来一卷泛黄的功法。" },
           { say: "modafu", text: "这《长春功》，你且用心修习。每练成一层，我便赏你纹银。" },
           { narr: "纹银……家里若能宽裕些就好了。你压下心头的念头，恭敬接过。" },
           { narr: "自此你住进药庐，日里辨药煎药，闲时打坐修《长春功》。修仙之路，就在这草药的苦香里，悄然开端。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("met_modafu");
@@ -154,24 +108,13 @@ const STORY = [
     text: [
       { scene: "演武厅" },
       "药庐之外，你结识了同门厉飞雨——一个武学有成、性子爽朗的师兄。",
-      { stage: {
-        bg: "yaolu",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "lifeiyu", art: "bt_wuren", pos: 7, name: "厉飞雨", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "lifeiyu", emo: "laugh", tone: "拍着你肩膀大笑", text: "韩立，你这记性简直是天才！我练了三月的招式，你看两遍就会了！" },
           { narr: "你笑而不语。这哪是什么天才——是《长春功》练到些火候后，记忆愈发清明罢了。这等隐秘，自然不能与人说。" },
           { narr: "张铁却没这般顺遂。他无论如何引气不入体，《长春功》死死卡在第一层。" },
           { say: "lifeiyu", tone: "摇头", text: "你这身子骨，不是修仙的料。改修武体吧，练练象甲功，强身健骨也好。" },
           { cam: "pan", to: { x: 3, y: 0 }, ms: 800 },
           { narr: "张铁憨憨地应了，没半分怨言。三人意气相投，结为好友——这七玄门的日子，总算有了些暖意。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("met_friends");
@@ -191,23 +134,13 @@ const STORY = [
     text: [
       "一次外出，你于无意间得了一只不起眼的小绿瓶。",
       "瓶中残留着几滴神秘绿液。你试着将一株枯萎灵草投入瓶内——",
-      { stage: {
-        bg: "yaolu",
-        W: 8,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 4, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.08, ms: 800 },
+      { cam: "zoom", scale: 1.08, ms: 800 },
           { fx: "flash", color: "#dff3ff", alpha: 0.4, ms: 500 },
           { fx: "burst", elem: "mu", n: 14 },
           { sfx: "chime" },
           { narr: "不过一夜，那灵草竟抽枝展叶，灵气盎然，仿佛被催着长了整整一季！" },
           { cam: "pan", to: { x: 2, y: 0 }, ms: 600 },
           { narr: "你心头剧跳，强压下狂喜。此物若善加利用……以你这平庸的四灵根，未必没有出头之日。此事，断不可让任何人知晓。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.bottle.unlocked = true;
@@ -229,22 +162,12 @@ const STORY = [
     title: "暗藏的锋芒",
     text: [
       { amb: "candle" },
-      { stage: {
-        bg: "yaolu",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.04, ms: 800 },
+      { cam: "zoom", scale: 1.04, ms: 800 },
           { narr: "靠着小绿瓶催熟的灵药，你瞒着墨大夫，将《长春功》一路偷修到了练气四层。" },
           { narr: "表面上，你仍是那个进境平平、按层领赏的笨拙药童；暗地里，你的修为早已远超墨大夫的预料。" },
           { cam: "zoom", scale: 1.1, ms: 600 },
           { sfx: "danger" },
           { narr: "你愈发谨慎。墨大夫待你太好了——好得不像个寻常师父。这份反常，让你脊背发凉。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("qi_layer_4");
@@ -287,19 +210,9 @@ const STORY = [
       { scene: "数月后 · 深夜" },
       { amb: "night" },
       "练象甲功的张铁奉墨大夫之命外出探查，此后再无音讯。门中只道他离门远游了。",
-      { stage: {
-        bg: "qixuan_ye",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { narr: "可你心里总堵着一块石头。张铁不是那种不辞而别的人。" },
           { narr: "你四处打听，蛛丝马迹却都指向一个令你脊背发凉的方向。直到这一夜，你绕到墨大夫密室之外——" },
-          { cgOut: true },
-        ],
-      }},
       { stage: {
         bg: "miju",
         W: 10,
@@ -358,14 +271,7 @@ const STORY = [
     title: "夺舍之谋",
     text: [
       { bgm: "tense" },
-      { stage: {
-        bg: "yaolu",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { narr: "拼凑起所有线索，那个深埋的真相终于浮出水面：墨大夫这具躯壳里，附着一缕名为「余子童」的修士残魂。" },
           { narr: "余子童元神受损，又夺不了墨大夫这具承不住灵力的凡躯。于是……" },
           { narr: "于是他借墨大夫之手养你、授你《长春功》，把你的身躯一步步炼成最趁手的夺舍容器。等的，就是有朝一日鸠占鹊巢，占了你的身体重获新生。" },
@@ -374,9 +280,6 @@ const STORY = [
           { cam: "pan", to: { x: -3, y: 0 }, ms: 600 },
           { say: "hanli", tone: "low", text: "想夺我的身子……得先问过我手里的毒。" },
           { narr: "一张死局，就此铺开。只等那夺舍之夜降临。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("showdown_ready");
@@ -443,14 +346,7 @@ const STORY = [
     title: "李代桃僵",
     text: [
       { amb: "candle" },
-      { stage: {
-        bg: "yaolu",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.04, ms: 800 },
+      { cam: "zoom", scale: 1.04, ms: 800 },
           { narr: "墨大夫的尸身渐渐冷却，余子童那缕不甘的残魂也已被你彻底镇灭。药庐里重归死寂。" },
           { narr: "声张吗？不。一个练气小修在七玄门这样的门派眼里，轻如草芥。这桩事，谁都不能知道。" },
           { narr: "你做了一个大胆的决定——索性顶替墨大夫的身份活下去。对外，你仍是那个深居简出、医毒双绝的「墨大夫」；暗里，你是这门中唯一无人知晓的修仙者。" },
@@ -460,9 +356,6 @@ const STORY = [
           { say: "hanli", tone: "low", text: "委屈你了，张铁。从今往后，你我兄弟，再不分离。" },
           { cam: "zoom", scale: 1.0, ms: 600 },
           { narr: "此后数年，你低调行医，潜心修炼，悄悄积蓄着毒、暗器与底牌。山雨欲来，你需要时间。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.give("lingshi", 5);
@@ -488,23 +381,12 @@ const STORY = [
     text: [
       { scene: "数年后 · 演武厅" },
       { bgm: "tense" },
-      { stage: {
-        bg: "shanmen",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "xiaosuanpan", art: "bt_wuren", pos: 7, name: "小算盘", face: "l" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -3 }, ms: 1200 },
+      { cam: "pan", to: { x: 0, y: -3 }, ms: 1200 },
           { narr: "门外早已不太平。野狼帮在帮主贾天龙麾下日渐坐大，为争夺七玄门治下几座富庶城镇的税赋，与门派屡屡冲突，前后交手十余次，互有死伤。" },
           { cam: "zoom", scale: 1.08, ms: 600 },
           { say: "xiaosuanpan", tone: "low", text: "墨大夫，您是没瞧见……野狼帮那帮人，一次比一次凶。门里三位师叔都坐不住了。" },
           { narr: "起初不过是凡俗江湖的厮杀。可你嗅到一丝不安——贾天龙的野心，似乎不止于几座城镇。" },
           { narr: "山雨欲来，风满楼。气氛一日紧过一日。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) { State.setFlag("gang_war"); Engine.meetNpc("xiaosuanpan", "门中管事弟子，消息灵通。"); Engine.meetNpc("jiatianlong", "野狼帮帮主，野心勃勃。"); },
     choices: [
@@ -520,17 +402,8 @@ const STORY = [
     text: [
       { scene: "七玄门 · 校场" },
       "果然，贾天龙亮出了底牌——他重金请来一名修仙者：青苓来的矮胖和尚，「金光上人」。",
-      { stage: {
-        bg: "shanmen",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 1, name: "韩立", face: "r" },
-          { id: "jinguang", art: "bt_jinguang", pos: 10, name: "金光上人", face: "l" },
-        ],
-        script: [
-          { fx: "flash", color: "#ffd27a", alpha: 0.35, ms: 320 },
+      { fx: "flash", color: "#ffd27a", alpha: 0.35, ms: 320 },
           { sfx: "castJin" },
-          { move: "jinguang", to: 8, ms: 1500 },
           { say: "jinguang", text: "七玄门？也配？今日，便让尔等见识见识何为仙法。" },
           { fx: "flash", color: "#ffd27a", alpha: 0.25, ms: 280 },
           { sfx: "hit" },
@@ -539,9 +412,6 @@ const STORY = [
           { wait: 600 },
           { narr: "片刻之间，尽数被击倒在地。门派危在旦夕，眼看就要被血洗。" },
           { narr: "满场绝望。可无人知道，这门中还藏着一个修仙者。那就是你——「墨大夫」。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("jinguang_appeared");
@@ -563,19 +433,9 @@ const STORY = [
     cg: "jinguang",
     title: "暗算金光上人",
     text: [
-      { stage: {
-        bg: "shanmen",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { narr: "正面硬拼，你绝非这和尚的对手。但修仙之争，从来不是比谁拳头硬——而是比谁算计更深、准备更足、出手更狠。" },
           { narr: "你以「墨大夫」医者的身份从容近身，谁也不会提防一个佝偻的老药师。就在咫尺之间——" },
-          { cgOut: true },
-        ],
-      }},
       { stage: {
         bg: "shanmen",
         W: 10,
@@ -611,14 +471,7 @@ const STORY = [
     title: "升仙令 · 离门",
     text: [
       { scene: "七玄门 · 山门外" },
-      { stage: {
-        bg: "shanmen",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { narr: "金光上人到死都瞪大着眼——他怎么也想不通，自己竟会折在一个不起眼的门派药师手里。" },
           { narr: "你从他身上搜得宝物：升仙令、金符、剑符、金钟罩——皆是你做梦都不敢想的修仙之资。" },
           { narr: "尤其这枚「升仙令」……它是踏入更高门派、求取筑基机缘的凭证。我的机会，到了。" },
@@ -626,26 +479,13 @@ const STORY = [
           { sfx: "danger" },
           { narr: "可夜里收功之时，一缕阴寒自丹田窜起，冻得你指尖发麻——墨大夫临死的冷笑浮上心头。遗书里写得明白：他在传你功法时早埋了寒毒，解药唯有墨家祖传的「暖阳宝玉」。" },
           { narr: "遗书末尾是一行小字：去岚州嘉元城墨府，解你的毒，也……替我安顿好她们。这老鬼，到死还要驱使我。" },
-          { cgOut: true },
-        ],
-      }},
       { bgm: "journey" },
-      { stage: {
-        bg: "departure",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.06, ms: 1500 },
+      { cam: "zoom", scale: 1.06, ms: 1500 },
           { narr: "你最后回望了一眼这座困了你数年的七玄门。这里有过暖意，也有过欺骗与杀机。" },
           { say: "hanli", tone: "极轻", text: "张铁，飞雨……后会有期。" },
           { wait: 500 },
           { cam: "pan", to: { x: 4, y: 0 }, ms: 1200 },
           { narr: "转身，山风扑面。先去嘉元城解毒，再寻修仙人的踪迹——凡人之路，仍在脚下延伸。" },
-          { cgOut: true },
-        ],
-      }},
       { scene: "七玄门篇 · 终　——　离门远行 · 启" },
     ],
     onArrive(s) {
@@ -682,15 +522,7 @@ const STORY = [
       { bgm: "town" },
       "三个月风尘，嘉元城到了。岚州第一大城名不虚传——街市喧腾，车马如流，比山下集镇繁华十倍不止。",
       "墨府坐落在城东，朱门高墙，只是门庭冷落，匾上漆色已有些剥落。你递上墨大夫的亲笔信。",
-      { stage: {
-        bg: "mofu",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mocaihuan", art: "mocaihuan", pos: 7, name: "墨彩环", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.06, ms: 1500 },
+      { cam: "zoom", scale: 1.06, ms: 1500 },
           { fx: "flash", color: "#f3e8c8", alpha: 0.16, ms: 600 },
           { narr: "片刻后，一个梳双髻的少女蹦跳着出来，上下打量你，眼睛骨碌碌地转。" },
           { say: "mocaihuan", emo: "scheme", text: "你就是我爹信里说的那个……土里土气的韩大哥？" },
@@ -699,9 +531,6 @@ const STORY = [
           { narr: "你还没反应过来，药丸已经到了她手里。这位墨家小姐古灵精怪，眼泪、撒娇、装可怜轮番上阵，半点不像深宅闺秀。" },
           { narr: "墨夫人款待了你。提及墨大夫的死讯时，她沉默良久，只说了一句：「他既有遗信安排，想必……早料到有这一日。」" },
           { narr: "信中所托有二：取暖阳宝玉解我的寒毒；安顿墨家。可这暖阳宝玉是墨家祖传之物——如何开得了口？" },
-          { cgOut: true },
-        ],
-      }},
       // 演出即引导：切到嘉元城这一刻，顺势告诉新玩家"到了该干嘛"——度月安顿，静极生变
       { guide: {
         tag: "初来乍到 · 指路",
@@ -731,16 +560,7 @@ const STORY = [
       { scene: "墨府 · 夜" },
       { bgm: "tense" },
       "你在墨府住了些时日，寒毒一日重过一日——运功时丹田如坠冰窟。",
-      { stage: {
-        bg: "mofu",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "thief1", art: "bt_bandit", pos: 9, name: "夜袭者", face: "l" },
-          { id: "thief2", art: "bt_bandit", pos: 10, name: "夜袭者", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.08, ms: 1100 },
+      { cam: "zoom", scale: 1.08, ms: 1100 },
           { narr: "这夜三更，院墙上瓦片轻响。你掀帘而出，只见两条黑影正撬后库的窗——手法娴熟，不是寻常毛贼。" },
           { sfx: "danger" },
           { beat: {
@@ -758,16 +578,10 @@ const STORY = [
                 line: "你出手稍迟，飞针擦着夜色掠过——两条黑影已翻墙而逃，慌乱中墙头落下一块腰牌。",
               },
           } },
-          { despawn: "thief1" },
-          { despawn: "thief2" },
           { narr: "墨彩环披衣赶来，捡起腰牌看了一眼，脸色发白。" },
-          { spawn: "mocaihuan", art: "mocaihuan", pos: 6, name: "墨彩环", face: "l" },
           { say: "mocaihuan", tone: "低声", text: "……是城里帮派的人。爹在时，岚州的这些豺狗没一个敢正眼看墨府。如今……" },
           { narr: "她没说下去。你环顾这座大宅——朱门依旧，可门里只剩孤儿寡母。墙外的嘉元城，已经换了天。" },
           { narr: "墨大夫遗书所托『安顿墨家』……我能杀退一两拨宵小，可我终究要走。这宅子需要的，是一道不走的影子。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("mo_warned");
@@ -786,15 +600,7 @@ const STORY = [
       { scene: "墨府 · 后园" },
       { amb: "wind" },
       "那夜之后，你在墨府明里暗里又退了两拨探子。嘉元城的豺狗们暂时缩回了爪子——但你看得出，它们只是在等你离开。",
-      { stage: {
-        bg: "mofu",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mocaihuan", art: "mocaihuan", pos: 7, name: "墨彩环", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.06, ms: 1200 },
+      { cam: "zoom", scale: 1.06, ms: 1200 },
           { narr: "清晨，墨彩环在后园叫住你，双手捧着一只锦盒，盒中玉光温润——暖阳宝玉。" },
           { say: "mocaihuan", text: "给你。我知道你身上有寒毒，娘也同意了。" },
           { narr: "这是墨家祖传之物，更是她的嫁妆——" },
@@ -809,9 +615,6 @@ const STORY = [
           { cam: "pan", to: { x: 3, y: 0 }, ms: 1000 },
           { narr: "当夜，你独自登上后库房顶，取出了那杆曲魂幡。幡下的身影立在檐角的阴影里，像一座沉默的碑——那是张铁的遗蜕，如今唤作曲魂。" },
           { narr: "带它走，刀口上多一分照应；留它下来，墨府便有一道不走的影子，护这一家人安稳度日。该如何决断？" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("han_du_cured");
@@ -864,15 +667,7 @@ const STORY = [
       { amb: "crowd" },
       { bgm: "fair" },
       "山谷两侧摊位绵延，灵光隐现。御器飞行的修士掠过头顶，你竭力不让自己显得像个没见过世面的土包子——失败了。",
-      { stage: {
-        bg: "tainan_fair",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "wanxiaoshan", art: "bt_sanxiu", pos: 7, name: "万小山", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1200 },
+      { cam: "zoom", scale: 1.05, ms: 1200 },
           { say: "wanxiaoshan", text: "兄台第一次来小会吧？别盯着人家的飞剑看啦，会被当肥羊宰的！" },
           { narr: "搭话的是个二十出头的年轻人，圆脸带笑，背着鼓鼓囊囊的行囊。他自称万小山，修仙世家出身。" },
           { say: "wanxiaoshan", text: "家道中落啦，就剩我一个跑散修。哎，看兄台面生——头一回来小会吧？" },
@@ -882,9 +677,6 @@ const STORY = [
           { cam: "pan", to: { x: -3, y: 0 }, ms: 800 },
           { narr: "人流里，一个着青衫的年轻女修与同伴擦肩而过，眉目清冷。" },
           { say: "wanxiaoshan", tone: "压低声音", text: "黄枫谷的师姐们也来了——七派的人都会来小会备货。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("wan_met");
@@ -907,16 +699,7 @@ const STORY = [
       { amb: "crowd" },
       "你在摊位间出手了几次。不知何时起，一道目光黏在了你的储物袋上。",
       "一名山羊胡道人踱了过来，身后跟着个贼眉鼠眼的瘦子。道人拂尘一甩，笑容可掬。",
-      { stage: {
-        bg: "tainan_fair",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "wanxiaoshan", art: "bt_sanxiu", pos: 4, name: "万小山", face: "r" },
-          { id: "qingwen", art: "bt_wuren", pos: 9, name: "青纹道人", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.06, ms: 1000 },
+      { cam: "zoom", scale: 1.06, ms: 1000 },
           { say: "qingwen", text: "这位小友面生得很。贫道青纹，添为散修盟的执事——小会的摊位费，小友可还没缴吧？" },
           { narr: "万小山脸色一变，刚要开口，你抬手拦住了他。" },
           { narr: "散修盟？小会乃自发集市，何来执事。这道人方才一直在我身后三个摊位外打转——他的『拂尘』甩动时，瘦子的手就往人群里的储物袋摸。" },
@@ -926,13 +709,8 @@ const STORY = [
           { sfx: "danger" },
           { narr: "四周霎时静了。瘦子脸色煞白，青纹道人眯起眼上下打量你，半晌，忽然嗤笑一声。" },
           { say: "qingwen", text: "好眼力。小友，路走宽些，来日方长——咱们，会再见的。" },
-          { move: "qingwen", to: 12, ms: 600 },
-          { despawn: "qingwen" },
           { narr: "两人身形一晃，没入人流。万小山长出一口气，连拍胸口。" },
           { say: "wanxiaoshan", text: "好险好险……这两个是惯吃黑食的，被他们盯上的散修没几个有好下场。韩兄，你这双眼睛，绝了！" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("qingwen_seen");
@@ -960,41 +738,13 @@ const STORY = [
       { amb: "wind" },
       { bgm: "journey" },
       "离大会还有些日子。万小山一早来敲你的门，背着他那标志性的大行囊。",
-      { stage: {
-        bg: "road",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "wanxiaoshan", art: "bt_wanxiaoshan", pos: 7, name: "万小山", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { say: "wanxiaoshan", text: "韩兄韩兄！后山有片野灵草地，会期前去采一茬，正好凑明年的盘缠！你药理好，我认路——五五分账！" },
-          { cgOut: true },
-        ],
-      }},
-      { stage: {
-        bg: "road",
-        W: 14,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "wanxiaoshan", art: "bt_wanxiaoshan", pos: 4, name: "万小山", face: "r" },
-        ],
-        script: [
-          { move: "hanli", to: 5, ms: 2400 },
-          { move: "wanxiaoshan", to: 7, ms: 2400 },
-          { say: "wanxiaoshan", text: "等攒够了灵石，我就去考清虚门的外门——我这资质，散修是熬不出头的，可我爹说过，万家的人不能断了仙路！" },
-          { move: "hanli", to: 8, ms: 2400 },
-          { move: "wanxiaoshan", to: 10, ms: 2400 },
+      { say: "wanxiaoshan", text: "等攒够了灵石，我就去考清虚门的外门——我这资质，散修是熬不出头的，可我爹说过，万家的人不能断了仙路！" },
           { bgm: "combat" },
           { sfx: "danger" },
-          { spawn: { id: "wolf1", art: "bt_wolf", pos: 13, name: "灵狼", face: "l" } },
-          { spawn: { id: "wolf2", art: "bt_wolf", pos: 12, name: "灵狼", face: "l" } },
           { narr: "话音未落，前方草丛一阵翻动——两头灵狼压低了身子，绿油油的眼睛盯着你们。" },
           { say: "wanxiaoshan", text: "韩、韩兄站我右边！我家传的火球术——照妖兽脸上招呼！" },
-          { cgOut: true },
-        ],
-      }},
     ],
     choices: [
       { text: "拔剑：「好。」", hint: "头一回，有人和你并肩而战", resolve: "wan_hunt_fight" },
@@ -1020,15 +770,7 @@ const STORY = [
       "会期到了。太南山腰人山人海，七面大旗猎猎作响——掩月宗、黄枫谷、灵兽山、清虚门、化刀坞、天阙堡、巨剑门。",
       "高台之上立着一面丈许高的测灵璧。少年男女们排着长队挨个上前按手，璧上灵光忽明忽暗，台下不时爆出欢呼或叹息。",
       "万小山陪你排在队尾，比你还紧张。",
-      { stage: {
-        bg: "xianhui_tai",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 4, name: "韩立", face: "c" },
-          { id: "wanxiaoshan", art: "bt_sanxiu", pos: 2, name: "万小山", face: "r" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1200 },
+      { cam: "zoom", scale: 1.05, ms: 1200 },
           { say: "wanxiaoshan", emo: "panic", text: "韩兄放轻松！你修为都练气中后期了，怎么也比这些没开过灵窍的娃娃强！" },
           { narr: "轮到你。掌心贴上测灵璧——四色灵光同时亮起，又同时黯下去，浑浊不清。" },
           { sfx: "fail" },
@@ -1039,9 +781,6 @@ const STORY = [
           { cam: "pan", to: { x: -4, y: 0 }, ms: 1000 },
           { narr: "高台另一侧，七派的接引修士分坐云台。最东侧一位白衣女修绝丽出尘，眉目疏淡地俯瞰全场——人群里有人压着嗓子说，那是掩月宗的南宫仙子，结丹期的大人物。" },
           { narr: "结丹……那是凌驾于筑基之上的境界。同样一双眼睛，她看这满山的人，会是什么样子？" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("xianhui_done");
@@ -1135,23 +874,12 @@ const STORY = [
       "你在林中埋了万小山，坟头朝着他念叨过的家乡。他行囊里那半张符纸，你替他收了——往后你画出的每一张符，都算有他一份。",
       "三日后，黄枫谷接引处。你越过长队，将一枚令牌放在案上。",
       "接引修士本待呵斥，看清令牌的一瞬，霍然起身。",
-      { stage: {
-        bg: "xianhui_tai",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 4, name: "韩立", face: "r" },
-          { id: "jieyin", art: "bt_wuren", pos: 7, name: "接引修士", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.06, ms: 1000 },
+      { cam: "zoom", scale: 1.06, ms: 1000 },
           { sfx: "chime" },
           { say: "jieyin", tone: "压低声音", text: "升仙令？！……阁下稍候，此令可直入我谷，无须测选。" },
           { narr: "队伍里炸开嗡嗡的议论。方才在测灵台上嗤笑过你的几张脸，此刻表情精彩纷呈。" },
           { cam: "pan", to: { x: 3, y: 0 }, ms: 800 },
           { narr: "测灵璧量得出灵根，量不出人心。黄枫谷——筑基之路，我来了。" },
-          { cgOut: true },
-        ],
-      }},
       { scene: "离门远行 · 终　——　黄枫谷篇 · 启" },
     ],
     onArrive(s) {
@@ -1184,24 +912,13 @@ const STORY = [
       { bgm: "journey" },
       "青石阶尽头云雾翻涌，仙鹤掠过殿宇飞檐。你随新弟子的队伍拾级而上，腿肚子都有些发飘——这才是真正的仙家气象。",
       "领队的是个面容温和的中年修士，一路不厌其烦地替众人指点：哪里是讲法堂，哪里是百机堂，灵田灵泉各在何处。",
-      { stage: {
-        bg: "huangfeng_gate",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "wushishu", art: "bt_wuren", pos: 7, name: "吴师叔", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1200 },
+      { cam: "zoom", scale: 1.05, ms: 1200 },
           { say: "wushishu", text: "都跟紧些。谷里规矩多，但记住一条就够——本分修行，谁也难为不了你。" },
           { sfx: "pick" },
           { narr: "发放青衫、腰牌、住所木牌，连同一片青叶法器、一柄制式铁剑时，他注意到你的入门名册。" },
           { say: "wushishu", text: "青叶法器助你御风赶路，铁剑虽是下品，到底是件正经战斗法器——御剑的本事，趁早练熟。" },
           { say: "wushishu", tone: "略一挑眉", text: "升仙令入谷？少见。小友，按谷例你可领一枚筑基丹——随我去执事殿。路上我教你：丹领了就收进贴身袋，谷里……不是人人都古道热肠。" },
           { narr: "萍水相逢，肯说这句话的，是个好人。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("hf_arrived");
@@ -1227,16 +944,7 @@ const STORY = [
     text: [
       { scene: "黄枫谷 · 执事殿" },
       "执事殿内，管事修士验过升仙令，从玉匣中取出一枚龙眼大的乳白丹丸。丹香入鼻，你丹田里的灵力都为之一颤。",
-      { stage: {
-        bg: "huangfeng_zhishi",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "wushishu", art: "bt_wuren", pos: 4, name: "吴师叔", face: "r" },
-          { id: "luyunfeng", art: "bt_wuren", pos: 9, name: "陆云风", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { sfx: "pick" },
           { narr: "筑基丹。入手微温，你的指尖几乎在抖——筑基之路，就握在掌心里。" },
           { narr: "苦修、算计、亡命——值了。都值了。" },
@@ -1246,7 +954,6 @@ const STORY = [
           { narr: "吴师叔脸色一沉，往你身前一站。" },
           { say: "wushishu", tone: "沉声", text: "陆师侄，谷例就是谷例。升仙令入谷授丹，掌门亲定的规矩——你要造次？" },
           { narr: "陆云风眼神闪烁之际，殿外又踱进来一个鹰目薄唇的青袍老者。满殿修士的腰瞬间弯了下去：「叶师叔。」" },
-          { spawn: "yeshishu", art: "bt_wuren", pos: 10, name: "叶师叔", face: "l" },
           { say: "yeshishu", tone: "皮笑肉不笑", text: "吵什么。老夫来调解：云风啊，丹是人家凭令领的，你抢，没规矩——" },
           { narr: "陆云风躬身退后，嘴角却挂着笑。叶师叔转向你，抬手一招，一只布袋飘到你面前：十几块灵石、几株药草。" },
           { say: "yeshishu", tone: "不容置疑", text: "不过，小友才练气七层，丹放在你手里是糟蹋。老夫门下有个后辈正当火候——这些换你那枚丹，公平买卖。日后你到了火候，自有机缘。" },
@@ -1259,9 +966,6 @@ const STORY = [
           { say: "hanli", tone: "极平静", text: "……成交。" },
           { wait: 600 },
           { narr: "你松开手。那枚乳白的丹丸离开掌心的一瞬，你把它的模样刻进了心里。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("zhuji_dan_stolen");
@@ -1285,15 +989,7 @@ const STORY = [
       { scene: "黄枫谷 · 掌门殿" },
       { bgm: "tense" },
       "掌门殿高阔幽深。你陈明原委，垂手而立。半晌，上首的中年掌门放下茶盏。",
-      { stage: {
-        bg: "huangfeng_zhishi",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "zhangmen", art: "bt_wuren", pos: 8, name: "黄枫谷掌门", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.06, ms: 1200 },
+      { cam: "zoom", scale: 1.06, ms: 1200 },
           { say: "zhangmen", tone: "语气平淡得像在说天气", text: "叶师叔既已给了灵石药草，便算两讫。修仙界中，机缘灵物，向来有德者居之——" },
           { say: "zhangmen", text: "——而所谓德，便是实力。你若有叶师叔的修为，这丹，谁拿得走？" },
           { narr: "他挥挥手，示意你退下。自始至终，没问过你一句。" },
@@ -1302,9 +998,6 @@ const STORY = [
           { narr: "殿外山风浩荡，云海翻腾。你立在白玉阶上，忽然笑了一声。" },
           { narr: "好。问世间讨公道，原是我天真。七玄门教过我一回，黄枫谷又教一回——这一课，我记到筑基那天。" },
           { say: "hanli", emo: "cold", tone: "极轻", text: "实力为上。多谢掌门赐教。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("zhangmen_seen");
@@ -1325,15 +1018,7 @@ const STORY = [
       { bgm: "daily" },
       "百机堂的执事翻着名册，把你打发去了百药园——谷东南向阳坡上，一畦一畦的灵田顺着山势铺开，药香沁人。",
       "看园的是个黑瘦干瘪的老者，背着手把你从头到脚扫了三遍，鼻子里哼了一声。",
-      { stage: {
-        bg: "huangfeng_gate",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mashibo", art: "bt_wuren", pos: 7, name: "马师伯", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "mashibo", text: "又塞个不要的来。丑话在前：卯时起垄，辰时引灵泉，巳时捉虫——误一炷香，扣一月例钱。手脚不干净的，老夫亲自打断。" },
           { narr: "他随手指着一畦蔫头耷脑的灵草：「先说说，这畦怎么了。」" },
           { narr: "叶片卷边发暗，根部却无虫眼——是灵泉引多了，涝着了。墨大夫的《百草谱》第三卷讲过。" },
@@ -1345,9 +1030,6 @@ const STORY = [
           { narr: "刀子嘴。这园子打理得一丝不苟，他对药草是真心，对人——大概也是。" },
           { narr: "自此，你成了百药园的看园弟子。差事不重，月例不薄，更要紧的是——这满园灵药，和园角那间无人过问的旧丹房。" },
           { narr: "叶师叔当我在这里磋磨光阴。可对我来说……药园、丹房、小绿瓶。三年——三年之内，我要让『筑基丹』四个字，重新回到我自己手里。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("yaoyuan_started");
@@ -1423,15 +1105,7 @@ const STORY = [
       { amb: "wind" },
       { bgm: "sorrow" },
       "陆云风的尸身倒在血泊里，眼睛还瞪着——他到死也没想明白，一个看药园的杂役弟子，出手为什么这么狠。",
-      { stage: {
-        bg: "houshan",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "chenqiaoqian", art: "bt_chenqiaoqian", pos: 7, name: "陈巧倩", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { sfx: "pick" },
           { narr: "你从他储物袋里翻出那两枚筑基丹。乳白的丹丸躺在掌心，温润微凉——和入谷那日一模一样。" },
           { narr: "两枚。叶师叔夺走的，今日从他师侄手里讨回来了——连本带利。" },
@@ -1441,9 +1115,6 @@ const STORY = [
           { say: "chenqiaoqian", text: "那你要什么？救命之恩，巧倩……无以为报。" },
           { narr: "麻烦。知情人是麻烦，恩情更是麻烦。储物袋里还有半瓶忘尘丹——抹去今夜，干干净净。这是最稳的路。" },
           { narr: "可是……万小山攥着符纸的手，彩环递玉时的眼睛。被人记得，真的是坏事吗？" },
-          { cgOut: true },
-        ],
-      }},
     ],
     choices: [
       {
@@ -1484,16 +1155,7 @@ const STORY = [
       { scene: "黄枫谷 · 山门大殿" },
       "大比时节，议事大殿内挤满了各脉弟子。你随百药园的杂役队伍站在最末，前面是一片赭黄道袍的海。",
       "高台之上坐着一位白发玉冠的老者——入谷那日同门口中的「李师祖」，黄枫谷首席大长老，李化元。",
-      { stage: {
-        bg: "huangfeng_dadian",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "lihuayuan", art: "bt_wuren", pos: 9, name: "李化元", face: "l" },
-          { id: "nangongwan", art: "bt_nangongwan", pos: 7, name: "南宫婉", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1200 },
+      { cam: "zoom", scale: 1.05, ms: 1200 },
           { say: "lihuayuan", text: "血色禁地，六十年灵气一衰。此番开启，名额三十，各脉按例分派。" },
           { narr: "台下顿时嗡声一片。有人高声问为何不再依五年旧例，李化元尚未答话，殿侧一个清冷的声音先开了口。" },
           { sfx: "chime" },
@@ -1505,9 +1167,6 @@ const STORY = [
           { narr: "你出列，朝高台一礼，只说了一句：「弟子练气十一层，药理粗通——禁地里的主药，认得全。」" },
           { narr: "满殿哄笑。李化元却抬了抬眼皮，目光落在你身上，停了一息。" },
           { say: "lihuayuan", text: "百药园马师伯荐过你。也罢——多你一个名额。活着回来。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("xueshi_opened");
@@ -1604,15 +1263,7 @@ const STORY = [
       { scene: "血色禁地" },
       "墨蛟庞大的尸身轰然砸进浅滩，黑雾散尽。你拄着膝盖喘息，后劲一阵阵涌上来——赢了。",
       "就在这时，蛟腹之下「啵」地一声轻响。一缕说不出名目的异香，混进血色雾气里，丝丝缕缕，避无可避。",
-      { stage: {
-        bg: "mojiao",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "nangongwan", art: "bt_nangongwan", pos: 7, name: "南宫婉", face: "l" },
-        ],
-        script: [
-          { sfx: "landDown" },
+      { sfx: "landDown" },
           { cam: "shake", px: 5 },
           { fx: "flash", color: "#b06a9a", alpha: 0.25, ms: 600 },
           { sfx: "whiff" },
@@ -1633,13 +1284,8 @@ const STORY = [
           { bgm: "sorrow" },
           { say: "nangongwan", emo: "smile", text: "韩立。立碑的立。……我记下了。" },
           { narr: "她说此生不得提起。可有些事不必提起，也烂不掉——它会跟着人走很远，远到谁也想不到的地方。" },
-          { despawn: "nangongwan" },
           { narr: "出禁地那日，李化元亲自在血幕外等着。听完你报上的灵药数目，老人捋须的手停了一停。" },
-          { spawn: "lihuayuan", art: "bt_wuren", pos: 7, name: "李化元", face: "l" },
           { say: "lihuayuan", text: "三十五种。比老夫赌约里押的还多三种。——韩立，可愿做老夫的记名弟子？" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("mojiao_resolved");
@@ -1668,24 +1314,12 @@ const STORY = [
     text: [
       { scene: "黄枫谷 · 丹房偏院" },
       "记名拜师后未几，李化元唤你到丹房偏院。院中地火幽幽，一名青衫老者正就着炉火翻看你那对墨蛟之角，眼里精光闪烁。",
-      { stage: {
-        bg: "huangfeng_dadian",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "lihuayuan", art: "bt_wuren", pos: 6, name: "李化元", face: "l" },
-          { id: "qiyunxiao", art: "bt_wuren", pos: 8, name: "齐云霄", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "lihuayuan", text: "这位是齐云霄，元武国姓齐的炼器巧匠，与老夫是多年旧识。你这对蛟角内蕴水行妖力，寻常炉火炼它不动——正该他出手。" },
           { say: "qiyunxiao", emo: "smile", text: "双角质胜精铁，毒性犹存。小子，要老夫给你炼把称手的？依这角的脾性，做成短法宝最是凶毒——四爪攥握、御空连抓，爪尖带着蛟毒，缠上谁都难受。" },
           { narr: "老者袖中飞出一具小巧法器雏形，四道墨绿如四枚蛟爪攥成一握。地火轰然窜起，蛟角入炉，缕缕毒雾被逼回器身。" },
           { narr: "三日后开炉——四爪墨绿、爪尖泛着幽幽青芒，正是那墨蛟未散的毒。「乌龙夺」。" },
           { say: "qiyunxiao", text: "记着，它的厉害不在一击之力，在那口毒——抓得越久，敌人烂得越透。拿去吧。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.take("mojiao_jiao", 1);
@@ -1713,15 +1347,7 @@ const STORY = [
       { scene: "黄枫谷 · 山门大殿" },
       "筑基的消息传开那日，整个百药园都炸了——四灵根伪灵根筑基，黄枫谷立谷以来，数得出几个？",
       "李化元把你唤去丹房，案上摊着一卷泛黄的剑诀。",
-      { stage: {
-        bg: "huangfeng_dadian",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "lihuayuan", art: "bt_wuren", pos: 7, name: "李化元", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "lihuayuan", text: "长春功到头了。筑基之后主修须换——这卷《青元剑诀》，谷中流传九层，弟子多止步三层。以你的心性，不止于此。" },
           { bgm: "triumph" },
           { narr: "你双手接过。卷册入手微沉，翻开第一页，一缕青芒自纸面流过——青芒可凝成三尺剑芒，亦可聚作丈余巨剑，自天倾斩。" },
@@ -1730,9 +1356,6 @@ const STORY = [
           { fx: "burst", elem: "mu", n: 18 },
           { say: "lihuayuan", tone: "soft", text: "去吧。把它练出名堂来——别辜负你那二十颗丹。" },
           { narr: "十九颗碎在丹田里，最后一颗成了。筑基这条路，是拿命堆出来的——往后的路，更是。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("qingyuan_given");
@@ -1761,18 +1384,8 @@ const STORY = [
       { amb: "wind" },
       { bgm: "daily" },
       "筑基弟子，有开洞府之权。掌门殿发下三处可选之地的图册，附赠一面「迷踪阵旗」——这是规制内的体面。",
-      { stage: {
-        bg: "huangfeng_gate",
-        W: 8,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 4, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.06, ms: 1000 },
+      { cam: "zoom", scale: 1.06, ms: 1000 },
           { narr: "杂役棚里睡了三年，如今也轮到自己择一处山头了。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     choices: [
       {
@@ -1812,15 +1425,7 @@ const STORY = [
     text: [
       { scene: "元武国 · 百艺坊" },
       { bgm: "fair" },
-      { stage: {
-        bg: "kuangchang",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "qiyunxiao", art: "bt_wuren", pos: 7, name: "齐云霄", face: "l" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -3 }, ms: 1200 },
+      { cam: "pan", to: { x: 0, y: -3 }, ms: 1200 },
           { narr: "出黄枫谷北行，过太岳山脉，便是元武国——比胥国更尚武的邻邦。坊市街尾那间「百艺坊」招牌不大，炉火却彻夜不熄。" },
           { narr: "你解下行囊里那一捆血色禁地的战利品：墨蛟之皮、之鳞、之角，腥气未散。柜后转出一个精瘦汉子，三角眼往那堆料上一扫，先是一亮，随即慢条斯理敲起算盘。" },
           { cam: "zoom", scale: 1.08, ms: 600 },
@@ -1831,9 +1436,6 @@ const STORY = [
           { say: "qiyunxiao", emo: "smile", text: "痛快！那便一炉三件：神风舟载你赶路，乌龙夺替你搏命；再奉送一张护阵的图——颠倒五行阵，基础的式子，我那口千年灵草的老底，匀你一份作引。" },
           { cam: "zoom", scale: 1.0, ms: 600 },
           { narr: "坊里似乎还该有个掌账的女子打理这些，却始终不见人影。齐云霄只字未提，你也没多问——有些人，要等再来一趟，才遇得上。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       Engine.meetNpc("qiyunxiao", "元武国百艺坊的巧匠，一炉好风火——墨蛟皮、千年灵草这等好料，到他手里方不算糟蹋。");
@@ -1881,15 +1483,7 @@ const STORY = [
     text: [
       { scene: "黄枫谷 · 山门大殿" },
       "你筑基后第三个月，黄枫谷出了大事。",
-      { stage: {
-        bg: "huangfeng_dadian",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mashibo", art: "bt_wuren", pos: 7, name: "马师伯", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { sfx: "danger" },
           { narr: "执法堂深夜锁拿叶师叔——罪名是「私通魔道」。卷宗上写得分明：千竹教卧底，潜伏二十年，入谷四连里被他夺走的那枚筑基丹，早顺着暗线送去了魔道。" },
           { narr: "当日满殿无人敢言的那位叶师叔……原来掌门的「不主持公道」，背后还有这一层。" },
@@ -1897,9 +1491,6 @@ const STORY = [
           { say: "mashibo", tone: "soft", text: "千竹教的人，死在自己买凶的路上。报应这东西，从来不缺席，只是不挑时辰。" },
           { narr: "执法堂清点叶师叔洞府时，搜出的赃物里有一卷无人能识的功法残卷——神识一触，深奥得叫人头痛。卷首两个古字：大衍。" },
           { narr: "「大衍诀」……执法堂当它是废卷归档了。可那一眼，你记住了——总有一天，它会是你的。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("huangfeng_complete");
@@ -1932,21 +1523,10 @@ const STORY = [
       { scene: "黄枫谷 · 外门居所" },
       "大衍诀的事还压在心头，谷中一道加急调令便到了你手上——朱漆封口，落款是首席大长老李化元。",
       "「魔道入侵在即。天南正道七派会盟燕家堡，共御魔锋。凡谷中筑基弟子，无论灵根，尽数征调——三日内动身。」",
-      { stage: {
-        bg: "huangfeng_dadian",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "lihuayuan", art: "bt_wuren", pos: 7, name: "李化元", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { narr: "无论灵根。这四个字，分明是冲着你这伪灵根来的。修为压制，军令如山——这一回，没有「不去」的选项。" },
           { say: "lihuayuan", tone: "cold", text: "你筑基了，便是谷中战力。燕家堡那一战躲不过，与其日后被人推上去送死，不如老夫先把你这条命，用在该用的地方。" },
           { narr: "你收拾起神风舟、乌龙夺与那张颠倒五行阵图，望了一眼太岳山脉北面那片越来越浓的妖氛——天南，真的要变天了。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       Chapters.unlock("modao");
@@ -1971,25 +1551,13 @@ const STORY = [
       { scene: "燕家堡 · 堡内校场" },
       { amb: "wind" },
       "燕家堡——天南正道七派临时会盟的大堡，堡墙旌旗猎猎，堡内却人心惶惶。（这里是燕家，可不是天阙堡——那是更往后的事了。）",
-      { stage: {
-        bg: "yanjia_jiaochang",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mocaihuan", art: "bt_mocaihuan", pos: 7, name: "墨彩环", face: "l" },
-          { id: "dongxuaner", art: "bt_dongxuaner", pos: 9, name: "董萱儿", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1200 },
+      { cam: "zoom", scale: 1.05, ms: 1200 },
           { narr: "你正寻自己的战位，一道熟悉的身影从避难的墨府家眷中迎面撞来——竟是墨彩环。嘉元城一别，她眉眼间已添了几分风霜。" },
           { say: "mocaihuan", emo: "cry", text: "韩大哥……真的是你。魔道打过来，爹让我们随墨府避进堡里。你……你也来了。这回，可别又把人丢下不管。" },
           { sfx: "sword" },
           { cam: "pan", to: { x: 3, y: 0 }, ms: 800 },
           { narr: "校场另一头，一位眉眼高华的红拂门下女修按剑而立，目光在你那柄乌龙夺上停了一瞬——后来你才知她姓董，名萱儿。当年陆云风为攀附的，正是她这条线。" },
           { say: "dongxuaner", tone: "cold", text: "伪灵根能筑基，倒是稀奇。战王蝉就要破阵了——活着出了这堡，再论你够不够格同我说话。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       Engine.meetNpc("mocaihuan", "墨大夫之女、嘉元城墨府小姐——魔道入侵随家眷避入燕家堡，与你重逢。");
@@ -2052,16 +1620,7 @@ const STORY = [
     text: [
       { scene: "燕家堡 · 溃围" },
       "战王蝉重伤遁空，可燕家堡也守不住了。堡墙四面起火，正道修士护着家眷夺路突围——你断后掩护，护着墨彩环、随董萱儿杀出一条血路。",
-      { stage: {
-        bg: "yanjia_kuiwei",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mocaihuan", art: "bt_mocaihuan", pos: 5, name: "墨彩环", face: "r" },
-          { id: "zhiqishi", art: "bt_wuren", pos: 8, name: "执旗使", face: "l" },
-        ],
-        script: [
-          { sfx: "castHuo" },
+      { sfx: "castHuo" },
           { fx: "flash", color: "#ff7a3c", alpha: 0.32 },
           { say: "mocaihuan", emo: "cry", text: "你又要走了……我知道你拦不住自己。可你得活着——答应我。" },
           { sfx: "danger" },
@@ -2069,9 +1628,6 @@ const STORY = [
           { say: "zhiqishi", tone: "cold", text: "活下来的，都是战力。黄枫谷韩立——编入前线待命营，听候征调。魔道争锋，才刚开始。" },
           { cam: "pan", to: { x: -3, y: 0 }, ms: 1000 },
           { narr: "你回头望了一眼火光里的燕家堡。这一战撑过来了，可真正的修罗场，是前头那一片不知尽头的矿道与杀阵。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("yanjia_done");
@@ -2110,23 +1666,12 @@ const STORY = [
       { amb: "wind" },
       "待命营里熬了些时日，一纸征调令终于压下来——你被拨去黑风岭矿场守备。这片矿脉出产炼器炼丹的灵矿，正魔两道都红了眼，是前线绞肉机般的死争之地。",
       "领你的是个沉默寡言的小队官，姓吕名天蒙，筑基初期。他扫了你一眼，没问灵根，只把一面刻着编号的腰牌丢给你。",
-      { stage: {
-        bg: "kuangchang",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "lvtianmeng", art: "bt_lvtianmeng", pos: 7, name: "吕天蒙", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "lvtianmeng", tone: "声音沉冷", text: "新来的，记住一句话——矿场里活下去，比立功要紧。前头那些『弃子』，就是没记住这句话。" },
           { fx: "flash", color: "#0a0a12", alpha: 0.34, ms: 360 },
           { narr: "他抬了抬下巴。矿道口外，几个修为低微的征卒正被推去填魔物的口子——所谓弃子战术，拿人命去探路、去耗魔物的杀招。你望着那几个再没回来的背影，心口发沉。" },
           { narr: "弃子。在这片矿场，伪灵根筑基的你，和那些被推上去的人，本就只隔着一层窗户纸。想活着走出去，就得比谁都清醒。" },
           { narr: "队伍里还有个总含着浅笑的征卒，唤作宣乐，话不多，眼神却总在人背后转。你说不上哪里不对，只是本能地，不愿把后背交给他。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       Engine.meetNpc("lvtianmeng", "黑风岭矿场的征军小队官——待麾下征卒尚存几分照拂，在这冷硬矿场里难得。");
@@ -2244,21 +1789,11 @@ const STORY = [
       "血玉蜘蛛伏诛，你剖开它腹下的卵囊，得了两枚温润的白玉蛛卵——未及孵化，灵机犹存。得卵即立项，这是一条「灵宠」的长线，孵化之法，留待来日。",
       "巢穴尽头还藏着一间石室。室心一座古旧的传送阵盘早已残破熄灭，阵心却嵌着一枚古朴玉令——「大挪移令」。你说不清它的来历，只觉这东西通着某个极遥远的去处。",
       "石室一角的玉匣里，静静躺着一枚赤金色的灵丹。古丹方所炼的「补天丹」，专为补全先天残缺的灵根——对你这伪灵根而言，简直是天赐之物。",
-      { stage: {
-        bg: "jiyuan_shi",
-        W: 8,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 4, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.08, ms: 800 },
+      { cam: "zoom", scale: 1.08, ms: 800 },
           { narr: "补天丹……伪灵根的桎梏，能松一松了。" },
           { fx: "flash", color: "#dff3ff", alpha: 0.5, ms: 700 },
           { fx: "burst", elem: "mu", n: 18 },
           { narr: "你当即盘膝服下补天丹。一股暖流游走百脉，残缺的灵根被丝丝补全，往后吐纳百脉之效，永久地长进了一分。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       if (!s.flags.modao_e1_fortune_done) {
@@ -2288,25 +1823,12 @@ const STORY = [
       { scene: "魔道前线 · 待命营" },
       { amb: "wind" },
       "退出矿洞，回到待命营。一支运送丹药的队伍正从营门进来——押队的女修一身黄枫谷装束，眉目清冷。是陈巧倩。",
-      { stage: {
-        bg: "kuangchang",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "chenqiaoqian", art: "bt_chenqiaoqian", pos: 7, name: "陈巧倩", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { narr: "黄枫谷一别，没想到在这魔道前线又遇上她。只是……那枚忘尘丹下去之后，她眼里那段过往，早被你亲手抹去了。" },
           { say: "chenqiaoqian", tone: "语气疏淡", text: "这位道友，借过。前线丹药紧着伤号，闲人莫挡道。" },
           { narr: "她的目光在你脸上停了不到一瞬，便淡淡移开，没有半分波澜——她是真的，不记得你了。" },
           { narr: "也好。这一世的恩怨牵扯，到此干净两清。她不必记得坊市归途那一夜，也不必记得你欠她、她欠你的那些。就当……从没相识过。" },
-          { move: "chenqiaoqian", to: 10, ms: 800 },
-          { despawn: "chenqiaoqian" },
           { narr: "你侧身让开。她押着丹药队走远，背影没有一次回头。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e1_chen_done");
@@ -2333,15 +1855,7 @@ const STORY = [
       { scene: "魔道前线 · 待命营" },
       { amb: "wind" },
       "退出矿洞，回到待命营。一支运送丹药的队伍正从营门进来——押队的女修一身黄枫谷装束，眉目清冷。是陈巧倩。",
-      { stage: {
-        bg: "kuangchang",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "chenqiaoqian", art: "bt_chenqiaoqian", pos: 7, name: "陈巧倩", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { narr: "当年那枚忘尘丹，你终究没让她服下。于是黄枫谷的恩怨、坊市归途那一夜，她都还记着——记着你。" },
           { narr: "她本垂着眼清点药匣，目光扫过让道的人群，在你脸上倏地一顿——那一顿里，清冷的眉眼霎时漾开，又被她极快地收住，只剩指尖捏着药匣，微微发紧。" },
           { say: "chenqiaoqian", emo: "sad", tone: "声音微不可察地一颤", text: "……韩师弟。真的是你。" },
@@ -2353,13 +1867,8 @@ const STORY = [
           { narr: "陈巧倩看着你这副疏淡模样，唇瓣动了动，欲言又止，终是将一只青玉小瓶搁进你掌心——是上等的疗伤丹。" },
           { say: "chenqiaoqian", emo: "sad", tone: "低声", text: "前线不比黄枫谷，刀剑无眼。这个你收着……我不图你记着我什么，只盼你能活着走出去。" },
           { narr: "你握着那只尚带她掌心温度的玉瓶，心里某处微微一动，又被你稳稳按了下去。仙凡修途各有各的劫——有些话此刻说不得，有些约，也要留给往后的山水。" },
-          { move: "chenqiaoqian", to: 10, ms: 800 },
-          { despawn: "chenqiaoqian" },
           { narr: "丹药队在营门外催着启程。她押队远去，这一回，走出几步，到底回了一次头。" },
           { narr: "黄枫谷那年她说，凡有陈家在的地方，必有你一席。如今看来，这一席，她还替你留着。来日方长——若真有缘再见，总该有个交代。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e1_chen_done");
@@ -2397,18 +1906,7 @@ const STORY = [
       { amb: "wind" },
       "两月过去。黑风岭的矿洞守备换防，你这一队征卒被拨往更北的金鼓原——七派征军与黑煞教魔修在这片焦土上隔原相持，已僵了小半年。",
       "前哨营盘扎在一道矮坡后。集结的号角里，几名筑基修士陆续到帐——比起黑风岭那些苦熬的征卒，这些是真正能上阵的同袍。",
-      { stage: {
-        bg: "kuangchang",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "liujing", art: "bt_wuren", pos: 6, name: "刘靖", face: "l" },
-          { id: "songmeng", art: "bt_wuren", pos: 8, name: "宋蒙", face: "l" },
-          { id: "zhongweiniang", art: "bt_wuren", pos: 9, name: "钟卫娘", face: "l" },
-          { id: "wuxuan", art: "bt_wuren", pos: 7, name: "武炫", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1200 },
+      { cam: "zoom", scale: 1.05, ms: 1200 },
           { say: "liujing", tone: "声音方正", text: "黄枫谷刘靖。听闻这一队里有个伪灵根筑基的——是你？" },
           { narr: "你拱手称是，已做好了被轻看的准备。出乎意料，那叫刘靖的修士只是上下打量你一眼，神色反倒郑重了几分。" },
           { say: "liujing", text: "伪灵根能走到筑基，是自己一寸寸挣来的。同袍面前，没人有资格小看你。——魔道役尸为傀，伤天害理，这一仗，并肩。" },
@@ -2417,9 +1915,6 @@ const STORY = [
           { say: "songmeng", tone: "不疾不徐", text: "卫娘。……韩道友，前线相持最忌浮躁，沉住气。活着，比立功要紧。" },
           { say: "wuxuan", emo: "smile", tone: "咧嘴", text: "别听他们文绉绉的！韩兄，回头巡逻遇上魔修，你护中路，喽啰交给我——嗷！" },
           { narr: "你默默记下这四张脸。藏拙惯了的人，难得在这刀山火海的前线，遇上几个肯把后背交给你的同袍。这份善缘，记账。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e2_muster_done");
@@ -2483,22 +1978,11 @@ const STORY = [
       { scene: "魔道前线 · 金鼓原" },
       { amb: "wind" },
       "巡逻收兵回营，营里却乱作一团。一骑染血的探马刚从侧翼撤回，带来一桩噩耗——",
-      { stage: {
-        bg: "kuangchang",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "tanma", art: "bt_wuren", pos: 7, name: "探马", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { narr: "随正道大军压上的红拂门一队，前日在东翼遇袭溃散。门中那位名门之后董萱儿，乱军里失了踪影，据逃回的散卒说，是被一股魔道高手裹挟着，往魔道腹地去了。" },
           { narr: "董萱儿。燕家堡那一夜与你并肩御魔、杀出血路的红拂女修。你握剑的手紧了一紧——那夜战王蝉重伤遁空，原来这笔账，魔道一直没忘。" },
           { say: "tanma", tone: "气喘", text: "……据说，掳她的是冲着她红拂门下的身份来的，要解去合欢宗一位姓云的老祖处『验明正身』。具体为何，无人知晓。" },
           { narr: "合欢宗、云露、验身份……这些名字你一个也搭不上。可你记下了。前线之大，你眼下救不得她——但这条断线，总有接上的一日。（伏笔归账·再别天南显影）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e2_dongxuaner_done");
@@ -2524,15 +2008,7 @@ const STORY = [
       { scene: "魔道前线 · 金鼓原营侧" },
       { amb: "candle" },
       "营侧背风处，一道白衣身影正立在火堆边烘手——掩月宗这回也派了人押阵前线，南宫婉竟也在金鼓原。血潭一别，再见已是这刀光剑影的所在。",
-      { stage: {
-        bg: "kuangchang",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "nangongwan", art: "bt_nangongwan", pos: 7, name: "南宫婉", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "nangongwan", emo: "cold", text: "韩立。立碑的立。——还活着。" },
           { say: "hanli", emo: "cold", tone: "拱手", text: "南宫道友。……侥幸。" },
           { sfx: "pick" },
@@ -2545,12 +2021,7 @@ const STORY = [
           { say: "nangongwan", emo: "smile", tone: "低声，几不可闻", text: "……木头。" },
           { narr: "你没听清那两个字。她已敛了神色，将瓦罐往你这边推了推，转身要走——掩月宗另有调遣，她得回西线去了。" },
           { say: "nangongwan", emo: "cold", text: "栗子给你。——别死在京城。听说你要随征军开赴京城了，那地方水深，比这焦土更杀人。" },
-          { move: "nangongwan", to: 10, ms: 800 },
-          { despawn: "nangongwan" },
           { narr: "她白衣一卷，没入营帐间的人流，再没回头。你低头看着掌心那枚渐凉的炒栗子，又看看她留下的半罐——心里某处微微一动，却到底没琢磨明白。仙凡修途各有各的劫，有些情分，你眼下还接不住，也辨不清。（正宫线·留白·此生缓续）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e2_nangongwan_done");
@@ -2573,23 +2044,10 @@ const STORY = [
     text: [
       { scene: "魔道前线 · 拔营" },
       "金鼓原的相持，到底没等来一场决战。魔道主力忽然回缩，七派征军接令——抽调一部精锐，随大军开赴京城。",
-      { stage: {
-        bg: "kuangchang",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "liujing", art: "bt_wuren", pos: 6, name: "刘靖", face: "r" },
-          { id: "songmeng", art: "bt_wuren", pos: 7, name: "宋蒙", face: "r" },
-          { id: "wuxuan", art: "bt_wuren", pos: 5, name: "武炫", face: "r" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { narr: "京城。胥国的心脏。魔道争锋这盘棋，真正的杀招，原来不在这片焦土，而在那座金粉楼台之下。南宫婉那句『别死在京城』，此刻想来，竟是一语成谶的提点。" },
           { narr: "你随宋蒙、刘靖、钟卫娘、武炫几位同袍一道拔营。焦土在身后渐远，前路是天子脚下、暗流汹涌的繁华京华。" },
           { narr: "前线相持的练兵，到此告一段落。你按了按行囊里那捧缴获的傀儡残件，又摸了摸怀中渐凉的炒栗子——这两样，一明一暗，都将在那座京城里，等着各自的回响。（魔道争锋·第二幕·完）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e2_jingcheng_done");
@@ -2628,38 +2086,16 @@ const STORY = [
       { amb: "crowd" },
       "金粉楼台，车马如流。随征军一路开抵京城，焦土的血腥气还没散尽，眼前已是天下最繁华的金粉之地。你这等外来的筑基修士，在京城权贵眼里，不过是又一个被征调来听用的『客卿』。",
       "长街拐角，一个挎着花篮的小姑娘脆生生地拦住你，篮里的栀子开得正好。",
-      { stage: {
-        bg: "jingcheng",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "xiaocui", art: "bt_wuren", pos: 7, name: "萧翠儿", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "xiaocui", emo: "smile", text: "这位公子，买朵花吧？今早现摘的，可新鲜啦——戴在身上，京城的晦气都冲散咯！" },
           { narr: "小姑娘叫萧翠儿，跟相依为命的萧爷爷住在巷尾。她眼睛亮得很，三两句就看出你不是寻常人——却也不怕，只当是桩新鲜事。市井的暖意，是这冷硬京城里难得的一点人气。" },
           { say: "xiaocui", tone: "歪着头，忽然认真", text: "公子……我听说有种神仙，能不老不死。像我爷爷那样的普通人，是不是这辈子，都没那个福气呀？" },
           { narr: "你怔了一下。这问题，你在嘉元城墨府里、被另一个古灵精怪的小姑娘问过一模一样的一句——你那时答不上来，此刻依旧。仙凡之间那道沟，不是一句话填得平的。" },
-          { cgOut: true },
-        ],
-      }},
       { scene: "秦府 · 客卿门第" },
       "随征军荐你入秦府做客卿。那看门的老门房替你引路，一路点头哈腰、堆着笑脸，絮絮叨叨说着府里的体面、修仙老爷的神通——说着说着，那张笑脸却忽然皱起来，浑浊的老眼里滚下泪来。",
-      { stage: {
-        bg: "jingcheng",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "menfang", art: "bt_wuren", pos: 7, name: "秦府老门房", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "menfang", tone: "抹着眼角，自己也不好意思", text: "公子莫笑……老汉是欢喜的。能伺候上仙长这样的贵人，是几辈子修来的福分……可一想，老汉这把骨头，到底是凡胎，眼睁睁看着儿孙也都是凡胎，熬不过这几十年的命……就，就忍不住……" },
           { narr: "他笑着笑着就哭了。你站在朱门之下，第一次这样近地，从一个凡人的眼睛里，看见『修仙者』四个字落在尘世里的分量——是仰望，是欢喜，也是一道永远跨不过去的、无声的悲凉。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e3_rujing_done");
@@ -2685,24 +2121,12 @@ const STORY = [
       { scene: "京城 · 茶楼" },
       "京城近来不太平：散修接二连三地失踪，活不见人、死不见尸。手法干净利落、专挑落单的修士下手——不像魔道一贯的张扬作风，倒像是有人在悄没声地『收割』。",
       "茶楼雅座里，五个散修凑作一桌低声议事。为首的拱手招呼你——蒙山五友，自炼气十层到圆满不等，结义抱团、消息灵通，是这京城里最肯透底的一拨地头蛇。",
-      { stage: {
-        bg: "jingcheng",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mengshan", art: "bt_wuren", pos: 7, name: "蒙山五友", face: "l" },
-          { id: "xiaocui", art: "bt_wuren", pos: 8, name: "萧翠儿", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "mengshan", tone: "压低声音", text: "这位道友面生啊。京城的水深，想打听失踪案……多少得先递个投名状。情报不是白给的——可你要真想除了那害人的东西，我们五个，到时候算你一份。" },
           { narr: "话音未落，巷口传来一阵急促的脚步——是萧翠儿，小脸煞白，眼泪糊了满脸。" },
           { sfx: "danger" },
           { say: "xiaocui", emo: "cry", text: "韩公子！我爷爷……我爷爷昨夜被『怪物』抓走了！邻里都说，是那专吃人的妖邪……公子你神通广大，求求你救救爷爷！" },
           { narr: "翠儿的爷爷，也卷进了这桩连环失踪案。线索千头万绪：蒙山五友手里有加密的消息、茶楼是消息的集散、翠儿的聪慧又能顺藤摸瓜。怎么查，是你的事——查得越透，等真捣了贼窝，胜算越大。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e3_shizong_done");
@@ -2746,23 +2170,12 @@ const STORY = [
       { scene: "馨王府 · 夜宴" },
       "查案的线头牵到馨王府。这位王爷广结方士术士，府中夜宴丝竹喧阗、冠盖如云。你混在客卿之列入席，目光在满堂珠翠间逡巡——忽然顿住。",
       "席间一位易了容的女子，正端着酒盏浅笑应酬。那眉眼、那神态被脂粉与术法改了七八分，可你认得——是墨彩环。燕家堡血光里匆匆一别，她竟也辗转到了京城。",
-      { stage: {
-        bg: "wangfu_yan",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mocaihuan", art: "bt_mocaihuan", pos: 7, name: "墨彩环", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "mocaihuan", emo: "smile", tone: "声音压得极低，笑意却抵到了眼底", text: "……韩大哥。真有你的，连这儿都能撞见。" },
           { narr: "她借着敬酒的由头侧身过来，三言两语，把这些年的飘零轻描淡写地揭了过去——墨府之难后，她改名换姓、易容藏形，一路追着仇人的踪迹，追到了这京城五色门的门下。" },
           { say: "mocaihuan", tone: "指尖在酒盏沿上轻轻一叩，眼里却有光", text: "害我墨家满门的人，就在这京城。我蹲了这么久，等的就是动手的时机。——没想到，等来的还有你。" },
           { say: "mocaihuan", emo: "smile", tone: "她笑意微敛，声音轻下来", text: "这些年我刀口上舔血，谁都信不过，独自一个人撑着。可一见着你这张老实脸，我这心里，没来由地就踏实了。——韩大哥，有你在，这桩血债，我敢去收了。" },
           { narr: "你一向木讷，此刻竟也说不出话，只重重点了点头。墨府那笔血债，从今往后，你陪她一道收。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e3_yanhui_done");
@@ -2787,23 +2200,12 @@ const STORY = [
     text: [
       { scene: "京城地底 · 血池" },
       "要端这处血池，单凭你一人脱不开身——既要缠住血侍，又要抢救池中活人。临行前，你寻上了那帮替你查案的散修，蒙山五友。",
-      { stage: {
-        bg: "jingcheng",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mengshan", art: "bt_wuren", pos: 7, name: "蒙山五友", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "mengshan", tone: "几个散修面面相觑，有些发怵", text: "黑煞教的血侍……我等几个无根无派的散修，凭什么去趟这趟要命的浑水？" },
           { narr: "你一向不善言辞，情急之下信口诌了个名头——「灵兽山」。这三个字一出口，连你自己都愣了半拍。" },
           { say: "hanli", tone: "面不改色，半真半假", text: "我身后是灵兽山。这趟收编诸位，正是要剿了这京城的魔教余孽。事成之后，自有交代。" },
           { narr: "「灵兽山」三个字是你随口胡诌的——你压根与那等大派沾不上半点边。可这名头唬人，蒙山五友将信将疑，到底是被血池里那些人命牵着，咬牙跟了上来。说到底，他们要打的，是黑煞教这魔教。" },
           { narr: "顺着失踪案的线索摸下去，京城地底竟藏着一处腥气冲天的血池——被掳的散修与凡人尽数泡在池中，被一点点抽干气血、供养着某种邪法。萧爷爷也在其中，气息奄奄。" },
-          { cgOut: true },
-        ],
-      }},
       { stage: {
         bg: "jingcheng",
         W: 12,
@@ -2925,15 +2327,7 @@ const STORY = [
       { scene: "京城 · 长街晨别" },
       { amb: "wind" },
       "血债了结的那一夜过后，墨彩环褪了易容的脂粉，露出本来的眉眼。压在她身上十数年的那口戾气，连同那张追凶的假面，一并卸了下来。晨光里，她竟比你记忆中任何时候都要松快。",
-      { stage: {
-        bg: "jingcheng",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "mocaihuan", art: "bt_mocaihuan", pos: 7, name: "墨彩环", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "mocaihuan", emo: "smile", tone: "她望着渐亮的天色，像卸下了千斤重担", text: "报了。爹娘，墨家满门……我追了大半辈子的这桩仇，今日，总算替他们讨回来了。" },
           { narr: "你以为她会哭，她却只是笑。那笑里没有恨了，也没有那股一直绷着、要同谁拼命的劲——只剩一种你说不上来的、尘埃落定的平静。" },
           { say: "mocaihuan", tone: "她转过头，认真地看着你", text: "这些年我活着，是替死人活着——为我爹的仇，为墨家满门的命。今日仇了了，我才回过神来：我自己，还没好好活过一回。" },
@@ -2941,12 +2335,7 @@ const STORY = [
           { say: "mocaihuan", emo: "smile", tone: "她忽然认真起来，声音很轻，却字字落到实处", text: "韩大哥，谢谢你。谢谢你，出现在我这微不足道的一生里。若没有你，我大约早死在追凶路上的某个夜里了，连块碑都不会有。如今我能堂堂正正地、为我自己活下去——这条命，有一半是你给的。" },
           { narr: "你一向木讷，搜肠刮肚，也只憋出一句「保重」。她却像是听懂了千言万语，重重点了点头。" },
           { say: "mocaihuan", tone: "她退后一步，朝你拱了拱手，眼里有光", text: "你的路，在更高更远的地方，我拦不住，也不想拦。去吧。我在这京城悬壶济世，等着听你扬名天下的消息。——这一回，换我，目送你了。" },
-          { move: "mocaihuan", to: 10, ms: 1000 },
-          { despawn: "mocaihuan" },
           { narr: "你转身离去，晨光把两个人的影子拉得很长。这一别，她没有遗憾，你也没有。仙途漫漫，曾有人与你并肩收过一桩血债，又笑着放你远行——这便已是难得。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e3_farewell_done");
@@ -2981,26 +2370,13 @@ const STORY = [
     text: [
       { scene: "京城 · 暗夜" },
       "墨彩环走后不过一月，京城连环失踪案的最后一根线，被你攥到了手里。你以幻色眼的迷幻术撬开了越国小王爷的嘴——血池、煞气、失踪的散修，桩桩件件背后那只手，竟一路指向了京城最不该指向的地方：皇宫。",
-      { stage: {
-        bg: "jingcheng",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "liujing", art: "bt_wuren", pos: 5, name: "刘靖", face: "l" },
-          { id: "songmeng", art: "bt_wuren", pos: 6, name: "宋蒙", face: "l" },
-          { id: "zhongweiniang", art: "bt_wuren", pos: 7, name: "钟卫娘", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1200 },
+      { cam: "zoom", scale: 1.05, ms: 1200 },
           { narr: "黑煞教的老巢，就在越国皇城最底下。贼首豢养血侍、掳人炼煞，把一国之都经营成了吞人的血窟。这等魔窟，凭你一人闯不得——你修书一封，急传黄枫谷。" },
           { narr: "三日后，黄枫谷的师兄弟星夜赶到：刘靖、宋蒙、钟卫娘……连同闻讯赶来的几派同道，凑足了九名筑基修士。月黑风高，众人立在皇城根下，刀剑入鞘、灵光内敛。" },
           { say: "liujing", tone: "他一身正气，遥望那座吞了无数性命的皇城", text: "黑煞教以一国之都为炉、炼人煞为丹，天理难容。今夜，我辈便替这京城、替那些活不见人的散修，把这魔窟，掀了！" },
           { say: "zhongweiniang", emo: "angry", text: "早憋着这口气了！宋师兄你别拦我——今夜我非把那帮役尸的玩意儿挨个收拾了不可！" },
           { say: "songmeng", tone: "他掂了掂掌心温润的重元珠，沉声", text: "……都护住彼此侧翼，活着掀了它，比逞英雄要紧。韩师弟，你心细，替大伙盯着点暗处。" },
           { narr: "九道身影没入夜色，直扑皇城。一场决定京城气运的大战，自皇宫大门轰然洞开的那一刻，开始了。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e4_shenxun_done");
@@ -3069,16 +2445,7 @@ const STORY = [
       { scene: "皇宫 · 血池大殿" },
       "三组同袍撕开血侍阵线，一路向下、向下——皇宫的地底深处，竟藏着一座吞天的血池大殿。腥气冲天，池水赤红如凝血，池底沉浮着不知多少散修的残躯。",
       "大殿尽头的玉阶之上，端坐着一个意想不到的人——越国之主，胥王。他一身常服、面带温煦，竟像是早已『恭候』多时。",
-      { stage: {
-        bg: "xuechi_dian",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "liujing", art: "bt_wuren", pos: 4, name: "刘靖", face: "r" },
-          { id: "xuwang", art: "bt_wuren", pos: 10, name: "胥王", face: "l" },
-        ],
-        script: [
-          { fx: "burst", elem: "huo", n: 12 },
+      { fx: "burst", elem: "huo", n: 12 },
           { sfx: "danger" },
           { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "xuwang", tone: "他温声而笑，仿佛只是设宴待客", text: "诸位仙长远来辛苦。寡人……备了些薄礼相待。" },
@@ -3087,9 +2454,6 @@ const STORY = [
           { fx: "burst", at: 6, elem: "jin", n: 14 },
           { sfx: "castHuo" },
           { narr: "凤凰符化作一只赤金火凰，长唳一声、俯冲而下——扑上来的几名血侍连惨叫都未及发出，便被真火焚成了灰烬！正道楷模的这一手高光，惊得满殿血煞为之一滞。可你心里，却莫名升起一丝寒意：这贼首，未免太『沉得住气』了。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e4_dive_done");
@@ -3115,25 +2479,13 @@ const STORY = [
     text: [
       { scene: "皇宫 · 血池大殿" },
       "就在凤凰符的赤金火光最盛、所有人的目光都被它吸住的刹那——你脑中那条重金买来的线报，骤然炸响：『黑煞教第五名血侍，从不露面，惯于伪作凡人、混在人前伺机暴起……』",
-      { stage: {
-        bg: "xuechi_dian",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "liujing", art: "bt_wuren", pos: 4, name: "刘靖", face: "r" },
-          { id: "xuwang", art: "bt_wuren", pos: 10, name: "胥王", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.16, ms: 240 },
+      { cam: "zoom", scale: 1.16, ms: 240 },
           { sfx: "danger" },
           { narr: "你猛地看向那位『温煦无害』的越国之主——他袖中，一缕几不可察的血煞，正悄然凝向刘靖的后心！第五血侍，从来就不是别人——就是他！" },
           { say: "hanli", emo: "shout", tone: "你想都没想，厉喝出声", text: "刘师兄当心后心——他就是第五血侍！" },
           { narr: "刘靖久经沙场，闻声不及回头，本能地侧身一拧——那道本要贯穿心脉的血煞阴手，堪堪偏开寸许、自他左肩透出！刘靖闷哼一声、单膝跪地，凤凰符的火光骤然黯了下去，可那条命，到底是保住了。" },
           { say: "liujing", tone: "他捂着血涌的左肩，咬牙回望那道阴手的来处，眼里是劫后的凝重", text: "好险……好阴毒的暗手！韩师弟，若非你这一声……刘某这条命，今日便要交代在这儿了。这份情，记下了。" },
           { narr: "（你前期在京城挣到的那条『第五血侍』线报，喝破了这记必杀的阴手——命途本是身陨，是你替刘靖挣回了一线生机。重伤的刘靖被宋蒙一把扶到身后。）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e4_liujing_done");
@@ -3159,25 +2511,13 @@ const STORY = [
     text: [
       { scene: "皇宫 · 血池大殿" },
       "就在凤凰符的赤金火光最盛、所有人的目光都被它吸住的刹那——那位『温煦无害』的越国之主，袖中骤然探出一缕血煞阴手，悄无声息地，贯入了刘靖的后心！",
-      { stage: {
-        bg: "xuechi_dian",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "liujing", art: "bt_wuren", pos: 4, name: "刘靖", face: "r" },
-          { id: "xuwang", art: "bt_wuren", pos: 10, name: "胥王", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.16, ms: 240 },
+      { cam: "zoom", scale: 1.16, ms: 240 },
           { wait: 700 },
           { narr: "无人料到这一手。无人来得及喝破。等众人惊觉，那道血煞已自刘靖前胸透出——他低头怔怔看着胸口的血窟，凤凰符的火光，一寸寸地黯了下去。" },
           { say: "liujing", tone: "他踉跄回身，难以置信地看着那个『一国之君』，嘴角溢出血来", text: "是你……黑煞教主……竟藏在……一国之君的皮囊底下……" },
           { narr: "正道楷模刘靖，一生除魔卫道、行事方正，终究没能防住这藏在『凡人』皮下的最毒一手。他重重倒下，凤凰符失了主人、化作一道赤金流光没入虚空——那是后话了。" },
           { say: "zhongweiniang", emo: "cry", tone: "她嘶声尖叫，几乎是扑过去的", text: "刘师兄——！！" },
           { narr: "（恭送除魔卫道的正道楷模，刘师兄。——若你前期在京城挖到过『第五血侍/教主伪装』的线报，本可喝破这记阴手、为他挣回一线生机；命途如此，转机要趁早挣。）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e4_liujing_done");
@@ -3202,17 +2542,7 @@ const STORY = [
     text: [
       { scene: "皇宫 · 血池大殿" },
       "那位『越国之主』缓缓站起身。他脸上温煦的皮相，正一寸寸剥落、簌簌而下——胥王、越皇、黑煞教主，原来从头到尾，都是同一个人。",
-      { stage: {
-        bg: "xuechi_dian",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "songmeng", art: "bt_wuren", pos: 4, name: "宋蒙", face: "r" },
-          { id: "zhongweiniang", art: "bt_wuren", pos: 5, name: "钟卫娘", face: "r" },
-          { id: "xuwang", art: "bt_wuren", pos: 10, name: "胥王", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "xuwang", tone: "凡人的皮囊褪尽，声音陡然森冷如渊", text: "装了这许多年凡人，也腻了。诸位仙长……可知，寡人这血池，养的是什么？" },
           { narr: "话音未落，他周身血煞冲天而起、池中赤水尽数倒灌入体！一股远超筑基的恐怖气息轰然炸开——他催动血煞秘法，竟生生跃入了『假丹』之境，那是寻常筑基修士仰望不及的筑基巅峰！" },
           { sfx: "farRoar" },
@@ -3222,9 +2552,6 @@ const STORY = [
           { say: "songmeng", emo: "shout", tone: "他护住众人，厉声", text: "不是对手——退！韩师弟，你脑子活，想法子拖住他，我们另寻生路！" },
           { narr: "几人且战且退、节节败北。你一边周旋、一边飞快盘算：硬拼必死，可若能拖到师兄妹与那几头傀儡蜥蜴布成阵势……一个疯狂的念头，在你脑中渐渐成形。" },
           { narr: "（皇宫决战·下篇·待续：拖时布阵战 → 真·颠倒五行阵 → 三符宝＋真凰符终结胥王 → 收官·离京钩。增量H下篇实装中。）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e4_xuwang_done");
@@ -3255,24 +2582,12 @@ const STORY = [
     text: [
       { scene: "皇宫 · 血池大殿" },
       "假丹之威如山压顶，黑血刀所过之处血煞横飞。你一边周旋一边厉声招呼众人：莫要硬碰，只管退、只管缠！",
-      { stage: {
-        bg: "xuechi_dian",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "songmeng", art: "bt_wuren", pos: 4, name: "宋蒙", face: "r" },
-          { id: "zhongweiniang", art: "bt_wuren", pos: 5, name: "钟卫娘", face: "r" },
-          { id: "xuwang", art: "bt_wuren", pos: 10, name: "胥王", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { say: "hanli", emo: "shout", tone: "你飞快盘算着，把那个疯狂的念头喊了出来", text: "宋师兄、钟师姐——带傀儡蜥蜴叼旗布阵！『真·颠倒五行阵』！我们几个，给你们拖时间！" },
           { narr: "宋蒙眼睛一亮，重元珠当即护身：「好胆识——就这么办！」他与钟卫娘急急退向四角，驱使着那几头筑基傀儡蜥蜴叼起阵旗，往血池广场的方位上死死镇去。" },
           { sfx: "castTu" },
           { narr: "（拖时布阵战：你这一战不必胜，只须撑住——拖满回合，师兄妹的颠倒五行阵便成，便是翻盘之时。败有所得，浴血退守也能再上。）" },
           { fight: "tuoshi_fight", guard: { hint: "撑满回合即胜，败有所得" } },
-        ],
-      }},
     ],
     choices: [
       { text: "「都听我的——结阵死守，拖住胥王！」", hint: "拖时布阵战：撑满回合即胜（败有所得·浴血再战）", resolve: "tuoshi_fight" },
@@ -3292,17 +2607,7 @@ const STORY = [
     text: [
       { scene: "皇宫 · 血池大殿" },
       "最后一道阵旗轰然插定，整座血池广场五行光华暴涨——木、火、金、水、土，倒转生克、虚实易位！「真·颠倒五行阵」终于布成！",
-      { stage: {
-        bg: "xuechi_dian",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "songmeng", art: "bt_wuren", pos: 4, name: "宋蒙", face: "r" },
-          { id: "zhongweiniang", art: "bt_wuren", pos: 5, name: "钟卫娘", face: "r" },
-          { id: "xuwang", art: "bt_wuren", pos: 10, name: "胥王", face: "l" },
-        ],
-        script: [
-          { fx: "lightning" },
+      { fx: "lightning" },
           { sfx: "thunder" },
           { cam: "shake", px: 9 },
           { say: "songmeng", emo: "shout", tone: "他与钟卫娘联手稳住阵眼，厉声", text: "阵成——压！韩师弟，机会只此一次，五行倒转镇着他的工夫，你的底牌，全给我招呼上去！" },
@@ -3310,8 +2615,6 @@ const STORY = [
           { narr: "（阵成决战：颠倒五行阵逐回合反噬胥王、佐助于你；金光砖等符宝底牌已在手——此刻不留底牌，更待何时！注意：他有二阶段，毁其肉身后仍会借丹复生。）" },
           { cam: "zoom", scale: 1.16, ms: 240 },
           { fight: "xuwang_final_fight", guard: { hint: "底牌尽出，毕其功于一役" } },
-        ],
-      }},
     ],
     choices: [
       { text: "「就是现在——金光砖！」底牌尽出，毕其功于一役！", hint: "阵成决战：颠倒五行阵逐回合压制 + 二阶段假丹 boss", resolve: "xuwang_final_fight" },
@@ -3332,17 +2635,7 @@ const STORY = [
     text: [
       { scene: "皇宫 · 血池大殿" },
       "平天尺、重元珠、赤红剑——你与宋蒙、陈巧倩三件符宝齐轰而下，胥王那具假丹肉身轰然崩碎。可血凝五行丹借阵中五行之力，犹自凝起一缕复生神魂，被颠倒五行阵死死镇在原地、寸步难逃。",
-      { stage: {
-        bg: "xuechi_dian",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "liujing", art: "bt_wuren", pos: 4, name: "刘靖", face: "r" },
-          { id: "zhongweiniang", art: "bt_wuren", pos: 5, name: "钟卫娘", face: "r" },
-          { id: "xuwang", art: "bt_wuren", pos: 10, name: "胥王", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { say: "liujing", tone: "他按着左肩的伤、剑还握不稳，却把一枚古拙符箓郑重递向钟卫娘", text: "卫娘——刘家祖传的真凰符，一生只可一击。我这身子催不动它了……了结这魔头，托付你了。" },
           { say: "zhongweiniang", emo: "shout", tone: "她双手捧符、赤金凰焰冲天而起", text: "真凰符——焚！" },
           { fx: "flash", color: "#ffd27a", alpha: 0.5 },
@@ -3351,9 +2644,6 @@ const STORY = [
           { narr: "一只赤金火凰自符中振翅而出，长鸣一声，将那缕负隅顽抗的复生神魂连同满殿血煞，尽数吞没、焚作飞灰。胥王、越皇、黑煞教主——这魔道巨擘，终于伏诛。" },
           { narr: "（彩蛋·刘宋渊源：宋蒙扶住力竭的刘靖，低声道「当年若非令尊援手，我宋家早已……这一符之恩，记下了。」——两家的旧渊源，是后话了。）" },
           { narr: "（战利品入囊：血凝五行丹／玄阴诀／血灵钻／锦帕／玉简／钵盂。）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e4b_finale_done");
@@ -3379,25 +2669,13 @@ const STORY = [
     text: [
       { scene: "皇宫 · 血池大殿" },
       "平天尺、重元珠、赤红剑——你与宋蒙、陈巧倩三件符宝齐轰而下，胥王那具假丹肉身轰然崩碎。可血凝五行丹借阵中五行之力，犹自凝起一缕复生神魂，被颠倒五行阵死死镇在原地、寸步难逃。",
-      { stage: {
-        bg: "xuechi_dian",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "zhongweiniang", art: "bt_wuren", pos: 5, name: "钟卫娘", face: "r" },
-          { id: "xuwang", art: "bt_wuren", pos: 10, name: "胥王", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { say: "zhongweiniang", emo: "cry", tone: "她攥着刘师兄留下的那枚祖传真凰符，泪流满面，双手却稳得出奇", text: "刘师兄……你护道一生，这最后一击，师妹替你了结他——真凰符，焚！" },
           { fx: "flash", color: "#ffd27a", alpha: 0.5 },
           { fx: "burst", elem: "jinlei", n: 18 },
           { sfx: "success" },
           { narr: "一只赤金火凰自符中振翅而出，长鸣一声，将那缕负隅顽抗的复生神魂连同满殿血煞，尽数吞没、焚作飞灰。胥王、越皇、黑煞教主——这魔道巨擘，终于伏诛。这一焚，是为天下苍生，也是为那位再回不来的正道楷模。" },
           { narr: "（战利品入囊：血凝五行丹／玄阴诀／血灵钻／锦帕／玉简／钵盂。）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       State.setFlag("modao_e4b_finale_done");
@@ -3424,21 +2702,10 @@ const STORY = [
     text: [
       { scene: "皇宫 · 血池大殿" },
       "血池熄了，赤水褪尽。这一夜，九名筑基修士夜闯皇城、力诛假丹境的黑煞教主胥王——蟠踞越国多年、以血祭邪法残害散修的黑煞教，自此覆灭。",
-      { stage: {
-        bg: "xuechi_dian",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "songmeng", art: "bt_wuren", pos: 6, name: "宋蒙", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { narr: "天光将明，众人各自收拾伤势与心绪。宋蒙拍了拍你的肩：「韩师弟，京城这趟，多亏有你。各派的烂账，七派自会去理——你我，是该回天南了。」" },
           { narr: "你握着囊中那枚自矿洞古传送阵心捧出的大挪移令，心头掠过一个念头：残缺的古传送阵、远在天南之外的乱星海……这条极长的线，今日还握不住，却已悄然牵起。" },
           { narr: "（魔道争锋·京城篇·收束。下一程「再别天南」：天南旧人旧事、古传送阵的修补、以及那条通向乱星海的引线——皆是后话。注意听各地江湖传闻，便知风从何起。）" },
-          { cgOut: true },
-        ],
-      }},
       { guide: { tag: "魔道争锋 · 京城篇 · 收束", hint: "黑煞教覆灭——再别天南篇已解锁，回天南。", focus: "map", cta: "回天南" } },
     ],
     onArrive(s) {
@@ -3482,20 +2749,10 @@ const STORY = [
       { scene: "嘉元城外 · 官道" },
       { amb: "wind" },
       "离了京城，一路南行。越往天南腹地走，那股熟悉的山水气息便越浓——这是你筑基之后，第一次踏回天南的土地。",
-      { stage: {
-        bg: "jiayuan_guandao",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { narr: "囊中那面曲魂幡幽幽震动，似在感应着什么。自燕家堡一路带到京城、又带回天南的这缕残魂，是你筹谋已久的一着暗棋。" },
           { say: "hanli", emo: "cold", tone: "low", text: "「曲魂幡躁动得厉害……是御灵宗的人，循着这缕魂气追来了。在他们动手之前——这缕曲魂，得先成我的底牌。」" },
           { narr: "（再别天南篇·开篇。先在嘉元城将曲魂祭成身外化身；御灵宗的夺舍者已在城外候着了。）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       Chapters.unlock("zaibie");
@@ -3527,22 +2784,12 @@ const STORY = [
     text: [
       { scene: "嘉元城 · 墨府旧宅 · 静室" },
       "你寻了处隐秘静室，取出曲魂幡，又请出自黑煞教主胥王处所得的那柄『血刃』——通体暗红、煞气森森的一件邪宝。",
-      { stage: {
-        bg: "jingshi_huashen",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { narr: "玄阴诀的法门在识海中流转。这一脉『身外化身』之术，正是要以秘法将一缕强魂祭炼成可离体而战的化身——再以利器附之，便是一具不惧伤亡、可挡在身前的战傀。" },
           { say: "hanli", tone: "low", text: "「曲魂本就是一缕假丹境的残魂，配上这柄血刃……成了它，便是一记能压我一头的杀招。」" },
           { fx: "material", at: "center", elem: "huo" },
           { sfx: "cast" },
           { narr: "你掐诀祭炼，曲魂幡中那缕残魂被血刃一引，煞气勃发、缓缓凝出一道人形虚影——假丹之威扑面而来。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     choices: [
       {
@@ -3667,21 +2914,11 @@ const STORY = [
     text: [
       { scene: "嘉元城 · 客栈" },
       "绿煌剑通体莹绿、剑身流转着古拙的纹路。你越阶一试，剑影分光、威势赫赫——虽催不出结丹本命的全威，已足以列为你第三柄主战法宝。",
-      { stage: {
-        bg: "jiayuan_inn",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { narr: "那卷奇虫榜玉简亦是意外之喜——内里录着诸般天地奇虫的来历与豢养之法，于你日后大有用处。" },
           { sfx: "danger" },
           { narr: "可还未及细看，城中已是一片哗然——金鼓原方向，黑煞教残部竟与天南各路魔修合流、倾巢来犯，灵兽山一脉临阵倒戈反水，正道大军节节败退……" },
           { say: "hanli", emo: "cold", tone: "low", text: "「金鼓原……黄枫谷的人，怕是都在那里。」" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "jiayuan_city";
@@ -3813,24 +3050,12 @@ const STORY = [
     text: [
       { scene: "金鼓原 · 护山大阵 · 阵心" },
       "齐天光幕轰然立起，整座山口被一道光墙护住，溃退的弟子们终于得了喘息。可阵心那道白须身影，却悄然伏倒，气息一点点散去。",
-      { stage: {
-        bg: "hushan_zhen",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "lihuayuan", art: "lihuayuan", pos: 6, name: "李化元", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.12, ms: 1200 },
+      { cam: "zoom", scale: 1.12, ms: 1200 },
           { say: "lihuayuan", tone: "weak", text: "「咳……护山大阵，能撑上三日。韩立……黄枫谷的根，就……拜托了……」" },
           { say: "hanli", emo: "cold", tone: "low", text: "「李前辈！……前辈！」" },
           { fx: "flash", color: "#ffe8b0", ms: 240 },
-          { despawn: "lihuayuan" },
           { narr: "白须身影化作点点流光，散入那道护山光幕里。一位老人，把自己烧成了黄枫谷最后一道屏障。" },
           { narr: "你将这份沉甸甸的托付记在心头。天南的旧人旧事，原来真的会一桩桩、一件件地凋零下去。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "jinguyuan";
@@ -3859,21 +3084,10 @@ const STORY = [
       { amb: "candle" },
       "金鼓原一败，天南正道再难给你容身之处。你循着大挪移令与古传送阵的线索，一路亡命，奔入元武国境内。",
       "百艺坊深处的地窟里，藏着一座尘封万载的古传送阵。可当年精研此阵的齐云霄，早已在魔劫中身死道消——只剩一个清瘦女子，守着残阵，形容枯槁。",
-      { stage: {
-        bg: "yuanwu_diku",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "xinruyin", art: "xinruyin", pos: 7, name: "辛如音", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "xinruyin", tone: "weak", text: "「你便是……韩立？齐前辈临终前说过，若有持大挪移令者来，便把这座古阵……交托于他。」" },
           { say: "xinruyin", tone: "low", text: "「这阵残损得太重，凭我之力修不全了。这卷修复图纸，你拿着——配上大挪移令，或许真能强启它一次，送你离开天南。」" },
           { narr: "你接过那卷《古传送阵·修复图纸》，指尖一沉。原来通往乱星海的那条线，竟要踏着这许多故人的死生，才牵得起来。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "yuanwu";
@@ -3943,21 +3157,11 @@ const STORY = [
     text: [
       { scene: "燕家堡 · 残垣" },
       "追兵将退之际，人群中却悄然欺近一道阴影——是个修『吸星噬元』一脉邪法的吸修，专挑你护体真元最薄的一瞬，贴身一击！",
-      { stage: {
-        bg: "yanjia_canyuan",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-        ],
-        script: [
-          { fx: "burst", at: "center", elem: "huo" },
+      { fx: "burst", at: "center", elem: "huo" },
           { sfx: "hit" },
           { say: "hanli", emo: "cold", tone: "weak", text: "「唔——！我的灵力……被他吸走了大半……！」" },
           { narr: "气海骤然一空。曲魂血刃及时反手将那吸修绞杀，可你的修为已被夺去大半——外人看去，你竟像是跌回了炼气数层的孱弱模样。" },
           { narr: "（跌境·纯演出——你的境界与战力数值并未真正改变；这只是外人眼中、与你自己心境上的一道阴影。乱星海之初，你自会重新拾回这口气，并一举踏入结丹。）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "yanjiabao";
@@ -3985,21 +3189,10 @@ const STORY = [
     text: [
       { scene: "越国矿洞 · 洞口" },
       "一路退到越国边陲那座废弃矿洞外，追兵被远远甩开。南宫婉看着你跌境后孱弱的模样，沉默片刻，将一袋沉甸甸的灵石塞进你手里。",
-      { stage: {
-        bg: "kuangdong_kou",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "nangongwan", art: "bt_nangongwan", pos: 6, name: "南宫婉", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "nangongwan", tone: "soft", text: "「这是一袋中品灵石，拿着——你如今这副样子，路上总要用得着。古阵那边，进去之后，就别再回头了。」" },
           { say: "hanli", emo: "cold", tone: "low", text: "「……南宫姑娘，多谢。后会，总该有期。」" },
           { narr: "她没有再说话，只是退开一步，目送你走向矿洞深处。这一别，便是天南之外、茫茫数万里了。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "yuekuang";
@@ -4067,15 +3260,7 @@ const STORY = [
     text: [
       { scene: "越国矿洞 · 古传送阵 · 阵心" },
       "六息撑过，古阵心爆起一道贯天光柱。辛如音泣血一喝，指尖最后一道阵纹补全——大挪移令催动的契机，只在这一瞬。",
-      { stage: {
-        bg: "chuansong_zhen",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 4, name: "韩立", face: "c" },
-          { id: "xinruyin", art: "xinruyin", pos: 6, name: "辛如音", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { say: "xinruyin", tone: "weak", text: "「就是现在——！持令入阵心，催动它！迟一息，这古阵就要塌了！」" },
           { narr: "你取出那枚自胥王矿洞古阵心捧出的大挪移令，掌心一热，迎着贯天光柱踏入阵心——" },
           {
@@ -4096,9 +3281,6 @@ const STORY = [
           { narr: "光柱冲霄的刹那，古阵自身也轰然崩裂——身后追兵的咒骂、辛如音最后那个虚弱而释然的笑、整座天南的山河……都在这一瞬被青光彻底吞没、抛在了脑后。" },
           { say: "hanli", emo: "cold", tone: "low", text: "「天南……生我、养我、也负我之地。总有一天——我会回来的。」" },
           { narr: "大挪移令碎了，古阵塌了，身后所有的追路，就此斩断。再别天南——这一别，是天南之外、茫茫数万里的未知。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "yuekuang";
@@ -4127,14 +3309,7 @@ const STORY = [
     text: [
       { scene: "乱星海 · 无边汪洋" },
       "青光骤散。脚下一空——你竟自半空跌落，重重砸进一片冰凉的咸涩海水里！",
-      { stage: {
-        bg: "luanxinghai",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.0, ms: 200 },
+      { cam: "zoom", scale: 1.0, ms: 200 },
           { fx: "burst", at: "center", elem: "shui" },
           { sfx: "splash" },
           { narr: "古阵崩毁的空间乱流，把你抛到了一个全然陌生的所在。你拼力浮出水面，环顾四周——" },
@@ -4144,9 +3319,6 @@ const STORY = [
           { say: "hanli", emo: "cold", tone: "low", text: "「这里……便是传说中的乱星海么。内星海人修、外星海妖修……我落在了哪一边？」" },
           { cam: "zoom", scale: 1.15, ms: 2000 },
           { narr: "孤身一人，落在这片陌生的浩瀚妖海。身后是再回不去的天南，身前是吉凶未卜的星海万里。一段全新的命途，自这片海平线上，缓缓拉开。" },
-          { cgOut: true },
-        ],
-      }},
       {
         guide: {
           tag: "再别天南篇 · 终",
@@ -4243,24 +3415,13 @@ const STORY = [
     text: [
       { scene: "魁星岛 · 魁星城" },
       "斩退那头海兽，你伏在一截浮木上随洋流漂了三日，终于望见一座岛影破开海雾——巨大的石像高踞港口，俯瞰着楼宇层叠、帆樯如林的一座海城。魁星岛，魁星城。",
-      { stage: {
-        bg: "kuixing_land",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "sanxiu", art: "bt_wuren", pos: 7, name: "魁星城散修", face: "l" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -4 }, ms: 1400 },
+      { cam: "pan", to: { x: 0, y: -4 }, ms: 1400 },
           { narr: "坊市里南腔北调，灵石叮当。你听人议论：这片乱星海以一道大阵划作内外——内星海是人修的地盘，外星海则是万千妖兽的猎场；而魁星岛，正悬在内外之交的边角上。" },
           { say: "sanxiu", tone: "low", text: "「外来的散修？落难漂上岛的多了去了。想在魁星岛落脚，没点本事、没座靠山，连块礁石都轮不到你。」" },
           { narr: "孑然一身、人地两生。要在这片海立住脚，先得有个能遮风的去处——和一身藏得住的本事。" },
           { narr: "你正盘算，一道黑袍身影自巷口掠过，目光在你身上若有若无地停了一瞬，又淡淡移开。你心头莫名一凛——那点幽冷的气息，不像善类。" },
           { fx: "flash", at: "center", color: "#3a2a55", ms: 220 },
           { narr: "未及多想，岛上坐地豪族顾家的管事却寻上了你：顾家正与人争一桩跨海商路的经商权，急需一位「面生、底细干净」的修士，替他们上镇妖台擂台走一遭。报酬，正是你眼下最缺的——魁星岛居留。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "kuixing_island";
@@ -4330,19 +3491,9 @@ const STORY = [
       { scene: "魁星岛 · 小寰岛航路" },
       "顾家如愿夺了那桩经商权，按约把一枚居留玉牌交到你手里。台上那场「苦战」反倒成了护身符——人人只当你是个修为平平、运气尚可的落难散修。",
       "你不愿在魁星城的眼皮底下久留，向人打听了一座僻处外缘的孤岛——小寰岛。岛小、灵气稀薄、连个常住的修士都没有，正合你的心意。",
-      { stage: {
-        bg: "xiaohuan_dongfu",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -3 }, ms: 1200 },
+      { cam: "pan", to: { x: 0, y: -3 }, ms: 1200 },
           { narr: "你在岛上择了一处背风的山腹，布下简陋禁制，开出一座洞府。海风呜咽，唯有曲魂的黑影静立一侧，与你相伴。" },
           { narr: "独岛、独修、唯一具身外化身相伴。这份孤独，是落难者的清苦，却也是一段苦修最好的火候。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "xiaohuan_island";
@@ -4368,21 +3519,11 @@ const STORY = [
       { scene: "小寰岛 · 洞府" },
       "二十载寒暑，在小寰岛的潮声里悄然流过。",
       "灵气稀薄，你便以耐心补拙：青元剑诀一层层重新筑起，三转重元功行至一转——散功重修这一遭，看似跌回入门，真元却淬炼得比从前更精纯几分。落海所失的那点修为，也终于一寸寸拾了回来，重回筑基后期巅峰。",
-      { stage: {
-        bg: "sanzhuan",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.04, ms: 300 },
+      { cam: "zoom", scale: 1.04, ms: 300 },
           { fx: "material", at: "center", elem: "mu", ms: 600 },
           { sfx: "cast" },
           { say: "hanli", emo: "calm", tone: "low", text: "「二十年……总算把根基重新夯实了。这一回重修过的真元，比当年更听使唤。」" },
           { narr: "孤岛一隅，二十年如一日。曲魂静立洞府之侧，从不言语，却让这份清苦的苦修，多了一丝不至于太冷的暖意。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "xiaohuan_island";
@@ -4432,15 +3573,7 @@ const STORY = [
       { scene: "魁星城 · 天工坊市" },
       "出关之后，你入魁星城遍访丹铺药行，想寻结丹所需的雪灵水、天火液——可这两味灵药价比连城，有市无货，问得你一筹莫展。",
       "正失意间，一道熟悉的声音在身后响起。",
-      { stage: {
-        bg: "wenqiang",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "wenqiang", art: "bt_wuren", pos: 7, name: "文樯", face: "l" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { say: "wenqiang", tone: "soft", text: "「这位道友的背影……韩道友？真是你！当年一别，竟在这乱星海的魁星城重逢，缘分不浅啊。」" },
           { narr: "竟是文樯——昔年的一面之识，文思月之父，如今也漂泊在这片星海。故人乡音，叫这陌生的海城都暖了几分。" },
           { say: "wenqiang", tone: "soft", text: "「韩道友也为结丹灵药犯难？正巧——六连殿要在魁星岛办一场镇妖大典，榜首之奖是一枚『降尘丹』，能降一分结丹门槛！你我联手报名，未必没有一搏之力。」" },
@@ -4448,9 +3581,6 @@ const STORY = [
           { fx: "flash", at: "center", color: "#caa6ff", ms: 220 },
           { narr: "随文樯穿过人潮时，一个抱着乐器的紫衣小女孩与你擦肩而过。你心头莫名一颤——那张脸，竟生出一种说不清、道不明的熟悉感，仿佛在很久很久以前便已相识。可那女孩很快没入人流，再寻不见了。" },
           { narr: "那点熟悉，像一缕够不着的旧梦。你摇摇头，把它压下——眼下，先是大典与降尘丹。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "kuixing_island";
@@ -4480,24 +3610,13 @@ const STORY = [
       { scene: "魁星岛 · 镇妖大典斗兽场" },
       "镇妖台筑成一座环形斗兽场，层层看台坐满了观礼的修士。台心的禁制幽幽流转，封着大典用作彩头的妖兽。",
       "嘉宾席上，妙音门掌门携夫人、女儿端坐其间，六连殿的苗、古两位长老分列左右；观众席的阴影里，一个白衣妖修「大善人」风希含笑而坐，离他不远，那道黑袍身影也赫然在列。",
-      { stage: {
-        bg: "doushouchang",
-        W: 12,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "feng_sanniang", art: "bt_wuren", pos: 5, name: "冯三娘", face: "l" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -5 }, ms: 1500 },
+      { cam: "pan", to: { x: 0, y: -5 }, ms: 1500 },
           { say: "feng_sanniang", tone: "stern", text: "「报名第六组的两位道友？我是六连殿冯三娘，这一阵的领队。你们这组抽到的彩头不轻——是头越级的婴鲤兽，幼体便堪比六阶。诸位且听我阵图调度，万勿轻敌。」" },
           { fx: "burst", at: "center", elem: "shui", ms: 280 },
           { sfx: "thunder" },
           { narr: "禁制开启，一头浑身赤鳞、双目猩红的巨兽自台心水牢中翻涌而出——婴鲤兽！才是幼体，那扑面而来的妖威便压得满场修士呼吸一窒。" },
           { say: "hanli", emo: "cold", tone: "low", text: "「越级五阶……正面硬撼是取死之道。」（你眼神微动，曲魂的黑影悄然没入人群。）「冯领队尽管布阵困它——真正的杀招，待它力竭时再出。」" },
           { narr: "众目睽睽，强敌环伺。这一战，不只为降尘丹——更是在风希、乌丑那等人物眼皮底下，露多少、藏多少的分寸。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "kuixing_island";
@@ -4565,16 +3684,7 @@ const STORY = [
     text: [
       { scene: "镇妖台 · 中央禁制" },
       "你斩落婴鲤兽，满场喝彩还未落下——",
-      { stage: {
-        bg: "doushouchang",
-        W: 14,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 2, name: "韩立", face: "r" },
-          { id: "wuchou", art: "wuchou", pos: 11, name: "乌丑", face: "l" },
-          { id: "fengxi", art: "fengxi", pos: 9, name: "风希", face: "l" },
-        ],
-        script: [
-          { fx: "burst", at: 7, elem: "jin", n: 20 },
+      { fx: "burst", at: 7, elem: "jin", n: 20 },
           { sfx: "thunder" },
           { cam: "shake", px: 12 },
           { narr: "镇妖台正中那道幽幽流转了百年的禁制，竟毫无征兆地自内炸裂！碎光冲霄数十里。" },
@@ -4598,12 +3708,8 @@ const STORY = [
           { cam: "zoom", scale: 1.25, ms: 700 },
           { narr: "元婴期裂风兽化人的真正修为骤然爆发，风刃如海。雷鹏虽悍，终究困兽百年、力有不逮——一场惊天动地的妖王对决之后，雷鹏哀鸣坠落。" },
           { narr: "风希探手一抄，竟生生斩落、夺走了那对垂天的疾雷双翅，身形一晃，没入打通的星海通道，飘然离场。" },
-          { move: "fengxi", to: 14, ms: 600 },
-          { despawn: "fengxi" },
           { narr: "雷鹏的双翅，正是风雷翅之材——风希取了材料便走，炼制之事，显然另有图谋。这一笔，你默默记下了。" },
           { say: "hanli", emo: "cold", tone: "low", text: "「元婴之上的厮杀……我连插手的余地都没有。当务之急，是从这场大乱里活着出去。」" },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "kuixing_island";
@@ -4678,24 +3784,13 @@ const STORY = [
     text: [
       { scene: "乱星海 · 魁星岛外海" },
       "斩开古长老的拦截，你护着紫灵杀出重围。身后的魁星岛已成一片火海——内外星海的通道既被打通，内海防御大阵随之失效，外海的妖兽如黑潮般汹涌涌入。乱星海，大乱了。",
-      { stage: {
-        bg: "luanxinghai",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "wangning", art: "bt_wuren", pos: 6, name: "汪凝", face: "l" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -6 }, ms: 1600 },
+      { cam: "pan", to: { x: 0, y: -6 }, ms: 1600 },
           { fx: "burst", at: "center", elem: "shui", ms: 320 },
           { sfx: "splash" },
           { narr: "你借着这场吞天的乱局掩护，驾起遁光，载着惊魂未定的小女孩，一头扎进茫茫外海，将魁星岛的火光与喊杀，远远抛在身后。" },
           { say: "wangning", tone: "soft", text: "「……谢谢你，大哥哥。我叫汪凝。」（小女孩怯生生抬头，那双眼睛，又叫你心头泛起那缕说不清的熟悉。）" },
           { say: "hanli", emo: "calm", tone: "low", text: "「先离了这是非之地再说。这片海要乱上好一阵了——乱中，也未必没有机缘。」" },
           { narr: "降尘丹到手、雷鹏与风希的因果落下、怀里多了一条要护的性命。一场大乱，把所有人都卷向未知的海域——而你，已嗅到了乱中取利的气息。" },
-          { cgOut: true },
-        ],
-      }},
       {
         guide: {
           tag: "初入星海篇 · 第一/二幕 暂告段落",
@@ -4742,22 +3837,11 @@ const STORY = [
     text: [
       { scene: "外星海 · 妖氛猎场边缘" },
       "乱星海一乱，内海待不得了。你驾遁光载着汪凝一路向外海漂去——越往外，海水越是幽碧，妖氛越是浓重，寻常修士避之不及，你却嗅出了机会。",
-      { stage: {
-        bg: "chuhai",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-          { id: "wangning", art: "bt_wuren", pos: 6, name: "汪凝", face: "l" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -4 }, ms: 1400 },
+      { cam: "pan", to: { x: 0, y: -4 }, ms: 1400 },
           { say: "wangning", emo: "worried", tone: "soft", text: "「大哥哥，外面……外面好多妖兽的气息。我们真要去那种地方吗？」" },
           { say: "hanli", emo: "calm", tone: "low", text: "「越凶险的地方，越藏着旁人不敢取的利。结丹要的资粮，就在那一头头海妖的妖丹里。你且寻处安稳礁岛待着，剩下的，交给我。」" },
           { narr: "结丹三资——降尘丹已得其一，雪灵水、天火液在魁星城寻而未果，更缺的是温养金丹的妖丹。这片外海，正是发家致富的本钱。" },
           { fx: "flash", at: "center", color: "#7fd4c4", ms: 220 },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "waixinghai";
@@ -4783,23 +3867,13 @@ const STORY = [
     text: [
       { scene: "外星海 · 沉船灵窟" },
       "猎场边缘一艘不知沉了多少年的古修仙舟里，金芒乱窜——一窝异种灵虫盘踞其中，通体如熔金、振翅如金云蔽日，啃噬着船骸上的精铁法器。",
-      { stage: {
-        bg: "shijin",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { say: "hanli", emo: "serious", tone: "low", text: "「群飞如金云、专噬金铁……奇虫榜上有名的『噬金虫』？这等灵虫，落到旁人手里是祸，落到我手里——便是一桩大机缘。」" },
           { fx: "burst", at: "center", elem: "jin", ms: 300 },
           { sfx: "cast" },
           { narr: "你以神识小心收伏这窝噬金虫，纳入灵机豢养。这虫一物四用：可附体淬身结甲、可放群出战噬敌、可化虫为刃破甲、亦可外化作虫之化身全力一击——四式同抽一池灵机，打一分少一分，取舍即战术。" },
           { say: "hanli", emo: "calm", tone: "low", text: "「再以乱星海特产的霓裳草为饵——花气甜腻、最招妖兽。布饵引妖来食，纵虫群一举围杀，剖丹取财……这取丹的关窍，齐了。」" },
           { narr: "噬金虫＋霓裳草，一引一杀。这片外海的妖丹，从今日起，便是我韩某人的进项了。" },
-          { cgOut: true },
-        ],
-      }},
       {
         guide: {
           tag: "新虫器 · 噬金虫（四用法）",
@@ -4873,14 +3947,7 @@ const STORY = [
     text: [
       { scene: "外星海 · 远眺极阴岛" },
       "这些时日，霓裳草引妖、噬金虫群杀，妖丹一颗颗剖出、装满了储物袋。正当你盘算着该往内海销丹之际——",
-      { stage: {
-        bg: "jinkui",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 3, name: "韩立", face: "r" },
-        ],
-        script: [
-          { cam: "pan", to: { x: 0, y: -8 }, ms: 1800 },
+      { cam: "pan", to: { x: 0, y: -8 }, ms: 1800 },
           { fx: "flash", at: "center", color: "#fff0c0", ms: 260 },
           { narr: "天际骤然一暗，极远处的海面竟被一股无形威压齐齐压沉！极阴岛方向，一道身影孤身踏空而立。" },
           { say: "hanli", emo: "shock", tone: "low", text: "「那威压……元婴中期巅峰？是星宫大长老金魁！他孤身踏临极阴岛——这是要当众示威。」" },
@@ -4888,9 +3955,6 @@ const STORY = [
           { sfx: "thunder" },
           { narr: "只见金魁信手一引，一道毁天灭地的法光当空轰落——整座极阴岛连同逆星盟极阴祖师一脉的老巢，在惊天动地的轰鸣里崩成齑粉，沉入海底。乌丑等辈，早躲得不见踪影。" },
           { narr: "一炮碎一岛。这便是元婴大修士的手段，也是星宫收复内星海的先声。仙凡有别，这等人物的棋局，眼下还轮不到我来落子——可这片海，怕是要为之再变一回了。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "waixinghai";
@@ -4930,20 +3994,10 @@ const STORY = [
     text: [
       { scene: "天星城 · 天都坊市" },
       "循着内海航路，你携满囊妖丹与降尘丹来到天星城——内星海中枢的修仙大都会，星宫治下，巨塔接云、坊市连绵、传送阵网四通八达，人修云集，是这片妖海里难得的太平中枢。",
-      { stage: {
-        bg: "tianxing",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 1000 },
+      { cam: "zoom", scale: 1.05, ms: 1000 },
           { say: "hanli", emo: "calm", tone: "low", text: "「内海第一都会，气象果然不同。在此落户置一处洞府，安顿好紫灵，再闭关备齐资粮——结丹之关，便在这里叩了。」" },
           { fx: "flash", at: "center", color: "#caa6ff", ms: 200 },
           { narr: "天都街上人潮如织，曾有两道惊才绝艳的身影擦肩而过，气度迥异于常人……可惜只是惊鸿一瞥，转瞬便没入了人海。（你心头掠过一丝异样，却也未及细想。）" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "tianxing_city";
@@ -4970,14 +4024,7 @@ const STORY = [
     text: [
       { scene: "天星城 · 洞府静室" },
       "结丹之关，最是凶险，可备得越足，活路便越宽——这是「觅长生」的道理。你在天星城的丹铺药行间奔走，以外海妖丹为本钱，将魁星城求而未得的两味灵药一一补齐。",
-      { stage: {
-        bg: "ziliang",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { say: "hanli", emo: "serious", tone: "low", text: "「雪灵水一寒、天火液一热，一寒一热相济，方能把一身灵力反复压炼成丹。再加降尘丹涤去尘浊、妖丹温养——资粮，算是齐了。」" },
           { fx: "material", at: "center", elem: "shui", ms: 500 },
           { sfx: "cast" },
@@ -4985,9 +4032,6 @@ const STORY = [
           { fx: "material", at: "center", elem: "mu", ms: 500 },
           { say: "hanli", emo: "calm", tone: "low", text: "「大衍诀三层既成，神识已足。三转重元功一转的精纯真元、大衍诀三层的神识、外海妖丹、降尘丹、雪灵水、天火液——结丹六资，齐备。」" },
           { narr: "万事俱备。可越是齐备，心里那根弦反倒绷得越紧——结丹的心魔，是平生执念所化，最难缠。这一关，终究要亲身去闯。" },
-          { cgOut: true },
-        ],
-      }},
     ],
     onArrive(s) {
       s.location = "tianxing_city";
@@ -5019,14 +4063,7 @@ const STORY = [
     text: [
       { scene: "天星城 · 洞府静室" },
       "静室之内，你盘膝凝神，引一身精纯真元向丹田汇聚，要将那盈满百窍的灵力反复压炼、凝散成丹。雪灵水寒、天火液炽，一寒一热在丹田里相搏——",
-      { stage: {
-        bg: "luanxinghai",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 320 },
+      { cam: "zoom", scale: 1.05, ms: 320 },
           { fx: "lightning", at: "center", elem: "huo", ms: 520 },
           { sfx: "thunder" },
           { narr: "丹将凝时，一缕心魔自识海猛然窜起！青牛镇的土屋、墨大夫临终的冷笑、七玄门的旧人、落海二十载的孤苦……平生执念尽数翻涌而上，搅得真元逆乱、凝丹之势骤崩。" },
@@ -5034,9 +4071,6 @@ const STORY = [
           { fx: "shake", at: "center", ms: 360 },
           { narr: "一口逆血喷出，将凝的丹胚溃散回灵力。首番叩关，败了。" },
           { narr: "曲魂当年结煞丹水到渠成，我却在这一关前栽了跟头。可这本就是『鲜有不败』的结丹关——执念既是劫，便要亲手勘破。调息、定心，再来。" },
-          { cgOut: true },
-        ],
-      }},
       {
         guide: {
           tag: "结丹关 · 屡挫屡战",
@@ -5073,19 +4107,9 @@ const STORY = [
     text: [
       { scene: "天星城 · 洞府静室" },
       "首番之败让你看清了这一关的分量。你闭门调息、勘破执念，将那翻涌的心魔一寸寸压伏，又把一身灵力推向圆满——只待择一吉时，再叩结丹之门。",
-      { stage: {
-        bg: "jieguan",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.05, ms: 800 },
+      { cam: "zoom", scale: 1.05, ms: 800 },
           { say: "hanli", emo: "serious", tone: "low", text: "「觅长生之关，备得越足、活路越宽。资粮齐、神识足、心魔伏——剩下的，是亲手去闯那一场心魔劫。这一回，不容有失。」" },
           { narr: "结丹的心魔劫，是生平执念所化，最是凶险，败则有跌境之险。可凡人韩立的路，从来都是把万全准备做到极致，再以命相搏。" },
-          { cgOut: true },
-        ],
-      }},
       {
         guide: {
           tag: "结丹关 · 觅长生式渡劫（可玩）",
@@ -5118,14 +4142,7 @@ const STORY = [
     objHint: "心魔劫闯过，丹胚终凝！一身灵力尽数压炼成一枚温润金丹，金丹大成、结丹初期。自此你第一次能正面打得过同阶——凡人韩立，结丹了。",
     text: [
       { scene: "天星城 · 洞府静室" },
-      { stage: {
-        bg: "jindan",
-        W: 10,
-        units: [
-          { id: "hanli", art: "bt_hanli", pos: 5, name: "韩立", face: "c" },
-        ],
-        script: [
-          { cam: "zoom", scale: 1.08, ms: 360 },
+      { cam: "zoom", scale: 1.08, ms: 360 },
           { narr: "这一回，当平生执念所化的心魔再度扑来，你已不再退避——青牛镇、墨大夫、七玄门、孤岛二十载……你一一受之、一一勘破，任它翻涌，自有一颗道心如磐。" },
           { fx: "lightning", at: 5, elem: "jin" },
           { sfx: "thunder" },
@@ -5135,8 +4152,6 @@ const STORY = [
           { say: "hanli", emo: "joy", tone: "low", text: "「成了……金丹大成！我韩立，结丹了！」" },
           { narr: "二十载孤岛苦修、镇妖大典的九死一生、外海猎妖的发家积淀、首番结丹的铩羽——尽数化作此刻丹田里这一点温润的金芒。这是你修仙以来，第一次能正面打得过同阶的扬眉吐气之时。" },
           { narr: "曲魂静立一旁。这一程，它陪你从天南到星海、从筑基到结丹。可不知为何，就在金丹大成的这一刻，远在嘉元城的某座旧府里，似有一缕故人的气息悄然黯淡了下去……（故人钟·低鸣）" },
-        ],
-      }},
       {
         guide: {
           tag: "初入星海篇 · 终　——　金丹大成（realmTier 1→2）",

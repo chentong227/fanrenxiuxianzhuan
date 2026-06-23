@@ -3150,8 +3150,10 @@ const Engine = {
     const SP = CombatAPI.SPELLS;
     spells.forEach(sk => {
       const sp = SP[sk];
-      if (!sp || !sp.driveRealm) return;
-      const dMul = Balance.driveMpMul(pTier, sp.driveRealm, !!sp.chargeCost, rLayer);
+      if (!sp || sp.source === "martial") return;
+      const dr = sp.tier != null ? sp.tier : (sp.driveRealm || 0);
+      if (dr <= pTier) return;
+      const dMul = Balance.driveMpMul(pTier, dr, !!sp.chargeCost, rLayer);
       if (dMul > 1) gearMpMul[sk] = (gearMpMul[sk] || 1) * dMul;
     });
     const dunTrait = State.gearTrait("charge_resist");

@@ -26,121 +26,121 @@
    */
   const SPELLS = {
     // 《长春功》一系（功法法术·木属性）
-    tuna:     { name: "长春吐纳", mp: 12, range: [0, 0], type: "heal", heal: 11, school: "mu", source: "art",
+    tuna:     { name: "长春吐纳", mp: 12, range: [0, 0], type: "heal", heal: 11, school: "mu", source: "art", tier: 0,
                 desc: "运转《长春功》吐纳调息，固本回元。修长春功者，回元更多。战中调息终是杯水车薪——胜负在攻。" },
-    huti:     { name: "长春护体", mp: 12, range: [0, 0], type: "def", shield: 16, school: "mu", source: "art",
+    huti:     { name: "长春护体", mp: 12, range: [0, 0], type: "def", shield: 16, school: "mu", source: "art", tier: 0,
                 desc: "以木灵之力护住周身。修长春功者，护体更坚。护体随回合消散——是应招，不是存款。" },
     // 凝息（原凝神静气）：弃攻回气——但破绽毕露
-    ningshen: { name: "凝息回元", mp: 0, range: [0, 0], type: "buff", regen: 12, expose: true, source: "art", oncePerRound: true,
+    ningshen: { name: "凝息回元", mp: 0, range: [0, 0], type: "buff", regen: 12, expose: true, source: "art", tier: 0, oncePerRound: true,
                 desc: "敛息凝神，引天地灵气回补灵力（+12）。但凝息之际破绽毕露——本回合受击伤害+30%。敢不敢当他面回气，是个赌局。" },
 
     // 武学（贴身专属·零耗——韩立的杀手锏传统，灵力耗尽时的特解）
-    zhayan:   { name: "眨眼剑法", mp: 0, range: [1, 1], type: "atk", dmg: 15, dodgeSelf: 0.15, buildMomentum: 1, source: "martial",
+    zhayan:   { name: "眨眼剑法", mp: 0, range: [1, 1], type: "atk", dmg: 15, dodgeSelf: 0.15, buildMomentum: 1, source: "martial", tier: 0,
                 desc: "凡人剑术，身形快如眨眼，欺身一剑。唯贴身可用，不耗灵力。每施一剑积累「剑势」。" },
-    zhayan_lian:{ name: "眨眼连击", mp: 0, range: [1, 1], type: "atk", dmg: 20, dodgeSelf: 0.1, spendMomentum: true, momentumDmg: 6, source: "martial",
+    zhayan_lian:{ name: "眨眼连击", mp: 0, range: [1, 1], type: "atk", dmg: 20, dodgeSelf: 0.1, spendMomentum: true, momentumDmg: 6, source: "martial", tier: 0,
                 desc: "凡人剑术，倾尽剑势连环爆发。每点「剑势」额外+6伤害，施后剑势清零。唯贴身可用。" },
-    lianhuan: { name: "连环眨眼", mp: 0, range: [1, 1], type: "atk", dmg: 15, multiSeg: true, segPer: 2, dodgeSelf: 0.2, spendMomentum: true, source: "martial",
+    lianhuan: { name: "连环眨眼", mp: 0, range: [1, 1], type: "atk", dmg: 15, multiSeg: true, segPer: 2, dodgeSelf: 0.2, spendMomentum: true, source: "martial", tier: 0,
                 desc: "眨眼剑法大成之技：身剑合一，一剑化作数剑（每2点剑势多斩一剑），剑剑独立结算。施后剑势清零。唯贴身可用。" },
-    weidu:    { name: "喂毒一击", mp: 0, range: [1, 1], type: "debuff", poison: { dmg: 10, turns: 4 }, source: "martial",
+    weidu:    { name: "喂毒一击", mp: 0, range: [1, 1], type: "debuff", poison: { dmg: 10, turns: 4 }, source: "martial", tier: 0,
                 consume: "duyao_cao",
                 desc: "剑尖淬毒，贴身一击令敌持续中毒。消耗一份毒草。" },
-    feizhen:  { name: "暗器飞针", mp: 3, range: [1, 3], type: "atk", dmg: 22, pierce: true, source: "martial",
+    feizhen:  { name: "暗器飞针", mp: 3, range: [1, 3], type: "atk", dmg: 22, pierce: true, source: "martial", tier: 0,
                 consume: "anqi",
                 desc: "凡人暗器，扬手激射，例不虚发，破甲。消耗一支暗器。" },
 
     // 运功镇魂：对元神之敌（神识所及，不拘远近）
-    zhenhun:  { name: "运功镇魂", mp: 11, range: [1, 4], type: "soul", source: "art", elem: "shui",
+    zhenhun:  { name: "运功镇魂", mp: 11, range: [1, 4], type: "soul", source: "art", tier: 0, elem: "shui",
                 slays: { ghost: 1.5 },
                 desc: "凝聚周身功力镇压神魂。唯对元神之敌有效，伤害取决于你的功力。神魂镇压本是鬼魅克星。" },
 
     // 火弹术（长春功后篇所授）：法术=控场补刀位，射程短于御物
-    huodan:   { name: "火弹术", mp: 12, range: [1, 2], type: "atk", dmg: 24, school: "huo", source: "art", elem: "huo",
+    huodan:   { name: "火弹术", mp: 12, range: [1, 2], type: "atk", dmg: 24, school: "huo", source: "art", tier: 0, elem: "huo",
                 desc: "凝火灵之气为弹，激射而出。火气灼金——对金行道基的修士妖兽事半功倍。" },
 
     /* —— 符箓（瞬发牌：一点灵气点燃封存法术，不占主行动）—— */
-    huoshe_fu: { name: "火蛇符", mp: 1, range: [1, 4], type: "atk", dmg: 26, source: "art", elem: "huo", consume: "huoshe_fu", quick: true,
+    huoshe_fu: { name: "火蛇符", mp: 1, range: [1, 4], type: "atk", dmg: 26, source: "art", tier: 1, elem: "huo", consume: "huoshe_fu", quick: true,
                 desc: "符上封存火蛇之术，扬手即发（瞬发，不占行动）。火克金——金行强敌的破局之物。消耗一张符。" },
-    hanbing_fu:{ name: "寒冰符", mp: 1, range: [1, 4], type: "atk", dmg: 26, source: "art", elem: "shui", consume: "hanbing_fu", quick: true,
+    hanbing_fu:{ name: "寒冰符", mp: 1, range: [1, 4], type: "atk", dmg: 26, source: "art", tier: 1, elem: "shui", consume: "hanbing_fu", quick: true,
                 desc: "符上封存寒冰锥击，扬手即发（瞬发）。水克火——火行凶兽的对策。消耗一张符。" },
 
     // 符宝·金光砖（瞬发大杀器：充能制+冷却——杀手的凶器，如今是你的底牌）
-    jinguang_zhuan: { name: "金光砖", mp: 6, range: [1, 4], type: "atk", dmg: 42, pierce: true, source: "art", elem: "jin",
+    jinguang_zhuan: { name: "金光砖", mp: 6, range: [1, 4], type: "atk", dmg: 42, pierce: true, source: "art", tier: 1, elem: "jin",
                 consume: "jinguang_zhuan_charge", cd: 2, quick: true,
                 desc: "金光上人的符宝遗赠：金光化砖凌空砸落，势大力沉、无视护体（瞬发）。每次催动耗一道充能（灵石可回充），催动后须回气两回合。" },
 
     /* —— 战内丹药（瞬发：灵力恢复链的实战落点——灵力池整场不复，丹药是续命的那口气）—— */
-    jinchuang_yao: { name: "服金疮药", mp: 0, range: [0, 0], type: "heal", heal: 40, quick: true, consume: "huixue_dan", source: "item",
+    jinchuang_yao: { name: "服金疮药", mp: 0, range: [0, 0], type: "heal", heal: 40, quick: true, consume: "huixue_dan", source: "item", tier: 0,
                 desc: "战中匀出一瞬吞下金疮药，气血回稳（瞬发，不占行动）。消耗一份金疮药。" },
-    huiyuan_dan: { name: "回元丹", mp: 0, range: [0, 0], type: "buff", regen: 40, quick: true, consume: "huiyuan_dan", source: "item",
+    huiyuan_dan: { name: "回元丹", mp: 0, range: [0, 0], type: "buff", regen: 40, quick: true, consume: "huiyuan_dan", source: "item", tier: 0,
                 desc: "一口吞下、灵力回涌 +40（瞬发，不占行动）。灵力池整场不复——这一粒，常是续命的那口气。消耗一枚回元丹。" },
 
     /* —— 控制符（瞬发）：拆大招、保蓄势、断追击 —— */
-    dingshen_fu: { name: "定身符", mp: 1, range: [1, 4], type: "debuff", dingshen: 1, quick: true, consume: "dingshen_fu", source: "art",
+    dingshen_fu: { name: "定身符", mp: 1, range: [1, 4], type: "debuff", dingshen: 1, quick: true, consume: "dingshen_fu", source: "art", tier: 1,
                 desc: "符上禁锢之术扬手贴出，定住敌身一回合（瞬发）——它动不了，你做什么都来得及。消耗一张符。" },
 
     /* —— 阵旗（瞬发）：往轴上铺区间，改写战场规则（阵法轴 v0）—— */
-    zhenqi_kunzu: { name: "困足阵旗", mp: 2, range: [1, 4], type: "zone", zone: "kunzu", zoneSpan: 1, zoneTurns: 4, quick: true, consume: "zhenqi_kunzu", source: "art",
+    zhenqi_kunzu: { name: "困足阵旗", mp: 2, range: [1, 4], type: "zone", zone: "kunzu", zoneSpan: 1, zoneTurns: 4, quick: true, consume: "zhenqi_kunzu", source: "art", tier: 1,
                 desc: "掷向敌方脚下，布两步困足之阵（4回合）：敌踏入阵中寸步难行、移动即止。挡突进的硬墙（瞬发）。消耗一面阵旗。" },
-    zhenqi_juling: { name: "聚灵阵旗", mp: 2, range: [0, 0], type: "zone", zone: "juling", zoneSpan: 1, zoneTurns: 5, selfZone: true, quick: true, consume: "zhenqi_juling", source: "art",
+    zhenqi_juling: { name: "聚灵阵旗", mp: 2, range: [0, 0], type: "zone", zone: "juling", zoneSpan: 1, zoneTurns: 5, selfZone: true, quick: true, consume: "zhenqi_juling", source: "art", tier: 1,
                 desc: "掷于自己脚下，布两步聚灵之阵（5回合）：立于阵中每回合灵力+8。久战续航的根本（瞬发）。消耗一面阵旗。" },
 
     /* —— 青元剑诀（筑基后主修，李化元所赠——grade3 玄阶功法的威能跃迁）—— */
-    qingyuan_jianmang: { name: "青元剑芒", mp: 11, range: [1, 3], type: "atk", dmg: 30, school: "mu", source: "art", elem: "mu",
+    qingyuan_jianmang: { name: "青元剑芒", mp: 11, range: [1, 3], type: "atk", dmg: 30, school: "mu", source: "art", tier: 1, elem: "mu",
                 desc: "青元剑诀三层之技：灵力凝成三尺青芒，隔空斩落。玄阶功法的锋锐，远非黄阶小术可比。" },
-    qingyuan_jiandun: { name: "青元剑盾", mp: 12, range: [0, 0], type: "def", shield: 24, school: "mu", source: "art",
+    qingyuan_jiandun: { name: "青元剑盾", mp: 12, range: [0, 0], type: "def", shield: 24, school: "mu", source: "art", tier: 1,
                 desc: "青元剑诀五层之技：剑芒环身结盾，密不透风。比长春护体坚实得多——筑基修士的防御底气。" },
-    qingyuan_jianying: { name: "剑影分光", mp: 20, range: [1, 3], type: "atk", dmg: 16, fixedSegs: 3, cd: 2, minLayer: 7, school: "mu", source: "art", elem: "mu",
+    qingyuan_jianying: { name: "剑影分光", mp: 20, range: [1, 3], type: "atk", dmg: 16, fixedSegs: 3, cd: 2, minLayer: 7, school: "mu", source: "art", tier: 1, elem: "mu",
                 desc: "青元剑诀七层之技·形态A分影多段：青芒一分为三、各自扑敌，每道分影独立结算克制与破甲。修为愈深、法宝相佐，分影愈众（更高层与绿煌剑解锁分光扫敌）。催动后须回气两回合。" },
     // 巨剑术（用户裁决·v149：随青元剑诀直授的大杀招——不纠结 canon 获取路径，重特效演出）：
     // 聚周身青芒铸丈余巨剑、自天倾斩。source:"art" 走标度尺(realmBand)同青元线；破甲+回气两回合。
-    jujian_shu: { name: "巨剑术", mp: 16, range: [1, 3], type: "atk", dmg: 40, pierce: true, cd: 2, school: "mu", source: "art", elem: "mu",
+    jujian_shu: { name: "巨剑术", mp: 16, range: [1, 3], type: "atk", dmg: 40, pierce: true, cd: 2, school: "mu", source: "art", tier: 1, elem: "mu",
                 desc: "青元剑诀所附之大杀招：聚周身青芒凝铸丈余巨剑，自天倾斩而下——势大力沉、破甲裂阵，一剑之威胜百剑之繁。催动后须回气两回合。" },
 
     /* —— 法器战斗技（装备授予，gear grantSpells）——
      * source:"treasure"（御物）：威力随境界成长最陡（威力=注入灵力）；贴身-30%。 */
-    tiejian_ci:  { name: "御剑刺", mp: 5, range: [1, 3], type: "atk", dmg: 10, source: "treasure", elem: "jin",
+    tiejian_ci:  { name: "御剑刺", mp: 5, range: [1, 3], type: "atk", dmg: 10, source: "treasure", tier: 0, elem: "jin",
                 desc: "御使外门铁剑凌空飞刺——黄枫谷入门下品法器的本分一击，威力寻常却胜在练气期便可催动。贴身施展不开（-30%）。" },
-    zimu_ren:    { name: "金蚨子母刃", mp: 8, range: [1, 3], type: "atk", dmg: 15, fixedSegs: 2, source: "treasure", elem: "jin",
+    zimu_ren:    { name: "金蚨子母刃", mp: 8, range: [1, 3], type: "atk", dmg: 15, fixedSegs: 2, source: "treasure", tier: 0, elem: "jin",
                 desc: "万宝楼千年药草换得的顶阶法器：一柄母刃居中驭使，八柄子刃随神识分袭（动漫官设一母八子）。子刃两段连斩、每段独立结算，威力随灵力雄厚而涨。贴身施展不开（-30%）。" },
-    jujian_zhan: { name: "巨剑斩", mp: 14, range: [1, 3], type: "atk", dmg: 40, pierce: true, source: "treasure", elem: "jin", cd: 2,
+    jujian_zhan: { name: "巨剑斩", mp: 14, range: [1, 3], type: "atk", dmg: 40, pierce: true, source: "treasure", tier: 0, elem: "jin", cd: 2,
                 desc: "御使丈余巨剑凌空斩落，势大力沉且破甲——一剑之威，胜过百剑之繁。催动后须回气两回合。贴身施展不开（-30%）。" },
     /* —— 乌龙夺（黄枫谷篇·元武国齐云霄以墨蛟之角炼成的四爪带毒攻击法宝——韩立筑基期第二主战）——
      * 四枚蛟爪分袭连抓、每爪独立结算；爪尖淬水行妖毒，抓痕入体持续掉血。
      * 非本命（本命=青竹蜂云剑）；授予在 story.js 齐云霄代工（增量C）。 */
-    wulong_zhua: { name: "乌龙夺", mp: 11, range: [1, 3], type: "atk", dmg: 9, fixedSegs: 4, poison: { dmg: 8, turns: 3 }, source: "treasure", elem: "shui", cd: 1,
+    wulong_zhua: { name: "乌龙夺", mp: 11, range: [1, 3], type: "atk", dmg: 9, fixedSegs: 4, poison: { dmg: 8, turns: 3 }, source: "treasure", tier: 0, elem: "shui", cd: 1,
                 desc: "墨蛟双角炼成的四爪短法宝御空飞出，四枚蛟爪分袭连抓、每爪独立结算；爪尖淬着墨蛟未散的水行妖毒，抓痕入体则毒发持续掉血。御物之技，威力随灵力雄厚而涨。贴身施展不开（-30%）。" },
     /* —— 绿煌剑（再别天南篇·御灵宗夺舍者本命法宝·结丹本命）——
      * driveRealm:2（结丹方可主驱）。越阶催动（统一设计）：威能×0.7^gap + 灵力×3^gap——
      *   筑基强驱（1档差）：80×2.4×0.7≈134 伤、13×3=39 灵力（杀手锏级，仍冠绝筑基）。
      *   达标后（结丹）灵力正常（13 MP），非本命×1.0。 */
-    lvhuang_jian: { name: "绿煌剑", mp: 13, range: [1, 4], type: "atk", dmg: 80, pierce: true, source: "treasure", elem: "jin", driveRealm: 2, cd: 1,
+    lvhuang_jian: { name: "绿煌剑", mp: 13, range: [1, 4], type: "atk", dmg: 80, pierce: true, source: "treasure", tier: 2, elem: "jin", driveRealm: 2, cd: 1,
                 desc: "御使御灵宗夺舍者的本命古剑·绿煌剑凌空斩落——通体莹绿、剑吟如龙，势大力沉且破甲。这是结丹本命之器，你越阶强驱灵力消耗剧增——但每一击都是结丹级的威能。贴身施展不开（-30%）。" },
-    jianying_fenguang: { name: "剑影分光", mp: 11, range: [1, 4], type: "atk", dmg: 26, fixedSegs: 3, source: "treasure", elem: "jin", driveRealm: 2,
+    jianying_fenguang: { name: "剑影分光", mp: 11, range: [1, 4], type: "atk", dmg: 26, fixedSegs: 3, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
                 desc: "绿煌剑所附剑诀：一剑化作三道分光剑影分袭来敌，每道独立结算——越阶强驱灵力剧增，分影之利却最适缠斗群敌。贴身施展不开（-30%）。" },
 
     /* —— 悬浮法宝（驭物特例，combat-arsenal 二·五）——三类法宝制下大多数伴身件
      * 走被动面板，少数"驭物类"保留祭起态（float: { upkeep, auto }）。
      * ⚠ ruyi_hualan 为演武占位样例（正典获得=乱星海篇，届时精核） */
-    ruyi_hualan: { name: "如意花篮（演武）", mp: 6, range: [0, 0], type: "float", source: "treasure", elem: "mu",
+    ruyi_hualan: { name: "如意花篮（演武）", mp: 6, range: [0, 0], type: "float", source: "treasure", tier: 2, elem: "mu",
                 float: { upkeep: 3, auto: { kind: "atk", dmg: 8, range: 4, name: "花雨" } },
                 desc: "祭于半空的古朴花篮，彩花自篮中泉涌而出——花雨溅射近处之敌（每回合自动 8 伤），悬浮燃灵 3/回合。点击收回。" },
 
     /* —— 青竹蜂云剑（本命法宝·主攻；正典=星海飞驰篇炼成，演武先行）——
      * swordOrbit:true=持续绕身剑阵（UI 渲染 au-swords）；神雷附剑给它缠金雷 */
-    qingzhu_jian: { name: "青竹蜂云剑", mp: 9, range: [1, 4], type: "atk", dmg: 22, fixedSegs: 2, source: "treasure", elem: "mu", swordOrbit: true, natal: true, driveRealm: 2,
+    qingzhu_jian: { name: "青竹蜂云剑", mp: 9, range: [1, 4], type: "atk", dmg: 22, fixedSegs: 2, source: "treasure", tier: 2, elem: "mu", swordOrbit: true, natal: true, driveRealm: 2,
                 desc: "本命法宝·青竹蜂云剑：群剑御空、剑随神念分袭，两段连斩各自结算，威力随灵力雄厚而涨。可引辟邪神雷附剑、凌空劈落、雷遁穿空。" },
 
     /* —— 辟邪神雷三用途（v96 用户裁决：72 剑 72 雷=独立资源，取舍即战术）——
      * chargeCost: { id, n }——特色资源消耗（战斗内不回充——池制同源）。
      * ⚠ 正典获得=星海飞驰篇青竹蜂云剑炼成（结丹）；演武先行验证编排 */
-    shenlei_pi: { name: "辟邪神雷·劈", mp: 6, range: [1, 10], type: "atk", dmg: 34, source: "treasure", elem: "mu", driveRealm: 2,
+    shenlei_pi: { name: "辟邪神雷·劈", mp: 6, range: [1, 10], type: "atk", dmg: 34, source: "treasure", tier: 2, elem: "mu", driveRealm: 2,
                 aoe: true, aoeSpan: 10,
                 chargeCost: { id: "shenlei", n: 1 }, slays: { ghost: 1.8, demon: 1.8 },
                 desc: "自身畔引爆辟邪神雷、左右十格横扫——金雷自人而发（非法宝飞袭），近处之敌尽数笼罩（专克邪魔鬼物×1.8）。耗神雷一道，雷尽则止。" },
-    shenlei_fujian: { name: "神雷附剑", mp: 4, range: [0, 0], type: "buff", source: "treasure", elem: "mu",
+    shenlei_fujian: { name: "神雷附剑", mp: 4, range: [0, 0], type: "buff", source: "treasure", tier: 2, elem: "mu",
                 chargeCost: { id: "shenlei", n: 3 }, leiEnchant: 3,
                 desc: "三道神雷缠上本命飞剑——三回合内主攻法宝带金雷（伤害×1.25、克邪×1.5）。耗神雷三道。" },
-    leidun:     { name: "雷遁", mp: 5, range: [0, 0], type: "buff", quick: true, source: "treasure", elem: "mu",
+    leidun:     { name: "雷遁", mp: 5, range: [0, 0], type: "buff", quick: true, source: "treasure", tier: 2, elem: "mu",
                 chargeCost: { id: "shenlei", n: 1 }, blinkMove: true, needTrait: "fenglei",
                 desc: "化一道银弧穿亚空间而行——本回合可瞬移到场上任意空位、无视挡线困足（瞬发）。需御「风雷翅」方可施展。耗神雷一道。韩跑跑的本钱。" },
 
@@ -148,16 +148,16 @@
      * 一窝灵虫四种调遣，同抽一池"灵机"（charges.shijinchong），打一分少一分、耗尽则哑火——取舍即战术。
      * 正典获得＝外星海致富偶得一窝噬金虫（见 data.js 同名条目）；持虫即四式入战（engine.playerFighter 注入 + 上膛）。
      * 全 source:"treasure"·driveRealm:2，chargeCost 消耗性底牌豁免越阶灵力倍率（Balance.driveMpMul 豁免）。 */
-    shijin_fu:    { name: "噬金·附体", mp: 5, range: [0, 0], type: "def", shield: 36, source: "treasure", elem: "jin",
+    shijin_fu:    { name: "噬金·附体", mp: 5, range: [0, 0], type: "def", shield: 36, source: "treasure", tier: 2, elem: "jin",
                 chargeCost: { id: "shijinchong", n: 1 },
                 desc: "纵噬金虫附于体表、淬结一层金芒虫甲护身（结盾 36）。耗灵机一分，虫尽则止。" },
-    shijin_chao:  { name: "噬金·出战", mp: 6, range: [1, 5], type: "atk", dmg: 14, fixedSegs: 3, source: "treasure", elem: "jin", driveRealm: 2,
+    shijin_chao:  { name: "噬金·出战", mp: 6, range: [1, 5], type: "atk", dmg: 14, fixedSegs: 3, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
                 chargeCost: { id: "shijinchong", n: 1 },
                 desc: "放虫群如金云扑敌、分头撕咬（三段连噬、各自结算）——金芒专噬金铁，远近皆可笼罩。耗灵机一分，虫尽则止。" },
-    shijin_blade: { name: "噬金·变武器", mp: 8, range: [1, 3], type: "atk", dmg: 36, pierce: true, cd: 1, source: "treasure", elem: "jin", driveRealm: 2,
+    shijin_blade: { name: "噬金·变武器", mp: 8, range: [1, 3], type: "atk", dmg: 36, pierce: true, cd: 1, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
                 chargeCost: { id: "shijinchong", n: 2 },
                 desc: "聚虫群凝成一柄噬金巨刃御使斩落——专啮金铁、破甲裂宝（必破甲）。耗灵机二分；催动后须回气一回合。虫尽则止。" },
-    shijin_huashen: { name: "噬金·变身外化身", mp: 12, range: [1, 4], type: "atk", dmg: 24, fixedSegs: 3, pierce: true, cd: 2, source: "treasure", elem: "jin", driveRealm: 2,
+    shijin_huashen: { name: "噬金·变身外化身", mp: 12, range: [1, 4], type: "atk", dmg: 24, fixedSegs: 3, pierce: true, cd: 2, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
                 chargeCost: { id: "shijinchong", n: 3 },
                 desc: "倾巢而出——万千噬金虫外化作一尊丈余虫王化身，扑食撕咬、势不可挡（三段破甲连击）。噬金虫的全力一击，耗灵机三分（半池倾覆）；催动后须回气两回合。虫尽则哑火。" },
   };
@@ -238,6 +238,7 @@
       this.grade = cfg.grade || 1;
       this.auxSkills = cfg.auxSkills || [];
       this.realmTier = cfg.realmTier || 0;
+      this.realmLayer = cfg.realmLayer || 1;   // 小境界层（初期1/中期2/后期3/大圆满4；越阶连续衰减用）
       this.layerMul = cfg.layerMul != null ? cfg.layerMul : 1;   // 主修功法层进度乘子（technique-tiers §5.4）
       this.techSpells = cfg.techSpells || [];                    // 吃 layerMul 的主修招式 id（仅主修当前层所授）
       this.exposed = false;          // 破绽（凝息/蓄势中受击+30%）
@@ -1337,10 +1338,12 @@
         const segs = sp.multiSeg ? 1 + Math.floor(spentMomentum / (sp.segPer || 2)) : (sp.fixedSegs || 1);
         let baseDmg = sp.dmg;
         if (sp.spendMomentum && !sp.multiSeg) { baseDmg += spentMomentum * (sp.momentumDmg || 0); }
-        baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier, lm);
-        // A2 承重墙：法宝驱动门槛 + 本命系数（消耗性底牌 chargeCost 不吃门槛折扣）——读时计算，存档 schema 不变
-        if (sp.source === "treasure") {
-          baseDmg = Math.round(baseDmg * Balance.driveMul(caster.realmTier, sp.driveRealm, sp.natal, !!sp.chargeCost, caster.realmLayer));
+        baseDmg = Balance.spellPower(baseDmg, sp.source, caster.grade, caster.realmTier, lm, sp.tier);
+        // 分级制：所有非武学招式按 itemTier 越阶催动——driveMul 衰减威能、driveMpMul 倍增灵力
+        // 消耗性底牌（chargeCost）豁免越阶折扣——特区底牌走乘性穿透
+        if (sp.source !== "martial") {
+          const dr = sp.tier != null ? sp.tier : (sp.driveRealm || 0);
+          baseDmg = Math.round(baseDmg * Balance.driveMul(caster.realmTier, dr, sp.natal, !!sp.chargeCost, caster.realmLayer));
         }
         baseDmg = Math.max(1, Math.round(baseDmg * auxMul * (caster.dmgBonus || 1)));
         // 贴身惩罚：御物/法术类远程攻击在距离1施展不开（-30%）——武学的主场
@@ -1507,12 +1510,12 @@
         if (sp.poison) { this._applyPoison(caster, target, tref, sp.poison); }
       } else if (sp.type === "heal") {
         const boost = ((caster.technique === "changchun" || caster.technique === "changchun_full") && sp.school === "mu") ? 1.4 : 1;
-        const heal = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.heal * boost), sp.source, caster.grade, caster.realmTier, lm) * auxMul));
+        const heal = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.heal * boost), sp.source, caster.grade, caster.realmTier, lm, sp.tier) * auxMul));
         caster.hp = clampNum(caster.hp + heal, 0, caster.hpMax);
         this._log(`${caster.name} 施「${sp.name}」，回气血 ${heal}（${Math.round(caster.hp)}/${caster.hpMax}）`);
       } else if (sp.type === "def") {
         const boost = ((caster.technique === "changchun" || caster.technique === "changchun_full") && sp.school === "mu") ? 1.4 : 1;
-        const shield = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.shield * boost), sp.source, caster.grade, caster.realmTier, lm) * auxMul));
+        const shield = Math.max(1, Math.round(Balance.spellPower(Math.round(sp.shield * boost), sp.source, caster.grade, caster.realmTier, lm, sp.tier) * auxMul));
         const cap = caster._shieldCap || 0;
         if (cap > 0 && caster.shield >= cap) {
           this._log(`${caster.name} 周身护体已至极限，再难叠加（护体${caster.shield}）。`);

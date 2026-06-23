@@ -1375,11 +1375,22 @@ const UI = {
       key: u.id, art: u.art, name: u.name, pos: u.pos, face: u.face,
       isHero: u.id === "hanli",
     }));
+    // 韩立立绘跟随当前境界/换装（而非 stage 配置里硬编码的 bt_hanli）
+    // 优先级：节点 heroSkin 场景强制 > 手动/境界默认（与旧 VN 模式一致）
+    const st = this._story;
+    const nodeSkin = st && st.stage && st.stage.heroSkin;
+    const heroPt = (typeof Art !== "undefined" && Art.heroId)
+      ? (nodeSkin || Art.heroId()) : "hanli";
+    const heroBt = nodeSkin
+      ? ("bt_" + nodeSkin)
+      : ((typeof Art !== "undefined" && Art.heroBattlerId) ? Art.heroBattlerId() : "bt_hanli");
     const ukeys = udefs.map(d => d.key).join(",");
     if (unitsEl.dataset.keys !== ukeys) {
       unitsEl.dataset.keys = ukeys;
       unitsEl.innerHTML = udefs.map(d => {
-        const src = (typeof Art !== "undefined" && Art.battlerUrl) ? (Art.battlerUrl(d.art) || Art.url(d.art)) : null;
+        const artId = d.isHero ? heroBt : d.art;
+        const fallbackId = d.isHero ? heroPt : d.art;
+        const src = (typeof Art !== "undefined" && Art.battlerUrl) ? (Art.battlerUrl(artId) || Art.url(fallbackId)) : null;
         if (!src) return "";
         const cls = d.isHero ? "axis-unit self stage-u" : "axis-unit enemy stage-u";
         return `<div class="${cls}" data-k="${d.key}">

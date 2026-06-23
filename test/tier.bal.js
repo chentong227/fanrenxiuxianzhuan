@@ -76,12 +76,12 @@ console.log("\n=== 功法层进度乘子（layerMul）梯度 ===");
   assert(Balance.layerMul(1, 9) === 1, "入门层（第1层）无层增益（layerMul=1）");
   assert(peak > early, `巅峰层乘子>初入层（${peak.toFixed(3)}>${early.toFixed(3)}）`);
   assert(peak <= 1.3 + 1e-9, `层乘子温和封顶（峰值${peak.toFixed(3)}≤1.30）`);
-  const sEarly = Balance.spellPower(base, "art", 3, 0, early);
-  const sPeak = Balance.spellPower(base, "art", 3, 0, peak);
+  const sEarly = Balance.spellPower(base, "art", 3, 0, early, 0);
+  const sPeak = Balance.spellPower(base, "art", 3, 0, peak, 0);
   assert(sPeak > sEarly, `同境界同品阶：巅峰输出>初入（${sPeak}>${sEarly}）`);
   // 不喧宾夺主：满层进度（1→巅峰）的增幅 < 升一个大境界的增幅
-  const samRealmPeak = Balance.spellPower(base, "art", 3, 0, peak);
-  const upRealmFlat = Balance.spellPower(base, "art", 3, 1, 1);
+  const samRealmPeak = Balance.spellPower(base, "art", 3, 0, peak, 0);
+  const upRealmFlat = Balance.spellPower(base, "art", 3, 1, 1, 1);
   assert(samRealmPeak < upRealmFlat, `层满进度不盖境界（本境巅峰${samRealmPeak} < 升一境初入${upRealmFlat}）`);
   // 武学不吃 layerMul
   const mFlat = Balance.spellPower(base, "martial", 1, 0, 1);

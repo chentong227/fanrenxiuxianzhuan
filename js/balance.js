@@ -206,12 +206,21 @@
       const t = clamp(((layer || 1) - 1) / (maxLayers - 1), 0, 1);
       return 1 + 0.3 * t;
     },
-    spellPower(base, source, grade, realmTier, layerMul) {
-      let mul = this.sourceMul(source) * this.realmScale(source, realmTier);
+    // itemTier: 招式/法宝自身所属大境界（0练气/1筑基/2结丹/3元婴…）。
+    // art/treasure 按 itemTier 缩放（不是玩家境界）——高 tier 招式天然威力大，
+    // 低阶修士用高 tier 招式=越阶催动（driveMul 衰减+灵力倍增），这就是"符宝碾压练气"的根。
+    // 武学仍按玩家境界微涨（凡人武学永远是凡人武学）。
+    // itemTier 缺省时回退到 realmTier（向后兼容旧调用）。
+    spellPower(base, source, grade, realmTier, layerMul, itemTier) {
+      if (source === "martial") {
+        return Math.max(1, Math.round(base * this.sourceMul(source) * this.realmScale(source, realmTier)));
+      }
+      const tier = itemTier != null ? itemTier : realmTier;
+      let mul = this.sourceMul(source) * this.realmBand(tier);
       // 品阶加成只作用于功法法术；法器威力看的是法器本身与注入法力，不吃功法品阶
-      if (source !== "martial" && source !== "treasure") mul *= this.gradeMul(grade);
-      // 功法层进度乘子（仅功法法术；武学/法器不吃）；默认 1 不影响既有四参调用
-      if (layerMul && layerMul !== 1 && source !== "martial" && source !== "treasure") mul *= layerMul;
+      if (source !== "treasure") mul *= this.gradeMul(grade);
+      // 功法层进度乘子（仅功法法术；武学/法器不吃）；默认 1 不影响既有调用
+      if (layerMul && layerMul !== 1 && source !== "treasure") mul *= layerMul;
       return Math.max(1, Math.round(base * mul));
     },
     /* ---- 法器层级越阶催动（within-realm soft scaling）----
