@@ -261,7 +261,7 @@ const FORTUNES = [
     where: ["town"],
     weight: 9,
     cooldown: 4,   // 同一伙拦路不会月月来堵——隔几月才重设关卡
-    cond: (s) => !s.flags.jinguang_dead,
+    cond: (s) => !s.flags.jinguang_dead && !s.flags.departure_complete,
     choices: [
       {
         text: "破财消灾，交五两",
@@ -571,7 +571,7 @@ const FORTUNES = [
     text: "雨夜投宿，同屋的老镖师就着一壶浊酒讲起江湖见闻——哪条道上不太平，哪家镖局折了人，野狼帮近来又在招兵买马……",
     where: ["town"],
     weight: 11,
-    cond: (s) => !s.flags.jinguang_dead,
+    cond: (s) => !s.flags.jinguang_dead && !s.flags.departure_complete,
     choices: [
       {
         text: "添一角酒，听他细说",

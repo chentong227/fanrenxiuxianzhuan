@@ -4349,39 +4349,55 @@ const UI = {
     // 终结演出先播完（墨溅 1.2s），结算卡随后压上
     const delay = win ? 1050 : 450;
     setTimeout(() => {
-      const res = this.el("co-result");
-      res.textContent = win ? (allEscaped ? "逐" : "胜") : fled ? "遁" : "败";
-      res.className = "co-result " + (win ? "co-win" : fled ? "co-flee" : "co-lose");
-      // 敌人结局名单：死的是死、跑的是跑，一目了然
-      this.el("co-foes").innerHTML = c.enemies.map(e => {
-        const fate = e.hp <= 0 ? '<b class="cf-slain">伏诛</b>' : e.escaped ? '<b class="cf-fled">走脱</b>' : win ? '<b class="cf-fled">退散</b>' : '<b class="cf-stand">未竟</b>';
-        return `<div class="co-foe">${e.name} · ${fate}</div>`;
-      }).join("");
-      // 复盘：关键手 / 消耗 / 余裕
-      const lines = [];
-      if (c.stats && Object.keys(c.stats).length) {
-        const top = Object.entries(c.stats).sort((a, b) => b[1] - a[1])[0];
-        if (top && top[1] > 0) lines.push(`关键手「${top[0]}」共建功 ${top[1]} 伤`);
-        // 协同复盘（A2）：接住统帅递的刀几次，配合是看得见的
-        if (c.stats["接应配合"]) lines.push(`接应点将 ×${c.stats["接应配合"]}——她递的刀，你都接住了`);
+      try {
+        const res = this.el("co-result");
+        if (res) { res.textContent = win ? (allEscaped ? "逐" : "胜") : fled ? "遁" : "败"; res.className = "co-result " + (win ? "co-win" : fled ? "co-flee" : "co-lose"); }
+        // 敌人结局名单：死的是死、跑的是跑，一目了然
+        const foes = this.el("co-foes");
+        if (foes) foes.innerHTML = c.enemies.map(e => {
+          const fate = e.hp <= 0 ? '<b class="cf-slain">伏诛</b>' : e.escaped ? '<b class="cf-fled">走脱</b>' : win ? '<b class="cf-fled">退散</b>' : '<b class="cf-stand">未竟</b>';
+          return `<div class="co-foe">${e.name} · ${fate}</div>`;
+        }).join("");
+        // 复盘：关键手 / 消耗 / 余裕
+        const lines = [];
+        if (c.stats && Object.keys(c.stats).length) {
+          const top = Object.entries(c.stats).sort((a, b) => b[1] - a[1])[0];
+          if (top && top[1] > 0) lines.push(`关键手「${top[0]}」共建功 ${top[1]} 伤`);
+          // 协同复盘（A2）：接住统帅递的刀几次，配合是看得见的
+          if (c.stats["接应配合"]) lines.push(`接应点将 ×${c.stats["接应配合"]}——她递的刀，你都接住了`);
+        }
+        if (!win && c.deathCause) lines.push(`你倒在「${c.deathCause.by}」的「${c.deathCause.move}」之下`);
+        const mpUsed = Math.max(0, Math.round((c.player.mpMax || 0) - c.player.mp));
+        lines.push(`耗灵力 ${mpUsed}　气血余 ${Math.max(0, Math.round(c.player.hp))}/${c.player.hpMax}`);
+        const detail = this.el("co-detail");
+        if (detail) detail.innerHTML = lines.map(l => `<div>${l}</div>`).join("");
+        // 战利预览（与 _finishCombat 发放同源）：败/遁无所得
+        let lootTxt = "";
+        if (win && meta.type === "encounter") {
+          const parts = [];
+          if (meta.reward) Object.entries(meta.reward).forEach(([k, v]) => parts.push(k === "silver" ? `纹银×${v}` : `${DATA.items[k] ? DATA.items[k].name : k}×${v}`));
+          if (meta.namedLoot && !c.enemies.some(e => e.escaped)) Object.entries(meta.namedLoot).forEach(([k, v]) => parts.push(`${DATA.items[k] ? DATA.items[k].name : k}×${v}`));
+          if (meta.namedBeast && c.enemies.some(e => e.escaped)) parts.push("（妖王走脱——异闻未了，专属战利与你无缘）");
+          if (parts.length) lootTxt = "得：" + parts.join("、");
+        } else if (fled) lootTxt = "全身而退——这一仗没输，只是没赢。";
+        const loot = this.el("co-loot");
+        if (loot) loot.textContent = lootTxt;
+        const confirm = this.el("co-confirm");
+        if (confirm) {
+          confirm.onclick = () => { ov.hidden = true; done(); };
+        } else {
+          // 确认按钮不存在——直接结算，绝不卡住 overlay
+          ov.hidden = true;
+          done();
+          return;
+        }
+        ov.hidden = false;
+        if (typeof Sfx !== "undefined") Sfx.play(win ? "success" : "danger");
+      } catch (e) {
+        // 渲染异常——强制结算，绝不残留 overlay
+        ov.hidden = true;
+        done();
       }
-      if (!win && c.deathCause) lines.push(`你倒在「${c.deathCause.by}」的「${c.deathCause.move}」之下`);
-      const mpUsed = Math.max(0, Math.round((c.player.mpMax || 0) - c.player.mp));
-      lines.push(`耗灵力 ${mpUsed}　气血余 ${Math.max(0, Math.round(c.player.hp))}/${c.player.hpMax}`);
-      this.el("co-detail").innerHTML = lines.map(l => `<div>${l}</div>`).join("");
-      // 战利预览（与 _finishCombat 发放同源）：败/遁无所得
-      let lootTxt = "";
-      if (win && meta.type === "encounter") {
-        const parts = [];
-        if (meta.reward) Object.entries(meta.reward).forEach(([k, v]) => parts.push(k === "silver" ? `纹银×${v}` : `${DATA.items[k] ? DATA.items[k].name : k}×${v}`));
-        if (meta.namedLoot && !c.enemies.some(e => e.escaped)) Object.entries(meta.namedLoot).forEach(([k, v]) => parts.push(`${DATA.items[k] ? DATA.items[k].name : k}×${v}`));
-        if (meta.namedBeast && c.enemies.some(e => e.escaped)) parts.push("（妖王走脱——异闻未了，专属战利与你无缘）");
-        if (parts.length) lootTxt = "得：" + parts.join("、");
-      } else if (fled) lootTxt = "全身而退——这一仗没输，只是没赢。";
-      this.el("co-loot").textContent = lootTxt;
-      this.el("co-confirm").onclick = () => { ov.hidden = true; done(); };
-      ov.hidden = false;
-      if (typeof Sfx !== "undefined") Sfx.play(win ? "success" : "danger");
     }, delay);
   },
 

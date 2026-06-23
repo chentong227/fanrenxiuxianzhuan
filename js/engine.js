@@ -131,6 +131,7 @@ const Engine = {
     },
     {
       id: "wolf_draft",
+      cond: (s) => !s.flags.departure_complete,
       stages: [
         { news: "山下风声紧：野狼帮在挨村抽丁，青壮挨家被点名，不从者吃刀背。" },
         { news: "商路被野狼帮的关卡掐断了，集镇物价一日三涨，镖局的买卖也歇了。" },
@@ -151,6 +152,8 @@ const Engine = {
       if (State.absMonth() >= s.ripple.nextAbs) {
         const chain = this._RIPPLES.find(r => r.id === s.ripple.id);
         if (!chain) { s.ripple = null; return; }
+        // 链条件不再满足（如已入仙门）——中止推进，标记完成
+        if (chain.cond && !chain.cond(s)) { s.doneRipples.push(chain.id); s.ripple = null; return; }
         s.ripple.stage += 1;
         const st = chain.stages[s.ripple.stage];
         if (!st) { s.doneRipples.push(chain.id); s.ripple = null; return; }
@@ -171,7 +174,12 @@ const Engine = {
     }
     // 启动新链（无活跃链与窗口时低概率）
     if (s.rippleWindow) return;
-    const pool = this._RIPPLES.filter(r => !(s.doneRipples || []).includes(r.id));
+    const pool = this._RIPPLES.filter(r => {
+      if ((s.doneRipples || []).includes(r.id)) return false;
+      // 已入仙门则不再起凡俗涟漪链（野狼帮等）
+      if (r.cond && !r.cond(s)) return false;
+      return true;
+    });
     if (!pool.length) return;
     if (Math.random() > Math.min(0.08 * months, 0.3)) return;
     const chain = pool[Math.floor(Math.random() * pool.length)];
@@ -5438,6 +5446,8 @@ const Engine = {
     }
     this._combat = null;
     this._combatMeta = null;
+    // 安全网：无论上面哪条分支走了 return 或抛异常，确保战斗 overlay 被清除
+    if (typeof UI !== "undefined" && UI.closeCombat) UI.closeCombat();
     this.checkLifespan();
     // 战后剧情接续：禁地战斗等设下的 flag 立刻被主线拾起（封岳→深潭、墨蛟→潭边）
     if (!s.pendingEvent && !this._retryAfterLoss) this.checkStory();

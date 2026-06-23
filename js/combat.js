@@ -26,13 +26,13 @@
    */
   const SPELLS = {
     // 《长春功》一系（功法法术·木属性）
-    tuna:     { name: "长春吐纳", mp: 9, range: [0, 0], type: "heal", heal: 11, school: "mu", source: "art",
+    tuna:     { name: "长春吐纳", mp: 12, range: [0, 0], type: "heal", heal: 11, school: "mu", source: "art",
                 desc: "运转《长春功》吐纳调息，固本回元。修长春功者，回元更多。战中调息终是杯水车薪——胜负在攻。" },
-    huti:     { name: "长春护体", mp: 9, range: [0, 0], type: "def", shield: 16, school: "mu", source: "art",
+    huti:     { name: "长春护体", mp: 12, range: [0, 0], type: "def", shield: 16, school: "mu", source: "art",
                 desc: "以木灵之力护住周身。修长春功者，护体更坚。护体随回合消散——是应招，不是存款。" },
     // 凝息（原凝神静气）：弃攻回气——但破绽毕露
-    ningshen: { name: "凝息回元", mp: 0, range: [0, 0], type: "buff", regen: 14, expose: true, source: "art", oncePerRound: true,
-                desc: "敛息凝神，引天地灵气回补灵力（+14）。但凝息之际破绽毕露——本回合受击伤害+30%。敢不敢当他面回气，是个赌局。" },
+    ningshen: { name: "凝息回元", mp: 0, range: [0, 0], type: "buff", regen: 12, expose: true, source: "art", oncePerRound: true,
+                desc: "敛息凝神，引天地灵气回补灵力（+12）。但凝息之际破绽毕露——本回合受击伤害+30%。敢不敢当他面回气，是个赌局。" },
 
     // 武学（贴身专属·零耗——韩立的杀手锏传统，灵力耗尽时的特解）
     zhayan:   { name: "眨眼剑法", mp: 0, range: [1, 1], type: "atk", dmg: 15, dodgeSelf: 0.15, buildMomentum: 1, source: "martial",
@@ -44,7 +44,7 @@
     weidu:    { name: "喂毒一击", mp: 0, range: [1, 1], type: "debuff", poison: { dmg: 10, turns: 4 }, source: "martial",
                 consume: "duyao_cao",
                 desc: "剑尖淬毒，贴身一击令敌持续中毒。消耗一份毒草。" },
-    feizhen:  { name: "暗器飞针", mp: 1, range: [1, 3], type: "atk", dmg: 22, pierce: true, source: "martial",
+    feizhen:  { name: "暗器飞针", mp: 3, range: [1, 3], type: "atk", dmg: 22, pierce: true, source: "martial",
                 consume: "anqi",
                 desc: "凡人暗器，扬手激射，例不虚发，破甲。消耗一支暗器。" },
 
@@ -64,7 +64,7 @@
                 desc: "符上封存寒冰锥击，扬手即发（瞬发）。水克火——火行凶兽的对策。消耗一张符。" },
 
     // 符宝·金光砖（瞬发大杀器：充能制+冷却——杀手的凶器，如今是你的底牌）
-    jinguang_zhuan: { name: "金光砖", mp: 3, range: [1, 4], type: "atk", dmg: 42, pierce: true, source: "art", elem: "jin",
+    jinguang_zhuan: { name: "金光砖", mp: 6, range: [1, 4], type: "atk", dmg: 42, pierce: true, source: "art", elem: "jin",
                 consume: "jinguang_zhuan_charge", cd: 2, quick: true,
                 desc: "金光上人的符宝遗赠：金光化砖凌空砸落，势大力沉、无视护体（瞬发）。每次催动耗一道充能（灵石可回充），催动后须回气两回合。" },
 
