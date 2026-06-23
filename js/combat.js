@@ -58,13 +58,13 @@
                 desc: "凝火灵之气为弹，激射而出。火气灼金——对金行道基的修士妖兽事半功倍。" },
 
     /* —— 符箓（瞬发牌：一点灵气点燃封存法术，不占主行动）—— */
-    huoshe_fu: { name: "火蛇符", mp: 1, range: [1, 4], type: "atk", dmg: 26, source: "art", tier: 1, elem: "huo", consume: "huoshe_fu", quick: true,
+    huoshe_fu: { name: "火蛇符", mp: 1, range: [1, 4], type: "atk", dmg: 12, source: "art", tier: 1, elem: "huo", consume: "huoshe_fu", quick: true,
                 desc: "符上封存火蛇之术，扬手即发（瞬发，不占行动）。火克金——金行强敌的破局之物。消耗一张符。" },
-    hanbing_fu:{ name: "寒冰符", mp: 1, range: [1, 4], type: "atk", dmg: 26, source: "art", tier: 1, elem: "shui", consume: "hanbing_fu", quick: true,
+    hanbing_fu:{ name: "寒冰符", mp: 1, range: [1, 4], type: "atk", dmg: 12, source: "art", tier: 1, elem: "shui", consume: "hanbing_fu", quick: true,
                 desc: "符上封存寒冰锥击，扬手即发（瞬发）。水克火——火行凶兽的对策。消耗一张符。" },
 
     // 符宝·金光砖（瞬发大杀器：充能制+冷却——杀手的凶器，如今是你的底牌）
-    jinguang_zhuan: { name: "金光砖", mp: 6, range: [1, 4], type: "atk", dmg: 42, pierce: true, source: "art", tier: 1, elem: "jin",
+    jinguang_zhuan: { name: "金光砖", mp: 6, range: [1, 4], type: "atk", dmg: 18, pierce: true, source: "art", tier: 1, elem: "jin",
                 consume: "jinguang_zhuan_charge", cd: 2, quick: true,
                 desc: "金光上人的符宝遗赠：金光化砖凌空砸落，势大力沉、无视护体（瞬发）。每次催动耗一道充能（灵石可回充），催动后须回气两回合。" },
 
@@ -85,24 +85,24 @@
                 desc: "掷于自己脚下，布两步聚灵之阵（5回合）：立于阵中每回合灵力+8。久战续航的根本（瞬发）。消耗一面阵旗。" },
 
     /* —— 青元剑诀（筑基后主修，李化元所赠——grade3 玄阶功法的威能跃迁）—— */
-    qingyuan_jianmang: { name: "青元剑芒", mp: 11, range: [1, 3], type: "atk", dmg: 30, school: "mu", source: "art", tier: 1, elem: "mu",
+    qingyuan_jianmang: { name: "青元剑芒", mp: 11, range: [1, 3], type: "atk", dmg: 13, school: "mu", source: "art", tier: 1, elem: "mu",
                 desc: "青元剑诀三层之技：灵力凝成三尺青芒，隔空斩落。玄阶功法的锋锐，远非黄阶小术可比。" },
-    qingyuan_jiandun: { name: "青元剑盾", mp: 12, range: [0, 0], type: "def", shield: 24, school: "mu", source: "art", tier: 1,
+    qingyuan_jiandun: { name: "青元剑盾", mp: 12, range: [0, 0], type: "def", shield: 10, school: "mu", source: "art", tier: 1,
                 desc: "青元剑诀五层之技：剑芒环身结盾，密不透风。比长春护体坚实得多——筑基修士的防御底气。" },
-    qingyuan_jianying: { name: "剑影分光", mp: 20, range: [1, 3], type: "atk", dmg: 16, fixedSegs: 3, cd: 2, minLayer: 7, school: "mu", source: "art", tier: 1, elem: "mu",
+    qingyuan_jianying: { name: "剑影分光", mp: 20, range: [1, 3], type: "atk", dmg: 7, fixedSegs: 3, cd: 2, minLayer: 7, school: "mu", source: "art", tier: 1, elem: "mu",
                 desc: "青元剑诀七层之技·形态A分影多段：青芒一分为三、各自扑敌，每道分影独立结算克制与破甲。修为愈深、法宝相佐，分影愈众（更高层与绿煌剑解锁分光扫敌）。催动后须回气两回合。" },
     // 巨剑术（用户裁决·v149：随青元剑诀直授的大杀招——不纠结 canon 获取路径，重特效演出）：
     // 聚周身青芒铸丈余巨剑、自天倾斩。source:"art" 走标度尺(realmBand)同青元线；破甲+回气两回合。
-    jujian_shu: { name: "巨剑术", mp: 16, range: [1, 3], type: "atk", dmg: 40, pierce: true, cd: 2, school: "mu", source: "art", tier: 1, elem: "mu",
+    jujian_shu: { name: "巨剑术", mp: 16, range: [1, 3], type: "atk", dmg: 17, pierce: true, cd: 2, school: "mu", source: "art", tier: 1, elem: "mu",
                 desc: "青元剑诀所附之大杀招：聚周身青芒凝铸丈余巨剑，自天倾斩而下——势大力沉、破甲裂阵，一剑之威胜百剑之繁。催动后须回气两回合。" },
 
     /* —— 法器战斗技（装备授予，gear grantSpells）——
      * source:"treasure"（御物）：威力随境界成长最陡（威力=注入灵力）；贴身-30%。 */
     tiejian_ci:  { name: "御剑刺", mp: 5, range: [1, 3], type: "atk", dmg: 10, source: "treasure", tier: 0, elem: "jin",
                 desc: "御使外门铁剑凌空飞刺——黄枫谷入门下品法器的本分一击，威力寻常却胜在练气期便可催动。贴身施展不开（-30%）。" },
-    zimu_ren:    { name: "金蚨子母刃", mp: 8, range: [1, 3], type: "atk", dmg: 15, fixedSegs: 2, source: "treasure", tier: 0, elem: "jin",
+    zimu_ren:    { name: "金蚨子母刃", mp: 8, range: [1, 3], type: "atk", dmg: 7, fixedSegs: 2, source: "treasure", tier: 0, elem: "jin",
                 desc: "万宝楼千年药草换得的顶阶法器：一柄母刃居中驭使，八柄子刃随神识分袭（动漫官设一母八子）。子刃两段连斩、每段独立结算，威力随灵力雄厚而涨。贴身施展不开（-30%）。" },
-    jujian_zhan: { name: "巨剑斩", mp: 14, range: [1, 3], type: "atk", dmg: 40, pierce: true, source: "treasure", tier: 0, elem: "jin", cd: 2,
+    jujian_zhan: { name: "巨剑斩", mp: 14, range: [1, 3], type: "atk", dmg: 17, pierce: true, source: "treasure", tier: 0, elem: "jin", cd: 2,
                 desc: "御使丈余巨剑凌空斩落，势大力沉且破甲——一剑之威，胜过百剑之繁。催动后须回气两回合。贴身施展不开（-30%）。" },
     /* —— 乌龙夺（黄枫谷篇·元武国齐云霄以墨蛟之角炼成的四爪带毒攻击法宝——韩立筑基期第二主战）——
      * 四枚蛟爪分袭连抓、每爪独立结算；爪尖淬水行妖毒，抓痕入体持续掉血。
@@ -113,9 +113,9 @@
      * driveRealm:2（结丹方可主驱）。越阶催动（统一设计）：威能×0.7^gap + 灵力×3^gap——
      *   筑基强驱（1档差）：80×2.4×0.7≈134 伤、13×3=39 灵力（杀手锏级，仍冠绝筑基）。
      *   达标后（结丹）灵力正常（13 MP），非本命×1.0。 */
-    lvhuang_jian: { name: "绿煌剑", mp: 13, range: [1, 4], type: "atk", dmg: 80, pierce: true, source: "treasure", tier: 2, elem: "jin", driveRealm: 2, cd: 1,
+    lvhuang_jian: { name: "绿煌剑", mp: 13, range: [1, 4], type: "atk", dmg: 15, pierce: true, source: "treasure", tier: 2, elem: "jin", driveRealm: 2, cd: 1,
                 desc: "御使御灵宗夺舍者的本命古剑·绿煌剑凌空斩落——通体莹绿、剑吟如龙，势大力沉且破甲。这是结丹本命之器，你越阶强驱灵力消耗剧增——但每一击都是结丹级的威能。贴身施展不开（-30%）。" },
-    jianying_fenguang: { name: "剑影分光", mp: 11, range: [1, 4], type: "atk", dmg: 26, fixedSegs: 3, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
+    jianying_fenguang: { name: "剑影分光", mp: 11, range: [1, 4], type: "atk", dmg: 5, fixedSegs: 3, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
                 desc: "绿煌剑所附剑诀：一剑化作三道分光剑影分袭来敌，每道独立结算——越阶强驱灵力剧增，分影之利却最适缠斗群敌。贴身施展不开（-30%）。" },
 
     /* —— 悬浮法宝（驭物特例，combat-arsenal 二·五）——三类法宝制下大多数伴身件
@@ -127,13 +127,13 @@
 
     /* —— 青竹蜂云剑（本命法宝·主攻；正典=星海飞驰篇炼成，演武先行）——
      * swordOrbit:true=持续绕身剑阵（UI 渲染 au-swords）；神雷附剑给它缠金雷 */
-    qingzhu_jian: { name: "青竹蜂云剑", mp: 9, range: [1, 4], type: "atk", dmg: 22, fixedSegs: 2, source: "treasure", tier: 2, elem: "mu", swordOrbit: true, natal: true, driveRealm: 2,
+    qingzhu_jian: { name: "青竹蜂云剑", mp: 9, range: [1, 4], type: "atk", dmg: 4, fixedSegs: 2, source: "treasure", tier: 2, elem: "mu", swordOrbit: true, natal: true, driveRealm: 2,
                 desc: "本命法宝·青竹蜂云剑：群剑御空、剑随神念分袭，两段连斩各自结算，威力随灵力雄厚而涨。可引辟邪神雷附剑、凌空劈落、雷遁穿空。" },
 
     /* —— 辟邪神雷三用途（v96 用户裁决：72 剑 72 雷=独立资源，取舍即战术）——
      * chargeCost: { id, n }——特色资源消耗（战斗内不回充——池制同源）。
      * ⚠ 正典获得=星海飞驰篇青竹蜂云剑炼成（结丹）；演武先行验证编排 */
-    shenlei_pi: { name: "辟邪神雷·劈", mp: 6, range: [1, 10], type: "atk", dmg: 34, source: "treasure", tier: 2, elem: "mu", driveRealm: 2,
+    shenlei_pi: { name: "辟邪神雷·劈", mp: 6, range: [1, 10], type: "atk", dmg: 6, source: "treasure", tier: 2, elem: "mu", driveRealm: 2,
                 aoe: true, aoeSpan: 10,
                 chargeCost: { id: "shenlei", n: 1 }, slays: { ghost: 1.8, demon: 1.8 },
                 desc: "自身畔引爆辟邪神雷、左右十格横扫——金雷自人而发（非法宝飞袭），近处之敌尽数笼罩（专克邪魔鬼物×1.8）。耗神雷一道，雷尽则止。" },
@@ -148,16 +148,16 @@
      * 一窝灵虫四种调遣，同抽一池"灵机"（charges.shijinchong），打一分少一分、耗尽则哑火——取舍即战术。
      * 正典获得＝外星海致富偶得一窝噬金虫（见 data.js 同名条目）；持虫即四式入战（engine.playerFighter 注入 + 上膛）。
      * 全 source:"treasure"·driveRealm:2，chargeCost 消耗性底牌豁免越阶灵力倍率（Balance.driveMpMul 豁免）。 */
-    shijin_fu:    { name: "噬金·附体", mp: 5, range: [0, 0], type: "def", shield: 36, source: "treasure", tier: 2, elem: "jin",
+    shijin_fu:    { name: "噬金·附体", mp: 5, range: [0, 0], type: "def", shield: 7, source: "treasure", tier: 2, elem: "jin",
                 chargeCost: { id: "shijinchong", n: 1 },
                 desc: "纵噬金虫附于体表、淬结一层金芒虫甲护身（结盾 36）。耗灵机一分，虫尽则止。" },
-    shijin_chao:  { name: "噬金·出战", mp: 6, range: [1, 5], type: "atk", dmg: 14, fixedSegs: 3, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
+    shijin_chao:  { name: "噬金·出战", mp: 6, range: [1, 5], type: "atk", dmg: 3, fixedSegs: 3, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
                 chargeCost: { id: "shijinchong", n: 1 },
                 desc: "放虫群如金云扑敌、分头撕咬（三段连噬、各自结算）——金芒专噬金铁，远近皆可笼罩。耗灵机一分，虫尽则止。" },
-    shijin_blade: { name: "噬金·变武器", mp: 8, range: [1, 3], type: "atk", dmg: 36, pierce: true, cd: 1, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
+    shijin_blade: { name: "噬金·变武器", mp: 8, range: [1, 3], type: "atk", dmg: 7, pierce: true, cd: 1, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
                 chargeCost: { id: "shijinchong", n: 2 },
                 desc: "聚虫群凝成一柄噬金巨刃御使斩落——专啮金铁、破甲裂宝（必破甲）。耗灵机二分；催动后须回气一回合。虫尽则止。" },
-    shijin_huashen: { name: "噬金·变身外化身", mp: 12, range: [1, 4], type: "atk", dmg: 24, fixedSegs: 3, pierce: true, cd: 2, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
+    shijin_huashen: { name: "噬金·变身外化身", mp: 12, range: [1, 4], type: "atk", dmg: 5, fixedSegs: 3, pierce: true, cd: 2, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
                 chargeCost: { id: "shijinchong", n: 3 },
                 desc: "倾巢而出——万千噬金虫外化作一尊丈余虫王化身，扑食撕咬、势不可挡（三段破甲连击）。噬金虫的全力一击，耗灵机三分（半池倾覆）；催动后须回气两回合。虫尽则哑火。" },
   };
