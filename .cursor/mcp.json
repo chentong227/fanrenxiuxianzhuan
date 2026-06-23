@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ds-mcp": {
+      "command": "D:\\cursor\\cursor\\cursor\\Cursor.exe",
+      "args": [
+        "c:\\Users\\Administrator\\.cursor\\extensions\\ds-open.ds-chat-panel-1.0.20\\resources\\mcp-server.cjs",
+        "--queue-root=C:\\Users\\Administrator\\.cursor\\ds-chat-messages"
+      ]
+    }
+  }
+}
