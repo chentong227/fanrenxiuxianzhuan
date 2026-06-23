@@ -4392,7 +4392,29 @@ const STORY = [
       Engine.writeLedger("starsea_biguan", "初入星海·孤岛立身——小寰岛闭关苦修二十载，行三转重元功一转，散功重修而真元愈纯（乘性印记 zhuanImprint），拾回落海暂失之修为，重回筑基后期巅峰。");
     },
     choices: [
-      { text: "出关——该往魁星城走一遭了。", hint: "孤岛立身·一幕终", resolve: "advance" },
+      { text: "苦修剑诀——青元剑芒再淬一寸", hint: "二十载苦修，剑上功夫最该磨",
+        effect: (s) => {
+          if (!s.swordMastery) {
+            s.swordIntent = Math.min(100, (s.swordIntent || 0) + 25);
+            if (s.swordIntent === 100) { State.setFlag("sword_intent_full"); Engine.toast && Engine.toast("剑意圆满！可回药庐悟剑"); }
+            return { text: "二十载寒暑，你将青元剑诀一寸寸打磨。孤岛潮声中，剑意日渐纯熟——出关之时，指间与剑意已隐隐相通（剑意+25）。", kind: "good" };
+          }
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 10);
+          return { text: "二十载寒暑，你将青元剑诀一寸寸打磨。眨眼剑法既已大成，你便将心力倾于青元剑芒——出关之时，剑势更沉了几分（心境+10）。", kind: "good" };
+        },
+        resolve: "advance" },
+      { text: "磨砺体魄——以曲魂为假想敌推演战法", hint: "纸上谈兵终觉浅，拿曲魂练手",
+        effect: (s) => {
+          s.hpMax += 15; s.hp = s.hpMax;
+          return { text: "二十载寒暑，你时常以曲魂为假想敌推演战法。它不知疲倦、不会受伤，正好让你把每一招的破绽都摸透。日复一日的实战模拟，你的体魄与反应都比闭门前更扎实了几分（气血上限+15）。", kind: "good" };
+        },
+        resolve: "advance" },
+      { text: "澄心悟道——打坐参悟，道心再澄一寸", hint: "根基要紧，心境更要紧",
+        effect: (s) => {
+          s.zhuanImprint = Math.round((s.zhuanImprint || 1) * 1.03 * 1000) / 1000;
+          return { text: "二十载寒暑，你除日常功课外，更多了几分打坐参悟的功夫。潮起潮落间，道心比从前更澄明了几分——三转重元功的精纯印记，又添了一层（闭关修为增速额外+3%）。", kind: "good" };
+        },
+        resolve: "advance" },
     ],
   },
 

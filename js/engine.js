@@ -3578,6 +3578,7 @@ const Engine = {
     State.data.combat = true;
     this._combat.startRound();
     this.log(`你在${State.location().name}遭遇「${tmpl.name}」，斗法一触即发！`, "bad");
+    if (enemy.introNote) this._combat._log(`【敌情】${enemy.introNote}`);
     UI.openCombat(this._combat, this._combatMeta);
   },
 

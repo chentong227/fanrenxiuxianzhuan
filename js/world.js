@@ -688,6 +688,7 @@ WORLD.atlas = {
 WORLD.enemies = {
   wild_wolf: {
     name: "灵狼", hp: 55, sense: 3, speed: 12, agility: 6, move: 2, mp: 40, tactics: "feral",
+    introNote: "山野灵狼——速度不低、扑咬凶猛，但感官迟钝、身板单薄。它扑来时身形一折再扑，一步躲不开：两步开外或趁它蓄势打断即可。", 
     reward: { lingcao: 1 }, namedLoot: { langya_fang: 1 },   // 普通妖兽掉普通材料（妖材经济 v1）
     attacks: [
       { name: "扑咬", dmg: 14, kind: "normal", weight: 12, aim: "cell", lunge: true, range: [1, 3] },
@@ -696,14 +697,18 @@ WORLD.enemies = {
     ],
   },
   outer_disciple: {
-    name: "外门弟子", hp: 85, sense: 6, speed: 10, agility: 5, move: 2, mp: 40, reward: { silver: 4 },
+    name: "外门弟子", hp: 85, sense: 6, speed: 10, agility: 5, move: 2, mp: 40, 
+    introNote: "外门弟子拳脚生疏、招式直来直去，只有近身才能打到。拉开距离用法术远程消耗，他追不上你。", 
+    reward: { silver: 4 },
     attacks: [
       { name: "拳脚", dmg: 15, kind: "normal", weight: 14, range: [1, 1] },
       { name: "锁喉擒拿", dmg: 11, kind: "pierce", weight: 6, range: [1, 1] },
     ],
   },
   bandit: {
-    name: "山贼", hp: 75, sense: 4, speed: 8, agility: 3, move: 2, mp: 40, tactics: "feral", reward: { silver: 3 },
+    name: "山贼", hp: 75, sense: 4, speed: 8, agility: 3, move: 2, mp: 40, tactics: "feral", 
+    introNote: "山贼蛮力之辈——出手重但慢，蓄力抡刀时破绽大开。趁他蓄势打断或闪开再打，别硬接。", 
+    reward: { silver: 3 },
     attacks: [
       { name: "刀劈", dmg: 14, kind: "normal", weight: 14, range: [1, 1] },
       { name: "狠命抡刀", dmg: 20, kind: "charge", weight: 6, aim: "cell", range: [1, 1] },
@@ -711,7 +716,9 @@ WORLD.enemies = {
   },
   rogue_cultivator: {
     // lane:1=法修天性缩在阵后放术（编队成立时生效；落单时引擎自动压上战位排——无敌龟壳不存在）
-    name: "散修", hp: 130, sense: 9, speed: 11, agility: 8, move: 1, mp: 52, tactics: "cunning", qiLayer: 3, elem: "tu", armor: 2, lane: 1, reward: { lingshi: 1 },
+    name: "散修", hp: 130, sense: 9, speed: 11, agility: 8, move: 1, mp: 52, tactics: "cunning", qiLayer: 3, elem: "tu", armor: 2, lane: 1, 
+    introNote: "散修行土遁、缩在阵后放术——石击伤不轻、聚灵蓄势更重。他机动差但灵力有限，耗光他的灵力便只剩挨打的份。木克土，长春功系法术正中其门。", 
+    reward: { lingshi: 1 },
     attacks: [
       { name: "土遁石击", dmg: 26, kind: "normal", weight: 12, elem: "tu", mp: 7 },
       { name: "法器贯刺", dmg: 20, kind: "pierce", weight: 8, mp: 8 },
@@ -719,7 +726,9 @@ WORLD.enemies = {
     ],
   },
   wolf_gang_thug: {
-    name: "野狼帮喽啰", hp: 95, sense: 5, speed: 9, agility: 4, move: 2, mp: 40, reward: { silver: 6 },
+    name: "野狼帮喽啰", hp: 95, sense: 5, speed: 9, agility: 4, move: 2, mp: 40, 
+    introNote: "野狼帮喽啰——蛮力横扫覆盖一格区间，蓄力时破绽大开。他身钝手慢，拉开距离打或趁蓄势打断皆可。", 
+    reward: { silver: 6 },
     attacks: [
       { name: "狼牙棒", dmg: 17, kind: "normal", weight: 14, range: [1, 1] },
       { name: "横扫蓄力", dmg: 23, kind: "charge", weight: 6, aim: "zone", zoneSpan: 1, range: [1, 2] },
