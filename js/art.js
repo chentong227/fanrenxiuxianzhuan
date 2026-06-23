@@ -145,6 +145,8 @@
     bt_xueshi_a: { face: "c" }, bt_xueshi_b: { face: "c" }, bt_xueshi_c: { face: "c" },
     // 初入星海篇·妖兽/人形敌（正面对称构图，永不镜像）；雷鹏=奇观演出走 CG·非可战敌·无战姿
     bt_yingli: { face: "c" }, bt_waihai: { face: "c" }, bt_guzhanglao: { face: "c" },
+    // stage beat 补缺：矿道同袍吕天蒙 / 七派武炫 / 魔修游猎小队
+    bt_lvtianmeng: { face: "c" }, bt_wuxuan: { face: "c" }, bt_moxiu: { face: "c" },
   };
 
   const HERO_BATTLERS = {
@@ -178,7 +180,9 @@
     // 初入星海篇·全量补绘演出 CG（横版底 + 竖版 _p）
     kuixing_land: { p: 1 }, xiaohuan_dongfu: { p: 1 }, sanzhuan: { p: 1 },
     doushouchang: { p: 1 }, leipeng_pofeng: { p: 1 }, jiu_ziling: { p: 1 },
-    waihai_lie: { p: 1 }, jindan: { p: 1 } };
+    waihai_lie: { p: 1 }, jindan: { p: 1 },
+    // stage beat 补缺：擂台/婴鲤兽场景底图（CG 文件已存在，补注册）
+    leitai: { p: 1 }, yingli: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };

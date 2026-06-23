@@ -299,7 +299,9 @@
       //   fieldCycle：真·颠倒五行阵——逐回合战场规则切换（相位数组，阵成后压制敌、佐助我）。
       this.objective = cfg.objective || null;
       this.fieldCycle = cfg.fieldCycle || null;
+      this.fieldManual = !!cfg.fieldManual;
       this._fieldPhase = null;
+      this._fieldUsed = [];   // 手动模式下已用过的相位索引
       // —— 轴战场：格数随战斗规格（v95 大战场小人物：标准 11，多敌/boss 15——
       //    战场大→走位与射程才有意义；突破=心象方寸不变）——
       this.W = cfg.W || (cfg.fronts && cfg.fronts.length ? this._frontsWidth(cfg.fronts)
@@ -754,6 +756,7 @@
       h.taken = true;
       this._log(`你矮身一探，趁乱将「${h.name}」收入袖中——这一拍没出手，全场只有你知道值不值。`);
       this._emitFx("player", "move", null);
+      if (typeof this._afterTake === "function") this._afterTake(h);
       return { ok: true, id: h.id, name: h.name, loot: h.loot };
     }
 
@@ -1093,6 +1096,7 @@
           this._log(`「${this.player._charging.name}」蓄势中（还差${this.player._charging.left}回合）——破绽毕露，稳住！`);
         }
       }
+      this._fieldPhaseApplied = false;   // 手动模式：本回合尚未激活相位
       this._rollEnemyIntents();
       this._actorRef = "player";   // 切镜（T6）：你的回合，镜头回到你
       // 开战的开口（T2）：第一回合，同道一句、敌方一句——人未动，气先到
@@ -1104,8 +1108,8 @@
       }
       this._log(`【第${this.round}回合】灵力 ${Math.round(this.player.mp)}/${this.player.mpMax}`
         + (this._pActsMax > 1 ? "（遁速远胜——本回合可出手两次！）" : ""));
-      // —— H·下·真·颠倒五行阵：阵成后逐回合战场规则切换（翻盘感——阵起则敌受制、我得佐）——
-      if (this.fieldCycle && this.fieldCycle.length) {
+      // —— 真颠倒五行阵：手动模式由玩家选相位（Engine.combatFieldPhase），自动模式逐回合轮转 ——
+      if (this.fieldCycle && this.fieldCycle.length && !this.fieldManual) {
         this._applyFieldPhase(this.fieldCycle[(this.round - 1) % this.fieldCycle.length]);
       }
       // —— H·下·拖时布阵战：survive 目标进度提示（师兄妹与傀儡蜥蜴正布阵，拖满即胜）——
@@ -2319,6 +2323,17 @@
     /* ----- H·下·真·颠倒五行阵：逐回合战场相位（startRound 内调用）-----
      * 阵成之后，五行倒转、虚实易位：每回合一相，反噬场上敌人、佐助我方。
      * ph: { name, log, suppress(占敌 hpMax 之比·穿甲), expose(令敌破绽毕露), player:{shield,dodge,mp} } */
+    // 手动选相位：玩家点一个未用过的相位激活（每相位整场只能用一次）
+    chooseFieldPhase(idx) {
+      if (!this.fieldManual || !this.fieldCycle || !this.fieldCycle[idx]) return { ok: false };
+      if (this._fieldUsed.includes(idx)) return { ok: false, reason: "此相位已用过" };
+      if (this._fieldPhaseApplied) return { ok: false, reason: "本回合已激活相位" };
+      this._fieldUsed.push(idx);
+      this._fieldPhaseApplied = true;
+      this._applyFieldPhase(this.fieldCycle[idx]);
+      return { ok: true };
+    }
+
     _applyFieldPhase(ph) {
       if (!ph) return;
       this._fieldPhase = ph;

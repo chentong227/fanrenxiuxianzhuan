@@ -3423,6 +3423,15 @@ const Engine = {
       if (mode === "shenlei_fujian" && UI.leiRitual) UI.leiRitual();
     }
   },
+  // 手动选阵法相位（真·颠倒五行阵·手动模式）：玩家每回合选一个未用过的相位激活
+  combatFieldPhase(idx) {
+    const c = this._combat;
+    if (!c || c.status !== "ongoing") return;
+    const r = c.chooseFieldPhase(idx);
+    if (!r.ok) { if (r.reason) this.toast(r.reason); return; }
+    if (typeof UI !== "undefined" && UI.renderCombat) UI.renderCombat(c, this._combatMeta);
+  },
+
   // 悬浮法宝祭起/收回（三位制·祭出位）
   combatFloat(spellId) {
     const c = this._combat;
@@ -3733,12 +3742,42 @@ const Engine = {
     const s = State.data;
     this._nextFightType = "santuan";
     const player = this.playerFighter();
-    // 三血侍非克隆（palace-battle-fixme 问题A）：各带专属 art→甲魁梧斧奴/乙枯瘦刺奴/丙精悍链奴
-    //   （ui 渲染优先 "bt_"+art，缺图回退 bt_xueshi）。formation:"pack" 仍是群架队形。
-    const xs = (art) => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack", art });
+    // 三血侍非克隆（palace-battle-fixme 问题A + 差异化设计）：
+    //   甲魁梧斧奴=Ⅰ型铁壁（高甲高血·慢·须破甲/毒/灼烧穿透）
+    //   乙枯瘦刺奴=Ⅱ型高闪（低血·极高闪避·须远程/必中/暴露debuff）
+    //   丙精悍链奴=Ⅴ型远程（中血·远程链索·须追击/封锁移动）
+    const base = WORLD.enemies.xueshi_zu;
+    const xsA = Object.assign({}, base, {   // Ⅰ型·铁壁
+      name: "血侍·甲魁梧斧奴", art: "xueshi_a", formation: "pack",
+      hp: 180, hpMax: 180, armor: 8, agility: 6, move: 1, speed: 10,
+      introNote: "魁梧如山的斧奴——血煞淬体、一身铜皮铁骨，寻常剑芒砍上去只留白印。甲厚血长但步履沉重：破甲手段（毒/灼烧/穿甲符宝）方能伤其根本。",
+      attacks: [
+        { name: "血煞重斧", dmg: 26, kind: "normal", weight: 12, elem: "huo", range: [1, 1], mp: 5 },
+        { name: "裂地斩", dmg: 32, kind: "charge", weight: 7, range: [1, 1], mp: 10 },
+      ],
+    });
+    const xsB = Object.assign({}, base, {   // Ⅱ型·高闪
+      name: "血侍·乙枯瘦刺奴", art: "xueshi_b", formation: "pack",
+      hp: 90, hpMax: 90, armor: 0, agility: 22, move: 3, speed: 20,
+      introNote: "枯瘦如鬼的刺奴——身法鬼魅，剑芒刀光皆从他肋下穿过。近战几乎打不中：须用远程法术、必中技能、或先令其暴露破绽方能命中。",
+      attacks: [
+        { name: "血影刺", dmg: 16, kind: "pierce", weight: 12, range: [1, 2], mp: 4 },
+        { name: "鬼步连刺", dmg: 14, kind: "normal", weight: 8, range: [1, 1], mp: 5, lunge: true, track: true },
+      ],
+    });
+    const xsC = Object.assign({}, base, {   // Ⅴ型·远程
+      name: "血侍·丙精悍链奴", art: "xueshi_c", formation: "pack",
+      hp: 110, hpMax: 110, armor: 2, agility: 12, move: 2, speed: 14,
+      introNote: "精悍狡猾的链奴——手持血链隔空抽人，近身就退。须追击封锁、或远程对射：让他一直放风筝，同袍的血线迟早被他磨穿。",
+      attacks: [
+        { name: "血链横扫", dmg: 18, kind: "normal", weight: 12, elem: "huo", range: [2, 4], mp: 5 },
+        { name: "锁链绞杀", dmg: 22, kind: "pierce", weight: 7, range: [1, 3], mp: 7 },
+        { name: "退步抽链", dmg: 14, kind: "normal", weight: 6, range: [2, 3], mp: 4, kite: true },
+      ],
+    });
     this._combat = new CombatAPI.Combat({
       player,
-      enemies: [xs("xueshi_a"), xs("xueshi_b"), xs("xueshi_c")],
+      enemies: [xsA, xsB, xsC],
       maxRounds: 24,
       // —— 30 格大战场·三战区声明式布局（palace-battle-fixme 问题B / teamfight-camera-design §3·§5）——
       //   报一张 fronts 表即得整片大战场：引擎据此自动落位 + 锁线（本区血侍杀意锁本区同袍）+
@@ -3783,15 +3822,16 @@ const Engine = {
     this._combatMeta = Art.has("huanggong") ? { type: "santuan", sceneBg: "huanggong" } : { type: "santuan" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("刘靖长剑出鞘、剑指皇城深处：「左中右三处分头缠住血侍——韩师弟你居中策应，哪条线吃紧便驰援哪边！」");
-    this.log("巍峨宫门轰然洞开、朱墙金瓦下血煞翻腾——三名血侍各扑一方：左厢刘靖缠住魁梧斧奴、中路宋蒙稳压枯瘦刺奴、右翼钟卫娘斗着精悍链奴，三条战线就此拉开。你居中策应：哪条线告急，便提步赶过去补刀——同袍了结当面之敌后，也会循着战势朝吃紧处靠拢、就近打配合。这是九筑基夜闯皇城的开幕，也是你第一次以「群阵」之姿与同袍并肩冲杀。", "event");
+    this._combat._log("刘靖长剑出鞘、剑指皇城深处：「左中右三处分头缠住血侍——韩师弟你居中策应，哪条线吃紧便驰援哪边！注意：斧奴皮糙肉厚须破甲、刺奴鬼魅难中须暴露、链奴隔空抽人须追击——各有所惧，对症下药！」");
+    this.log("巍峨宫门轰然洞开、朱墙金瓦下血煞翻腾——三名血侍各扑一方：左厢刘靖缠住魁梧斧奴、中路宋蒙稳压枯瘦刺奴、右翼钟卫娘斗着精悍链奴，三条战线就此拉开。斧奴铜皮铁骨、刺奴鬼魅难中、链奴隔空放风筝——各有所长，须对症下药。你居中策应：哪条线告急，便提步赶过去补刀。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
   // —— 皇宫决战·拖时布阵战（增量H下·survive 拖满回合机制首演）——
   // 几人不敌胥王假丹之威、且战且退：玩家+傀儡蜥蜴(+刘靖若在)死守，撑满 N 回合即胜——
   // 师兄妹（宋蒙/钟卫娘）此刻正叼旗布「真·颠倒五行阵」（场外·叙事）；拖到阵成便翻盘。
-  // objective={kind:"survive"} 拖满 maxRounds 即胜；败有所得（不设死局，浴血退守再上）。
+  // 差异化改造（§C 资源型）：场上散落3面阵旗，玩家须在6回合内移动+拾取阵旗——
+  //   拾齐3面=阵提前布成（速胜）；6回合未拾齐但活着=拖到阵成（险胜）；死了=败。
   startTuoshiFight() {
     const s = State.data;
     this._nextFightType = "tuoshi";
@@ -3807,7 +3847,7 @@ const Engine = {
         { name: "叼旗镇位", dmg: 8, weight: 6, elem: "tu", range: [1, 2], line: "傀儡蜥蜴死死叼住阵旗、寸步不退，护住阵脚" },
       ] });
     const sides = [xiyi(1), xiyi(2)];
-    // 刘靖若在（jingcheng_intel≥2 救下）则重伤并肩死守；身陨则不在场
+    // 刘靖若在（jingcheng_intel≥2 救下）则重伤并肩死守；身殛则不在场
     if (s.flags.liujing_survived) {
       sides.unshift({ id: "liujing", name: "刘靖", kind: "ally", art: "liujing",
         hp: 96, hpMax: 96, guard: 0.30, elem: "jin",
@@ -3820,6 +3860,14 @@ const Engine = {
 
     // 拖时之敌：胥王假丹肉身（刻意拔高 hp/armor——硬拼必败，意在"拖到阵成"而非速杀）
     const boss = Object.assign({}, WORLD.enemies.xuwang_danshen, { hp: 600, hpMax: 600, armor: 7 });
+    // 阵旗×3散落战场（资源型 survive）：玩家须移动到旗旁花一个主行动拾取——
+    //   拾齐3面=阵提前布成（速胜）；拖满6回合活着=阵也成（险胜）。
+    //   旗位散在战场各处（3/8/12），玩家须在躲避黑血刀的同时跑位拾旗——不能原地防御了事。
+    const flags = [
+      { id: "flag1", name: "阵旗·木", pos: 3, icon: "木" },
+      { id: "flag2", name: "阵旗·火", pos: 8, icon: "火" },
+      { id: "flag3", name: "阵旗·土", pos: 12, icon: "土" },
+    ];
     this._combat = new CombatAPI.Combat({
       player,
       enemies: [boss],
@@ -3828,12 +3876,23 @@ const Engine = {
       maxRounds: 6,
       W: 15, lanes: 2,
       sides,
+      hotspots: flags,
     });
+    this._combat._flagsTaken = 0;
+    // 钩子：拾旗时计数，3面齐=速胜
+    this._combat._afterTake = function(h) {
+      this._flagsTaken++;
+      this._log(`【阵旗】已得 ${this._flagsTaken}/3 面阵旗——${this._flagsTaken >= 3 ? "三旗齐至，阵法可成！" : "继续拾取！"}`);
+      if (this._flagsTaken >= 3) {
+        this.status = "win";
+        this._log("「三旗齐——阵成！」你将最后一面阵旗猛然插定，五行光华暴涨——不必再拖了！");
+      }
+    };
     this._combatMeta = Art.has("huanggong") ? { type: "tuoshi", sceneBg: "huanggong" } : { type: "tuoshi" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("宋蒙、钟卫娘急退布阵：「拖住他！我们叼旗布阵——只须六息工夫，颠倒五行阵成，便能反制此獠！」");
-    this.log("胥王假丹之威如山压下，几人节节败退。宋蒙、钟卫娘领着傀儡蜥蜴急布「真·颠倒五行阵」——这一战不必胜，只须撑住：拖到阵成，便是翻盘之时！", "event");
+    this._combat._log("宋蒙、钟卫娘急退布阵：「拖住他！阵旗散落在场上——你跑过去拾起来，三旗齐至阵法即成！不拾也行，撑满六息工夫我们自己也布得完——但快一步是一步！」");
+    this.log("胥王假丹之威如山压下，几人节节败退。三面阵旗散落在战场上——你须在躲避黑血刀的同时跑位拾旗：拾齐三面，阵法立成；拾不齐，撑满六息也行。总之，活着！", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -3880,6 +3939,7 @@ const Engine = {
       enemies: [p1],
       waves: [[p2]],
       fieldCycle,
+      fieldManual: true,       // 手动模式：玩家每回合选一个相位激活（每相位只能用一次）
       maxRounds: 16,
       W: 15, lanes: 2,
       sides,
@@ -4451,8 +4511,9 @@ const Engine = {
     } else {
       Object.entries(r.loot || {}).forEach(([k, n]) => State.give(k, n));
     }
-    this.toast(`战中采得：${names}`);
+    if (names) this.toast(`战中采得：${names}`);
     if (typeof Sfx !== "undefined") Sfx.play("pick");
+    if (c.status !== "ongoing") { this._combatOver(); return; }
     UI.renderCombat(c, this._combatMeta);
     State.save();
   },
@@ -5523,6 +5584,13 @@ const Engine = {
     State.data.pendingEvent = null;
     try { fn.call(this); } catch (e) { return false; }
     return true;
+  },
+
+  // 从舞台坠入战斗（可继承轴位置——snap={W,units,hotspots,preps}）
+  // 目前直接路由到 startFight；后续可在 snap 中提取位置信息传给战斗构造函数
+  startFightFromStage(id, snap) {
+    // snap 保留位：后续可把轴上的单位位置/布置/热点带入战斗初始状态
+    return this.startFight(id);
   },
 
   /* —— D1-a 直接坠入·地点/箱庭（薄封装，复用既有地点系统）——
