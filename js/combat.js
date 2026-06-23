@@ -638,6 +638,11 @@
     /* 它现在最恨谁（敌方选目标/朝向/背袭判定共用）——返回 Fighter。
      * T4：候选=玩家+全部活侧位（多组对位由仇恨自然分流） */
     aggroTarget(e) {
+      // 保护型战斗：敌人优先追击指定目标（_enemyTargetBias 返回 Fighter 或 null）
+      if (this._enemyTargetBias) {
+        const forced = this._enemyTargetBias(e);
+        if (forced) return forced;
+      }
       const cands = [{ u: this.player, key: "player" }];
       this.sides.forEach((s, i) => {
         if (s.hp > 0) cands.push({ u: s, key: "side:" + i, alt: i === 0 ? "side" : null });
@@ -1591,6 +1596,7 @@
         }
       });
 
+      if (this._afterEnemyTick) this._afterEnemyTick();
       this._checkEnd();
       if (this.status === "ongoing") {
         Object.keys(this.player.cooldowns).forEach(k => {

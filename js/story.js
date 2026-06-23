@@ -251,7 +251,27 @@ const STORY = [
       Engine.scheduleEvent("zhangtie_death", 3);  // 张铁外出，三月后归期不至 → 真相浮现
     },
     choices: [
-      { text: "藏锋守拙，静观其变", hint: "继续", next: true },
+      {
+        text: "藏锋守拙，静观其变",
+        hint: "最稳的路——不露半分破绽，等他自己露出马脚",
+        effect(s) {
+          Engine.writeLedger("hanli_hide", "暗藏锋芒：选择藏拙静观，不露半分真实修为");
+          return { text: "你将修为压得死死的，面上仍是那个进境平平的笨拙药童。墨大夫若有所图，迟早会自己露出马脚——急不得。", kind: "sys" };
+        },
+        next: true,
+      },
+      {
+        text: "暗中试探墨大夫的底细",
+        hint: "主动出击——偷查药庐密室、留意他的行踪。风险：打草惊蛇",
+        effect(s) {
+          State.setFlag("hanli_probed_modafu");
+          s.demon += 5;
+          Engine.writeLedger("hanli_probe", "暗藏锋芒：选择暗中试探墨大夫，偷查药庐密室");
+          Engine.toast("探知+1（暗中试探）·心魔+5（疑心反噬）");
+          return { text: "你趁墨大夫外出时潜入药庐深处，翻到几瓶来路不明的丹药和一卷残缺的夺舍秘术笔记——看不懂，但字迹是墨大夫的。\n\n你将一切原样放回，退出密室。心跳如擂鼓。\n\n他到底想干什么？疑心像毒蛇一样缠上来——你逼自己冷静，但道心已生了一丝裂隙。\n\n（账本：暗中试探。你比藏拙线多知道了一些事，但疑心也重了五分。）", kind: "sys" };
+        },
+        next: true,
+      },
     ],
   },
 
@@ -306,7 +326,27 @@ const STORY = [
       Engine.toast("张铁惨死、炼成铁奴，你心境剧震", true);
     },
     choices: [
-      { text: "强忍悲愤，暗自筹谋", hint: "万全准备，方能一击", next: true },
+      {
+        text: "强忍悲愤，暗自筹谋",
+        hint: "万全准备，方能一击——忍，是这条路上的第一课",
+        effect(s) {
+          Engine.writeLedger("hanli_endure", "张铁之死：强忍悲愤，将仇恨化为筹谋的动力");
+          return { text: "你将指甲从掌心拔出，十个月牙印渗着血。这一笔账，你记下了。\n\n但现在不是时候。他不知道你已修到练气四层，不知道你有小绿瓶——这是你仅有的两张底牌。打出去之前，须得万全。\n\n你退回自己的屋子，面上不露分毫。翌日如常煎药、如常修炼。墨大夫叫你，你应声而去——和昨日一模一样。", kind: "sys" };
+        },
+        next: true,
+      },
+      {
+        text: "当面质问墨大夫——要一个真相",
+        hint: "快意恩仇——但打草惊蛇，决战将提前且更险",
+        effect(s) {
+          State.setFlag("hanli_confronted_modafu");
+          s.demon += 10; s.mood -= 10;
+          Engine.writeLedger("hanli_confront", "张铁之死：当面质问墨大夫，打草惊蛇");
+          Engine.toast("心魔+10·心境-10（质问的代价）");
+          return { text: "你一脚踹开密室的门，铁奴在幽光中缓缓转身。墨大夫坐在阴影里，并不惊慌——甚至像是在等你。\n\n「你看到了。」他叹了口气，枯槁的脸上没有一丝愧疚。「张铁的资质修不了仙……这具铁奴，是他唯一还有用的方式。」\n\n你攥紧拳头，浑身发抖。他想说什么，你一个字都不想听。\n\n「你恨我？」他笑了笑，「恨吧。恨也是动力——你修长春功的进度，比我预想的快多了。」\n\n他早就知道。他一直在等你发现。你转身离去，身后传来他幽幽的声音：「准备好了，就来吧。我等着。」\n\n（账本：当面质问。你比隐忍线多了一份怒火——决战将提前到来，但你心中的杀意也更炽。）", kind: "sys" };
+        },
+        next: true,
+      },
     ],
   },
 
@@ -1008,7 +1048,27 @@ const STORY = [
       Engine.addMilestone("升仙大会：测灵璧前，四灵根当众落选", "deed");
     },
     choices: [
-      { text: "退下高台（袖中令牌，不急在此刻）", hint: "大会散场再做计较" },
+      {
+        text: "退下高台（袖中令牌，不急在此刻）",
+        hint: "低调退场——大会散场再做计较，不引人注目",
+        effect(s) {
+          Engine.writeLedger("xianhui_lowkey", "升仙大会：低调退场，不露升仙令");
+          return { text: "你面不改色地退下高台，混入散场的人流。四灵根的标签是最好的伪装——没人会注意一个落选的废物。\n\n袖中那枚升仙令微微发烫。不急——等散了场，人少了，再亮出来也不迟。", kind: "sys" };
+        },
+        next: true,
+      },
+      {
+        text: "当众亮出升仙令——「我要直入七派」",
+        hint: "高调亮令——名望大涨，但引来觊觎目光",
+        effect(s) {
+          State.setFlag("xianhui_public_token");
+          Engine.addFame(3, "升仙大会上有人当众亮出升仙令直入七派");
+          Engine.writeLedger("xianhui_public", "升仙大会：当众亮升仙令，高调入场");
+          Engine.toast("名望+3（高调亮令）——但有些目光不太友善");
+          return { text: "你从袖中取出那枚古朴的令牌，高举过头——\n\n「升仙令在此。我要直入七派。」\n\n全场哗然。测灵璧前落选的废物，手里竟握着升仙令？七派接引修士齐齐投来目光，有人惊讶，有人审视——那白衣女修也只是微微侧目。\n\n万小山在台下急得直跺脚：「韩兄你——这也太……」\n\n太什么？太高调了。你看到了人群中几道不善的目光——散修里有人盯上了你。\n\n但令牌就是令牌。七派不敢怠慢，当场有人迎你入座。\n\n（账本：高调亮令。名望大涨，但太南山林中，有人开始惦记你了。）", kind: "sys" };
+        },
+        next: true,
+      },
     ],
   },
   {
@@ -3634,7 +3694,28 @@ const STORY = [
       if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
     },
     choices: [
-      { text: "「黄枫谷有难——赶赴金鼓原。」", resolve: "advance" },
+      {
+        text: "「黄枫谷有难——赶赴金鼓原。」",
+        hint: "星夜驰援——赶上首战，与李化元/南宫婉并肩冲杀",
+        effect(s) {
+          State.setFlag("zaibie_rush_jingu");
+          Engine.writeLedger("zaibie_rush", "再别天南：星夜赶赴金鼓原参战，赶上首战");
+          return { text: "你收起绿煌剑，连夜出城。金鼓原方向火光映天——这一战，你不能缺席。", kind: "sys" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「先回黄枫谷报信，集结同道再赴金鼓原。」",
+        hint: "稳妥集结——多一日准备、多几分胜算，但首战已过",
+        effect(s) {
+          State.setFlag("zaibie_report_first");
+          s.spirit = Math.min((State.realm() || {}).spMax || s.spirit || 0, s.spirit + 30);
+          Engine.writeLedger("zaibie_report", "再别天南：先回黄枫谷报信集结，多一日准备");
+          Engine.toast("灵力+30（多休整一日）——但首战已过，金鼓原势如累卵");
+          return { text: "你折返黄枫谷，将金鼓原急报传遍山门。门中弟子闻讯集结，你趁这一日打坐回气、整备法宝——灵力回涌，状态更佳。\n\n可金鼓原方向，战火已燃。你多了一日准备，却也错过了首战——赶到时，正道联军已退了三里。\n\n（账本：先报信。灵力多回一口，但金鼓原首战已失，赶到时局面更险。）", kind: "sys" };
+        },
+        resolve: "advance",
+      },
     ],
   },
 
