@@ -1770,7 +1770,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("success");
     },
     choices: [
-      { text: "把这五日、连同不能说的那一夜，都埋进血色雾气里。「弟子韩立，拜见师尊。」", resolve: "advance" },
+      {
+        text: "把这五日、连同不能说的那一夜，都埋进血色雾气里。「弟子韩立，拜见师尊。」",
+        hint: "郑重拜师——跪下磕头",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 5);
+          return { text: "你跪下磕了三个头——血色雾气里，那五个字轻得像烟，却重得像铁。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「弟子韩立，拜见师尊。」只拱手，不跪。",
+        hint: "藏拙——保持分寸",
+        effect(s) {
+          State.setFlag("hanli_formal_bow");
+          return { text: "你拱手为礼，不卑不亢——李化元看在眼里，倒也没说什么，只捋须一笑。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
 
@@ -1802,7 +1819,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("success");
     },
     choices: [
-      { text: "接过乌龙夺，四爪在掌心一收。「多谢齐前辈。」", resolve: "advance" },
+      {
+        text: "接过乌龙夺，四爪在掌心一收。「多谢齐前辈。」",
+        hint: "即刻试手——感受法宝脾性",
+        effect(s) {
+          State.setFlag("wulong_test");
+          return { text: "你催动灵力，四道墨绿爪影在掌心一收一放——蛟毒隐隐流转，果然凶毒。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「前辈厚赐，韩立记下了。」收好不试，先回洞府再参。",
+        hint: "藏拙——不在长辈面前暴露底细",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          return { text: "你没有当场试手——在齐云霄面前暴露灵力深浅，不是明智之举。收好乌龙夺，回去再慢慢参。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
 
@@ -1853,7 +1887,25 @@ const STORY = [
       Engine.settleLedger("zhuji_dan_grudge", "入谷那日被夺走的东西，你用二十颗丹与一个境界，彻底讨了回来");
     },
     choices: [
-      { text: "闭关参剑——青元剑芒，当自指间出。", resolve: "advance" },
+      {
+        text: "闭关参剑——青元剑芒，当自指间出。",
+        hint: "苦修参悟——闭关不出",
+        effect(s) {
+          s.mood = Math.max(0, s.mood - 2);
+          return { text: "你闭关不出，日夜参悟剑诀——青芒初时凝不住，反复百遍，才在指间聚出第一缕剑芒。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「先去洞府安顿，再参也不迟。」",
+        hint: "先安身——磨刀不误砍柴工",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 3);
+          State.setFlag("qingyuan_settle_first");
+          return { text: "你没有急着闭关——先去洞府安顿好日常，再静心参剑。磨刀不误砍柴工。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2011,7 +2063,25 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("bell");
     },
     choices: [
-      { text: "魔道暗流已动——天南，要变天了。（黄枫谷篇·完）", resolve: "advance" },
+      {
+        text: "魔道暗流已动——天南，要变天了。（黄枫谷篇·完）",
+        hint: "警醒——暗流涌动",
+        effect(s) {
+          s.mood = Math.max(0, s.mood - 1);
+          return { text: "你望向太岳山脉外那片越来越浓的妖氛——天南，真的要变天了。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「大衍诀……总有一天，它是我的。」先记下这卷残卷。",
+        hint: "远虑——记下大衍诀的归处",
+        effect(s) {
+          State.setFlag("dayan_remembered");
+          Engine.writeLedger("dayan_remembered", true);
+          return { text: "你没有急着走——在执法堂库房前多停了一步，将那卷残卷的归处牢牢记在心里。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
 
@@ -2057,7 +2127,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("danger");
     },
     choices: [
-      { text: "「军令如山。」收拾行装，北上燕家堡。", resolve: "advance" },
+      {
+        text: "「军令如山。」收拾行装，北上燕家堡。",
+        hint: "从命——收拾行装即刻动身",
+        effect(s) {
+          return { text: "你收拾好行囊，没有多想——军令如山，不是你能抗的。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「三日内动身……」先多打探一番燕家堡的虚实。",
+        hint: "谨慎——多打听一日再走",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          State.setFlag("yanjia_recon");
+          return { text: "你没有急着动身——先向谷中同门打听了燕家堡的地形与魔道的风声，多一分了解，少一分凶险。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2100,7 +2187,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「都到这步了，谁也别想再把谁丢下。」握紧乌龙夺，列入战阵。", resolve: "advance" },
+      {
+        text: "「都到这步了，谁也别想再把谁丢下。」握紧乌龙夺，列入战阵。",
+        hint: "护人——握紧乌龙夺，列入战阵",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 3);
+          return { text: "你握紧乌龙夺，站到墨彩环身前——这一战，你不退。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「彩环，你跟紧我。」先护住她，再看战局。",
+        hint: "先保人——护住墨彩环再论其他",
+        effect(s) {
+          State.setFlag("yanjia_protect_mocaihuan");
+          return { text: "你没有急着列入战阵——先护住墨彩环退到安全处，再转身面对魔道。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2170,7 +2274,25 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("bell");
     },
     choices: [
-      { text: "「这一仗，才刚开始。」随征旗开赴前线。（燕家堡之战·完）", resolve: "advance" },
+      {
+        text: "「这一仗，才刚开始。」随征旗开赴前线。（燕家堡之战·完）",
+        hint: "认命——随征旗开赴前线",
+        effect(s) {
+          s.mood = Math.max(0, s.mood - 3);
+          return { text: "你望了一眼火光里的燕家堡，转身随征旗而去——这一仗，才刚开始。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「彩环，保重。」回头多看她一眼。",
+        hint: "牵挂——多看故人一眼",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          State.setFlag("yanjia_lookback");
+          return { text: "你在人群中回头多看了一眼——墨彩环站在火光里，也在望着你。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
 
@@ -2223,7 +2345,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("danger");
     },
     choices: [
-      { text: "「我不做弃子。」收起腰牌，打起十二分精神。", resolve: "advance" },
+      {
+        text: "「我不做弃子。」收起腰牌，打起十二分精神。",
+        hint: "警醒——不做弃子",
+        effect(s) {
+          return { text: "你收起腰牌，心口发沉——在这片矿场，活下去比什么都重要。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「吕队官，这矿道里……到底藏着什么？」先向他打听虚实。",
+        hint: "谨慎——多问一句再入矿",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          State.setFlag("modao_e1_ask_lvtianmeng");
+          return { text: "你多问了一句——吕天蒙看了你一眼，低声道：“矿道里不只有魔物。有些东西，比魔物更险。”", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2352,7 +2491,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "收起大挪移令与两枚蛛卵，循原路退出矿洞。", resolve: "advance" },
+      {
+        text: "收起大挪移令与两枚蛛卵，循原路退出矿洞。",
+        hint: "见好就收——不贪不留",
+        effect(s) {
+          return { text: "你收好三样收获，循原路退出——矿洞里的机缘已尽，多留无益。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「再搜一搜……」多翻几处角落再走。",
+        hint: "贪多——多搜一刻或有意外",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          State.setFlag("modao_e1_extra_search");
+          return { text: "你又多翻了几处角落——果然在石室偏壁找到一小摄灵矿碎屑，虽不多，聊胜于无。", kind: "good" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2388,7 +2544,25 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「就当从没相识过。」（魔道争锋·第一幕·完）", resolve: "advance" },
+      {
+        text: "「就当从没相识过。」（魔道争锋·第一幕·完）",
+        hint: "释然——恩怨两清",
+        effect(s) {
+          s.mood = Math.max(0, s.mood - 1);
+          return { text: "你侧身让开，看着她走远——就当从没相识过。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「……保重。」低声说了一句，她听不见。",
+        hint: "低语——她已不记得，你却还没忘",
+        effect(s) {
+          s.mood = Math.max(0, s.mood - 3);
+          State.setFlag("chen_forgot_murmur");
+          return { text: "你低声说了两个字——她已走远，自然听不见。可你心里清楚，有些事忘了比记着好。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2436,7 +2610,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「巧倩师姐。……是我。」（魔道争锋·第一幕·完）", resolve: "advance" },
+      {
+        text: "「巧倩师姐。……是我。」（魔道争锋·第一幕·完）",
+        hint: "回应——接下这份情",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 3);
+          return { text: "你接下那只青玉瓶——掌心的温度，你知道这份情，你欠着。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「师姐，前线凶险，你也保重。」退一步，保持距离。",
+        hint: "克制——领情但不越界",
+        effect(s) {
+          State.setFlag("chen_remember_restrain");
+          return { text: "你退了一步，将玉瓶收好——这份情你领了，可你给不起更多。藏拙守距，是为你好，也是为我好。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
 
@@ -2484,7 +2675,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「韩立。承蒙诸位不弃。」", resolve: "advance" },
+      {
+        text: "「韩立。承蒙诸位不弃。」",
+        hint: "坦诚——报上真名",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 3);
+          return { text: "你拱手报上真名——藏拙归藏拙，同袍面前，不必再藏。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「在下韩某。灵根低微，只盼不拖诸位后腿。」",
+        hint: "谦抑——低调自居",
+        effect(s) {
+          State.setFlag("modao_e2_humble");
+          return { text: "你报了个「韩某」，将身段压到最低——同袍是好意，可你习惯了不把底牌亮给人看。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2535,7 +2743,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「这笔账，记下了。」", resolve: "advance" },
+      {
+        text: "「这笔账，记下了。」",
+        hint: "隐忍——记下这笔账，待来日",
+        effect(s) {
+          return { text: "你将这条断线记在心里——眼下救不得她，可这笔账，总有清算的一天。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「……董萱儿。」攥紧拳头，暗暗咬牙。",
+        hint: "愤懑——怒而无力",
+        effect(s) {
+          s.mood = Math.max(0, s.mood - 2);
+          State.setFlag("modao_e2_dongxuaner_rage");
+          return { text: "你攥紧拳头——燕家堡那一夜并肩杀出血路的人，就这么被掳走了。可你眼下，连自保都勉强。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2577,7 +2802,25 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「……多谢。道友珍重。」（揣好那枚炒栗子）", resolve: "advance" },
+      {
+        text: "「……多谢。道友珍重。」（揣好那枚炒栗子）",
+        hint: "珍重——揣好栗子，目送她走",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          return { text: "你揣好那枚炒栗子——温热渐凉，却一直贴在胸口。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「道友也保重。西线凶险。」",
+        hint: "回关——叮嘱她也保重",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 3);
+          State.setFlag("nangongwan_reciprocal");
+          return { text: "你罕见地多了一句——她脚步微微一顿，没有回头，却微微点了点头。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2607,7 +2850,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「赴京。」（魔道争锋·第二幕·完）", resolve: "advance" },
+      {
+        text: "「赴京。」（魔道争锋·第二幕·完）",
+        hint: "从命——随军赴京",
+        effect(s) {
+          return { text: "你随征军拔营北上——京城在前方等着。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「京城……水深。」摸了摸怀中的炒栗子，暗暗提防。",
+        hint: "警醒——京城水深，提前留心",
+        effect(s) {
+          s.mood = Math.max(0, s.mood - 1);
+          State.setFlag("modao_e2_jingcheng_alert");
+          return { text: "你没有因为拔营而松懈——南宫婉那句「别死在京城」，你记着。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
 
@@ -2655,7 +2915,25 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「老人家言重了。」（默然记下这一幕）", resolve: "advance" },
+      {
+        text: "「老人家言重了。」（默然记下这一幕）",
+        hint: "默然——记下这一幕",
+        effect(s) {
+          s.mood = Math.max(0, s.mood - 1);
+          return { text: "你默然站在朱门之下——仙凡之间的那道沟，不是一句话填得平的。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「老人家，你好好保重。」多宽慰他一句。",
+        hint: "温言——宽慰凡人",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          State.setFlag("modao_e3_comfort_doorkeeper");
+          return { text: "你多停了一步，宽慰了那老门房两句——他抹了抹眼角，笑了，说“公子心善”。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2741,7 +3019,24 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「这笔账，我陪你一起收。」", resolve: "advance" },
+      {
+        text: "「这笔账，我陪你一起收。」",
+        hint: "并肩——陪她收这笔血债",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 3);
+          return { text: "你重重点头——墨府那笔血债，从今往后，你陪她一道收。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「彩环，先摸清五色门的底细，再动手。」",
+        hint: "稳进——先查再动手",
+        effect(s) {
+          State.setFlag("modao_e3_cautious_revenge");
+          return { text: "你按住她的急切——仇要收，但不能葬撞。先摸清五色门的虚实，再动手不迟。", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
   {
@@ -2870,7 +3165,25 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
-      { text: "「保重。等我扬名的消息。」", resolve: "advance" },
+      {
+        text: "「保重。等我扬名的消息。",
+        hint: "远行——扬名天下再聚",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 3);
+          return { text: "你转身离去，晨光把两个人的影子拉得很长——这一别，她没有遗憾，你也没有。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「彩环……谢谢你。」多说了一句，停了一步。",
+        hint: "珍重——多说一句再走",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 5);
+          State.setFlag("mocaihuan_extra_farewell");
+          return { text: "你停了一步，回头多说了一句——她愣了愣，随即笑了，眉眼弯起来：“去吧。”", kind: "event" };
+        },
+        resolve: "advance",
+      },
     ],
   },
 
