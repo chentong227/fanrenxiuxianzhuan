@@ -465,7 +465,8 @@
         && (lane == null || (u.lane || 0) === lane)) || null;
     }
     /* 简令→排位映射（2.5 排制）：攻=压上战位排拼输出（可被贴身）；
-     * 守=贴玩家的僚位随时挡刀；撤=缩到最深排；随=远程僚位/近战战位的天性 */
+     * 守=贴玩家的僚位随时挡刀；撤=缩到最深排；随=远程僚位/近战战位的天性；
+     * 憋=蓄灵待发（攒够最强招的灵力后×1.5爆发，放完归位随行） */
     setSideStance(st, idx = 0) {
       const s = this.sides[idx];
       if (!s) return;
@@ -938,6 +939,7 @@
     /* 敌方击打侧位单位（挡线/挡刀共用收尾） */
     _strikeSideUnit(e, atkDef, victim) {
       let sdmg = atkDef.dmg || 8;
+      if (e._enrageMul) sdmg = Math.round(sdmg * e._enrageMul);
       if (atkDef.elem && victim.elem) sdmg = Math.round(sdmg * elemMul(atkDef.elem, victim.elem));
       const r0 = victim.takeDamage(sdmg, { pierce: atkDef.pierce });
       this._log(`${e.name} 使「${atkDef.name}」，${victim.name} 代受 ${r0.dealt} 伤（${Math.max(0, Math.round(victim.hp))}/${victim.hpMax}）`);
@@ -992,6 +994,22 @@
       }
       this.sides.forEach(s => { if (s.exposed && !s._charging) s.exposed = false; });   // 同道破绽同节奏消退（同规则）
       this._usedOnce = {};
+      // —— 敌人特性·回合开始结算 ——
+      this.enemies.forEach(e => {
+        if (!e.alive) return;
+        // 回血：每回合回复固定值（逼玩家加快输出，不能耗）
+        if (e.regen && e.hp < e.hpMax) {
+          const heal = Math.min(e.regen, e.hpMax - e.hp);
+          if (heal > 0) { e.hp += heal; this._log(`${e.name} 气血回涌（+${heal}）——须加快输出！`); }
+        }
+        // 狂暴：到指定回合后攻击力倍增（逼玩家速战，不能拖）
+        if (e.enrage && !e._enraged && this.round >= e.enrage.turn) {
+          e._enraged = true;
+          e._enrageMul = e.enrage.atkMul;
+          this._log(`${e.name} 蓦然狂化——攻势暴涨（伤害×${e.enrage.atkMul}）！速战速决！`);
+          this._emitFx(`enemy:${this.enemies.indexOf(e)}`, "crit", "狂化！");
+        }
+      });
       // 遁速差 → 行动经济：玩家遁速远胜 → 概率抢得第二主行动；高速强敌 → 概率连动
       const foes = this.enemies.filter(e => e.alive);
       const fastest = foes.length ? Math.max(...foes.map(e => e.speed || 10)) : 10;
@@ -1121,7 +1139,16 @@
       // —— H·下·拖时布阵战：survive 目标进度提示（师兄妹与傀儡蜥蜴正布阵，拖满即胜）——
       if (this.objective && this.objective.kind === "survive") {
         const left = Math.max(0, this.maxRounds - this.round);
-        if (left > 0) this._log(`【拖时布阵】师兄妹与傀儡蜥蜴正催动「真·颠倒五行阵」——再撑 ${left} 回合，阵即可成！`);
+        if (this.escapePos != null) {
+          // 护送逃脱型：显示紫灵距撤离点的步数
+          const zl = this.sides.find(sd => sd.id === "wang_ning");
+          if (zl && zl.hp > 0 && left > 0) {
+            const steps = zl.pos - this.escapePos;
+            if (steps > 0) this._log(`【护送】小紫灵距撤离点还差${steps}步——清开追兵护她过去！或再撑 ${left} 回合由曲魂兜底。`);
+          }
+        } else if (left > 0) {
+          this._log(`【拖时布阵】师兄妹与傀儡蜥蜴正催动「真·颠倒五行阵」——再撑 ${left} 回合，阵即可成！`);
+        }
       }
     }
 
@@ -1429,6 +1456,13 @@
             if (assassin) this._maim(target);
             { const av = this._allyVoice(); if (av) this._say(av, "backstabPraise"); }
           }
+          // 反击特性：近身受击时反伤（逼玩家换远程/破甲/时机）
+          if (target.counter && target.alive && sp.range && sp.range[1] <= 1 && totalDealt > 0 && caster === this.player) {
+            const ctr = target.counter;
+            const r2 = this.player.takeDamage(ctr, {});
+            this._log(`${target.name} 借着你近身的一瞬反噬一击（-${r2.dealt}）——近身强攻不是上策！`);
+            this._emitFx("player", "hurt", r2.dealt);
+          }
           if (anyCrit) this._log(`（神识料敌于先，一击中的！）`);
           if (exploitCharge) {
             this._log(target._whiffed
@@ -1674,6 +1708,7 @@
       }
     }
     _sideActOne(s, sideIdx) {
+      if (s.noAct) return;   // VIP/护送对象：不参与战斗 AI（移动由 _afterEnemyTick 钩子接管）
       this._actorRef = this._refOf(s);   // 切镜（T6）：谁行动，镜头看谁
       if (this.W > 13) this._emitFx(this._refOf(s), "turn", null);   // 导演（B1）：本拍先把镜头交给行动者，再演他的走位/出手
       const stance = s.stance || "follow";
@@ -1846,7 +1881,9 @@
       // —— 出招：攻令/破绽窗口选最重的一手；否则按权重（人格 aggr 推高重招概率）。
       //    同规则：招式耗灵（mv.mp），灵力不济的招出不了；全负担不起=敛息回元
       //    （跳过出手回灵+亮破绽——同道也会被耗蓝，消耗战对三方都成立）——
+      //    憋令（ultimate）：攒够最强招灵力后×1.5爆发，放完归位随行——
       let mv = null;
+      let ultBoost = false;
       if (s.moves && s.moves.length) {
         const affordable = s.moves.filter(m => (m.mp || 0) <= (s.mp || 0));
         if (!affordable.length) {
@@ -1857,7 +1894,27 @@
         }
         const usable = affordable.filter(m => !m.range || (d >= m.range[0] && d <= m.range[1]));
         const pool = usable.length ? usable : affordable;
-        if (stance === "attack" || winOf(target)) {
+        if (stance === "ultimate") {
+          // 憋大招：找最强招，灵力不够则敛息攒灵（不浪费在轻招上）
+          const biggest = s.moves.reduce((a, b) => (b.dmg || 0) > (a.dmg || 0) ? b : a, s.moves[0]);
+          if ((s.mp || 0) < (biggest.mp || 0)) {
+            s.mp = Math.min((s.mpMax || 30), (s.mp || 0) + 14);
+            s.exposed = true;
+            this._log(`${s.name} 凝神蓄灵、不急着出手——在攒「${biggest.name}」的灵力（${Math.round(s.mp)}/${biggest.mp || 0}）……`);
+            return;
+          }
+          // 灵力够了：找射程内的最强招爆发
+          const inRange = affordable.filter(m => !m.range || (d >= m.range[0] && d <= m.range[1]));
+          if (inRange.length) {
+            mv = inRange.reduce((a, b) => (b.dmg || 0) > (a.dmg || 0) ? b : a, inRange[0]);
+            ultBoost = true;
+          } else {
+            // 最强招不在射程——走近一些
+            const step = this._stepToward(s, target, this.moveCap(s));
+            if (step != null && step !== s.pos) { s.pos = step; this._log(`${s.name} 提步逼近——在找「${biggest.name}」的出手距离。`); }
+            return;
+          }
+        } else if (stance === "attack" || winOf(target)) {
           mv = pool.reduce((a, b) => (b.dmg || 0) > (a.dmg || 0) ? b : a, pool[0]);
         } else {
           const sum = pool.reduce((a, m) => a + (m.weight || 10) + persona.aggr, 0);
@@ -1874,6 +1931,11 @@
       dmg = Math.round(dmg * eMul * sMul);
       const exploit = winOf(target);
       if (exploit) dmg = Math.round(dmg * 1.3);   // 接力：抓住破绽窗口
+      if (ultBoost) {
+        dmg = Math.round(dmg * 1.5);   // 憋大招爆发
+        this._emitFx(this._refOf(s), "crit", "大招！");
+        this._log(`${s.name} 灵力盈满、蓄势一击——「${mv ? mv.name : "全力一击"}」×1.5 爆发！`);
+      }
       if (target.soulOnly && !s.soulTouch) { this._log(`${s.name} 攻向 ${target.name}，却如击虚空——元神无形，此路不通。`); return; }
       const r = target.takeDamage(dmg, { soul: !!s.soulTouch, pierce: mv && mv.pierce });
       this._stat(s.name, r.dealt);
@@ -1896,6 +1958,13 @@
         this._log(`${s.name} 使「${moveName}」${exploit ? "（趁虚）" : ""}，对 ${target.name} 造成 ${r.dealt} 伤害` + (eMul > 1 ? "（克制）" : ""));
       }
       this._emitFx(`enemy:${ti}`, "dmg", r.dealt);
+      // 憋大招放完→归位随行（一次性简令）
+      if (ultBoost) {
+        s.stance = "follow";
+        const natural = (s.moves || []).some(m => m.range && m.range[1] > 1) ? 1 : 0;
+        s.lane = natural;
+        this._log(`${s.name} 大招倾泻已尽、气机回缓——归位随行。`);
+      }
       // 击杀/灵力告急的开口（T2）
       if (!target.alive) this._say(s, "kill");
       else if ((s.mp || 0) < (s.mpMax || 30) * 0.25) this._say(s, "lowMp");
@@ -2177,6 +2246,7 @@
         }
         victims.forEach(v => {
           let cdmg = atkDef.dmg || 8;
+          if (e._enrageMul) cdmg = Math.round(cdmg * e._enrageMul);
           if (atkDef.elem && v.elem) cdmg = Math.round(cdmg * elemMul(atkDef.elem, v.elem));
           if (atkDef.kind === "release" && v.chargeResist > 0) cdmg = Math.round(cdmg * (1 - v.chargeResist));
           const r = v.takeDamage(cdmg, { pierce: atkDef.pierce });   // 命中即实打（盾甲照常）：躲的机会给过了，不再掷闪避
@@ -2212,6 +2282,7 @@
         this._log(`${e.name} 的「${atkDef.name}」席卷第${from + 1}~${to + 1}步！`);
         victims.forEach(v => {
           let zdmg = atkDef.dmg || 8;
+          if (e._enrageMul) zdmg = Math.round(zdmg * e._enrageMul);
           if (atkDef.elem && v.elem) zdmg = Math.round(zdmg * elemMul(atkDef.elem, v.elem));
           const r = v.takeDamage(zdmg, { pierce: atkDef.pierce });
           if (v === this.player && this.player.hp <= 0) this.deathCause = { by: e.name, move: atkDef.name };
@@ -2269,6 +2340,7 @@
       dodge = clampNum(dodge - enemyAdv.hitBonus, 0, 0.6);
       if (this.rng() < dodge) { this._log(`${e.name} 使「${atkDef.name}」，被 ${this.player.name} 闪避！`); this._emitFx("player", "miss", "闪避"); return; }
       let edmg = atkDef.dmg || 8;
+      if (e._enrageMul) edmg = Math.round(edmg * e._enrageMul);
       if (atkDef.elem && this.player.elem) {
         const m = elemMul(atkDef.elem, this.player.elem);
         if (m > 1 && !this._eNoted) { this._eNoted = true; this._log(`（${e.name}的${ELEM_NAME[atkDef.elem]}系法术天克你的道基——护体灵力被压着打！）`); }

@@ -73,6 +73,8 @@ const Engine = {
     this._tickWorld(months);
     // 异闻链：身在彩霞山一带，山野风声随月份酝酿（听闻→寻踪→相遇）
     this._tickBeastRumor(months);
+    // 材料传闻链：同构的"风声→寻踪→探索采得"
+    this._tickMaterialRumor(months);
     // 时间推进后检查到期的任务与预定事件
     this._checkSchedule();
   },
@@ -1246,6 +1248,17 @@ const Engine = {
     if (foreknown) {
       Explore._log(s.explore, `异闻在耳——「${WORLD.enemies[s.beastRumor].name}」就盘踞在此地深处。猎，或不猎？`);
     }
+    // 材料传闻激活：传闻指向此站点 → 注入 specialHerb（传闻在耳，采得在脚）
+    if (s.materialRumor && WORLD.materialRumors) {
+      const mr = WORLD.materialRumors.find(x => x.id === s.materialRumor);
+      if (mr && mr.site === siteId) {
+        xcfg.specialHerb = mr.item;
+        xcfg.specialHerbN = 2;
+        // 重新生成（specialHerb 在 generate 时读取，需重新调用）
+        s.explore = Explore.generate(xcfg, Math.random);
+        Explore._log(s.explore, `传闻在耳——${mr.title}，就在这片地界深处。`);
+      }
+    }
     UI.openExplore(s.explore);
     State.save();
   },
@@ -1396,6 +1409,21 @@ const Engine = {
 
     // 异闻投放：深入栖地探索，最易撞见风声（按本地妖王池限定·无活跃异闻且尚有未伏诛妖王时）
     this._maybeBeastRumor(0.5, (DATA.exploreSites[st.siteId] || {}).beastPool);
+    // 材料传闻投放：探索归来，风声更易入耳
+    this._maybeMaterialRumor(0.35, [this._currentBeastArea()].filter(Boolean));
+
+    // 材料传闻兑现：采得传闻指向的材料 → 标记已得、清除活跃传闻
+    if (s.materialRumor && WORLD.materialRumors) {
+      const mr = WORLD.materialRumors.find(x => x.id === s.materialRumor);
+      if (mr && State.count(mr.item) > 0) {
+        if (!(s.foundMaterials || []).includes(mr.id)) s.foundMaterials.push(mr.id);
+        s.materialRumor = null;
+        s.materialRumorClue = 0;
+        s.materialRumorClueAt = null;
+        this.log(`【传闻兑现】${mr.title}——传闻不虚，此物到手。`, "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+      }
+    }
 
     this.checkLifespan();
     this.checkStory();
@@ -2424,13 +2452,15 @@ const Engine = {
     if (!done) {
       if (link.kind === "beastRumor") done = (s.slainBeasts || []).includes(link.id);
       else if (link.kind === "ripple") done = (s.doneRipples || []).includes(link.id);
-      else if (link.kind === "item") done = (State.count(link.id) > 0) || !!(s.ledger && s.ledger[link.id]);
+      else if (link.kind === "item") done = (State.count(link.id) > 0) || !!(s.ledger && s.ledger[link.id])
+        || ((s.foundMaterials || []).includes(entry.id));
       else if (link.kind === "story") done = !!(s.flags && s.flags[link.id]);
     }
     if (done) return "done";
     let active = (s.yiwenSeen || []).includes(entry.id);
     if (!active && link.kind === "beastRumor") active = (s.beastRumor === link.id);
     if (!active && link.kind === "ripple") active = !!(s.ripple && s.ripple.id === link.id);
+    if (!active && s.materialRumor === entry.id) active = true;
     return active ? "active" : "unseen";
   },
   // 异闻妖王：听闻其名（投放）——威名先至，相遇在后。beastIds：限定可投放的异闻 id（区域投放）
@@ -2489,8 +2519,46 @@ const Engine = {
     if (typeof Sfx !== "undefined") Sfx.play("chime");
   },
 
-
-  /* -------- 闭关修炼：修为主要来源。months=闭关时长（月）-------- */
+  // 材料传闻：听闻→寻踪→探索采得（与异闻妖王同构的"风声→行动"链）
+  _maybeMaterialRumor(chance, areaIds) {
+    const s = State.data;
+    if (s.materialRumor) return;
+    if (typeof WORLD === "undefined" || !WORLD.materialRumors) return;
+    let pool = WORLD.materialRumors.filter(r => !(s.foundMaterials || []).includes(r.id));
+    if (areaIds) pool = pool.filter(r => areaIds.includes(r.area));
+    if (!pool.length || Math.random() > chance) return;
+    const r = pool[Math.floor(Math.random() * pool.length)];
+    s.materialRumor = r.id;
+    s.materialRumorClue = 0;
+    s.materialRumorClueAt = (s.year || 0) * 12 + (s.month || 0);
+    this._seeYiwen(r.id);
+    this.log(`【传闻】${r.rumor}`, "event");
+    this.toast("听到一桩材料传闻（见际遇栏）");
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
+  },
+  _tickMaterialRumor(months) {
+    const s = State.data;
+    if (typeof WORLD === "undefined" || !WORLD.materialRumors) return;
+    const area = this._currentBeastArea();
+    if (!area) return;
+    const areaIds = [area];
+    if (!s.materialRumor) {
+      this._maybeMaterialRumor(clamp(0.14 * months, 0, 0.3), areaIds);
+      return;
+    }
+    const r = WORLD.materialRumors.find(x => x.id === s.materialRumor);
+    if (!r || !r.clues || !r.clues.length) return;
+    s.materialRumorClue = s.materialRumorClue || 0;
+    if (s.materialRumorClue >= r.clues.length) return;
+    const now = (s.year || 0) * 12 + (s.month || 0);
+    if (s.materialRumorClueAt == null) s.materialRumorClueAt = now;
+    if (now - s.materialRumorClueAt < 2) return;
+    if (Math.random() > clamp(0.22 * months, 0, 0.45)) return;
+    this.log(`【传闻】${r.clues[s.materialRumorClue]}`, "event");
+    s.materialRumorClue++;
+    s.materialRumorClueAt = now;
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
+  },
   cultivate(months) {
     const s = State.data;
     const root = State.root();
@@ -3478,11 +3546,13 @@ const Engine = {
       this.toast(`${su.name}的境界远在你之上——接好她递的刀便是`);
       return;
     }
-    const order = ["follow", "attack", "guard", "retreat"];
+    const order = ["follow", "attack", "guard", "ultimate", "retreat"];
     const cur = order.indexOf(su.stance || "follow");
-    c.setSideStance(order[(cur + 1) % 4], idx);   // 简令即阵型：换令同时换排（攻=压上战位/守=贴身僚位/撤=最深排）
+    c.setSideStance(order[(cur + 1) % 5], idx);   // 简令即阵型：换令同时换排（攻=压上战位/守=贴身僚位/撤=最深排）
     const txt = { follow: "随行——跟你的焦点打", attack: "强攻——压上战位排，下重手专补刀",
-                  guard: "护主——贴身代刀，稳字当头", retreat: "后撤——退到阵后自保" }[su.stance];
+                  guard: "护主——贴身代刀，稳字当头",
+                  ultimate: "憋大招——蓄灵攒最强招，灵力满后×1.5爆发，放完归位",
+                  retreat: "后撤——退到阵后自保" }[su.stance];
     this.log(`【简令】${su.name}：${txt}。`, "sys");
     if (typeof UI !== "undefined" && UI.renderCombat) UI.renderCombat(c, this._combatMeta);
   },
@@ -4299,7 +4369,10 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
-  // —— 二⑥·救小紫灵·斩逆星盟古长老脱身（objective:survive 护送逃亡＋精英战·曲魂断后）——
+  // —— 二⑥·救小紫灵·斩逆星盟古长老脱身（objective:survive 护送逃脱型＋精英战·曲魂断后）——
+  //    护送机制：紫灵须移动到撤离点（pos=0·海雾脱身路），每回合自动向撤离点移1步——
+  //    但有敌近身2格内时她吓得不敢动。玩家须拦截追兵、清出安全距离，护她走到撤离点。
+  //    胜利条件：紫灵抵达撤离点 OR 拖满6回合（曲魂斩长老·兜底）。
   startStarseaJiuzilingFight() {
     const s = State.data;
     this._nextFightType = "ss_jiuziling";
@@ -4316,17 +4389,60 @@ const Engine = {
       reward: {}, namedLoot: null,
     });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    // 小紫灵·护送对象（VIP·不参战·移动由 _afterEnemyTick 接管）
+    sides.push({ id: "wang_ning", name: "小紫灵", kind: "ally", art: "wang_ning",
+      hp: 50, hpMax: 50, guard: 0, elem: "shui",
+      noAct: true, persona: { aggr: 0, prot: 0, kite: 0 }, moves: [],
+    });
     this._combat = new CombatAPI.Combat({
       player, enemies: [elder, hei(), hei()],
       objective: { kind: "survive", rounds: 6,
         winLog: "曲魂血刃自侧翼洞穿古长老命门，你一剑封喉——黑袍人影颓然坠地。你抄起惊魂未定的小紫灵，趁乱杀出重围、遁入海雾。斩古长老·携紫灵脱身！" },
       maxRounds: 6, W: 15, lanes: 2, sides,
     });
+    // 撤离点 = pos=0（左端·海雾脱身路）
+    this._combat.escapePos = 0;
+    // 护送钩子：紫灵自动向撤离点移动，近身有敌则吓得不敢动
+    this._combat._afterEnemyTick = function() {
+      const zl = this.sides.find(sd => sd.id === "wang_ning");
+      if (!zl) return;
+      if (zl.hp <= 0) {
+        this._log("小紫灵气绝倒地——你没能护住她！妙音门掌门临终的托付，碎了。");
+        this.status = "lose";
+        return;
+      }
+      if (zl.pos <= 0) {
+        this._log("小紫灵跌跌撞撞扑进海雾深处——成了！你断后挡住追兵，她脱身了！");
+        this.status = "win";
+        this._log(this.objective.winLog || "");
+        return;
+      }
+      const threat = this.enemies.find(e => e.alive && this.dist(e, zl) <= 2);
+      if (threat) {
+        this._log(`小紫灵被${threat.name}的杀气吓得腿软——不敢迈步！清开近身的追兵，她才能继续跑！`);
+        return;
+      }
+      const oldPos = zl.pos;
+      zl.pos = Math.max(0, zl.pos - 1);
+      if (zl.pos !== oldPos) {
+        const left = zl.pos;
+        this._log(`小紫灵趁空隙向海雾挪了一步（距撤离点还差${left}步）——护住她，别让追兵近身！`);
+        this._emitFx(this._refOf(zl), "move", null);
+      }
+    };
+    // 敌人优先追击紫灵（护送核心：追兵冲着她来）
+    this._combat._enemyTargetBias = function(e) {
+      const zl = this.sides.find(sd => sd.id === "wang_ning");
+      if (!zl || zl.hp <= 0) return null;
+      if (this.dist(e, zl) <= 4) return zl;
+      return null;
+    };
     this._combatMeta = { type: "ss_jiuziling" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("你将小紫灵护在身后，曲魂黑影横刀断后。古长老血遁追命、黑袍杂兵合围——撑住这一阵，斩了拦路的长老，便能带她杀出去！");
-    this.log("大典惊变·妙音门门主夫妇殉难。你接住坠落的小紫灵，逆星盟古长老挟假丹之威拦杀，黑袍杂兵合围。护住她、撑住追杀、斩了古长老——杀出这场惊变。", "event");
+    this._combat._log("你将小紫灵护在身后，曲魂黑影横刀断后。古长老血遁追命、黑袍杂兵合围——");
+    this._combat._log("【护送】小紫灵须走到左端撤离点（蓝光标记）——每回合自动向撤离点移1步，但有敌近身2格内则吓得不敢动。清开追兵、护她到撤离点，或拖满6回合由曲魂斩长老兜底！");
+    this.log("大典惊变·妙音门门主夫妇殉难。你接住坠落的小紫灵，逆星盟古长老挟假丹之威拦杀，黑袍杂兵合围。护住她、清开追兵、护她到撤离点——杀出这场惊变。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 

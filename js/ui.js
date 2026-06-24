@@ -157,6 +157,26 @@ const UI = {
         <span class="obj-hint">${phase}　伏诛有厚报</span>
       </div>`;
     }
+    // 材料传闻：听闻→寻踪→探索采得（与异闻妖王同构的"风声→行动"链）
+    if (sb && sb.materialRumor && typeof WORLD !== "undefined" && WORLD.materialRumors) {
+      const mr = WORLD.materialRumors.find(x => x.id === sb.materialRumor);
+      if (mr) {
+        const total = (mr.clues) ? mr.clues.length : 0;
+        const clueN = Math.min(sb.materialRumorClue || 0, total);
+        const phase = clueN <= 0
+          ? "风声初起——留意此物所在"
+          : clueN < total
+            ? "踪迹渐明——循线索前往探索"
+            : "踪迹了然——前往对应探索点采得";
+        const siteName = (DATA.exploreSites[mr.site] || {}).name || mr.site;
+        luck += `<div class="obj-task" style="border-left-color:var(--jade)">
+          <span class="obj-key" style="background:var(--jade);color:#08140f">传闻</span>
+          <b>${mr.title}</b>
+          ${total ? `<span class="obj-prog">线索 ${clueN}/${total}</span>` : ""}
+          <span class="obj-hint">${phase}　指向「${siteName}」</span>
+        </div>`;
+      }
+    }
     // 剑意修行链：实战用剑积累，圆满可悟剑（大件范式：明牌进度=惦记）
     const sd = State.data;
     if (sd && !sd.swordMastery && (sd.swordIntent || 0) > 0) {
@@ -4137,7 +4157,7 @@ const UI = {
       if (u.kind === "ally" && (u.mastery || 0) >= 2) {
         badges.push(`<span class="au-mark mk-stance mk-lead" title="她的境界远在你之上——接好她递的刀便是">帅</span>`);
       } else {
-        const stCh = { follow: "随", attack: "攻", guard: "守", retreat: "撤" }[u.stance || "follow"];
+        const stCh = { follow: "随", attack: "攻", guard: "守", ultimate: "憋", retreat: "撤" }[u.stance || "follow"];
         badges.push(`<span class="au-mark mk-stance" onclick="event.stopPropagation(); Engine.cycleSideStance(${opts.sideIndex || 0})">${stCh}</span>`);
       }
     }
@@ -4514,6 +4534,7 @@ const UI = {
         zoneCells.has(i) ? "danger-zone" : "",
         zoneFrontCells.has(i) ? "zone-front" : "",   // "扫"战位排：矮雾带（僚位无虞）；不标=罩全排高雾带
         i === 0 ? "edge-home" : "", i === c.W - 1 ? "edge-far" : "",
+        c.escapePos != null && i === c.escapePos ? "escape-cell" : "",
       ].join(" ");
       // 同轴一体：洞窟没采完的热点原格还在——走到跟前花一个主行动照采（一边打一边贪）
       const hot = (c.hotspots || []).find(h => h.pos === i && !h.taken);
@@ -4874,7 +4895,7 @@ const UI = {
         const down = u.hp <= 0;
         const lead = u.kind === "ally" && (u.mastery || 0) >= 2;
         const st = u.stance || "follow";
-        const stCh = lead ? "帅" : ({ follow: "随", attack: "攻", guard: "守", retreat: "撤" }[st] || "随");
+        const stCh = lead ? "帅" : ({ follow: "随", attack: "攻", guard: "守", ultimate: "憋", retreat: "撤" }[st] || "随");
         const hpPct = Math.max(0, Math.round(u.hp / u.hpMax * 100));
         const mpPct = u.mpMax ? Math.max(0, Math.round((u.mp || 0) / u.mpMax * 100)) : 0;
         // 灵虫/灵宠形态钩（用户裁决：点形态章切换化枪/附体/分身——u.forms 定义后生效，
@@ -4882,7 +4903,7 @@ const UI = {
         const formCh = (u.forms && u.forms.length > 1)
           ? `<span class="pc-form" onclick="event.stopPropagation(); Engine.cycleSideForm(${idx})" title="切换形态">${u.form || u.forms[0]}</span>` : "";
         return `<button class="pet-card ${down ? 'down' : ''} ${lead ? 'lead' : ''}" ${down ? 'disabled' : ''}
-          onclick="Engine.cycleSideStance(${idx})" title="${down ? u.name + ' 已离场' : lead ? '她的境界远在你之上——全程自主出手，每回合为你点将' : '点击换简令：随行→强攻→护主→后撤'}">
+          onclick="Engine.cycleSideStance(${idx})" title="${down ? u.name + ' 已离场' : lead ? '她的境界远在你之上——全程自主出手，每回合为你点将' : '点击换简令：随行→强攻→护主→憋大招→后撤'}">
           <span class="seal">${u.name[0]}${stackN > 1 ? `<i class="pc-stack">×${stackN}</i>` : ""}</span>
           <span class="pc-body"><span class="pc-name">${u.name}</span>
           <span class="pc-hp"><i style="width:${hpPct}%"></i></span>

@@ -903,6 +903,13 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 .axis-cell.edge-home .dot { background: rgba(126,185,142,.5); }
 .axis-cell.edge-far .dot { background: rgba(194,92,80,.4); }
+/* 撤离点：蓝色光门标记（护送逃脱型 survive 战） */
+.axis-cell.escape-cell .dot {
+  width: 12px; height: 12px; margin-left: -6px; bottom: 18px;
+  background: rgba(100,180,255,.7); box-shadow: 0 0 8px 2px rgba(100,180,255,.4);
+  animation: escape-pulse 1.5s ease-in-out infinite;
+}
+@keyframes escape-pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
 /* 可走：青色涟漪圈（点击移动） */
 .axis-cell.can-move { cursor: pointer; }
 .axis-cell.can-move .dot {

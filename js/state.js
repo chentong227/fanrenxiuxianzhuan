@@ -90,6 +90,10 @@ const State = {
       beastRumorClue: 0,      // 异闻寻踪进度（听闻→寻踪→相遇：随月份逐渐逼近真相）
       beastRumorClueAt: null, // 上一条线索浮现的绝对月份（隔月铺陈：两条线索至少相隔 2 月）
       slainBeasts: [],        // 已伏诛的异闻妖王（不再重复出没）
+      materialRumor: null,    // 活跃的材料传闻 id（听闻→寻踪→探索采得）
+      materialRumorClue: 0,   // 材料传闻寻踪进度
+      materialRumorClueAt: null, // 上一条线索浮现的绝对月份
+      foundMaterials: [],     // 已采得的传闻材料（不再重复投放）
       revealedRealm: 0,       // 藏拙：示人境界（真实境界=realmIndex；差值=深藏的层数）
       skills: { alchemy: 0, scouting: 0, fulu: 0 },   // 杂学熟练度：药理 / 探知 / 制符（嗑瓜子轴）
       intel: {},              // 情报面纱：{ npcId: 0听闻|1见过出手|2买过底细 }
@@ -162,6 +166,10 @@ const State = {
     if (d.beastRumorClue === undefined) d.beastRumorClue = 0;
     if (d.beastRumorClueAt === undefined) d.beastRumorClueAt = null;
     if (!d.slainBeasts) d.slainBeasts = [];
+    if (d.materialRumor === undefined) d.materialRumor = null;
+    if (d.materialRumorClue === undefined) d.materialRumorClue = 0;
+    if (d.materialRumorClueAt === undefined) d.materialRumorClueAt = null;
+    if (!d.foundMaterials) d.foundMaterials = [];
     if (d.revealedRealm == null) d.revealedRealm = d.realmIndex;   // 老档：示人=真实（未藏过）
     if (d.zhuanImprint == null) d.zhuanImprint = 1;   // 三转重元功·乘性印记（增6）
     if (!d.skills) d.skills = { alchemy: 0, scouting: 0, fulu: 0 };

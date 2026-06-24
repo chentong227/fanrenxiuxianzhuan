@@ -740,7 +740,8 @@ WORLD.enemies = {
    * 三型攻击各有其王：白虎=cell 扑杀（躲格）、蜈蚣=zone 毒雾（拉区间）、狼王=高速连动。 —— */
   beast_baihu: {
     name: "白额吊睛虎", hp: 240, sense: 7, speed: 14, agility: 12, move: 2, mp: 60, stubborn: true, tactics: "feral", elem: "jin", nature: "beast",
-    introNote: "正是异闻中那头噬人虎王！金风裂爪天克你的木行道基——它的血怒扑杀会随你身形一折再扑，寻常一步躲不开：要么两步开外，要么趁它蓄势打断，要么举盾硬接。火符灼其金煞，别恋战。",
+    enrage: { turn: 4, atkMul: 1.3 },
+    introNote: "正是异闻中那头噬人虎王！金风裂爪天克你的木行道基——它的血怒扑杀会随你身形一折再扑，寻常一步躲不开：要么两步开外，要么趁它蓄势打断，要么举盾硬接。缠斗越久它越凶——速战速决，火符灼其金煞。",
     attacks: [
       { name: "裂风虎爪", dmg: 30, kind: "normal", weight: 12, elem: "jin", range: [1, 1] },
       { name: "虎啸震林", dmg: 16, kind: "normal", weight: 6, aim: "zone", zoneSpan: 1, range: [1, 4] },
@@ -752,7 +753,8 @@ WORLD.enemies = {
   },
   beast_wugong: {
     name: "铁背蜈蚣王", hp: 185, immunePoison: true, sense: 6, speed: 8, agility: 7, move: 1, mp: 60, tactics: "cunning", elem: "tu", nature: "beast",
-    introNote: "铁背蜈蚣王——土行厚甲、自身百毒不侵！你的毒计无用，但木气克土：长春功门下的法术正中其门。它的腥毒雾会罩住一片地界——拉出区间再打。",
+    counter: 6,
+    introNote: "铁背蜈蚣王——土行厚甲、自身百毒不侵！你的毒计无用，但木气克土：长春功门下的法术正中其门。它的腥毒雾会罩住一片地界——拉出区间再打。近身强攻会被百足反噬——以远程法术克之。",
     attacks: [
       { name: "百足绞缠", dmg: 22, kind: "normal", weight: 12, range: [1, 1] },
       { name: "毒牙噬咬", dmg: 26, kind: "pierce", weight: 8, range: [1, 1] },
@@ -785,7 +787,8 @@ WORLD.enemies = {
   mojiao: {
     name: "墨蛟", hp: 270, sense: 9, speed: 13, agility: 9, move: 2, mp: 85, elem: "shui", nature: "beast",
     tactics: "feral", stubborn: true, canFlee: false, boss: true,
-    introNote: "禁地深潭之主——通体墨鳞的蛟龙幼体，黑雾护体、利齿如戟！它的「泥流潜袭」会循着你的气息追击，一步躲不开：要么两步开外，要么趁它蓄势打断。鳞厚甲坚，破甲与符宝方是正解。",
+    regen: 5,
+    introNote: "禁地深潭之主——通体墨鳞的蛟龙幼体，黑雾护体、利齿如戟！它的「泥流潜袭」会循着你的气息追击，一步躲不开：要么两步开外，要么趁它蓄势打断。鳞厚甲坚、水气回涌——破甲与符宝方是正解，须以高输出压住它的回涌。",
     attacks: [
       { name: "撕咬", dmg: 26, kind: "normal", weight: 12, range: [1, 1] },
       // 横扫=蛟尾"扫"战位排（depth:front——僚位的她躲得掉）；毒雾/啸震类不标=默认"罩"全排
@@ -805,6 +808,7 @@ WORLD.enemies = {
   zhanwangchan: {
     name: "战王蝉", hp: 360, sense: 12, speed: 15, agility: 11, move: 2, mp: 110, elem: "jin", nature: "beast",
     tactics: "feral", stubborn: true, canFlee: false, boss: true,
+    counter: 8,
     introNote: "燕家堡破阵而出的魔道巨擘——甲胄如铁，双镰开阖，振翅之间裂石分风！它的「振翅冲撞」会循着你的气息追击，破甲贯刺更是专破护体灵光。这一战不为诛它，只为撑过它的杀势、活着退出燕家堡。甲坚势猛，破甲与符宝方能扛得住。",
     attacks: [
       { name: "镰爪斩", dmg: 30, kind: "normal", weight: 12, range: [1, 1] },
@@ -841,6 +845,7 @@ WORLD.enemies = {
   xueyu_zhizhu: {
     name: "血玉蜘蛛", hp: 300, sense: 10, speed: 12, agility: 8, move: 2, mp: 95, elem: "tu", nature: "beast",
     tactics: "feral", stubborn: true, canFlee: false, boss: true,
+    enrage: { turn: 5, atkMul: 1.3 },
     introNote: "矿洞最深处镇压的四级蛛妖——封印松脱，狂化在即！血玉甲壳刀剑难透，「血丝缚」吐丝罩战阵、「狂噬」循着你的气息猛扑，一步躲不开。它越受伤越狂。破甲、火攻与相克方是正解——你那身木行道基，正克它岩穴血玉的土煞。",
     attacks: [
       { name: "毒牙撕咬", dmg: 26, kind: "normal", weight: 12, range: [1, 1] },
@@ -914,6 +919,7 @@ WORLD.enemies = {
   tieluo_mao: {
     name: "血茧铁罗", hp: 330, sense: 15, speed: 17, agility: 12, move: 2, mp: 100, qiLayer: 13, elem: "huo", armor: 3,
     tactics: "feral", stubborn: true, canFlee: false, boss: true,
+    enrage: { turn: 3, atkMul: 1.4 },
     introNote: "断臂化茧后的铁罗——独臂，血煞却暴涨到近乎不死。「独臂血爪」一爪比先前更沉更狠，「血遁狂扑」循着你的气息亡命扑来，「血煞爆」掀起一片赤焰罩住战位前排。他蜕了皮甲、血肉外露（破甲更易），可血气狂涌、痛觉尽失，是头濒死搏命的凶兽。他行火，木生火——你那身木行道基仍占不到相克便宜，只能凭底牌与硬功，把这具血茧彻底打垮。",
     attacks: [
       { name: "独臂血爪", dmg: 33, kind: "normal", weight: 12, elem: "huo", range: [1, 1], mp: 6 },
@@ -974,6 +980,7 @@ WORLD.enemies = {
   /* —— 黄枫谷一带的栖地妖王（客观恒在·区域投放；异闻只叠预知，不改其存在）—— */
   yinjia_jiaomang: {
     name: "银甲角蟒", hp: 215, sense: 7, speed: 12, agility: 9, move: 2, mp: 65, tactics: "feral", elem: "shui", nature: "beast", armor: 4, stubborn: true,
+    regen: 7,
     introNote: "乌龙潭蜕甲的角蟒——通体银鳞坚逾精铁，寻常刀剑只留白印。它的「角撞破势」会随你身形追撞，一步躲不开：破甲的钝击（蓄力重招）与雷火之属方能撼动其甲，正面对耗只是徒劳。",
     attacks: [
       { name: "银鳞绞缠", dmg: 26, kind: "normal", weight: 12, range: [1, 1] },
@@ -1088,6 +1095,7 @@ WORLD.enemies = {
   yingli_beast: {
     name: "婴鲤兽", hp: 520, sense: 18, speed: 17, agility: 14, move: 2, mp: 110,
     elem: "shui", nature: "beast", tactics: "feral", stubborn: true, canFlee: false, boss: true, armor: 7,
+    regen: 10,
     introNote: "镇妖台斗兽场铁笼掀开，一头形如赤鳞巨鲤的越级凶兽破水而出——虽只是幼体，凶威已堪比六阶！它行水属，狂涛裹尾、巨口吞噬，「越阶冲撞」更循气追身、势如雷霆。寻常修士近不得身，唯赖冯三娘的困兽阵层层迟滞、众人合力，方能寻那一线极限斩杀的破绽。",
     attacks: [
       { name: "赤鳞水箭", dmg: 30, kind: "normal", weight: 12, elem: "shui", range: [1, 4], mp: 6 },
@@ -1221,6 +1229,29 @@ WORLD.beastRumors = [
       "谷外巡山的弟子又少回来一个，带队的师兄只叮嘱：莫往林子最深处去。",
       "你在谷外林间见到大片被踏平的灌木，断口齐整，似有巨物反复经行。",
       "夜风里传来一声谁也认不出的兽吼，林梢惊起一片飞鸟——它就在不远处的林子深处。",
+    ] },
+];
+
+/* 材料传闻池：听闻→寻踪→探索采得——与异闻妖王同构的"风声→行动"链。
+ * site: 对应 DATA.exploreSites 的 id（传闻激活时，该探索点注入 specialHerb）
+ * item: 传闻指向的材料 id
+ * area: 投放区域（与 beastRumors 同逻辑：按当前大陆节点分区） */
+WORLD.materialRumors = [
+  { id: "hanyancao", area: "huangfeng", title: "乌龙潭·寒烟草",
+    site: "wulong_tan", item: "hanyancao",
+    rumor: "黄枫谷记名弟子间传着：乌龙潭阴寒水汽里生着一种白霜灵草，性寒入骨——是解热定神的妙材，只是采时须运功御寒。",
+    clues: [
+      "有弟子从乌龙潭回来，袖口凝着一层薄霜——说是潭边有种灵草，寒气逼人，寻常人近不得。",
+      "你在谷中药志翻到一条：「寒烟草，生于至阴水脉之畔，叶面凝霜，性寒入骨——采之须运功御寒，否则寒气侵体、神识发滞。」",
+      "乌龙潭的水雾里隐约可见几抹白霜点——那便是寒烟草了。寒气不寻常，备御寒之法再去。",
+    ] },
+  { id: "qiannian_lingcao", area: "huangfeng", title: "谷外山林·千年灵草",
+    site: "guwai_lin", item: "qiannian_lingcao",
+    rumor: "一个巡山弟子说在谷外山林深处见过一株灵草，灵气浓得化不开——不像是寻常年份能长出来的。",
+    clues: [
+      "谷外巡山的弟子带回一片灵草叶，叶脉里灵光流转——药龄少说数百年。他说是在林子最深处见到的。",
+      "你在谷外林间嗅到一股浓郁灵气，循味寻去，地上残留着几片落叶，叶脉犹亮——那株灵草就在附近。",
+      "林深处灵气如雾，你隐约看见一株灵草在灌木丛中泛着幽光——千年之材，可遇不可求。但林中妖兽出没，须小心。",
     ] },
 ];
 

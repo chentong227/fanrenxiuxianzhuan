@@ -631,7 +631,6 @@ DATA.exploreSites = {
     beastHabitat: true,
     beastHabitatChance: 0.3,
     beastPool: ["yinjia_jiaomang"],
-    specialHerb: "hanyancao", specialHerbN: 3,
     companions: [],
     arc: "huangfeng",
   },
