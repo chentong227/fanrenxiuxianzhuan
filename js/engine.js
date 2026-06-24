@@ -5646,7 +5646,14 @@ const Engine = {
     const s = State.data;
     s.pendingEvent = stage.id;
     if (stage.onArrive) stage.onArrive(s);
-    UI.renderStory(stage);
+    // text/choices 可为函数（按 state 动态生成）——选项钩子的基础设施
+    const resolved = (typeof stage.text === "function" || typeof stage.choices === "function")
+      ? Object.assign({}, stage, {
+          text: typeof stage.text === "function" ? stage.text(s) : stage.text,
+          choices: typeof stage.choices === "function" ? stage.choices(s) : stage.choices,
+        })
+      : stage;
+    UI.renderStory(resolved);
     State.save();
     UI.renderAll();
   },
