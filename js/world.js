@@ -797,6 +797,11 @@ WORLD.enemies = {
       { name: "泥流潜袭", dmg: 32, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, mp: 12, range: [1, 5] },
     ],
     armor: 5,
+    // 妖兽BOSS演出：Phase 切换（HP 50% 时狂暴化——压迫感的核心来源）
+    phases: [
+      { at: 0.5, cue: "墨蛟猛然仰头，一声嘶吼震得洞壁碎石簌簌而落——它的墨鳞根根倒竖，双瞳赤红如血！",
+        buff: { atkMul: 1.25, speedAdd: 2 }, shake: 14, flash: "#1a0000" },
+    ],
     // 大妖王=大件之源：角→乌龙夺、皮鳞→神风舟（bigitem 妖材→法宝链；动漫/原著：燕家堡代工）
     reward: { lingshi: 4 }, namedLoot: { mojiao_jiao: 1, mojiao_pi: 1, mojiao_lin: 3, xueshi_zhuyao: 2 },
   },

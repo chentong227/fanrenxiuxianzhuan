@@ -256,6 +256,7 @@
         : (this.nature === "beast" || this.nature === "corpse") ? 1
         : 2;                          // 法修默认中距对轰
       this.canFlee = cfg.canFlee !== false && !/心魔|劫/.test(this.name || "");
+      this.phases = cfg.phases || null;
     }
     get alive() { return this.hp > 0 && !this.escaped; }
     // 越阶催动：法器 minLayer > 玩家 layer 时灵力消耗倍增（杀手锏设计）
@@ -2356,6 +2357,10 @@
         if (this.player.hp <= 0) this.deathCause = { by: e.name, move: atkDef.name };
         this._log(`${e.name} 使「${atkDef.name}」，你受到 ${r.dealt} 伤害${r.exposed ? "（破绽+30%）" : ""}（${Math.max(0, Math.round(this.player.hp))}/${this.player.hpMax}）`);
         this._emitFx("player", "hurt", r.dealt);
+        // BOSS 重击震屏：妖兽 BOSS 的突进/横扫命中时屏幕震动（压迫感）
+        if (e.boss && r.dealt >= 18) {
+          this._emitFx("global", "bossHit", { shake: Math.min(12, Math.round(r.dealt * 0.4)) });
+        }
         // 同道的关切（T2）：你血线垮半时她开口（账本保证一场只说一次）
         if (this.player.hp > 0 && this.player.hp < this.player.hpMax * 0.5) {
           const av = this._allyVoice();
@@ -2468,6 +2473,9 @@
           if (e.alive && (e.lane || 0) !== 0) { e.lane = 0; this._log(`阵脚已破——${e.name} 被逼上前来！`); }
         });
       }
+      // BOSS Phase 切换：血线触发狂暴化/技能强化（妖兽 BOSS 压迫感的核心来源）
+      this._checkBossPhases();
+
       const allGone = this.enemies.every(e => !e.alive);
       if (allGone && (!this._pendingEnemyWaves || this._pendingEnemyWaves.length === 0)) {
         const fledAny = this.enemies.some(e => e.escaped);
@@ -2475,6 +2483,30 @@
         this._log(fledAny && this.enemies.every(e => e.escaped) ? `敌人尽数遁走——战场是你的了。` : `敌人尽灭，胜！`);
         { const av = this._allyVoice(); if (av) this._say(av, "win"); }
       }
+    }
+
+    // BOSS Phase 检测：每敌每阶段只触发一次，越过血线时发出演出事件
+    _checkBossPhases() {
+      this.enemies.forEach(e => {
+        if (!e.alive || !e.phases || !e.phases.length) return;
+        if (!e._phaseDone) e._phaseDone = {};
+        const ratio = e.hp / e.hpMax;
+        e.phases.forEach((ph, i) => {
+          if (e._phaseDone[i]) return;
+          if (ratio > ph.at) return;
+          e._phaseDone[i] = true;
+          this._log(`${ph.cue}`);
+          if (ph.buff) {
+            if (ph.buff.atkMul) {
+              (e.attacks || []).forEach(a => { a.dmg = Math.round(a.dmg * ph.buff.atkMul); });
+              if (e.atk) e.atk = Math.round(e.atk * ph.buff.atkMul);
+            }
+            if (ph.buff.speedAdd) e.speed = (e.speed || 10) + ph.buff.speedAdd;
+            if (ph.buff.armorAdd) e.armor = (e.armor || 0) + ph.buff.armorAdd;
+          }
+          this._emitFx("global", "bossPhase", { idx: i, shake: ph.shake, flash: ph.flash, name: e.name });
+        });
+      });
     }
 
     /* ----- 速决：AI 代打全场（无头跑——速战按钮/蒙特卡洛共用）-----

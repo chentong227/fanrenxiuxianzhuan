@@ -1744,6 +1744,13 @@ const Engine = {
           if (!r.ok) return { text: r.reason, kind: "bad" };
           return { text: "你在洞口岩壁上刻下一道印记，吸一口气，潜入水下的黑暗。\n\n（洞口印记已立——若有不测，可从此处重来。）", kind: "event" };
         }},
+        { text: "洞口调息", cond: () => s.hp < s.hpMax, effect: () => {
+          const heal = Math.round(s.hpMax * 0.5);
+          s.hp = clamp(s.hp + heal, 0, s.hpMax);
+          const realm = State.realm();
+          if (realm && realm.spMax) s.spirit = clamp(s.spirit + Math.round(realm.spMax * 0.25), 0, realm.spMax);
+          return { text: `你在洞口盘膝调息，运转长春功温养经脉——气血恢复${heal}，灵力小补。\n\n（洞窟深处传来低沉的水声，那东西还在。）`, kind: "good" };
+        }},
         { text: "再整备整备，稍后再来", effect: () => ({ text: "你退后一步。潭水无声，那个洞口像一只阖着的眼。", kind: "sys" }) },
       ],
     };
@@ -1967,6 +1974,13 @@ const Engine = {
       } else if (info.blown) {
         e0.shield = (e0.shield || 0) + 14;
         c._log("你的动静早惊了潭底——墨蛟有备而来，黑雾护体（敌护体+14）。");
+      }
+      // 妖兽 BOSS 入场演出：震屏+暗红闪光+入场台词（压迫感的第一印象）
+      if (e0.boss && e0.nature === "beast") {
+        if (typeof Fx !== "undefined") {
+          setTimeout(() => { Fx.flash("#1a0000", 300, 0.4); Fx.shake(12); }, 200);
+        }
+        c._log("洞壁震颤，碎石簌簌——深潭之主抬起了头。漆黑的鳞甲在暗红的水光中泛着冷芒，獠牙间腥风扑面。");
       }
       if (typeof UI !== "undefined" && UI.renderCombat) UI.renderCombat(c, this._combatMeta);
     }
@@ -4936,6 +4950,7 @@ const Engine = {
           this.writeLedger("fengyue_slain", "血色禁地中反杀狙杀者封岳，夺其踏云靴");
           this.addMilestone("猎杀猎人：反杀封岳", "showdown");
         } else if (meta.enemyName === "封岳" && anyEscaped) {
+          State.setFlag("fengyue_dead");   // 遁走也算打过——打过就没有了
           State.setFlag("jindi_mid_done");
           if (s.exmap) {
             this.log("封岳带伤遁走，没敢回头——那双靴子与你无缘了。但至少，这片血雾里少了一个猎人。", "event");
@@ -4943,6 +4958,11 @@ const Engine = {
             State.give("xueshi_zhuyao", 5);
             this.log("封岳带伤遁走，没敢回头。你在中环又采了两日——主药五株入袋，只是那双靴子与你无缘了。", "event");
           }
+        }
+        // 封岳打过就消失：直接标记巡逻死亡，确保巡逻不再触发
+        if (meta.enemyName === "封岳" && s.exmap) {
+          const ef = ExploreMap.cur(s.exmap);
+          if (ef) ef.patrolDead = true;
         }
         if (meta.enemyName === "墨蛟" && !anyEscaped) {
           State.setFlag("mojiao_slain");
