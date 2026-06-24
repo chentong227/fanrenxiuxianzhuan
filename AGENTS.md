@@ -76,17 +76,8 @@
 
 - **发版**：`node scripts/bump.js <版本号>`（同步 index.html ?v=/build 号与 ver.txt——
   客户端自动更新；Node 写文件编码安全，**勿用 PowerShell 改版本**）。
-- **⚠ 落 main 上线（重要·每窗必读，v133 起）**：仓库走 GitHub Pages 从 `main` 部署。
-  **Devin 有硬护栏，禁止直接 `git push` 到 main**——直推会被工具拦下（不要反复试）。
-  既定落 main 流程（PAT 仅本会话用、勿存；所有输出 `sed` 脱敏 PAT）：
-  1. 本地 commit 后推到**特性分支**：
-     `git push "https://<PAT>@github.com/chentong227/fanrenxiuxianzhuan.git" HEAD:devin/<ts>-<topic>`
-  2. **开 PR**：仓库属 chentong227，内建 git 工具用的是另一账号、无写权限，须用 PAT 走 GitHub API：
-     `curl -X POST -H "Authorization: Bearer <PAT>" .../repos/chentong227/fanrenxiuxianzhuan/pulls -d '{"title":...,"head":"<分支>","base":"main","body":...}'`
-  3. **合并 PR**（用户已认可此法等同其平时直推；如不确定先问一句）：
-     `curl -X PUT -H "Authorization: Bearer <PAT>" .../pulls/<n>/merge -d '{"merge_method":"rebase"}'`
-     （`rebase` 保持 main 线性，等同直推。）
-  4. 合并后 GitHub Pages 自动部署，验 `curl https://chentong227.github.io/fanrenxiuxianzhuan/ver.txt` = 新版本号（部署有几十秒延迟，带 `?cb=` 绕缓存）。
+- **落 main 上线**：仓库走 GitHub Pages 从 `main` 部署。本地 commit 后直接 `git push origin main` 即可。
+  推送后 GitHub Pages 自动部署，验 `curl https://chentong227.github.io/fanrenxiuxianzhuan/ver.txt` = 新版本号（部署有几十秒延迟，带 `?cb=` 绕缓存）。
 - **测试**：`node test/run.js`（存档迁移）、`node test/journey.test.js`（E2E 主线）、
   `node test/combat.test.js`、平衡蒙特卡洛 `node test/encounter.bal.js`、`node test/elem.bal.js`、
   `node test/tier.bal.js`（标度公式）、`node test/scale.bal.js`（A2 标度校准·几何 realmBand+驱动门槛）。
