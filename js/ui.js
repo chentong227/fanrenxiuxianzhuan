@@ -14,6 +14,39 @@ const UI = {
     this.renderActions();
     this.renderObjective();
     this.renderRecentLog();
+    if (this._mapZoom !== 5 && !this.el("worldmap-canvas").hidden) this._updateAvatarPin();
+    const dock = this.el("action-dock");
+    if (dock && dock.classList.contains("show")) this._renderDockActions();
+  },
+
+  // L3: 点击 ripple 光圈
+  _rippleInited: false,
+  initRipple() {
+    if (this._rippleInited) return;
+    this._rippleInited = true;
+    document.addEventListener("click", e => {
+      const btn = e.target.closest(".btn-action, .btn-secondary, .btn-primary, .choice");
+      if (!btn) return;
+      const r = document.createElement("span");
+      r.className = "ripple";
+      const rect = btn.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      r.style.width = r.style.height = size + "px";
+      r.style.left = (e.clientX - rect.left - size / 2) + "px";
+      r.style.top = (e.clientY - rect.top - size / 2) + "px";
+      btn.appendChild(r);
+      setTimeout(() => r.remove(), 500);
+    });
+  },
+
+  // L3: 行动过程叠层动画
+  _playActionOverlay(type) {
+    const stage = this.el("scene-stage");
+    if (!stage) return;
+    const ov = document.createElement("div");
+    ov.className = "action-overlay " + type;
+    stage.appendChild(ov);
+    setTimeout(() => ov.remove(), 1000);
   },
 
   // 行动页"刚刚发生"反馈条：最近三条见闻（用户裁决：只显一行看不出做了什么——加大）
@@ -341,6 +374,23 @@ const UI = {
         } else confirmBox.innerHTML = "";
       } else confirmBox.innerHTML = "";
     }
+
+    // L2: 场景热点（试点地点）
+    this._renderHotspots(loc);
+  },
+
+  // L2: 在场景图上叠加可点击热点
+  _renderHotspots(loc) {
+    const s = State.data;
+    if (!loc.hotspots || loc.scene || s.pendingEvent || s.combat) return;
+    const pinsBox = this.el("scene-pins");
+    if (!pinsBox) return;
+    const visible = loc.hotspots.filter(h => !h.cond || h.cond(s));
+    const html = visible.map(h =>
+      `<button class="scene-hotspot" style="left:${h.x}%;top:${h.y}%" onclick="Engine.doAction('${h.action}')" title="${h.label}">
+        <span class="sh-icon">${h.icon}</span><span class="sh-label">${h.label}</span>
+      </button>`).join("");
+    pinsBox.insertAdjacentHTML("beforeend", html);
   },
 
   // 兼容旧调用（已由 renderSceneStage 取代）
@@ -447,7 +497,7 @@ const UI = {
         <span class="nw-ic">${a.icon}</span><span class="nw-lb">${a.label}${why ? `<i class="nw-cd">${why}</i>` : ''}</span>
       </button>`;
     };
-    this.openModal(`
+    this.openSheet(`
       <div class="npc-wheel">
         <div class="nw-side left">${good.map(a=>btn(a,"good")).join("")}</div>
         <div class="nw-center">
@@ -460,8 +510,8 @@ const UI = {
         </div>
         <div class="nw-side right">${bad.map(a=>btn(a,"bad")).join("")}</div>
       </div>
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
-    `, "wheel");
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeSheet()">离开</button></div>
+    `);
   },
 
   // 轮盘动作分发
@@ -500,13 +550,13 @@ const UI = {
       Engine.passTime(1);
       Engine.log(`你与「${nm}」切磋了一场，点到即止，体魄+1，交情见长${extra}。`, "good");
       Engine.flushNpcGifts();
-      this.closeModal(); Engine.checkLifespan(); State.save(); this.renderAll();
+      this.closeSheet(); Engine.checkLifespan(); State.save(); this.renderAll();
       return;
     }
     if (kind === "probe") {
       if (I) { I.markInteract(s, npcId); I.favor(s, npcId, -1); }
       Engine.log(`你暗中打量「${nm}」，揣摩其底细。${n?n.bio:''}`, "sys");
-      this.closeModal(); State.save(); this.renderAll();
+      this.closeSheet(); State.save(); this.renderAll();
       return;
     }
     if (kind === "threat") {
@@ -523,7 +573,7 @@ const UI = {
       const sever = nowRel <= -24 ? `　${nm}自此与你恩断义绝，再不愿以礼相待。` : "";
       Engine.log(`你出言恐吓「${nm}」，对方面色一变，记恨在心。修仙人的恶名，就是这么攒下的。${gained}${sever}`, "bad");
       this.toast(gained ? "威逼之下，套出了底细" : "恶名又添一笔");
-      this.closeModal(); State.save(); this.renderAll();
+      this.closeSheet(); State.save(); this.renderAll();
       return;
     }
   },
@@ -538,7 +588,7 @@ const UI = {
       const it = DATA.items[k];
       return `<button class="choice" onclick="UI._giveGift('${npcId}','${k}')">${it?it.name:k} ×${s.inventory[k]}</button>`;
     }).join("");
-    this.openModal(`
+    this.openSheet(`
       <h2>赠礼予${n?n.name:''}</h2>
       <p style="color:var(--ink-dim);font-size:13px">投其所好，礼下于人——交情自然渐厚。</p>
       <div class="choices" style="margin-top:12px">${rows}</div>
@@ -559,7 +609,7 @@ const UI = {
     const n = WORLD.npcById(npcId);
     Engine.log(`你将「${it?it.name:itemId}」赠予${n?n.name:''}，对方欣然收下，交情+${gain}。`, "good");
     Engine.flushNpcGifts();
-    this.closeModal(); State.save(); this.renderAll();
+    this.closeSheet(); State.save(); this.renderAll();
   },
 
   // 与在场人物交谈：静态对话主题（降级/请教路径）
@@ -575,7 +625,7 @@ const UI = {
       `<button class="btn btn-secondary" style="text-align:left" onclick="Engine.dialogueTopic('${npcId}', ${i})">
         ${t.label}${t.hint ? `<span style="display:block;color:var(--ink-dim);font-size:12px">${t.hint}</span>` : ""}
       </button>`).join("");
-    this.openModal(`
+    this.openSheet(`
       <div class="fortune-tag" style="border-color:var(--jade);color:var(--jade)">闲谈</div>
       <h2>${n.name}<span style="color:var(--gold);font-size:13px;margin-left:8px">${n.role}</span></h2>
       <p style="color:var(--ink-dim);font-size:13px">${n.bio}</p>
@@ -652,7 +702,7 @@ const UI = {
   },
   endLiveTalk() {
     const t = this._talk; this._talk = null;
-    this.closeModal();
+    this.closeSheet();
     if (t && t.history.length) {
       const n = WORLD.npcById(t.npcId);
       Engine.passTime(1);  // 一番交谈耗些光阴
@@ -685,7 +735,7 @@ const UI = {
         `<button class="choice" onclick="UI.pickTalkOption(${i})">${o}</button>`).join("")
         || `<div class="talk-thinking">（似乎没什么好说的了）</div>`;
     }
-    this.openModal(`
+    this.openSheet(`
       <div class="fortune-tag" style="border-color:var(--jade);color:var(--jade)">对谈 · ${relTxt}</div>
       <h2>${n.name}<span style="color:var(--gold);font-size:13px;margin-left:8px">${n.role}</span></h2>
       <div class="talk-convo" id="talk-convo">${convo || `<p style="color:var(--ink-dim);font-size:13px">${n.bio}</p>`}</div>
@@ -699,13 +749,13 @@ const UI = {
   // 攀谈（降级路径用）：花点时间增进交情
   chatLocal(npcId) {
     const s = State.data;
-    if (s.pendingEvent || s.combat) { this.closeModal(); return; }
+    if (s.pendingEvent || s.combat) { this.closeSheet(); return; }
     Engine.passTime(1);
     if (typeof INTERACTIONS !== "undefined") INTERACTIONS.favor(s, npcId, 3);
     s.mood = clamp(s.mood + 3, 0, s.moodMax);
     const n = WORLD.npcById(npcId);
     Engine.log(`你与「${n ? n.name : npcId}」攀谈了一番，叙了些闲话，交情更近了几分。`, "event");
-    this.closeModal();
+    this.closeSheet();
     Engine.checkLifespan();
     State.save();
     this.renderAll();
@@ -765,6 +815,10 @@ const UI = {
     const s = State.data;
     const t = this.el("top-time");
     if (t) t.textContent = `第${s.year}年${s.month}月`;
+    // 月历条
+    this._renderMonthBar(s.month);
+    // 季节染色
+    this._updateSeason(s.month);
     // 角色卡
     const hn = this.el("hero-name"); if (hn) hn.textContent = s.name;
     const ha = this.el("hero-age"); if (ha) ha.textContent = `${s.age} 岁`;
@@ -779,6 +833,30 @@ const UI = {
     // 随身灵圃：小绿瓶解锁后，顶栏「小瓶」常驻
     const bb = this.el("btn-bottle");
     if (bb) bb.hidden = !(s.bottle && s.bottle.unlocked);
+  },
+
+  _seasonOf(month) {
+    if (month <= 3) return "spring";
+    if (month <= 6) return "summer";
+    if (month <= 9) return "autumn";
+    return "winter";
+  },
+  _renderMonthBar(month) {
+    const bar = this.el("month-bar");
+    if (!bar) return;
+    if (!bar.children.length) {
+      const seasons = ["spring","spring","spring","summer","summer","summer","autumn","autumn","autumn","winter","winter","winter"];
+      bar.innerHTML = seasons.map((se, i) =>
+        `<div class="month-cell ${se}" data-m="${i+1}"></div>`
+      ).join("");
+    }
+    bar.querySelectorAll(".month-cell").forEach(c => {
+      c.classList.toggle("active", +c.dataset.m === month);
+    });
+  },
+  _updateSeason(month) {
+    const stage = this.el("scene-stage");
+    if (stage) stage.dataset.season = this._seasonOf(month);
   },
 
   renderStats() {
@@ -811,11 +889,32 @@ const UI = {
     this.setBar("demon", s.demon, 100);
   },
 
+  _prevBars: {},
   setBar(key, val, max) {
     const pct = clamp((val / max) * 100, 0, 100);
-    this.el(`${key}-bar`).style.width = pct + "%";
+    const bar = this.el(`${key}-bar`);
     const txt = this.el(`${key}-text`);
-    if (txt) txt.textContent = (key === "cul" || key === "sp") ? `${Math.round(val)} / ${max}` : Math.round(val);
+    const prev = this._prevBars[key] || 0;
+    const cur = Math.round(val);
+    if (bar) bar.style.width = pct + "%";
+    if (txt) txt.textContent = (key === "cul" || key === "sp") ? `${cur} / ${max}` : cur;
+    // 数值跳动 + 浮动增益
+    if (cur !== prev && bar) {
+      const delta = cur - prev;
+      txt.classList.remove("num-pop");
+      void txt.offsetWidth;
+      txt.classList.add("num-pop");
+      if (delta > 0) this._floatGain(key, delta);
+    }
+    this._prevBars[key] = cur;
+  },
+  _floatGain(key, delta) {
+    const labels = { cul: "修为", sp: "灵力", hp: "气血", mood: "心境", demon: "心魔" };
+    const el = document.createElement("div");
+    el.className = "float-gain-toast";
+    el.textContent = `${labels[key] || key} +${delta}`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
   },
 
   // 背包分类（A4：道具/材料/丹药/法宝）——keepsake 唯一信物不入此处，归大件图鉴
@@ -2099,13 +2198,13 @@ const UI = {
       { m: 36, label: "闭关三年", note: "心无旁骛，岁月如梭" },
     ];
     const optHtml = opts.map(o =>
-      `<button class="btn btn-secondary" style="text-align:left" onclick="UI.closeModal(); Engine.doCultivate(${o.m});">
+      `<button class="btn btn-secondary" style="text-align:left" onclick="UI.closeSheet(); Engine.doCultivate(${o.m});">
         ${o.label}　<span style="color:var(--ink-dim);font-size:12px">预计修为+${perMonth * o.m}　${o.note}</span>
       </button>`
     ).join("");
     // 一键闭关至本层圆满（省去反复点击，但插曲/耗时照常结算）
     const toFullBtn = (toFull > 0 && need > 0 && need < 200)
-      ? `<button class="btn btn-primary" onclick="UI.closeModal(); Engine.doCultivate(${need});">闭关至本层圆满　<span style="font-size:12px;opacity:.85">约 ${need} 月</span></button>`
+      ? `<button class="btn btn-primary" onclick="UI.closeSheet(); Engine.doCultivate(${need});">闭关至本层圆满　<span style="font-size:12px;opacity:.85">约 ${need} 月</span></button>`
       : "";
 
     // 闭关研习功法（持有未习的典籍时）
@@ -2118,7 +2217,7 @@ const UI = {
           return `<div class="study-item">
             <div><div class="si-name">${t.name} <span style="color:var(--gold);font-size:11px">${gradeLabel(t.grade)}</span></div>
             <div class="si-meta">${t.desc}</div></div>
-            <button class="btn btn-mini" onclick="UI.closeModal(); Engine.studyTechnique('${id}');">研习（3月）</button>
+            <button class="btn btn-mini" onclick="UI.closeSheet(); Engine.studyTechnique('${id}');">研习（3月）</button>
           </div>`;
         }).join("")}
       </div>` : "";
@@ -2131,11 +2230,11 @@ const UI = {
         <div class="study-item">
           <div><div class="si-name">${ref.name} · 第 ${ref.cur} → ${ref.next} 层 <span style="color:var(--gold);font-size:11px">上限 ${ref.max} 层</span></div>
           <div class="si-meta">闭关参研、将功法推进一层；达标层数解锁新战技，同系法术威力随层渐涨。耗修为 ${ref.cultCost}。</div></div>
-          <button class="btn btn-mini" onclick="UI.closeModal(); Engine.refineLayer('${ref.techId}');">参研（${ref.months}月）</button>
+          <button class="btn btn-mini" onclick="UI.closeSheet(); Engine.refineLayer('${ref.techId}');">参研（${ref.months}月）</button>
         </div>
       </div>` : "";
 
-    this.openModal(`
+    this.openSheet(`
       <h2>闭关修炼</h2>
       ${this._statusStrip()}
       <p style="color:var(--ink-dim)">于修仙者而言，光阴最是宝贵，也最不值钱。闭得越久，修为越深，可寿元、心境亦在流逝。
@@ -2143,7 +2242,7 @@ const UI = {
       <div class="modal-actions">
         ${toFullBtn}
         ${optHtml}
-        <button class="btn btn-ghost" onclick="UI.closeModal()">再想想</button>
+        <button class="btn btn-ghost" onclick="UI.closeSheet()">再想想</button>
       </div>
       ${refineHtml}
       ${studyHtml}
@@ -2739,6 +2838,445 @@ const UI = {
     `);
   },
 
+  /* ============================================================
+   * 地图主界面（P1：全屏可缩放地图——替代弹窗式地图）
+   * 缩放级别 Z1~Z5 对应五级舆图数据：
+   *   Z1=人界全图 Z2=大区 Z3=胥国 Z4=地区地点 Z5=据点场景（=scene-stage）
+   * 默认 Z5（在据点内看场景），点「舆图」切到 Z3（胥国全景）。
+   * ============================================================ */
+  _mapZoom: 5,          // 当前缩放级别（UI 状态，不存档）
+  _mapFocusNode: null,  // Z4 时聚焦的大陆节点 id
+
+  toggleWorldmap() {
+    if (this._mapZoom === 5) {
+      // 从场景切到地图：默认 Z3（胥国全景）
+      this._prevZoom = 5;
+      this._mapZoom = 3;
+      this._mapFocusNode = null;
+      this._showWorldmap(true);
+      this.renderWorldmap();
+    } else {
+      // 从地图切回场景（Z5）
+      this._prevZoom = this._mapZoom;
+      this._mapZoom = 5;
+      this._showWorldmap(false);
+      this.renderLocation();
+    }
+  },
+
+  // Z4↔Z5 交叉淡入淡出：show=true 显示地图，show=false 显示场景
+  _showWorldmap(show) {
+    const canvas = this.el("worldmap-canvas");
+    const stage = this.el("scene-stage");
+    if (!canvas || !stage) return;
+    if (show) {
+ // 显示地图：canvas 淡入，stage 淡出
+ canvas.hidden = false;
+ requestAnimationFrame(() => canvas.classList.remove("fade-out"));
+ stage.classList.add("fade-out");
+ this._showActionDock(false);
+ const hudBtn = this.el("hud-toggle");
+ if (hudBtn) hudBtn.hidden = false;
+    } else {
+ // 显示场景：stage 淡入，canvas 淡出
+ stage.classList.remove("fade-out");
+ canvas.classList.add("fade-out");
+ this._showActionDock(true);
+ // 延迟隐藏 canvas（等淡出动画完成）
+ clearTimeout(this._mapFadeTimer);
+ this._mapFadeTimer = setTimeout(() => { canvas.hidden = true; }, 500);
+ const hudBtn2 = this.el("hud-toggle");
+ if (hudBtn2) hudBtn2.hidden = true;
+    }
+  },
+
+  // 行动 dock 显示/隐藏（P2：Z5 时滑出）
+  _showActionDock(show) {
+    const dock = this.el("action-dock");
+    if (!dock) return;
+    if (show) {
+ dock.hidden = false;
+ requestAnimationFrame(() => dock.classList.add("show"));
+ this._renderDockActions();
+    } else {
+ dock.classList.remove("show");
+ clearTimeout(this._dockHideTimer);
+ this._dockHideTimer = setTimeout(() => { dock.hidden = true; }, 400);
+    }
+  },
+
+  // 将行动按钮也渲染到 dock 中（复用 renderActions 逻辑）
+  _renderDockActions() {
+    const loc = State.location();
+    const dockBox = this.el("dock-actions");
+    if (!dockBox || !loc) return;
+    const s = State.data;
+    const storyPending = !!s.pendingEvent;
+    const labels = {
+      cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
+      adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
+      explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
+      liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声",
+    };
+    let acts = (loc.scene ? [] : loc.actions.slice());
+    if (!loc.scene) {
+      acts = acts.filter(a => a !== "bottle" || s.bottle.unlocked);
+      if (loc.home && (s.swordIntent || 0) >= 100 && !s.swordMastery) acts.unshift("wujian");
+      if (loc.home && loc.id === "huangfeng_gate" && s.flags.mojiao_resolved
+        && State.count("xueshi_zhuyao") >= 4 && !s.flags.zhuji_lian_done) acts.unshift("liandan");
+    }
+    // 涟漪窗口
+    let windowBtn = "";
+    const rw = s.rippleWindow;
+    if (rw && !loc.scene) {
+      const left = rw.dueAbs - State.absMonth();
+      if ((rw.id === "herb_garden" && loc.id === "houshan") || (rw.id === "wolf_bounty" && loc.id === "town")) {
+        const lbl = rw.id === "herb_garden" ? "寻无主药园" : "应悬赏剿匪";
+        windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('${rw.id}')">${lbl} <span class="win-left">余${left}月</span></button>`;
+      }
+    }
+    const focus = this._pendingFocus; this._pendingFocus = null;
+    dockBox.innerHTML = (acts.length || windowBtn)
+      ? windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
+      : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>` : "");
+    dockBox.querySelectorAll("[data-action]").forEach(btn => {
+      btn.addEventListener("click", () => Engine.doAction(btn.dataset.action));
+    });
+  },
+
+  _mapZoomIn() {
+    if (this._mapZoom >= 5) return;
+    this._mapZoom++;
+    if (this._mapZoom === 5) {
+      // Z4→Z5：地图淡出，场景淡入，dock 滑出
+      this._showWorldmap(false);
+      // 确保场景内容刷新
+      this.renderLocation();
+    } else {
+      this.renderWorldmap();
+    }
+  },
+
+  _mapZoomOut() {
+    if (this._mapZoom <= 1) return;
+    this._mapZoom--;
+    if (this._mapZoom === 4 && this._prevZoom === 5) {
+      // Z5→Z4：场景淡出，地图淡入
+      this._showWorldmap(true);
+      this.renderWorldmap();
+    } else {
+      this.renderWorldmap();
+    }
+  },
+
+  renderWorldmap() {
+    const z = this._mapZoom;
+    const svg = this.el("worldmap-svg");
+    const pinsBox = this.el("worldmap-pins");
+    const labelsBox = this.el("worldmap-labels");
+    const hint = this.el("worldmap-hint");
+    const bg = this.el("worldmap-bg");
+    if (!svg || !pinsBox) return;
+    const s = State.data;
+    const C = WORLD.continent;
+    if (!C) return;
+
+    // 按缩放级别设定背景图
+    const bgMap = {
+      1: "renjie_map",
+      2: "tiannan_atlas",
+      3: C.map,
+      4: null,
+    };
+    const bgUrl = bgMap[z] && typeof Art !== "undefined" ? Art.url(bgMap[z]) : null;
+    if (bg) bg.style.backgroundImage = bgUrl ? `url("${bgUrl}")` : "";
+
+    // 按缩放级别设定 viewBox 和内容
+    let viewBox, svgContent = "", pinsHtml = "", labelsHtml = "", hintText = "";
+
+    if (z === 1) {
+      // Z1：人界全图——只画四大区块轮廓
+      viewBox = "0 0 100 100";
+      hintText = "人界全图 · 缩放查看";
+      const L = WORLD.atlas && WORLD.atlas.levels.renjjie;
+      if (L) {
+        const pathSet = this._atlasPinSet(L);
+        svgContent = L.nodes.map(n => {
+          const d = this._atlasPath(n, pathSet);
+          const st = this._atlasNodeState(n, s, this._atlasPathSet());
+          return `<path class="region-block ${st}" d="${d}" onclick="UI._wmPickAtlas('renjjie','${n.id}')"/>`;
+        }).join("");
+        labelsHtml = L.nodes.map(n => {
+          const lab = n.label || n.pos;
+          const st = this._atlasNodeState(n, s, this._atlasPathSet());
+          return `<div class="wm-label ${st === 'here' ? 'sel' : ''}" style="left:${lab.x}%;top:${lab.y}%" onclick="UI._wmPickAtlas('renjjie','${n.id}')">${n.name}</div>`;
+        }).join("");
+      }
+    } else if (z === 2) {
+      // Z2：大区图——天南各国
+      viewBox = "0 0 100 100";
+      hintText = "天南 · 缩放查看";
+      const L = WORLD.atlas && WORLD.atlas.levels.tiannan;
+      if (L) {
+        const pathSet = this._atlasPinSet(L);
+        svgContent = L.nodes.map(n => {
+          const d = this._atlasPath(n, pathSet);
+          const st = this._atlasNodeState(n, s, this._atlasPathSet());
+          return `<path class="region-block ${st}" d="${d}" onclick="UI._wmPickAtlas('tiannan','${n.id}')"/>`;
+        }).join("");
+        labelsHtml = L.nodes.map(n => {
+          const lab = n.label || n.pos;
+          const st = this._atlasNodeState(n, s, this._atlasPathSet());
+          return `<div class="wm-label ${st === 'here' ? 'sel' : ''}" style="left:${lab.x}%;top:${lab.y}%" onclick="UI._wmPickAtlas('tiannan','${n.id}')">${n.name}</div>`;
+        }).join("");
+      }
+    } else if (z === 3) {
+      // Z3：胥国——据点 pin + 路线墨痕 + 州名题字
+      viewBox = "0 0 100 100";
+      hintText = "胥国 · 十三州 · 点据点启程";
+
+      const curNode = C.nodes.find(n => (n.locs || []).includes(s.location)) || C.nodes[0];
+      const visited = s.visitedNodes || ["caixia"];
+      const epoch = WORLD.atlas.factionEpoch(s);
+
+      // 路线
+      svgContent = C.routes.map(r => {
+        const a = C.nodes.find(n => n.id === r.from), b = C.nodes.find(n => n.id === r.to);
+        if (!a || !b) return "";
+        const trod = visited.includes(a.id) && visited.includes(b.id);
+        return `<line class="wm-route${trod ? ' trod' : ''}" x1="${a.pos.x}" y1="${a.pos.y}" x2="${b.pos.x}" y2="${b.pos.y}"/>`;
+      }).join("");
+
+      // 据点 pins
+      pinsHtml = C.nodes.map(n => {
+        const here = n.id === curNode.id;
+        const gateMsg = n.gate ? n.gate(s) : null;
+        const cls = n.silhouette ? "silhouette" : gateMsg ? "gated" : "";
+        const nm = WORLD.atlas.epochPick(n.nameByEpoch, epoch) || n.name;
+        const ruin = WORLD.atlas.epochPick(n.ruinByEpoch, epoch);
+        const label = ruin ? `${nm}（旧址）` : nm;
+        return `<div class="wm-pin ${here ? 'here' : ''} ${cls}" style="left:${n.pos.x}%;top:${n.pos.y}%" onclick="UI._wmPickNode('${n.id}')" title="${n.desc}">
+          <span class="wm-pin-dot"></span>
+          <span class="wm-pin-label">${label}${here ? ' ·在此' : ''}</span>
+        </div>`;
+      }).join("");
+
+      // 州名题字
+      labelsHtml = (C.prefectures || []).map(p => {
+        const L2 = p.label || { x: 50, y: 50 };
+        return `<div class="wm-label" style="left:${L2.x}%;top:${L2.y}%">${p.name}</div>`;
+      }).join("");
+
+    } else if (z === 4) {
+      // Z4：地区图——当前大陆节点内地点
+      const focusId = this._mapFocusNode;
+      const node = C.nodes.find(n => n.id === focusId) ||
+                   C.nodes.find(n => (n.locs || []).includes(s.location)) || C.nodes[0];
+      const locs = WORLD.locations.filter(l =>
+        !l.scene && l.map && (node.locs || []).includes(l.id) &&
+        (!l.unlock || l.unlock(s)));
+      const cur = s.location;
+
+      viewBox = "0 0 100 100";
+      hintText = `${node.name} · 点地点前往`;
+
+      // 连线
+      const curLoc = WORLD.locations.find(l => l.id === cur);
+      if (curLoc && curLoc.map) {
+        svgContent = locs.filter(l => l.id !== cur).map(l =>
+          `<line class="wm-route trod" x1="${curLoc.map.x}" y1="${curLoc.map.y}" x2="${l.map.x}" y2="${l.map.y}"/>`
+        ).join("");
+      }
+
+      pinsHtml = locs.map(l => {
+        const here = l.id === cur;
+        const factor = Balance.travelTimeFactor(State.effectiveSpeed());
+        const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
+        return `<div class="wm-pin ${here ? 'here' : ''}" style="left:${l.map.x}%;top:${l.map.y}%" onclick="UI._wmPickLoc('${l.id}')" title="${l.desc}">
+          <span class="wm-pin-dot"></span>
+          <span class="wm-pin-label">${l.name}${here ? ' ·在此' : ` ${cost}月`}</span>
+        </div>`;
+      }).join("");
+    }
+
+    svg.setAttribute("viewBox", viewBox);
+    svg.innerHTML = svgContent;
+    pinsBox.innerHTML = pinsHtml;
+    labelsBox.innerHTML = labelsHtml;
+    if (hint) hint.textContent = hintText;
+
+    // 更新 avatar pin
+    this._updateAvatarPin();
+  },
+
+  // 旅途抵达后：从地图切到场景（Z5）
+  _journeyArriveTransition() {
+    if (this._mapZoom === 5) return;
+    this._prevZoom = this._mapZoom;
+    this._mapZoom = 5;
+    this._showWorldmap(false);
+    this.renderLocation();
+  },
+
+  // P4：切换 HUD 侧栏折叠/展开（地图模式下）
+  _toggleHudPanels() {
+    const rail = document.querySelector(".side-rail");
+    const stage = document.querySelector(".stage-col");
+    if (!rail && !stage) return;
+    const anyCollapsed = (rail && rail.classList.contains("collapsed")) ||
+                         (stage && stage.classList.contains("collapsed"));
+    if (anyCollapsed) {
+      if (rail) rail.classList.remove("collapsed");
+      if (stage) stage.classList.remove("collapsed");
+    } else {
+      if (rail) rail.classList.add("collapsed");
+      if (stage) stage.classList.add("collapsed");
+    }
+  },
+
+  // 地图上点据点节点（Z3）
+  _wmPickNode(nodeId) {
+    const C = WORLD.continent;
+    const n = C.nodes.find(x => x.id === nodeId);
+    if (!n) return;
+    const s = State.data;
+    if (n.silhouette) { this.toast("传说之地——尚不可至"); return; }
+    const gateMsg = n.gate ? n.gate(s) : null;
+    if (gateMsg) { this.toast(`道途未通：${gateMsg}`, true); return; }
+    if ((n.locs || []).includes(s.location)) {
+      // 已在此处 → 缩放到 Z4 看地点
+      this._mapFocusNode = n.id;
+      this._mapZoom = 4;
+      this.renderWorldmap();
+      return;
+    }
+    // 弹出确认窗口
+    const months = Math.max(1, n.months || 2);
+    const danger = n.danger || "未知";
+    const epoch = WORLD.atlas.factionEpoch(s);
+    const nm = WORLD.atlas.epochPick(n.nameByEpoch, epoch) || n.name;
+    const desc = WORLD.atlas.epochPick(n.descByEpoch, epoch) || n.desc;
+    this.openSheet(`
+      <h2>启程 · ${nm}</h2>
+      <p style="color:var(--ink-dim);font-size:13px">${desc}</p>
+      <div class="prep-list">
+        <div class="prep-item"><span>行程</span><b>约 ${months} 月</b></div>
+        <div class="prep-item"><span>凶险</span><b>${danger}</b></div>
+      </div>
+      <div class="choices">
+        <button class="choice" onclick="UI._confirmJourney('${n.id}')">收拾行囊，启程出发<span class="c-hint">旅途月月有奇遇</span></button>
+        <button class="choice" onclick="UI.closeSheet()">再想想<span class="c-hint">留在此处</span></button>
+      </div>
+    `);
+  },
+
+  _confirmJourney(nodeId) {
+    const C = WORLD.continent;
+    const n = C.nodes.find(x => x.id === nodeId);
+    if (!n) return;
+    this.closeSheet();
+    this.toast(`启程：${n.name}`);
+    Engine.startJourney(n.id);
+  },
+
+  // 地图上点地点（Z4）
+  _wmPickLoc(locId) {
+    const l = WORLD.locations.find(x => x.id === locId);
+    if (!l) return;
+    if (l.id === State.data.location) { this.toast("已在此处"); return; }
+    const factor = Balance.travelTimeFactor(State.effectiveSpeed());
+    const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
+    this.openSheet(`
+      <h2>前往 · ${l.name}</h2>
+      <p style="color:var(--ink-dim);font-size:13px">${l.desc}</p>
+      <div class="prep-list">
+        <div class="prep-item"><span>行程</span><b>约 ${cost} 月</b></div>
+      </div>
+      <div class="choices">
+        <button class="choice" onclick="UI._confirmTravel('${l.id}')">动身前往<span class="c-hint">耗时 ${cost} 月</span></button>
+        <button class="choice" onclick="UI.closeSheet()">再想想<span class="c-hint">留在此处</span></button>
+      </div>
+    `);
+  },
+
+  _confirmTravel(locId) {
+    this.closeSheet();
+    Engine.travelTo(locId);
+    // 到达后切回场景
+    this._mapZoom = 5;
+    this._showWorldmap(false);
+  },
+
+  // Z1/Z2 点区块
+  _wmPickAtlas(levelId, nodeId) {
+    const L = WORLD.atlas && WORLD.atlas.levels[levelId];
+    const n = L && L.nodes.find(x => x.id === nodeId);
+    if (!n) return;
+    const st = this._atlasNodeState(n, State.data, this._atlasPathSet());
+    if (st === "locked") { this.toast(n.silhouette ? "远观之地——尚不可至" : "道途未通——暂不可往"); return; }
+    if (n.to === "yueguo") {
+      // 进入胥国 → Z3
+      this._mapZoom = 3;
+      this.renderWorldmap();
+      return;
+    }
+    // 其他层级：下钻
+    if (n.to) this._wmGoto(n.to);
+  },
+  _wmGoto(levelId) {
+    if (levelId === "yueguo") { this._mapZoom = 3; this.renderWorldmap(); return; }
+    const L = WORLD.atlas && WORLD.atlas.levels[levelId];
+    if (!L) { this._mapZoom = 3; this.renderWorldmap(); return; }
+    this._mapZoom = (L.kind === "world") ? 1 : 2;
+    this.renderWorldmap();
+  },
+
+  // 更新 avatar pin 位置
+  _updateAvatarPin() {
+    const pin = this.el("avatar-pin");
+    if (!pin) return;
+    const s = State.data;
+    const C = WORLD.continent;
+    if (!C) { pin.hidden = true; return; }
+
+    let ax, ay;
+    if (s.journey) {
+      // 旅途中：沿路线插值
+      const j = s.journey;
+      const fromNode = C.nodes.find(n => n.id === j.from);
+      const toNode = C.nodes.find(n => n.id === j.to);
+      if (fromNode && toNode) {
+        const progress = j.total > 0 ? j.leg / j.total : 0;
+        ax = fromNode.pos.x + (toNode.pos.x - fromNode.pos.x) * progress;
+        ay = fromNode.pos.y + (toNode.pos.y - fromNode.pos.y) * progress;
+      } else if (toNode) {
+        ax = toNode.pos.x; ay = toNode.pos.y;
+      }
+    } else {
+      // 静止：在当前所在据点
+      const curNode = C.nodes.find(n => (n.locs || []).includes(s.location));
+      if (curNode) { ax = curNode.pos.x; ay = curNode.pos.y; }
+    }
+
+    if (ax != null && ay != null) {
+      pin.hidden = false;
+      pin.style.left = ax + "%";
+      pin.style.top = ay + "%";
+    } else {
+      pin.hidden = true;
+    }
+    // 旅途状态浮标
+    const js = this.el("journey-status");
+    if (js) {
+      if (s.journey) {
+        js.hidden = false;
+        js.textContent = `旅途：${s.journey.toName} ${s.journey.leg}/${s.journey.total}月`;
+      } else {
+        js.hidden = true;
+      }
+    }
+  },
+
   /* -------- 云游（可视化大地图，点击图标前往）——只列当前大陆节点内的去处 -------- */
   openTravel() {
     const cur = State.data.location;
@@ -3240,12 +3778,12 @@ const UI = {
         <button class="btn btn-mini" onclick="Engine.buy('${it.id}')"><span class="mprice">${it.price}两</span></button>
       </div>`;
     }).join("");
-    this.openModal(`
+    this.openSheet(`
       <h2>山下集镇 · 采买</h2>
       <p style="color:var(--ink-dim)">纹银：${State.data.silver} 两</p>
       ${blackMarket ? '<p style="color:var(--gold);font-size:12px">巷尾的药贩子朝你挤眼——丹房失窃的那批养元丹，正在黑市贱卖。过了这村没这店。</p>' : ''}
       ${html}
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeSheet()">离开</button></div>
     `);
   },
 
@@ -3284,13 +3822,13 @@ const UI = {
       ${x.has ? `<button class="btn btn-mini" onclick="Engine.fairSell('${x.id}')">售出</button>`
               : `<span style="color:var(--ink-faint);font-size:12px">不足</span>`}
     </div>`).join("");
-    this.openModal(`
+    this.openSheet(`
       <h2>太南小会 · 赶集</h2>
       <p style="color:var(--ink-dim)">灵石：${State.count("lingshi")} 枚　纹银在这里没人收——修仙人只认灵石。</p>
       ${goods}
       <h3 class="panel-title" style="margin-top:10px">以物易石（摊主收购）</h3>
       ${sells}
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeSheet()">离开</button></div>
     `);
   },
 
@@ -3341,7 +3879,7 @@ const UI = {
           <span>${xiangFace}<span class="iname">廊下晒太阳的向老头</span><span style="color:var(--ink-dim);font-size:12px">　他朝你招了招手，似乎有话要说。</span></span>
           <button class="btn btn-mini" onclick="Engine.xiangIntel()">上前听他闲谈</button>
         </div>`;
-    this.openModal(`
+    this.openSheet(`
       <h2>万宝楼 · 采买</h2>
       <p style="color:var(--ink-dim)">灵石：${State.count("lingshi")} 枚　纹银：${s.silver} 两（坊市只认灵石）</p>
       ${floor1}
@@ -3351,7 +3889,7 @@ const UI = {
       ${sells}
       <h3 class="panel-title" style="margin-top:10px">坊市闲人</h3>
       ${xiang}
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal()">离开</button></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeSheet()">离开</button></div>
     `);
   },
 
@@ -5947,6 +6485,14 @@ const UI = {
     this.el("modal-overlay").hidden = false;
   },
   closeModal() { this._selPref = null; this.el("modal-overlay").hidden = true; },
+
+  /* -------- 底部 sheet（L1b：轻量面板，不遮挡场景/地图） -------- */
+  openSheet(html) {
+    const s = this.el("bottom-sheet");
+    s.innerHTML = `<span class="sheet-close" onclick="UI.closeSheet()">×</span>` + html;
+    this.el("sheet-overlay").hidden = false;
+  },
+  closeSheet() { this.el("sheet-overlay").hidden = true; },
 
   toast(msg, bad = false) {
     const t = this.el("toast");

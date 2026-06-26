@@ -1,7 +1,0 @@
-{
-  "ok": true,
-  "action": "eval",
-  "time": "2026-06-22T06:03:39.195Z",
-  "msg": "eval done",
-  "value": "{\"pending\":\"intro\",\"hasStory\":true,\"overlayHidden\":false,\"storyIdx\":7,\"beatsLen\":7}"
-}

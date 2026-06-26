@@ -49,6 +49,13 @@ WORLD.locations = [
     env: { phase: "night", amb: "night", depth: { fg: "interior", far: 0.3 } },
     actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
     encounters: [],
+    hotspots: [
+      { id: "cultivate", icon: "🧘", x: 50, y: 55, action: "cultivate", label: "闭关" },
+      { id: "breakthrough", icon: "⚡", x: 72, y: 42, action: "breakthrough", label: "突破" },
+      { id: "rest", icon: "🍃", x: 28, y: 50, action: "rest", label: "调息" },
+      { id: "bottle", icon: "🫗", x: 78, y: 62, action: "bottle", label: "小瓶", cond: s => s.bottle.unlocked },
+      { id: "alchemy", icon: "⚗", x: 22, y: 68, action: "alchemy", label: "炼药" },
+    ],
   },
   {
     id: "houshan",
@@ -67,6 +74,9 @@ WORLD.locations = [
       { id: "beast", weight: 20, kind: "fight", enemy: "wild_wolf" },
       { id: "rival", weight: 14, kind: "fight", enemy: "outer_disciple" },
       { id: "silver", weight: 12, kind: "reward" },
+    ],
+    hotspots: [
+      { id: "explore", icon: "🌲", x: 50, y: 50, action: "explore", label: "深入探索" },
     ],
   },
   {
@@ -103,6 +113,9 @@ WORLD.locations = [
       { id: "rumor", weight: 18, kind: "rumor" },
       { id: "npc", weight: 20, kind: "npc" },
       { id: "thug", weight: 14, kind: "fight", enemy: "bandit" },
+    ],
+    hotspots: [
+      { id: "market", icon: "🏪", x: 50, y: 55, action: "market", label: "采买" },
     ],
   },
   {
@@ -447,14 +460,14 @@ WORLD.continent = {
       desc: "天南以东的无尽海域，星罗万岛，妖修横行。路远得连舆图都画不全。" },
   ],
   routes: [
-    { from: "caixia", to: "qingniu" },
-    { from: "caixia", to: "huangfeng" },
-    { from: "qingniu", to: "yuejing" },
-    { from: "yuejing", to: "jiayuan" },
-    { from: "yuejing", to: "huangfeng" },
-    { from: "jiayuan", to: "tainangu" },
-    { from: "caixia", to: "yuejing" },
-    { from: "huangfeng", to: "yuanwu" },
+    { from: "caixia", to: "qingniu", terrain: "官道" },
+    { from: "caixia", to: "huangfeng", terrain: "山道" },
+    { from: "qingniu", to: "yuejing", terrain: "官道" },
+    { from: "yuejing", to: "jiayuan", terrain: "平原" },
+    { from: "yuejing", to: "huangfeng", terrain: "山道" },
+    { from: "jiayuan", to: "tainangu", terrain: "丘陵" },
+    { from: "caixia", to: "yuejing", terrain: "官道" },
+    { from: "huangfeng", to: "yuanwu", terrain: "山道" },
   ],
   /* —— L3 州（v147 §10.4「拆越国→镜/建/岚州」；v148 去格子：州块多边形不再渲染，州仅作分组）：凡俗政区。
    *   区分度：L3＝州名题字（点州名看一州城·宗），L4＝点状城/宗（点钉启程/下钻 L5）。

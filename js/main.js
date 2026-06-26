@@ -34,7 +34,13 @@ const Main = {
     UI.el("btn-chronicle").addEventListener("click", () => UI.openChronicle());
     UI.el("btn-codex").addEventListener("click", () => UI.openCodex());
     const btnAtlas = UI.el("btn-atlas");
-    if (btnAtlas) btnAtlas.addEventListener("click", () => UI.openAtlas());
+    if (btnAtlas) btnAtlas.addEventListener("click", () => UI.toggleWorldmap());
+    const zoomIn = UI.el("zoom-in");
+    if (zoomIn) zoomIn.addEventListener("click", () => UI._mapZoomIn());
+    const zoomOut = UI.el("zoom-out");
+    if (zoomOut) zoomOut.addEventListener("click", () => UI._mapZoomOut());
+    const hudToggle = UI.el("hud-toggle");
+    if (hudToggle) hudToggle.addEventListener("click", () => UI._toggleHudPanels());
     const btnBottle = UI.el("btn-bottle");
     if (btnBottle) btnBottle.addEventListener("click", () => UI.openBottle());
 
@@ -432,6 +438,7 @@ const Main = {
     if (layout && !layout.getAttribute("data-mtab")) layout.setAttribute("data-mtab", "stage");
     UI.renderNarrative();
     UI.renderAll();
+    UI.initRipple();
     if (State.data.bottle.unlocked) UI.showBottleButton();
     // 中途存档退出的大陆旅途：自动续走
     if (Engine.resumeJourney) setTimeout(() => Engine.resumeJourney(), 400);

@@ -98,12 +98,32 @@
 
     <!-- 主游戏界面：场景大图铺满全屏做底，HUD 浮于其上 -->
     <section id="screen-game" class="screen">
+      <!-- 地图主界面（全屏可缩放地图——P1 地图主界面化） -->
+      <div id="worldmap-canvas" class="worldmap-canvas" hidden>
+        <div id="worldmap-bg" class="worldmap-bg"></div>
+        <svg id="worldmap-svg" class="worldmap-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="worldmap-pins" class="worldmap-pins"></div>
+        <div id="worldmap-labels" class="worldmap-labels"></div>
+        <div id="avatar-pin" class="avatar-pin" hidden>
+          <div class="avatar-pin-dot"></div>
+          <div class="avatar-pin-ring"></div>
+        </div>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoom-in" title="放大">＋</button>
+          <button class="zoom-btn" id="zoom-out" title="缩小">－</button>
+        </div>
+        <button class="hud-toggle" id="hud-toggle" title="切换面板" hidden>☰</button>
+        <div class="worldmap-hint" id="worldmap-hint"></div>
+        <div id="journey-status" class="journey-status" hidden></div>
+      </div>
+
       <!-- 场景层（全屏底）-->
       <div id="scene-stage" class="scene-stage">
         <!-- 远景气层（2.5D 纵深·空气透视）：data-depth 时点亮，慢于背景半拍漂移 -->
         <div class="scene-far" aria-hidden="true"></div>
         <div id="scene-bg" class="scene-bg"></div>
         <div class="scene-veil"></div>
+        <div class="scene-season" aria-hidden="true"></div>
         <!-- 此处由 Env.apply 动态插入 .scene-tint / .scene-weather（染色/天气，z:2）-->
         <!-- 前景框层（2.5D 纵深·近景遮挡）：data-fg 驱动，压在染色之上＝不被染、快于背景漂移 -->
         <div class="scene-fg" aria-hidden="true"></div>
@@ -122,6 +142,7 @@
         <div class="char-brief">
           <span class="game-logo">凡人修仙传</span>
           <span id="top-time" class="t-realm">——</span>
+          <div id="month-bar" class="month-bar"></div>
         </div>
         <div class="topbar-actions">
           <button id="btn-atlas" class="btn btn-mini" title="天下舆图 · 人界→大区→国别→据点">舆图</button>
@@ -208,6 +229,12 @@
           <div id="choices" class="choices"></div>
         </section>
       </main>
+
+      <!-- 据点级行动 dock（P2：Z5 时从底部滑出，复用 renderActions 逻辑） -->
+      <div id="action-dock" class="action-dock" hidden>
+        <div class="action-dock-grip"></div>
+        <div id="dock-actions" class="dock-actions"></div>
+      </div>
 
       <!-- 手机底部分页栏（窄屏显示，桌面隐藏）-->
       <nav class="mobile-tabs" id="mobile-tabs">
@@ -355,6 +382,10 @@
     <!-- 弹窗容器 -->
     <div id="modal-overlay" class="modal-overlay" hidden>
       <div id="modal" class="modal"></div>
+    </div>
+    <!-- 底部 sheet（轻量信息面板，不遮挡场景） -->
+    <div id="sheet-overlay" class="sheet-overlay" hidden>
+      <div id="bottom-sheet" class="bottom-sheet"></div>
     </div>
     <!-- 浮动提示 -->
     <div id="toast" class="toast" hidden></div>

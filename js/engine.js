@@ -549,6 +549,10 @@ const Engine = {
     if (State.data.combat) { this.toast("酣战之中，无暇他顾"); return; }
     const s = State.data;
 
+    // L3: 行动过程叠层动画
+    const _overlayMap = { cultivate: "meditate", rest: "meditate", gather: "gather", explore: "explore", adventure: "explore", alchemy: "meditate", investigate: "explore", spar: "explore" };
+    if (_overlayMap[action] && UI._playActionOverlay) UI._playActionOverlay(_overlayMap[action]);
+
     if (action === "cultivate") { UI.openSeclusion(); return; }
     else if (action === "adventure") this.adventure();
     else if (action === "rest") this.rest();
@@ -2151,7 +2155,8 @@ const Engine = {
     const gateMsg = node.gate ? node.gate(s) : null;
     if (gateMsg) { this.toast(`道途未通：${gateMsg}`, true); return; }
     const months = Math.max(1, node.months || 2);
-    s.journey = { to: nodeId, toName: node.name, leg: 0, total: months };
+    const curNode = C.nodes.find(n => (n.locs || []).includes(s.location));
+    s.journey = { to: nodeId, toName: node.name, leg: 0, total: months, from: curNode ? curNode.id : null };
     this.log(`你收拾行囊，踏上去「${node.name}」的路——约${months}月行程。江湖路远，晓行夜宿。`, "event");
     this.toast(`启程：${node.name}`);
     UI.closeModal();
@@ -2159,7 +2164,7 @@ const Engine = {
     this._journeyLeg();
   },
 
-  // 走一段（1月）。平安则续走；遇事则停下弹抉择（选完自动续走）；走完即到达。
+  // 走一段（1月）。每月主动抉择：赶路/扎营搜寻/采药/打听/跟商队（P0·旅途即内容升级）
   _journeyLeg() {
     const s = State.data;
     const j = s.journey;
@@ -2168,26 +2173,202 @@ const Engine = {
     j.leg += 1;
     this.passTime(1);
     if (s.combat || s.pendingEvent) { State.save(); UI.renderAll(); return; }   // 旅途被世界打断（剧情/战斗）：事毕由钩子续走
-    // 40% 遇事，60% 平安
-    if (Math.random() < 0.4) {
+    // 旅途行动面板：每月主动抉择
+    this._pendingFortune = this._buildJourneyPanel(j);
+    this.log(`【旅途】第${j.leg}/${j.total}月：行至半途，须择路而行。`, "sys");
+    State.save();
+    UI.renderAll();
+    UI.openFortune(this._pendingFortune);
+  },
+
+  // 旅途行动面板构建（P0）
+  _buildJourneyPanel(j) {
+    const s = State.data;
+    const C = WORLD.continent;
+    const fromNode = C.nodes.find(n => n.id === j.from);
+    const route = C.routes.find(r =>
+      (r.from === j.from && r.to === j.to) ||
+      (r.from === j.to && r.to === j.from)
+    );
+    const terrain = (route && route.terrain) || "官道";
+    j.terrain = terrain;
+
+    const terrainDesc = {
+      "山道": "山路崎岖，峰峦叠嶂——灵草隐于崖壁，野兽出没林间。",
+      "官道": "官道平坦，车马往来——行脚商旅络绎不绝，消息也灵通些。",
+      "平原": "旷野平畴，一览无余——路好走，却也少了藏身之处。",
+      "丘陵": "丘陵起伏，林木葱茏——说不准哪里藏着好东西，也说不准哪里蹿出什么来。",
+    };
+
+    const choices = [];
+
+    // 1. 赶路（兼程前进）
+    choices.push({
+      text: "赶路（兼程前进）",
+      hint: "快速推进，可能遭遇旅途事件",
+      effect: (s) => Engine._journeyActionTravel(s, j),
+    });
+
+    // 2. 扎营搜寻（探查四周）
+    choices.push({
+      text: "扎营搜寻（探查四周）",
+      hint: "耗灵力4，可能发现物资或遭遇妖兽",
+      cond: (s) => s.spirit >= 4,
+      effect: (s) => Engine._journeyActionScout(s, j),
+    });
+
+    // 3. 采药（沿途采集）
+    choices.push({
+      text: "采药（沿途采集）",
+      hint: "耗灵力2，采集灵草",
+      cond: (s) => s.spirit >= 2,
+      effect: (s) => Engine._journeyActionGather(s, j),
+    });
+
+    // 4. 打听风闻（留意消息）
+    choices.push({
+      text: "打听风闻（留意消息）",
+      hint: "在途经之处打听消息",
+      effect: (s) => Engine._journeyActionRumor(s, j),
+    });
+
+    // 5. 跟商队（结伴同行）
+    choices.push({
+      text: "跟商队（结伴同行）",
+      hint: "耗纹银3，安全且心境回升",
+      cond: (s) => s.silver >= 3,
+      effect: (s) => Engine._journeyActionCaravan(s, j),
+    });
+
+    return {
+      title: `旅途 · 第${j.leg}/${j.total}月`,
+      text: `从「${fromNode ? fromNode.name : "出发地"}」往「${j.toName}」——${terrainDesc[terrain] || terrainDesc["官道"]}`,
+      choices,
+    };
+  },
+
+  // 旅途行动：赶路
+  _journeyActionTravel(s, j) {
+    // 25% 概率触发旅途事件（交互式，复用 _JOURNEY_EVENTS 池）
+    if (Math.random() < 0.25) {
       const pool = this._JOURNEY_EVENTS.filter(e => !e.cond || e.cond(s));
       const sum = pool.reduce((a, e) => a + (e.weight || 10), 0);
       let r = Math.random() * sum, pick = pool[0];
       for (const e of pool) { r -= (e.weight || 10); if (r <= 0) { pick = e; break; } }
-      this._pendingFortune = {
-        title: `旅途 · ${pick.title}`, text: pick.text,
+      this._pendingJourneyEvent = {
+        title: `旅途 · ${pick.title}`,
+        text: pick.text,
         choices: pick.choices.filter(c => !c.cond || c.cond(s)).map(c => ({ text: c.text, effect: c.effect })),
       };
-      this.log(`【旅途】第${j.leg}月：${pick.title}。`, "sys");
-      State.save();
-      UI.renderAll();
-      UI.openFortune(this._pendingFortune);
-      return;   // 等玩家抉择，chooseFortune 钩子续走
+      return { text: "你兼程赶路，行至一处——", kind: "sys" };
     }
-    this.log(`【旅途】第${j.leg}月：晓行夜宿，一路无话。${j.toName}又近了些。`, "sys");
-    State.save();
-    UI.renderAll();
-    this._journeyLeg();
+    // 平安推进
+    s.mood = clamp(s.mood - 2, 0, s.moodMax);
+    const scenes = [
+      "晓行夜宿，一路无话。",
+      "道上行人渐稀，你独自走了半日，只有山雀相伴。",
+      "日头偏西，你寻了处避风的山坳歇脚，明日再行。",
+      "沿途风光平淡，偶尔掠过几只惊起的飞鸟。",
+      "你脚下不停，翻过一道坡，远处山色渐近。",
+    ];
+    return { text: scenes[Math.floor(Math.random() * scenes.length)] + `「${j.toName}」又近了些。`, kind: "sys" };
+  },
+
+  // 旅途行动：扎营搜寻
+  _journeyActionScout(s, j) {
+    s.spirit = clamp(s.spirit - 4, 0, State.realm().spMax);
+    const terrain = j.terrain || "官道";
+    const roll = Math.random();
+    const beastChance = terrain === "山道" ? 0.28 : terrain === "丘陵" ? 0.22 : 0.15;
+    const herbChance = terrain === "山道" ? 0.35 : terrain === "丘陵" ? 0.30 : 0.25;
+
+    if (roll < beastChance) {
+      // 妖兽遭遇——山道出灵狼，官道出山贼
+      const enemy = terrain === "山道" ? "wild_wolf" : "bandit";
+      this._fortuneFight = enemy;
+      return { text: terrain === "山道" ? "你在林中搜寻时，灌木丛猛然炸开——一头灵狼龇牙扑来！" : "你扎营探查时，几个拿刀的汉子从林子里钻出来——剪径的毛贼！", kind: "bad" };
+    }
+    if (roll < beastChance + herbChance) {
+      // 发现物资
+      const n = 1 + Math.floor(Math.random() * 2);
+      State.give("lingcao", n);
+      if (terrain === "山道" && Math.random() < 0.3) {
+        State.give("duyao_cao", 1);
+        return { text: `你在崖壁缝隙中寻得灵草×${n}，另采到一株毒草——山道险峻，好东西也多。（灵草+${n}，毒草+1）`, kind: "good" };
+      }
+      return { text: `你四处探查，寻得灵草×${n}。识货的眼睛，走到哪都饿不着。`, kind: "good" };
+    }
+    // 无所获
+    s.mood = clamp(s.mood - 1, 0, s.moodMax);
+    return { text: "你仔细搜寻了四周，除了一些寻常草木，并无特别发现。", kind: "sys" };
+  },
+
+  // 旅途行动：采药
+  _journeyActionGather(s, j) {
+    s.spirit = clamp(s.spirit - 2, 0, State.realm().spMax);
+    const terrain = j.terrain || "官道";
+    s.skills = s.skills || { alchemy: 0, scouting: 0 };
+    s.skills.alchemy = (s.skills.alchemy || 0) + 1;
+    const bonus = Math.floor((s.skills.alchemy || 0) / 8);
+    let n = 1 + Math.floor(Math.random() * 2) + bonus;
+    if (terrain === "山道") n += 1;
+    if (terrain === "平原") n = Math.max(1, n - 1);
+    State.give("lingcao", n);
+    if (terrain === "山道" && Math.random() < 0.25) {
+      State.give("duyao_cao", 1);
+      this.log(`你在山道崖壁间采得灵草×${n}、毒草×1。山野灵药丰富，不虚此行。（药理+1）`, "good");
+      return { text: `山道旁灵草丰茂——灵草×${n}，另得毒草×1。药理+1。`, kind: "good" };
+    }
+    this.log(`你沿途采集灵草×${n}，可投入小绿瓶催熟。（药理+1）`, "good");
+    return { text: `你放慢脚步，沿途留意药草——灵草×${n}。药理+1。`, kind: "good" };
+  },
+
+  // 旅途行动：打听风闻
+  _journeyActionRumor(s, j) {
+    const terrain = j.terrain || "官道";
+    const roll = Math.random();
+    // 官道更容易打听到消息
+    const rumorChance = terrain === "官道" ? 0.65 : terrain === "平原" ? 0.55 : 0.40;
+    const npcChance = terrain === "官道" ? 0.20 : 0.10;
+
+    if (roll < npcChance) {
+      // 遇到 NPC
+      const npc = WORLD.randomNpc ? WORLD.randomNpc(null, s) : null;
+      if (npc) {
+        const isNew = this.meetNpc(npc.id);
+        const line = (npc.lines && npc.lines.length) ? npc.lines[Math.floor(Math.random() * npc.lines.length)] : (npc.line || "");
+        this.log(`途中偶遇「${npc.name}」（${npc.role}）。${line ? npc.name + "道：「" + line + "」" : ""}${isNew ? "——初见记入图鉴。" : ""}`, "event");
+        return { text: `你在歇脚处遇到一位行旅之人——「${npc.name}」，${npc.role}。${line ? "他道：「" + line + "」" : ""}`, kind: "event" };
+      }
+    }
+    if (roll < npcChance + rumorChance) {
+      // 听到传闻
+      const rumor = this._randomRumor();
+      this.log(`【旅途风闻】${rumor}`, "sys",
+        { label: "旅途风闻", prompt: "在旅途中听到一句市井传闻，写一句即可，要符合当下世道：" });
+      return { text: rumor, kind: "sys" };
+    }
+    // 没打听到什么
+    s.mood = clamp(s.mood - 1, 0, s.moodMax);
+    return { text: "你向路过的行脚商打听了一圈，都是些鸡毛蒜皮的事——没什么值得留意的。", kind: "sys" };
+  },
+
+  // 旅途行动：跟商队
+  _journeyActionCaravan(s, j) {
+    s.silver = Math.max(0, s.silver - 3);
+    s.mood = clamp(s.mood + 5, 0, s.moodMax);
+    // 5% 概率遭遇劫匪（但商队有护卫，战斗更轻松）
+    if (Math.random() < 0.05) {
+      this._fortuneFight = "bandit";
+      return { text: "商队行至一处山口，几个毛贼拦住去路——商队护卫拔刀在前，你从旁策应！", kind: "bad" };
+    }
+    const scenes = [
+      "你随商队一路同行，车马辚辚，倒也安稳。护卫们粗声大气地聊着江湖事，你听了一耳朵。",
+      "商队老板是个健谈的胖子，一路上讲了不少沿途风物——什么地方的水甜、什么地方的匪多，都门儿清。",
+      "你跟着商队走了半日，混在货车间不显山不露水。到得驿站，老板还请你喝了碗热汤。",
+      "夜宿商队营地，篝火旁听行脚商讲外头的新鲜事——修仙人的传说越传越离谱，你听着暗自好笑。",
+    ];
+    return { text: scenes[Math.floor(Math.random() * scenes.length)] + `（纹银-3，心境+5）`, kind: "good" };
   },
 
   _journeyArrive() {
@@ -2202,6 +2383,8 @@ const Engine = {
     if (node && !s.visitedNodes.includes(node.id)) s.visitedNodes.push(node.id);
     this.log(`风尘仆仆，你终于抵达「${j.toName}」。`, "good");
     if (typeof Sfx !== "undefined") Sfx.play("chime");
+    // 旅途抵达：从地图切到场景（P3）
+    if (typeof UI !== "undefined" && UI._journeyArriveTransition) UI._journeyArriveTransition();
     // 有地区层的节点：落脚其首地点
     if (node && node.locs && node.locs.length) {
       s.location = node.locs[0];
@@ -2310,7 +2493,7 @@ const Engine = {
       this._afterFortuneHook = null;
       const back = WORLD.continent.nodes.find(n => (n.locs || []).includes("yaolu"));
       if (back) {
-        s.journey = { to: back.id, toName: back.name, leg: 0, total: back.months || 1, back: true };
+        s.journey = { to: back.id, toName: back.name, leg: 0, total: back.months || 1, back: true, from: "qingniu" };
         this.log(`乡情已了，你辞别爹娘，踏上归山之路。`, "sys");
         State.save();
         this._journeyLeg();
@@ -2441,28 +2624,7 @@ const Engine = {
     if (!s.yiwenSeen) s.yiwenSeen = [];
     if (id && !s.yiwenSeen.includes(id)) s.yiwenSeen.push(id);
   },
-  // 异闻录卡态派生（恒在原则）：由既有状态推导一条异闻的图鉴卡态——
-  //   "done" 已了（已伏诛/已得/已了结）｜ "active" 风声在耳（已听闻/线索进行中）｜ "unseen" 未闻（给引导）。
-  // 不新增权威状态：beastRumor→slainBeasts，ripple→doneRipples，item→inventory/ledger，story→flags；
-  //   外加 doneFlag 兜底（材料被消耗、情报一次性时避免 count 归零误判）与 s.yiwenSeen[] 听闻留痕。
-  _yiwenState(entry, s) {
-    const link = entry.link || {};
-    let done = false;
-    if (entry.doneFlag && s.flags && s.flags[entry.doneFlag]) done = true;
-    if (!done) {
-      if (link.kind === "beastRumor") done = (s.slainBeasts || []).includes(link.id);
-      else if (link.kind === "ripple") done = (s.doneRipples || []).includes(link.id);
-      else if (link.kind === "item") done = (State.count(link.id) > 0) || !!(s.ledger && s.ledger[link.id])
-        || ((s.foundMaterials || []).includes(entry.id));
-      else if (link.kind === "story") done = !!(s.flags && s.flags[link.id]);
-    }
-    if (done) return "done";
-    let active = (s.yiwenSeen || []).includes(entry.id);
-    if (!active && link.kind === "beastRumor") active = (s.beastRumor === link.id);
-    if (!active && link.kind === "ripple") active = !!(s.ripple && s.ripple.id === link.id);
-    if (!active && s.materialRumor === entry.id) active = true;
-    return active ? "active" : "unseen";
-  },
+
   // 异闻妖王：听闻其名（投放）——威名先至，相遇在后。beastIds：限定可投放的异闻 id（区域投放）
   _maybeBeastRumor(chance, beastIds) {
     const s = State.data;
@@ -2941,6 +3103,16 @@ const Engine = {
       this._fortuneFight = null;
       State.save();
       this.startEncounterFight(enemy);
+      return;
+    }
+    // 旅途行动触发了后续事件（赶路遇事）：弹出事件面板，选完后继续旅途
+    if (this._pendingJourneyEvent) {
+      const ev = this._pendingJourneyEvent;
+      this._pendingJourneyEvent = null;
+      this._pendingFortune = ev;
+      State.save();
+      UI.renderAll();
+      UI.openFortune(ev);
       return;
     }
     // 摊位重开：连续交易类奇遇（钟吾的摊——买完一样还能再买）

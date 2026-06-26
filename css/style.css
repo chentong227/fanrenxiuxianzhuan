@@ -202,6 +202,235 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 #screen-game.active { display: block; position: relative; height: 100vh; height: 100dvh; overflow: hidden; }
 #screen-game .topbar { position: absolute; top: 0; left: 0; right: 0; }
 
+/* ===== 地图主界面（P1：全屏可缩放地图替代弹窗） ===== */
+.worldmap-canvas {
+  position: absolute; inset: 0; z-index: 1;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 40%, #1a2230 0%, #0e1219 70%, #080a0f 100%);
+}
+.worldmap-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  opacity: 0.35;
+}
+.worldmap-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  transition: viewBox 0.6s ease;
+}
+.worldmap-pins, .worldmap-labels {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.worldmap-pins { z-index: 3; }
+.worldmap-labels { z-index: 4; }
+
+/* 地图据点 pin */
+.wm-pin {
+  position: absolute; transform: translate(-50%, -50%);
+  pointer-events: auto; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.wm-pin-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--gold); border: 2px solid rgba(255,255,255,.3);
+  box-shadow: 0 0 8px rgba(201,169,106,.5);
+  transition: all 0.2s;
+}
+.wm-pin.here .wm-pin-dot {
+  background: var(--jade-bright); border-color: var(--jade);
+  box-shadow: 0 0 12px rgba(95,184,154,.7);
+  width: 14px; height: 14px;
+}
+.wm-pin.gated .wm-pin-dot {
+  background: #555; border-color: rgba(255,255,255,.15);
+  box-shadow: none;
+}
+.wm-pin.silhouette .wm-pin-dot {
+  background: transparent; border-style: dashed; border-color: rgba(255,255,255,.2);
+}
+.wm-pin:hover .wm-pin-dot {
+  transform: scale(1.3);
+  box-shadow: 0 0 16px rgba(201,169,106,.8);
+}
+.wm-pin-label {
+  font-size: 11px; color: var(--ink); white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8);
+  letter-spacing: 1px;
+}
+.wm-pin.here .wm-pin-label { color: var(--jade-bright); }
+.wm-pin.gated .wm-pin-label { color: var(--ink-dim); }
+
+/* 地图标签（州名/区块名） */
+.wm-label {
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: 13px; color: var(--gold); letter-spacing: 3px;
+  text-shadow: 0 1px 4px rgba(0,0,0,.9);
+  pointer-events: auto; cursor: pointer;
+  opacity: 0.7; transition: opacity 0.2s;
+}
+.wm-label:hover { opacity: 1; }
+.wm-label.sel { color: var(--gold-bright); opacity: 1; }
+
+/* SVG 路线 */
+.wm-route {
+  stroke: rgba(201,169,106,.25); stroke-width: 0.3;
+  stroke-dasharray: 1.5 1; fill: none;
+}
+.wm-route.trod {
+  stroke: rgba(201,169,106,.5); stroke-dasharray: none;
+  stroke-width: 0.4;
+}
+
+/* avatar pin（韩立头像在地图上） */
+.avatar-pin {
+  position: absolute; transform: translate(-50%, -50%);
+  z-index: 5; pointer-events: none;
+  transition: left 1.5s ease, top 1.5s ease;
+}
+.avatar-pin-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--jade-bright);
+  border: 2px solid #fff;
+  box-shadow: 0 0 12px rgba(95,184,154,.8), 0 2px 6px rgba(0,0,0,.5);
+}
+.avatar-pin-ring {
+  position: absolute; top: 50%; left: 50%;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid rgba(95,184,154,.4);
+  transform: translate(-50%, -50%);
+  animation: avatar-pulse 2s ease-out infinite;
+}
+@keyframes avatar-pulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+}
+
+/* 缩放控制 */
+.zoom-controls {
+  position: absolute; right: 14px; bottom: 80px;
+  z-index: 10; display: flex; flex-direction: column; gap: 6px;
+}
+.zoom-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(14,11,8,.85); color: var(--gold);
+  border: 1px solid var(--border); font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.zoom-btn:hover { background: rgba(201,169,106,.15); border-color: var(--gold); }
+.zoom-btn:active { transform: scale(0.92); }
+
+/* 地图提示文字 */
+.worldmap-hint {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  z-index: 10; font-size: 12px; color: var(--ink-dim);
+  background: rgba(14,11,8,.7); padding: 6px 14px; border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  white-space: nowrap; pointer-events: none;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+
+/* 地图模式下的 HUD 调整 */
+.worldmap-canvas:not([hidden]) ~ .layout { z-index: 8; }
+.worldmap-canvas:not([hidden]) ~ .topbar { z-index: 14; }
+
+/* ===== Z4↔Z5 交叉淡入淡出（P2：场景图与地图间的平滑过渡） ===== */
+#scene-stage {
+  transition: opacity 0.5s ease;
+}
+.worldmap-canvas {
+  transition: opacity 0.5s ease;
+}
+.worldmap-canvas.fade-out { opacity: 0; pointer-events: none; }
+#scene-stage.fade-out { opacity: 0; pointer-events: none; }
+
+/* ===== 据点级行动 dock（P2：Z5 时从底部滑出） ===== */
+.action-dock {
+  position: absolute; left: 50%; bottom: 14px;
+  transform: translateX(-50%) translateY(100%);
+  z-index: 12; width: min(560px, 92vw);
+  background: rgba(14,11,8,.88);
+  border: 1px solid var(--border);
+  border-radius: 14px 14px 10px 10px;
+  padding: 6px 14px 14px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,.5);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  opacity: 0;
+}
+.action-dock.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+.action-dock-grip {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 0 auto 8px;
+}
+.dock-actions {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+}
+.dock-actions .btn-action {
+  flex: 0 1 auto; width: auto; min-width: 100px;
+  padding: 10px 16px; font-size: 14px; letter-spacing: 2px;
+}
+.dock-actions .act-hint { width: 100%; text-align: center; }
+
+/* ===== P4: 地图模式下的 HUD 浮窗化 ===== */
+/* 地图可见时：layout 变为浮在地图上的半透明面板 */
+.worldmap-canvas:not([hidden]) ~ .layout {
+  position: absolute; inset: auto; z-index: 9;
+  display: grid;
+  grid-template-columns: 282px minmax(0, 1fr) 372px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px; padding: 56px 14px calc(80px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+  background: transparent;
+}
+.worldmap-canvas:not([hidden]) ~ .layout > * {
+  pointer-events: auto;
+  background: rgba(14,11,8,.82);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+/* 地图模式：侧栏可折叠（默认展开，加 .collapsed 收起） */
+.worldmap-canvas:not([hidden]) ~ .layout .side-rail.collapsed {
+  width: 0; overflow: hidden; opacity: 0; pointer-events: none; padding: 0; margin: 0; border: 0;
+}
+.worldmap-canvas:not([hidden]) ~ .layout .stage-col.collapsed {
+  width: 0; overflow: hidden; opacity: 0; pointer-events: none; padding: 0; margin: 0; border: 0;
+}
+/* 地图模式：mid-col 只在 Z5 时需要（dock 已替代），Z1~Z4 时隐藏行动栏 */
+.worldmap-canvas:not([hidden]) ~ .layout .mid-col {
+  display: none;
+}
+
+/* HUD 切换按钮（P4：地图模式时显示/隐藏侧栏） */
+.hud-toggle {
+  position: absolute; left: 14px; bottom: 14px; z-index: 13;
+  width: 36px; height: 36px; border-radius: 8px;
+  background: rgba(14,11,8,.85); border: 1px solid var(--border);
+  color: var(--ink); font-size: 16px; cursor: pointer;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: none;
+}
+.worldmap-canvas:not([hidden]) .hud-toggle { display: block; }
+.hud-toggle:hover { color: var(--gold-bright); border-color: var(--gold); }
+
+/* 旅途状态浮标（P3：地图上显示旅途进度） */
+.journey-status {
+  position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+  z-index: 11; padding: 6px 16px; border-radius: 20px;
+  background: rgba(14,11,8,.85); border: 1px solid var(--gold);
+  color: var(--gold-bright); font-size: 13px; letter-spacing: 1px;
+  white-space: nowrap; pointer-events: none;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 2px 12px rgba(0,0,0,.4);
+  animation: journeyPulse 2s ease-in-out infinite;
+}
+@keyframes journeyPulse {
+  0%, 100% { box-shadow: 0 2px 12px rgba(0,0,0,.4); }
+  50% { box-shadow: 0 2px 16px rgba(212,176,106,.4); }
+}
+
 .layout {
   position: absolute; inset: 0; z-index: 8;
   display: grid;
@@ -293,6 +522,191 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .bar-fill.hp { background: linear-gradient(90deg, #8a3a3a, var(--red)); }
 .bar-fill.mood { background: linear-gradient(90deg, #7a5aa8, var(--purple)); }
 .bar-fill.demon { background: linear-gradient(90deg, #4a1a1a, #c93838); }
+
+/* 数值跳动 + 浮动增益（L1a 体验升级） */
+.bar-label .num-pop { animation: numPop .5s ease; }
+@keyframes numPop {
+  0% { transform: scale(1); color: var(--ink-dim); }
+  30% { transform: scale(1.25); color: var(--gold-bright); }
+  100% { transform: scale(1); color: var(--ink-dim); }
+}
+.float-gain-toast {
+  position: fixed; top: 30%; left: 50%; transform: translateX(-50%);
+  color: var(--jade-bright); font-size: 18px; font-weight: 700;
+  text-shadow: 0 0 8px rgba(0,0,0,.6); pointer-events: none; z-index: 200;
+  animation: floatUpToast 1.4s ease-out forwards;
+}
+@keyframes floatUpToast {
+  0% { opacity: 0; transform: translate(-50%, 10px) scale(.9); }
+  15% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
+  30% { transform: translate(-50%, -4px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -40px) scale(1); }
+}
+
+/* ===== L3 行动反馈：点击 ripple + 过程动画 ===== */
+.btn-action, .btn-secondary, .btn-primary {
+  position: relative; overflow: hidden;
+}
+.ripple {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  background: rgba(255,255,255,.3);
+  transform: scale(0); animation: rippleSpread .5s ease-out;
+}
+@keyframes rippleSpread {
+  to { transform: scale(3); opacity: 0; }
+}
+
+/* 行动过程叠层（修炼打坐/采药绿光/探索迷雾） */
+.action-overlay {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  animation: actOverlay .9s ease-in-out forwards;
+}
+.action-overlay.meditate {
+  background: radial-gradient(circle at 50% 70%, rgba(126,185,142,.15), transparent 60%);
+}
+.action-overlay.meditate::after {
+  content: "🧘"; font-size: 48px; opacity: 0;
+  animation: actIcon .9s ease-in-out forwards;
+}
+.action-overlay.gather {
+  background: radial-gradient(circle at 50% 70%, rgba(100,200,100,.2), transparent 50%);
+}
+.action-overlay.gather::after {
+  content: "🌿"; font-size: 36px; opacity: 0;
+  animation: actIcon .8s ease-in-out forwards;
+}
+.action-overlay.explore {
+  background: radial-gradient(circle at 50% 50%, rgba(180,200,220,.15), transparent 70%);
+}
+.action-overlay.explore::after {
+  content: "🌫"; font-size: 42px; opacity: 0;
+  animation: actIcon 1s ease-in-out forwards;
+}
+@keyframes actOverlay {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes actIcon {
+  0% { opacity: 0; transform: scale(.5) translateY(10px); }
+  30% { opacity: .8; transform: scale(1.2) translateY(0); }
+  70% { opacity: .8; transform: scale(1) translateY(-4px); }
+  100% { opacity: 0; transform: scale(1) translateY(-12px); }
+}
+
+/* ===== L2 场景热点：可点击热区替代行动按钮 ===== */
+.scene-hotspot {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: rgba(20,20,30,.55); border: 1px solid rgba(255,255,255,.15);
+  border-radius: 50%; width: 44px; height: 44px;
+  cursor: pointer; z-index: 4; padding: 0;
+  transition: transform .2s ease, box-shadow .2s ease;
+  animation: hotspotPulse 2.5s ease-in-out infinite;
+}
+.scene-hotspot:hover, .scene-hotspot:active {
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 0 12px rgba(126,185,142,.5);
+}
+.scene-hotspot .sh-icon { font-size: 18px; line-height: 1; }
+.scene-hotspot .sh-label {
+  font-size: 9px; color: var(--ink-dim); white-space: nowrap;
+  position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+  text-shadow: 0 1px 3px rgba(0,0,0,.8);
+}
+@keyframes hotspotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(126,185,142,.3); }
+  50% { box-shadow: 0 0 0 6px rgba(126,185,142,0); }
+}
+
+/* ===== 底部 sheet（L1b：轻量信息面板，不遮挡场景） ===== */
+
+/* ===== 月历条 + 季节染色（L4：时间流逝可感知） ===== */
+.month-bar {
+  display: flex; gap: 2px; margin-top: 4px; height: 16px;
+}
+.month-cell {
+  width: 14px; height: 6px; border-radius: 2px;
+  background: var(--bg-panel-2); border: 1px solid var(--border-soft);
+  transition: background .3s ease, transform .3s ease;
+}
+.month-cell.active {
+  background: var(--gold); border-color: var(--gold-bright);
+  transform: scaleY(1.6);
+}
+.month-cell.spring { border-color: rgba(126,185,142,.4); }
+.month-cell.summer { border-color: rgba(201,111,95,.4); }
+.month-cell.autumn { border-color: rgba(212,176,106,.4); }
+.month-cell.winter { border-color: rgba(111,159,200,.4); }
+
+/* 季节染色：叠在 scene-tint 之上（z-index:2.5）*/
+.scene-season {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  opacity: 0; transition: opacity 1.5s ease;
+}
+.scene-stage[data-season="spring"] .scene-season {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(126,185,142,.06) 0%, rgba(100,160,120,.04) 100%);
+}
+.scene-stage[data-season="summer"] .scene-season {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(201,159,95,.05) 0%, rgba(180,140,80,.03) 100%);
+}
+.scene-stage[data-season="autumn"] .scene-season {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(212,176,106,.08) 0%, rgba(180,140,70,.05) 100%);
+}
+.scene-stage[data-season="winter"] .scene-season {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(111,139,180,.07) 0%, rgba(90,120,160,.05) 100%);
+}
+
+/* ===== 底部 sheet（L1b：轻量信息面板，不遮挡场景） ===== */
+.sheet-overlay {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(0,0,0,0.25);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fadein 0.2s ease;
+}
+.bottom-sheet {
+  width: 460px; max-width: 94vw; max-height: 65vh; overflow-y: auto;
+  background: var(--bg-panel); border: 1px solid var(--border-soft);
+  border-bottom: none; border-radius: 12px 12px 0 0;
+  padding: 20px 22px calc(16px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 32px rgba(0,0,0,.5);
+  animation: sheetUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.bottom-sheet h2 {
+  color: var(--gold-bright); font-size: 18px; letter-spacing: 2px;
+  margin-bottom: 10px; padding-right: 28px;
+}
+.bottom-sheet .sheet-close {
+  position: absolute; top: 12px; right: 16px;
+  color: var(--ink-faint); font-size: 20px; cursor: pointer;
+  line-height: 1; transition: color .15s;
+}
+.bottom-sheet .sheet-close:hover { color: var(--gold); }
+.bottom-sheet .market-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--border-soft);
+}
+.bottom-sheet .market-item:last-child { border-bottom: none; }
+.bottom-sheet .modal-actions {
+  display: flex; flex-direction: column; gap: 8px; margin-top: 14px;
+}
+.bottom-sheet .choices { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.bottom-sheet .prep-list {
+  background: var(--bg-panel-2); border-radius: 8px; padding: 10px 12px; margin: 8px 0;
+}
+.bottom-sheet .prep-item {
+  display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px;
+}
 
 /* ===== 界面区（所在 + 地图 + 人物 + 行动）===== */
 .stage-place {
@@ -2401,6 +2815,8 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 @media (max-width: 1180px) {
   .layout { grid-template-columns: 244px minmax(0, 1fr) 300px; gap: 10px; padding: 52px 10px 10px; }
   html, body { font-size: 14px; }
+  .wm-pin-label { font-size: 10px; }
+  .wm-label { font-size: 11px; }
 }
 
 /* 桌面：底部分页栏隐藏 */
@@ -2424,6 +2840,33 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   .btn-more { display: inline-block; font-size: 15px; padding: 5px 12px; }
 
   /* （场景带/在场人物的手机覆盖规则在文件末尾——必须晚于桌面定义） */
+
+  /* 地图主界面·手机端：全屏地图 + 底部缩放控制 */
+  .worldmap-canvas { position: absolute; inset: 0; }
+  .zoom-controls { right: 10px; bottom: 70px; }
+  .zoom-btn { width: 34px; height: 34px; font-size: 16px; }
+  .wm-pin-label { font-size: 10px; letter-spacing: 0; }
+  .wm-label { font-size: 11px; letter-spacing: 2px; }
+  .worldmap-hint { font-size: 11px; bottom: 12px; }
+
+  /* 手机端隐藏 HUD 切换按钮（用底栏 tab 代替） */
+  .hud-toggle { display: none !important; }
+  .journey-status { top: 48px; font-size: 11px; padding: 4px 12px; }
+
+  /* 行动 dock·手机端：底部 sheet 风格 */
+  .action-dock {
+    width: 100vw; left: 0; bottom: 0;
+    border-radius: 14px 14px 0 0;
+    padding: 6px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .dock-actions .btn-action { min-width: 90px; padding: 9px 12px; font-size: 13px; }
+
+  /* 地图模式·手机端：全屏地图，HUD 隐藏（用底栏 tab 切换查看） */
+  .worldmap-canvas:not([hidden]) ~ .layout {
+    display: none !important;
+  }
+  /* 地图模式时 dock 在底栏之上 */
+  .action-dock.show { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
 
   /* HUD：场景带下方，分页滚动 */
   .layout {
