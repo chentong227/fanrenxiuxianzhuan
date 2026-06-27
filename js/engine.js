@@ -2625,6 +2625,21 @@ const Engine = {
     if (id && !s.yiwenSeen.includes(id)) s.yiwenSeen.push(id);
   },
 
+  // 异闻录卡态派生：done（已了）/ active（风声在耳）/ unseen（未闻）
+  _yiwenState(e, s) {
+    if (!e || !s) return "unseen";
+    const lk = e.link || {};
+    // done：doneFlag 优先（材料已消耗但 flag 为真）
+    if (e.doneFlag && s.flags && s.flags[e.doneFlag]) return "done";
+    if (lk.kind === "beastRumor" && (s.slainBeasts || []).includes(lk.id)) return "done";
+    if (lk.kind === "ripple" && (s.doneRipples || []).includes(lk.id)) return "done";
+    if (lk.kind === "item" && typeof State !== "undefined" && State.count(lk.id) > 0) return "done";
+    if (lk.kind === "story" && s.flags && s.flags[lk.id]) return "done";
+    // active：已听闻但未了
+    const seen = (s.yiwenSeen || []).includes(e.id);
+    return seen ? "active" : "unseen";
+  },
+
   // 异闻妖王：听闻其名（投放）——威名先至，相遇在后。beastIds：限定可投放的异闻 id（区域投放）
   _maybeBeastRumor(chance, beastIds) {
     const s = State.data;
