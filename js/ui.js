@@ -25,7 +25,7 @@ const UI = {
     if (this._rippleInited) return;
     this._rippleInited = true;
     document.addEventListener("click", e => {
-      const btn = e.target.closest(".btn-action, .btn-secondary, .btn-primary, .choice");
+      const btn = e.target.closest(".btn-action, .btn-secondary, .btn-primary, .choice, .scene-hotspot");
       if (!btn) return;
       const r = document.createElement("span");
       r.className = "ripple";
