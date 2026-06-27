@@ -379,18 +379,17 @@ const UI = {
     this._renderHotspots(loc);
   },
 
-  // L2: 在场景图上叠加可点击热点
+  // L2: 在场景图上叠加可点击热点（独立层，不与 pins 混）
   _renderHotspots(loc) {
     const s = State.data;
-    if (!loc.hotspots || loc.scene || s.pendingEvent || s.combat) return;
-    const pinsBox = this.el("scene-pins");
-    if (!pinsBox) return;
+    const layer = this.el("scene-hotspots");
+    if (!layer) return;
+    if (!loc.hotspots || loc.scene || s.pendingEvent || s.combat) { layer.innerHTML = ""; return; }
     const visible = loc.hotspots.filter(h => !h.cond || h.cond(s));
-    const html = visible.map(h =>
+    layer.innerHTML = visible.map(h =>
       `<button class="scene-hotspot" style="left:${h.x}%;top:${h.y}%" onclick="Engine.doAction('${h.action}')" title="${h.label}">
         <span class="sh-icon">${h.icon}</span><span class="sh-label">${h.label}</span>
       </button>`).join("");
-    pinsBox.insertAdjacentHTML("beforeend", html);
   },
 
   // 兼容旧调用（已由 renderSceneStage 取代）
@@ -789,6 +788,10 @@ const UI = {
       if (loc.home && loc.id === "huangfeng_gate" && State.data.flags.mojiao_resolved
         && State.count("xueshi_zhuyao") >= 4 && !State.data.flags.zhuji_lian_done) acts.unshift("liandan");
     }
+
+    // 有热点时不再渲染常规行动按钮（热点替代了它们），但保留限时窗口按钮
+    const hasHotspots = loc.hotspots && !loc.scene;
+    if (hasHotspots) acts = [];
 
     // 涟漪窗口：限时机会在对应地点浮现（过期即逝）
     let windowBtn = "";

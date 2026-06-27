@@ -597,6 +597,10 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 
 /* ===== L2 场景热点：可点击热区替代行动按钮 ===== */
+.scene-hotspots-layer {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+}
+.scene-hotspots-layer .scene-hotspot { pointer-events: auto; }
 .scene-hotspot {
   position: absolute; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center; gap: 2px;
