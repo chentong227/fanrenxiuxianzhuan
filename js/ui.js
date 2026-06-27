@@ -2890,6 +2890,14 @@ const UI = {
  this._mapFadeTimer = setTimeout(() => { canvas.hidden = true; }, 500);
  const hudBtn2 = this.el("hud-toggle");
  if (hudBtn2) hudBtn2.hidden = true;
+ // 恢复地点 BGM + 环境音
+ const loc = State.location();
+ if (loc && typeof Sfx !== "undefined" && Sfx.bgm && !State.data.combat) {
+   Sfx.bgm(this._bgmForLocation(loc));
+   const amb = (typeof Env !== "undefined") ? Env.ambientFor(loc) : null;
+   if (amb && Sfx.ambient) Sfx.ambient(amb);
+   else if (Sfx.ambientStop) Sfx.ambientStop();
+ }
     }
   },
 
@@ -2928,6 +2936,8 @@ const UI = {
       if (loc.home && loc.id === "huangfeng_gate" && s.flags.mojiao_resolved
         && State.count("xueshi_zhuyao") >= 4 && !s.flags.zhuji_lian_done) acts.unshift("liandan");
     }
+    // 有热点时 dock 也不显示常规行动按钮（热点替代了它们），但保留限时窗口
+    if (loc.hotspots && !loc.scene) acts = [];
     // 涟漪窗口
     let windowBtn = "";
     const rw = s.rippleWindow;

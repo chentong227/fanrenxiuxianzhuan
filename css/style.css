@@ -598,7 +598,8 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 
 /* ===== L2 场景热点：可点击热区替代行动按钮 ===== */
 .scene-hotspots-layer {
-  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  position: absolute; z-index: 4; pointer-events: none;
+  left: 306px; right: 396px; top: 110px; bottom: 27vh;
 }
 .scene-hotspots-layer .scene-hotspot { pointer-events: auto; }
 .scene-hotspot {
@@ -2869,6 +2870,9 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   .worldmap-canvas:not([hidden]) ~ .layout {
     display: none !important;
   }
+  .worldmap-canvas:not([hidden]) ~ .scene-stage {
+    display: none !important;
+  }
   /* 地图模式时 dock 在底栏之上 */
   .action-dock.show { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
 
@@ -4910,6 +4914,7 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 @media (max-width: 1180px) and (min-width: 761px) {
   .scene-head { left: 264px; }
   .scene-pins { left: 262px; right: 318px; }
+  .scene-hotspots-layer { left: 262px; right: 318px; }
   .locals { left: 262px; right: 318px; }
 }
 @media (max-width: 760px) {
@@ -4929,6 +4934,7 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   .scene-head .loc-name { font-size: 17px; letter-spacing: 2px; }
   .scene-head .loc-desc-inline { display: none; }
   .scene-pins { left: 4%; right: 4%; top: 24%; bottom: 18%; }
+  .scene-hotspots-layer { left: 4%; right: 4%; top: 24%; bottom: 18%; }
   /* 立绘居中铺底，按人数自适应缩放（--ln-n 由 renderLocals 写入），挤而不溢出视口 */
   .locals { left: 3%; right: 3%; bottom: 4px; gap: 6px; justify-content: center; flex-wrap: nowrap; overflow: hidden; }
   .ln-figure { height: clamp(46px, calc(64vw / var(--ln-n, 4)), 92px); }
