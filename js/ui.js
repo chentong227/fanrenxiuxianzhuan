@@ -341,6 +341,7 @@ const UI = {
     // 过场地点 / 待决剧情 / 战斗：不显示前往按钮（不能乱走）
     if (loc.scene || s.pendingEvent || s.combat) {
       pinsBox.innerHTML = ""; if (confirmBox) confirmBox.innerHTML = "";
+      this._renderHotspots(loc);   // 清除残留热点（_renderHotspots 内部会判断 scene/combat 并清空）
       return;
     }
 
@@ -6368,7 +6369,7 @@ const UI = {
           <button class="btn btn-secondary" onclick="UI._ceremonyEnd(false)">不动声色（深藏不露）</button>
           <button class="btn btn-ghost" onclick="UI._ceremonyEnd(true)">渐露锋芒（示人以真）</button>
         </div>
-        ${hidden > 0 || true ? `<div class="cer-note">藏拙：示人境界不变，他人小觑于你——关键一战亮出真修为，方有雷霆之势。</div>` : ""}
+        ${hidden > 0 ? `<div class="cer-note">藏拙：示人境界不变，他人小觑于你——关键一战亮出真修为，方有雷霆之势。</div>` : ""}
       </div>`;
     ov.classList.add("show");
   },

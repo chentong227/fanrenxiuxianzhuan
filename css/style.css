@@ -2574,9 +2574,9 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .recent-log .rl-tag { color: var(--gold); font-size: 11px; flex-shrink: 0; }
 .recent-log .rl-txt {
   color: var(--ink); flex: 1; min-width: 0;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.recent-log .rl-row.rl-latest .rl-txt { -webkit-line-clamp: 3; }
+.recent-log .rl-row.rl-latest .rl-txt { -webkit-line-clamp: 3; line-clamp: 3; }
 .recent-log .rl-txt.entry-good { color: var(--jade-bright); }
 .recent-log .rl-more { align-self: flex-end; color: var(--ink-faint); font-size: 11px; }
 .recent-log .rl-txt.entry-bad { color: var(--red); }
