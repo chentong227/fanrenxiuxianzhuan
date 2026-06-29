@@ -182,7 +182,9 @@
     doushouchang: { p: 1 }, leipeng_pofeng: { p: 1 }, jiu_ziling: { p: 1 },
     waihai_lie: { p: 1 }, jindan: { p: 1 },
     // stage beat 补缺：擂台/婴鲤兽场景底图（CG 文件已存在，补注册）
-    leitai: { p: 1 }, yingli: { p: 1 } };
+    leitai: { p: 1 }, yingli: { p: 1 },
+    // 初入星海篇·剧情 CG 补登记（资产 assets/cg/cg_*.png+_p 已在库，此前漏注册→剧情大图不显示走兜底）
+    wenqiang: { p: 1 }, chuhai: { p: 1 }, shijin: { p: 1 }, tianxing: { p: 1 }, ziliang: { p: 1 }, jieguan: { p: 1 }, jinkui: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };
