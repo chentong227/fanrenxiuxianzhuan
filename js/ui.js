@@ -2659,13 +2659,21 @@ const UI = {
       ? ms.map(m => `<div class="chron-item breakthrough"><span class="chron-t">${m.t}</span><b>${KIND_ICON[m.kind] || "·"} ${m.title}</b></div>`).join("")
       : `<div class="inv-empty">道途尚浅，来日方长。</div>`;
     // 前路：已知的未来=明牌的惦记（动漫党的欲望地图，只示意不剧透）
+    // 前路·已知的远方（明牌惦记）：达成线随境界/篇章推进点亮，远处目标始终保留 ≥2 个未达成的"望山"
+    // ——杜绝"已结丹却仍显黄枫谷筑基之路·前路遥遥"的过时惦记（三层惦记不空·上层须随进度刷新）。
+    const ri = s.realmIndex || 0;
+    const f = s.flags || {};
     const AHEAD = [
       { title: "眨眼剑法 · 大成", done: () => s.swordMastery },
-      { title: "练气七层 · 本篇圆满", done: () => s.realmIndex >= 6 },
-      { title: "升仙令 · 离门赴黄枫谷", done: () => s.flags.arc1_complete },
-      { title: "黄枫谷 · 筑基之路", done: () => false, far: true },
-      { title: "？？？ · 灵宠之缘", done: () => false, far: true },
-      { title: "乱星海 · 金雷竹", done: () => false, far: true },
+      { title: "练气七层 · 七玄门圆满", done: () => ri >= 6 },
+      { title: "升仙令 · 离门赴黄枫谷", done: () => f.arc1_complete },
+      { title: "三段筑基 · 凝就道基", done: () => ri >= 13 },
+      { title: "《青元剑诀》· 剑修主修", done: () => !!(s.techLayers && s.techLayers.qingyuan_sword) },
+      { title: "魔道争锋 · 京城血夜", done: () => f.arc3_complete, far: !(f.modao_invasion || f.yanjia_summoned) },
+      { title: "再别天南 · 重渡星海", done: () => f.arc4_complete, far: !f.arc3_complete },
+      { title: "初入星海 · 金丹大成", done: () => f.arc5_complete || ri >= 17, far: !(f.jiedan_complete || f.starsea_entered || f.arc4_complete) },
+      { title: "青竹蜂云剑 · 大庚剑阵", done: () => false, far: true },
+      { title: "元婴之路 · 问鼎天南", done: () => false, far: true },
     ];
     const aheadHtml = AHEAD.map(a => {
       const ok = a.done();
