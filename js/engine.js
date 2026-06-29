@@ -5169,6 +5169,10 @@ const Engine = {
         }
         if (meta.enemyName === "墨蛟" && !anyEscaped) {
           State.setFlag("mojiao_slain");
+          // 远雷·伏岩观战兑现（铁律3）：看清的路数与旧伤破绽，化作斩蛟那一击的落点——点名出处
+          if (this.settleLedger("mojiao_watch", "深潭洞中那阵伏岩观战没有白费——墨蛟的出招路数、左肋那道旧伤，你早记在心里。今日斩蛟那一击，正落在它最痛的破绽上。看，比莽撞动手值钱")) {
+            s.mood = clamp(s.mood + 2, 0, s.moodMax);
+          }
         }
         // —— 燕家堡之战·战王蝉（增量D）：撑过血线=打到其溃退（剧情撤离，非诛杀）——
         if (meta.enemyName === "战王蝉") {
@@ -5427,6 +5431,12 @@ const Engine = {
           s.mood = clamp(s.mood + 2, 0, s.moodMax);
         }
         if (this.settleLedger("intro_observe_herbs", "当年拜师初时一味一味记下的药庐门道，早把你练成了半个丹毒行家——催熟剧毒、淬炼暗器，全靠这点根基。丹道启蒙那一步，原来走得不冤")) {
+          s.mood = clamp(s.mood + 2, 0, s.moodMax);
+        }
+        if (this.settleLedger("gang_use_xiaosuanpan", "当初托小算盘盯着野狼帮，那些人手分布、头目习性的零碎情报，到金光上人现身这一刻全串成了线——你算准了野狼帮的底、也算准了这尊请来的杀神几时落单")) {
+          s.mood = clamp(s.mood + 2, 0, s.moodMax);
+        }
+        if (this.settleLedger("gang_focus_cultivate", "野狼帮闹得最凶那阵子，你没去蹚浑水，闷头把修为又拔高一截——今日对上金光上人，正是这点不动声色攒下的功力，让你的毒与暗器递得到、收得回")) {
           s.mood = clamp(s.mood + 2, 0, s.moodMax);
         }
         this.addFame(25, "修仙杀手金光上人死于彩霞山");

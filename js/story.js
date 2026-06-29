@@ -120,6 +120,12 @@ const STORY = [
       if (Engine.settleLedger("village_inquiry", "三叔在路上被你问出的那些门道——选拔考筋骨悟性胆识三项、药庐是冷灶——临到场上桩桩对得上。知己知彼，让你这资质平平的杂役坯子没在第一关就慌了手脚")) {
         s.mood = Math.min(s.moodMax, s.mood + 2);
       }
+      if (Engine.settleLedger("journey_observe", "赴考路上默记下的那些少年长短，到了选拔场全派上用场——谁筋骨强、谁步子虚，你心里有数，连自己几斤几两也照得清楚。这份探知的本能，从踏出青牛镇就开始磨了")) {
+        s.mood = Math.min(s.moodMax, s.mood + 2);
+      }
+      if (Engine.settleLedger("exam_train_body", "补考那半年夜夜苦练的筋骨，再试时结实得连考官都多看一眼——天资不够，毅力来凑。挤进记名弟子名册的最后那一把力气，是自己一拳一拳攒出来的")) {
+        s.mood = Math.min(s.moodMax, s.mood + 2);
+      }
     },
     text(s) {
       const t = [
@@ -415,6 +421,9 @@ const STORY = [
       // 远雷·结拜之情兑现（铁律3）：当年那炷结拜香，在兄弟惨死这一刻结出最沉的果——点名出处
       if (Engine.settleLedger("friends_sworn", "结拜时焚的那炷香还在鼻尖，张铁却已被炼成了铁奴。异姓兄弟的誓言「有难同当」，此刻成了压在你心头一辈子的债——也成了你带走曲魂、走完这条路的执念")) {
         s.demon = Math.min(100, s.demon + 5);   // 兄弟之死，心魔更重
+      }
+      if (Engine.settleLedger("journey_help_zhangtie", "赴考路上教他那几招防身手法，护得了他选拔场上的胆识，却护不住他在墨大夫手里的命。那句「有你这兄弟我心里踏实」言犹在耳——你教他的本事，终究太轻太浅")) {
+        s.demon = Math.min(100, s.demon + 3);
       }
       Engine.toast("张铁惨死、炼成铁奴，你心境剧震", true);
     },
@@ -1397,6 +1406,10 @@ const STORY = [
       if (!s.metNpcs.includes("yeshishu")) s.metNpcs.push("yeshishu");
       State.give("lingshi", 12);
       State.give("lingcao", 3);
+      // 远雷·吴师叔之恩兑现（铁律3）：入谷那点提点之恩，在夺丹这关有人替你挡了一句话——点名出处
+      if (Engine.settleLedger("wu_kindness", "陆云风发难时，是吴师叔脸色一沉、往你身前一站——入谷那日他递青叶法器、教你早练御剑的提点之恩，今日化作满殿权势倾轧里替你顶住的那一句「谷例就是谷例」。寒门杂役难得的一点暖")) {
+        s.mood = Math.min(s.moodMax, s.mood + 3);
+      }
       Engine.writeLedger("zhuji_dan_grudge", "入谷之日，叶师叔借调解之名换走你的筑基丹（陆云风发难在先）");
       Engine.addMilestone("夺丹之辱：筑基丹得而复失", "showdown");
       Engine.toast("筑基丹：得而复失（此仇此辱，记在前路）");
@@ -1645,6 +1658,10 @@ const STORY = [
       State.setFlag("xueshi_opened");
       if (!s.metNpcs.includes("lihuayuan")) s.metNpcs.push("lihuayuan");
       if (!s.metNpcs.includes("nangongwan")) s.metNpcs.push("nangongwan");
+      // 远雷·向之礼指点兑现（铁律3）：晒太阳老人当年那番闲谈门道，今日字字应验——点名出处
+      if (Engine.settleLedger("xiang_guidance", "晒太阳的向老头当年那番闲谈——血色主药是筑基丹根本、名额按各脉实力分、修为先到练气十一层——今日大殿之上字字应验。那句「你去得，也回得来」，原来早把这条路给你点透了")) {
+        s.mood = Math.min(s.moodMax, s.mood + 2);
+      }
       Engine.writeLedger("jindi_seat", "名额大会上凭一句「主药认得全」拼下血色禁地席位");
       Engine.addMilestone("血色禁地：名额到手", "deed");
     },
