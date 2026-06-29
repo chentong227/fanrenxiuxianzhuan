@@ -412,6 +412,10 @@ const STORY = [
     onArrive(s) {
       State.setFlag("zhangtie_dead");
       s.demon += 20; s.mood -= 25;
+      // 远雷·结拜之情兑现（铁律3）：当年那炷结拜香，在兄弟惨死这一刻结出最沉的果——点名出处
+      if (Engine.settleLedger("friends_sworn", "结拜时焚的那炷香还在鼻尖，张铁却已被炼成了铁奴。异姓兄弟的誓言「有难同当」，此刻成了压在你心头一辈子的债——也成了你带走曲魂、走完这条路的执念")) {
+        s.demon = Math.min(100, s.demon + 5);   // 兄弟之死，心魔更重
+      }
       Engine.toast("张铁惨死、炼成铁奴，你心境剧震", true);
     },
     choices: [

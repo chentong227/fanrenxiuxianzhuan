@@ -73,6 +73,12 @@
 
 > **还债节奏**：每轮 2~6 条选择债，优先还「玩家性格/准备类」A 类债（开局谨慎链已基本闭环：
 > 离家准备→入门选拔、决战准备→反杀、洞府选址→强征）。后续优先攻 `secret_cultivate_*`/`identity_*`/`intro_*`/`friends_*` 等剩余 A 类。
+- **2026-06-29 v235**：七玄门篇 A 类选择债批量闭环（8 条）——
+  拜师初（`intro_observe_herbs`→以下克上·丹毒根基／`intro_watch_modafu`→反杀夜·早识杀机）、
+  结友（`friends_learn_martial`→反杀夜·凡武救命／`friends_sworn`→张铁之死·兄弟之债，并加 demon+5）、
+  暗修期（`secret_cultivate_push`→反杀夜·抢出的修为／`secret_cultivate_probe`→反杀夜·信息差先手）、
+  顶替身份（`identity_study_poison`→金光决战·毒方反噬／`identity_practice_medicine`→金光决战·药师身份料敌）。
+  **至此七玄门篇全篇玩家性格/准备选择因果链闭环**。闭环率 **10% → 16%**（13 → 21 条），baseline 降至 113 条。
 
 ---
 

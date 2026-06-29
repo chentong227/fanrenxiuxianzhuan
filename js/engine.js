@@ -5363,6 +5363,19 @@ const Engine = {
         if (this.settleLedger("showdown_prep_poison", "催熟的剧毒与满袖暗器，在三段恶斗里一寸寸耗垮了铁奴的百毒之躯——以弱胜强的本钱，全是当初一味一味备下的。备得越足，今夜便走得越稳")) {
           s.mood = clamp(s.mood + 3, 0, s.moodMax);
         }
+        // 远雷·暗修期与拜师初的伏笔在反杀夜一并兑现（铁律3）——点名出处
+        if (this.settleLedger("intro_watch_modafu", "拜师那天起你就暗暗记下墨大夫的每一处反常——密室的气味、看你的眼神。今夜动手前，正是这些点滴让你早早识破了「师恩」底下的杀机，没等到刀架脖子才醒悟")) {
+          s.mood = clamp(s.mood + 2, 0, s.moodMax);
+        }
+        if (this.settleLedger("secret_cultivate_push", "暗修期那一截抢出来的修为，今夜成了压垮余子童元神的最后一分功力。当初把小绿瓶的灵药尽数砸进苦修——这一注，押对了")) {
+          s.mood = clamp(s.mood + 2, 0, s.moodMax);
+        }
+        if (this.settleLedger("secret_cultivate_probe", "当初故意露破绽试探，摸清了墨大夫并不知你真实修为——今夜这道信息差，成了你抢得先手的底牌。他至死都没料到药童的功力深到这般")) {
+          s.mood = clamp(s.mood + 2, 0, s.moodMax);
+        }
+        if (this.settleLedger("friends_learn_martial", "厉飞雨教的那几手凡人武学，早与眨眼剑法融在了一处。近身搏杀那一瞬的三分底气，是兄弟当年笑着递来的——他不知道，这几招今夜替你挡了命")) {
+          s.mood = clamp(s.mood + 2, 0, s.moodMax);
+        }
         this.addFame(15, "药庐那位韩师傅，深藏不露");
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         // 曲魂幡到手：张铁尸傀自此随你驱使（侧位单位 v0——挚友之尸，为你而战）
@@ -5392,6 +5405,16 @@ const Engine = {
         State.give("jinzhong_zhao", 1);
         this.log("金光上人金钟罩虽固，终究敌不过你的毒与暗器。这矮胖和尚至死不信，自己竟栽在一个门派药师手里！七玄门之危，就此解去。", "good");
         this.addMilestone("以下克上：暗算金光上人", "showdown");
+        // 远雷·丹毒传承与身份伏笔在以下克上一役兑现（铁律3）——点名出处
+        if (this.settleLedger("identity_study_poison", "毒杀这位修仙杀手的方子，正出自当年从墨大夫遗物里抄录的那几卷毒方。他用了一辈子的医毒之术，最终成了取他性命的人的本钱——这老鬼若泉下有知，怕要气活")) {
+          s.mood = clamp(s.mood + 3, 0, s.moodMax);
+        }
+        if (this.settleLedger("identity_practice_medicine", "以墨大夫身份行医这些年打探来的门中虚实，让你算准了金光上人的来路与软肋。新身份最大的好处——谁都不防一个看病抓药的老药师")) {
+          s.mood = clamp(s.mood + 2, 0, s.moodMax);
+        }
+        if (this.settleLedger("intro_observe_herbs", "当年拜师初时一味一味记下的药庐门道，早把你练成了半个丹毒行家——催熟剧毒、淬炼暗器，全靠这点根基。丹道启蒙那一步，原来走得不冤")) {
+          s.mood = clamp(s.mood + 2, 0, s.moodMax);
+        }
         this.addFame(25, "修仙杀手金光上人死于彩霞山");
         // 符宝·金光砖：杀手的凶器成为你的底牌（韩立的第一件符宝，动漫考据）
         State.give("jinguang_zhuan", 1);
