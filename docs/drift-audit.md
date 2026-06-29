@@ -93,6 +93,14 @@
   深潭观战（`mojiao_watch`→斩墨蛟·破绽落点）。闭环率 **19% → 25%**（25 → 33 条），baseline 降至 101 条。
   **菡云芝考据校正**（用户）：菡云芝是御灵宗，灵兽山才是御灵宗埋的千年暗桩（魔道入侵反水）——`hanyunzhi_flower` 仍属御灵宗线跨篇钩子，留待兑现。
   剩余 A 类 24 条多为各篇内部演出债（魔道/星海/再别篇）或需新建兑现节点者（如 `saved_merchant_road` 官道救行商需补重逢节点），后续逐篇处理。
+- **2026-06-29 v238 · 心性账本机制（态度债统一归宿）**：把 15 条「回望/态度」选择债从「只记不结」根治为一套系统——
+  新增 `State.temperament{stoic,sentiment,marks}` + `Engine.recordTemperament(id,axis,label)`（种因即结算：态度的果＝它当场铸成「你是谁」）
+  + `Engine.temperamentEcho()`（克制 vs 动情累计 → 一句性情总结）+ 风云录·道途页「心性·你是谁」呼应区。
+  改造 15 条态度选择由 `writeLedger(id,true)`（API 误用·label 写成布尔）→ `recordTemperament`：
+  modao_finale_respect/resolve、jingcheng_lookback、lihuayuan_death_mourn/stoic、zaibie_lookback/no_lookback、
+  starsea_jindan_calm/luan_help/shijin_breed/tianxing_public/xiaohuan_explore、modao_e4_alert、nangong_lingshi_grateful、xinruyin_helped。
+  **副作用：修了 writeLedger(id,true) 的 API 误用**（这些 id 退出 writeLedger 命名空间，总债基数 134→119）。闭环率 **25% → 28%**（33/119），baseline 降至 86 条。
+  保留为真钩子不转：`dayan_remembered`（大衍诀残卷线索·跨篇）、`starsea_jingbian_observe`（风希弱点情报·跨篇）——它们是情报伏笔非纯态度，留待对应内容兑现。
 
 ---
 

@@ -2679,6 +2679,7 @@ const UI = {
       <h3 class="panel-title" style="margin-top:8px">风云榜（彩霞山座次）</h3>
       <div class="fame-stone">${boardHtml}</div>
       ${myFameNote}
+      ${(() => { const te = (typeof Engine !== "undefined" && Engine.temperamentEcho) ? Engine.temperamentEcho() : null; return te ? `<h3 class="panel-title" style="margin-top:8px">心性 · 你是谁</h3><div class="temperament-echo temperament-${te.tone}">${te.text}</div>` : ""; })()}
       <h3 class="panel-title" style="margin-top:8px">名场面回廊（重温关键演出）</h3>
       <div class="scene-gallery">${scenesHtml}</div>
       <h3 class="panel-title" style="margin-top:8px">道途年表（你挣来的每一步）</h3>

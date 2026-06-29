@@ -106,6 +106,7 @@ const State = {
       sideUnit: null,         // 侧位单位（尸傀/灵宠/傀儡）{ id,name,hp,hpMax,atk,...,status,carry }
       intelElems: {},         // 已揭示的敌方道基行属 { 敌名: elem }（打了才知道）
       ledger: {},             // 因果账本：{ id: {t,label} }——插曲种因，主线节点读账结果（world-architecture §3）
+      temperament: { stoic: 0, sentiment: 0, marks: [] },   // 心性账本：名场面态度累计（克制承志 vs 动情牵挂），铸"我是谁"——名场面回望选择在此结算（铁律3 闭环）
       journey: null,          // 大陆旅途 { to, toName, leg, total, back }（旅途即内容：world-architecture §1.3）
       gear: { weapon: null, armor: null, accessory: null },   // 法器装备三槽（DATA.gear）
       sideTreasures: [],      // 伴身法宝槽（v96 三类法宝制：被动面板件，槽数=神识档）
@@ -190,6 +191,7 @@ const State = {
     if (!d.sideTreasures) d.sideTreasures = [];   // 伴身法宝槽（v96）
     if (!d.intelElems) d.intelElems = {};
     if (!d.ledger) d.ledger = {};
+    if (!d.temperament) d.temperament = { stoic: 0, sentiment: 0, marks: [] };   // 心性账本：克制/承志 vs 动情/牵挂（名场面态度累计，铸"我是谁"）
     if (d.journey === undefined) d.journey = null;
     if (d.exmap === undefined) d.exmap = null;
     if (d.heroSkin === undefined) d.heroSkin = null;   // v213 三级换装：手动选定立绘（老档默认跟随境界）

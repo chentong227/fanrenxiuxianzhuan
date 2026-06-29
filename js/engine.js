@@ -2545,6 +2545,35 @@ const Engine = {
     return true;
   },
 
+  /* 心性抉择（名场面态度·铁律3 闭环）：
+   *   "回望/克制/动情"这类态度选择，它的「果」就是它当场塑造了「你是谁」——
+   *   故种因即结算（写 ledger 闭环 + 计入 temperament 维度 + 留一行心性批注）。
+   *   axis: "stoic"（克制/承志/斩牵绊）｜"sentiment"（动情/牵挂/回望）。
+   *   兑现在「我的修仙人生」总结处统一呼应（temperamentEcho）。 */
+  recordTemperament(id, axis, label) {
+    const s = State.data;
+    if (!s.temperament) s.temperament = { stoic: 0, sentiment: 0, marks: [] };
+    // ledger 闭环：态度选择写读一体（不再是只记不结的悬空因）
+    s.ledger = s.ledger || {};
+    if (!s.ledger[id]) s.ledger[id] = { t: `第${s.year}年${s.month}月`, label };
+    if (axis === "stoic" || axis === "sentiment") s.temperament[axis] = (s.temperament[axis] || 0) + 1;
+    s.temperament.marks = s.temperament.marks || [];
+    s.temperament.marks.push({ t: `第${s.year}年${s.month}月`, axis, label });
+    return true;
+  },
+
+  /* 心性基调读数：克制 vs 动情的累计倾向 → 一句"你是谁"的总结（我的修仙人生·呼应位）。 */
+  temperamentEcho() {
+    const tm = (State.data && State.data.temperament) || { stoic: 0, sentiment: 0 };
+    const st = tm.stoic || 0, se = tm.sentiment || 0;
+    if (st + se === 0) return null;
+    const diff = st - se;
+    if (diff >= 2) return { tone: "stoic", text: "一路行来，你惯于把痛与念压进心底，化作前行的脚力。世人见你冷峻自持——这份克制，是你在仙途上为自己锻的甲。" };
+    if (diff <= -2) return { tone: "sentiment", text: "一路行来，你始终不肯让那些人、那些牵挂轻易散去。回望、悼念、记挂——这份不肯凉透的心，是你修仙路上没丢的那点人味。" };
+    return { tone: "balanced", text: "一路行来，你在克制与动情之间走着——该断时断得决绝，该念时念得真切。刚柔之间，自有你的分寸。" };
+  },
+
+
   /* ===========================================================
    *  名声与风云榜：事迹换名次——"别人眼里的你"
    * =========================================================== */

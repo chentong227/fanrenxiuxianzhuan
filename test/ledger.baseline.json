@@ -38,7 +38,7 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "fengyue_slain": {
-      "where": "js/engine.js:5152",
+      "where": "js/engine.js:5181",
       "label": "血色禁地中反杀狙杀者封岳，夺其踏云靴",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -67,21 +67,6 @@
       "label": "血色禁地中稳守外环，安稳采药",
       "status": "TODO-补兑现或降级flavor"
     },
-    "jingcheng_lookback": {
-      "where": "js/story.js:3718",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "lihuayuan_death_mourn": {
-      "where": "js/story.js:4069",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "lihuayuan_death_stoic": {
-      "where": "js/story.js:4078",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "lingchong_line": {
       "where": "js/story.js:2526",
       "label": "剖血玉蜘蛛得白玉蛛卵两枚——「灵宠」长线立项，孵化随后续篇章实装",
@@ -100,11 +85,6 @@
     "modao_conscript_post": {
       "where": "js/story.js:2383",
       "label": "拨入黑风岭矿场守备——初识队官吕天蒙，亲见『弃子战术』的冷酷",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "modao_e4_alert": {
-      "where": "js/story.js:3348",
-      "label": "",
       "status": "TODO-补兑现或降级flavor"
     },
     "modao_e4_dive": {
@@ -132,16 +112,6 @@
       "label": "皇宫决战收束·离京——黑煞教覆灭，九筑基功成离京、各返天南。埋「再别天南篇」长线钩：回天南旧人旧事/矿洞古传送阵修补/通向乱星海的大挪移令引线（本增量止于此·下一篇章后续窗口实装）",
       "status": "TODO-补兑现或降级flavor"
     },
-    "modao_finale_resolve": {
-      "where": "js/story.js:3672",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "modao_finale_respect": {
-      "where": "js/story.js:3612",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "modao_liujing_die": {
       "where": "js/story.js:3438",
       "label": "皇宫血池大殿——黑煞教主胥王伪装成越国之主、以阴手偷袭，正道楷模刘靖后心中招身陨（命途＝原著默认；玩家前期情报未拉满、未能喝破伏兵）。凤凰符失主、化光遁去",
@@ -158,7 +128,7 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "modao_patrol_won": {
-      "where": "js/engine.js:5524",
+      "where": "js/engine.js:5553",
       "label": "金鼓原巡逻遭遇战告捷——先斩魔修领队、群势立溃，缴获傀儡残件，初窥傀儡之术的引子",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -168,7 +138,7 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "modao_santuan_won": {
-      "where": "js/engine.js:5547",
+      "where": "js/engine.js:5576",
       "label": "九筑基夜闯皇城·开幕三组对位群架告捷——韩立与刘靖/宋蒙/钟卫娘三组同袍并肩冲杀，撕开血侍阵线、杀进皇宫深处（sides[] 复数化群架首演）",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -183,12 +153,12 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "modao_tuoshi_won": {
-      "where": "js/engine.js:5569",
+      "where": "js/engine.js:5598",
       "label": "皇宫决战·拖时布阵——几人不敌胥王假丹之威、且战且退拖延时辰，终待师兄妹与傀儡蜥蜴将「真·颠倒五行阵」布成（survive 拖满回合·败有所得首例）",
       "status": "TODO-补兑现或降级flavor"
     },
     "modao_xuwang_slain": {
-      "where": "js/engine.js:5589",
+      "where": "js/engine.js:5618",
       "label": "皇宫决战·阵成压制——颠倒五行阵逐回合反噬胥王，三符宝齐轰毁其假丹肉身，血凝五行丹借阵复生之神魂亦被打散，终由钟卫娘祭真凰符灭其神魂。黑煞教覆灭。",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -198,7 +168,7 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "mofu_avenged": {
-      "where": "js/engine.js:5234",
+      "where": "js/engine.js:5263",
       "label": "京城五色门收口——诛杀妖化王管事，为墨彩环了结墨府之祸的血债（七玄门篇种下的因果，至此总兑现）",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -215,11 +185,6 @@
     "mojiao_together": {
       "where": "js/story.js:1798",
       "label": "血色禁地深潭，与南宫婉背靠背斩杀墨蛟",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "nangong_lingshi_grateful": {
-      "where": "js/story.js:4258",
-      "label": "",
       "status": "TODO-补兑现或降级flavor"
     },
     "nangongwan_chestnut": {
@@ -243,12 +208,12 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "sanxiu_escaped": {
-      "where": "js/engine.js:4000",
+      "where": "js/engine.js:4029",
       "label": "杀万小山的第三名散修当场遁走",
       "status": "TODO-补兑现或降级flavor"
     },
     "sanzhuan_yizhuan": {
-      "where": "js/engine.js:2882",
+      "where": "js/engine.js:2911",
       "label": "${cfg.name}·一转——散功重修青元剑诀，根基反比从前更纯。真元精纯乘性印记 ×${cfg.imprintMul}（闭关修为增速永久略增），不剥离已修层数（二十载苦修已重炼归位）。",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -287,11 +252,6 @@
       "label": "初入星海·四幕·章末高潮——韩立勘破平生执念之心魔、闯过结丹关心魔劫，金丹大成（筑基大圆满→结丹初期·realmTier 1→2质变·本作第一次正面打得过同阶的扬眉吐气节点）。故人钟低鸣：墨彩环病逝于远渡期间（#13·软伏笔墨彩环转世＝紫灵·不写死）。章末埋钩：虚天殿/虚天鼎/银月/青竹蜂云剑/风雷翅炼制/玄骨上人夺曲魂身躯/乾蓝冰焰（皆留星海飞驰篇）。初入星海篇·终。",
       "status": "TODO-补兑现或降级flavor"
     },
-    "starsea_jindan_calm": {
-      "where": "js/story.js:5435",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "starsea_jingbian": {
       "where": "js/story.js:4826",
       "label": "镇妖大典惊变——逆星盟乌丑勾结妖修风希、六连殿长老反水，炸开镇妖台禁制，放出镇压百年的十级雷鹏并打通内外星海通道；雷鹏破封屠戮、踩碎星宫双圣石像，旋为风希斩杀、夺走双翅（风雷翅之材料）离场。本篇仅得材料线索，炼制留外海风云篇。",
@@ -308,12 +268,12 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "starsea_jiuziling_won": {
-      "where": "js/engine.js:5787",
+      "where": "js/engine.js:5816",
       "label": "镇妖大典惊变·救小紫灵——妙音门门主夫妇为护女力竭殉难，韩立接住坠落的汪凝，于乱局中越阶斩逆星盟古长老（假丹/筑基巅峰人修）、杀出黑袍合围，携小紫灵脱身。",
       "status": "TODO-补兑现或降级flavor"
     },
     "starsea_leitai_won": {
-      "where": "js/engine.js:5746",
+      "where": "js/engine.js:5775",
       "label": "初入星海·镇妖台擂台——韩立藏拙佯作苦战，以「炼气五层」之姿险胜炼气八层打手，替顾家夺下经商权，换得魁星岛居留。露而不显，正是凡人韩立的火候。",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -322,19 +282,9 @@
       "label": "乱星海大乱——内外星海通道打通、内海防御大阵失效，外海妖兽涌入内海。韩立携小紫灵（汪凝）趁乱遁出魁星岛海域，奔赴外星海。初入星海篇第一/二幕（孤岛立身·镇妖大典惊变）至此收束。",
       "status": "TODO-补兑现或降级flavor"
     },
-    "starsea_luan_help": {
-      "where": "js/story.js:4941",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "starsea_shijin": {
       "where": "js/story.js:5036",
       "label": "初入星海·三幕——外海沉船灵窟偶得奇虫榜『噬金虫』（一物四用·附体/出战/变武器/变身外化身），并以乱星海特产『霓裳草』为引妖之饵。猎妖取丹之法成。",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "starsea_shijin_breed": {
-      "where": "js/story.js:5055",
-      "label": "",
       "status": "TODO-补兑现或降级flavor"
     },
     "starsea_tianxing": {
@@ -342,28 +292,18 @@
       "label": "初入星海·四幕——韩立携外海妖丹返内海，落户星宫治下第一都会天星城，置洞府、安顿汪凝，备齐结丹资粮叩关。天都街双骄惊鸿一瞥（cameo·仅留印象，羁绊正戏在后续篇章）。",
       "status": "TODO-补兑现或降级flavor"
     },
-    "starsea_tianxing_public": {
-      "where": "js/story.js:5192",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "starsea_xiaohuan_explore": {
-      "where": "js/story.js:4587",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "starsea_yaoshou_won": {
-      "where": "js/engine.js:5726",
+      "where": "js/engine.js:5755",
       "label": "初入星海·落海——海域相位层层迟滞，韩立携曲魂斩退循血来袭的低阶海妖，于乱星海立住第一口气。",
       "status": "TODO-补兑现或降级flavor"
     },
     "starsea_yingli_won": {
-      "where": "js/engine.js:5766",
+      "where": "js/engine.js:5795",
       "label": "镇妖大典·极限斩杀——众修法阵难伤越级五阶婴鲤兽，韩立携曲魂后发，借冯三娘困兽阵图困而后杀，于巨兽力竭一线之机极限斩杀夺彩，得榜首奖『降尘丹』（降一分结丹门槛）。",
       "status": "TODO-补兑现或降级flavor"
     },
     "starsea_zhifu_won": {
-      "where": "js/engine.js:5809",
+      "where": "js/engine.js:5838",
       "label": "外星海发家——霓裳草引妖、噬金虫群缠（附体/出战/变武器/变身外化身四用法共池取舍），连斩中阶海妖、剖取乱星海妖丹。妖丹乃星海硬通货，韩立自此积起结丹资粮。",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -373,7 +313,7 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "tieluo_escaped": {
-      "where": "js/engine.js:5222",
+      "where": "js/engine.js:5251",
       "label": "京城救萧爷爷——断黑煞教血侍铁罗一臂、再打垮其化血茧的狂暴形态，他终以血侍秘术蜕茧金蝉脱壳遁走（仇恨账本首次跨场：断臂之仇、化茧之恨，他会带着记忆回来，皇宫决战再算）",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -382,18 +322,13 @@
       "label": "墨蛟双角托元武国巧匠齐云霄炼成四爪毒法宝「乌龙夺」——妖材成器，攻击带毒",
       "status": "TODO-补兑现或降级flavor"
     },
-    "xinruyin_helped": {
-      "where": "js/story.js:4135",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "xuanle_slain": {
-      "where": "js/engine.js:5192",
+      "where": "js/engine.js:5221",
       "label": "矿洞黑吃黑——识破并诛杀掩月宗阴手宣乐，为队官吕天蒙讨回那一刀",
       "status": "TODO-补兑现或降级flavor"
     },
     "xueyu_slain": {
-      "where": "js/engine.js:5203",
+      "where": "js/engine.js:5232",
       "label": "诛杀狂化的血玉蜘蛛——剖腹得白玉蛛卵两枚，一条「灵宠」长线自此开端",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -428,32 +363,32 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "zaibie_duoshe_won": {
-      "where": "js/engine.js:5630",
+      "where": "js/engine.js:5659",
       "label": "再别天南·夺剑——曲魂假丹之躯硬撼结丹本命剑，先碎夺舍躯壳、再散结丹残念。绿煌剑（越阶第三主战·配剑影分光术）与奇虫榜玉简归你。",
       "status": "TODO-补兑现或降级flavor"
     },
     "zaibie_hudao_won": {
-      "where": "js/engine.js:5688",
+      "where": "js/engine.js:5717",
       "label": "再别天南·护道——与南宫婉、陈巧倩三人结阵护住退路，撑过追杀。然此役后韩立为吸修所趁、修为暴跌（跌境·纯演出·不动数值）。",
       "status": "TODO-补兑现或降级flavor"
     },
     "zaibie_hushan_won": {
-      "where": "js/engine.js:5669",
+      "where": "js/engine.js:5698",
       "label": "再别天南·护山大阵——死守阵脚六息，李化元燃尽本命真元布成护山大阵，挡下魔潮、护黄枫谷弟子退走，自己却灯枯油尽。",
       "status": "TODO-补兑现或降级flavor"
     },
     "zaibie_jinbei_won": {
-      "where": "js/engine.js:5609",
+      "where": "js/engine.js:5638",
       "label": "再别天南·嘉元城外——颠倒五行阵图逐回合反制金背妖螂，曲魂·身外化身当先，越阶硬仗告捷。",
       "status": "TODO-补兑现或降级flavor"
     },
     "zaibie_jingu_won": {
-      "where": "js/engine.js:5650",
+      "where": "js/engine.js:5679",
       "label": "再别天南·金鼓原决战——与李化元、南宫婉并肩斩魔，先斩魔修领队、撕开缺口。然黑煞教势大、灵兽山倒戈，正道大局已不可挽。",
       "status": "TODO-补兑现或降级flavor"
     },
     "zaibie_kuangdong_won": {
-      "where": "js/engine.js:5707",
+      "where": "js/engine.js:5736",
       "label": "再别天南·矿洞拖时——死守洞口六息，辛如音耗尽精血修阵，大挪移令催动万载古传送阵，一步踏出天南。",
       "status": "TODO-补兑现或降级flavor"
     },
@@ -472,19 +407,9 @@
       "label": "再别天南·赠别——越国矿洞外，南宫婉赠中品灵石一袋，助跌境后的韩立疗复、催动古阵。",
       "status": "TODO-补兑现或降级flavor"
     },
-    "zaibie_lookback": {
-      "where": "js/story.js:4341",
-      "label": "",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "zaibie_luanxinghai": {
       "where": "js/story.js:4397",
       "label": "再别天南·演出②到达乱星海——古阵崩毁的空间乱流将韩立抛入乱星海，落海·首见浩瀚妖海。章末定格于无边海景。解锁『初入星海篇』钩子（待后续实装）。再别天南篇·终。",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "zaibie_no_lookback": {
-      "where": "js/story.js:4350",
-      "label": "",
       "status": "TODO-补兑现或降级flavor"
     },
     "zaibie_open": {
@@ -503,7 +428,7 @@
       "status": "TODO-补兑现或降级flavor"
     },
     "zhanwangchan_grudge": {
-      "where": "js/engine.js:5181",
+      "where": "js/engine.js:5210",
       "label": "燕家堡之战力挫战王蝉——魔道巨擘重伤遁空，与你结下不死不休之仇",
       "status": "TODO-补兑现或降级flavor"
     }

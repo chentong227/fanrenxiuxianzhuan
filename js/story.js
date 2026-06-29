@@ -3343,9 +3343,9 @@ const STORY = [
     choices: [
       {
         text: "「……太沉得住气了。」心生警觉，暗中戒备。",
-        hint: "暗中戒备——直觉救命",
+        hint: "暗中戒备——铸入心性",
         effect(s) {
-          Engine.writeLedger("modao_e4_alert", true);
+          Engine.recordTemperament("modao_e4_alert", "stoic", "血池大殿·察觉胥王沉得过分·暗自凝力戒备——多疑自持，是你活下来的本能");
           return { text: "你没有被凤凰符的光芒分去心神——那股莫名的寒意，让你悄悄将灵力凝于掌心。", kind: "event" };
         },
         resolve: "advance",
@@ -3607,9 +3607,9 @@ const STORY = [
     choices: [
       {
         text: "（赤金凰焰吞没神魂——胥王，终于伏诛。）",
-        hint: "感慨正道楷模——这份敬意，记入因果",
+        hint: "感慨正道楷模——铸入心性",
         effect(s) {
-          Engine.writeLedger("modao_finale_respect", true);
+          Engine.recordTemperament("modao_finale_respect", "sentiment", "皇宫决战终结·向刘靖与钟卫娘默拜——记得住别人的好，是你没丢的人味");
           return { text: "你望着那道渐渐散去的赤金凰焰，心中默默向刘靖与钟卫娘一拜——正道楷模，当之无愧。", kind: "event" };
         },
         resolve: "advance",
@@ -3666,10 +3666,10 @@ const STORY = [
       },
       {
         text: "「刘师兄，安息。」化悲愤为前行之力。",
-        hint: "承遗志——心境微降但志不倒",
+        hint: "承遗志——铸入心性",
         effect(s) {
           s.mood = Math.max(0, s.mood - 2);
-          Engine.writeLedger("modao_finale_resolve", true);
+          Engine.recordTemperament("modao_finale_resolve", "stoic", "皇宫决战终结·承刘靖遗志——把悲愤压成前行的脚力");
           return { text: "你向那道散去的凰焰微微颔首——正道楷模的遗志，自有活着的人替他走下去。", kind: "event" };
         },
         resolve: "advance",
@@ -3713,9 +3713,9 @@ const STORY = [
     choices: [
       {
         text: "「京城的事，了了。」回望一眼那座血夜中的皇城。",
-        hint: "回望京城——这份沉重，记入因果",
+        hint: "回望京城——铸入心性",
         effect(s) {
-          Engine.writeLedger("jingcheng_lookback", true);
+          Engine.recordTemperament("jingcheng_lookback", "sentiment", "离京时回望那座皇城——血夜的人与事，你舍不得就此翻篇");
           return { text: "你回头望了一眼那座渐渐远去的皇城——京城血夜，终成过往。", kind: "event" };
         },
         resolve: "advance",
@@ -4064,18 +4064,18 @@ const STORY = [
     choices: [
       {
         text: "「前辈的托付，我记下了。」",
-        hint: "沉痛悼念——这份情，记入因果账本",
+        hint: "沉痛悼念——铸入心性",
         effect(s) {
-          Engine.writeLedger("lihuayuan_death_mourn", true);
+          Engine.recordTemperament("lihuayuan_death_mourn", "sentiment", "李化元燃尽本命布护山大阵·向那道流光深深一拜——师恩重，你记一辈子");
           return { text: "你向着那道散入光幕的流光，深深一拜。", kind: "event" };
         },
         resolve: "advance",
       },
       {
         text: "「……黄枫谷的根，我来守。」沉默承受，不发一语。",
-        hint: "沉默承受——化悲愤为前行的力",
+        hint: "沉默承受——铸入心性",
         effect(s) {
-          Engine.writeLedger("lihuayuan_death_stoic", true);
+          Engine.recordTemperament("lihuayuan_death_stoic", "stoic", "李化元殉道·把痛压进心底护住退走的弟子——不发一语，是你扛事的方式");
           s.mood = Math.max(0, s.mood - 3);
           return { text: "你将那份沉甸甸的痛压进心底，不发一语，转身护住退走的弟子。", kind: "event" };
         },
@@ -4132,7 +4132,7 @@ const STORY = [
         requireItem: "huixue_dan",
         effect(s) {
           State.take("huixue_dan", 1);
-          Engine.writeLedger("xinruyin_helped", true);
+          Engine.recordTemperament("xinruyin_helped", "sentiment", "赠辛如音一枚疗伤丹——对枯槁守阵人递一分善意，你心还热着");
           return { text: "你取出一枚疗伤丹搁在她手心。辛如音怔了怔，唇角微微一弯——这枯槁的女子，竟也有了一丝血色。", kind: "good" };
         },
         resolve: "advance",
@@ -4253,9 +4253,9 @@ const STORY = [
       },
       {
         text: "「南宫姑娘的心意，韩某……愧领了。」",
-        hint: "难得流露一丝温情——记入因果账本",
+        hint: "难得流露一丝温情——铸入心性",
         effect(s) {
-          Engine.writeLedger("nangong_lingshi_grateful", true);
+          Engine.recordTemperament("nangong_lingshi_grateful", "sentiment", "受南宫婉赠灵石·难得多说了一句·喉头微动——冷面人也有软处");
           s.mood = Math.min(s.moodMax, s.mood + 2);
           return { text: "你握了握那袋灵石，喉头微动，到底多说了一句。南宫婉微微一怔，旋即别过脸去——海风里，似有一声极轻的叹息。", kind: "good" };
         },
@@ -4336,18 +4336,18 @@ const STORY = [
     choices: [
       {
         text: "青光吞没前——最后回望一眼天南。",
-        hint: "回望故土——这份牵绊，记入因果账本",
+        hint: "回望故土——铸入心性",
         effect(s) {
-          Engine.writeLedger("zaibie_lookback", true);
+          Engine.recordTemperament("zaibie_lookback", "sentiment", "离天南赴星海·最后一瞬回望故土山河——故土的牵绊，你带着走");
           return { text: "你在青光吞没的最后一瞬回头望去——天南的山河在光柱之外渐渐模糊、远去，终至不见。", kind: "event" };
         },
         resolve: "advance",
       },
       {
         text: "头也不回——踏光而去。",
-        hint: "斩断牵绊——前路只向星海",
+        hint: "斩断牵绊——铸入心性",
         effect(s) {
-          Engine.writeLedger("zaibie_no_lookback", true);
+          Engine.recordTemperament("zaibie_no_lookback", "stoic", "离天南赴星海·不回头·把故土一切抛在身后——断得决绝，是你向前的狠劲");
           return { text: "你没有回头。青光自脚下冲天而起，将故土的一切抛在身后——前路只有茫茫星海。", kind: "event" };
         },
         resolve: "advance",
@@ -4584,7 +4584,7 @@ const STORY = [
         hint: "多探一日——或许有更好的去处",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 2);
-          Engine.writeLedger("starsea_xiaohuan_explore", true);
+          Engine.recordTemperament("starsea_xiaohuan_explore", "stoic", "落脚星海前·多盘桓数日打听外岛灵脉·谋定而后动——你惯于先看清再落子");
           return { text: "你没有急着找岛——在坊市多盘桓了几日，打听过外岛灵脉的传闻。最终还是小寰岛最合心意，只是多这几日，让你对这片海多了几分了解。", kind: "event" };
         },
         resolve: "advance",
@@ -4938,7 +4938,7 @@ const STORY = [
           s.mood = Math.min(s.moodMax, s.mood + 4);
           s.hp = Math.max(1, Math.floor(s.hp * 0.95));
           State.setFlag("starsea_luan_help");
-          Engine.writeLedger("starsea_luan_help", true);
+          Engine.recordTemperament("starsea_luan_help", "sentiment", "乱星海大乱·顺手拉起两名跌落的散修同遁·多一分凶险换几分人望——危难里不踩着别人走");
           return { text: "你没有独自先走——顺手拉起两名跌落看台的散修，一同遁出混乱。多了一分凶险，却也多了几分人望。", kind: "good" };
         },
         resolve: "advance",
@@ -5052,7 +5052,7 @@ const STORY = [
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 3);
           State.setFlag("starsea_shijin_breed");
-          Engine.writeLedger("starsea_shijin_breed", true);
+          Engine.recordTemperament("starsea_shijin_breed", "stoic", "得噬金虫·留几只做种不竭泽而渔·远虑——你算的是长远的账");
           return { text: "你没有将噬金虫尽数收走——留了几只做种，日后繁衍起来，便不愁虫源了。多一分远虑，少一分近忧。", kind: "good" };
         },
         resolve: "advance",
@@ -5189,7 +5189,7 @@ const STORY = [
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 3);
           State.setFlag("starsea_tianxing_public");
-          Engine.writeLedger("starsea_tianxing_public", true);
+          Engine.recordTemperament("starsea_tianxing_public", "sentiment", "天星城·公开露面广打听结丹消息·宁担注目之险也要入世求机——你不甘只做个隐者");
           return { text: "你在天都坊市公开露面，广打听结丹的消息——多了几分人望与线索，却也多了几分被人注目的风险。", kind: "event" };
         },
         resolve: "advance",
@@ -5432,7 +5432,7 @@ const STORY = [
         hint: "沉静以对——前路更远",
         effect(s) {
           s.mood = Math.max(0, s.mood - 1);
-          Engine.writeLedger("starsea_jindan_calm", true);
+          Engine.recordTemperament("starsea_jindan_calm", "stoic", "结丹大成·不喜形于色·视为又一个起点——心境愈沉，是你走得远的根");
           return { text: "你没有太过激动——结丹不过是修仙路上的又一个起点。前路更远、更险，心境反倒比方才更沉了几分。", kind: "event" };
         },
         resolve: "advance",

@@ -2754,6 +2754,12 @@ html, body { touch-action: manipulation; }
 .chron-item.desperate { border-left-color: var(--purple); }
 .chron-item.fortune { border-left-color: var(--blue); }
 
+/* 心性基调（名场面态度累计 → 一句"你是谁"·我的修仙人生呼应） */
+.temperament-echo { padding: 11px 13px; border-radius: 8px; font-size: 13px; line-height: 1.75; background: var(--bg-panel-2); border-left: 3px solid var(--gold); color: var(--ink); }
+.temperament-echo.temperament-stoic { border-left-color: var(--blue); }
+.temperament-echo.temperament-sentiment { border-left-color: var(--red); }
+.temperament-echo.temperament-balanced { border-left-color: var(--jade); }
+
 /* ===== §9-6 名场面回廊（风云录里重温关键演出）===== */
 .scene-gallery { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
 .scene-row {
