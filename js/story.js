@@ -482,8 +482,7 @@ const STORY = [
       Engine.toast("习得运功镇魂、暗器飞针；得暗器×3。去小绿瓶催熟毒草备战");
     },
     choices: [
-      { text: "布下死局，静待夺舍之夜", hint: "进入决战", next: true },
-      { text: "以毒为先——催熟剧毒，多备暗器", hint: "毒与暗器，是你唯一的优势",
+      { text: "以毒为先——催熟剧毒、多备暗器（耗时备战）", hint: "互斥·选了即赴决战——毒与暗器是你以弱胜强的本钱（决战毒杀更狠）",
         effect(s) {
           State.give("duyao_cao", 2);
           State.give("anqi", 2);
@@ -492,11 +491,20 @@ const STORY = [
           return { text: "你将小绿瓶催熟的毒草尽数炼成剧毒，又淬了数枚暗器。这些东西，就是你以弱胜强的本钱。", kind: "good" };
         },
         next: true },
-      { text: "以武为先——苦练眨眼剑法，磨砺身法", hint: "近身搏杀，唯快不破",
+      { text: "以武为先——苦练眨眼剑法、磨砺身法（耗时备战）", hint: "互斥·选了即赴决战——近身搏杀唯快不破（决战剑招更利、身法更稳）",
         effect(s) {
           State.setFlag("showdown_martial_focus");
           Engine.writeLedger("showdown_prep_martial", "决战前苦练眨眼剑法——以武为先");
           return { text: "你日夜苦练眨眼剑法，将每一招的出剑角度、身法变化都打磨到极致。墨大夫若要夺舍，近身之际就是你唯一的机会——那一剑，必须快到他反应不过来。", kind: "good" };
+        },
+        next: true },
+      { text: "稳住心境，速战速决——不拖延，今夜就动手", hint: "互斥·不另备物，但抢得先机（心境+，敌少一分防备）",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, s.mood + 8);
+          s.demon = Math.max(0, s.demon - 6);
+          State.setFlag("showdown_prep_swift");
+          Engine.writeLedger("showdown_prep_swift", "决战前不拖延、稳心境速动手——抢先机，趁余子童尚未起疑便下杀手");
+          return { text: "你没有再多备什么。备得越久，露馅的风险越大——余子童的疑心，会随每一个反常的夜晚加重。你压下心绪、定住道心，决意趁他尚未起疑，今夜就动手。", kind: "good" };
         },
         next: true },
     ],

@@ -5492,6 +5492,9 @@ const Engine = {
         if (this.settleLedger("showdown_prep_poison", "催熟的剧毒与满袖暗器，在三段恶斗里一寸寸耗垮了铁奴的百毒之躯——以弱胜强的本钱，全是当初一味一味备下的。备得越足，今夜便走得越稳")) {
           s.mood = clamp(s.mood + 3, 0, s.moodMax);
         }
+        if (this.settleLedger("showdown_prep_swift", "你没有多备一物、只抢一个「快」字——余子童尚未起疑便已动手，今夜他连惊觉的工夫都没有。备得久不如下手早：这一注速攻，押对了")) {
+          s.mood = clamp(s.mood + 3, 0, s.moodMax);
+        }
         // 远雷·暗修期与拜师初的伏笔在反杀夜一并兑现（铁律3）——点名出处
         if (this.settleLedger("intro_watch_modafu", "拜师那天起你就暗暗记下墨大夫的每一处反常——密室的气味、看你的眼神。今夜动手前，正是这些点滴让你早早识破了「师恩」底下的杀机，没等到刀架脖子才醒悟")) {
           s.mood = clamp(s.mood + 2, 0, s.moodMax);
