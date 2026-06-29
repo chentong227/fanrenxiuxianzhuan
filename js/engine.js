@@ -6470,9 +6470,48 @@ const Engine = {
     }
   },
   gameOver(reason) {
+    const s = State.data;
+    // —— 我的修仙人生·终章总结：一缕道心散尽前，把这一生挣来的都摆出来给玩家看 ——
+    // 复用既有数据（境界/年表/伏诛/名声/心性/世间众生），不新增存档字段。
+    const realm = (State.realm && State.realm()) ? State.realm().name : "凡夫";
+    const yrs = (s.year || 1);
+    // 一生几桩"质变/大件/勋章"——年表里挑分量最重的几条作墓志（按 kind 权重，取前 6）
+    const KIND_RANK = { breakthrough: 5, bigitem: 4, showdown: 4, medal: 3, story: 2, deed: 1, minor: 0 };
+    const KIND_ICON = { breakthrough: "▲", bigitem: "◆", showdown: "⚔", medal: "★", story: "◇", deed: "·", minor: "·" };
+    const ms = (s.milestones || []).slice();
+    const topMs = ms.map((m, i) => ({ m, i }))
+      .sort((a, b) => ((KIND_RANK[b.m.kind] || 0) - (KIND_RANK[a.m.kind] || 0)) || (b.i - a.i))
+      .slice(0, 6)
+      .sort((a, b) => a.i - b.i)
+      .map(x => x.m);
+    const msHtml = topMs.length
+      ? topMs.map(m => `<div class="chron-item breakthrough"><span class="chron-t">${m.t}</span><b>${KIND_ICON[m.kind] || "·"} ${m.title}</b></div>`).join("")
+      : `<div class="inv-empty">道途尚浅，来不及在世间留下痕迹。</div>`;
+    const slain = (s.slainBeasts || []).length;
+    const fame = s.fame || 0;
+    const fameTxt = fame >= 30 ? "威名赫赫，一方人物" : fame >= 12 ? "薄有名声，渐为人知" : fame > 0 ? "略有耳闻，籍籍之间" : "默默无名，无人记得";
+    const te = (this.temperamentEcho && this.temperamentEcho()) || null;
+    // 世间众生：你走后，故人各自的命数（活着的/已殁的）——"你离开，世界不会停"
+    const fates = (s.npcFates || []);
+    const aliveN = fates.filter(f => f.status === "alive").length;
+    const deadN = fates.filter(f => f.status === "dead").length;
+    const worldTxt = fates.length
+      ? `你身后，世间故人${aliveN ? `尚有 ${aliveN} 人各奔前程` : ""}${deadN ? `${aliveN ? "，" : ""}${deadN} 人已先你而去` : ""}。江湖照旧，只是再没有你。`
+      : "";
     UI.openModal(`
-      <h2>身死道消</h2>
-      <p>${reason}</p>
+      <h2>我的修仙人生 · 终</h2>
+      <p style="color:var(--ink-dim);line-height:1.7">${reason}</p>
+      <div class="ending-epitaph">
+        <div class="ending-line"><span>姓名</span><b>${s.name || "韩立"}</b></div>
+        <div class="ending-line"><span>止步</span><b style="color:var(--gold)">${realm}</b></div>
+        <div class="ending-line"><span>享年</span><b>${s.age || 13} 岁 · 修行 ${yrs} 载</b></div>
+        <div class="ending-line"><span>名望</span><b>${fameTxt}</b></div>
+        ${slain ? `<div class="ending-line"><span>伏诛</span><b>异闻妖王 ${slain} 头</b></div>` : ""}
+      </div>
+      ${te ? `<h3 class="panel-title" style="margin-top:12px">心性 · 你是谁</h3><div class="temperament-echo temperament-${te.tone}">${te.text}</div>` : ""}
+      <h3 class="panel-title" style="margin-top:12px">此生几桩 · 你挣来的</h3>
+      <div class="chronicle">${msHtml}</div>
+      ${worldTxt ? `<p style="color:var(--ink-faint);font-size:12px;margin-top:10px">${worldTxt}</p>` : ""}
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="Main.toCreate()">重入轮回</button>
       </div>

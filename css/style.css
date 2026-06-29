@@ -2760,6 +2760,15 @@ html, body { touch-action: manipulation; }
 .temperament-echo.temperament-sentiment { border-left-color: var(--red); }
 .temperament-echo.temperament-balanced { border-left-color: var(--jade); }
 
+/* ===== 我的修仙人生·终章墓志（gameOver 总结）===== */
+.ending-epitaph { margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: var(--bg-panel-2);
+  border: 1px solid var(--border); border-top: 2px solid var(--gold); }
+.ending-line { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0;
+  font-size: 14px; line-height: 1.5; }
+.ending-line + .ending-line { border-top: 1px dashed var(--border); }
+.ending-line span { color: var(--ink-dim); font-size: 12px; letter-spacing: 2px; }
+.ending-line b { color: var(--ink); }
+
 /* ===== §9-6 名场面回廊（风云录里重温关键演出）===== */
 .scene-gallery { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
 .scene-row {
