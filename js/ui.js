@@ -3148,7 +3148,7 @@ const UI = {
         labelsHtml = L.nodes.map(n => {
           const lab = n.label || n.pos;
           const st = this._atlasNodeState(n, s, this._atlasPathSet());
-          return `<div class="wm-label ${st === 'here' ? 'sel' : ''}" style="left:${lab.x}%;top:${lab.y}%" onclick="UI._wmPickAtlas('renjjie','${n.id}')">${n.name}</div>`;
+          return `<div class="wm-label ${st === 'here' ? 'sel' : ''}" data-mx="${lab.x}" data-my="${lab.y}" onclick="UI._wmPickAtlas('renjjie','${n.id}')">${n.name}</div>`;
         }).join("");
       }
     } else if (z === 2) {
@@ -3164,7 +3164,7 @@ const UI = {
         labelsHtml = L.nodes.map(n => {
           const lab = n.label || n.pos;
           const st = this._atlasNodeState(n, s, this._atlasPathSet());
-          return `<div class="wm-label ${st === 'here' ? 'sel' : ''}" style="left:${lab.x}%;top:${lab.y}%" onclick="UI._wmPickAtlas('tiannan','${n.id}')">${n.name}</div>`;
+          return `<div class="wm-label ${st === 'here' ? 'sel' : ''}" data-mx="${lab.x}" data-my="${lab.y}" onclick="UI._wmPickAtlas('tiannan','${n.id}')">${n.name}</div>`;
         }).join("");
       }
     } else if (z === 3 || z === 4) {
@@ -3189,7 +3189,7 @@ const UI = {
         const nm = WORLD.atlas.epochPick(n.nameByEpoch, epoch) || n.name;
         const ruin = WORLD.atlas.epochPick(n.ruinByEpoch, epoch);
         const label = ruin ? `${nm}（旧址）` : nm;
-        return `<div class="wm-pin ${here ? 'here' : ''} ${cls}" style="left:${n.pos.x}%;top:${n.pos.y}%" onclick="UI._wmPickNode('${n.id}')" title="${n.desc}">
+        return `<div class="wm-pin ${here ? 'here' : ''} ${cls}" data-mx="${n.pos.x}" data-my="${n.pos.y}" onclick="UI._wmPickNode('${n.id}')" title="${n.desc}">
           <span class="wm-pin-dot"></span>
           <span class="wm-pin-label">${label}${here ? ' ·在此' : ''}</span>
         </div>`;
@@ -3198,7 +3198,7 @@ const UI = {
       // 州名题字
       labelsHtml = (C.prefectures || []).map(p => {
         const L2 = p.label || { x: 50, y: 50 };
-        return `<div class="wm-label" style="left:${L2.x}%;top:${L2.y}%">${p.name}</div>`;
+        return `<div class="wm-label" data-mx="${L2.x}" data-my="${L2.y}">${p.name}</div>`;
       }).join("");
 
       if (z === 3) {
@@ -3223,7 +3223,7 @@ const UI = {
           const p = locPos(l);
           const factor = Balance.travelTimeFactor(State.effectiveSpeed());
           const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
-          return `<div class="wm-pin loc ${here ? 'here' : ''}" style="left:${p.x}%;top:${p.y}%" onclick="UI._wmPickLoc('${l.id}')" title="${l.desc}">
+          return `<div class="wm-pin loc ${here ? 'here' : ''}" data-mx="${p.x}" data-my="${p.y}" onclick="UI._wmPickLoc('${l.id}')" title="${l.desc}">
             <span class="wm-pin-dot"></span>
             <span class="wm-pin-label">${l.name}${here ? ' ·在此' : ` ${cost}月`}</span>
           </div>`;
@@ -3236,7 +3236,7 @@ const UI = {
           return `<line class="wm-route trod" x1="${centerP.x}" y1="${centerP.y}" x2="${p.x}" y2="${p.y}" vector-effect="non-scaling-stroke"/>`;
         }).join("");
         // Z4 只显当前据点名（其余 pin 淡出，避免与地点簇打架）
-        pinsHtml = `<div class="wm-pin here node-anchor" style="left:${node.pos.x}%;top:${node.pos.y}%">
+        pinsHtml = `<div class="wm-pin here node-anchor" data-mx="${node.pos.x}" data-my="${node.pos.y}">
           <span class="wm-pin-label node">${node.name}</span></div>` + locPins;
         labelsHtml = "";
       }
@@ -3247,22 +3247,39 @@ const UI = {
     labelsBox.innerHTML = labelsHtml;
     if (hint) hint.textContent = hintText;
 
-    // 应用连续缩放变换（同图放大；跨级换图时由 _setWmBg 交叉淡入配合）
+    // 应用连续缩放变换（只缩底图/SVG）；pin/文字按投影坐标定位（原生分辨率，不糊）
     this._applyWmZoom(k, fx, fy);
+    this._projectWmMarkers();
 
     // 更新 avatar pin
     this._updateAvatarPin();
   },
 
-  // 连续缩放：translate+scale（origin 恒为中心）——把聚焦点(fx,fy)移到屏幕中心并放大 k 倍。
-  // pin/label 用 --wmk 反向缩放保持屏上恒定大小（见 CSS）。
+  // 连续缩放：只对 .wm-world（底图+SVG 路线）做 translate+scale。pin/文字/头像在层外，
+  // 用 _projectWmMarkers 按同一投影换算屏幕坐标——文字图标始终原生分辨率渲染（放大不糊）。
   _applyWmZoom(k, fx, fy) {
     const world = this.el("wm-world");
     if (!world) return;
+    this._wmK = k; this._wmFx = fx; this._wmFy = fy;
     const tx = -k * (fx - 50);
     const ty = -k * (fy - 50);
-    world.style.setProperty("--wmk", k);
     world.style.transform = `translate(${tx}%, ${ty}%) scale(${k})`;
+  },
+
+  // 投影：把每个 marker 的地图坐标(data-mx/my, 0~100)按当前缩放换算成屏幕百分比。
+  //   屏幕% = 50 + (m - 焦点) × k。marker 在缩放层外，故文字/图标按原生像素渲染（清晰）。
+  _projectWmMarkers() {
+    const k = this._wmK || 1, fx = this._wmFx != null ? this._wmFx : 50, fy = this._wmFy != null ? this._wmFy : 50;
+    const proj = (el) => {
+      const mx = parseFloat(el.dataset.mx), my = parseFloat(el.dataset.my);
+      if (isNaN(mx) || isNaN(my)) return;
+      el.style.left = (50 + (mx - fx) * k) + "%";
+      el.style.top = (50 + (my - fy) * k) + "%";
+    };
+    const pinsBox = this.el("worldmap-pins"), labelsBox = this.el("worldmap-labels");
+    if (pinsBox) pinsBox.querySelectorAll(".wm-pin").forEach(proj);
+    if (labelsBox) labelsBox.querySelectorAll(".wm-label").forEach(proj);
+    const av = this.el("avatar-pin"); if (av && !av.hidden) proj(av);
   },
 
   // 底图交叉淡入（跨级换图：人界/天南/胥国/场景之间）。同图不换=直接返回。
@@ -3471,8 +3488,18 @@ const UI = {
 
     if (ax != null && ay != null) {
       pin.hidden = false;
-      pin.style.left = ax + "%";
-      pin.style.top = ay + "%";
+      // 韩立头像（地图上"人在走"——比纯光圈更有代入感；id 随境界换装）
+      const port = this.el("avatar-pin-portrait");
+      if (port && typeof Art !== "undefined") {
+        const hid = Art.heroId ? Art.heroId() : "hanli";
+        const url = Art.url(hid);
+        if (url && port.dataset.img !== hid) { port.style.backgroundImage = `url("${url}")`; port.dataset.img = hid; }
+      }
+      // 投影坐标：存 data-mx/my，由 _projectWmMarkers 统一换算屏幕位置（与 pin 同一套，缩放一致）
+      pin.dataset.mx = ax; pin.dataset.my = ay;
+      const k = this._wmK || 1, fx = this._wmFx != null ? this._wmFx : 50, fy = this._wmFy != null ? this._wmFy : 50;
+      pin.style.left = (50 + (ax - fx) * k) + "%";
+      pin.style.top = (50 + (ay - fy) * k) + "%";
     } else {
       pin.hidden = true;
     }
