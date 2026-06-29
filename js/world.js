@@ -1337,13 +1337,21 @@ WORLD.bigitems = [
     } },
   { id: "yiwen", cat: "shijie", name: "异闻妖王",
     blurb: "传闻→寻踪→伏诛的妖王猎杀链，伏诛掉落具名稀材——稀材即下一段大件链的入口。",
-    guide: "身在彩霞山一带每月或有听闻；深入后山探索寻踪，踪迹了然后入深处与之一战。",
+    guide: "身处妖物栖地一带每月或有听闻；深入山野探索寻踪，踪迹了然后入深处与之一战。",
     stat: (s) => {
       const max = (WORLD.beastRumors || []).length || 3;
       const cur = (s.slainBeasts || []).length;
       const active = s.beastRumor && WORLD.enemies[s.beastRumor] ? WORLD.enemies[s.beastRumor].name : null;
+      // 当前所在大陆节点是否有可投放的异闻妖王（无栖地章节给中性「市井未传」而非违和的「后山风声」）
+      let hasLocalRumor = false;
+      try {
+        const node = (WORLD.continent.nodes || []).find(n => (n.locs || []).includes(s.location));
+        const area = node ? node.id : null;
+        if (area) hasLocalRumor = (WORLD.beastRumors || []).some(r => (r.area || "caixia") === area && !(s.slainBeasts || []).includes(r.id));
+      } catch (e) { /* continent 未就绪时静默 */ }
+      const idleNote = hasLocalRumor ? "静待山野风声" : "此地未传妖王异闻";
       return { state: cur > 0 ? "got" : active ? "track" : "unheard", prog: { cur, max },
-        note: active ? "正在追猎：" + active : cur ? "已伏诛 " + cur + " 头妖王" : "静待后山风声" };
+        note: active ? "正在追猎：" + active : cur ? "已伏诛 " + cur + " 头妖王" : idleNote };
     } },
   { id: "atlas", cat: "shijie", name: "舆图远行",
     blurb: "人界分层舆图——人界▸大区▸国别·联盟▸据点，一图到底，永远知道自己在何处、能去何方。",
