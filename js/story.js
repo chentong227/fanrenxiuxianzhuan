@@ -35,6 +35,7 @@ const STORY = [
       { text: "临行前，偷偷揣一包干粮盐巴", hint: "穷家孩子，路上不能空着手",
         effect(s) {
           State.give("lingshi", 1);
+          State.setFlag("village_provisions");   // flag 供剧情台词分支读；writeLedger 管远雷兑现
           Engine.writeLedger("village_provisions", "离家前偷偷揣了干粮盐巴——穷家孩子的谨慎");
           return { text: "你趁爹娘不注意，往怀里塞了几块干粮和一小包盐巴。三叔见了，笑而不语。", kind: "good" };
         },
@@ -42,6 +43,7 @@ const STORY = [
       { text: "向三叔细问七玄门的底细", hint: "知己知彼，方能踏稳第一步",
         effect(s) {
           s.skills = s.skills || {}; s.skills.scouting = (s.skills.scouting || 0) + 1;
+          State.setFlag("village_inquiry");   // flag 供剧情台词分支读；writeLedger 管远雷兑现
           Engine.writeLedger("village_inquiry", "离家前向三叔细问七玄门底细——天生谨慎");
           return { text: "一路上你拉着三叔问了个底朝天：门中有多少弟子？谁说了算？药庐是干什么的？三叔被你问得直笑：「你这娃儿，心眼倒多。」", kind: "good" };
         },
@@ -99,6 +101,7 @@ const STORY = [
         next: true },
       { text: "教张铁几招防身的小手法", hint: "兄弟互助",
         effect(s) {
+          State.setFlag("journey_help_zhangtie");   // flag 供剧情台词分支读；writeLedger 管远雷兑现（两者各司其职）
           Engine.writeLedger("journey_help_zhangtie", "赴考路上教张铁几招防身手法——兄弟情谊");
           s.mood = Math.min(s.moodMax || 100, (s.mood || 0) + 5);
           return { text: "张铁憨厚，功夫底子差，你便教他几招简单实用的防身手法。他学得笨，却学得认真，一边练一边咧嘴笑：「韩立，有你这兄弟，我心里踏实多了。」", kind: "good" };
@@ -484,6 +487,7 @@ const STORY = [
         effect(s) {
           State.give("duyao_cao", 2);
           State.give("anqi", 2);
+          State.setFlag("showdown_prep_poison");   // flag 供决战台词分支读；writeLedger 管远雷兑现
           Engine.writeLedger("showdown_prep_poison", "决战前以毒为先——催熟剧毒、多备暗器");
           return { text: "你将小绿瓶催熟的毒草尽数炼成剧毒，又淬了数枚暗器。这些东西，就是你以弱胜强的本钱。", kind: "good" };
         },
@@ -609,6 +613,7 @@ const STORY = [
         effect(s) {
           s.skills = s.skills || {}; s.skills.scouting = (s.skills.scouting || 0) + 1;
           State.give("lingshi", 3);
+          State.setFlag("identity_practice_medicine");   // flag 供野狼帮/太南台词分支读；writeLedger 管远雷兑现
           Engine.writeLedger("identity_practice_medicine", "以墨大夫身份行医——打探门中虚实");
           return { text: "你顶着墨大夫的身份行医问诊，门中弟子来找你看病，你一边把脉一边闲聊——谁跟谁有隙、野狼帮最近有何动静、三位师叔的脾气秉性……不出数月，门中的虚实你已摸得七七八八。", kind: "good" };
         },
@@ -660,6 +665,7 @@ const STORY = [
       { text: "让小算盘替你留意野狼帮的动向", hint: "消息灵通的人，用起来最顺手",
         effect(s) {
           s.skills = s.skills || {}; s.skills.scouting = (s.skills.scouting || 0) + 1;
+          State.setFlag("gang_use_xiaosuanpan");   // flag 供野狼帮/太南台词分支读；writeLedger 管远雷兑现
           Engine.writeLedger("gang_use_xiaosuanpan", "托小算盘留意野狼帮动向——借力打力");
           return { text: "你私下给了小算盘几块灵石，让他替你盯着野狼帮的动静。他消息灵通，果然不负所托——不出半月，野狼帮的人手分布、头目习性，你都摸了个清楚。", kind: "good" };
         },

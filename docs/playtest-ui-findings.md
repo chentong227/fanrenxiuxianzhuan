@@ -183,3 +183,14 @@
 ## 全面深挖小结（v248）
 最大收获＝音频真 bug（夜景后 BGM 卡 16%）。其余维度（存读档/特效/探索/平衡）代码纪律扎实，无新 bug，
 但补了两道长期防线（saveload + smoke 测试，测试套 31→33）。结论：游戏底层工程健康度高。
+
+
+## 代码纪律深挖（v249 · 资产引用完整性）
+- ✅✅ **真 bug：7 个星海篇剧情 CG 画好了却不显示**（wenqiang/chuhai/shijin/tianxing/ziliang/jieguan/jinkui）。
+  资产 `assets/cg/cg_*.png`+`_p` 全在库，但 art.js 的 `CG` 注册表漏登记 → `cgUrl` 返回 null → 剧情大图走水墨兜底。
+  玩家玩到星海篇这些节点本该看到大图，实际只见兜底。修：art.js CG 表补登记 7 项 `{p:1}`。
+- ✅ **新增 assetref.test.js 永久守护**：STORY cg 引用磁盘有图却未注册 = FAIL；give/take/count 物品 id、
+  startEncounterFight 敌人 id、meetNpc NPC id 必须存在于数据表。这类"资产画了没接线/id 拼错"断链以后自动拦截。
+- ✅ scene/portrait 层无真断链：6 个未注册 scene 全是 `fg_*` 前景遮挡层（用户裁决暂停·资产保留），
+  portrait 按名直查不需注册表。数据引用（物品/敌人/NPC）0 悬空。
+- 测试套 33→34（+assetref）。结论：代码纪律的**资产-注册脱节**是隐藏雷区，已修已守护。
