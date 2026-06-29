@@ -388,3 +388,18 @@
 - 这同时修了一处**选择质量**（消灭被支配选项）+ 铺第二组**时间窗口互斥**（七玄门篇也有了真取舍窗口）。
 - 两例互斥窗口（七玄门决战前 / 黄枫谷血色禁地前）现各驻一篇，范式一致、皆复用既有系统。
 - 全门禁绿（ledger 新债已结/journey/smoke/quality）。
+
+
+## 开新章·星海飞驰篇 shell 注册（v261）——审计throughline收尾
+- **背景**：既有五篇已按规章全审好（v253~v260·因果/选择/战斗/惦记/互斥全过门禁）。throughline 终点＝开新章。
+- ✅ **章节就绪度核查**：`docs/xinghaifeichi-design.md` 设计稿完整——动漫考据节点表（73~124集·≥2源台账）、
+  系统推进表 A~E 全填、篇章质量 §六 checklist 全勾、实装切片 S1~S10 已排期。`tianxing_city` 已是带 home
+  行动（闭关/突破/调息/炼药）的完整 location。**设计层就绪，可按切片推进**。
+- ✅ **修隐患 + 注册 shell**：此前 `starsea.nextChapter:"xinghaifeichi"` 指向一个**不存在的章节对象**
+  （初入星海通关 `Chapters.unlock("xinghaifeichi")` 把字符串塞进 unlockedChapters，但 `Chapters.get` 返回 null）——
+  解锁钩子悬空。现注册星海飞驰章节 shell（chapters.js）：order6/realmTier2/realmCapIndex22/startLocation
+  tianxing_city/completeFlag arc6_complete/nextChapter waihaifengyun。解锁钩子自此可解析。
+- **S1~S10 内容（青竹蜂云剑/虚天殿/曲魂线/银月等）= 用户最在意、想亲自体验的「最重篇章」narrative**——
+  按用户「想自己玩、不提前体验掉」的意愿，**剧情内容待用户开工指令再按切片推进**，不在打磨阶段擅自铺写。
+  本次只落地无叙事的章节 shell（让解锁钩子干净、为后续切片备好骨架）。
+- 全门禁绿（chapter/run/smoke/journey）。

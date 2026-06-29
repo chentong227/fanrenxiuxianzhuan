@@ -75,6 +75,20 @@ const Chapters = {
       // 见 docs/lore-churu-xinghai.md / docs/churu-xinghai-design.md。动漫年番原创脊柱（镇妖大典）。
       // 待实装：登魁星岛·镇妖台擂台/小寰岛闭关重修(三转一转)/镇妖大典(越级斩婴鲤兽)·大典惊变(雷鹏·风希·救小紫灵·乱星海大乱)/外星海致富(噬金虫·全妖丹)/天星城首次结丹失败·金丹大成。
     },
+    {
+      id: "xinghaifeichi",
+      name: "星海飞驰篇",
+      order: 6,
+      locked: true,             // 由初入星海篇章末「金丹大成」(arc5_complete)解锁
+      realmTier: 2,             // 结丹期（全章主体结丹·战斗标度结丹档）
+      realmCapIndex: 22,        // 结丹中期上限（设计稿§〇待定 22~24，取 22 起步；深层随切片推进再校）
+      startLocation: "tianxing_city",
+      completeFlag: "arc6_complete",
+      nextChapter: "waihaifengyun", // 章末四大势力追杀→外海风云篇（钩子·后续实装）
+      currencyName: "灵石",
+      // 设计全文见 docs/xinghaifeichi-design.md（最重篇章·52集·青竹蜂云剑/虚天殿/曲魂线收束/银月）。
+      // 实装切片 S1~S10（设计稿§十一）：当前=S0 章节 shell 注册（解锁钩子可解析·内容待按切片推进）。
+    },
   ],
 
   get(id) { return this.list.find(c => c.id === id) || null; },
