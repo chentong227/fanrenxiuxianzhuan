@@ -183,9 +183,9 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   border-bottom: none;
 }
 .char-brief { display: flex; align-items: baseline; gap: 12px; }
-.game-logo { font-size: 18px; color: var(--gold-bright); letter-spacing: 5px; font-weight: 700; text-shadow: 0 1px 10px rgba(0,0,0,.8); }
+.game-logo { font-size: 18px; color: var(--gold-bright); letter-spacing: 5px; font-weight: 700; text-shadow: 0 1px 10px rgba(0,0,0,.8); white-space: nowrap; }
 .t-name { font-size: 18px; color: var(--jade-bright); letter-spacing: 2px; }
-.t-realm { color: var(--ink); font-size: 13px; letter-spacing: 1px; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+.t-realm { color: var(--ink); font-size: 13px; letter-spacing: 1px; text-shadow: 0 1px 4px rgba(0,0,0,.8); white-space: nowrap; }
 .time-brief { color: var(--ink-dim); font-size: 14px; }
 .time-brief .dot { margin: 0 6px; }
 .topbar-actions { display: flex; gap: 7px; }
@@ -236,13 +236,15 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .wm-pin {
   position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--wmk, 1)));
   pointer-events: auto; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  /* 锚点=圆点中心（与 avatar-pin 同心）：圆点绝对居中于地理坐标，名字浮在下方不挤占锚点 */
+  width: 0; height: 0;
 }
 .wm-pin-dot {
+  position: absolute; top: 0; left: 0; transform: translate(-50%, -50%);
   width: 10px; height: 10px; border-radius: 50%;
   background: var(--gold); border: 2px solid rgba(255,255,255,.3);
   box-shadow: 0 0 8px rgba(201,169,106,.5);
-  transition: all 0.2s;
+  transition: box-shadow 0.2s, background 0.2s, border-color 0.2s;
 }
 .wm-pin.here .wm-pin-dot {
   background: var(--jade-bright); border-color: var(--jade);
@@ -257,10 +259,12 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   background: transparent; border-style: dashed; border-color: rgba(255,255,255,.2);
 }
 .wm-pin:hover .wm-pin-dot {
-  transform: scale(1.3);
+  transform: translate(-50%, -50%) scale(1.3);
   box-shadow: 0 0 16px rgba(201,169,106,.8);
 }
 .wm-pin-label {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  margin-top: 2px;
   font-size: 11px; color: var(--ink); white-space: nowrap;
   text-shadow: 0 1px 3px rgba(0,0,0,.8);
   letter-spacing: 1px;
@@ -2913,7 +2917,7 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
     max-height: 80px; overflow-y: auto;
   }
   .char-brief { gap: 8px; }
-  .game-logo { font-size: 15px; letter-spacing: 3px; }
+  .game-logo { font-size: 14px; letter-spacing: 2px; }
   .t-name { font-size: 16px; }
   .topbar-actions { gap: 5px; }
   .btn-mini { padding: 5px 9px; font-size: 12px; }
@@ -5032,6 +5036,11 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   #screen-game[data-mtab="act"] .scene-stage { flex: 1 1 auto; min-height: 0; }
   #screen-game[data-mtab="act"] .scene-pins { display: none; }
   #screen-game[data-mtab="act"] .scene-confirm { display: none; }
+  /* 行动已收进底部 sheet——场景上的悬浮行动图标圈是冗余，隐藏让场景干净沉浸 */
+  #screen-game[data-mtab="act"] .scene-hotspots-layer { display: none; }
+  /* 在场人物立绘：站在场景里、浮在底部 sheet 之上（不被边框盖住）。
+   * sheet 收起态约占底部 210px，立绘抬到其上方 */
+  #screen-game[data-mtab="act"] .locals { bottom: 222px; }
   /* 立绘居中铺底，按人数自适应缩放（--ln-n 由 renderLocals 写入），挤而不溢出视口 */
   .locals { left: 3%; right: 3%; bottom: 4px; gap: 6px; justify-content: center; flex-wrap: nowrap; overflow: hidden; }
   .ln-figure { height: clamp(46px, calc(64vw / var(--ln-n, 4)), 92px); }

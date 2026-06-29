@@ -2919,6 +2919,7 @@ const UI = {
     if (!canvas || !stage) return;
     if (show) {
  // 显示地图：canvas 淡入，stage 淡出
+ clearTimeout(this._mapFadeTimer);   // 取消上一次"淡出后隐藏"的待执行计时——否则快速来回切会把刚显示的地图又隐藏（黑屏 bug）
  canvas.hidden = false;
  requestAnimationFrame(() => canvas.classList.remove("fade-out"));
  stage.classList.add("fade-out");
@@ -3117,6 +3118,7 @@ const UI = {
     const hint = this.el("worldmap-hint");
     if (!svg || !pinsBox) return;
     const s = State.data;
+    if (!s) return;                       // 创建界面/未开局：地图无可渲染（防 null 崩溃）
     const C = WORLD.continent;
     if (!C) return;
 
@@ -3288,15 +3290,9 @@ const UI = {
     }
   },
 
-  // 旅途抵达后：从地图切到场景（Z5）
+  // 旅途抵达后：从地图切到场景（Z5），回到据点·行动态
   _journeyArriveTransition() {
-    if (this._mapZoom === 5) return;
-    this._prevZoom = this._mapZoom;
-    this._mapZoom = 5;
-    this._showWorldmap(false);
-    this.renderLocation();
-    // 手机端到达即弹行动 sheet（落脚据点即可行事）
-    if (this._isMobile()) this.switchMobileTab("act");
+    this._returnToLocale();
   },
 
   // 旅途开始：切到地图主界面（Z3），头像将沿路线插值移动（P3 旅途可视化）
@@ -3394,9 +3390,21 @@ const UI = {
   _confirmTravel(locId) {
     this.closeSheet();
     Engine.travelTo(locId);
-    // 到达后切回场景
+    // 到达后回到「据点·行动」态（不只是切 zoom——还要同步 tab/data-mtab/dock，否则停在旧版残留 UI）
+    this._returnToLocale();
+  },
+
+  // 统一收口：从地图/旅途回到据点态——切 Z5、地图淡出、底栏=行动、弹行动 sheet。
+  _returnToLocale() {
     this._mapZoom = 5;
-    this._showWorldmap(false);
+    this._showWorldmap(false, true);   // skipDock：由下面按平台决定是否弹
+    this.renderLocation();
+    document.querySelectorAll(".mtab").forEach(t => t.classList.toggle("active", t.dataset.tab === "act"));
+    const sg = document.getElementById("screen-game"); if (sg) sg.setAttribute("data-mtab", "act");
+    const layout = document.querySelector(".layout"); if (layout) layout.setAttribute("data-mtab", "act");
+    const s = State.data;
+    if (!s.combat && !s.pendingEvent && !s.exmap) this._showActionDock(true);
+    this.renderAll();
   },
 
   // Z1/Z2 点区块
