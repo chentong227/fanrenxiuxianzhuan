@@ -3611,6 +3611,8 @@ const STORY = [
       ["xuening_wuxing_dan", "xuanyin_jue", "xueling_zuan", "jinpa_liusong", "yujian_canpian", "boyu_alms"].forEach(k => State.give(k, 1));
       Engine.writeLedger("modao_e4b_finale", "皇宫血池大殿·终结——三符宝（韩立平天尺/宋蒙重元珠/陈巧倩赤红剑）齐轰毁胥王假丹肉身→血凝五行丹借阵复生神魂→颠倒五行阵镇之、刘靖将祖传真凰符托付钟卫娘、师妹祭符灭神魂。黑煞教覆灭。得：血凝五行丹/玄阴诀/血灵钻/锦帕/玉简/钵盂。彩蛋：刘宋渊源");
       Engine.addMilestone("皇宫决战·终结：真凰符灭胥王神魂，黑煞教覆灭（刘靖生还）", "showdown");
+      // 远雷·跨场仇恨兑现（铁律3）：京城血池蜕茧遁走的铁罗，随黑煞教覆灭同灭——断臂化茧的旧账，在皇宫血夜清了
+      Engine.settleLedger("tieluo_escaped", "那个在血池里断你一臂、化血茧金蝉脱壳遁走的血侍铁罗——他到底没能再逃过这一劫。黑煞教教主既灭，满殿血侍同遭真凰符焚尽，他亦在其中。当日他咬着你气息撂下的那句「下次是你进血池」，终究只是句没能兑现的狠话");
       if (typeof Sfx !== "undefined") Sfx.play("success");
     },
     choices: [
@@ -3661,6 +3663,8 @@ const STORY = [
       ["xuening_wuxing_dan", "xuanyin_jue", "xueling_zuan", "jinpa_liusong", "yujian_canpian", "boyu_alms"].forEach(k => State.give(k, 1));
       Engine.writeLedger("modao_e4b_finale", "皇宫血池大殿·终结——三符宝（韩立平天尺/宋蒙重元珠/陈巧倩赤红剑）齐轰毁胥王假丹肉身→血凝五行丹借阵复生神魂→颠倒五行阵镇之、钟卫娘含泪祭刘靖遗下的祖传真凰符灭神魂（为身陨的刘师兄报仇）。黑煞教覆灭。得：血凝五行丹/玄阴诀/血灵钻/锦帕/玉简/钵盂");
       Engine.addMilestone("皇宫决战·终结：真凰符灭胥王神魂，黑煞教覆灭（刘靖身陨）", "showdown");
+      // 远雷·跨场仇恨兑现（铁律3）：京城血池蜕茧遁走的铁罗，随黑煞教覆灭同灭——断臂化茧的旧账，在皇宫血夜清了
+      Engine.settleLedger("tieluo_escaped", "那个在血池里断你一臂、化血茧金蝉脱壳遁走的血侍铁罗——他到底没能再逃过这一劫。黑煞教教主既灭，满殿血侍同遭真凰符焚尽，他亦在其中。当日他咬着你气息撂下的那句「下次是你进血池」，终究只是句没能兑现的狠话");
       if (typeof Sfx !== "undefined") Sfx.play("success");
     },
     choices: [
@@ -4334,6 +4338,7 @@ const STORY = [
       { sfx: "thunder" },
       { cam: "shake", px: 14 },
       "光柱冲霄的刹那，古阵自身也轰然崩裂——身后追兵的咒骂、辛如音最后那个虚弱而释然的笑、整座天南的山河……都在这一瞬被青光彻底吞没、抛在了脑后。",
+      { aside: "追兵最前那道甲胄如铁的身影你认得——战王蝉。燕家堡那一夜结下的不死不休，它从天南腹地一路咬到了这阵前，眼睁睁看你踏入光柱。「总有一天我会回来的」——这句话，一半说给天南，一半，说给它听。（宿敌未了·重返天南再算）" },
       { say: "韩立", emo: "cold", tone: "low", text: "「天南……生我、养我、也负我之地。总有一天——我会回来的。」" },
       { aside: "大挪移令碎了，古阵塌了，身后所有的追路，就此斩断。再别天南——这一别，是天南之外、茫茫数万里的未知。" },
     ],
