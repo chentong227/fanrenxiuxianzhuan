@@ -79,6 +79,13 @@
   暗修期（`secret_cultivate_push`→反杀夜·抢出的修为／`secret_cultivate_probe`→反杀夜·信息差先手）、
   顶替身份（`identity_study_poison`→金光决战·毒方反噬／`identity_practice_medicine`→金光决战·药师身份料敌）。
   **至此七玄门篇全篇玩家性格/准备选择因果链闭环**。闭环率 **10% → 16%**（13 → 21 条），baseline 降至 113 条。
+- **2026-06-29 v236**：黄枫谷篇 A 类选择债（4 条）——
+  血色禁地情报（`jindi_guzhen` 古阵残纹／`jindi_zhongwu_map` 钟吾舆图 → 反杀封岳时点名兑现：摸清的猎杀路线化作伏击先手，
+  机械上本就驱动 `f.intel.patrol_route` 给伏击先手，今补 ledger 层闭环）、
+  百药园底子（`ma_approval` 马师伯栽培／`yaoyuan_overharvest` 园角私种 → 自炼筑基丹 lianZhujiDan 时点名兑现：
+  三年看园的辨药火候熔进丹炉、私种补足辅药亏空）。闭环率 **16% → 19%**（21 → 25 条），baseline 降至 109 条。
+  注：`qingwen_grudge`（青纹道人结怨）、`hanyunzhi_flower`（御灵宗菡云芝人情）经评估为**真·跨篇钩子**（黑煞教/御灵宗线），
+  当场机械兑现已充分（探知+2／火蛇符+定身符方案），叙事远雷留待魔道争锋/再别天南篇御灵宗线展开时兑现，不强行就近结。
 
 ---
 

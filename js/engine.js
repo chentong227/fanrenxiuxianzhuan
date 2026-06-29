@@ -3530,6 +3530,13 @@ const Engine = {
     this.log(`【地火之屋】三个月闭门不出。地火翻腾，丹炉九转——开炉那刻，丹香冲得人眼眶发热：筑基丹 ×${n}！寻常弟子三五颗已是高产，你这一炉，够把"伪灵根"三个字砸碎了。（图鉴里那个空位，已无需讨还。）`, "good");
     this.addMilestone(`地火炼丹：筑基丹×${n} 出炉`, "bigitem");
     this.settleLedger("jindi_seat", "禁地名额没有白拼——主药化作了满匣筑基丹");
+    // 远雷·百药园底子兑现（铁律3）：马师伯的栽培与园角的私账，都在这一炉里开花——点名出处
+    if (this.settleLedger("ma_approval", "马师伯当年那句「倒不是个棒槌」、那本翻烂的《百草谱》、那排交你管的青元参苗——三年看园攒下的辨药火候，今日全熔进了这炉丹里。他对药草是真心，没看错你这双手")) {
+      s.mood = clamp(s.mood + 3, 0, s.moodMax);
+    }
+    if (this.settleLedger("yaoyuan_overharvest", "园角自留地里偷种的那几批药苗，到底没白费——它们补足了这一炉的辅药亏空。马师伯当年睁只眼闭只眼那份默许，此刻也算有了回报")) {
+      s.mood = clamp(s.mood + 2, 0, s.moodMax);
+    }
     this.toast(`筑基丹 ×${n} 入袋！洞府「尝试突破」冲击筑基`);
     if (typeof Sfx !== "undefined") Sfx.play("success");
     this.checkStory();
@@ -5144,6 +5151,13 @@ const Engine = {
           }
           this.writeLedger("fengyue_slain", "血色禁地中反杀狙杀者封岳，夺其踏云靴");
           this.addMilestone("猎杀猎人：反杀封岳", "showdown");
+          // 远雷·禁地情报兑现（铁律3）：摸清的猎杀路线，化作伏击封岳的先手——点名出处
+          if (this.settleLedger("jindi_guzhen", "古阵残纹里窥得的那张猎杀路线图，今日全应在了刀口上——你算准他游弋到哪一步、从哪个方位扑来，先手伏击一击咬死。是猎人，反成了猎物")) {
+            s.mood = clamp(s.mood + 2, 0, s.moodMax);
+          }
+          if (this.settleLedger("jindi_zhongwu_map", "钟吾那张朱砂舆图值回了八块灵石——他用三天看清的封岳脾性，让你避开正面、卡住他的巡逻死角下手。命，果然比灵石值钱")) {
+            s.mood = clamp(s.mood + 2, 0, s.moodMax);
+          }
         } else if (meta.enemyName === "封岳" && anyEscaped) {
           State.setFlag("jindi_mid_done");
           if (s.exmap) {
