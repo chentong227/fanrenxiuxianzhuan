@@ -194,3 +194,13 @@
 - ✅ scene/portrait 层无真断链：6 个未注册 scene 全是 `fg_*` 前景遮挡层（用户裁决暂停·资产保留），
   portrait 按名直查不需注册表。数据引用（物品/敌人/NPC）0 悬空。
 - 测试套 33→34（+assetref）。结论：代码纪律的**资产-注册脱节**是隐藏雷区，已修已守护。
+
+
+### 代码纪律深挖·flag/ledger 同名异源（v250）
+- ✅✅ **真 bug：一批剧情分支台词从未显示**。`writeLedger("X")` 只写 `s.ledger.X`，不写 `s.flags.X`；
+  但剧情用 `if (s.flags.X)` 读同名 flag 切台词 → flag 永远 undefined → else 分支永远走不到。
+  受害台词（藏拙/暖心/老练，全是人物质感）：村粮分张铁、教张铁防身→入门胆识、托小算盘→野狼帮情报、
+  备毒→决战冷然、行医→太南见过世面。修：5 处选项 effect 补 `State.setFlag(X)`（flag 管即时台词、ledger 管远雷，各司其职）。
+- 复核：其余"读了从不写"的 flag（chen_resolved/yeshishu_dead/huangfeng_relocated/jiedan_complete/
+  yuanying_complete/mulan_arc/ouyang_dead）均为**冗余负向 guard 或未来篇章解锁**——无害（storyStage 顺序制已防重触发；欧阳线已废）。
+- 教训：ledger id 与 flag 同名极易误以为"写了 ledger=设了 flag"。两者是不同存储。→ 立门禁防回归。
