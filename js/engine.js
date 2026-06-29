@@ -81,14 +81,35 @@ const Engine = {
 
   // 世间百态：随时间流动的氛围事件（野狼帮/门派/市井三条线，只造氛围不改数值）
   _AMBIENT_EVENTS: [
-    { cond: (s) => !s.flags.jinguang_dead, text: "听闻野狼帮又吞了一家镖局，山下商旅背地里骂声载道。" },
-    { cond: (s) => !s.flags.jinguang_dead, text: "集镇酒肆里有人压低声音说，野狼帮在招揽亡命之徒，开的价钱不低。" },
-    { cond: (s) => s.flags.gang_war && !s.flags.jinguang_dead, text: "七玄门与野狼帮的梁子越结越深，山下行人入夜便不敢出门。" },
-    { cond: () => true, text: "门中贴出告示：后山深处近来有凶兽伤人，弟子结伴方可入山。" },
-    { cond: () => true, text: "几名外门弟子因私斗被罚去担水三月，门规面前没人讲情面。" },
-    { cond: () => true, text: "市集上新到了一批南边的药材，价钱压得很低，药铺掌柜们脸色难看。" },
-    { cond: () => true, text: "听说邻县遭了蝗灾，逃难的人拖家带口往这边来，镇口多了不少生面孔。" },
-    { cond: () => true, text: "山道上的老茶棚换了新主人，旧主人据说进山采药，再没回来。" },
+    // —— 七玄门篇·凡俗小镇市井（仅本篇语境，jinguang_dead 后退场；黄枫谷起不再播凡俗旧闻）——
+    { cond: (s) => s.activeChapter === "qixuan" && !s.flags.jinguang_dead, text: "听闻野狼帮又吞了一家镖局，山下商旅背地里骂声载道。" },
+    { cond: (s) => s.activeChapter === "qixuan" && !s.flags.jinguang_dead, text: "集镇酒肆里有人压低声音说，野狼帮在招揽亡命之徒，开的价钱不低。" },
+    { cond: (s) => s.activeChapter === "qixuan" && s.flags.gang_war && !s.flags.jinguang_dead, text: "七玄门与野狼帮的梁子越结越深，山下行人入夜便不敢出门。" },
+    { cond: (s) => s.activeChapter === "qixuan", text: "门中贴出告示：后山深处近来有凶兽伤人，弟子结伴方可入山。" },
+    { cond: (s) => s.activeChapter === "qixuan", text: "几名外门弟子因私斗被罚去担水三月，门规面前没人讲情面。" },
+    { cond: (s) => s.activeChapter === "qixuan", text: "市集上新到了一批南边的药材，价钱压得很低，药铺掌柜们脸色难看。" },
+    { cond: (s) => s.activeChapter === "qixuan", text: "听说邻县遭了蝗灾，逃难的人拖家带口往这边来，镇口多了不少生面孔。" },
+    { cond: (s) => s.activeChapter === "qixuan", text: "山道上的老茶棚换了新主人，旧主人据说进山采药，再没回来。" },
+    // —— 黄枫谷篇·仙门驻地百态（各脉机锋／灵药行情／禁地余响／同门轶事——本分修行的仙家日子）——
+    { cond: (s) => s.activeChapter === "huangfeng", text: "万宝楼挂出新到的丹方玉简，几位内门弟子围着争看，灵石拍得叮当响。" },
+    { cond: (s) => s.activeChapter === "huangfeng", text: "听说炼丹堂走水了半间，烧了某位师叔积攒多年的火候——丹道一途，急不得。" },
+    { cond: (s) => s.activeChapter === "huangfeng", text: "谷中又有弟子闭死关，三月不出。同门私下打赌：这回是破境，还是走火。" },
+    { cond: (s) => s.activeChapter === "huangfeng", text: "血色禁地的灵气一年薄似一年，老弟子叹气：当年遍地主药的光景，再不会有了。" },
+    { cond: (s) => s.activeChapter === "huangfeng", text: "坊市口的告示换了——各脉灵田歉收，今年的例钱怕是要打折扣。" },
+    { cond: (s) => s.activeChapter === "huangfeng", text: "执法堂抓了个偷采百药园的杂役，杖责三十、逐出谷去。园里人这几日都安分了许多。" },
+    { cond: (s) => s.activeChapter === "huangfeng", text: "听闻掩月宗的人又来谷里走动了——那等大派的修士，眼睛长在头顶上。" },
+    { cond: (s) => s.activeChapter === "huangfeng", text: "谷外乌龙潭近来不太平，记名弟子结伴去试剑的，回来时少了一个。" },
+    // —— 魔道争锋篇·前线/京城（战时肃杀·正魔交锋·京城暗流）——
+    { cond: (s) => s.activeChapter === "modao", text: "前线又添了新坟。征调令一道接一道，待命营里的脸一天比一天沉。" },
+    { cond: (s) => s.activeChapter === "modao", text: "营中私语：魔道这回是倾巢而出，七派会盟也未必压得住。" },
+    { cond: (s) => s.activeChapter === "modao", text: "京城连着几日有散修失踪，巡夜的兵卒讳莫如深，只说『莫要夜行』。" },
+    { cond: (s) => s.activeChapter === "modao", text: "听闻黑煞教以血祭炼煞，所过之处人畜不留——这等邪法，天理难容。" },
+    // —— 初入星海篇·乱星海（海客江湖·妖兽猎场·星宫秩序）——
+    { cond: (s) => s.activeChapter === "starsea", text: "码头又靠了艘满载妖丹的商船，引得半个坊市的修士围上去问价。" },
+    { cond: (s) => s.activeChapter === "starsea", text: "外海传回消息：某座灵岛被妖潮淹了，岛上散修十不存一。海凶莫测。" },
+    { cond: (s) => s.activeChapter === "starsea", text: "星宫又出了新的悬赏，猎杀外海妖兽的玉牌挂了一长串，价高者得。" },
+    { cond: (s) => s.activeChapter === "starsea", text: "坊间传说乱星海深处有上古洞府现世，引得不少结丹修士结伴远航。" },
+    // —— 通用（任何篇章·点季节/修行感，不带凡俗地域）——
     { cond: (s) => s.bottle && s.bottle.unlocked, text: "坊间又在传某位散修捡了天大机缘、一步登天的故事。你听着，只是笑笑。" },
     { cond: () => true, text: "夜里落了头场霜，门中老人说，今年的冬天会比往年冷。" },
   ],
