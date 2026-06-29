@@ -204,3 +204,24 @@
 - 复核：其余"读了从不写"的 flag（chen_resolved/yeshishu_dead/huangfeng_relocated/jiedan_complete/
   yuanying_complete/mulan_arc/ouyang_dead）均为**冗余负向 guard 或未来篇章解锁**——无害（storyStage 顺序制已防重触发；欧阳线已废）。
 - 教训：ledger id 与 flag 同名极易误以为"写了 ledger=设了 flag"。两者是不同存储。→ 立门禁防回归。
+
+
+## 代码纪律深挖·阶段总结（v248~v250）
+系统覆盖 10 个面，挖出 3 个真 bug + 建 4 道永久门禁，测试套 29→35 全绿：
+
+| 维度 | 结果 |
+|------|------|
+| 音频 BGM | ★真bug：夜景后 BGM 卡 16%（_vol 从未赋值）→ 修 |
+| 资产-注册（CG）| ★真bug：7 个星海篇 CG 画好却漏注册不显示 → 修 + assetref.test.js |
+| flag/ledger 同名异源 | ★真bug：5 处分支台词静默丢失 → 修 + flagledger.test.js |
+| 存读档边界 | 116 节点 roundtrip 0 软锁 + saveload.test.js |
+| 动态文本崩溃 | 全节点求值 0 抛错 + smoke.test.js |
+| 数据引用（物品/敌人/NPC）| 0 悬空 |
+| combat/loadout 契约 | 法术 range/敌招字段/法宝 driveRealm 0 警告 |
+| fx.js 性能红线 | 粒子封顶 420/禁 shadowBlur/降档 全守 |
+| 探索副本完整性 | 5 地图 sub/edge 0 悬空 |
+| 数值平衡 | 同阶胜率/TTK 锚点达标 |
+
+**结论：代码纪律性已系统性夯实。** 三个真 bug 都属"静默型"（不报错不崩，但玩家体验受损）——
+正是深挖才能揪出的。四道新门禁把这几类静默 bug 变成"一改就红"，杜绝回归。
+**下一步可转向"玩家游戏性"深挖**（代码地基已确认无误）。
