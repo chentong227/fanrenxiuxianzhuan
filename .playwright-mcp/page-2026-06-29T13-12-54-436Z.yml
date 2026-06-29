@@ -1,0 +1,39 @@
+- generic [ref=e2]:
+  - generic [ref=e22]:
+    - generic [ref=e25]:
+      - generic [ref=e26]: 所在
+      - generic [ref=e27]: 七玄门 · 山门
+      - generic [ref=e28]: 气派非凡的仙门，你将在此参加入门选拔。
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: 凡人修仙传
+        - generic [ref=e32]: 第1年1月
+      - generic [ref=e46]:
+        - button "舆图" [ref=e47] [cursor=pointer]
+        - button "⋯" [ref=e48] [cursor=pointer]
+    - generic [ref=e49]:
+      - generic [ref=e51]:
+        - generic [ref=e52]: 赴考山路
+        - generic [ref=e53]: 天命 · 际遇将至
+      - generic [ref=e54]:
+        - button "行动" [ref=e55] [cursor=pointer]
+        - button "见闻" [ref=e56] [cursor=pointer]
+      - generic [ref=e103]: — 此地仅供过场，循剧情前行 —
+    - navigation [ref=e60]:
+      - button "舆图" [ref=e61] [cursor=pointer]
+      - button "行动" [ref=e62] [cursor=pointer]
+      - button "状态" [ref=e63] [cursor=pointer]
+  - generic [ref=e64]:
+    - generic [ref=e74]: 七玄门 · 入门选拔
+    - generic [ref=e109] [cursor=pointer]: 眼看就要被刷下，你不肯认命，硬着头皮求得一个补考的机会。半年后再试，凭着一股韧劲，你和张铁终于挤进了记名弟子的名册。
+    - generic [ref=e80]:
+      - button "入门记名，正式踏入七玄门 继续" [ref=e110]:
+        - text: 入门记名，正式踏入七玄门
+        - generic [ref=e111]: 继续
+      - button "补考半年间，苦练筋骨体魄 资质不够，毅力来凑" [ref=e112]:
+        - text: 补考半年间，苦练筋骨体魄
+        - generic [ref=e113]: 资质不够，毅力来凑
+    - generic:
+      - generic:
+        - generic: 七玄门 · 入门选拔
+        - generic: 凡人

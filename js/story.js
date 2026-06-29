@@ -2112,7 +2112,7 @@ const STORY = [
         hint: "远虑——记下大衍诀的归处",
         effect(s) {
           State.setFlag("dayan_remembered");
-          Engine.writeLedger("dayan_remembered", true);
+          Engine.writeLedger("dayan_remembered", "执法堂库房前多停一步，将大衍诀残卷的归处牢牢记下——他日必取（魔道争锋·大衍诀线伏笔）");
           return { text: "你没有急着走——在执法堂库房前多停了一步，将那卷残卷的归处牢牢记在心里。", kind: "event" };
         },
         resolve: "advance",
@@ -4836,7 +4836,7 @@ const STORY = [
         text: "（雷鹏陨、风希去——这场大乱，才刚刚开始）",
         hint: "震撼之余——记下风希的弱点",
         effect(s) {
-          Engine.writeLedger("starsea_jingbian_observe", true);
+          Engine.writeLedger("starsea_jingbian_observe", "镇妖大典惊变·将风希出手的每一式看在眼里——元婴修士的手段，今日记下，日后或有用处（星海后续伏笔）");
           return { text: "你将风希出手的每一式都看在眼里——元婴的手段，今日记下，日后或有用处。", kind: "event" };
         },
         resolve: "advance",

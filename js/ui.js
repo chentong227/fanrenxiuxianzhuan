@@ -1236,10 +1236,11 @@ const UI = {
       : this._buildStoryBeatsFallback(stage);
     // 因果有报·沉浸呈现：onArrive 里 settleLedger 缓冲的「远雷」插到剧情流最前（金句先声夺人，不再埋日志）
     if (typeof Engine !== "undefined" && Engine._pendingEchoes && Engine._pendingEchoes.length) {
+      const echoes = Engine._pendingEchoes;
       const echoBeats = [];
-      Engine._pendingEchoes.forEach(e => {
-        echoBeats.push({ kind: "echo", text: `【因果有报】${e.echo}` });
-      });
+      // ≥3 条：加一句蒙太奇引语，让"投入越多回报越涌"读作刻意的往事回闪，而非堆砌
+      if (echoes.length >= 3) echoBeats.push({ kind: "echo", text: "往事一幕幕涌上心头——你这一路的每一分用心，此刻都有了回响。" });
+      echoes.forEach(e => echoBeats.push({ kind: "echo", text: `【因果有报】${e.echo}` }));
       Engine._pendingEchoes = [];
       return echoBeats.concat(beats);
     }

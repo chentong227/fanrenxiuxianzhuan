@@ -1,0 +1,42 @@
+- generic [ref=e2]:
+  - generic [ref=e22]:
+    - generic [ref=e25]:
+      - generic [ref=e26]: 所在
+      - generic [ref=e27]: 青牛镇
+      - generic [ref=e28]: 你的家乡，一个贫苦的小山村。
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: 凡人修仙传
+        - generic [ref=e32]: 第1年1月
+      - generic [ref=e46]:
+        - button "舆图" [ref=e47] [cursor=pointer]
+        - button "⋯" [ref=e48] [cursor=pointer]
+    - generic [ref=e49]:
+      - generic [ref=e51]:
+        - generic [ref=e52]: 青牛镇
+        - generic [ref=e53]: 天命 · 际遇将至
+      - generic [ref=e54]:
+        - button "行动" [ref=e55] [cursor=pointer]
+        - button "见闻" [ref=e56] [cursor=pointer]
+      - generic [ref=e59]: — 此地仅供过场，循剧情前行 —
+    - navigation [ref=e60]:
+      - button "舆图" [ref=e61] [cursor=pointer]
+      - button "行动" [ref=e62] [cursor=pointer]
+      - button "状态" [ref=e63] [cursor=pointer]
+  - generic [ref=e64]:
+    - generic [ref=e74]: 青牛镇 · 韩家
+    - generic [ref=e79] [cursor=pointer]: 爹娘犹豫，你却已动了心——若能进了那高门大派，家里的日子或许就能好过些。
+    - generic [ref=e80]:
+      - button "拜别爹娘，随三叔去七玄门 踏出青牛镇" [ref=e81]:
+        - text: 拜别爹娘，随三叔去七玄门
+        - generic [ref=e82]: 踏出青牛镇
+      - button "临行前，偷偷揣一包干粮盐巴 穷家孩子，路上不能空着手" [ref=e83]:
+        - text: 临行前，偷偷揣一包干粮盐巴
+        - generic [ref=e84]: 穷家孩子，路上不能空着手
+      - button "向三叔细问七玄门的底细 知己知彼，方能踏稳第一步" [ref=e85]:
+        - text: 向三叔细问七玄门的底细
+        - generic [ref=e86]: 知己知彼，方能踏稳第一步
+    - generic:
+      - generic:
+        - generic: 青牛镇 · 韩家
+        - generic: 凡人

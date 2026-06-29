@@ -1,0 +1,27 @@
+- generic [ref=e2]:
+  - generic [ref=e22]:
+    - generic [ref=e25]:
+      - generic [ref=e26]: 所在
+      - generic [ref=e27]: 赴考山路
+      - generic [ref=e28]: 通往七玄门的迢迢山路。
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: 凡人修仙传
+        - generic [ref=e32]: 第1年1月
+      - generic [ref=e46]:
+        - button "舆图" [ref=e47] [cursor=pointer]
+        - button "⋯" [ref=e48] [cursor=pointer]
+    - navigation [ref=e60]:
+      - button "舆图" [ref=e61] [cursor=pointer]
+      - button "行动" [ref=e62] [cursor=pointer]
+      - button "状态" [ref=e63] [cursor=pointer]
+  - generic [ref=e64]:
+    - generic [ref=e66] [cursor=pointer]: 跳过 ⏭
+    - generic [ref=e74]: 赴 考
+    - generic [ref=e67] [cursor=pointer]:
+      - generic [ref=e93]: 其中一个虎背熊腰、憨厚老实的少年叫张铁，与你一见投缘。一路上你俩互相照应，渐成好友。
+      - generic [ref=e76]: ▽ 轻触继续
+    - generic:
+      - generic:
+        - generic: 赴 考
+        - generic: 凡人
