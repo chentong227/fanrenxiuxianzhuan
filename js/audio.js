@@ -441,6 +441,7 @@
           el._handoff = true;
           const nb = new window.Audio(el._src);
           nb._src = el._src; nb.onerror = el.onerror;
+          nb._vol = target;                             // 承接真实目标音量（duck/unduck 据此，循环换实例后不丢）
           bgmEl = nb;                                   // 新实例接管为当前轨
           setupLoopEl(nb, track, target, lxf);          // 链上下一轮（含兜底）
           nb.volume = 0; nb.play().catch(() => {});
@@ -594,6 +595,7 @@
           if (prev) { prev._handoff = true; clearLoop(prev); }        // 旧轨停循环监视，免淡出途中误重启
           const el = new window.Audio(url);
           el._src = url; el.volume = 0;
+          el._vol = target;   // 记真实目标音量：duck/unduck/keySfxDuck 据此压低与恢复（否则 unduck 读到的是已压低值→BGM 永远闷着不回升·夜景后音乐卡在 16% 的 bug）
           el.onerror = () => {   // 文件缺失：回退合成
             if (bgmEl === el) bgmEl = null;
             const fb = FALLBACK[track] !== undefined ? FALLBACK[track] : track;

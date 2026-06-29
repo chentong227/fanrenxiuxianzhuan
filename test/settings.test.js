@@ -75,11 +75,14 @@ console.log("== 3. reduceMotion / liteMotion：用户档 与 系统偏好 并联
 
 console.log("== 4. 震动：委托 Fx（单一真相源）+ 能力探测 ==");
 {
-  vibrateSupported = true; global.navigator = { vibrate: () => {} };
+  // Node 21+ 内置只读全局 navigator（仅 userAgent，无 vibrate）——直接赋值不生效，
+  //   用 defineProperty 强制覆盖以模拟浏览器的 navigator.vibrate 能力。
+  const setNav = (obj) => { try { Object.defineProperty(global, "navigator", { value: obj, configurable: true, writable: true }); } catch (e) { global.navigator = obj; } };
+  vibrateSupported = true; setNav({ vibrate: () => {} });
   assert(S.hapticsSupported() === true, "navigator.vibrate 存在→支持");
   S.setHaptics(false); assert(S.haptics() === false && hapStore === false, "setHaptics(false) 透传 Fx");
   S.setHaptics(true); assert(S.haptics() === true && hapStore === true, "setHaptics(true) 透传 Fx");
-  delete global.navigator;
+  setNav(undefined);
   assert(S.hapticsSupported() === false, "无 navigator.vibrate→不支持");
 }
 

@@ -13,6 +13,8 @@ function assert(cond, msg) {
   else { console.log("  ✗ 失败: " + msg); fail++; }
 }
 const near = (a, b, eps = 0.01) => Math.abs(a - b) <= eps;
+// BGM 默认音量（audio.js BGM_VOL：源已 -20 LUFS 归一后降至 0.26 抑吵闹）——测试基准随之对齐
+const BGM_V = 0.26;
 
 // —— 可控时钟 + 假定时器 ——
 let clock = 0;
@@ -70,10 +72,10 @@ Sfx.bgm("daily");
 {
   const a = created[0];
   assert(a && /bgm_daily\.mp3$/.test(a.src), "bgm('daily') 创建 daily 文件轨");
-  assert(a.loop === true && a.playing === true, "daily 轨 loop+play");
+  assert(a.playing === true, "daily 轨在播（自管交叉淡化循环：loop=false 但持续播）");
   assert(a.volume === 0, "起始音量 0（待淡入）");
   tick(600);
-  assert(near(a.volume, 0.3), `600ms 后淡入到 0.3（实际 ${a.volume.toFixed(3)}）`);
+  assert(near(a.volume, BGM_V), `600ms 后淡入到 ${BGM_V}（实际 ${a.volume.toFixed(3)}）`);
 }
 
 console.log("== 2. 换轨：旧轨交叉淡出收掉、新轨淡入 ==");
@@ -84,17 +86,17 @@ Sfx.bgm("combat");
   assert(nw.volume === 0, "新轨起始 0");
   tick(600);
   assert(near(old.volume, 0) && old.paused === true, "旧轨淡出到 0 并暂停");
-  assert(near(nw.volume, 0.3), `新轨淡入到 0.3（实际 ${nw.volume.toFixed(3)}）`);
+  assert(near(nw.volume, BGM_V), `新轨淡入到 ${BGM_V}（实际 ${nw.volume.toFixed(3)}）`);
 }
 
 console.log("== 3. 关键 SFX 让路：thunder 触发→音乐瞬时 −6dB 再缓回 ==");
 {
-  const cur = created[1];                 // 当前 combat 轨，音量 0.3
+  const cur = created[1];                 // 当前 combat 轨，音量 BGM_V
   Sfx.play("thunder");
   tick(80);
-  assert(near(cur.volume, 0.15), `落到 ×0.5≈0.15（实际 ${cur.volume.toFixed(3)}）`);
+  assert(near(cur.volume, BGM_V * 0.5), `落到 ×0.5≈${(BGM_V*0.5).toFixed(3)}（实际 ${cur.volume.toFixed(3)}）`);
   tick(520);
-  assert(near(cur.volume, 0.3), `缓回 0.3（实际 ${cur.volume.toFixed(3)}）`);
+  assert(near(cur.volume, BGM_V), `缓回 ${BGM_V}（实际 ${cur.volume.toFixed(3)}）`);
 }
 
 console.log("== 4. 环境床让位（duck）：起床压低 BGM、收床恢复 ==");
@@ -103,10 +105,10 @@ console.log("== 4. 环境床让位（duck）：起床压低 BGM、收床恢复 =
   Sfx.ambient("night");
   assert(created[2] && /amb_night\.mp3$/.test(created[2].src), "ambient('night') 起文件床");
   tick(240);
-  assert(near(cur.volume, 0.3 * 0.16, 0.012), `床领奏→BGM 压到 ×0.16≈0.048（实际 ${cur.volume.toFixed(3)}）`);
+  assert(near(cur.volume, BGM_V * 0.16, 0.012), `床领奏→BGM 压到 ×0.16≈${(BGM_V*0.16).toFixed(3)}（实际 ${cur.volume.toFixed(3)}）`);
   Sfx.ambient(null);
   tick(320);
-  assert(near(cur.volume, 0.3), `收床→BGM 恢复 0.3（实际 ${cur.volume.toFixed(3)}）`);
+  assert(near(cur.volume, BGM_V), `收床→BGM 恢复 ${BGM_V}（实际 ${cur.volume.toFixed(3)}）`);
 }
 
 console.log("== 5. 同轨幂等：重复 bgm(同轨) 不新建元素 ==");
@@ -120,7 +122,7 @@ console.log("== 6. C3 切轨校验：未知轨名一律拒绝、不扰动当前�
 {
   assert(typeof Sfx.isTrack === "function" && Sfx.isTrack("boss") && !Sfx.isTrack("nope"),
     "isTrack：合法轨真、非法轨假");
-  assert(Sfx.tracks().length === 9, "tracks()：九轨白名单");
+  assert(Sfx.tracks().length === 11, "tracks()：十一轨白名单（daily/town/journey/fair/combat/combat_wild/combat_secret/boss/tense/sorrow/triumph）");
   const n = created.length, cur = Sfx.curBgm();   // 当前应为 combat
   const warns = [];
   const origWarn = console.warn; console.warn = (m) => warns.push(m);
