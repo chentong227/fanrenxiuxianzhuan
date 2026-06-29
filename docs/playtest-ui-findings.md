@@ -64,6 +64,10 @@
 
 ## 初入星海篇 巡检（rubric 15 条）
 
+> ✅ **临战准备道具错位·已修复（v231 `_fightPrepItems` 章节/境界演进）**：下文"暗器当底牌"是 pre-fix 记录。
+>   现状：练气=毒草/暗器，筑基（huangfeng/departure）=火蛇符/寒冰符/定身符/回元丹，
+>   结丹（modao/starsea）=符箓+阵旗（聚灵/困足）+金光砖充能+回元丹——结丹修士不再数练气暗器。
+
 ### starsea_a1_kuixing · 登临奎星岛（storyStage 88）
 - ✅ **A3 读档软锁修复验证**：此存档 pendingEvent=starsea_a1_kuixing，读档后剧情正常恢复渲染
   （v227 修复前这种存档会软锁）——真实场景确认修复有效。

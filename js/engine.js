@@ -3944,6 +3944,9 @@ const Engine = {
       enemies: [this._applyDossier(modafu)],
       waves: [[tienu], [yuhun]],
       maxRounds: 16,
+      // 药庐子夜·密室夺舍＝贴身近战：窄场(W9·室内方寸) + 敌起手近距(pos5，距玩家4格)，
+      //   一两回合即接战——不是旷野大战场，不该让玩家空点六回合「结束回合」等敌人走过来。
+      W: 9, enemyPos: 5,
     });
 
     this._combatMeta = { type: "showdown" };
@@ -3990,6 +3993,9 @@ const Engine = {
       enemies: [this._applyDossier(jinguang)],
       maxRounds: 18,
       side: this.sideUnitFor("jinguang"),   // 动漫考据：伏杀金光上人，韩立放出了张铁尸傀
+      // 「以药师身份从容近身」暗算＝贴身突袭：敌起手近距(pos5，距玩家4格)，毒/暗器一两回合即可招呼，
+      //   不必空走六回合（叙事上韩立本就贴近了才动手，不是隔着旷野对峙）。
+      enemyPos: 5,
     });
     // 金钟罩护体：开局即有厚护盾，暗器(破甲)与毒(持续)是破局关键；金钟罩为法宝护体，不随回合消退
     this._combat.enemies[0].shield = 40;
