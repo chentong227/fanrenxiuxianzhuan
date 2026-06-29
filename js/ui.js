@@ -271,7 +271,7 @@ const UI = {
     if (sd && sd.rippleWindow) {
       const rw = sd.rippleWindow;
       const left = Math.max(0, rw.dueAbs - State.absMonth());
-      const whereTxt = rw.id === "herb_garden" ? "后山" : rw.id === "wolf_bounty" ? "集镇" : rw.id === "cheap_pills" ? "集镇采买" : "";
+      const whereTxt = rw.id === "herb_garden" ? "后山" : rw.id === "wolf_bounty" ? "集镇" : rw.id === "cheap_pills" ? "集镇采买" : rw.id === "lingcao_boom" ? "坊市" : "";
       luck += `<div class="obj-task ${left <= 1 ? 'urgent' : ''}">
         <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">风声</span>
         <b>${rw.note || "限时机会"}</b>
@@ -836,6 +836,8 @@ const UI = {
       if ((rw.id === "herb_garden" && loc.id === "houshan") || (rw.id === "wolf_bounty" && loc.id === "town")) {
         const lbl = rw.id === "herb_garden" ? "寻无主药园" : "应悬赏剿匪";
         windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('${rw.id}')">${lbl} <span class="win-left">余${left}月</span></button>`;
+      } else if (rw.id === "lingcao_boom" && loc.id === "fangshi") {
+        windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('lingcao_boom')">趁涨价出手灵草 <span class="win-left">余${left}月</span></button>`;
       }
     }
 
@@ -3067,6 +3069,8 @@ const UI = {
       if ((rw.id === "herb_garden" && loc.id === "houshan") || (rw.id === "wolf_bounty" && loc.id === "town")) {
         const lbl = rw.id === "herb_garden" ? "寻无主药园" : "应悬赏剿匪";
         windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('${rw.id}')">${lbl} <span class="win-left">余${left}月</span></button>`;
+      } else if (rw.id === "lingcao_boom" && loc.id === "fangshi") {
+        windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('lingcao_boom')">趁涨价出手灵草 <span class="win-left">余${left}月</span></button>`;
       }
     }
     const focus = this._pendingFocus; this._pendingFocus = null;

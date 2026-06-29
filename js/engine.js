@@ -136,6 +136,7 @@ const Engine = {
   _RIPPLES: [
     {
       id: "hunter_lost",
+      cond: (s) => s.activeChapter === "qixuan",
       stages: [
         { news: "坊间闲话：老猎户陈伯进山七八日了，还没见回来。家里人急得直哭。" },
         { news: "猎户陈伯的草鞋在后山涧边被人寻着了——人多半是没了。山里人叹：靠山吃山，也葬于山。" },
@@ -145,11 +146,23 @@ const Engine = {
     },
     {
       id: "pill_theft",
+      cond: (s) => s.activeChapter === "qixuan",
       stages: [
         { news: "门里传开了：丹房昨夜失窃，丢了一批养元丹。管事们脸色铁青。" },
         { news: "失窃案有了眉目——竟是个外门弟子监守自盗，已被废了功夫逐出山门。" },
         { news: "那批赃丹几经转手流入了山下黑市，价钱压得极低。集镇的药贩子们闷声发财。", window: "cheap_pills", windowMonths: 3,
           windowNote: "黑市贱卖养元丹（集镇·限时）" },
+      ],
+    },
+    {
+      // 黄枫谷篇·涟漪链：某脉灵田歉收→灵草价涨→坊市抢购窗口（贴百药园灵药经济·无需新战斗）
+      id: "lingtian_blight",
+      cond: (s) => s.activeChapter === "huangfeng",
+      stages: [
+        { news: "坊市传开：青芫峰一脉的灵田闹了药瘟，半数灵草烂在田里，今秋怕是要歉收。" },
+        { news: "歉收坐实了——万宝楼的灵草价一日三涨，囤了货的弟子捂着不卖，等着再翻一倍。" },
+        { news: "你掌着百药园，手里的灵草此刻正是稀罕物。趁这波价高出手，能换不少灵石。", window: "lingcao_boom", windowMonths: 3,
+          windowNote: "灵草涨价·囤货高价出手（坊市·限时）" },
       ],
     },
     {
@@ -226,6 +239,18 @@ const Engine = {
       this.log("【悬赏剿匪】你揭了镖局的赏格，循着线索堵住一伙野狼帮喽啰——", "event");
       this._bountyFight = true;
       this.startEncounterFight("wolf_gang_thug");
+    } else if (windowId === "lingcao_boom") {
+      // 黄枫谷篇·灵草涨价窗口：把囤的灵草高价出手换灵石（百药园经济兑现·无战斗）
+      const n = State.count("lingcao");
+      if (n < 1) { this.toast("你手里没有灵草可卖", true); return; }
+      const sell = Math.min(n, 20);
+      State.take("lingcao", sell);
+      const gain = sell * 2;   // 涨价行情：每株 2 灵石（平日万宝楼难有此价）
+      State.give("lingshi", gain);
+      this.log(`【灵草行情】趁着青芫峰歉收的涨价潮，你把囤的灵草 ${sell} 株尽数出手——换得灵石 ${gain}。掌着百药园，这波你吃得最饱。`, "good");
+      s.rippleWindow = null;
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+      this.checkLifespan(); State.save(); UI.renderAll();
     }
   },
 
