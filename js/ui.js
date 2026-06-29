@@ -4149,6 +4149,15 @@ const UI = {
     }
     const fleeBtn = this.el("combat-flee");
     if (fleeBtn) fleeBtn.onclick = () => Engine.combatFlee();
+    // 观阵：拉远看全战场（保大战场，解决手机端看不全）——纯取景切换，不耗回合
+    this._surveyMode = false;
+    const surveyBtn = this.el("combat-survey");
+    if (surveyBtn) {
+      surveyBtn.classList.remove("on");
+      surveyBtn.onclick = () => this.toggleSurvey();
+      // 只有"宽到一屏看不全"的战场才需要观阵（W>13），窄场藏起来
+      surveyBtn.hidden = !(combat.W > 13);
+    }
     const logBtn = this.el("combat-logbtn");
     if (logBtn) logBtn.onclick = () => {
       const lg = this.el("combat-log");
@@ -5191,6 +5200,16 @@ const UI = {
     }
   },
 
+  // 观阵：拉远看全战场 ↔ 跟随态（纯取景切换，不耗回合、不改战斗状态）。保大战场，解决手机端看不全。
+  toggleSurvey() {
+    this._surveyMode = !this._surveyMode;
+    const btn = this.el("combat-survey");
+    if (btn) btn.classList.toggle("on", this._surveyMode);
+    if (typeof Sfx !== "undefined") Sfx.play("click");
+    const c = (typeof Engine !== "undefined") ? Engine._combat : null;
+    if (c) this.renderCombat(c, Engine._combatMeta);
+  },
+
   renderCombat(c, meta) {
     const SP = CombatAPI.SPELLS;
     // 锁定目标已死：自动换到下一个活敌（弹道/脚圈/手牌射程全部跟着走）
@@ -5326,11 +5345,34 @@ const UI = {
     const ovSky = this.el("combat-overlay");
     if (ovSky) ovSky.classList.toggle("sky", air);   // 升空：前景淡出（贴地遮挡物不再挡视野）
     if (c.W > 13) {
+      // 观阵态（全景）：V=全战场、cam=0、zoom=容纳缩放——一屏看全大战场（不缩战场本身）。
+      const survey = !!this._surveyMode;
       // 宽死区（v90）：玩家在画面中部大半区域随便走，镜头纹丝不动——"是韩立在动"；
       // 只有逼近画框边缘才缓缓追上（追，不绑）。
       // v95 大战场小人物：基线视野 11→13 格——同屏更多天地，人物自然更小
-      const V = air ? Math.min(c.W, 13 + 2 * aGrade) : 13, m = 2.4;
+      const V = survey ? c.W : (air ? Math.min(c.W, 13 + 2 * aGrade) : 13), m = 2.4;
       const trackW = (c.W / V) * 100;
+      // 观阵：容纳缩放——视野从 13 格扩到 W 格，等比缩到 13/W（下限 0.5 防人物过小），cam 归零从最左铺满
+      let zoomEff = zoom;
+      if (survey) {
+        zoomEff = Math.max(0.5, Math.min(zoom, 13 / c.W));
+        const camS = 0;
+        c._cam = camS;
+        const shiftS = (camS / c.W) * 100;
+        [laneEl2, unitsEl].forEach(el => {
+          el.style.width = trackW + "%";
+          el.style.transform = `translateX(-${shiftS.toFixed(2)}%)${worldY} scale(${zoomEff.toFixed(3)})`;
+          el.classList.add("cam-track");
+        });
+        this._camParts = { V, worldY, farY, midY, farScale, midScale, zoom: zoomEff };
+        if (bgEl2) {
+          bgEl2.style.transform = `translateX(0%)${farY} scale(${farScale})`;
+          const midEl = this.el("combat-bgmid");
+          if (midEl && midEl.classList.contains("on")) midEl.style.transform = `translateX(0%)${midY} scale(${midScale})`;
+        }
+        if (this._fightFarCue) this._fightFarCue(null);   // 全景态全员入画，无需"出画点名"
+        // 观阵态短路：跳过跟随相机逻辑（下面那段只在非观阵时跑）
+      } else {
       let cam = (typeof c._cam === "number") ? c._cam : (p.pos + 0.5 - V / 2);
       if (p.pos + 0.5 < cam + m) cam = p.pos + 0.5 - m;
       if (p.pos + 0.5 > cam + V - m) cam = p.pos + 0.5 - (V - m);
@@ -5389,6 +5431,7 @@ const UI = {
           te2 && te2.pos + 0.5 < cam);
       }
       this._frontCues(c, cam, V);
+      }
     } else {
       [laneEl2, unitsEl].forEach(el => {
         el.style.width = "";

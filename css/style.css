@@ -917,6 +917,9 @@ body.dock-active .layout .mid-col {
 }
 .toast.bad { border-color: var(--red); color: var(--red); }
 
+/* 观阵按钮激活态（全景观阵中）*/
+#combat-survey.on { border-color: var(--gold); color: var(--gold-bright); background: rgba(201,169,106,.12); }
+
 /* 剧情演出中：toast 移到顶部，避免压住底部的剧情抉择按钮（结识新人物等提示）。 */
 body.story-on .toast {
   bottom: auto; top: calc(16px + env(safe-area-inset-top, 0px));
