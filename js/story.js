@@ -783,7 +783,7 @@ const STORY = [
       Engine.toast("七玄门篇通关！寒毒在身——启程嘉元城");
     },
     choices: [
-      { text: "收拾行装，南下嘉元城", hint: "点顶栏「舆图」→胥国，择嘉元城启程；寒毒不除，修行难安", next: "end" },
+      { text: "收拾行装，南下嘉元城", hint: "点「舆图」→胥国，择嘉元城启程；寒毒不除，修行难安", next: "end" },
     ],
   },
 
@@ -797,7 +797,7 @@ const STORY = [
     cg: "mofu",
     cond: (s) => s.flags.arc1_complete && s.location === "jiayuan_city" && !s.flags.mo_met,
     objTitle: "南下嘉元城",
-    objHint: "寒毒在身——点顶栏「舆图」择嘉元城启程，持遗信投墨府求暖阳宝玉。",
+    objHint: "寒毒在身——点「舆图」择嘉元城启程，持遗信投墨府求暖阳宝玉。",
     title: "嘉元城 · 墨府投信",
     text(s) {
       const t = [
@@ -994,7 +994,7 @@ const STORY = [
     id: "wan_meet",
     cond: (s) => s.flags.han_du_cured && s.location === "tainan_fair" && !s.flags.wan_met,
     objTitle: "南下太南谷",
-    objHint: "修仙人的集市「太南小会」开了——点顶栏「舆图」择太南谷启程。",
+    objHint: "修仙人的集市「太南小会」开了——点「舆图」择太南谷启程。",
     title: "太南小会 · 引路人",
     text(s) {
       const t = [

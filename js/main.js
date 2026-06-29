@@ -429,7 +429,18 @@ const Main = {
       const s = State.data;
       if (s.pendingEvent) {
         const stage = STORY.find(st => st.id === s.pendingEvent);
-        if (stage) UI.renderStory(stage);
+        if (stage) {
+          // text/choices 可能是函数（按 state 动态生成）——须先求值再渲染，
+          // 否则 cutscene 编译会拿到函数而非段落数组（segs is not iterable），剧情不显示→存档软锁。
+          const resolved = (typeof stage.text === "function" || typeof stage.choices === "function")
+            ? Object.assign({}, stage, {
+                text: typeof stage.text === "function" ? stage.text(s) : stage.text,
+                choices: typeof stage.choices === "function" ? stage.choices(s) : stage.choices,
+              })
+            : stage;
+          try { UI.renderStory(resolved); }
+          catch (e) { console.error("恢复剧情卡失败", e); }
+        }
       }
       // 存档停在血色禁地（v3 舆图）：重开舆图
       if (s.exmap && UI.openExmap) setTimeout(() => UI.openExmap(), 300);
