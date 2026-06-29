@@ -202,20 +202,29 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 #screen-game.active { display: block; position: relative; height: 100vh; height: 100dvh; overflow: hidden; }
 #screen-game .topbar { position: absolute; top: 0; left: 0; right: 0; }
 
-/* ===== 地图主界面（P1：全屏可缩放地图替代弹窗） ===== */
+/* ===== 地图主界面（地图即主界面：全屏可缩放，连续缩放不换图） ===== */
 .worldmap-canvas {
   position: absolute; inset: 0; z-index: 1;
   overflow: hidden;
   background: radial-gradient(ellipse at 50% 40%, #1a2230 0%, #0e1219 70%, #080a0f 100%);
 }
+/* 连续缩放变换层：bg/svg/pins/labels/avatar 同步缩放=同一张图放大看细节（不翻图）。
+ * transform-origin 由 JS 按聚焦点动态设定；transition 让 Z3↔Z4 平滑过渡。 */
+.wm-world {
+  position: absolute; inset: 0;
+  transform-origin: 50% 50%;
+  transition: transform 0.6s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
+}
 .worldmap-bg {
   position: absolute; inset: 0;
   background-size: cover; background-position: center;
-  opacity: 0.35;
+  opacity: 0.55;
 }
+/* 第二张底图（跨级换图时交叉淡入：人界↔天南↔胥国）。默认透明，切图时淡入再交换。 */
+.wm-bg2 { opacity: 0; transition: opacity 0.5s ease; }
 .worldmap-svg {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  transition: viewBox 0.6s ease;
 }
 .worldmap-pins, .worldmap-labels {
   position: absolute; inset: 0; pointer-events: none;
@@ -225,7 +234,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 
 /* 地图据点 pin */
 .wm-pin {
-  position: absolute; transform: translate(-50%, -50%);
+  position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--wmk, 1)));
   pointer-events: auto; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
 }
@@ -261,7 +270,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 
 /* 地图标签（州名/区块名） */
 .wm-label {
-  position: absolute; transform: translate(-50%, -50%);
+  position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--wmk, 1)));
   font-size: 13px; color: var(--gold); letter-spacing: 3px;
   text-shadow: 0 1px 4px rgba(0,0,0,.9);
   pointer-events: auto; cursor: pointer;
@@ -282,7 +291,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 
 /* avatar pin（韩立头像在地图上） */
 .avatar-pin {
-  position: absolute; transform: translate(-50%, -50%);
+  position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--wmk, 1)));
   z-index: 5; pointer-events: none;
   transition: left 1.5s ease, top 1.5s ease;
 }
@@ -333,6 +342,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 /* 地图模式下的 HUD 调整 */
 .worldmap-canvas:not([hidden]) ~ .layout { z-index: 8; }
 .worldmap-canvas:not([hidden]) ~ .topbar { z-index: 14; }
+.worldmap-canvas:not([hidden]) ~ .objective-bar { display: none; }
 
 /* ===== Z4↔Z5 交叉淡入淡出（P2：场景图与地图间的平滑过渡） ===== */
 #scene-stage {
@@ -344,7 +354,7 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .worldmap-canvas.fade-out { opacity: 0; pointer-events: none; }
 #scene-stage.fade-out { opacity: 0; pointer-events: none; }
 
-/* ===== 据点级行动 dock（P2：Z5 时从底部滑出） ===== */
+/* ===== 据点级行动 sheet（地图主界面：底部统一面板=行动+见闻合一） ===== */
 .action-dock {
   position: absolute; left: 50%; bottom: 14px;
   transform: translateX(-50%) translateY(100%);
@@ -363,9 +373,26 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   opacity: 1;
 }
 .action-dock-grip {
-  width: 36px; height: 4px; border-radius: 2px;
-  background: var(--border); margin: 0 auto 8px;
+  width: 40px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 2px auto 8px; cursor: pointer;
 }
+.action-dock-grip:hover { background: var(--gold); }
+/* 头部：地点名 + 天命一行 */
+.dock-head {
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border-soft);
+}
+.dock-loc { color: var(--gold-bright); font-size: 16px; letter-spacing: 2px; font-weight: 600; }
+.dock-obj { color: var(--jade); font-size: 12px; letter-spacing: 1px; opacity: .9; }
+/* 段切换标签：行动 / 见闻 */
+.dock-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.dock-tab {
+  flex: 1; padding: 7px 0; background: none; border: 1px solid var(--border-soft);
+  border-radius: 8px; color: var(--ink-dim); font-family: inherit; font-size: 13px;
+  letter-spacing: 3px; cursor: pointer; transition: all .15s;
+}
+.dock-tab.active { color: var(--gold-bright); border-color: var(--gold); background: rgba(201,169,106,.1); }
+.dock-body { max-height: 42vh; overflow-y: auto; }
 .dock-actions {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
 }
@@ -374,6 +401,25 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   padding: 10px 16px; font-size: 14px; letter-spacing: 2px;
 }
 .dock-actions .act-hint { width: 100%; text-align: center; }
+/* 见闻段：在场人物 + 最近见闻条 */
+.dock-news { display: flex; flex-direction: column; gap: 6px; }
+.dn-npcs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.dn-npc {
+  background: rgba(95,184,154,.1); border: 1px solid var(--jade);
+  border-radius: 8px; padding: 6px 12px; color: var(--jade-bright);
+  font-family: inherit; font-size: 13px; cursor: pointer;
+}
+.dn-npc i { color: var(--ink-dim); font-style: normal; font-size: 11px; margin-left: 5px; }
+.dn-row { display: flex; gap: 8px; font-size: 12.5px; line-height: 1.5; padding: 3px 0; border-bottom: 1px solid var(--border-soft); }
+.dn-row:last-of-type { border-bottom: none; }
+.dn-tag { color: var(--gold); flex-shrink: 0; font-size: 11px; }
+.dn-txt { color: var(--ink); }
+.dn-more { background: none; border: none; color: var(--jade); font-family: inherit; font-size: 12px; cursor: pointer; padding: 6px 0; text-align: left; }
+/* 完整见闻浮层 */
+.log-sheet { display: flex; flex-direction: column; gap: 10px; }
+.log-sheet .ls-row { border-bottom: 1px solid var(--border-soft); padding-bottom: 8px; }
+.log-sheet .ls-tag { color: var(--gold); font-size: 11px; }
+.log-sheet .ls-body { color: var(--ink); font-size: 13px; line-height: 1.6; margin-top: 3px; }
 
 /* ===== P4: 地图模式下的 HUD 浮窗化 ===== */
 /* 地图可见时：layout 变为浮在地图上的半透明面板 */
@@ -401,6 +447,14 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 /* 地图模式：mid-col 只在 Z5 时需要（dock 已替代），Z1~Z4 时隐藏行动栏 */
 .worldmap-canvas:not([hidden]) ~ .layout .mid-col {
   display: none;
+}
+/* Z5 dock 模式：dock 可见时也隐藏 mid-col（worldmap 已淡出但 dock 仍在） */
+body.dock-active .layout .mid-col {
+  display: none;
+}
+/* 有热点的地点：mid-col 空面板会遮挡场景热点，直接隐藏让热点可点 */
+.layout.has-hotspots .mid-col {
+  display: none !important;
 }
 
 /* HUD 切换按钮（P4：地图模式时显示/隐藏侧栏） */
@@ -853,10 +907,18 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 .toast {
   position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
   background: var(--bg-panel); border: 1px solid var(--jade); color: var(--jade-bright);
-  padding: 12px 24px; border-radius: 8px; z-index: 200; box-shadow: 0 10px 30px var(--shadow);
+  padding: 12px 24px; border-radius: 8px; z-index: 260; box-shadow: 0 10px 30px var(--shadow);
   letter-spacing: 1px; animation: toastin 0.3s ease;
+  max-width: 90vw; text-align: center; line-height: 1.5;
 }
 .toast.bad { border-color: var(--red); color: var(--red); }
+
+/* 剧情演出中：toast 移到顶部，避免压住底部的剧情抉择按钮（结识新人物等提示）。 */
+body.story-on .toast {
+  bottom: auto; top: calc(16px + env(safe-area-inset-top, 0px));
+  animation: toastin-top 0.3s ease;
+}
+@keyframes toastin-top { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
 @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes toastin { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
@@ -2585,7 +2647,14 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 html, body { touch-action: manipulation; }
 
 /* ===== 际遇 / 任务指引条（天命=必须做的 / 机缘=可以做的）===== */
-.objective-bar { margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+/* 独立于 tab 面板——桌面端浮于 topbar 下方，手机端 fixed 常驻 */
+.objective-bar {
+  position: absolute; top: 52px; z-index: 9; pointer-events: auto;
+  left: calc(282px + 14px + 12px); right: calc(372px + 14px + 12px);
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 120px; overflow-y: auto;
+}
+.objective-bar:empty { display: none; }
 .obj-sect { display: flex; flex-direction: column; gap: 6px; }
 .obj-sect.fate { padding-left: 0; }
 .obj-sect.luck {
@@ -2819,6 +2888,7 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 /* 中等屏幕（平板、窄窗口）：缩窄两侧卷轴 */
 @media (max-width: 1180px) {
   .layout { grid-template-columns: 244px minmax(0, 1fr) 300px; gap: 10px; padding: 52px 10px 10px; }
+  .objective-bar { left: calc(244px + 10px + 10px); right: calc(300px + 10px + 10px); }
   html, body { font-size: 14px; }
   .wm-pin-label { font-size: 10px; }
   .wm-label { font-size: 11px; }
@@ -2836,6 +2906,12 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   /* 顶栏：覆于场景带之上，只留 时间 + ☰（其余收进系统菜单）*/
   #screen-game .topbar { position: absolute; top: 0; left: 0; right: 0; z-index: 14; }
   .topbar { gap: 6px; padding: 7px 10px; }
+
+  /* 际遇栏：fixed 常驻于顶栏下方，不随 tab 切换隐藏 */
+  .objective-bar {
+    position: fixed; top: 48px; left: 8px; right: 8px; z-index: 13;
+    max-height: 80px; overflow-y: auto;
+  }
   .char-brief { gap: 8px; }
   .game-logo { font-size: 15px; letter-spacing: 3px; }
   .t-name { font-size: 16px; }
@@ -2847,7 +2923,7 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   /* （场景带/在场人物的手机覆盖规则在文件末尾——必须晚于桌面定义） */
 
   /* 地图主界面·手机端：全屏地图 + 底部缩放控制 */
-  .worldmap-canvas { position: absolute; inset: 0; }
+  .worldmap-canvas { position: absolute; inset: 0; padding-top: 52px; }
   .zoom-controls { right: 10px; bottom: 70px; }
   .zoom-btn { width: 34px; height: 34px; font-size: 16px; }
   .wm-pin-label { font-size: 10px; letter-spacing: 0; }
@@ -2873,8 +2949,12 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   .worldmap-canvas:not([hidden]) ~ .scene-stage {
     display: none !important;
   }
-  /* 地图模式时 dock 在底栏之上 */
-  .action-dock.show { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+  /* 行动 sheet·手机端：底部 sheet，位于底栏之上 */
+  .action-dock.show { bottom: calc(50px + env(safe-area-inset-bottom, 0px)); }
+  .action-dock { width: 100vw; left: 0; transform: translateX(0) translateY(100%); border-radius: 16px 16px 0 0; padding: 6px 14px 14px; }
+  .action-dock.show { transform: translateX(0) translateY(0); }
+  /* 全展开态：sheet 拉高占大半屏（行动+见闻都看得全） */
+  .action-dock.expanded .dock-body { max-height: 64vh; }
 
   /* HUD：场景带下方，分页滚动 */
   .layout {
@@ -2884,15 +2964,23 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   }
   .panel { overflow: visible; margin-bottom: 0; backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--paper-solid); }
   .mid-col { max-height: none; }
-  /* 默认显示「见闻」栏 */
-  .layout .side-rail, .layout .mid-col { display: none; }
-  .layout .stage-col { display: flex; }
+  /* 地图主界面化：行动页(act)=场景做底+底部行动 sheet，layout 三栏隐藏；
+   * 韩立页(hero)=角色卡+储物全屏；舆图页(map)=全屏地图（layout 已被上面隐藏） */
+  .layout .side-rail, .layout .mid-col, .layout .stage-col { display: none; }
+  /* 行动页：场景常驻、layout 不占位（行动走 sheet） */
+  #screen-game[data-mtab="act"] .layout { display: none; }
+  #screen-game[data-mtab="act"] .scene-stage { display: block; flex: 1; }
+  /* 韩立页：隐藏场景，显示角色卡+储物 */
+  #screen-game[data-mtab="hero"] .layout { display: block; }
   .layout[data-mtab="hero"] .side-rail { display: block; }
-  .layout[data-mtab="hero"] .mid-col,
-  .layout[data-mtab="hero"] .stage-col { display: none; }
-  .layout[data-mtab="mid"] .mid-col { display: flex; }
-  .layout[data-mtab="mid"] .side-rail,
-  .layout[data-mtab="mid"] .stage-col { display: none; }
+
+  .stage-col .narrative { max-height: none; flex: none; }
+  .stage-col > .panel-title { display: none; }   /* 页签已标明"见闻"，免重复 */
+  /* 行动按钮在手机上竖排大按钮 */
+  .mid-col .action-buttons { flex-direction: column; }
+  .mid-col .btn-action { width: 100%; padding: 14px 16px; }
+  /* 手机上显示"刚刚发生"反馈条（治行动/见闻割裂） */
+  .recent-log { display: flex; }
 
   .stage-col .narrative { max-height: none; flex: none; }
   .stage-col > .panel-title { display: none; }   /* 页签已标明"见闻"，免重复 */
@@ -2915,6 +3003,11 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
     border-top: 2px solid transparent;
   }
   .mobile-tabs .mtab.active { color: var(--gold-bright); border-top-color: var(--gold); background: rgba(201,169,106,.07); }
+
+  /* Toast 避开底部 Tab 栏 */
+  .toast { bottom: 64px; }
+  /* 剧情演出中 toast 顶部显示（覆盖上面的 64px，避免压住抉择按钮）*/
+  body.story-on .toast { bottom: auto; top: calc(16px + env(safe-area-inset-top, 0px)); }
 
   /* 弹窗几乎占满屏宽 */
   .modal { width: 94vw; padding: 20px 16px; max-height: 88vh; }
@@ -4935,6 +5028,10 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   .scene-head .loc-desc-inline { display: none; }
   .scene-pins { left: 4%; right: 4%; top: 24%; bottom: 18%; }
   .scene-hotspots-layer { left: 4%; right: 4%; top: 24%; bottom: 18%; }
+  /* 地图主界面化：行动页(act)场景做全屏底，旅行改走「舆图」tab——隐藏场景内旧 travel 图钉 */
+  #screen-game[data-mtab="act"] .scene-stage { flex: 1 1 auto; min-height: 0; }
+  #screen-game[data-mtab="act"] .scene-pins { display: none; }
+  #screen-game[data-mtab="act"] .scene-confirm { display: none; }
   /* 立绘居中铺底，按人数自适应缩放（--ln-n 由 renderLocals 写入），挤而不溢出视口 */
   .locals { left: 3%; right: 3%; bottom: 4px; gap: 6px; justify-content: center; flex-wrap: nowrap; overflow: hidden; }
   .ln-figure { height: clamp(46px, calc(64vw / var(--ln-n, 4)), 92px); }

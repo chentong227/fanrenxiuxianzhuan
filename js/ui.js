@@ -4,6 +4,8 @@
 
 const UI = {
   el(id) { return document.getElementById(id); },
+  // 是否手机视口（地图主界面化的布局分流以此为准）
+  _isMobile() { return window.matchMedia && window.matchMedia("(max-width: 760px)").matches; },
 
   /* -------- 全量渲染 -------- */
   renderAll() {
@@ -17,6 +19,17 @@ const UI = {
     if (this._mapZoom !== 5 && !this.el("worldmap-canvas").hidden) this._updateAvatarPin();
     const dock = this.el("action-dock");
     if (dock && dock.classList.contains("show")) this._renderDockActions();
+    // 手机端·据点态：行动 sheet 是常态入口，剧情/战斗/秘境时收起
+    if (this._isMobile() && this._mapZoom === 5) {
+      const s = State.data;
+      const busy = !!(s.combat || s.pendingEvent || s.exmap);
+      if (dock && !busy && !dock.classList.contains("show")
+          && document.getElementById("screen-game").classList.contains("active")) {
+        this._showActionDock(true);
+      } else if (dock && busy && dock.classList.contains("show")) {
+        this._showActionDock(false);
+      }
+    }
   },
 
   // L3: 点击 ripple 光圈
@@ -97,16 +110,35 @@ const UI = {
   // 手机分页：切换显示哪一栏（stage=界面 / hero=韩立+储物）
   switchMobileTab(tab) {
     const layout = document.querySelector(".layout");
-    if (!layout) return;
-    layout.setAttribute("data-mtab", tab);
-    // 同步到 #screen-game：CSS 据此在「韩立」页隐藏场景带（A4 道具界面不显示地图）
     const sg = document.getElementById("screen-game");
-    if (sg) sg.setAttribute("data-mtab", tab);
     document.querySelectorAll(".mtab").forEach(t =>
       t.classList.toggle("active", t.dataset.tab === tab));
-    // 切到见闻页时定位到最新一条
-    if (tab === "stage") this._scrollNarrativeBottom();
-    else layout.scrollTop = 0;
+
+    if (tab === "map") {
+      // 舆图：进地图主界面（默认胥国 Z3）
+      if (this._mapZoom === 5) {
+        this._prevZoom = 5; this._mapZoom = 3; this._mapFocusNode = null;
+        this._showWorldmap(true); this.renderWorldmap();
+      }
+      if (sg) sg.setAttribute("data-mtab", "map");
+      if (layout) layout.setAttribute("data-mtab", "map");
+      return;
+    }
+
+    // 行动 / 韩立：回到据点（Z5 场景），地图淡出
+    if (this._mapZoom !== 5) {
+      this._mapZoom = 5;
+      this._showWorldmap(false, tab !== "act");  // 行动页弹出 dock，韩立页不弹
+      this.renderLocation();
+    } else if (tab === "act") {
+      // 已在据点：确保行动 sheet 弹出
+      this._showActionDock(true);
+    } else {
+      this._showActionDock(false);
+    }
+
+    if (layout) layout.setAttribute("data-mtab", tab);
+    if (sg) sg.setAttribute("data-mtab", tab);
   },
 
   // 际遇栏 · 天命/机缘分区（world-architecture §2：锚与帆）——
@@ -793,6 +825,8 @@ const UI = {
     // 有热点时不再渲染常规行动按钮（热点替代了它们），但保留限时窗口按钮
     const hasHotspots = loc.hotspots && !loc.scene;
     if (hasHotspots) acts = [];
+    const layout = document.querySelector(".layout");
+    if (layout) layout.classList.toggle("has-hotspots", !!hasHotspots);
 
     // 涟漪窗口：限时机会在对应地点浮现（过期即逝）
     let windowBtn = "";
@@ -809,7 +843,8 @@ const UI = {
     const focus = this._pendingFocus; this._pendingFocus = null;
     box.innerHTML = (acts.length || windowBtn)
       ? windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
-      : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>` : "");
+      : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>`
+      : (hasHotspots ? `<div class="act-hint">— 点场景中发光标记行事 —</div>` : ""));
     box.querySelectorAll("[data-action]").forEach(btn => {
       btn.addEventListener("click", () => Engine.doAction(btn.dataset.action));
     });
@@ -1107,6 +1142,14 @@ const UI = {
     const lb = this.el("story-portrait-left"), rb = this.el("story-portrait-right");
     if (lb) { lb.innerHTML = ""; lb.className = "story-portrait left"; }
     if (rb) { rb.innerHTML = ""; rb.className = "story-portrait right"; rb.dataset.set = ""; }
+    // 清空上一幕残留：对话文本/说话人/选项必须复位，否则旧选项会赖在屏底、仍可点击，
+    // 造成"点了没剧情变化 / 切幕后旧内容残留在对话框"（题字卡演出期间也不该露出旧选项）。
+    const spEl = this.el("story-speaker"); if (spEl) spEl.innerHTML = "";
+    const txEl = this.el("story-text"); if (txEl) txEl.innerHTML = "";
+    const chEl = this.el("story-choices");
+    if (chEl) { chEl.innerHTML = ""; chEl.classList.remove("cut-beat-on"); }
+    const dlgEl = this.el("story-dialog"); if (dlgEl) dlgEl.classList.remove("scene-beat");
+    const cueEl0 = this.el("story-cue"); if (cueEl0) cueEl0.textContent = "";
     // 场景背景：优先该阶段声明的 CG，否则用当前地点的场景图
     this._storySetScene(stage);
     // 演出地基（cutscene.js）：清旧镜头/计时；含演出原语则挂 FX 叠层、关 kenBurns 改由镜头 op 驱动
@@ -2860,16 +2903,17 @@ const UI = {
       this._showWorldmap(true);
       this.renderWorldmap();
     } else {
-      // 从地图切回场景（Z5）
+      // 从地图切回场景（Z5）：不显示 dock（用常规 layout 行动按钮）
       this._prevZoom = this._mapZoom;
       this._mapZoom = 5;
-      this._showWorldmap(false);
+      this._showWorldmap(false, true);  // skipDock=true：退出地图模式时不弹 dock
       this.renderLocation();
     }
   },
 
   // Z4↔Z5 交叉淡入淡出：show=true 显示地图，show=false 显示场景
-  _showWorldmap(show) {
+  // skipDock=true 时不在显示场景后弹出 action-dock（用于 toggleWorldmap 退出地图模式）
+  _showWorldmap(show, skipDock) {
     const canvas = this.el("worldmap-canvas");
     const stage = this.el("scene-stage");
     if (!canvas || !stage) return;
@@ -2885,7 +2929,8 @@ const UI = {
  // 显示场景：stage 淡入，canvas 淡出
  stage.classList.remove("fade-out");
  canvas.classList.add("fade-out");
- this._showActionDock(true);
+ if (!skipDock) this._showActionDock(true);
+ else this._showActionDock(false);
  // 延迟隐藏 canvas（等淡出动画完成）
  clearTimeout(this._mapFadeTimer);
  this._mapFadeTimer = setTimeout(() => { canvas.hidden = true; }, 500);
@@ -2909,12 +2954,22 @@ const UI = {
     if (show) {
  dock.hidden = false;
  requestAnimationFrame(() => dock.classList.add("show"));
+ document.body.classList.add("dock-active");
  this._renderDockActions();
     } else {
  dock.classList.remove("show");
+ dock.classList.remove("expanded");
+ document.body.classList.remove("dock-active");
  clearTimeout(this._dockHideTimer);
  this._dockHideTimer = setTimeout(() => { dock.hidden = true; }, 400);
     }
+  },
+
+  // 抓手点按：半展开(peek) ↔ 全展开 之间切换（手机端底部 sheet 行为）
+  _toggleDockExpand() {
+    const dock = this.el("action-dock");
+    if (!dock) return;
+    dock.classList.toggle("expanded");
   },
 
   // 将行动按钮也渲染到 dock 中（复用 renderActions 逻辑）
@@ -2923,7 +2978,16 @@ const UI = {
     const dockBox = this.el("dock-actions");
     if (!dockBox || !loc) return;
     const s = State.data;
-    const storyPending = !!s.pendingEvent;
+
+    // —— 头部：地点名 + 天命一行 ——
+    const locName = this.el("dock-loc");
+    if (locName) locName.textContent = loc.name || "";
+    const objEl = this.el("dock-obj");
+    if (objEl) {
+      const obj = Engine.currentObjective ? Engine.currentObjective() : null;
+      objEl.textContent = obj ? `天命 · ${obj.title}` : "";
+    }
+
     const labels = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
@@ -2937,8 +3001,8 @@ const UI = {
       if (loc.home && loc.id === "huangfeng_gate" && s.flags.mojiao_resolved
         && State.count("xueshi_zhuyao") >= 4 && !s.flags.zhuji_lian_done) acts.unshift("liandan");
     }
-    // 有热点时 dock 也不显示常规行动按钮（热点替代了它们），但保留限时窗口
-    if (loc.hotspots && !loc.scene) acts = [];
+    // 注：地图主界面化后，行动 sheet 始终列出据点行动（即使该地点也有场景热点）——
+    // sheet 是主入口，场景热点退为可选的氛围交互（不再清空 dock 行动）。
     // 涟漪窗口
     let windowBtn = "";
     const rw = s.rippleWindow;
@@ -2952,18 +3016,78 @@ const UI = {
     const focus = this._pendingFocus; this._pendingFocus = null;
     dockBox.innerHTML = (acts.length || windowBtn)
       ? windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
-      : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>` : "");
+      : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>`
+      : (loc.hotspots ? `<div class="act-hint">— 点场景中发光标记行事 —</div>` : ""));
     dockBox.querySelectorAll("[data-action]").forEach(btn => {
       btn.addEventListener("click", () => Engine.doAction(btn.dataset.action));
     });
+
+    // —— 见闻 pane：最近见闻 + 在场人物 ——
+    this._renderDockNews(loc);
+  },
+
+  // 行动 sheet 内的"见闻"段：最近若干条见闻 + 在场可交谈人物（点开全部见闻=切见闻页）
+  _renderDockNews(loc) {
+    const box = this.el("dock-news");
+    if (!box) return;
+    loc = loc || State.location();
+    const s = State.data;
+    const log = (s && s.log) || [];
+    const strip = (e, cap) => {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = e.body || "";
+      let txt = (tmp.textContent || "").trim().replace(/\s+/g, " ");
+      if (txt.length > cap) txt = txt.slice(0, cap) + "…";
+      return txt;
+    };
+    let html = "";
+    // 在场人物（可点交谈）
+    const locals = (loc && !loc.scene && !s.pendingEvent && WORLD.localsAt) ? WORLD.localsAt(loc.id, s) : [];
+    if (locals.length) {
+      html += `<div class="dn-npcs">` + locals.map(n => {
+        const met = (s.metNpcs || []).includes(n.id);
+        return `<button class="dn-npc" onclick="UI.talkLocal('${n.id}')">${met ? n.name : "陌生人"}<i>${n.role}</i></button>`;
+      }).join("") + `</div>`;
+    }
+    if (log.length) {
+      const recent = log.slice(-6).reverse();
+      html += recent.map(e =>
+        `<div class="dn-row"><span class="dn-tag">${e.t}</span><span class="dn-txt entry-${e.kind || 'event'}">${strip(e, 110)}</span></div>`
+      ).join("");
+      html += `<button class="dn-more" onclick="UI.openLogSheet()">查看完整见闻 ›</button>`;
+    } else if (!locals.length) {
+      html += `<div class="act-hint">— 此地暂无见闻 —</div>`;
+    }
+    box.innerHTML = html;
+  },
+
+  // 行动 sheet 内切「行动 / 见闻」段
+  _dockTab(tab) {
+    const dock = this.el("action-dock");
+    if (!dock) return;
+    dock.querySelectorAll(".dock-tab").forEach(t => t.classList.toggle("active", t.dataset.dtab === tab));
+    const act = this.el("dock-actions"), news = this.el("dock-news");
+    if (act) act.hidden = (tab !== "act");
+    if (news) news.hidden = (tab !== "news");
+  },
+
+  // 完整见闻浮层（从行动 sheet 的「见闻」段点开）
+  openLogSheet() {
+    const s = State.data;
+    const log = (s && s.log) || [];
+    const rows = log.slice().reverse().map(e =>
+      `<div class="ls-row"><span class="ls-tag">${e.t}</span><div class="ls-body entry-${e.kind || 'event'}">${e.body || ""}</div></div>`
+    ).join("") || `<div class="act-hint">— 暂无见闻 —</div>`;
+    this.openSheet(`<h2>见闻 · 全录</h2><div class="log-sheet">${rows}</div>`);
   },
 
   _mapZoomIn() {
     if (this._mapZoom >= 5) return;
     this._mapZoom++;
     if (this._mapZoom === 5) {
-      // Z4→Z5：地图淡出，场景淡入，dock 滑出
-      this._showWorldmap(false);
+      // Z4→Z5：地图淡出，场景淡入（不弹 dock，用常规 layout 行动按钮）
+      this._prevZoom = 4;
+      this._showWorldmap(false, true);
       // 确保场景内容刷新
       this.renderLocation();
     } else {
@@ -2973,9 +3097,11 @@ const UI = {
 
   _mapZoomOut() {
     if (this._mapZoom <= 1) return;
+    const wasZ5 = this._mapZoom === 5;
     this._mapZoom--;
-    if (this._mapZoom === 4 && this._prevZoom === 5) {
+    if (wasZ5) {
       // Z5→Z4：场景淡出，地图淡入
+      this._prevZoom = 5;
       this._showWorldmap(true);
       this.renderWorldmap();
     } else {
@@ -2989,29 +3115,25 @@ const UI = {
     const pinsBox = this.el("worldmap-pins");
     const labelsBox = this.el("worldmap-labels");
     const hint = this.el("worldmap-hint");
-    const bg = this.el("worldmap-bg");
     if (!svg || !pinsBox) return;
     const s = State.data;
     const C = WORLD.continent;
     if (!C) return;
 
-    // 按缩放级别设定背景图
-    const bgMap = {
-      1: "renjie_map",
-      2: "tiannan_atlas",
-      3: C.map,
-      4: null,
-    };
+    // 底图（按缩放级别）：Z3/Z4 同为胥国图——连续缩放不换图；跨级（Z1/Z2/Z3）才换图（交叉淡入）
+    const bgMap = { 1: "renjie_map", 2: "tiannan_atlas", 3: C.map, 4: C.map };
     const bgUrl = bgMap[z] && typeof Art !== "undefined" ? Art.url(bgMap[z]) : null;
-    if (bg) bg.style.backgroundImage = bgUrl ? `url("${bgUrl}")` : "";
+    this._setWmBg(bgUrl);
 
-    // 按缩放级别设定 viewBox 和内容
-    let viewBox, svgContent = "", pinsHtml = "", labelsHtml = "", hintText = "";
+    // viewBox 恒定 0~100：缩放靠 .wm-world 的 transform（保证 pin/label 与底图同步、连续）
+    svg.setAttribute("viewBox", "0 0 100 100");
+
+    let svgContent = "", pinsHtml = "", labelsHtml = "", hintText = "";
+    // 缩放变换参数：k=放大倍率，(fx,fy)=聚焦点（0~100）。默认全图（k=1，居中）。
+    let k = 1, fx = 50, fy = 50;
 
     if (z === 1) {
-      // Z1：人界全图——只画四大区块轮廓
-      viewBox = "0 0 100 100";
-      hintText = "人界全图 · 缩放查看";
+      hintText = "人界全图 · 点区块下钻";
       const L = WORLD.atlas && WORLD.atlas.levels.renjjie;
       if (L) {
         const pathSet = this._atlasPinSet(L);
@@ -3027,9 +3149,7 @@ const UI = {
         }).join("");
       }
     } else if (z === 2) {
-      // Z2：大区图——天南各国
-      viewBox = "0 0 100 100";
-      hintText = "天南 · 缩放查看";
+      hintText = "天南 · 点区块下钻";
       const L = WORLD.atlas && WORLD.atlas.levels.tiannan;
       if (L) {
         const pathSet = this._atlasPinSet(L);
@@ -3044,21 +3164,18 @@ const UI = {
           return `<div class="wm-label ${st === 'here' ? 'sel' : ''}" style="left:${lab.x}%;top:${lab.y}%" onclick="UI._wmPickAtlas('tiannan','${n.id}')">${n.name}</div>`;
         }).join("");
       }
-    } else if (z === 3) {
-      // Z3：胥国——据点 pin + 路线墨痕 + 州名题字
-      viewBox = "0 0 100 100";
-      hintText = "胥国 · 十三州 · 点据点启程";
-
+    } else if (z === 3 || z === 4) {
+      // Z3=胥国全景，Z4=聚焦某据点的地区——同一张图，靠 transform 连续放大
       const curNode = C.nodes.find(n => (n.locs || []).includes(s.location)) || C.nodes[0];
       const visited = s.visitedNodes || ["caixia"];
       const epoch = WORLD.atlas.factionEpoch(s);
 
-      // 路线
+      // 路线（vector-effect 非缩放描边——放大时线不变粗）
       svgContent = C.routes.map(r => {
         const a = C.nodes.find(n => n.id === r.from), b = C.nodes.find(n => n.id === r.to);
         if (!a || !b) return "";
         const trod = visited.includes(a.id) && visited.includes(b.id);
-        return `<line class="wm-route${trod ? ' trod' : ''}" x1="${a.pos.x}" y1="${a.pos.y}" x2="${b.pos.x}" y2="${b.pos.y}"/>`;
+        return `<line class="wm-route${trod ? ' trod' : ''}" x1="${a.pos.x}" y1="${a.pos.y}" x2="${b.pos.x}" y2="${b.pos.y}" vector-effect="non-scaling-stroke"/>`;
       }).join("");
 
       // 据点 pins
@@ -3081,46 +3198,94 @@ const UI = {
         return `<div class="wm-label" style="left:${L2.x}%;top:${L2.y}%">${p.name}</div>`;
       }).join("");
 
-    } else if (z === 4) {
-      // Z4：地区图——当前大陆节点内地点
-      const focusId = this._mapFocusNode;
-      const node = C.nodes.find(n => n.id === focusId) ||
-                   C.nodes.find(n => (n.locs || []).includes(s.location)) || C.nodes[0];
-      const locs = WORLD.locations.filter(l =>
-        !l.scene && l.map && (node.locs || []).includes(l.id) &&
-        (!l.unlock || l.unlock(s)));
-      const cur = s.location;
-
-      viewBox = "0 0 100 100";
-      hintText = `${node.name} · 点地点前往`;
-
-      // 连线
-      const curLoc = WORLD.locations.find(l => l.id === cur);
-      if (curLoc && curLoc.map) {
-        svgContent = locs.filter(l => l.id !== cur).map(l =>
-          `<line class="wm-route trod" x1="${curLoc.map.x}" y1="${curLoc.map.y}" x2="${l.map.x}" y2="${l.map.y}"/>`
-        ).join("");
+      if (z === 3) {
+        hintText = "胥国 · 十三州 · 点据点查看";
+      } else {
+        // Z4：聚焦当前据点，放大显示其下地点（地点 pin 在据点 pos 周围成簇——同图放大）
+        const focusId = this._mapFocusNode;
+        const node = C.nodes.find(n => n.id === focusId) || curNode;
+        fx = node.pos.x; fy = node.pos.y; k = 2.4;
+        hintText = `${node.name} · 点地点前往`;
+        const locs = WORLD.locations.filter(l =>
+          !l.scene && l.map && (node.locs || []).includes(l.id) && (!l.unlock || l.unlock(s)));
+        const cur = s.location;
+        // 地点簇：以据点 pos 为心，把地点的 map 坐标压缩到 ±spread 的小范围内（同图近景）
+        const spread = 7;   // 簇半径（0~100 坐标），约对应屏上一片区域
+        const locPos = l => ({
+          x: node.pos.x + (l.map.x - 50) / 50 * spread,
+          y: node.pos.y + (l.map.y - 50) / 50 * spread,
+        });
+        const locPins = locs.map(l => {
+          const here = l.id === cur;
+          const p = locPos(l);
+          const factor = Balance.travelTimeFactor(State.effectiveSpeed());
+          const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
+          return `<div class="wm-pin loc ${here ? 'here' : ''}" style="left:${p.x}%;top:${p.y}%" onclick="UI._wmPickLoc('${l.id}')" title="${l.desc}">
+            <span class="wm-pin-dot"></span>
+            <span class="wm-pin-label">${l.name}${here ? ' ·在此' : ` ${cost}月`}</span>
+          </div>`;
+        }).join("");
+        // Z4 连线（据点心 → 各地点）
+        const curLoc = WORLD.locations.find(l => l.id === cur);
+        const centerP = curLoc && (node.locs || []).includes(cur) ? locPos(curLoc) : node.pos;
+        svgContent = locs.map(l => {
+          const p = locPos(l);
+          return `<line class="wm-route trod" x1="${centerP.x}" y1="${centerP.y}" x2="${p.x}" y2="${p.y}" vector-effect="non-scaling-stroke"/>`;
+        }).join("");
+        // Z4 只显当前据点名（其余 pin 淡出，避免与地点簇打架）
+        pinsHtml = `<div class="wm-pin here node-anchor" style="left:${node.pos.x}%;top:${node.pos.y}%">
+          <span class="wm-pin-label node">${node.name}</span></div>` + locPins;
+        labelsHtml = "";
       }
-
-      pinsHtml = locs.map(l => {
-        const here = l.id === cur;
-        const factor = Balance.travelTimeFactor(State.effectiveSpeed());
-        const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
-        return `<div class="wm-pin ${here ? 'here' : ''}" style="left:${l.map.x}%;top:${l.map.y}%" onclick="UI._wmPickLoc('${l.id}')" title="${l.desc}">
-          <span class="wm-pin-dot"></span>
-          <span class="wm-pin-label">${l.name}${here ? ' ·在此' : ` ${cost}月`}</span>
-        </div>`;
-      }).join("");
     }
 
-    svg.setAttribute("viewBox", viewBox);
     svg.innerHTML = svgContent;
     pinsBox.innerHTML = pinsHtml;
     labelsBox.innerHTML = labelsHtml;
     if (hint) hint.textContent = hintText;
 
+    // 应用连续缩放变换（同图放大；跨级换图时由 _setWmBg 交叉淡入配合）
+    this._applyWmZoom(k, fx, fy);
+
     // 更新 avatar pin
     this._updateAvatarPin();
+  },
+
+  // 连续缩放：translate+scale（origin 恒为中心）——把聚焦点(fx,fy)移到屏幕中心并放大 k 倍。
+  // pin/label 用 --wmk 反向缩放保持屏上恒定大小（见 CSS）。
+  _applyWmZoom(k, fx, fy) {
+    const world = this.el("wm-world");
+    if (!world) return;
+    const tx = -k * (fx - 50);
+    const ty = -k * (fy - 50);
+    world.style.setProperty("--wmk", k);
+    world.style.transform = `translate(${tx}%, ${ty}%) scale(${k})`;
+  },
+
+  // 底图交叉淡入（跨级换图：人界/天南/胥国/场景之间）。同图不换=直接返回。
+  _setWmBg(url) {
+    const bg = this.el("worldmap-bg"), bg2 = this.el("worldmap-bg2");
+    if (!bg) return;
+    const cur = bg.dataset.url || "";
+    if (cur === (url || "")) return;
+    if (url) {
+      if (cur) {
+        // 已有底图 → 用 bg2 淡入新图，再交换（crossfade）
+        bg2.style.backgroundImage = `url("${url}")`;
+        bg2.style.opacity = "0.55";
+        clearTimeout(this._bgSwapT);
+        this._bgSwapT = setTimeout(() => {
+          bg.style.backgroundImage = `url("${url}")`;
+          bg.dataset.url = url;
+          bg2.style.opacity = "0";
+        }, 480);
+      } else {
+        bg.style.backgroundImage = `url("${url}")`;
+        bg.dataset.url = url;
+      }
+    } else {
+      bg.style.backgroundImage = ""; bg.dataset.url = "";
+    }
   },
 
   // 旅途抵达后：从地图切到场景（Z5）
@@ -3130,6 +3295,19 @@ const UI = {
     this._mapZoom = 5;
     this._showWorldmap(false);
     this.renderLocation();
+    // 手机端到达即弹行动 sheet（落脚据点即可行事）
+    if (this._isMobile()) this.switchMobileTab("act");
+  },
+
+  // 旅途开始：切到地图主界面（Z3），头像将沿路线插值移动（P3 旅途可视化）
+  _enterJourneyMap() {
+    this._prevZoom = this._mapZoom;
+    this._mapZoom = 3;
+    this._mapFocusNode = null;
+    this._showWorldmap(true);
+    this.renderWorldmap();
+    document.querySelectorAll(".mtab").forEach(t => t.classList.toggle("active", t.dataset.tab === "map"));
+    const sg = document.getElementById("screen-game"); if (sg) sg.setAttribute("data-mtab", "map");
   },
 
   // P4：切换 HUD 侧栏折叠/展开（地图模式下）
@@ -3255,7 +3433,7 @@ const UI = {
 
     let ax, ay;
     if (s.journey) {
-      // 旅途中：沿路线插值
+      // 旅途中：沿路线插值（Z3 坐标系）
       const j = s.journey;
       const fromNode = C.nodes.find(n => n.id === j.from);
       const toNode = C.nodes.find(n => n.id === j.to);
@@ -3266,8 +3444,18 @@ const UI = {
       } else if (toNode) {
         ax = toNode.pos.x; ay = toNode.pos.y;
       }
+    } else if (this._mapZoom === 4) {
+      // Z4：地点簇坐标系（以聚焦据点 pos 为心，地点压缩到 ±spread）——与 renderWorldmap 一致
+      const node = C.nodes.find(n => n.id === this._mapFocusNode) ||
+                   C.nodes.find(n => (n.locs || []).includes(s.location)) || C.nodes[0];
+      const curLoc = WORLD.locations.find(l => l.id === s.location);
+      const spread = 7;
+      if (curLoc && curLoc.map && (node.locs || []).includes(s.location)) {
+        ax = node.pos.x + (curLoc.map.x - 50) / 50 * spread;
+        ay = node.pos.y + (curLoc.map.y - 50) / 50 * spread;
+      } else { ax = node.pos.x; ay = node.pos.y; }
     } else {
-      // 静止：在当前所在据点
+      // Z3 及以下：用据点 pos 坐标系
       const curNode = C.nodes.find(n => (n.locs || []).includes(s.location));
       if (curNode) { ax = curNode.pos.x; ay = curNode.pos.y; }
     }
@@ -3291,66 +3479,17 @@ const UI = {
     }
   },
 
-  /* -------- 云游（可视化大地图，点击图标前往）——只列当前大陆节点内的去处 -------- */
+  /* -------- 云游（已归入世界地图 Z4 视图）-------- */
   openTravel() {
-    const cur = State.data.location;
-    const arc = Chapters.active().id;
-    // 大陆层过滤：地区层云游只显示当前大陆节点的 locs（跨节点须走「远眺天下」旅途）。
-    // 地理优先：身在该节点，节点内地点不受篇章 arc 过滤（人到了，地方就在那里）。
+    // 旧弹窗已废弃——重定向到世界地图 Z4（当前据点地区图）
+    const s = State.data;
     const C = WORLD.continent;
-    const curNode = C ? C.nodes.find(n => (n.locs || []).includes(cur)) : null;
-    const inNode = (l) => !curNode || (curNode.locs || []).includes(l.id);
-    const locs = WORLD.locations.filter(l =>
-      !l.scene && l.map && inNode(l) && (curNode || !l.arc || l.arc === arc) && (!l.unlock || l.unlock(State.data)));
-
-    // 连线（从当前所在地到各可去之处）便于看出空间关系
-    const curLoc = WORLD.locations.find(l => l.id === cur);
-    const lines = (curLoc && curLoc.map)
-      ? locs.filter(l => l.id !== cur).map(l =>
-          `<line x1="${curLoc.map.x}" y1="${curLoc.map.y}" x2="${l.map.x}" y2="${l.map.y}" class="map-line"/>`).join("")
-      : "";
-
-    const pins = locs.map(l => {
-      const here = l.id === cur;
-      const factor = Balance.travelTimeFactor(State.effectiveSpeed());
-      const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
-      return `<div class="map-pin ${here ? 'here' : ''}" style="left:${l.map.x}%;top:${l.map.y}%"
-        ${here ? '' : `onclick="UI._travelPick('${l.id}')"`} title="${l.desc}">
-        <span class="pin-dot"></span>
-        <span class="pin-label">${l.name}${here ? ' ·在此' : `　<span class="pin-cost">${cost}月</span>`}</span>
-      </div>`;
-    }).join("");
-
-    // 远行直达（E2）：已解锁但尚未抵达的大陆节点，给云游一个一跳直达入口——
-    // 如七玄门篇通关后的嘉元城/越京/太南谷，免去「远眺天下→翻地图找节点」的层层点按。
-    const farNodes = C ? C.nodes.filter(n =>
-      !n.silhouette && n.gate && n.gate(State.data) === null &&
-      !(n.locs || []).includes(cur) && !(State.data.visitedNodes || []).includes(n.id)) : [];
-    const farRow = farNodes.length
-      ? `<div class="far-jump"><span class="far-jump-key">远行新途</span>${farNodes.map(n =>
-          `<button class="btn btn-secondary btn-mini" onclick="UI.openContinent(); UI._contPick('${n.id}')">${n.name} ▶</button>`).join("")}</div>`
-      : "";
-
-    this.openModal(`
-      <h2>云游何处</h2>
-      <p style="color:var(--ink-dim);font-size:12px">七玄门内外，点击地图上的地点即可前往。遁速越高，赶路越省光阴。</p>
-      <div class="speed-bar">
-        <span class="speed-key">移动速度</span>
-        <span class="speed-val">${State.effectiveSpeed()}</span>
-        <span class="speed-breakdown">基础${State.data.speed}${State.realmSpeedBonus() ? `＋境界${State.realmSpeedBonus()}` : ''}${State.movementArtBonus() ? `＋身法${State.movementArtBonus()}` : ''}${State.flightTreasure().speedBonus ? `＋${State.flightTreasure().name}${State.flightTreasure().speedBonus}` : ''}</span>
-        <span class="speed-mount">${State.flightTreasure().name}</span>
-      </div>
-      <div class="worldmap">
-        <svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
-        ${pins}
-      </div>
-      <div id="map-detail" class="map-detail">${curLoc ? `<b>${curLoc.name}</b>　${curLoc.desc}` : ''}</div>
-      ${farRow}
-      <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="UI.openContinent()">远眺天下 ▲</button>
-        <button class="btn btn-ghost" onclick="UI.closeModal()">不去了</button>
-      </div>
-    `);
+    const curNode = C ? C.nodes.find(n => (n.locs || []).includes(s.location)) : null;
+    this._mapFocusNode = curNode ? curNode.id : null;
+    this._prevZoom = this._mapZoom;
+    this._mapZoom = 4;
+    this._showWorldmap(true);
+    this.renderWorldmap();
   },
   _travelPick(locId) {
     const l = WORLD.locations.find(x => x.id === locId);
@@ -3361,8 +3500,16 @@ const UI = {
       <div style="margin-top:8px"><button class="btn btn-primary btn-mini" onclick="UI.closeModal(); Engine.travelTo('${l.id}')">前往（${cost} 月）</button></div>`;
   },
 
-  /* -------- 大陆层：天南舆图（world-architecture L0）——全图早见，远方=惦记 -------- */
+  /* -------- 大陆层（已归入世界地图 Z3 视图）-------- */
   openContinent() {
+    // 旧弹窗已废弃——重定向到世界地图 Z3（胥国全景）
+    this._prevZoom = this._mapZoom;
+    this._mapZoom = 3;
+    this._mapFocusNode = null;
+    this._showWorldmap(true);
+    this.renderWorldmap();
+    return;
+    // —— 以下旧弹窗代码保留但不再执行 ——
     const C = WORLD.continent;
     if (!C) return;
     const s = State.data;
@@ -3471,10 +3618,18 @@ const UI = {
    * 不传 levelId = 从当前所在的国别层打开（先看到「我在哪」，再决定「去哪」）。
    * ============================================================ */
   openAtlas(levelId) {
+    // 旧弹窗已废弃——重定向到世界地图
     levelId = levelId || this._atlasCurrentLevel();
     if (levelId === "yueguo") return this.openContinent();
     const L = WORLD.atlas && WORLD.atlas.levels[levelId];
     if (!L) return this.openContinent();
+    // 确定缩放级别：world=Z1, region=Z2
+    this._prevZoom = this._mapZoom;
+    this._mapZoom = (L.kind === "world") ? 1 : 2;
+    this._showWorldmap(true);
+    this.renderWorldmap();
+    return;
+    // —— 以下旧弹窗代码保留但不再执行 ——
     const s = State.data;
     const on = !!this._factionsOn;
     const epoch = WORLD.atlas.factionEpoch(s);
@@ -3739,6 +3894,7 @@ const UI = {
   // 切换势力图层：翻转开关并就地重绘当前舆图层（_atlasReopen 由 openAtlas/openContinent 设定）。
   toggleFactions() {
     this._factionsOn = !this._factionsOn;
+    if (!this.el("worldmap-canvas").hidden) { this.renderWorldmap(); return; }
     if (this._atlasReopen) this._atlasReopen();
   },
   // 当前剧情纪元名（图例顶部标注；红线：魔道/慕兰篇默认停在纪元0）。

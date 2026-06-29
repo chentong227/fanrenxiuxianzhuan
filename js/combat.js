@@ -413,6 +413,7 @@
         mpMax: s.mpMax != null ? s.mpMax : Math.max(s.mp != null ? s.mp : 30, 30),
       });
       f.isSide = true;
+      f.id = s.id || null;           // 护送/保护目标标识（objective:protect 用）
       f.kind = s.kind || "corpse";
       f.sideRef = s;                 // 原始引用（Engine 战后回写用；persona 人格权重在此）
       f.atk = s.atk; f.atkName = s.atkName;
@@ -1150,6 +1151,14 @@
           this._log(`【拖时布阵】师兄妹与傀儡蜥蜴正催动「真·颠倒五行阵」——再撑 ${left} 回合，阵即可成！`);
         }
       }
+      // —— 护送/保护目标进度提示（objective:protect）——
+      if (this.objective && this.objective.kind === "protect") {
+        const target = this.sides.find(sd => sd.id === this.objective.target);
+        const left = Math.max(0, this.maxRounds - this.round);
+        if (target && target.hp > 0 && left > 0) {
+          this._log(`【护人】${target.name} 还在——再撑 ${left} 回合即可脱险！`);
+        }
+      }
     }
 
     /* ----- 出招合法性 ----- */
@@ -1653,6 +1662,15 @@
             // 拖时布阵战：拖满回合不死＝阵成＝胜（败有所得首例）
             this.status = "win";
             this._log(this.objective.winLog || `拖到了时辰——师兄妹的「真·颠倒五行阵」终于布成！`);
+          } else if (this.objective && this.objective.kind === "protect") {
+            // 护送/保护战：拖满回合且保护目标存活＝胜
+            const target = this.sides.find(sd => sd.id === this.objective.target);
+            if (target && target.hp > 0) {
+              this.status = "win";
+              this._log(this.objective.winLog || `${target.name}安然脱险——护送成功！`);
+            } else {
+              this.status = "lose"; this._log(`回合耗尽，未能护住。`);
+            }
           } else {
             this.status = "lose"; this._log(`回合耗尽，未能取胜。`);
           }
@@ -2444,6 +2462,15 @@
         { const av = this._allyVoice(); if (av) this._say(av, "playerDown"); }
         this._log(`${this.player.name} 气血耗尽，败。`);
         return;
+      }
+      // 护送/保护目标阵亡＝败（objective:protect）
+      if (this.objective && this.objective.kind === "protect") {
+        const target = this.sides.find(sd => sd.id === this.objective.target);
+        if (target && target.hp <= 0) {
+          this.status = "lose";
+          this._log(this.objective.loseLog || `护送目标${target.name}气绝倒地——你没能护住！`);
+          return;
+        }
       }
       // 阵型崩溃（T3）：领队殒命，群势立溃——阵散为各自为战，爪牙皆软三分
       if (!this._packBroken) {

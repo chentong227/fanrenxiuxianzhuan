@@ -203,6 +203,8 @@ const STORY = [
   {
     id: "friends",
     cond: (s) => s.flags.adventured || s.cultivation >= 40,
+    objTitle: "初入门径",
+    objHint: "在药庐闭关修炼《长春功》，修为积累到一定程度自有机缘。",
     title: "同门之谊",
     text(s) {
       const t = [
@@ -260,6 +262,8 @@ const STORY = [
     id: "bottle",
     cond: (s) => s.cultivation >= 70 || s.flags.adv_count >= 2,
     cg: "bottle",
+    objTitle: "机缘暗至",
+    objHint: "继续修炼或外出历练，修为渐深时自有造化登门。",
     title: "神秘小瓶",
     text(s) {
       const t = [

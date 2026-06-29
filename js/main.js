@@ -71,6 +71,14 @@ const Main = {
       tab.addEventListener("click", () => UI.switchMobileTab(tab.dataset.tab));
     });
 
+    // —— 行动 sheet 内的「行动 / 见闻」段切换 ——
+    document.querySelectorAll(".dock-tab").forEach(tab => {
+      tab.addEventListener("click", () => UI._dockTab(tab.dataset.dtab));
+    });
+    // 抓手：点一下在展开/收起之间切换（半展开 peek ↔ 全展开）
+    const dockGrip = UI.el("dock-grip");
+    if (dockGrip) dockGrip.addEventListener("click", () => UI._toggleDockExpand());
+
     // 点击遮罩空白关闭弹窗（奇遇/剧情等必须选择的弹窗除外）
     UI.el("modal-overlay").addEventListener("click", (e) => {
       if (e.target.id === "modal-overlay" && !Engine._pendingFortune) UI.closeModal();
@@ -435,10 +443,16 @@ const Main = {
     UI.el("screen-create").classList.remove("active");
     UI.el("screen-game").classList.add("active");
     const layout = document.querySelector(".layout");
-    if (layout && !layout.getAttribute("data-mtab")) layout.setAttribute("data-mtab", "stage");
+    if (layout && !layout.getAttribute("data-mtab")) layout.setAttribute("data-mtab", "act");
+    const sg = UI.el("screen-game");
+    if (sg && !sg.getAttribute("data-mtab")) sg.setAttribute("data-mtab", "act");
     UI.renderNarrative();
     UI.renderAll();
     UI.initRipple();
+    // 手机端：据点行动 sheet 默认弹出（地图主界面化——行动是常态入口）
+    if (UI._isMobile && UI._isMobile() && !State.data.combat && !State.data.pendingEvent) {
+      UI._showActionDock(true);
+    }
     if (State.data.bottle.unlocked) UI.showBottleButton();
     // 中途存档退出的大陆旅途：自动续走
     if (Engine.resumeJourney) setTimeout(() => Engine.resumeJourney(), 400);

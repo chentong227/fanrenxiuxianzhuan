@@ -570,7 +570,7 @@ const Engine = {
     else if (action === "explore") { this.enterHoushan(); return; }
     else if (action === "board") { this.cityRead("board"); return; }
     else if (action === "rumor") { this.cityRead("rumor"); return; }
-    else if (action === "travel") { UI.openTravel(); return; }
+    else if (action === "travel") { UI.openTravel(); return; }  // openTravel 已重定向到世界地图 Z4
     else if (action === "wujian") { this.doWujian(); return; }
     else if (action === "liandan") { this.lianZhujiDan(); return; }
 
@@ -2160,6 +2160,8 @@ const Engine = {
     this.log(`你收拾行囊，踏上去「${node.name}」的路——约${months}月行程。江湖路远，晓行夜宿。`, "event");
     this.toast(`启程：${node.name}`);
     UI.closeModal();
+    // 旅途可视化（P3）：切到地图主界面（Z3），头像将沿路线移动
+    if (typeof UI !== "undefined" && UI._enterJourneyMap) UI._enterJourneyMap();
     State.save();
     this._journeyLeg();
   },
@@ -2461,12 +2463,13 @@ const Engine = {
             Engine.addMilestone("拜别：小妹出嫁，你在席上", "deed");
             State.setFlag("home_farewell");
             State.setFlag("demon_seed_sister");   // 心魔种子：花轿远去的背影（突破心魔战素材）
-            return { text: "喜宴那日你坐在末席，看小妹蒙着红盖头给爹娘磕头。花轿抬出村口时，她忽然掀帘回头，朝你这边望了一眼。\n\n你在心里说：二哥对不住你，往后不能护着你了。\n\n临行前夜，你把三十两银子缝进娘的旧棉袄，又在房梁上压了张字条——若有急难，去彩霞山下托人带话。（心境+12，心魔-10，纹银-10）\n\n走出村口那一步，你没有回头。", kind: "good" };
+            return { text: "喜宴那日你坐在末席，看小妹蒙着红盖头给爹娘磕头。花轿抬出村口时，她忽然掀帘回头，朝你这边望了一眼。\n\n你在心里说：二哥对不住你，往后不能护着你了。\n\n临行前夜，你把十两银子缝进娘的旧棉袄，又在房梁上压了张字条——若有急难，去彩霞山下托人带话。（心境+12，心魔-10，纹银-10）\n\n走出村口那一步，你没有回头。", kind: "good" };
           },
         },
         {
-          text: "盘桓三日，放下银两便走（道途催人）",
+          text: "盘桓三日，放下银两便走（+1月）",
           effect(sd) {
+            Engine.passTime(1);
             sd.silver = Math.max(0, sd.silver - 15);
             sd.mood = Math.min(sd.moodMax, sd.mood + 4);
             sd.demon = Math.min(100, sd.demon + 4);
@@ -6086,7 +6089,7 @@ const Engine = {
     // 选项副作用（账本/状态变化等，fortune 式 effect——返回 {text,kind} 则记入见闻）
     if (choice.effect) {
       const r = choice.effect(s) || {};
-      if (r.text) this.log(r.text, r.kind || "event");
+      if (r.text) { this.log(r.text, r.kind || "event"); this.toast(r.text, r.kind === "bad"); }
     }
 
     // 复仇战：万小山之仇（三散修——同阶之争你无敌；第三人遁走是远雷）

@@ -1,11 +1,12 @@
 /* ============================================================
- * exploremap.js — 箱庭探索 v3 · L1 舆图引擎 + 嵌套栈
+ * exploremap.js — 箱庭探索 v3 · L1 舆图 + L2 楼阁 + L3 深窟 · 嵌套栈
  *
  * 设计（docs/explore-redesign.md 定稿）：
  *  - L1 野外舆图：地标节点+连线，移动耗灾厄钟；"用时间换安全"的战略层。
  *  - 巡逻威胁：会动的敌人棋子（封岳），相遇=对阵轴开打；路上永不随机强战。
  *  - 血幕收缩：钟到点关闭外环节点——地图本身在恶化。
- *  - 嵌套栈：节点可为子图入口（L3 横版深窟），进=压栈、出=弹栈。
+ *  - 嵌套栈：节点可为子图入口（L2 楼阁 / L3 横版深窟），进=压栈、出=弹栈。
+ *  - L2 楼阁层：多楼层平面图，楼梯切换楼层；每层节点+连线同 L1 逻辑。
  *  - L3 scene 图：线性段落制（入口/观察/采集/决战），暴露值只在此局部存在。
  *
  * 纯逻辑、无 DOM、可序列化（状态挂 State.data.exmap）、可无头测试。
@@ -280,6 +281,83 @@
       fight: { enemy: "mojiao", ally: "nangongwan",
         cue: "南宫婉的绫光忽然一滞——墨蛟猩红的竖瞳，越过她，直直锁住了潭岸上的你。" },
     },
+
+    /* ====== 测试用 L2 楼阁层（虚天殿内殿·简化版） ======
+     * 楼层制：每层 = 一张 L1 式平面图（rooms+edges）；楼梯节点切换楼层。
+     * kind: "tower" → _mkFrame 以 field 模式运行，mapOf 返回当前层 pseudo-map。
+     * node.kind 新增：stairs_up（上楼）/ stairs_down（下楼） */
+    test_tower_l2: {
+      id: "test_tower_l2", kind: "tower",
+      name: "虚天殿·内殿",
+      bg: "xutian_neidian",
+      entryFloor: 0,
+      notes: [
+        "殿内灵压沉沉，廊柱上的符纹忽明忽灭。",
+        "远处传来阵法运转的嗡鸣，像心跳。",
+      ],
+      floors: [
+        {
+          name: "一层·前殿",
+          entry: "entrance",
+          rooms: {
+            entrance:  { name: "殿门", kind: "exit", x: 50, y: 82, icon: "◈",
+                         desc: "虚天殿内殿入口。灵光透过门缝洒出来，里面静得像坟墓。" },
+            main_hall:  { name: "正殿", kind: "lore", x: 50, y: 50, icon: "📜",
+                         desc: "正殿中央，虚天鼎的灵光透过禁制隐约可见——但禁制太强，近不得。",
+                         read: "禁制上的符文你认得大半——这是一座元婴级困阵，硬闯是自寻死路。" },
+            side_room:  { name: "偏室", kind: "gather", x: 25, y: 45, icon: "🌿",
+                         desc: "一间不大的偏室，角落散落着前人遗物。",
+                         loot: { lingshi: 3 } },
+            stairs_up:  { name: "登仙梯", kind: "stairs_up", x: 75, y: 30, icon: "↑",
+                         desc: "通往二楼的阶梯。灵压越往上越重，像有什么东西压着。" },
+          },
+          edges: [
+            ["entrance", "main_hall", 1],
+            ["main_hall", "side_room", 1],
+            ["main_hall", "stairs_up", 1],
+          ],
+        },
+        {
+          name: "二层·藏宝阁",
+          intro: "登上二层，灵压骤然加重。廊道尽头隐有金光——藏宝阁到了。",
+          rooms: {
+            stairs_down: { name: "阶梯下来", kind: "stairs_down", x: 75, y: 82, icon: "↓",
+                           desc: "从一层上来，灵压明显更重了。" },
+            corridor:    { name: "回廊", kind: "lore", x: 50, y: 60, icon: "📜",
+                           desc: "回廊两侧刻满了古修士的壁画——修炼、斗法、飞升，一图接一图。",
+                           read: "壁画末尾有一幅残图：一位古修士手持虚天鼎，鼎中炼化万物——这是虚天殿的由来。" },
+            treasure:    { name: "藏宝阁", kind: "gather", x: 40, y: 30, icon: "💎",
+                           desc: "藏宝阁中宝光隐隐。架上有几件品相不差的灵材。",
+                           loot: { lingshi: 5, lingcao: 2 }, rich: true },
+            stairs_up2:  { name: "顶层梯", kind: "stairs_up", x: 70, y: 25, icon: "↑",
+                           desc: "通往顶层的窄梯。上面灵压如山——怕是有大阵镇守。" },
+          },
+          edges: [
+            ["stairs_down", "corridor", 1],
+            ["corridor", "treasure", 1],
+            ["corridor", "stairs_up2", 2],
+          ],
+        },
+        {
+          name: "顶层·阵眼",
+          intro: "顶层灵压如山。正中一座大阵，阵眼处灵光流转——这就是虚天殿的禁制核心。",
+          rooms: {
+            stairs_down2: { name: "窄梯下来", kind: "stairs_down", x: 70, y: 82, icon: "↓",
+                            desc: "从二层上来，灵压重得像扛着一座山。" },
+            array_eye:    { name: "阵眼", kind: "danger", x: 50, y: 45, icon: "⚔",
+                            desc: "大阵阵眼——灵光流转间，隐约可见虚天鼎的影子被封在阵心。",
+                            beastEnemy: true },
+            final_room:   { name: "内室", kind: "enter", x: 30, y: 30, icon: "🕳",
+                            sub: "mojiao_cave", boss: true,
+                            desc: "阵眼后方一间密室。门上的符纹已暗——里面似乎通向更深处。" },
+          },
+          edges: [
+            ["stairs_down2", "array_eye", 1],
+            ["array_eye", "final_room", 1],
+          ],
+        },
+      ],
+    },
   };
 
   function edgeKey(a, b) { return a < b ? a + "|" + b : b + "|" + a; }
@@ -310,6 +388,15 @@
         f.pos = map.playerPos != null ? map.playerPos : 1;
         f.expose = 0; f.taken = {}; f.preps = {}; f.introDone = false;
       }
+      // L2 楼阁层：多楼层——frame 以 field 模式运行（复用 L1 全部逻辑），
+      //   mapOf 返回当前层的 pseudo-map；楼梯节点触发 floorChange
+      if (map.kind === "tower") {
+        f.kind = "field";   // 对 L1 逻辑透明（travel/options/gather 等零改动）
+        f.floor = map.entryFloor || 0;
+        const fl = map.floors[f.floor];
+        f.node = (fl && (fl.entry || Object.keys(fl.rooms)[0])) || null;
+        if (f.node) f.visited[f.node] = true;
+      }
       // 战争迷雾（map.fog 选启）：四态可见性——glimpsed 窥见 / rumored 风闻；visited 已至沿用 f.visited
       // hunted：巢穴猎物已伏诛（与 cleared「采尽」分开记——先猎杀，方可搜刮）
       if (map.fog) { f.glimpsed = {}; f.rumored = {}; f.senseBand = {}; f.hunted = {}; }
@@ -319,7 +406,19 @@
     },
 
     cur(x) { return x.stack[x.stack.length - 1]; },
-    mapOf(f) { return MAPS[f.mapId]; },
+    mapOf(f) {
+      const map = MAPS[f.mapId];
+      // L2 楼阁层：返回当前层的 pseudo-map（对 L1 逻辑透明）
+      if (map && map.kind === "tower" && map.floors) {
+        const fl = map.floors[f.floor || 0];
+        return {
+          id: map.id, kind: "field",
+          nodes: fl.rooms, edges: fl.edges || [],
+          notes: map.notes, clockMax: 0, fog: false,
+        };
+      }
+      return map;
+    },
 
     // 据点风味·复访变迁：按 flags 选节点的风物变体（最进展者列在前=优先命中）。
     // 纯函数、无 DOM/无 State——可无头测；返回命中的 flavor 对象或 null（用 node 基础风物）。
@@ -557,8 +656,49 @@
         return { ok: true, events };
       }
 
+      // L2 楼阁层：抵达楼梯节点 → 发 stairs 事件（engine 可自动或手动触发 floorChange）
+      if (node.kind === "stairs_up" || node.kind === "stairs_down") {
+        events.push({ type: "stairs", direction: node.kind === "stairs_up" ? "up" : "down", node: nodeId });
+      }
       events.push({ type: "arrive", node: nodeId, firstVisit, nodeDef: node });
       return { ok: true, events };
+    },
+
+    /* ---------- L2 楼阁层：楼层切换 ---------- */
+    // direction: "up" | "down"——在楼梯节点上调用，切换到相邻楼层
+    floorChange(x, direction) {
+      const f = this.cur(x);
+      const map = MAPS[f.mapId];
+      if (!map || map.kind !== "tower") return { ok: false, reason: "非楼阁" };
+      const newFloor = (f.floor || 0) + (direction === "up" ? 1 : -1);
+      if (newFloor < 0 || newFloor >= map.floors.length) return { ok: false, reason: "无路可去" };
+      const newDef = map.floors[newFloor];
+      // 在新层找匹配的楼梯入口（上楼→找 stairs_down，下楼→找 stairs_up）
+      const want = direction === "up" ? "stairs_down" : "stairs_up";
+      let entryRoom = null;
+      for (const [id, r] of Object.entries(newDef.rooms)) {
+        if (r.kind === want) { entryRoom = id; break; }
+      }
+      if (!entryRoom) entryRoom = newDef.entry || Object.keys(newDef.rooms)[0];
+      f.floor = newFloor;
+      f.node = entryRoom;
+      const firstVisit = !f.visited[entryRoom];
+      f.visited[entryRoom] = true;
+      const events = [
+        { type: "floorChange", floor: newFloor, floorName: newDef.name || `第${newFloor + 1}层`,
+          room: entryRoom, firstVisit },
+      ];
+      if (newDef.intro) events.push({ type: "note", text: newDef.intro });
+      return { ok: true, events };
+    },
+
+    // 当前楼层信息（UI 用）
+    floorInfo(x) {
+      const f = this.cur(x);
+      const map = MAPS[f.mapId];
+      if (!map || map.kind !== "tower") return null;
+      const fl = map.floors[f.floor || 0];
+      return { floor: f.floor || 0, total: map.floors.length, name: (fl && fl.name) || "" };
     },
 
     _patrolStep(x, events) {
