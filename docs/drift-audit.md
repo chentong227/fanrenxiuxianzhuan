@@ -101,6 +101,9 @@
   starsea_jindan_calm/luan_help/shijin_breed/tianxing_public/xiaohuan_explore、modao_e4_alert、nangong_lingshi_grateful、xinruyin_helped。
   **副作用：修了 writeLedger(id,true) 的 API 误用**（这些 id 退出 writeLedger 命名空间，总债基数 134→119）。闭环率 **25% → 28%**（33/119），baseline 降至 86 条。
   保留为真钩子不转：`dayan_remembered`（大衍诀残卷线索·跨篇）、`starsea_jingbian_observe`（风希弱点情报·跨篇）——它们是情报伏笔非纯态度，留待对应内容兑现。
+- **2026-06-29 v239 · 新建兑现节点（旅途善举长出后果）**：`saved_merchant_road`（官道救行商）原为旅途随机善举、无重逢窗口——
+  新增旅途事件 `jr_merchant_repay`（cond：种过因且未报答 `!merchant_repaid`）：当年救的行商发家后官道重逢、投桃报李（纹银+20/灵石+2/生意人耳报+心境），settleLedger 点名兑现。
+  这是**为还债新建内容**（非接线），让"顺手救人"真正长出远雷。闭环率 **28% → 29%**（34/119），baseline 降至 85 条。
 
 ---
 

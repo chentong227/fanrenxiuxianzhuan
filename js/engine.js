@@ -2119,6 +2119,27 @@ const Engine = {
       ],
     },
     {
+      // 远雷·官道救行商兑现（铁律3）：当年救的行商缓过来了，发了家——投桃报李
+      id: "jr_merchant_repay", weight: 30, title: "故人·官道重逢",
+      cond: (s) => !!(s.ledger && s.ledger.saved_merchant_road) && !s.flags.merchant_repaid,
+      text: "前方道旁支着顶气派的商棚，一队镖车正歇脚。一个圆胖商人远远瞧见你，愣了一下，忽然撇下伙计快步迎上来——「恩公！可算又遇着您了！」\n\n你定睛一看，竟是当年官道上那个遭劫、被你救回一命的行商。如今他气色红润、绸衫革靴，俨然发了家。",
+      choices: [
+        { text: "「举手之劳，不必挂怀。」", effect(s) {
+          State.setFlag("merchant_repaid");
+          s.silver += 20;
+          State.give("lingshi", 2);
+          if (typeof Engine !== "undefined" && Engine.settleLedger) {
+            Engine.settleLedger("saved_merchant_road", "当年官道上随手救的那名行商，缓过命来发了家——今日重逢，他认得你这恩公，硬塞来盘缠与灵石，还递了句生意人的耳报");
+          }
+          s.mood = Math.min(s.moodMax, s.mood + 4);
+          s.worldNews = s.worldNews || [];
+          s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "rumor", text: "行脚商人间传：那位走南闯北的‘恩公’，又被人念叨起来了。" });
+          if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+          return { text: "他不由分说塞来一袋碎银和两枚灵石（纹银+20，灵石+2），又压低声音道：「恩公行走在外，消息最是要紧——近来这条道上哪伙人不好惹、哪处坊市的价钱实在，小的都替您记着。」\n\n（心境+4。一桩随手的善，绕了一圈，连本带利回到你手里。）", kind: "good" };
+        } },
+      ],
+    },
+    {
       id: "jr_bandit", weight: 16, title: "剪径的毛贼",
       text: "三五个拿刀的汉子从林子里钻出来拦住去路：「此山是我开！留下买路财！」",
       choices: [
