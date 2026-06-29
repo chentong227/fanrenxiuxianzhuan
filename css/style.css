@@ -5064,14 +5064,17 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
      据点铭牌——名号+风物小字，填充上半空旷、点明"此地何处" */
   #screen-game[data-mtab="act"] .scene-head {
     left: 12px; right: 12px; top: 134px; bottom: auto; max-width: none;
-    background: none; padding: 0 0 12px; border-radius: 0;
+    /* 可读性衬底：场景图亮部（山门天空）下，暗金文字会糊——加一层左起深色软渐变托住文字 */
+    background: linear-gradient(180deg, rgba(8,6,4,.62) 0%, rgba(8,6,4,.40) 60%, rgba(8,6,4,0) 100%);
+    padding: 10px 14px 16px; border-radius: 10px;
+    -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px);
   }
   .scene-head { left: 12px; top: 50px; bottom: auto; max-width: 62%; }
   .scene-head .loc-name { font-size: 19px; letter-spacing: 3px; }
   /* 据点风物小字：act 页显示（点明此地是什么地方，填上半空旷）*/
   #screen-game[data-mtab="act"] .loc-desc-inline {
     display: block; margin-top: 4px; font-size: 12.5px; line-height: 1.6;
-    color: var(--ink-dim); max-width: 88%; text-shadow: 0 1px 4px rgba(0,0,0,.85);
+    color: #d2c9b7; max-width: 92%; text-shadow: 0 1px 5px rgba(0,0,0,.95);
   }
   .scene-head .loc-desc-inline { display: none; }
   .scene-pins { left: 4%; right: 4%; top: 24%; bottom: 18%; }
