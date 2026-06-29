@@ -191,6 +191,13 @@ const State = {
     if (!d.sideTreasures) d.sideTreasures = [];   // 伴身法宝槽（v96）
     if (!d.intelElems) d.intelElems = {};
     if (!d.ledger) d.ledger = {};
+    // 健壮性：location 必须是有效地点 id——老档/重构改 id 后若失配，静默回退会让玩家"莫名被传回青牛镇"。
+    //   这里兜底为 qingniu（安全默认），但留一条 console 警告便于排查（不改 schema、不卡档）。
+    if (typeof WORLD !== "undefined" && WORLD.locations && d.location
+        && !WORLD.locations.some(l => l.id === d.location)) {
+      try { console.warn("[migrate] 无效地点 id：" + d.location + " → 回退 qingniu"); } catch (e) {}
+      d.location = "qingniu";
+    }
     if (!d.temperament) d.temperament = { stoic: 0, sentiment: 0, marks: [] };   // 心性账本：克制/承志 vs 动情/牵挂（名场面态度累计，铸"我是谁"）
     if (d.journey === undefined) d.journey = null;
     if (d.exmap === undefined) d.exmap = null;
