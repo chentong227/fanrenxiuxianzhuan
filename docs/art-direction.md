@@ -135,3 +135,13 @@
 
 > 补图工作流：`node scripts/genart.js`（生图）→ `node scripts/cutout.js`（抠透明底）
 > → 把 id 加进 `_npcIdByName` extra 表 → 进 `qingwen_plot` 节点验立绘左右站位与朝向。
+
+## 十、场景图待补清单（playtest 累积）
+
+| 地点 id | 名称 | 出现章节 | 备注 |
+|---------|------|---------|------|
+| `modao_front` | 魔道前线 · 待命营 | 魔道争锋篇 | 缺场景图→中段纯黑（已加水墨渐变兜底，仍建议补正式场景） |
+
+> 补图：`node scripts/genart.js` 生成 `assets/scenes/<locId>.png`（满幅横构图，
+> 提示词带"画面铺满无黑边"）→ `scripts/cropbars.js` 裁黑边。
+> 兜底机制：无图地点 `.scene-stage` 已有水墨径向渐变，不再是纯黑空洞。

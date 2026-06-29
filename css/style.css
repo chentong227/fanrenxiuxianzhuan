@@ -4186,7 +4186,10 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
  * ============================================================ */
 .scene-stage {
   position: absolute; inset: 0; z-index: 1;
-  overflow: hidden; background: var(--bg);
+  overflow: hidden;
+  /* 无场景图时的优雅兜底：水墨径向渐变（而非纯黑大片空洞）——缺图地点也像"夜色/雾中"而非 bug */
+  background:
+    radial-gradient(ellipse at 50% 32%, #1c1812 0%, #14110b 55%, #0b0907 100%);
 }
 .scene-bg {
   position: absolute; inset: -2.5%; background-size: cover; background-position: center 38%;
