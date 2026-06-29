@@ -272,6 +272,18 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 }
 .wm-pin.here .wm-pin-label { color: var(--jade-bright); }
 .wm-pin.gated .wm-pin-label { color: var(--ink-dim); }
+/* pin 副信息行（舆图显示更多：凶险/行程/状态）——浮在名字下方 */
+.wm-pin-meta {
+  position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+  white-space: nowrap; font-size: 9.5px; letter-spacing: .5px;
+  color: var(--ink-dim); text-shadow: 0 1px 3px rgba(0,0,0,.85);
+}
+.wm-pin-meta.here { color: var(--jade); }
+.wm-pin-meta.lock { color: var(--ink-faint); }
+.wm-danger { font-style: normal; margin-right: 4px; padding: 0 4px; border-radius: 4px; }
+.wm-danger.d-lo { color: #9fd0a8; }
+.wm-danger.d-mid { color: #e2c277; }
+.wm-danger.d-hi { color: #f4a08c; }
 
 /* 地图标签（州名/区块名） */
 .wm-label {
@@ -5074,7 +5086,9 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   /* A3/A4 韩立页：道具界面不显示地图（隐藏场景带），状态与储物袋左右并排。
    * 场景带隐去后顶栏(absolute)浮于 .layout 之上，故补足上留白避开顶栏。*/
   #screen-game[data-mtab="hero"] .scene-stage { display: none; }
-  #screen-game[data-mtab="hero"] .layout { padding-top: 52px; }
+  /* 韩立页=角色档案，不显示"天命/限时"世界际遇栏（那是行动页的事）——避免 fixed 栏压住角色卡 */
+  #screen-game[data-mtab="hero"] .objective-bar { display: none; }
+  #screen-game[data-mtab="hero"] .layout { padding-top: calc(48px + 12px); }
   .layout[data-mtab="hero"] .side-rail { display: flex; gap: 10px; align-items: flex-start; }
   /* 左：人物状态（粘顶——浏览/取用道具时数值始终在侧）*/
   .side-rail .sr-status { flex: 0 0 43%; min-width: 0; position: sticky; top: 0; align-self: flex-start; }

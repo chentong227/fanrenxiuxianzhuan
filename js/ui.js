@@ -1821,18 +1821,22 @@ const UI = {
         `<button class="choice" onclick="UI.closeReplay()">合上回廊</button>`;
       return;
     }
-    // 战斗类抉择前的「临战准备」一览
+    // 战斗类抉择前的「临战准备」一览——底牌随章节/境界演进（不再死盯练气期的毒草暗器）
     const isFight = (stage.choices || []).some(c => c.resolve);
     let prepHtml = "";
     if (isFight) {
-      const du = State.count("duyao_cao"), an = State.count("anqi");
-      const ready = (du >= 3 && an >= 3);
-      const warn = (du === 0 && an === 0);
-      const hasPrep = (stage.choices || []).some(c => c.calm);   // 本节点是否提供「退去后山备货」真出口
-      const warnNote = hasPrep ? '毫无底牌！可选「退去后山」备足毒草暗器再战，不必硬拼' : '毫无底牌！硬拼九死一生，建议先去后山备足毒草暗器';
+      const items = this._fightPrepItems();        // [{id,name,n}...] 当前阶段的关键底牌
+      const total = items.reduce((a, it) => a + it.n, 0);
+      const kinds = items.filter(it => it.n > 0).length;
+      const ready = kinds >= 2 && total >= 4;        // 至少两类底牌、合计≥4 = 充分
+      const warn = total === 0;
+      const hasPrep = (stage.choices || []).some(c => c.calm);
+      const exForm = items.map(it => it.name).slice(0, 2).join("、") || "底牌";
+      const warnNote = hasPrep ? `毫无底牌！可选「退去」备足${exForm}再战，不必硬拼` : `毫无底牌！硬拼九死一生，宜先备足${exForm}`;
+      const itemsHtml = items.map(it => `<span class="fp-item">${it.name} ×${it.n}</span>`).join("");
       prepHtml = `<div class="fight-prep ${ready ? 'ok' : warn ? 'bad' : 'mid'}">
         <span class="fp-tag">临战准备</span>
-        <span class="fp-item">毒草 ×${du}</span><span class="fp-item">暗器 ×${an}</span>
+        ${itemsHtml}
         <span class="fp-note">${ready ? '准备充分，可放手一搏' : warn ? warnNote : '底牌偏少，胜算有限，宜再备一些'}</span>
       </div>`;
     }
@@ -1842,6 +1846,33 @@ const UI = {
         ${c.text}${c.hint ? `<span class="c-hint">${c.hint}${lack ? '（尚缺）' : ''}</span>` : ""}
       </button>`;
     }).join("");
+  },
+
+  // 临战准备底牌清单：按章节/境界演进——练气数毒草暗器，筑基后符箓/瞬发/阵旗/法宝充能。
+  //   只列"当前阶段玩家真能囤、战斗真能用"的消耗性底牌，避免"筑基修士还在数练气暗器"的错位。
+  _fightPrepItems() {
+    const s = State.data;
+    const chap = s.activeChapter || "qixuan";
+    const realm = s.realmIndex || 0;
+    // 候选底牌（按出现顺序），取玩家拥有或本阶段相关的
+    const cand = [];
+    const push = (id) => { const it = DATA.items[id]; if (it) cand.push({ id, name: it.name, n: State.count(id) }); };
+    if (chap === "qixuan" || realm < 2) {
+      // 练气期：毒草 + 暗器
+      push("duyao_cao"); push("anqi");
+    } else if (chap === "huangfeng" || chap === "departure") {
+      // 筑基前后：符箓 + 瞬发底牌（毒草暗器退居其次，仍计入若有）
+      push("huoshe_fu"); push("hanbing_fu"); push("dingshen_fu"); push("huiyuan_dan");
+    } else {
+      // 魔道争锋 / 初入星海（筑基后期~结丹）：符箓 + 阵旗 + 瞬发 + 法宝充能
+      push("huoshe_fu"); push("hanbing_fu"); push("dingshen_fu");
+      push("zhenqi_juling"); push("zhenqi_kunzu"); push("jinguang_zhuan_charge"); push("huiyuan_dan");
+    }
+    // 兜底：若该阶段候选全无（数据缺），退回毒草暗器，至少有显示
+    if (!cand.length) { push("duyao_cao"); push("anqi"); }
+    // 只保留最多 4 项（界面不挤），优先有货的
+    cand.sort((a, b) => (b.n > 0 ? 1 : 0) - (a.n > 0 ? 1 : 0));
+    return cand.slice(0, 4);
   },
 
   // 选项点击：先把这段剧情沉淀到叙事日志（留痕），再关闭演出、推进
@@ -3189,9 +3220,21 @@ const UI = {
         const nm = WORLD.atlas.epochPick(n.nameByEpoch, epoch) || n.name;
         const ruin = WORLD.atlas.epochPick(n.ruinByEpoch, epoch);
         const label = ruin ? `${nm}（旧址）` : nm;
+        // 副信息行（舆图显示更多）：当前=在此；远观=??；未通=锁；可达=凶险+行程月数
+        let meta = "";
+        if (here) meta = `<span class="wm-pin-meta here">在此</span>`;
+        else if (n.silhouette) meta = `<span class="wm-pin-meta lock">远观之地</span>`;
+        else if (gateMsg) meta = `<span class="wm-pin-meta lock">道途未通</span>`;
+        else {
+          const months = Math.max(1, n.months || 2);
+          const danger = n.danger || "";
+          const dCls = danger === "高" ? "d-hi" : danger === "中" ? "d-mid" : "d-lo";
+          meta = `<span class="wm-pin-meta">${danger ? `<i class="wm-danger ${dCls}">${danger}险</i>` : ""}约${months}月</span>`;
+        }
         return `<div class="wm-pin ${here ? 'here' : ''} ${cls}" data-mx="${n.pos.x}" data-my="${n.pos.y}" onclick="UI._wmPickNode('${n.id}')" title="${n.desc}">
           <span class="wm-pin-dot"></span>
           <span class="wm-pin-label">${label}${here ? ' ·在此' : ''}</span>
+          ${meta}
         </div>`;
       }).join("");
 
