@@ -128,7 +128,13 @@ dialogue.test.js / cutscene.test.js / world.test.js / env.test.js / quest.test.j
    - **首测结果（2026-06-29）**：134 种因 id，仅 7 闭环 → **闭环率 5%**（比 drift-audit 估计的还重）。
      127 条存量债已铺进 baseline，门禁即刻生效。
    - **执法线（铁律3）**：改了 story.js / engine.js 新增 writeLedger 后必跑；FAIL = 因果违宪，禁止 push。
-2. **`test/balance.todo.js`**（待做）：扫描 data.js 中新增 gear/spell 是否缺 `driveRealm` 或 `// TODO:tier` 标注。
+2. **`test/quality.audit.js`** —— ✅ **已实装（2026-06-30）·玩法质量（§五战斗/§四选择）机器执法器**：
+   - 战斗质量：boss/named 敌人（`boss`/`namedLoot`/名字含「妖王/巨擘/教主/老祖/长老」）必须有
+     `introNote`（战术题面）+ `attacks`（出招表）；任一缺失 = FAIL。
+   - 选择质量：剧情节点不得出现「假多选」（≥2 选项全部同 `resolve` 且无 `effect`/`fight`＝伪装的单选）。
+   - 用法：`node test/quality.audit.js`（exit 0=全过）。改了 world.js 敌人表 / story.js 选项后必跑。
+   - 首测（2026-06-30）：PASS——31 敌人 boss/named 全有 introNote+attacks，108 剧情节点 0 假多选。
+3. **`test/balance.todo.js`**（待做）：扫描 data.js 中新增 gear/spell 是否缺 `driveRealm` 或 `// TODO:tier` 标注。
 3. **commit 钩子**（待做）：改了 `js/balance.js|combat.js` 自动提示「跑 scale.bal.js」。
 
 > D1（ledger.audit）已把漂移 #1 从「靠自觉」变「靠门禁」。**还债工作流**：从 baseline
