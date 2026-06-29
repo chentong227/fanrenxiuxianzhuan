@@ -85,6 +85,17 @@ const INTERACTIONS = {
       return { kind, npcId: who.id, npcName: who.name };
     }
 
+    // 活世界与你抢资源（drift-audit #4）：寿元将尽者会主动找上门求救命丹——
+    //   不是被动等你拜会才碰上，而是"垂死者亲自来求"。你的丹有数、求助者不止一个：救谁是真选择。
+    //   仅在你以医毒闻名（is_modafu·够得着求药的名头）时主动来访，避免早期打扰。
+    if (s.flags.is_modafu) {
+      const dying = alive.filter(f => f.desperate);
+      if (dying.length && rng() < 0.55) {
+        const who = dying[Math.floor(rng() * dying.length)];
+        return { kind: "beg_pill", npcId: who.id, npcName: who.name };
+      }
+    }
+
     const who = alive[Math.floor(rng() * alive.length)];
     const kinds = [];
     // 求丹：你以医毒闻名时更常见
@@ -154,41 +165,51 @@ const INTERACTIONS = {
             { text: "婉拒", effect() { return { text: "你推说丹药不足，婉言谢绝。", kind: "sys" }; } },
           ],
         };
-      case "beg_pill":
+      case "beg_pill": {
+        // 续命丹分级（drift-audit #4 资源竞争）：珍稀丹续得久——你的丹有数、垂死者不止一个，救谁/用哪颗是真取舍。
+        // 灵乳灵药=小绿瓶量产的大补灵药（续 6 年）；养元丹=寻常丹（续 3 年）；凝神丹=安神（续 2 年·聊胜于无）。
+        const PILLS = [
+          { id: "lingyao_dan", name: "灵乳灵药", years: 6 },
+          { id: "qingyuan_dan", name: "养元丹", years: 3 },
+          { id: "ningshen_dan", name: "凝神丹", years: 2 },
+        ];
+        const owned = PILLS.filter(p => State.count(p.id) >= 1);
+        const giveChoices = owned.map(p => ({
+          text: `赠以${p.name}（续 ${p.years} 年寿）`, hint: "积德结善缘——但你的丹，救得了几人？",
+          effect(st) {
+            State.take(p.id, 1);
+            INTERACTIONS.favor(st, f.id, p.years >= 6 ? 20 : p.years >= 3 ? 12 : 6);
+            f.lifespan += p.years; f.desperate = false;
+            st.mood = Math.min(st.moodMax, st.mood + 4);
+            return { text: `你递出一枚${p.name}。${f.name}涕泪交加，重重一拜。续得 ${p.years} 年寿——能否更进一步，便看他造化了。`, kind: "good" };
+          },
+        }));
+        // 高价出售（只对最珍稀的一颗给选项，避免刷屏）：救命之物从无公道价
+        if (owned.length) {
+          const top = owned[0];
+          giveChoices.push({
+            text: `高价出售${top.name}（要价灵石×3）`, hint: "趁人之危，但灵石实在",
+            effect(st) {
+              State.take(top.id, 1); State.give("lingshi", 3);
+              INTERACTIONS.favor(st, f.id, 3);
+              f.lifespan += top.years; f.desperate = false;
+              return { text: `你坐地起价。${f.name}咬牙倾尽家底换药——救命之物，从无公道价。`, kind: "event" };
+            },
+          });
+        }
+        giveChoices.push({
+          text: owned.length ? "爱莫能助（丹要留给更要紧的人/事）" : "爱莫能助（你也没有续命的丹）",
+          effect(st) {
+            INTERACTIONS.favor(st, f.id, -6);
+            return { text: `你摇头婉拒。${f.name}失魂落魄地离去……修仙界的命，从来各凭天数。这一颗丹省下了，可省下，也是一条命没接住。`, kind: "bad" };
+          },
+        });
         return {
           title: "垂死求丹",
-          text: `${f.name}（${realm}）寿元将尽，突破无望，红着眼眶恳求："墨大夫，求您一枚续命的灵药，多少灵石我都给！"`,
-          choices: [
-            {
-              text: "赠以灵药（灵乳灵药×1）", hint: "积德，亦结善缘",
-              cond: () => State.count("lingyao_dan") >= 1,
-              effect(st) {
-                State.take("lingyao_dan", 1);
-                INTERACTIONS.favor(st, f.id, 20);
-                f.lifespan += 4; f.desperate = false;
-                st.mood = Math.min(st.moodMax, st.mood + 6);
-                return { text: `你递出一枚灵乳灵药。${f.name}涕泪交加，重重一拜。续得几年寿，能否更进一步，便看他造化了。`, kind: "good" };
-              },
-            },
-            {
-              text: "高价出售（要价灵石×3）",
-              cond: () => State.count("lingyao_dan") >= 1,
-              effect(st) {
-                State.take("lingyao_dan", 1); State.give("lingshi", 3);
-                INTERACTIONS.favor(st, f.id, 4);
-                f.lifespan += 4; f.desperate = false;
-                return { text: `你坐地起价。${f.name}咬牙倾尽家底换药——救命之物，从无公道价。`, kind: "event" };
-              },
-            },
-            {
-              text: "爱莫能助",
-              effect(st) {
-                INTERACTIONS.favor(st, f.id, -6);
-                return { text: `你摇头婉拒。${f.name}失魂落魄地离去……修仙界的命，从来各凭天数。`, kind: "bad" };
-              },
-            },
-          ],
+          text: `${f.name}（${realm}）寿元将尽、突破无望，辗转寻到以医毒闻名的"墨大夫"门上，红着眼眶恳求："求您一枚续命的灵药，多少灵石我都给！"`,
+          choices: giveChoices,
         };
+      }
       case "secret_realm":
         return {
           title: "邀约闯秘境",

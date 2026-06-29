@@ -448,3 +448,28 @@
   三路对称胜率断言**刻意不补**（非对称是设计而非缺陷）。测试套 38→39。
 - drift-audit #2 从「★★★★ P0 未实装」→ **闭环**：三路分化成立（直接乘区/底牌路/控场乘区各填战力公式不同格子），
   深耕有里程碑甜头。全门禁绿（run/journey/smoke/saveload/scale/skillmilestone）。
+
+
+## 活世界命途·资源竞争落地（v264）——drift-audit #4 实质闭环
+- **复核发现诊断部分过时**：`interactions.js beg_pill` 早已实现「玩家用续命丹扳背景修士命途」
+  （读 lingyao_dan、改 npcsim f.lifespan/f.desperate）——世界并非全隔绝，#4 比记录的乐观。
+- ✅ **三处强化**（守 fate-design 红线·不加好感数值条·离散救/不救事件）：
+  ① `INTERACTIONS.pick` 让 `desperate`（寿元将尽）修士**主动找上门**求丹（is_modafu 名头下 55% 优先）——
+     从"拜会时随机碰上"升级为"垂死者亲自来求"，世界主动来抢你的资源。
+  ② `beg_pill` 接**多丹分级**（灵乳灵药续6年/养元丹3年/凝神丹2年）：你的丹有数、求助者不止一个，
+     **救谁/用哪颗丹是真取舍**（资源竞争·单周目不可全救）。
+  ③ 无丹仍有「爱莫能助」出口（不卡死）；台词点出"省下一颗丹，也是一条命没接住"。
+- ✅ 新建 `test/npcfate.test.js`（垂死主动求丹+多丹分级+资源竞争+真改命途全验证）。测试套 39→40。
+- 命途道岔的珍稀材料竞争（fate healed_chen/gave_chen_resource）payoff 在乱星海篇·属合法未来钩。
+
+## drift-audit 六项漂移·全部收口（2026-06-30 里程碑）
+| # | 漂移 | 收口 |
+|---|------|------|
+| 6 治理 | ✅ CONSTITUTION 立宪 + audit-gate 门禁 |
+| 1 因果闭环 | ✅ A类债100%·ledger.audit 棘轮 |
+| 2 Build分化 | ✅ v263 非对称三路+里程碑甜头 |
+| 3 时间窗口互斥 | ✅ v259/v260 落2例·范式成立 |
+| 5 分级制 | ✅ 核实早已实装+校准·balance.todo 守 |
+| 4 命途资源竞争 | ✅ v264 垂死主动求丹+多丹分级 |
+六项漂移在既有篇章范围内全部收口。门禁体系：ledger/quality/balance.todo/build.bal/skillmilestone/npcfate
++ scale/encounter/elem/tier 平衡组 + run/journey/chapter/smoke/saveload/assetref 回归组 = 40 套全绿。
