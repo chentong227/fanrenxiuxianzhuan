@@ -1,13 +1,9 @@
 /* Build 路线平衡校验（build-balance-design.md §4.3 落地·诚实版）。
  *
- * ⚠ 现状声明（drift-audit #2 实证·2026-06-30 核实）：
- *   设计稿设想「剑/丹/阵」三路对称战力公式（alchemyBonus/formationBonus 直接加战力），
- *   但代码现实——**只有剑道（功法层 layerMul）一条线真正进了战力**：
- *     · 剑道：`Balance.layerMul(layer,max)` → spellPower 乘区（真·战力分化）。
- *     · 丹道：`s.skills.alchemy` 只影响采药量/炼丹产量/双丹率/剧情台词，**不直接进战斗战力**（经济/资源路）。
- *     · 阵法：只有符箓/阵旗消耗道具，**无 formation 熟练度战力线**。
- *   故「三路纯 build 打同一 boss 胜率差≤10%」断言**前置系统未实装**——
- *   那套 alchemyBonus/formationBonus 战力公式属待拍板设计方向（不在本门禁伪造）。
+ * ⚠ 现状声明（drift-audit #2·2026-06-30 用户拍板「非对称三路」·已闭环）：
+ *   三路**刻意不对称**（守一致感）——剑道=直接战力乘区(layerMul)、丹道=底牌制造路(炼丹/采药·不直接进战斗)、
+ *   阵法=控场/洞府乘区(符箓阵旗·洞府聚灵阵)。深耕回报靠**里程碑独占能力**（见 Engine._SKILL_MILESTONES /
+ *   test/skillmilestone.test.js），非伤害公式。故「三路纯 build 胜率差≤10%」对称断言**刻意不补**（非缺陷）。
  *
  * 本门禁只对**已实装的剑道 layerMul 战力线**做真实不变量断言（铁律4 标度尺的一部分）：
  *   断言1 单调：层数越高 layerMul 不降（同门功法逐层精进）。

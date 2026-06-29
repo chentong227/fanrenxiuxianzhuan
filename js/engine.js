@@ -668,12 +668,14 @@ const Engine = {
     const s = State.data;
     this.passTime(WORLD.activities.gather.timeCost);
     if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
-    const bonus = Math.floor((s.skills.alchemy || 0) / 8);   // 药理每8级多识得一株
+    const div = s.flags && s.flags.dan_ms_bianyao ? 6 : 8;   // 丹道·辨药入门里程碑：识别量更丰（每6级多识一株）
+    const bonus = Math.floor((s.skills.alchemy || 0) / div);
     const n = 1 + Math.floor(Math.random() * 3) + bonus;
     State.give("lingcao", n);
     if (Math.random() < 0.4 + (s.skills.alchemy || 0) * 0.01) State.give("duyao_cao", 1);
     s.skills.alchemy += 1;
     this.log(`你在灵草丛中采得灵草 ×${n}` + (s.inventory.duyao_cao ? "，还顺手挖到一株毒草" : "") + `。（药理+1，现 ${s.skills.alchemy}）`, "good");
+    this._checkSkillMilestones("alchemy");
   },
 
   /* -------- 切磋（演武厅，可能引出厉飞雨剧情提示）-------- */
@@ -691,6 +693,39 @@ const Engine = {
       if (s.swordIntent === 100 && !s.flags.sword_intent_full) { State.setFlag("sword_intent_full"); this.toast("剑意圆满！可回药庐悟剑"); }
     }
     this.log("你与同门切磋武艺，身法体魄略有精进。厉飞雨笑你进境神速，直呼天才。" + swordNote, "good");
+  },
+
+  /* -------- 杂学里程碑：丹道(alchemy)/阵法(fulu) 深耕的「独占能力台阶」 --------
+   * 设计哲学（用户裁决 2026-06-30·非对称三路）：丹/阵不塞伤害公式（违一致感），
+   *   而以「里程碑解锁独占能力/被动增强」做深耕甜头——剑道=直接战力乘区，丹道=底牌制造路，
+   *   阵法=控场/洞府乘区。三路各填战力公式不同格子，刻意不对称。
+   * 解锁即置 flag（存档惰性·不改 schema）+ 报喜 + 入年表。读时检查、幂等（flag 防重）。 */
+  _SKILL_MILESTONES: {
+    alchemy: [
+      { at: 20, flag: "dan_ms_bianyao", title: "丹道·辨药入门", log: "【丹道精进】药理通了关窍——采药辨药一眼定真假，往后采得更丰（识别量+）。" },
+      { at: 40, flag: "dan_ms_anshen", title: "丹道·自炼凝神丹", log: "【丹道精进】凝神丹的火候你已了然——自此洞府可亲手炼制凝神丹（安神压魔），不必再仰仗坊市稀货。" },
+      { at: 60, flag: "dan_ms_chunqing", title: "丹道·丹火纯青", log: "【丹道精进】丹火纯青，一炉常得双丹——炼药出丹率更稳、偶得三丹。" },
+    ],
+    fulu: [
+      { at: 15, flag: "zhen_ms_wengu", title: "阵法·布阵稳固", log: "【阵法精进】阵脚扎得更稳——探索中布下的阵旗多撑两回合。" },
+      { at: 30, flag: "zhen_ms_juling", title: "阵法·洞府聚灵阵", log: "【阵法精进】你能在洞府铺设永久聚灵阵了——阵眼吐灵，自此闭关修为增速再进一档（×1.08·与灵泉/补天叠乘）。" },
+    ],
+  },
+  // 检查并解锁某条熟练度的到点里程碑（采药/炼药/制符后调用）。
+  _checkSkillMilestones(skill) {
+    const s = State.data;
+    const lv = (s.skills && s.skills[skill]) || 0;
+    const table = this._SKILL_MILESTONES[skill];
+    if (!table) return;
+    s.flags = s.flags || {};
+    for (const m of table) {
+      if (lv >= m.at && !s.flags[m.flag]) {
+        s.flags[m.flag] = true;
+        this.log(m.log, "good");
+        this.addMilestone(m.title, "deed");
+        if (typeof Sfx !== "undefined") Sfx.play("bell");
+      }
+    }
   },
 
   /* -------- 道途年表：质变/大件/勋章的永久记录 -------- */
@@ -1177,11 +1212,18 @@ const Engine = {
     if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
     const doubleChance = Math.min(0.35, (s.skills.alchemy || 0) * 0.015 + (s.insight || 0) * 0.01);
     const dbl = Math.random() < doubleChance;
-    State.give("qingyuan_dan", dbl ? 2 : 1);
+    // 丹道·丹火纯青里程碑：双丹基础上偶得三丹（独占增强）
+    const tripleChance = s.flags && s.flags.dan_ms_chunqing ? 0.18 : 0;
+    const trp = dbl && Math.random() < tripleChance;
+    const got = trp ? 3 : (dbl ? 2 : 1);
+    State.give("qingyuan_dan", got);
     s.skills.alchemy += 2;
-    this.log(dbl
-      ? `炉火纯青——这一炉竟得养元丹 ×2！（药理+2，现 ${s.skills.alchemy}）`
-      : `你依墨大夫所授丹方，以灵草炼出一枚养元丹。（药理+2，现 ${s.skills.alchemy}）`, "good");
+    this.log(trp
+      ? `丹火纯青，三花聚顶——这一炉竟得养元丹 ×3！（药理+2，现 ${s.skills.alchemy}）`
+      : dbl
+        ? `炉火纯青——这一炉竟得养元丹 ×2！（药理+2，现 ${s.skills.alchemy}）`
+        : `你依墨大夫所授丹方，以灵草炼出一枚养元丹。（药理+2，现 ${s.skills.alchemy}）`, "good");
+    this._checkSkillMilestones("alchemy");
   },
 
   /* -------- 探查（密室，推进张铁/夺舍线索）-------- */
@@ -1986,8 +2028,10 @@ const Engine = {
       const cell = info.preps[p.id];
       if (cell == null) return;
       if (p.zone) {
+        // 阵法·布阵稳固里程碑：探索布阵旗化战场阵法多撑 2 回合（深耕被动）
+        const wengu = (s.flags && s.flags.zhen_ms_wengu) ? 2 : 0;
         zones.push({ from: Math.max(0, cell - 1), to: Math.min(info.W - 1, cell + 1),
-                     type: p.zone, turns: p.zone === "juling" ? 5 : 4, team: "player" });
+                     type: p.zone, turns: (p.zone === "juling" ? 5 : 4) + wengu, team: "player" });
       } else if (p.mine) {
         mines.push({ cell, kind: p.mine, name: p.name,
                      dmg: p.mine === "tienu" ? Math.round(((s.sideUnit || {}).atk || 13) * 2) : 24,
@@ -2862,7 +2906,9 @@ const Engine = {
     const butianMul = s.flags.butian_used ? 1.10 : 1;
     // 三转重元功·真元精纯乘性印记：散功重修一遍，根基更纯，闭关修为增速永久略增（乘性·非平铺，吃 A2 承重墙）
     const zhuanMul = s.zhuanImprint || 1;
-    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * dongfuMul * butianMul * zhuanMul));
+    // 阵法·洞府聚灵阵里程碑：阵眼吐灵，闭关增速再进一档（乘性·与灵泉/补天/三转叠乘——小绿瓶×灵泉×阵法三重乘法）
+    const formationMul = s.flags && s.flags.zhen_ms_juling ? 1.08 : 1;
+    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * dongfuMul * butianMul * zhuanMul * formationMul));
     let gain = perMonth * months;
 
     // 心境告急：心乱则修为难进、心魔易侵（杂念丛生，事倍功半）
@@ -6002,6 +6048,7 @@ const Engine = {
     const s = State.data;
     const crop = DATA.bottle.crops[cropId];
     if (!crop) return;
+    if (crop.gateFlag && !(s.flags && s.flags[crop.gateFlag])) { this.toast("此谱尚未参透"); return; }
     if ((s.realmIndex || 0) < (crop.minRealmIdx || 0)) { this.toast("境界未到，参不透此谱"); return; }
     if (!State.take(crop.seed, 1)) { this.toast("缺少种子原料"); return; }
     s.bottle.plots[plotIndex] = { crop: cropId, growth: 0 };
@@ -6085,6 +6132,7 @@ const Engine = {
     } else {
       this.log(`运笔时灵力一滞，符纹溃散——一张符纸就此作废。（制符术+2，现 ${s.skills.fulu}）`, "bad");
     }
+    this._checkSkillMilestones("fulu");
     State.save();
     UI.renderAll();
     if (typeof UI.openFuluCraft === "function") UI.openFuluCraft();

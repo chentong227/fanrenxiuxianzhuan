@@ -575,7 +575,7 @@ DATA.bottle = {
   crops: {
     lingcao:   { seed: "lingcao",   matureItem: "lingyao_dan", yield: 1, growth: 100, minRealmIdx: 0,
                  name: "灵草 → 灵乳灵药", use: "服食大补修为——瞒着旁人精进的本钱" },
-    anshen:    { seed: "lingcao",   matureItem: "ningshen_dan", yield: 1, growth: 120, minRealmIdx: 0,
+    anshen:    { seed: "lingcao",   matureItem: "ningshen_dan", yield: 1, growth: 120, minRealmIdx: 0, gateFlag: "dan_ms_anshen",
                  name: "灵草 → 凝神丹", use: "安神压魔，冲关前先稳住心境" },
     duyao_cao: { seed: "duyao_cao", matureItem: "duyao_cao",   yield: 2, growth: 100, minRealmIdx: 0,
                  name: "毒草（催熟增殖）", use: "淬毒杀招的本钱，越催越烈" },

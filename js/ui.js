@@ -2451,6 +2451,7 @@ const UI = {
         Object.keys(DATA.bottle.crops).forEach(cid => {
           const c = DATA.bottle.crops[cid];
           if (!State.count(c.seed)) return;
+          if (c.gateFlag && !(s.flags && s.flags[c.gateFlag])) return;   // 里程碑解锁的专属谱（如丹道·自炼凝神丹）
           if (realmIdx < (c.minRealmIdx || 0)) {
             lockedNote = `<div class="pstat">境界既高，更多灵草谱自现</div>`;
             return;
