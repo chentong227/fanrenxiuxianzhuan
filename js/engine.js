@@ -578,10 +578,11 @@ const Engine = {
     this.checkStory();
     // 主线/战斗/奇遇都不抢占时，NPC 才可能主动找上门
     if (!s.pendingEvent && !s.combat && !this._pendingFortune) this._maybeInteraction();
+    // 即时反馈（嗑瓜子）：直接执行的行动（打坐/历练/采药/切磋…）结算后亮一条见闻
+    if (!s.pendingEvent && !s.combat && !this._pendingFortune) this._flashLastLog();
     State.save();
     UI.renderAll();
   },
-  /* -------- 前往其他地点（遁速影响赶路耗时）-------- */
   travelTo(locId) {
     const s = State.data;
     if (s.combat) return;
@@ -2982,11 +2983,26 @@ const Engine = {
     this.checkLifespan();
     this.checkStory();
     if (!s.pendingEvent && !s.combat && !this._pendingFortune) this._maybeInteraction();
+    // 即时反馈（嗑瓜子）：闭关结算后亮一条最近见闻，玩家不必切「见闻」段也知道刚发生了什么
+    if (!s.pendingEvent && !s.combat) this._flashLastLog();
     State.save();
     UI.renderAll();
   },
 
-  /* -------- 外出历练：按当前地点的遭遇表抽取 -------- */
+  // 把最近一条见闻闪成 toast（行动即时反馈）——剧情/战斗/奇遇接管时不弹（各自有演出）
+  _flashLastLog() {
+    try {
+      const log = State.data && State.data.log;
+      if (!log || !log.length) return;
+      const e = log[log.length - 1];
+      const tmp = (typeof document !== "undefined") ? document.createElement("div") : null;
+      let txt = e.body || "";
+      if (tmp) { tmp.innerHTML = txt; txt = (tmp.textContent || "").trim(); }
+      txt = txt.replace(/\s+/g, " ");
+      if (txt.length > 42) txt = txt.slice(0, 42) + "…";
+      if (txt) this.toast(txt, e.kind === "bad");
+    } catch (e) {}
+  },
   adventure() {
     const s = State.data;
     this.passTime(DATA.actions.adventure.timeCost);
