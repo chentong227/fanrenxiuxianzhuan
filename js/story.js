@@ -2275,6 +2275,12 @@ const STORY = [
       s.flags.modao_call_due = State.absMonth() + 2;
       Engine.writeLedger("modao_conscript", "逃出燕家堡，被七派强征入伍——编入魔道争锋前线待命营，听候征调");
       Engine.addMilestone("魔道争锋篇·启：逃出燕家堡，被强征入伍", "story");
+      // 远雷·洞府选址兑现（铁律3）：藏拙者的僻静谷挡不住军令，显达者的灵泉苦修则换来赴战底气——点名出处
+      if (Engine.settleLedger("dongfu_pijing", "你把洞府藏进最不打眼的幽谷，自以为神仙难寻——可宗门一纸征令照样找上门来。藏得了是非，藏不过军令。这一课记下了：在七派的棋盘上，棋子无处可藏")) {
+        s.mood = Math.max(0, s.mood - 2);
+      } else if (Engine.settleLedger("dongfu_lingquan", "灵泉眼这些年事半功倍的苦修，此刻全化作赴战的底气——别的征卒两股战战，你提剑的手却稳。当初为修为险些与灵猿拼命，今日方知值得")) {
+        s.mood = Math.min(s.moodMax, s.mood + 2);
+      }
       if (typeof Sfx !== "undefined") Sfx.play("bell");
     },
     choices: [
