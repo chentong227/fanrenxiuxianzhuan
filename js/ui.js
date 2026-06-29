@@ -2953,6 +2953,7 @@ const UI = {
     const dock = this.el("action-dock");
     if (!dock) return;
     if (show) {
+ clearTimeout(this._dockHideTimer);   // 取消上一次"隐藏"待执行计时——否则地图↔据点快速切换会把刚弹出的 sheet 又隐藏（show 类在但 hidden 属性回 true）
  dock.hidden = false;
  requestAnimationFrame(() => dock.classList.add("show"));
  document.body.classList.add("dock-active");
