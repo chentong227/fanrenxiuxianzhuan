@@ -4049,6 +4049,9 @@ const Engine = {
       player,
       enemies: [mk("刀疤散修", 78, 13), mk("瘦高散修", 66, 11)],
       maxRounds: 18,
+      // 林间伏击复仇＝近身遭遇（"二人当面…围了上来"）：W11 + 起手近距，开局即接战，
+      //   不是旷野大战场（练气期无阵法/傀儡可布，不该空等数回合等散修走过来）。
+      W: 11, enemyPos: 5,
     });
     this._combatMeta = { type: "revenge" };
     s.combat = true;
@@ -4805,6 +4808,9 @@ const Engine = {
       enemies: [lu],
       maxRounds: 18,
       side: this.sideUnitFor("encounter"),
+      // 坊市归途·陆云风拦路夺丹＝狭路对峙（当面叫阵后动手）：起手中近距，一两回合即接战，
+      //   不是隔旷野远望（练气期无布置手段，远距=纯空等）。
+      enemyPos: 6,
     });
     this._combatMeta = { type: "luyunfeng", canQuick: false };
     s.combat = true;
