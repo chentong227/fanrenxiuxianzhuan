@@ -342,16 +342,6 @@
       "label": "暗修期间加紧修炼——以实力为底牌",
       "status": "TODO-补兑现或降级flavor"
     },
-    "showdown_prep_martial": {
-      "where": "js/story.js:472",
-      "label": "决战前苦练眨眼剑法——以武为先",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "showdown_prep_poison": {
-      "where": "js/story.js:465",
-      "label": "决战前以毒为先——催熟剧毒、多备暗器",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "starsea_biguan": {
       "where": "js/story.js:4584",
       "label": "初入星海·孤岛立身——小寰岛闭关苦修二十载，行三转重元功一转，散功重修而真元愈纯（乘性印记 zhuanImprint），拾回落海暂失之修为，重回筑基后期巅峰。",

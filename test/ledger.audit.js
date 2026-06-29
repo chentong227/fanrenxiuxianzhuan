@@ -51,8 +51,12 @@ for (const file of files) {
   reWrite.lastIndex = 0;
   while ((m = reWrite.exec(code))) {
     const id = m[1];
+    // A/B 分类启发式：种因点附近窗口（±260 字符）若同时调 addMilestone → 疑似成就型（B 类·应降级）；
+    // 否则为选择型（A 类·应补兑现窗口）——这是「做啥都不重要」病灶的正主。
+    const win = code.slice(Math.max(0, m.index - 260), m.index + 260);
+    const isAchievement = /addMilestone/.test(win);
     if (!writes.has(id)) writes.set(id, []);
-    writes.get(id).push({ file: rel, line: lineOf(m.index), label: m[2] || "" });
+    writes.get(id).push({ file: rel, line: lineOf(m.index), label: m[2] || "", cls: isAchievement ? "B" : "A" });
   }
   for (const re of [reRead, reMemberDot, reMemberIdx, reNpcField]) {
     re.lastIndex = 0;
@@ -93,9 +97,11 @@ const newDebt = grandfathered ? unsettled.filter(id => !grandfathered.has(id)) :
 const repaid = grandfathered ? [...grandfathered].filter(id => reads.has(id) || !writes.has(id)).sort() : [];
 
 if (asJson) {
+  const clsMap = {};
+  for (const id of unsettled) clsMap[id] = writes.get(id)[0].cls || "A";
   console.log(JSON.stringify({
     writeCount: writes.size, readHit: settled.length, unsettledCount: unsettled.length,
-    settled, unsettled, newDebt, repaid,
+    settled, unsettled, classes: clsMap, newDebt, repaid,
   }, null, 2));
   process.exit(grandfathered ? (newDebt.length ? 1 : 0) : 0);
 }
@@ -115,12 +121,23 @@ if (settled.length) {
 }
 
 if (unsettled.length) {
+  const clsOf = (id) => (writes.get(id)[0].cls || "A");
+  const aDebt = unsettled.filter(id => clsOf(id) === "A");
+  const bDebt = unsettled.filter(id => clsOf(id) === "B");
   console.log("── 只记不结（种了因、全仓从未读取——铁律3 嫌疑账目）──");
-  for (const id of unsettled) {
+  console.log(`   分类：A 选择债 ${aDebt.length} 条（补兑现窗口）｜B 成就债 ${bDebt.length} 条（评估后降级/补未来读取）\n`);
+  console.log("  【A 类·选择债】玩家取舍写了 ledger 却无人读——「做啥都不重要」正主，优先补 settleLedger：");
+  for (const id of aDebt) {
     const loc = writes.get(id)[0];
     const flag = grandfathered && grandfathered.has(id) ? "·存量豁免" : (grandfathered ? "·★新债" : "");
-    console.log(`  ✗ ${id}  [${loc.file}:${loc.line}]${flag}`);
-    if (loc.label) console.log(`        「${loc.label.slice(0, 40)}${loc.label.length > 40 ? "…" : ""}」`);
+    console.log(`    ✗ ${id}  [${loc.file}:${loc.line}]${flag}`);
+    if (loc.label) console.log(`          「${loc.label.slice(0, 36)}${loc.label.length > 36 ? "…" : ""}」`);
+  }
+  console.log("\n  【B 类·成就债】种因处伴 addMilestone——多为未来篇章钩子或重复记账，评估后降级（删 writeLedger 留 addMilestone）或补未来读取：");
+  for (const id of bDebt) {
+    const loc = writes.get(id)[0];
+    const flag = grandfathered && grandfathered.has(id) ? "·存量豁免" : (grandfathered ? "·★新债" : "");
+    console.log(`    ✗ ${id}  [${loc.file}:${loc.line}]${flag}`);
   }
   console.log("");
 }

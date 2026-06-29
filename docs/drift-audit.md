@@ -60,6 +60,13 @@
 - 已铺 `test/ledger.baseline.json`（127 条存量豁免）+ 棘轮门禁生效：**存量宽限、新债即刻 FAIL**。
   从此「只许还债、不许欠新债」，baseline 清空之日 = 本漂移治愈之时。
 
+### 还债进度（持续更新）
+- **2026-06-29 v232~233**：审计工具加 A/B 自动分类（种因点 ±260 字符内伴 `addMilestone` → B 成就债，否则 A 选择债）——
+  127 条债自动切成 **A 选择债 47 / B 成就债 78**，把「一坨债」变成有策略的施工图（A 优先补兑现、B 评估降级）。
+  已还 2 组 4 条选择债做范式样板：**洞府选址**（`dongfu_lingquan`/`dongfu_pijing` → modao_conscript 强征时点名兑现：藏拙挡不住军令／苦修换赴战底气）、
+  **决战前准备**（`showdown_prep_martial`/`showdown_prep_poison` → showdown 反杀墨大夫时点名兑现：磨剑成快剑／备毒耗垮铁奴）。
+  闭环率 **5% → 8%**（7 → 11 条）。还债工作流（补 settleLedger → 从 baseline 删 id → 审计全绿）已跑通两轮。
+
 ---
 
 ## 二、闭关「专修方向」缺位（Build 分化第一层）

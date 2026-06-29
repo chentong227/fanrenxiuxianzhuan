@@ -5356,6 +5356,13 @@ const Engine = {
         State.setFlag("modafu_dead");
         this.log("墨大夫毒发倒地，铁奴被你击碎，余子童的元神也被你以功力生生镇灭！你赢了——靠的是准备、算计与一刻不敢松懈的苦修。", "good");
         this.addMilestone("夺舍之夜：反杀墨大夫（余子童）", "showdown");
+        // 远雷·决战前准备兑现（铁律3）：以武/以毒为先，皆在此役开花结果——点名出处
+        if (this.settleLedger("showdown_prep_martial", "苦练到极致的眨眼剑法，在夺舍之夜近身那一瞬递了出去——快到墨大夫的元神来不及反扑。当初日夜磨剑的执拗，今夜全数兑成了那道致命的快")) {
+          s.mood = clamp(s.mood + 3, 0, s.moodMax);
+        }
+        if (this.settleLedger("showdown_prep_poison", "催熟的剧毒与满袖暗器，在三段恶斗里一寸寸耗垮了铁奴的百毒之躯——以弱胜强的本钱，全是当初一味一味备下的。备得越足，今夜便走得越稳")) {
+          s.mood = clamp(s.mood + 3, 0, s.moodMax);
+        }
         this.addFame(15, "药庐那位韩师傅，深藏不露");
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         // 曲魂幡到手：张铁尸傀自此随你驱使（侧位单位 v0——挚友之尸，为你而战）
