@@ -160,3 +160,26 @@
   - settings.test.js：Node 21+ 内置只读全局 `navigator`（仅 userAgent 无 vibrate），`global.navigator=…`
     赋值不生效 → 改 `Object.defineProperty` 强制覆盖模拟浏览器 vibrate 能力。
 - **教训**：长期红测试会让"跑全套"习惯性忽略红项，真 bug（BGM 卡音量）被淹没。深挖第一步＝让测试套全绿可信。
+
+
+### 存读档边界维度（v248+ · saveload.test.js）
+- ✅ **全 116 剧情节点 roundtrip 不软锁**：每个 STORY 节点作 pendingEvent → save→State.load()→_migrate→
+  按 loadGame 路径求值 resolved text/choices → Cutscene.compile，全程不抛。读档软锁那类 bug 有了覆盖全节点的防线（新增 test/saveload.test.js）。
+- ✅ **冒烟 smoke.test.js**：全 STORY 节点动态 text()/choices()/objHint() + 各 storyStage objective + 旅途 gate 求值，0 抛错。
+
+### 剧情演出特效维度（fx.js · 代码审计）
+- ✅ 性能红线全守：`_budget:420` 粒子全场封顶（5 处引用一致）、`_degraded` 降档 32 处、RAF 管理 7 处、
+  **禁 shadowBlur 红线严守**（3 处出现全是注释声明，无一真调用 ctx.shadowBlur——改用离屏降采样近似泛光）。
+
+### 探索/箱庭副本维度（exploremap.js · 完整性审计）
+- ✅ 5 张探索地图（血色禁地 xueshi_l1 / 嘉元城 jiayuan_city_l1 / 后山 houshan_l1 / 墨蛟洞 mojiao_cave /
+  虚天殿原型 test_tower_l2）：所有 `sub:` 子地图引用、entry、edge 端点**完整性 0 问题**，无悬空引用。
+- 注：`test_tower_l2`＝虚天殿 L2 塔层原型（kind:"tower" 上下楼），未被任何生产节点 sub 指向，仅调试/测试入口可达，正常游玩不误入。待后续接入。
+
+### 数值平衡维度（scale.bal.js · 实跑确认）
+- ✅ 轴内同阶胜率恒定 42%（各 tier 一致·标度恒定）；同阶 vs 杂兵 100%（碾压）；越阶 vs 强敌 0%（靠底牌）；
+  同阶 TTK 5.3~5.9 回合（锚点达标）。5 条断言全过，平衡健康。
+
+## 全面深挖小结（v248）
+最大收获＝音频真 bug（夜景后 BGM 卡 16%）。其余维度（存读档/特效/探索/平衡）代码纪律扎实，无新 bug，
+但补了两道长期防线（saveload + smoke 测试，测试套 31→33）。结论：游戏底层工程健康度高。
