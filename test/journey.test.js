@@ -341,10 +341,16 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
 {
   const s = State.data;
   s.realmIndex = 10;
-  // 名额大会已在 chen_after 后自动开启（门槛软化，见上）——此处径直“踏入血幕”开 L1 舆图。
+  // 名额大会已在 chen_after 后自动开启（门槛软化，见上）——名额到手后先过「临行三月备战」互斥窗口，再踏入血幕。
   assert(s.flags.xueshi_opened, "名额已开（练气十一层即触发，无大比日历空等）");
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "jindi_meeting"), 0);
-  // —— 五日禁地（v3 舆图）：选择"踏入血幕"即开 L1 ——
+  // —— 时间窗口互斥·首例：血色禁地临行三月三选一（修为/底牌/丹药）——
+  assert(s.pendingEvent === "jindi_prep", "名额到手→临行三月备战互斥窗口（jindi_prep）");
+  const prepHpStock = State.count("huoshe_fu");
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "jindi_prep"), 1);   // 选「坊市备底牌」
+  assert(s.flags.jindi_prep_done && s.flags.jindi_prep_stock, "备战窗口：选了坊市备底牌（互斥·已锁定）");
+  assert(State.count("huoshe_fu") === prepHpStock + 2, "备底牌：火蛇符×2 入袋");
+  // —— 五日禁地（v3 舆图）：备战毕→踏入血幕开 L1 ——
   assert(s.exmap && s.exmap.stack.length === 1, "踏入血幕：L1 舆图已开（exmap 会话）");
   const EM = sandbox.ExploreMap;
   assert(EM.cur(s.exmap).node === "rukou", "起点=血幕裂口");

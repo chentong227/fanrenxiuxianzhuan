@@ -1672,7 +1672,82 @@ const STORY = [
       Engine.addMilestone("血色禁地：名额到手", "deed");
     },
     choices: [
-      { text: "清点行装，踏入血幕——五日生死局，开始了。", resolve: "jindi_enter" },
+      { text: "名额到手——可血幕之内五日生死，临行这三月，须得备足。", resolve: "advance" },
+    ],
+  },
+  {
+    /* —— 时间窗口互斥·首例（drift-audit P0 #3 落地）：血色禁地临行·三月备战 ——
+     * 名额已定、血幕未开。临行三个月只够把一件事做到位——三选一，选了即无暇他顾（互斥）。
+     * 铁律2：耗 3 月（passTime）。铁律6：收益各有所值、无最优解（修为/底牌/丹药各喂一条路）。
+     * 铁律7：错过不卡死——没选的那两条，禁地里自有更难更贵的补救（采集/硬拼）。
+     * 复用既有系统（cultivate 修为 / give 底牌 / skills.alchemy），零新系统（乘法律）。 */
+    id: "jindi_prep",
+    skipIf: (s) => s.flags.jindi_prep_done,
+    cond: (s) => s.flags.xueshi_opened && !s.flags.jindi_prep_done && !s.flags.jindi_entered,
+    bgm: "tense",
+    objTitle: "临行三月 · 备战血色禁地",
+    objHint: "血幕未开，临行尚有三月。这三个月只够把一件事做到位——闭关冲修为、坊市备底牌、丹房精炼，三者只能择一。",
+    title: "血色禁地 · 临行三月",
+    text(s) {
+      return [
+        { scene: "黄枫谷 · 居所" },
+        { amb: "candle" },
+        "名额到手那日起，血幕开启便定在了三个月后。三个月——于修仙者不长，却也容不得你既要又要。",
+        { aside: "血色禁地五日生死局：主药在深、凶险在深。临行这三月怎么花，进去那五日就怎么活。修为、底牌、丹药——你只来得及把其中一样备到位。" },
+        { say: "韩立", emo: "serious", tone: "low", text: "「贪多嚼不烂。这三个月，押一处——押对了，便是血幕里多一条命。」" },
+      ];
+    },
+    choices: [
+      {
+        text: "闭关冲修为：把这三月尽数砸进苦修，临阵境界更稳。",
+        hint: "互斥·耗3月——修为大涨（冲层/突破缓冲），但底牌与丹药无暇置备",
+        effect(s) {
+          State.setFlag("jindi_prep_done");
+          State.setFlag("jindi_prep_cultivate");
+          Engine.passTime(3);
+          if (typeof Engine.cultivate === "function") Engine.cultivate(3);   // 三月闭关修为结算
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          Engine.writeLedger("jindi_prep_cultivate", "血色禁地临行三月——尽数闭关苦修、不备底牌不炼丹，押的是临阵境界更稳（互斥窗口·选了修为弃了备战）");
+          Engine.addMilestone("临行备战：三月闭关冲修为", "deed");
+          return { text: "三个月，你足不出洞府，灵力在经脉里一寸寸拓宽。临行那日推开石门，境界比月前沉稳了不止一线——血幕之内，硬实力才是底气。\n\n（修为大进；底牌与丹药未及置备——禁地里，省着用。）", kind: "good" };
+        },
+        resolve: "jindi_enter",
+      },
+      {
+        text: "坊市备底牌：跑遍黄枫谷坊市，把符箓暗器囤足。",
+        hint: "互斥·耗3月——得火蛇符/寒冰符/定身符/暗器一批，但这三月不长修为",
+        effect(s) {
+          State.setFlag("jindi_prep_done");
+          State.setFlag("jindi_prep_stock");
+          Engine.passTime(3);
+          State.give("huoshe_fu", 2);
+          State.give("hanbing_fu", 2);
+          State.give("dingshen_fu", 1);
+          State.give("anqi", 4);
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          Engine.writeLedger("jindi_prep_stock", "血色禁地临行三月——跑遍坊市囤足符箓暗器（火蛇/寒冰/定身符＋飞针），押的是临阵底牌厚（互斥窗口·选了备战弃了修为/丹药）");
+          Engine.addMilestone("临行备战：三月坊市囤底牌", "bigitem");
+          return { text: "三个月，你把黄枫谷坊市跑了个遍，灵石换成了满袋的符箓与飞针——火蛇克金、寒冰克火、定身拆招，暗器补刀。\n\n（得火蛇符×2、寒冰符×2、定身符×1、暗器×4；修为未进——血幕里，靠这些底牌咬硬骨头。）", kind: "good" };
+        },
+        resolve: "jindi_enter",
+      },
+      {
+        text: "丹房精炼：守着地火丹炉，磨药理、囤回元丹。",
+        hint: "互斥·耗3月——药理大涨＋得回元丹一批（战内续命），但不长修为、不囤符箓",
+        effect(s) {
+          State.setFlag("jindi_prep_done");
+          State.setFlag("jindi_prep_alchemy");
+          Engine.passTime(3);
+          s.skills = s.skills || { alchemy: 0, scouting: 0 };
+          s.skills.alchemy = (s.skills.alchemy || 0) + 6;
+          State.give("huiyuan_dan", 3);
+          s.mood = Math.min(s.moodMax, s.mood + 2);
+          Engine.writeLedger("jindi_prep_alchemy", "血色禁地临行三月——守地火丹炉磨药理、囤回元丹，押的是临阵续航＋丹道根基（互斥窗口·选了丹药弃了修为/符箓）");
+          Engine.addMilestone("临行备战：三月丹房精炼（药理+6·回元丹×3）", "bigitem");
+          return { text: "三个月，你守着地火丹炉寸步不离，火候手感又精进一层，炉里滚出几粒救命的回元丹。\n\n（药理+6、回元丹×3；修为未进、符箓未囤——血幕里，灵力见底时这几粒丹便是续命的那口气。）", kind: "good" };
+        },
+        resolve: "jindi_enter",
+      },
     ],
   },
   {
