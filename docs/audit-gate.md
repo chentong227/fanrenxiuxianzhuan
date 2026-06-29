@@ -120,8 +120,10 @@ dialogue.test.js / cutscene.test.js / world.test.js / env.test.js / quest.test.j
      `s.ledger["X"]` / NPC 数据 `ledger: "X"`（经 `readLedger(A.ledger)` 动态读取）。
    - 报告 `W − R`（种了因、全仓从不结果的 id 列表）。
    - **棘轮（ratchet）执法**：`test/ledger.baseline.json` 存量豁免表存在时，
-     任何「未结算且不在豁免表」的 id = **新债 → FAIL(exit 1)**；存量债被宽限。
-     **只许还债、不许欠新债。** baseline 缺失则为引导模式（只报告、exit 0）。
+     任何「未结算且不在豁免表的 **A 类选择债**」= **新债 → FAIL(exit 1)**；存量债被宽限。
+     **只许还债、不许欠新选择债。** baseline 缺失则为引导模式（只报告、exit 0）。
+   - **三分类（v241）**：A 选择债（铁律3 正主·严格门禁）／B 成就记录（伴 addMilestone 的流水账·合法只记不结·不阻断）／
+     H 真钩子（label 含未来承诺词·等 readLedger 兑现·不阻断）。门禁只对 A 类新债 FAIL，B/H 新增仅提示不拦截。
    - 用法：`node test/ledger.audit.js`（审计）／`--write-baseline`（铺底/接受存量）／`--json`（机读）。
    - **首测结果（2026-06-29）**：134 种因 id，仅 7 闭环 → **闭环率 5%**（比 drift-audit 估计的还重）。
      127 条存量债已铺进 baseline，门禁即刻生效。

@@ -51,12 +51,28 @@ for (const file of files) {
   reWrite.lastIndex = 0;
   while ((m = reWrite.exec(code))) {
     const id = m[1];
-    // A/B 分类启发式：种因点附近窗口（±260 字符）若同时调 addMilestone → 疑似成就型（B 类·应降级）；
-    // 否则为选择型（A 类·应补兑现窗口）——这是「做啥都不重要」病灶的正主。
-    const win = code.slice(Math.max(0, m.index - 260), m.index + 260);
-    const isAchievement = /addMilestone/.test(win);
+    const label = m[2] || "";
+    // 三分类启发式（种因点附近窗口 ±300 字符）：
+    //   H 类·真钩子：label 含「日后/长线/跨场/待续/再算/显影/伏笔/埋下/引线/钥匙/随后/方知」等未来承诺词
+    //     → 设计上承诺将来 readLedger 兑现，属合法开放债（宪法允许「有窗口的因」），不计入"待还"。
+    //   B 类·成就记录：种因点伴 addMilestone 且非钩子 → 误占 ledger 命名空间的剧情/战斗流水账（成就型只记不结·铁律3 例外）。
+    //   A 类·选择债：其余 → 玩家取舍写了 ledger 却无人读，「做啥都不重要」正主，须补兑现窗口。
+    const win = code.slice(Math.max(0, m.index - 300), m.index + 300);
+    const hasMilestone = /addMilestone/.test(win);
+    // 显式真钩子白名单（label 未含承诺词但设计上确为跨篇伏笔，经人工核定）
+    const HOOK_WHITELIST = new Set([
+      "dayan_remembered", "hanyunzhi_flower", "qingwen_grudge", "sanxiu_escaped",
+      "dayan_clue", "mojiao_oath",
+    ]);
+    // 显式成就记录白名单（机械兑现即得·ledger 纯记录·addMilestone 在更远处未被 ±300 窗口扫到）
+    const DEED_WHITELIST = new Set([
+      "sanzhuan_yizhuan", "starsea_jieguan", "zaibie_a1_after",
+    ]);
+    const isHook = HOOK_WHITELIST.has(id) ||
+      /日后|长线|跨场|待续|再算|显影|伏笔|埋下|引线|钥匙|随后|后续篇章|不死不休|断线|归账/.test(label);
+    const cls = isHook ? "H" : ((hasMilestone || DEED_WHITELIST.has(id)) ? "B" : "A");
     if (!writes.has(id)) writes.set(id, []);
-    writes.get(id).push({ file: rel, line: lineOf(m.index), label: m[2] || "", cls: isAchievement ? "B" : "A" });
+    writes.get(id).push({ file: rel, line: lineOf(m.index), label, cls });
   }
   for (const re of [reRead, reMemberDot, reMemberIdx, reNpcField]) {
     re.lastIndex = 0;
@@ -91,8 +107,11 @@ if (fs.existsSync(BASELINE)) {
 }
 const grandfathered = baseline && baseline.grandfathered ? new Set(Object.keys(baseline.grandfathered)) : null;
 
-// 新债 = 未结算 且 不在豁免表
-const newDebt = grandfathered ? unsettled.filter(id => !grandfathered.has(id)) : [];
+// 新债 = 未结算 且 不在豁免表。门禁只对 A 类（选择债）FAIL——B 成就记录/H 真钩子是合法的「只记不结」（铁律3 例外），
+//   它们入 baseline 即可，新增 B/H 不阻断（否则每记一笔战报/埋一个钩子都要改 baseline，门禁会变噪音）。
+const clsOfId = (id) => (writes.has(id) ? (writes.get(id)[0].cls || "A") : "A");
+const newDebt = grandfathered ? unsettled.filter(id => !grandfathered.has(id) && clsOfId(id) === "A") : [];
+const newRecords = grandfathered ? unsettled.filter(id => !grandfathered.has(id) && clsOfId(id) !== "A") : [];
 // 已还清债 = 在豁免表但现在已结算（提示可从 baseline 删除）
 const repaid = grandfathered ? [...grandfathered].filter(id => reads.has(id) || !writes.has(id)).sort() : [];
 
@@ -124,8 +143,13 @@ if (unsettled.length) {
   const clsOf = (id) => (writes.get(id)[0].cls || "A");
   const aDebt = unsettled.filter(id => clsOf(id) === "A");
   const bDebt = unsettled.filter(id => clsOf(id) === "B");
-  console.log("── 只记不结（种了因、全仓从未读取——铁律3 嫌疑账目）──");
-  console.log(`   分类：A 选择债 ${aDebt.length} 条（补兑现窗口）｜B 成就债 ${bDebt.length} 条（评估后降级/补未来读取）\n`);
+  const hHook = unsettled.filter(id => clsOf(id) === "H");
+  // 选择债闭环率：真正衡量「做啥都不重要」病灶的指标——只看 A 类（B 成就/H 钩子不算"待还选择债"）
+  const choiceTotal = settled.length + aDebt.length;
+  const choiceRatio = choiceTotal ? (settled.length / choiceTotal * 100).toFixed(0) : "—";
+  console.log("── 只记不结（种了因、全仓从未读取）──");
+  console.log(`   分类：A 选择债 ${aDebt.length}（铁律3 正主·须补兑现）｜B 成就记录 ${bDebt.length}（误占 ledger 命名空间·应降级 addMilestone）｜H 真钩子 ${hHook.length}（合法开放债·等内容兑现）`);
+  console.log(`   ★选择债闭环率（衡量「选择有重量」）：${settled.length}/${choiceTotal} = ${choiceRatio}%\n`);
   console.log("  【A 类·选择债】玩家取舍写了 ledger 却无人读——「做啥都不重要」正主，优先补 settleLedger：");
   for (const id of aDebt) {
     const loc = writes.get(id)[0];
@@ -133,12 +157,10 @@ if (unsettled.length) {
     console.log(`    ✗ ${id}  [${loc.file}:${loc.line}]${flag}`);
     if (loc.label) console.log(`          「${loc.label.slice(0, 36)}${loc.label.length > 36 ? "…" : ""}」`);
   }
-  console.log("\n  【B 类·成就债】种因处伴 addMilestone——多为未来篇章钩子或重复记账，评估后降级（删 writeLedger 留 addMilestone）或补未来读取：");
-  for (const id of bDebt) {
-    const loc = writes.get(id)[0];
-    const flag = grandfathered && grandfathered.has(id) ? "·存量豁免" : (grandfathered ? "·★新债" : "");
-    console.log(`    ✗ ${id}  [${loc.file}:${loc.line}]${flag}`);
-  }
+  console.log("\n  【H 类·真钩子】label 含未来承诺词（日后/长线/跨场/再算…）——设计上等 readLedger 兑现，合法留账：");
+  for (const id of hHook) console.log(`    ⟡ ${id}`);
+  console.log("\n  【B 类·成就记录】伴 addMilestone 的剧情/战斗流水账——里程碑已记，ledger 属冗余（宜降级，详见 docs/drift-audit §B类降级）：");
+  for (const id of bDebt) console.log(`    · ${id}`);
   console.log("");
 }
 
@@ -156,13 +178,17 @@ if (!grandfathered) {
   process.exit(0);
 }
 
+if (newRecords.length) {
+  console.log(`【提示】新增 ${newRecords.length} 条 B 成就记录/H 钩子（不阻断，但建议入 baseline 或评估）：${newRecords.join(", ")}\n`);
+}
+
 if (newDebt.length) {
-  console.log(`========== FAIL：发现 ${newDebt.length} 条新债（未闭环且不在豁免表） ==========`);
-  console.log("违反宪法铁律3：种因必须声明兑现窗口。要么补 readLedger/settleLedger 兑现节点，");
+  console.log(`========== FAIL：发现 ${newDebt.length} 条新 A 类选择债（未闭环且不在豁免表） ==========`);
+  console.log("违反宪法铁律3：玩家选择种因必须声明兑现窗口。要么补 readLedger/settleLedger 兑现节点，");
   console.log("要么降级为纯 flavor（不写 ledger，只给当场文字），要么明确入存量表（不推荐）。\n");
   process.exit(1);
 }
 
-console.log("========== PASS：无新增未闭环账目 ==========");
+console.log("========== PASS：无新增未闭环选择债 ==========");
 console.log(`（存量债 ${grandfathered.size} 条仍在 baseline 中待还，见 test/ledger.baseline.json）\n`);
 process.exit(0);

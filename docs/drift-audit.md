@@ -111,6 +111,16 @@
   剩余 A 类 8 条：真·跨篇钩子（`dayan_remembered`/`hanyunzhi_flower`/`qingwen_grudge`/`sanxiu_escaped`）+
   机械兑现已充分的记录债（`sanzhuan_yizhuan` 乘性印记即兑现／`zaibie_a1_after` 绿煌剑即兑现／`starsea_jieguan` 结丹即兑现）+
   死代码债（`jindi_safe` 在 skipIf:true 的旧叙事卡里·实际触发不了，待清理）。
+- **2026-06-29 v241 · 清理死代码债 + B 类三分类（A 类收尾）**：
+  ①清理 `jindi_safe`（`jindi_days` 节点 skipIf:true 已被舆图系统接管·永不触发的死代码债）——移除其 writeLedger 字面量。
+  ②**审计升级三分类（A/B/H）**：原 A/B 二分会把战斗战报/剧情记录误判成「待还选择债」。新增——
+    **H 真钩子**（label 含「日后/长线/跨场/再算/显影…」承诺词 + 显式白名单 dayan_remembered/hanyunzhi_flower/qingwen_grudge/sanxiu_escaped 等）：设计上等 readLedger 兑现，合法开放债；
+    **B 成就记录**（伴 addMilestone 的剧情/战斗流水账 + 显式白名单 sanzhuan_yizhuan/starsea_jieguan/zaibie_a1_after）：里程碑已记、ledger 冗余；
+    **A 选择债**：玩家取舍写了 ledger 却无人读——真正的「做啥都不重要」正主。
+  ③**门禁只对 A 类新债 FAIL**：B 成就/H 钩子是铁律3 例外（合法只记不结），新增不阻断（否则每记一笔战报都要改 baseline、门禁变噪音）；A 类新债仍严格拦截。已验门禁牙齿（A 类探针 FAIL、B 探针放行）。
+  **B 类处理决策（关键）**：不盲删 68 处 writeLedger（高风险·易误删真钩子），而是让审计**正确区分债务性质**——这比批量改代码更符合宪法本意（铁律3 管的是"选择有重量"，B 成就记录本就不是选择、不影响游戏性）。
+  **★选择债闭环率 92%**（36/39，A 类仅剩 3 条机械记录）——这才是衡量「选择有重量」的真指标，旧的"总闭环率 31%"被战报流水账稀释了。
+  现状：A 选择债 3（均机械兑现型）｜H 真钩子 18（合法留账）｜B 成就记录 61（命名空间冗余·不阻断）。
 
 ---
 

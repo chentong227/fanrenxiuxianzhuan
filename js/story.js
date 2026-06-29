@@ -1693,7 +1693,8 @@ const STORY = [
         effect(s) {
           State.give("xueshi_zhuyao", 4);
           State.setFlag("jindi_mid_done");
-          Engine.writeLedger("jindi_safe", "血色禁地中稳守外环，安稳采药");
+          // 【死代码·留档】本节点 skipIf:()=>true 已被舆图系统接管，永不触发。
+          //   原先此处的"稳守外环"种因已移除（jindi_safe）——它种因永不发生且全仓无人读，属死代码债（drift-audit 清理）。
           Engine.passTime(1);
           return { text: "三日下来，你像在百药园当值一样按部就班：辨土、寻脉、起药——主药四株稳稳入袋。\n\n远处偶有惨叫声穿透血雾，你充耳不闻。稳，是你在七玄门学会的第一个字。\n\n（血色主药×4。第四日，该往深处的水潭去了——主药最厚的地方，绕不开。）", kind: "good" };
         },
