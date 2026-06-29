@@ -4108,6 +4108,12 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 @keyframes storyLineIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .story-line.narr { color: var(--ink-dim); }
 .story-line.aside { color: #9fc8e8; font-style: italic; }
+/* 因果有报·远雷呈现：金句先声夺人（沉浸式呈现 settleLedger 的兑现，不再埋日志） */
+.story-line.story-echo {
+  color: var(--gold); font-weight: 600; line-height: 1.85;
+  padding-left: 11px; border-left: 3px solid var(--gold);
+  text-shadow: 0 0 8px rgba(212,175,120,.25);
+}
 .story-cue {
   position: absolute; right: 22px; bottom: 8px; color: var(--gold);
   font-size: 12px; letter-spacing: 1px; opacity: .7;

@@ -1231,7 +1231,22 @@ const UI = {
   // 把 text[]（字符串/对象混排）拍平成节拍。演出原语（cam/actor/fx/sfx/wait/beat）的
   // 编译统一委托 cutscene.js（纯函数、可无头测试）；缺该模块则退回内置兼容解析（旧剧情卡）。
   _buildStoryBeats(stage) {
-    if (typeof Cutscene !== "undefined" && Cutscene.compile) return Cutscene.compile(stage);
+    const beats = (typeof Cutscene !== "undefined" && Cutscene.compile)
+      ? Cutscene.compile(stage)
+      : this._buildStoryBeatsFallback(stage);
+    // 因果有报·沉浸呈现：onArrive 里 settleLedger 缓冲的「远雷」插到剧情流最前（金句先声夺人，不再埋日志）
+    if (typeof Engine !== "undefined" && Engine._pendingEchoes && Engine._pendingEchoes.length) {
+      const echoBeats = [];
+      Engine._pendingEchoes.forEach(e => {
+        echoBeats.push({ kind: "echo", text: `【因果有报】${e.echo}` });
+      });
+      Engine._pendingEchoes = [];
+      return echoBeats.concat(beats);
+    }
+    return beats;
+  },
+
+  _buildStoryBeatsFallback(stage) {
     const beats = [];
     (stage.text || []).forEach(seg => {
       if (typeof seg === "string") { beats.push({ kind: "narr", text: seg }); return; }
@@ -1680,12 +1695,18 @@ const UI = {
       const who = b.who;
       const isNarr = (b.kind === "narr");
       const isAside = (b.kind === "aside");
-      speakerEl.innerHTML = isNarr ? "" :
+      const isEcho = (b.kind === "echo");
+      speakerEl.innerHTML = (isNarr || isEcho) ? "" :
         `<span class="sp-name${isAside ? ' aside' : ''}">${who}${isAside ? "（心声）" : ""}</span>`;
-      this._typeText(textEl, `<span class="story-line${isNarr ? ' narr' : ''}${isAside ? ' aside' : ''}">${b.text}</span>`);
+      if (isEcho) {
+        this._typeText(textEl, `<span class="story-line story-echo">${b.text}</span>`, true);
+        if (typeof Sfx !== "undefined") Sfx.play("chime");
+      } else {
+        this._typeText(textEl, `<span class="story-line${isNarr ? ' narr' : ''}${isAside ? ' aside' : ''}">${b.text}</span>`);
+      }
       // 立绘：旁白用当前地点/无；对话/心声用说话人立绘；showWho=立绘亮相（无对白）
       // emo=表情变体；tone 含怒/喝/厉 → 立绘震动（对话演出：形象会动，代入感所在）
-      this._storySetPortrait(b.showWho || (isNarr ? null : who), b.emo, b.tone);
+      this._storySetPortrait(b.showWho || ((isNarr || isEcho) ? null : who), b.emo, b.tone);
     }
 
     const last = (st.idx >= st.beats.length - 1);

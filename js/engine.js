@@ -2563,6 +2563,9 @@ const Engine = {
     const entry = State.data.ledger[id];
     this.log(`【因果有报】${echoText}（因起于${entry.t}：${entry.label}）`, "good");
     this.addMilestone(`因果：${entry.label} → 今日有报`, "deed");
+    // 沉浸式呈现：缓冲一条「因果有报」演出拍，由 renderStory 在剧情流开头插入（不再只埋在日志里）
+    this._pendingEchoes = this._pendingEchoes || [];
+    this._pendingEchoes.push({ echo: echoText, cause: entry.label });
     return true;
   },
 
