@@ -66,6 +66,13 @@
   已还 2 组 4 条选择债做范式样板：**洞府选址**（`dongfu_lingquan`/`dongfu_pijing` → modao_conscript 强征时点名兑现：藏拙挡不住军令／苦修换赴战底气）、
   **决战前准备**（`showdown_prep_martial`/`showdown_prep_poison` → showdown 反杀墨大夫时点名兑现：磨剑成快剑／备毒耗垮铁奴）。
   闭环率 **5% → 8%**（7 → 11 条）。还债工作流（补 settleLedger → 从 baseline 删 id → 审计全绿）已跑通两轮。
+- **2026-06-29 v234**：再还 1 组 2 条——**离家准备**（`village_provisions`/`village_inquiry` → exam 入门选拔 onArrive 点名兑现：
+  偷揣的干粮撑过补考半年／向三叔打听的门道临场对得上）。注意：这两条原已有 flag 层叙事钩子（journey/exam 读 `s.flags.village_*`），
+  但 **ledger 层从未闭环**——印证审计盲区洞察：「flag 兑现了叙事 ≠ ledger 闭环」，二者需都补。闭环率 **8% → 10%**（11 → 13 条）。
+  baseline 经 `--write-baseline` 重生成为 121 条（干净态，已还 6 条全部移出）。
+
+> **还债节奏**：每轮 2~6 条选择债，优先还「玩家性格/准备类」A 类债（开局谨慎链已基本闭环：
+> 离家准备→入门选拔、决战准备→反杀、洞府选址→强征）。后续优先攻 `secret_cultivate_*`/`identity_*`/`intro_*`/`friends_*` 等剩余 A 类。
 
 ---
 

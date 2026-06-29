@@ -111,7 +111,16 @@ const STORY = [
   {
     id: "exam",
     title: "七玄门 · 入门选拔",
-    onArrive(s) { s.location = "shanmen"; State.setFlag("joined_sect"); },
+    onArrive(s) {
+      s.location = "shanmen"; State.setFlag("joined_sect");
+      // 远雷·离家准备兑现（铁律3）：当年那点谨慎，在初入门的关口有了回响——点名出处
+      if (Engine.settleLedger("village_provisions", "补考那半年最难捱，灵石早花尽、米缸见了底——亏得离家时偷揣的那包干粮盐巴撑着，没在山门外先饿垮。穷家孩子的那点谨慎，原来是保命的本钱")) {
+        s.mood = Math.min(s.moodMax, s.mood + 2);
+      }
+      if (Engine.settleLedger("village_inquiry", "三叔在路上被你问出的那些门道——选拔考筋骨悟性胆识三项、药庐是冷灶——临到场上桩桩对得上。知己知彼，让你这资质平平的杂役坯子没在第一关就慌了手脚")) {
+        s.mood = Math.min(s.moodMax, s.mood + 2);
+      }
+    },
     text(s) {
       const t = [
         { shot: "establish" },
