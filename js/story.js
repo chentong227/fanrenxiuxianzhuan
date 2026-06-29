@@ -3199,6 +3199,8 @@ const STORY = [
     onArrive(s) {
       State.setFlag("modao_e3_farewell_done");
       State.setFlag("modao_act3_done");
+      // 远雷·燕家堡重逢兑现（铁律3）：燕家堡那场重逢结下的故人之缘，在京城长街走到了无憾的尽头
+      Engine.settleLedger("yanjia_reunion", "燕家堡火光里重逢的墨彩环，一路从魔道入侵走到京城血夜——今日长街晨别，她放下血仇、卸了易容，循父亲的医道为自己而活。当年那场乱世重逢，到底有了个不遗憾的收梢");
       Engine.writeLedger("mocaihuan_farewell", "京城长街晨别——墨彩环放下血仇、卸了易容，循父亲墨居仁的医道留在京城悬壶济世、为自己而活；她目送你远行，无憾而别（修#2·墨彩环情感线·不遗憾的结局，执笔）");
       Engine.addMilestone("魔道争锋·第三幕·收束：墨彩环放下仇恨、悬壶济世，无憾而别", "story");
       s.flags.modao_act4_due = State.absMonth() + 1;   // 第四幕时锚（黑煞覆灭·皇宫决战·待实装）：告别后约一月，黑煞教老巢现形
@@ -4110,6 +4112,8 @@ const STORY = [
       s.location = "yuanwu";
       State.setFlag("zaibie_a3_done");
       if (State.count("guzhen_tuzhi") < 1) State.give("guzhen_tuzhi", 1);
+      // 远雷·元武首访伏笔兑现（铁律3）：当年北上代工首访不遇辛如音，今日故地重来终于照面——已是生离死别之境
+      Engine.settleLedger("yuanwu_first", "当年北上元武国代工，百艺坊里只见齐云霄、不遇辛如音——你那时怎会想到，再来元武国竟是亡命，齐云霄已殁，唯辛如音守着残阵等你这持令之人。一坊之缘，绕成了生死之托");
       Engine.writeLedger("zaibie_a3_yuanwu", "再别天南·亡命元武——故人齐云霄已殁，辛如音守残破古传送阵，赠《古传送阵·修复图纸》。配大挪移令可强启古阵、离开天南。");
       Engine.addMilestone("再别天南：得古传送阵修复图纸（辛如音赠）", "zaibie");
       s.worldNews = s.worldNews || [];

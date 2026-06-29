@@ -104,6 +104,13 @@
 - **2026-06-29 v239 · 新建兑现节点（旅途善举长出后果）**：`saved_merchant_road`（官道救行商）原为旅途随机善举、无重逢窗口——
   新增旅途事件 `jr_merchant_repay`（cond：种过因且未报答 `!merchant_repaid`）：当年救的行商发家后官道重逢、投桃报李（纹银+20/灵石+2/生意人耳报+心境），settleLedger 点名兑现。
   这是**为还债新建内容**（非接线），让"顺手救人"真正长出远雷。闭环率 **28% → 29%**（34/119），baseline 降至 85 条。
+- **2026-06-29 v240**：跨篇 designed-foreshadow 债闭环 2 条——
+  `yuanwu_first`（黄枫谷篇北上代工·首访不遇辛如音）→ 再别天南 `zaibie_a3_yuanwu`（亡命元武·齐云霄已殁·辛如音守残阵）点名兑现：一坊之缘绕成生死之托；
+  `yanjia_reunion`（魔道篇燕家堡重逢墨彩环）→ `mocaihuan_farewell`（京城长街晨别）点名兑现：乱世重逢走到无憾收梢。
+  闭环率 **29% → 30%**（36/119），baseline 降至 83 条。
+  剩余 A 类 8 条：真·跨篇钩子（`dayan_remembered`/`hanyunzhi_flower`/`qingwen_grudge`/`sanxiu_escaped`）+
+  机械兑现已充分的记录债（`sanzhuan_yizhuan` 乘性印记即兑现／`zaibie_a1_after` 绿煌剑即兑现／`starsea_jieguan` 结丹即兑现）+
+  死代码债（`jindi_safe` 在 skipIf:true 的旧叙事卡里·实际触发不了，待清理）。
 
 ---
 
