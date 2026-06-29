@@ -27,11 +27,6 @@
       "label": "",
       "status": "TODO-补兑现或降级flavor"
     },
-    "dayi_ling_got": {
-      "where": "js/story.js:2528",
-      "label": "矿洞古传送阵心得「大挪移令」——一把通往极远之地的钥匙（乱星海长线）",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "dongxuaner_captured": {
       "where": "js/story.js:2782",
       "label": "金鼓原急报：董萱儿于侧翼溃战中被魔道掳走，将解往合欢宗云露处『验身份』——燕家堡同袍之厄，暗线归账（再别天南显影）",
