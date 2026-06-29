@@ -134,7 +134,19 @@ dialogue.test.js / cutscene.test.js / world.test.js / env.test.js / quest.test.j
    - 选择质量：剧情节点不得出现「假多选」（≥2 选项全部同 `resolve` 且无 `effect`/`fight`＝伪装的单选）。
    - 用法：`node test/quality.audit.js`（exit 0=全过）。改了 world.js 敌人表 / story.js 选项后必跑。
    - 首测（2026-06-30）：PASS——31 敌人 boss/named 全有 introNote+attacks，108 剧情节点 0 假多选。
-3. **`test/balance.todo.js`**（待做）：扫描 data.js 中新增 gear/spell 是否缺 `driveRealm` 或 `// TODO:tier` 标注。
+3. **`test/balance.todo.js`** —— ✅ **已实装（2026-06-30）·铁律4 数值标度的机器执法器**：
+   - 扫 `CombatAPI.SPELLS`：任何招式缺 `tier` = FAIL；`source:"treasure"` 的**越阶攻击招式**
+     （tier≥2·有 dmg·非 chargeCost 消耗底牌）缺 `driveRealm` = FAIL（越阶本命须标可驱境界门槛；
+     本阶法器 tier<2、消耗底牌走乘性穿透，均豁免·不误报）。
+   - 首测（2026-06-30）：PASS——37 招式 tier 全覆盖，越阶法宝攻击技 driveRealm 齐全。
+   - 守的是漂移 #5：tier 制拍板前，星海飞驰新法宝（青竹蜂云剑/辟邪神雷等）漏标越阶门槛即被拦。
+   - 用法：`node test/balance.todo.js`。改了 combat.js SPELLS / data.js gear 必跑。
+4. **`test/build.bal.js`** —— ✅ **已实装（2026-06-30·诚实版）·Build 战力线不变量**：
+   - 现状核实（drift-audit #2 实证）：**只有剑道 layerMul 一条线真进战力**；丹道(skills.alchemy)只影响
+     采药/炼丹产量·不进战斗，阵法无 formation 战力线。设计稿的「三路对称战力公式」属**未实装·待拍板方向**。
+   - 故只对已实装的 `Balance.layerMul` 做真实断言：单调递增/峰值≤1.35(不盖大境界跨度)/起点归一(练气零扰动)/单层无效。
+   - **不伪造**丹/阵战力对战蒙特卡洛（无中生有的假门禁比没门禁更坏）。三路胜率对称断言待战力线实装后补。
+   - 用法：`node test/build.bal.js`。
 3. **commit 钩子**（待做）：改了 `js/balance.js|combat.js` 自动提示「跑 scale.bal.js」。
 
 > D1（ledger.audit）已把漂移 #1 从「靠自觉」变「靠门禁」。**还债工作流**：从 baseline

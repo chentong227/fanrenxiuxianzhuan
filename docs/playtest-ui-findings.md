@@ -403,3 +403,33 @@
   按用户「想自己玩、不提前体验掉」的意愿，**剧情内容待用户开工指令再按切片推进**，不在打磨阶段擅自铺写。
   本次只落地无叙事的章节 shell（让解锁钩子干净、为后续切片备好骨架）。
 - 全门禁绿（chapter/run/smoke/journey）。
+
+
+## 深挖·数值地基门禁 + 演出账核实（v262）
+> 开星海飞驰新内容前，把"数值尺子"的机器门禁装好，免新法宝再造数值债。
+
+### 1. 数值标度门禁 balance.todo.js（铁律4·落 audit-gate D2 待办）
+- ✅ 新建 `test/balance.todo.js`：SPELLS 缺 tier=FAIL；越阶攻击法宝技（treasure·tier≥2·有dmg·非chargeCost）缺 driveRealm=FAIL。
+- 现状核实：37 招式 **tier 全覆盖**；越阶法宝攻击技 driveRealm 齐全（绿煌剑/青竹蜂云剑/噬金虫等都标了）。
+  本阶法器（tiejian_ci/zimu_ren/jujian_zhan/wulong_zhua·tier0）与 buff/float/消耗底牌正确豁免、不误报。
+- 澄清一处疑似 bug：`lvhuang_jian` 在 data.js 出现两次＝`DATA.items`（图鉴描述）+`DATA.gear`（装备数据）同名跨表，是该项目惯例，非重复定义。
+  gear 不带 driveRealm 也非 bug——越阶机制由 grantSpells 指向的 combat SPELLS 上的 driveRealm/tier 承载（gear 只管 minLayer）。
+
+### 2. Build 战力线门禁 build.bal.js（drift-audit #2·诚实版）
+- ✅✅ **实证 drift-audit #2**：核实代码后确认——**三路里只有剑道(layerMul)真进战力**；丹道(skills.alchemy)
+  只影响采药量/炼丹产量/双丹率/剧情台词、**不直接进战斗**（是经济/资源路）；阵法只有符箓阵旗道具、**无 formation 战力线**。
+  设计稿 build-balance-design 的「alchemyBonus/formationBonus 三路对称战力公式」**代码里不存在·属待拍板设计方向**。
+- ✅ 新建 `test/build.bal.js`：只对已实装的 layerMul 做真实不变量断言（单调/峰值≤1.35/起点归一/单层无效），
+  **不伪造**丹阵战力蒙特卡洛（假门禁比无门禁更坏）。三路胜率对称断言待战力线实装后补。
+- **决策点（需你拍板）**：丹道/阵法要不要做成真·战力分化（如设计稿的对称公式），还是保持"丹=资源路/阵=道具路"
+  的现状差异化？这决定 build.bal 将来能否补全三路对称断言。
+
+### 3. 演出/CG 缺口账核实——文档已严重过时（好消息）
+- ✅ 扫全 109 STORY 节点：**0 纯文本裸节点**，全部含演出原语(shot/say/aside/fx/cam…)或 cg 字段；81 节点带 cg。
+- staging-catalog.md 记的"45 无演出/32 缺 CG"是**老账**——此后演出补完进展显著，实际已无大片纯文本裸节点。
+  CG 引用无断链（assetref.test 绿守护）。结论：演出/CG 维度比文档记录健康得多，非当前短板。
+
+### 深挖小结
+两道新数值门禁（balance.todo + build.bal）就位，测试套 36→38。最大收获＝**实证并诚实记录了 drift-audit #2**
+（三路战力只剑道一条线·丹阵战力公式未实装），把"以为有的对称系统"与"实际有的"对齐，避免在假设上造门禁。
+演出账核实推翻了"45待补"的过时印象。**真正待你拍板的设计方向缩到两个**：①tier 分级制（#5）②丹/阵是否做真战力分化（#2）。
