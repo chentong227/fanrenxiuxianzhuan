@@ -1685,7 +1685,12 @@
     _airUpkeep(u) {
       if ((u.alt || 0) !== 1) { u._airRounds = 0; return; }
       u._airRounds = (u._airRounds || 0) + 1;
-      const cost = 2 + u._airRounds;
+      // flight-ladder F0·四档耗灵曲线（境界即续航·airGrade 分档）：
+      //   筑基(档1) 3→5→7 陡——战术协助两三回合就疼；结丹(档2) 2→3→4 缓——可长期飞；
+      //   元婴(档3) 1→1→2 平——遁光常驻。敌我侧三方同规则（妖禽默认档1=陡，拖到灵尽跌落是正路）。
+      const g = u.airGrade || 1;
+      const r = u._airRounds;
+      const cost = g >= 3 ? Math.ceil(r / 2) : (g === 2 ? 1 + r : 1 + 2 * r);
       if ((u.mp || 0) >= cost) {
         u.mp -= cost;
         if (u === this.player && u._airRounds >= 2) this._log(`（悬空愈久灵力愈沉——本回合燃灵 ${cost}）`);

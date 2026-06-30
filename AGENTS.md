@@ -135,8 +135,11 @@
   `technique-tiers.md`、`chapter-template.md`、`ui-reference.md`、
   `build-balance-design.md`（剑道/丹道/阵法三路平衡）、
   `chapter-systems-manifest.md`（篇章系统推进清单——**开发新篇章时必读**）
-- **进行中**：`combat-redesign.md`（战斗 v2 调研报告）+ `combat-axis-rules.md`
-  （对阵轴规则书+纸面推演——待用户拍板，未拍板前不实装）
+- **✅ 已落地·战斗 v2 对阵轴**（2026-06-11 用户拍板·引擎全量落地）：`combat-axis-rules.md` 头部状态块为准——
+  法力池/九格轴/移动挡线/瞬发牌/攻击三型+躲闪三角/遁速差/敌蓝尽遁走追击/蓄势打断/阵法格 zones/法力恢复链/
+  定身符/速决层 autoResolve 全部在 combat.js。`combat-redesign.md` 是更广的调研 wishlist，大半已增量实装
+  （噬金虫四式/敌 build 对称/同道/灵宠/傀儡/灵虫多形态）。**非待办**——余项随篇章内容增量补。
+  飞行阶梯 F0 四档耗灵曲线 v291 已落（见 `flight-ladder-design.md`）。
 - **✅ 已修复·皇宫决战（v170·2026-06-30 复核确认）**：`palace-battle-fixme.md`——三处问题全部解决：
   ①血侍三变体非克隆（bt_xueshi_a/b/c + art 字段渲染）②三组对位三战线（声明式 fronts:[] + 跨场驰援 +
   战区切换条）③皇宫底图重画（建筑感）。回归全绿、iPhone 竖屏实测正常。文档已勾验收标准并存档备查。

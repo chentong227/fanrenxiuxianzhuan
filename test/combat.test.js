@@ -466,20 +466,36 @@ console.log("\n=== 16. 空层 2.5D：升空/贴身隔层/俯击/击落/地雷不
 
 console.log("\n=== 16.5 对空压力：悬空耗灵递增 / 兽王凌空扑杀(antiAir) / 符箓灵光锁敌 ===");
 {
-  // 悬空耗灵递增：3 → 4 → 5（悬空是手段不是常态）
+  // 悬空耗灵·四档曲线（flight-ladder F0）：筑基(档1)陡 3→5→7（悬空是手段不是常态）
   const c = new Combat({ player: mkHan({ canFly: true, mp: 80 }), enemies: [dummy({ name: "恶狼", hp: 200, nature: "beast" })],
     rng: noCrit, W: 9, playerPos: 3, enemyPos: 7 });
   c.startRound();
   c.playerFly();
   let mpB = c.player.mp;
   c.endRound(); c.startRound();
-  assert(c.player.mp === mpB - 3, `悬空第1回合燃灵3（${mpB}→${c.player.mp}）`);
+  assert(c.player.mp === mpB - 3, `筑基悬空第1回合燃灵3（${mpB}→${c.player.mp}）`);
   mpB = c.player.mp;
   c.endRound(); c.startRound();
-  assert(c.player.mp === mpB - 4, `悬空第2回合燃灵4——递增（${mpB}→${c.player.mp}）`);
+  assert(c.player.mp === mpB - 5, `筑基悬空第2回合燃灵5——陡增（${mpB}→${c.player.mp}）`);
   mpB = c.player.mp;
   c.endRound(); c.startRound();
-  assert(c.player.mp === mpB - 5, `悬空第3回合燃灵5（${mpB}→${c.player.mp}）`);
+  assert(c.player.mp === mpB - 7, `筑基悬空第3回合燃灵7（${mpB}→${c.player.mp}）`);
+  // 结丹(档2)缓 2→3→4：可长期飞
+  const cj = new Combat({ player: mkHan({ canFly: true, airGrade: 2, mp: 80 }), enemies: [dummy({ name: "恶狼", hp: 200, nature: "beast" })],
+    rng: noCrit, W: 9, playerPos: 3, enemyPos: 7 });
+  cj.startRound(); cj.playerFly();
+  let mj = cj.player.mp; cj.endRound(); cj.startRound();
+  assert(cj.player.mp === mj - 2, `结丹悬空第1回合燃灵2（缓·${mj}→${cj.player.mp}）`);
+  mj = cj.player.mp; cj.endRound(); cj.startRound();
+  assert(cj.player.mp === mj - 3, `结丹悬空第2回合燃灵3（缓增）`);
+  // 元婴(档3)平 1→1→2：遁光常驻
+  const cy = new Combat({ player: mkHan({ canFly: true, airGrade: 3, mp: 80 }), enemies: [dummy({ name: "恶狼", hp: 200, nature: "beast" })],
+    rng: noCrit, W: 9, playerPos: 3, enemyPos: 7 });
+  cy.startRound(); cy.playerFly();
+  let my = cy.player.mp; cy.endRound(); cy.startRound();
+  assert(cy.player.mp === my - 1, `元婴悬空第1回合燃灵1（平·${my}→${cy.player.mp}）`);
+  my = cy.player.mp; cy.endRound(); cy.startRound();
+  assert(cy.player.mp === my - 1, `元婴悬空第2回合仍燃灵1（遁光常驻）`);
   // antiAir：带凌空扑杀的兽王对空中玩家不再"仰首戒备"，而且这一口咬得着
   const wk = dummy({ name: "赤目狼王", hp: 185, nature: "beast", move: 2, attacks: [
     { name: "撕咬", dmg: 22, kind: "normal", weight: 10, range: [1, 1] },
