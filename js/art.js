@@ -185,8 +185,8 @@
     leitai: { p: 1 }, yingli: { p: 1 },
     // 初入星海篇·剧情 CG 补登记（资产 assets/cg/cg_*.png+_p 已在库，此前漏注册→剧情大图不显示走兜底）
     wenqiang: { p: 1 }, chuhai: { p: 1 }, shijin: { p: 1 }, tianxing: { p: 1 }, ziliang: { p: 1 }, jieguan: { p: 1 }, jinkui: { p: 1 },
-    // 星海飞驰·红尘劫 CG 槽（待 genart 生成 cg_hongchen/_p——青竹小轩棋枰坐化·读遗书演出；未生成走兜底）
-    hongchen: {} };
+    // 星海飞驰·红尘劫 CG（青竹小轩棋枰坐化·读遗书演出·v292 已生成横+竖）
+    hongchen: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };

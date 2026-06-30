@@ -254,15 +254,13 @@
   视差+立绘缩档+错落站位）。蓝图、五机制表、镜头语法全在 docs/explore-redesign.md
   （**必读〇节设计历程与四节同轴一体**，别重蹈覆辙）。L2 歧路层与虚天殿完全体待做。
   调试：`?debugmap=1&m=<seed>` 直开血色禁地。
-- **舆图五级重制（设计稿待拍板，施工铁律见 map-redesign-design.md）**：天下舆图
-  （`WORLD.atlas` / `WORLD.continent`，渲染 `UI.openAtlas`/`openContinent`/`_atlasCrumbs`）
-  与上面的箱庭探索（`ExploreMap`，=L5 据点单屏）是**两套系统**，别混。重制要点：
-  ①五级 = L1 世界图 / L2 大陆·大域 / L3 国·州 / L4 宗门城 / L5 据点单屏；**区分度**靠
-  L1-3 区域块状(点块下钻)、L4 点状、L5 单屏。②**L1/L2 地理锁定**（按参考图+考据，不自创），
-  **L3 国/州起方可原创**。③区块解锁三态（暗雾/亮起/在此）+ ??占位 + 势力叠加层（非第6级）。
-  ④底图须 AI 按原图洗（去水印/统一色调）；地名用题字字体（弃黑体）。⑤**朝向**：canon 罗盘
-  = 海北/慕兰南/魔道东/正道西/九国盟南；**黄枫谷灭门后南迁去向=北凉国（九国盟，已考据落定）**；
-  彩色世界图为观赏把天南转向（详 §7），默认方案①以 canon 为权威、剧情方位零改。施工按 §10 增量。
+- **舆图五级重制（核心已落地·2026-06-30 复核厘清）**：`map-redesign-design.md` + `map-action-hub-design.md`——
+  块状化（L1/L2 region-block+poly）/解锁点亮三态/势力叠加/五级下钻面包屑/**全屏地图主界面化（toggleWorldmap+缩放·非弹窗）**
+  均**已增量落地**（map-action-hub 表 L1~L5 全 ✅；openAtlas 已重定向世界地图非 openModal）；AI 洗净底图
+  （renjie_map/tiannan_map/tiannan_atlas，prompt 已"无文字水印印章"）亦在库。陈旧"待拍板"flag 已厘清。
+  余项（题字 webfont / L3·L4 进一步拆分）为可选打磨，非阻塞。
+- **生成资产·红尘劫 CG（v292）**：`cg_hongchen`（横+竖 `_p`）已生成入库（genart DEFS+P_CGS），art.js 注册 `hongchen:{p:1}`；
+  棋友坐化节点 `cg:"hongchen"` 实测渲染正常（手机竖屏走 `_p`，404 已消）。
 - **战斗系统 v2 引擎已全量落地（2026-06-11）**：combat.js 原地升级为对阵轴+法力池
   （对外接口不变）。机制清单与平衡基线见 combat-axis-rules.md 头部状态块。
   v78 新增：变宽战场（W 5~27）+注入站位/zones/mines/hotspots、`playerTake` 战中采集、
