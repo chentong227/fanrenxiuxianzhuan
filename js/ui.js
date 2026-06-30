@@ -951,9 +951,16 @@ const UI = {
   },
   _floatGain(key, delta) {
     const labels = { cul: "修为", sp: "灵力", hp: "气血", mood: "心境", demon: "心魔" };
+    // 心魔上涨是坏事——用警示色；其余增益用上扬绿。多条同刻增益纵向错开，避免叠成一团读不清。
+    const bad = key === "demon";
     const el = document.createElement("div");
-    el.className = "float-gain-toast";
-    el.textContent = `${labels[key] || key} +${delta}`;
+    el.className = "float-gain-toast" + (bad ? " fg-bad" : "");
+    el.textContent = `${labels[key] || key} ${bad ? "" : "+"}${delta}`;
+    // 本帧内的第 n 条：纵向下移 n×26px（同刻多项结算时逐条排开）
+    const now = performance.now();
+    if (!this._fgFrame || now - this._fgFrame > 200) { this._fgFrame = now; this._fgIdx = 0; }
+    el.style.marginTop = (this._fgIdx * 26) + "px";
+    this._fgIdx++;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1500);
   },

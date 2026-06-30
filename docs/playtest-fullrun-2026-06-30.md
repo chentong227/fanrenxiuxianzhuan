@@ -447,3 +447,22 @@
   v269 被回滚"。比纸面副本可靠（真引擎真存档真装配）。
 - 五项测试全绿（combat/encounter/scale/run/climax 各 exit 0），无交叉污染。
 
+
+
+---
+
+## v270 · D1 去弹窗化打磨（先查再改·2026-06-30）
+
+> 用户："先打磨"。目标＝ux-overhaul §三 L1 信息去弹窗化。
+
+### 先核实状态（避免重做已完成的）
+- 查证：L1 四项**早已实装**——修炼结果走 HUD float-gain（非 modal）、采买(openMarket)/NPC对话(openNpcWheel)/
+  地图确认 全走 `openSheet` 底部 sheet。CSS `.bottom-sheet`/`.float-gain-toast`/`num-pop` 齐备（标注 L1a/L1b）。
+  实机验证：闭关 6 月弹「修为+84 / 灵力+195」float-gain，工作正常。
+- **结论：L1 主体无需重做**（验证而非假设·省下无谓改动）。
+
+### 真缺口·已修（float-gain 多条重叠）
+- 病：`_floatGain` 所有 toast 固定 top:30%/left:50% → 闭关同刻 修为+灵力(+心魔) 三条**精确叠在一起读不清**。
+- 修（ui.js + style.css）：①同帧内多条 float 纵向错开（marginTop n×26px）；②心魔上涨用警示红 `.fg-bad`
+  （增益绿/恶化红，一眼分善恶）。
+- 实机验证：三条同刻结算 → 0/26/52px 错开、心魔显红「心魔 8」。run/combat/climax 全绿，无回归。

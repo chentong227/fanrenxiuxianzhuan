@@ -608,6 +608,7 @@ body.dock-active .layout .mid-col {
   text-shadow: 0 0 8px rgba(0,0,0,.6); pointer-events: none; z-index: 200;
   animation: floatUpToast 1.4s ease-out forwards;
 }
+.float-gain-toast.fg-bad { color: var(--red); }
 @keyframes floatUpToast {
   0% { opacity: 0; transform: translate(-50%, 10px) scale(.9); }
   15% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
