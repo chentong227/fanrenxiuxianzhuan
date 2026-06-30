@@ -180,7 +180,10 @@
   改高潮战/boss 数值必跑；其辅助 `test/_loadgame.js` 在 node 下垫片加载真实引擎全链）、
   `node test/backbone.audit.js`（**主干无死链护栏**·真引擎从魔道四幕驱动到星海飞驰章末·防红尘劫式
   storyStage+1 死链/缺派发——**改 story.js 节点顺序/cond/新增剧情必跑**；journey.test 只覆盖到魔道三幕，此审计专守其后的星海盲区）、
-  `node test/ledger.audit.js`（铁律3 因果闭环棘轮门禁·push 前必跑）。
+  `node test/ledger.audit.js`（铁律3 因果闭环棘轮门禁·push 前必跑）、
+  `node test/combat-sweep.bal.js`（**尾段战斗体验普查**·真引擎从魔道四幕驱动到星海飞驰章末·每遇战斗 autoResolve 多轮取样测胜率/末血/回合·标死局/太易/偏险——
+  ⚠ 两条关键校准：①按战斗归属篇章切 activeChapter 校正 realmTier 战力档〔xh_*=星海飞驰结丹 tier2/realmBand5.5；ss_*=初入星海；余=魔道筑基〕②解析 finishCombat 各分支识别 fail-forward〔败设 _retryAfterLoss 即非死局〕。
+  仅"真死局"〔0%·非survive·非阵法·非 fail-forward〕判 FAIL；binghuo/guiyuan/haiwang 是 autoResolve 贪婪 AI 不会集火/省底牌的悲观地板·均带 fail-forward 非死局·真人靠集火+特攻底牌取胜）。
   改战斗/数值必跑平衡脚本，胜率锚点见 combat-balance-design.md。
 - **⚠ 移动端测试基准（2026-06-16 起·硬约束，用户明令"要记住"）**：本游戏**主攻手机端**，
   一切浏览器可视化测试/验收/录屏**一律用 iPhone 14 Pro Max 视口（430×932，DPR 3）**跑——
