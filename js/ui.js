@@ -1223,7 +1223,7 @@ const UI = {
     if (choicesBox) {
       choicesBox.innerHTML = (stage.choices || []).map((c, i) => {
         const lack = c.requireItem && !State.count(c.requireItem);
-        return `<button class="choice${c.resolve ? ' choice-fight' : ''}" onclick="Engine.chooseStory(STORY[${State.data.storyStage}], ${i})">
+        return `<button class="choice${c.resolve && c.resolve !== "advance" ? ' choice-fight' : ''}" onclick="Engine.chooseStory(STORY[${State.data.storyStage}], ${i})">
           ${c.text}${c.hint ? `<span class="c-hint">${c.hint}${lack ? '（尚缺）' : ''}</span>` : ""}
         </button>`;
       }).join("");
@@ -1846,7 +1846,9 @@ const UI = {
       return;
     }
     // 战斗类抉择前的「临战准备」一览——底牌随章节/境界演进（不再死盯练气期的毒草暗器）
-    const isFight = (stage.choices || []).some(c => c.resolve);
+    // ⚠ resolve:"advance" 是"纯推进"哨兵（非战斗派发），不得据此误判为战斗节点——
+    //   否则闭关/叙事类节点会错挂「临战准备·硬拼九死一生」（v265 巡检实锤·闭关二十载）。
+    const isFight = (stage.choices || []).some(c => c.resolve && c.resolve !== "advance");
     let prepHtml = "";
     if (isFight) {
       const items = this._fightPrepItems();        // [{id,name,n}...] 当前阶段的关键底牌
@@ -1866,7 +1868,7 @@ const UI = {
     }
     box.innerHTML = prepHtml + (stage.choices || []).map((c, i) => {
       const lack = c.requireItem && !State.count(c.requireItem);
-      return `<button class="choice${c.resolve && !c.calm ? ' choice-fight' : ''}" onclick="UI.storyChoose(${i})">
+      return `<button class="choice${c.resolve && c.resolve !== "advance" && !c.calm ? ' choice-fight' : ''}" onclick="UI.storyChoose(${i})">
         ${c.text}${c.hint ? `<span class="c-hint">${c.hint}${lack ? '（尚缺）' : ''}</span>` : ""}
       </button>`;
     }).join("");

@@ -4718,15 +4718,20 @@ const Engine = {
     });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
     // 冯三娘·六连殿阵法师·大典团战领队（友军侧·阵法困势·prot 偏高）
+    // v266 参与感修：她的本分是「困兽递刀」不是「替你斩杀」——降其输出、强化困阵，
+    //   把那一线极限斩杀的杀招留给玩家（治"高潮战友军自动磨死、玩家干看着"）。
     sides.push({ id: "feng_sanniang", name: "冯三娘", kind: "ally", art: "feng_sanniang",
       hp: 140, hpMax: 140, guard: 0.4, elem: "shui",
-      persona: { aggr: 5, prot: 7, kite: 2 },
+      persona: { aggr: 3, prot: 8, kite: 3 },
       moves: [
-        { name: "困兽阵旗", dmg: 18, weight: 12, elem: "shui", range: [1, 3], line: "冯三娘阵旗翻飞，水罡困势又紧一分：「第六组听令——困住它，给韩道友递机会！」" },
-        { name: "六合剑光", dmg: 22, weight: 6, elem: "jin", range: [1, 2], line: "冯三娘剑指如电，一道六合剑光斩在婴鲤兽鳞甲的缝隙处" },
+        { name: "困兽阵旗", dmg: 8, weight: 16, elem: "shui", range: [1, 3], line: "冯三娘阵旗翻飞，水罡困势又紧一分：「第六组听令——困住它，斩它的机会留给韩道友！」" },
+        { name: "六合压阵", dmg: 10, weight: 5, elem: "jin", range: [1, 2], line: "冯三娘剑指如电，一道六合剑光逼住婴鲤兽的扑势，替你卡死它的退路" },
       ] });
     this._combat = new CombatAPI.Combat({
-      player, enemies: [ying], waves: [[yingRage]], fieldCycle, maxRounds: 24, W: 15, lanes: 2, sides,
+      // v266：W 15→11、显式贴近布阵（玩家 pos4·敌 pos7·gap3＝攻击射程内）——
+      //   砍掉"前2~3回合空走"，玩家开战即可出手，把极限斩杀的参与感还给玩家。
+      player, enemies: [ying], waves: [[yingRage]], fieldCycle, maxRounds: 24, W: 11, lanes: 2, sides,
+      playerPos: 4, enemyPos: 7,
     });
     this._combatMeta = { type: "ss_yingli" };
     s.combat = true;
