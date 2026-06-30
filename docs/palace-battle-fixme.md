@@ -11,8 +11,11 @@
 > - **C**：`huanggong.png` 已按建筑感重画并接入（`sceneBg:"huanggong"`）；iPhone 竖屏实测加载正常、
 >   无字块、无默认土地（仅 favicon/待生成 cg_hongchen 的无害 404）。
 > - 回归：`node test/{run,journey,combat}.test.js` + `ledger.audit` 全绿。
-> - **遗留（非阻塞·非本清单范畴）**：胥王决战在 e4 皇宫态自动探针曾测出低胜率，疑 e4 存档 loadout
->   错配，需用 e4 真存档复核后再判（见星海篇平衡批注），与本清单 A/B/C 无关。
+> - **遗留（已复核·2026-06-30 收尾）**：胥王决战 e4 自动探针曾测 0% 胜率——经真引擎复核确认是**探针假象**：
+>   ①用错存档（save-modao-e3 缺 `liujing_survived` flag）②autoResolve 不激活 `fieldManual` 的颠倒五行阵。
+>   实测：刘靖在场（情报拉满命途）autoResolve **89% 胜率**（且这是没用阵法的地板）；刘靖身陨分支虽更难，
+>   但真人逐回合手动用颠倒五行阵（6 相 suppress+expose+护盾）+ 金光砖底牌，**且胥王战 fail-forward 不设死局**。
+>   结论：**无"打不过"bug、非死局**。命途道岔（救刘靖与否）见 story.js `modao_e4_liujing_live/die`。
 >
 > ---
 >
