@@ -10,7 +10,8 @@
  *   通过 test/_loadgame.js 在 node 下用 window/document 垫片**加载真实游戏引擎**
  *   （data/world/state/combat/story/chapters/engine 全真），再读**真实存档**、调**真实战斗装配**
  *   （Engine.startXxxFight——含真同道/真阵法/真站位/真 loadout），autoResolve 蒙特卡洛。
- *   ——量的就是玩家在那个剧情节点的真实战斗体验，不是重постро的近似。
+ *   ——量的就是玩家在那个剧情节点的真实战斗体验，不是重新构造的近似。
+ *   覆盖：黄枫谷（墨蛟/封岳/陆云风）· 魔道（战王蝉/化茧铁罗）· 初入星海（婴鲤兽 v269）。
  *
  * ⚠ 口径：AI autoResolve≈高水位手操（走位/抓趁虚/抢秒），末血是乐观估计；真人无视预警更低。
  *   胜率含同道佐助＝真实玩家口径（非剥离的本体下限）。
@@ -99,6 +100,22 @@ const yl = montecarlo("save-starsea-kuixing.json", () => {
 console.log(`  · 婴鲤兽（金丹大成·三人围杀·v269 蓄力杀招）：胜率 ${pct(yl.win)} / 末血 ${pct(yl.endHp)} / ${yl.rounds.toFixed(1)}回合`);
 assert(yl.win >= 0.80, `婴鲤兽·三人阵高胜率（≥80%·${pct(yl.win)}）——越阶靠准备/同道，赢得漂亮`);
 assert(yl.endHp <= 0.90, `婴鲤兽·蓄力杀招见牙：末血≤90%（${pct(yl.endHp)}）——v269 一致感修不被回滚（防再次滑成毫发无伤）`);
+
+// —— 魔道·燕家堡战王蝉（撑血线大BOSS·剧情"货真价实的硬仗"）——
+// 本体口径：撑血线即撤的逃逸式 boss，本体非稳赢、且赢也惨烈，印证剧情凶险。
+const zwc = montecarlo("save-yanjiabao.json", () => {
+  Engine._nextFightType = "zhanwangchan"; Engine.startEncounterFight("zhanwangchan");
+});
+console.log(`  · 战王蝉（筑基初·燕家堡大BOSS·本体）：胜率 ${pct(zwc.win)} / 末血 ${pct(zwc.endHp)} / ${zwc.rounds.toFixed(1)}回合`);
+assert(zwc.win <= 0.80, `战王蝉·本体非稳赢（≤80%·${pct(zwc.win)}）——魔道巨擘·货真价实的硬仗`);
+assert(zwc.endHp <= 0.80, `战王蝉·赢也惨烈：末血≤80%（${pct(zwc.endHp)}）——剧情凶险=数值凶险`);
+
+// —— 魔道·化茧铁罗（二阶段搏命·跨场宿敌）——
+const tl = montecarlo("save-modao-e3.json", () => {
+  Engine._nextFightType = "tieluo_mao"; Engine.startEncounterFight("tieluo_mao");
+});
+console.log(`  · 化茧铁罗（筑基初·二阶段搏命）：胜率 ${pct(tl.win)} / 末血 ${pct(tl.endHp)} / ${tl.rounds.toFixed(1)}回合`);
+assert(tl.endHp <= 0.82, `化茧铁罗·搏命见血：末血≤82%（${pct(tl.endHp)}）——化茧二阶段·不是无伤通过`);
 
 console.log(`\n========== 高潮战一致感锚点：${failures === 0 ? "全部通过 \u2713" : failures + " 项失败 \u2717"} ==========\n`);
 process.exit(failures === 0 ? 0 : 1);
