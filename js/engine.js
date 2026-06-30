@@ -5025,23 +5025,23 @@ const Engine = {
     player.hp = s.hpMax; player.hpMax = s.hpMax;
     // 石蝶·法修型（远程法术·脆皮高输出）
     const shidie = {
-      name: "石蝶", hp: 280, sense: 17, speed: 16, agility: 13, move: 2, mp: 90, qiLayer: 17,
+      name: "石蝶", hp: 185, sense: 17, speed: 16, agility: 13, move: 2, mp: 90, qiLayer: 17,
       elem: "jin", nature: "human", tactics: "kite", canFlee: false, armor: 2, boss: true,
       introNote: "石蝶修的是远程法修一路，灵光锋锐、走位刁钻——放任她拉开距离便要吃苦头，须贴身逼杀。",
       attacks: [
-        { name: "锋芒灵光", dmg: 26, kind: "normal", weight: 12, elem: "jin", range: [1, 5], mp: 6 },
-        { name: "破空锥", dmg: 32, kind: "pierce", weight: 7, range: [1, 4], elem: "jin", mp: 8 },
+        { name: "锋芒灵光", dmg: 20, kind: "normal", weight: 12, elem: "jin", range: [1, 5], mp: 6 },
+        { name: "破空锥", dmg: 26, kind: "pierce", weight: 7, range: [1, 4], elem: "jin", mp: 8 },
       ],
       reward: { lingshi: 12 }, namedLoot: null,
     };
     // 老胡·甲坚型（高护甲·硬碰硬）
     const laohu = {
-      name: "老胡", hp: 340, sense: 13, speed: 12, agility: 8, move: 1, mp: 70, qiLayer: 17,
-      elem: "tu", nature: "human", tactics: "guarded", canFlee: false, armor: 8, boss: true,
+      name: "老胡", hp: 220, sense: 13, speed: 12, agility: 8, move: 1, mp: 70, qiLayer: 17,
+      elem: "tu", nature: "human", tactics: "guarded", canFlee: false, armor: 3, boss: true,
       introNote: "老胡一身横练护体、甲坚如铁——寻常法术挠不动他，须以破甲/重击或辟邪神雷破其防。",
       attacks: [
-        { name: "厚土撞", dmg: 28, kind: "normal", weight: 12, elem: "tu", range: [1, 1] },
-        { name: "崩山压顶", dmg: 36, kind: "charge", weight: 6, aim: "cell", lunge: true, range: [1, 3], mp: 8, elem: "tu" },
+        { name: "厚土撞", dmg: 22, kind: "normal", weight: 12, elem: "tu", range: [1, 1] },
+        { name: "崩山压顶", dmg: 28, kind: "charge", weight: 6, aim: "cell", lunge: true, range: [1, 3], mp: 8, elem: "tu" },
       ],
       reward: { lingshi: 12 }, namedLoot: null,
     };
@@ -5122,12 +5122,12 @@ const Engine = {
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;
     const tiehuoyi = () => ({
-      name: "铁火蚁", hp: 200, sense: 13, speed: 14, agility: 11, move: 2, mp: 40,
-      elem: "huo", nature: "beast", tactics: "feral", canFlee: false, armor: 9, formation: "pack",
+      name: "铁火蚁", hp: 150, sense: 13, speed: 14, agility: 11, move: 2, mp: 40,
+      elem: "huo", nature: "beast", tactics: "feral", canFlee: false, armor: 5, formation: "pack",
       introNote: "铁火蚁群专噬金铁、甲坚如熔铁——奇虫榜第九。与你的噬金虫同源相克：附体结甲抗咬、放虫群对冲、化刃破其重甲。",
       attacks: [
-        { name: "熔铁噬咬", dmg: 24, kind: "normal", weight: 12, elem: "huo", range: [1, 1] },
-        { name: "火蚁喷焰", dmg: 20, kind: "normal", weight: 7, elem: "huo", range: [1, 3], mp: 4 },
+        { name: "熔铁噬咬", dmg: 18, kind: "normal", weight: 12, elem: "huo", range: [1, 1] },
+        { name: "火蚁喷焰", dmg: 15, kind: "normal", weight: 7, elem: "huo", range: [1, 3], mp: 4 },
       ],
       reward: {}, namedLoot: null,
     });
@@ -5204,11 +5204,11 @@ const Engine = {
       reward: {}, namedLoot: null,
     });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);   // 啼魂兽随行
-    // 凌玉灵·护送对象（VIP·不参战·筑基后期·护住勿令气绝）
+    // 凌玉灵·护送对象（VIP·不参战·筑基后期·护住勿令气绝）——hp 抬至 150 撑得住护送
     sides.push({ id: "ling_yuling", name: "凌玉灵", kind: "ally", art: null,
-      hp: 70, hpMax: 70, guard: 0.2, elem: "shui", noAct: true, persona: { aggr: 0, prot: 0, kite: 0 }, moves: [] });
+      hp: 150, hpMax: 150, guard: 0.3, elem: "shui", noAct: true, persona: { aggr: 0, prot: 0, kite: 0 }, moves: [] });
     this._combat = new CombatAPI.Combat({
-      player, enemies: [yaoshou(), yaoshou(), yaoshou()],
+      player, enemies: [yaoshou(), yaoshou()],
       objective: { kind: "survive", rounds: 4,
         winLog: "外海妖兽尽数退散——凌玉灵脱险了。星宫双圣之女承你这一份救命之情，星宫的关系线，自此种下。" },
       maxRounds: 4, W: 15, lanes: 3, sides,
