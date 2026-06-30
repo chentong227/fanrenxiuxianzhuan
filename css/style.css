@@ -4046,6 +4046,9 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 @media (orientation: portrait) {
   .story-bg { background-size: contain; }
 }
+/* 近 9:16 的竖版 CG 仍走 cover 全出血（JS 测图比后挂 .cg-fill）——裁切极小、沉浸感更强；
+   方图/横图无此类＝保持 contain 信箱式不裁主体。桌面横屏 .story-bg 本就 cover，此类无害。 */
+.story-bg.cg-fill { background-size: cover; }
 .story-scrim {
   position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(12,10,8,.55) 0%, rgba(12,10,8,.1) 35%, rgba(12,10,8,.4) 70%, rgba(12,10,8,.92) 100%);

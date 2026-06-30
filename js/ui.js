@@ -1300,6 +1300,14 @@ const UI = {
       // far=同图·模糊压暗版：竖屏 contain 呈现时填满信箱边带（杜绝方图 _p 被 cover 裁半）；
       //   桌面横屏 story-bg 仍 cover 全盖、far 被遮＝零观感变化。
       if (far) { far.style.backgroundImage = `url("${url}")`; far.classList.add("on"); }
+      // 竖屏画幅自适应（v295）：测真实图比——近 9:16 的竖图用 cover 全出血（裁切极小、更有沉浸感），
+      //   方图/横图保持 contain 信箱式（不裁主体）。桌面横屏恒 cover，cg-fill 无害。
+      bg.classList.remove("cg-fill");
+      if (window.matchMedia && window.matchMedia("(orientation: portrait)").matches) {
+        const probe = new Image();
+        probe.onload = () => { if (probe.naturalWidth / probe.naturalHeight <= 0.62) bg.classList.add("cg-fill"); };
+        probe.src = url;
+      }
     } else {
       bg.style.backgroundImage = ""; bg.classList.remove("on");
       if (far) { far.style.backgroundImage = ""; far.classList.remove("on"); }

@@ -556,6 +556,14 @@ function genOne(id, def, opts = {}) {
       content.push({ type: "text", text: `以上述参考图为底（第一张锁定脸型/画风/渲染质感，其余锁定服饰、发型与气度），生成同一人物的变体：${def.prompt}。${style}。` });
     }
   }
+  // 竖版 CG/场景（_p）：附一张空白 9:16 画布作「画幅比例参考」——nano-banana 输出比例贴合参考图，
+  //   根治 base flash 无视"9:16"prompt 仍出方图 1024²（手机竖屏 cover 会裁掉近半宽度）的顽疾。
+  const ASPECT_CANVAS = path.join(ROOT, "_refs", "canvas_916.png");
+  if ((def.kind === "cg_p" || def.kind === "scene_p") && !refs.length && !opts.noRef && fs.existsSync(ASPECT_CANVAS)) {
+    const cb64 = fs.readFileSync(ASPECT_CANVAS).toString("base64");
+    content.push({ type: "image_url", image_url: { url: `data:image/png;base64,${cb64}` } });
+    content.push({ type: "text", text: `参考图是一张空白的竖版画布（9:16 纵向画幅），仅用于锁定输出图片的画幅比例。请彻底忽略参考图的颜色与内容，输出一张与参考图同样竖长比例(9:16)、画面内容上下铺满整幅的全新画作：${def.prompt}。${style}。` });
+  }
   if (!content.length) content.push({ type: "text", text: `${style}。画面内容：${def.prompt}。` });
   const model = (def.hq && !opts.fallback) ? MODEL_HQ : MODEL;
   const body = JSON.stringify({
