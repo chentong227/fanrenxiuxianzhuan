@@ -273,6 +273,21 @@ DATA.items = {
   qingzhu_fengyun_jian: { name: "青竹蜂云剑", rarity: "legendary", type: "treasure", natal: true,
     desc: "韩立的本命法宝——以万年金雷竹炼就的七十二口青碧飞剑，群剑御空、剑随神念分袭，更蕴一道辟邪神雷可缠剑、可劈落、可雷遁。器灵银月尚在沉睡。自此一剑在手，韩立战力质变，元婴老怪之间也敢周旋。（本命主攻·swordOrbit绕身剑阵·辟邪神雷三式·战斗自动入战）" },
 
+  /* —— 星海飞驰篇·S7 虚天殿外殿三关·收获与三元婴赠宝 —— */
+  mingshun_zhu: { name: "鸣魂珠", rarity: "epic", type: "treasure",
+    desc: "冰火道中元瑶相赠、控御啼魂兽的关窍之物。不曾炼化，故只能对啼魂兽下些简单号令；纵如此，那头天生克制鬼物精魂的灵兽，也已是难得的底牌。（啼魂兽·控御之珠）" },
+  boluo_zhu: { name: "婆罗珠", rarity: "epic", type: "treasure",
+    desc: "极阴祖师所赠的安神定魂之宝，幽光温润、可镇心神。过虚天殿『极妙幻境』那一关心性考验时，持之可稳住道心、不为幻象所惑。元婴老怪的拉拢之物——用是要用的，提防也是要提防的。（极妙幻境·安神）" },
+  qingming_zhen: { name: "青冥针", rarity: "epic", type: "treasure",
+    desc: "青易居士所赠的攻击型符宝，针出如青冥裂空、锋锐无俦。更要紧的是——这是青易居士给的信物，日后出虚天殿时，凭它可冒充青易居士的徒弟蒙混过关。（符宝·防身+信物）" },
+  huanglin_jia: { name: "皇鳞甲", rarity: "legendary", type: "treasure",
+    desc: "蛮胡子相赠的成名防御法宝，鳞甲层叠、坚逾金石——可硬接元婴修士一击而不溃。虚天殿元婴大战中，正是它替韩立挡下了那致命的一下，保住一条性命。（成名防御·保命法宝）" },
+  wuxing_huan: { name: "五行环", rarity: "epic", type: "treasure",
+    desc: "宝光阁所得的古宝，五枚色环循五行流转、可演化相生相克之力。阵法一道上颇有妙用。（宝光阁古宝）" },
+  xuese_pifeng: { name: "血色披风", rarity: "epic", type: "treasure",
+    desc: "宝光阁所得的古宝，血色猎猎、内蕴一缕遁光之力，护身遁走两便。（宝光阁古宝）" },
+
+
 
   ks_chenqiaoqian: { name: "陈家药引", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "chenqiaoqian",
     desc: "陈巧倩从陈家药圃匀来的稀罕药引，寻常炼丹师有价无市。她只淡淡说一句「顺路」，绝口不提坊市归途那一夜的相欠。" },

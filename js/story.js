@@ -6322,6 +6322,272 @@ const STORY = [
       },
     ],
   },
+  // —— 节点 4-C·虚天殿现世·入殿（锚·大限钟·三百年一开·不可回头）——
+  {
+    id: "xh_a4_xutian_enter",
+    skipIf: (s) => s.flags.xh_a4_xutian_enter_done,
+    cond: (s) => s.flags.xh_a4_xuangu_done && !s.flags.xh_a4_xutian_enter_done,
+    bgm: "tense",
+    title: "虚天殿 · 现世",
+    objTitle: "入殿 · 三百年一开",
+    objHint: "循着虚天残图的指引，虚天殿现世了。你与紫灵一同步入——禁制在身后轰然合拢，三百年一开的龙潭虎穴，自此再无回头路。元婴老怪们，也都来了。",
+    text: [
+      { scene: "虚天殿 · 殿门" },
+      { cam: "zoom", scale: 1.05, ms: 340 },
+      "失曲魂之痛尚未平复，虚天残图却已灼灼发烫——三百年一开的虚天殿，现世了。你与紫灵循图而入，巨大的殿门在身后轰然合拢。",
+      { aside: "这一进来，没有禁制松开之前是出不去的。殿中早已不止你们——极阴祖师、蛮胡子、青易居士……一个个元婴级的恐怖气息，在殿宇深处若隐若现。一个结丹小修，要在这群老怪之间求生、夺宝。藏拙，求活。" },
+      { say: "紫灵", tone: "low", text: "「韩大哥，殿中三关，闯过去才能到内殿。万事小心——这里头，没一个是善茬。」" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a4_xutian_enter_done");
+      Engine.writeLedger("xh_xutian_enter", "虚天殿现世——循虚天残图入殿、禁制合拢不可回头。极阴/蛮胡子/青易居士三元婴入场，韩立携紫灵闯外殿三关。");
+      Engine.addMilestone("虚天殿现世·入殿（三关之始·元婴云集）", "xinghaifeichi");
+    },
+    choices: [
+      { text: "步入虚天殿 · 闯外殿三关", hint: "鬼冤之地 → 冰火道 → 极妙幻境", resolve: "advance" },
+    ],
+  },
+
+  // —— 节点 4-D·第一关·鬼冤之地（Combat·辟邪神雷克鬼首秀）——
+  {
+    id: "xh_a4_guiyuan",
+    skipIf: (s) => s.flags.xh_a4_guiyuan_done,
+    cond: (s) => s.flags.xh_a4_xutian_enter_done && !s.flags.xh_a4_guiyuan_done,
+    bgm: "combat",
+    title: "虚天殿 · 第一关 · 鬼冤之地",
+    objTitle: "鬼冤之地 · 辟邪神雷克鬼",
+    objHint: "第一关阴灵弥漫，鬼王驱使阴灵兽扑来。辟邪神雷专克邪魔鬼物（×1.8）——这是本命法宝克鬼的首秀。先清阴灵、再以神雷集火鬼王。",
+    text: [
+      { scene: "虚天殿 · 鬼冤之地" },
+      "踏入第一关，阴风惨惨、怨煞冲天。鬼王自阴雾深处浮现，身侧阴灵兽嘶吼着扑来。",
+      { aside: "邪魔鬼物……正是辟邪神雷的克星。金雷一引，七十二剑齐鸣——是时候让这些阴物，尝尝青竹蜂云剑缠雷的滋味了。" },
+    ],
+    choices: [
+      { text: "出手 · 辟邪神雷破鬼冤", hint: "神雷克邪魔×1.8（首秀）", resolve: "xh_guiyuan_fight" },
+    ],
+  },
+
+  // —— 节点 4-E·第二关·冰火道·熔岩路（Combat·铁火蚁群·噬金虫对决）——
+  {
+    id: "xh_a4_binghuo",
+    skipIf: (s) => s.flags.xh_a4_binghuo_done,
+    cond: (s) => s.flags.xh_a4_guiyuan_done && !s.flags.xh_a4_binghuo_done,
+    bgm: "combat",
+    title: "虚天殿 · 第二关 · 冰火道",
+    objTitle: "冰火道 · 铁火蚁群",
+    objHint: "第二关冰火道分熔岩路与玄晶道。你择熔岩路而入——金魁暗设的陷阱里，本不该有的铁火蚁群涌出。隐约还有一道女子呼救声……以噬金虫对耗铁火蚁。",
+    text: [
+      { scene: "虚天殿 · 冰火道 · 熔岩路" },
+      "冰火道一分为二：熔岩路炽热如炉，玄晶道极寒刺骨。你择熔岩路而入——岩浆翻涌间，一群甲坚如熔铁的铁火蚁如赤潮涌来。",
+      { aside: "铁火蚁……奇虫榜第九，与我的噬金虫同源相克。岩壁那头隐约传来一道女子的呼救——先杀穿这群火蚁再说！" },
+    ],
+    choices: [
+      { text: "出手 · 噬金虫对耗铁火蚁", hint: "甲坚火属·虫群对决", resolve: "xh_binghuo_fight" },
+    ],
+  },
+
+  // —— 节点 4-E2·元瑶重逢·啼魂兽获取（story·新侧位·填补曲魂之缺）——
+  {
+    id: "xh_a4_yuanyao",
+    skipIf: (s) => s.flags.xh_a4_yuanyao_done,
+    cond: (s) => s.flags.xh_a4_binghuo_done && !s.flags.xh_a4_yuanyao_done,
+    bgm: "town",
+    title: "冰火道 · 元瑶 · 啼魂兽",
+    objTitle: "救人 · 得啼魂兽",
+    objHint: "你从铁火蚁群中救下一位戴面纱的结丹女修——元瑶。她为谢恩欲以身相许、又献上青火雷三枚，皆被你婉拒。你只看中了她随身那头天生克鬼的灵兽：啼魂兽。",
+    text: [
+      { scene: "虚天殿 · 冰火道 · 岩壁后" },
+      "杀穿火蚁，岩壁后一位戴面纱的结丹女修正被困死角——你出手援之。她自称元瑶，为复活亡友而入虚天殿寻养魂木。",
+      { say: "元瑶", emo: "calm", text: "「道友救命之恩，元瑶无以为报……愿以身相许，或这三枚青火雷——魔道青阳门秘制，一枚可抵元婴一击——皆赠予道友。」" },
+      { aside: "以身相许？青火雷？都不必。你的目光，落在她身侧那头通体幽碧、正啼啼低鸣的小兽身上——啼魂兽，天生吞噬精魂、克制鬼物。曲魂走后空着的那个位置……或许，正该是它。" },
+      { say: "韩立", tone: "low", text: "「这些都不必。元瑶道友若过意不去……便将这头啼魂兽，连同鸣魂珠，赠予我罢。」" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a4_yuanyao_done");
+      Engine.meetNpc("yuan_yao", "为复活亡友妍丽而入虚天殿寻养魂木的结丹女修——冰火道中为韩立所救，赠啼魂兽+鸣魂珠。还阳术之事留外海风云篇。");
+      State.give("mingshun_zhu", 1);
+      // 啼魂兽：填补曲魂之缺的新侧位·天生克鬼物（slays ghost/demon ×2）
+      s.sideUnit = { id: "tihun_shou", name: "啼魂兽", kind: "beast", art: null,
+        hp: 95, hpMax: 95, atk: 18, atkName: "吞魂啮咬", move: 2,
+        nature: "beast", elem: "shui", slays: { ghost: 2, demon: 2 }, guard: 0.3, status: "ok", carry: true,
+        persona: { aggr: 6, prot: 3, kite: 2 },
+        moves: [
+          { name: "吞魂啮咬", dmg: 18, weight: 12, range: [1, 1], slays: { ghost: 2, demon: 2 }, elem: "shui", line: "啼魂兽扑上撕咬、吞噬精魂——对鬼物邪魔尤为致命" },
+          { name: "啼魂摄魄", dmg: 14, weight: 6, range: [1, 3], slays: { ghost: 2, demon: 2 }, elem: "shui", line: "啼魂兽一声幽鸣，摄魂之音荡开" },
+        ] };
+      Engine.writeLedger("xh_tihun_get", "冰火道·救元瑶——婉拒以身相许与青火雷×3，只取啼魂兽+鸣魂珠。啼魂兽天生克鬼物精魂（slays ghost/demon ×2），填补曲魂走后的侧位——这是玄骨终战收尾残魂的关键底牌。");
+      Engine.addMilestone("虚天殿·啼魂兽到手（新侧位·天生克鬼·终战底牌）", "xinghaifeichi");
+      Engine.toast("侧位随行：啼魂兽（天生克鬼物）");
+    },
+    choices: [
+      {
+        text: "收下啼魂兽与鸣魂珠 · 带元瑶过道",
+        hint: "新侧位·克鬼底牌（玄骨终战关键）",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 4);
+          return { text: "元瑶将啼魂兽与鸣魂珠郑重交予你。那小兽歪头打量你片刻，竟亲昵地蹭了蹭你的衣袖。你带着元瑶一道穿过冰火道——空了的侧位，重新有了温度。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 4-F·极阴收徒·三元婴赠宝（story·藏拙周旋·得婆罗珠/青冥针/皇鳞甲）——
+  {
+    id: "xh_a4_sanyuanying",
+    skipIf: (s) => s.flags.xh_a4_sanyuanying_done,
+    cond: (s) => s.flags.xh_a4_yuanyao_done && !s.flags.xh_a4_sanyuanying_done,
+    bgm: "tense",
+    title: "虚天殿 · 三元婴博弈",
+    objTitle: "藏拙周旋 · 各怀鬼胎",
+    objHint: "三位魔道元婴盯上了你那能拉虚天鼎的血玉蜘蛛。极阴强收你为徒，玄骨（萧诧）暗示你拜极阴更稳妥；蛮胡子、青易居士各赠宝物拉拢。各怀鬼胎——你便藏拙周旋，照单全收。",
+    text: [
+      { scene: "虚天殿 · 殿宇深处" },
+      "三关将半，三位元婴老怪却先后寻上了你——因你那只能拉动虚天鼎的血玉蜘蛛。",
+      { say: "极阴祖师", tone: "森冷", text: "「这小子的血玉蜘蛛，拉鼎正合用。本座收你为徒——不得拒绝。」" },
+      { aside: "夺了曲魂身躯的玄骨（萧诧）在一旁，竟以传音暗示你：拜极阴更稳妥，此人更危险、不宜结仇。你心知肚明——三个老怪都想利用你拉鼎，用完即弃。既如此，藏拙周旋、宝物照收便是。" },
+      { say: "蛮胡子", tone: "豪烈", text: "「小子，老夫这件皇鳞甲给你——能挡元婴一击。别问为什么，先收下！」" },
+      { say: "青易居士", emo: "smile", text: "「韩道友，这枚青冥针权当见面礼……虚天殿凶险，有我青易照拂。」" },
+      { aside: "极阴赠婆罗珠（安神定魂，过极妙幻境正用得上）、蛮胡子赠皇鳞甲（保命）、青易赠青冥针（防身+日后冒充其徒的信物）。三件礼，三把算计——你一一收下，心里却跟明镜似的。" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a4_sanyuanying_done");
+      Engine.meetNpc("man_huzi", "魔道元婴中期巨擘——赠皇鳞甲拉拢韩立（元婴大战中替韩立挡下致命一击的保命法宝）。");
+      Engine.meetNpc("qingyi_jushi", "南鹤岛元婴初期散修——赠青冥针符宝、虚情假意收徒，日后成韩立冒充其徒出殿的信物。");
+      State.give("boluo_zhu", 1);
+      State.give("huanglin_jia", 1);
+      State.give("qingming_zhen", 1);
+      Engine.writeLedger("xh_sanyuanying", "虚天殿三元婴博弈——极阴强收韩立为徒（玄骨暗示拜极阴更稳）、三元婴各赠宝物拉拢：极阴婆罗珠（过极妙幻境）、蛮胡子皇鳞甲（保命）、青易青冥针（防身+出殿冒充信物）。各怀鬼胎觊觎血玉蜘蛛，韩立藏拙周旋、照单全收。");
+      Engine.addMilestone("虚天殿·三元婴赠宝（婆罗珠/皇鳞甲/青冥针·藏拙周旋）", "xinghaifeichi");
+    },
+    choices: [
+      {
+        text: "拜入极阴门下 · 藏拙周旋（玄骨建议）",
+        hint: "动漫核定·更稳妥·照收三宝",
+        effect(s) {
+          State.setFlag("xh_baibai_jiyin");
+          Engine.writeLedger("xh_baibai_jiyin", "拜入极阴门下（藏拙之举·玄骨建议·极阴更危险不宜结仇）——名为师徒，实为相互利用。");
+          return { text: "你依玄骨暗示，恭敬拜入极阴门下。极阴皮笑肉不笑地受了——双方都清楚，这师徒名分不过是各取所需的幌子。三件宝物，你尽数收入囊中。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "虚与委蛇 · 不拜师只收礼",
+        hint: "保持距离·埋下隐患",
+        effect(s) {
+          State.setFlag("xh_baibai_refuse");
+          Engine.writeLedger("xh_baibai_jiyin", "婉拒极阴拜师、只收三元婴赠礼——保持距离，却也埋下元婴记恨的隐患。");
+          return { text: "你打着哈哈，礼收了，拜师却含糊推脱。极阴眼底寒光一闪，到底没当场发作——但这梁子，算是悄悄结下了。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 4-G·宝光阁（story·古宝 4 选 1）——
+  {
+    id: "xh_a4_baoguang",
+    skipIf: (s) => s.flags.xh_a4_baoguang_done,
+    cond: (s) => s.flags.xh_a4_sanyuanying_done && !s.flags.xh_a4_baoguang_done,
+    bgm: "journey",
+    title: "虚天殿 · 宝光阁",
+    objTitle: "古宝 · 四路选一",
+    objHint: "冰火道后、极妙幻境前——宝光阁四条路分别通向宝物/功法/丹药/直通第三关。以噬金虫切断灵力进入能量罩，可取其一。",
+    text: [
+      { scene: "虚天殿 · 宝光阁" },
+      "宝光阁内，四条光路分向四处：一路通古宝『五行环』，一路通古宝『血色披风』，一路通一卷功法残篇，一路则可直通第三关、省去周折。",
+      { aside: "能量罩拦在宝物之前——你纵噬金虫切断灵力，方可入内取宝。四路只能择一，且看你要什么。" },
+    ],
+    onArrive(s) { s.location = "tianxing_city"; State.setFlag("xh_a4_baoguang_done"); },
+    choices: [
+      {
+        text: "取五行环（阵法古宝）",
+        hint: "五行流转·阵法一道有妙用",
+        effect(s) {
+          State.give("wuxing_huan", 1);
+          Engine.writeLedger("xh_baoguang", "宝光阁取五行环（五行流转·阵法古宝）。");
+          return { text: "你切断能量罩，取下五枚循五行流转的色环——五行环入手。阵法一道，又添一臂之力。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "取血色披风（护身遁光）",
+        hint: "护身+遁走两便",
+        effect(s) {
+          State.give("xuese_pifeng", 1);
+          Engine.writeLedger("xh_baoguang", "宝光阁取血色披风（护身+遁光古宝）。");
+          return { text: "你取下那件血色猎猎的披风——内蕴一缕遁光之力，护身遁走两便。血色披风入手。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "取功法残篇（丹道/阵法精进）",
+        hint: "熟练度+",
+        effect(s) {
+          s.skills = s.skills || {}; s.skills.alchemy = (s.skills.alchemy || 0) + 2;
+          State.give("lingshi", 30);
+          Engine.writeLedger("xh_baoguang", "宝光阁取功法残篇（丹道/阵法熟练度+·灵石+30）。");
+          return { text: "你取下一卷古修士的功法残篇——参研之下，丹道阵法的火候都精进了几分（熟练度+2·灵石+30）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "直通第三关（省时·大限将近）",
+        hint: "不取宝·节省时间",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 2);
+          Engine.writeLedger("xh_baoguang", "宝光阁直通第三关——不贪宝物、稳妥为上。");
+          return { text: "你不为宝物所动，径直走向通往第三关的光路。元婴环伺、大限将近——稳妥，比贪宝要紧。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 4-H·第三关·极妙幻境（story·心性考验·非战斗·婆罗珠安神·S7 收口）——
+  {
+    id: "xh_a4_jimiao",
+    skipIf: (s) => s.flags.xh_a4_jimiao_done,
+    cond: (s) => s.flags.xh_a4_baoguang_done && !s.flags.xh_a4_jimiao_done,
+    cg: "jindan",
+    bgm: "sorrow",
+    title: "虚天殿 · 第三关 · 极妙幻境",
+    objTitle: "心性 · 回溯人生",
+    objHint: "第三关极妙幻境非战斗——心性考验。婆罗珠安神定魂，助你穿过幻象。回溯人生的种种选择，唯有道心澄明者，方能勘破。",
+    text(s) {
+      return [
+        { scene: "虚天殿 · 极妙幻境" },
+        { cam: "zoom", scale: 1.04, ms: 320 },
+        "第三关没有敌人，只有幻象。青牛镇的爹娘、墨大夫、七玄门、孤岛二十载、曲魂被夺的那一刻……平生种种，如潮水般在识海里翻涌，要将你拖入心魔。",
+        { aside: State.count("boluo_zhu") > 0
+            ? "你取出极阴所赠的婆罗珠——幽光温润，心神为之一定。红尘劫渡过的那份通透，此刻成了你最坚实的道心。"
+            : "你没有安神之宝，只能凭一身道心硬抗这幻象洪流。红尘劫渡过的那份通透，是你唯一的依凭。" },
+        { say: "韩立", emo: "calm", tone: "low", text: "「来过、痛过、失去过……可我韩立的道心，从不在这些幻象里。勘破。」" },
+      ];
+    },
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a4_jimiao_done");
+      const hasBoluo = State.count("boluo_zhu") > 0;
+      s.mood = Math.min(s.moodMax, (s.mood || 0) + (hasBoluo ? 10 : 6));
+      s.demon = Math.max(0, (s.demon || 0) - (hasBoluo ? 8 : 4));
+      Engine.writeLedger("xh_jimiao", `极妙幻境·心性考验通过${hasBoluo ? "（婆罗珠安神·道心愈固）" : "（无安神之宝·凭道心硬抗）"}——外殿三关终局，回溯人生而勘破幻象。`);
+      Engine.addMilestone("虚天殿·极妙幻境通过（外殿三关终局）", "xinghaifeichi");
+    },
+    choices: [
+      {
+        text: "勘破幻境 · 道心如磐",
+        hint: "外殿三关·终（内殿取鼎·待续）",
+        effect(s) {
+          return { text: "幻象一层层崩碎、消散。你睁开眼，已立于通往内殿的殿门之前。外殿三关，过了——接下来，是虚天鼎、是元婴大战、是与玄骨的了断。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
 ];
 
 window.STORY = STORY;

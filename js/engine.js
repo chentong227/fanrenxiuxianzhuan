@@ -3830,7 +3830,7 @@ const Engine = {
     return { id: u.id, name: u.name, kind: u.kind || "corpse", hp: u.hp, hpMax: u.hpMax,
              atk: u.atk, atkName: u.atkName, move: u.move != null ? u.move : 1,
              moves: u.moves || null, art: u.art || null,
-             elem: u.elem || null, nature: u.nature || null, guard: u.guard || 0.3,
+             elem: u.elem || null, nature: u.nature || null, slays: u.slays || null, guard: u.guard || 0.3,
              // 人格（背景即打法）：尸傀无智而忠——护主权重拉满，不抢窗口不惜身
              persona: u.persona || { aggr: 3, prot: 9, kite: 0 } };
   },
@@ -5066,6 +5066,84 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // —— S7·虚天殿第一关·鬼冤之地（鬼王+阴灵兽·邪魔·辟邪神雷克鬼首秀 ×1.8）——
+  //    nature:"demon"（非 ghost）——既吃 shenlei slays.demon×1.8，又不触发 soulOnly 锁（辟邪神雷正面可伤）。
+  startXhGuiyuanFight() {
+    const s = State.data;
+    this._nextFightType = "xh_guiyuan";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    const yinling = () => ({
+      name: "阴灵兽", hp: 170, sense: 14, speed: 15, agility: 12, move: 2, mp: 50,
+      elem: "shui", nature: "demon", tactics: "feral", canFlee: false, armor: 2, formation: "pack",
+      attacks: [
+        { name: "阴煞扑噬", dmg: 22, kind: "normal", weight: 12, elem: "shui", range: [1, 1] },
+        { name: "怨煞冲", dmg: 26, kind: "charge", weight: 5, aim: "cell", lunge: true, range: [1, 3], mp: 5, elem: "shui" },
+      ],
+      reward: {}, namedLoot: null,
+    });
+    const guiwang = {
+      name: "鬼王", hp: 420, sense: 18, speed: 15, agility: 11, move: 2, mp: 100, qiLayer: 21,
+      elem: "shui", nature: "demon", tactics: "cunning", canFlee: false, armor: 4, boss: true, regen: 8,
+      introNote: "鬼冤之地阴灵弥漫——鬼王能驱使阴灵兽、自身亦能回煞自愈。它是鬼物邪魔，辟邪神雷正是它的克星：神雷劈/附剑专克邪魔×1.8。先清阴灵、再以神雷集火鬼王。",
+      attacks: [
+        { name: "万鬼噬魂", dmg: 30, kind: "normal", weight: 12, elem: "shui", range: [1, 4], mp: 6 },
+        { name: "怨煞潮", dmg: 26, kind: "normal", weight: 8, aim: "zone", zoneSpan: 1, range: [1, 3], depth: "front", elem: "shui", mp: 7 },
+        { name: "夺命阴爪", dmg: 36, kind: "pierce", weight: 7, range: [1, 1], elem: "shui", mp: 8 },
+      ],
+      reward: { lingshi: 18 }, namedLoot: null,
+    };
+    const sides = [];
+    // 紫灵同闯关（妙音门盟·若结盟）
+    if (s.flags.xh_miaoyin_ally) {
+      sides.push({ id: "zi_ling", name: "紫灵", kind: "ally", art: "zi_ling",
+        hp: 160, hpMax: 160, guard: 0.4, elem: "shui", persona: { aggr: 5, prot: 4, kite: 4 },
+        moves: [{ name: "妙音裂魂", dmg: 16, weight: 14, elem: "jin", range: [1, 4], slays: { demon: 1.4 }, line: "紫灵妙音裂空，专荡阴灵之煞：「韩大哥，神雷克它们，放手打！」" }] });
+    }
+    const qu = this._quhunSide(); if (qu) sides.push(qu);   // 曲魂已失·此处通常为空
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [yinling(), yinling(), guiwang],
+      maxRounds: 24, W: 15, lanes: 3, sides,
+      playerPos: 4, enemyPos: 9,
+    });
+    this._combatMeta = { type: "xh_guiyuan" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("鬼冤之地阴风惨惨，鬼王驱阴灵兽扑来。你心念一引，七十二口青竹蜂云剑出鞘——辟邪神雷在剑阵间金光流转，正是这些邪魔鬼物的克星！");
+    this.log("虚天殿·第一关·鬼冤之地——辟邪神雷专克邪魔鬼物（×1.8）！这是本命法宝克鬼的首秀。先清阴灵兽，再以神雷集火鬼王。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— S7·虚天殿第二关·冰火道·铁火蚁群（虫群·甲坚火属·噬金虫对决）——
+  startXhBinghuoFight() {
+    const s = State.data;
+    this._nextFightType = "xh_binghuo";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    const tiehuoyi = () => ({
+      name: "铁火蚁", hp: 200, sense: 13, speed: 14, agility: 11, move: 2, mp: 40,
+      elem: "huo", nature: "beast", tactics: "feral", canFlee: false, armor: 9, formation: "pack",
+      introNote: "铁火蚁群专噬金铁、甲坚如熔铁——奇虫榜第九。与你的噬金虫同源相克：附体结甲抗咬、放虫群对冲、化刃破其重甲。",
+      attacks: [
+        { name: "熔铁噬咬", dmg: 24, kind: "normal", weight: 12, elem: "huo", range: [1, 1] },
+        { name: "火蚁喷焰", dmg: 20, kind: "normal", weight: 7, elem: "huo", range: [1, 3], mp: 4 },
+      ],
+      reward: {}, namedLoot: null,
+    });
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [tiehuoyi(), tiehuoyi(), tiehuoyi()],
+      maxRounds: 22, W: 15, lanes: 3, sides,
+      playerPos: 4, enemyPos: 9,
+    });
+    this._combatMeta = { type: "xh_binghuo" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("冰火道熔岩路上，铁火蚁群如赤潮涌来。你掌心噬金虫蠢蠢欲动——同源相克，正好以虫斗蚁：附体结甲、放群对冲、化刃破其熔铁重甲。");
+    this.log("虚天殿·第二关·冰火道（熔岩路）——铁火蚁群甲坚火属。以噬金虫四用法对耗、青竹蜂云剑破甲，杀出一条路。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -6274,6 +6352,40 @@ const Engine = {
         s.pendingEvent = "xh_a4_guxiushi_fight";
         this._retryAfterLoss = "xh_a4_guxiushi_fight";
       }
+    } else if (meta.type === "xh_guiyuan") {
+      // 星海飞驰·S7 虚天殿第一关·鬼冤之地（辟邪神雷克鬼首秀）——胜→冰火道
+      if (win) {
+        State.setFlag("xh_a4_guiyuan_done");
+        this.writeLedger("xh_guiyuan_won", "虚天殿第一关·鬼冤之地——辟邪神雷专克邪魔鬼物，越级斩鬼王、灭阴灵兽。本命法宝克鬼之威，名副其实。");
+        this.addMilestone("虚天殿·第一关：鬼冤之地（辟邪神雷克鬼首秀）", "xinghaifeichi");
+        this.log("鬼王在金色神雷中煞气溃散、灰飞烟灭——辟邪神雷克鬼，名不虚传。第一关，过了。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_xh_guiyuan = (s.flags.losses_xh_guiyuan || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xh_guiyuan) * 8;
+        s.hp = s.hpMax; s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`鬼王回煞自愈、阴灵难缠，一时没能竟全功——你调息再上（再战伤害+${bonus}%）。辟邪神雷克它们，集中神雷打鬼王！`, "bad");
+        s.pendingEvent = "xh_a4_guiyuan"; this._retryAfterLoss = "xh_a4_guiyuan";
+      }
+    } else if (meta.type === "xh_binghuo") {
+      // 星海飞驰·S7 虚天殿第二关·冰火道·铁火蚁群（噬金虫对决）——胜→元瑶·啼魂兽
+      if (win) {
+        State.setFlag("xh_a4_binghuo_done");
+        this.writeLedger("xh_binghuo_won", "虚天殿第二关·冰火道——以噬金虫对耗铁火蚁群、青竹蜂云剑破其熔铁重甲，杀穿熔岩路。");
+        this.addMilestone("虚天殿·第二关：冰火道·铁火蚁群（噬金虫对决）", "xinghaifeichi");
+        this.log("最后一只铁火蚁被噬金虫群吞没——熔岩路杀穿了。前方似有打斗声传来……", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_xh_binghuo = (s.flags.losses_xh_binghuo || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xh_binghuo) * 8;
+        s.hp = s.hpMax; s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`铁火蚁甲坚难破、火毒缠身，一时杀不透——你调息再上（再战伤害+${bonus}%）。噬金虫附体抗咬、化刃破甲，再冲！`, "bad");
+        s.pendingEvent = "xh_a4_binghuo"; this._retryAfterLoss = "xh_a4_binghuo";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -6549,6 +6661,8 @@ const Engine = {
       xh_zhaozheng_fight:      function () { this.startXhZhaozhengFight(); },
       xh_taowang_fight:        function () { this.startXhTaowangFight(); },
       xh_guxiushi_fight:       function () { this.startXhGuxiushiFight(); },
+      xh_guiyuan_fight:        function () { this.startXhGuiyuanFight(); },
+      xh_binghuo_fight:        function () { this.startXhBinghuoFight(); },
     });
   },
   hasFight(id) { return !!(id && this._fightRoutes()[id]); },
@@ -6783,6 +6897,8 @@ const Engine = {
     if (choice.resolve === "xh_zhaozheng_fight") { s.pendingEvent = null; this.startXhZhaozhengFight(); return; }
     if (choice.resolve === "xh_taowang_fight")   { s.pendingEvent = null; this.startXhTaowangFight();   return; }
     if (choice.resolve === "xh_guxiushi_fight")  { s.pendingEvent = null; this.startXhGuxiushiFight();  return; }
+    if (choice.resolve === "xh_guiyuan_fight")   { s.pendingEvent = null; this.startXhGuiyuanFight();   return; }
+    if (choice.resolve === "xh_binghuo_fight")   { s.pendingEvent = null; this.startXhBinghuoFight();   return; }
 
     // 普通推进
     s.pendingEvent = null;
