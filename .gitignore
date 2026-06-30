@@ -6,7 +6,13 @@ Thumbs.db
 # 生图/测试临时文件
 test/_*.json
 test/_*.tmp.js
+test/_verify_*.js
 test_out.txt
+_ledger_out.txt
+_*.txt
+combat_xuangu.md
+play_*.jpeg
+play_*.png
 promo/videos/
 
 promo/raw/
