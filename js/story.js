@@ -5661,6 +5661,240 @@ const STORY = [
       },
     ],
   },
+  // —— 节点 2-A·蝎岛团战（锚③·硬锚·sides combat·妙音门 vs 隐煞门）——
+  {
+    id: "xh_a2_xiedao",
+    skipIf: (s) => s.flags.xh_a2_xiedao_done,
+    cond: (s) => s.flags.xh_a1_miaoyin_done && !s.flags.xh_a2_xiedao_done,
+    bgm: "combat",
+    title: "蝎岛 · 妙音门 vs 隐煞门",
+    objTitle: "团战 · 侧翼突入",
+    objHint: "随妙音门赴蝎岛、强攻隐煞门据点。紫灵居中调度，两位客卿正面牵制，你带曲魂自侧翼突入——荡平隐煞门弟子。",
+    text(s) {
+      const ally = s.flags.xh_miaoyin_ally;
+      const t = [
+        { scene: "蝎岛 · 隐煞门据点" },
+        "浪涛拍岸，蝎岛礁石嶙峋。妙音门倾巢而出，强攻隐煞门据点——这是内星海两家积怨已久的一仗。",
+      ];
+      if (ally) {
+        t.push({ say: "紫灵", emo: "calm", text: "「韩大哥，两位客卿替你正面牵制，你随我从侧翼切进去。隐煞门那些弟子，先清了。」" });
+      } else {
+        t.push({ aside: "你虽只应了'卖材料'、未受客卿之名，紫灵仍以一份薄面请你出手——你便以散修身份，自侧翼旁助一臂。" });
+      }
+      t.push(
+        "隐煞门弟子结阵迎来，金煞刀光森森。乱军之中，一道身影却悄然往后退去——是妙音门客卿赵峥。紫灵眼角余光扫过，却不动声色。",
+        { aside: "（这场仗，似乎不只是'攻打据点'这么简单……）" },
+      );
+      return t;
+    },
+    choices: [
+      { text: "迎战 · 随紫灵自侧翼突入", hint: "荡平隐煞门弟子（团战）", resolve: "xh_xiedao_fight" },
+    ],
+  },
+
+  // —— 节点 2-B·紫灵做局（锚④·硬锚·关键抉择 3 选 1）——
+  {
+    id: "xh_a2_zuoling",
+    skipIf: (s) => s.flags.xh_a2_zuoling_done,
+    cond: (s) => s.flags.xh_a2_xiedao_done && !s.flags.xh_a2_zuoling_done,
+    bgm: "tense",
+    title: "蝎岛 · 紫灵的棋局",
+    objTitle: "做局 · 清除叛徒",
+    objHint: "赵峥'逃走'并非意外——紫灵早已与隐煞门孙门主暗中联手，要从妙音门内部清除勾结极阴岛的叛徒。她要你配合杀赵峥。",
+    text: [
+      { scene: "蝎岛 · 礁石背风处" },
+      "战事既歇，紫灵屏退左右，遥遥向隐煞门那边一名黑袍老者颔首——竟是隐煞门孙门主。两人眼神交汇，一切尽在不言中。",
+      { say: "紫灵", tone: "low", text: "「韩大哥可看出来了？这一仗，是我与孙门主联手做的局。赵峥、符长老暗通极阴岛、出卖门中机密，今日便是清理门户。」" },
+      { aside: "原来'攻打隐煞门'是幌子，真正要清的是混在妙音门里的两条蛀虫。这女子的心计……不愧是那缕'熟悉'之人。" },
+      { say: "紫灵", emo: "calm", text: "「赵峥已被我暗算、护体寸裂，真元逆乱。韩大哥可愿替我，了结这个叛徒？」" },
+    ],
+    onArrive(s) {
+      State.setFlag("xh_a2_zuoling_done");
+      Engine.meetNpc("sun_menzhu", "隐煞门门主——表面与妙音门是死对头，实则与紫灵联手做局清除叛徒的棋手。");
+    },
+    choices: [
+      {
+        text: "配合紫灵 · 击杀赵峥",
+        hint: "妙音门关系最深 · 客卿长老顺理成章",
+        effect(s) {
+          State.setFlag("xh_zuoling_ally");
+          Engine.writeLedger("xh_zuoling_choice", "蝎岛做局——配合紫灵清理门户、击杀叛徒赵峥，与妙音门结深。");
+          return { text: "你颔首应下。既已看清这局棋，便替她落下这一子——勾结极阴岛的叛徒，留不得。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "质疑紫灵 · 要求解释",
+        hint: "谨慎为先 · 紫灵尊重你的持重",
+        effect(s) {
+          State.setFlag("xh_zuoling_question");
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 2);
+          Engine.writeLedger("xh_zuoling_choice", "蝎岛做局——先质疑紫灵、要她把因由说清，再决意诛赵峥；谨慎持重，紫灵亦尊重。");
+          return { text: "你不急着动手，先要她把前因后果说个明白。紫灵也不恼，将赵峥通敌的证据一一道来——你这才点头。谨慎，是你一贯的活法。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "独走 · 不掺和内部清算",
+        hint: "保持独立 · 后续逃亡难度增（赵峥仍活）",
+        effect(s) {
+          State.setFlag("xh_zuoling_solo");
+          Engine.writeLedger("xh_zuoling_choice", "蝎岛做局——不掺和妙音门内部清算、独善其身，赵峥得以脱身（后续天都炼傀追杀时他将联手追兵）。");
+          return { text: "你摇头——妙音门的家务事，你不愿沾手。紫灵深深看你一眼，也不勉强。赵峥趁这空隙，遁走了。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 2-C·击杀赵峥（锚④续·Combat·配合/质疑径才有·独走 skip）——
+  {
+    id: "xh_a2_zhaozheng",
+    skipIf: (s) => s.flags.xh_zuoling_solo || s.flags.xh_a2_zhaoyu_done,
+    cond: (s) => (s.flags.xh_zuoling_ally || s.flags.xh_zuoling_question) && !s.flags.xh_a2_zhaoyu_done,
+    bgm: "combat",
+    title: "蝎岛 · 困兽赵峥",
+    objTitle: "了结 · 勾结极阴岛的叛徒",
+    objHint: "赵峥被紫灵暗算，护体法宝已裂、真元逆乱——只剩个空架子。但困兽犹斗，不可大意。",
+    text: [
+      { scene: "蝎岛 · 礁石背风处" },
+      "赵峥自知事败，再不掩饰，厉声反扑——可他护体灵光时明时暗，真元逆乱，那身结丹中期的修为已是空壳。",
+      { say: "赵峥", emo: "angry", text: "「你们早有预谋——极阴岛不会放过你们的！」" },
+    ],
+    choices: [
+      { text: "出手 · 了结赵峥", hint: "削弱版恶战 · 困兽犹斗", resolve: "xh_zhaozheng_fight" },
+    ],
+  },
+
+  // —— 节点 2-D·极阴现身（锚⑤·硬锚·观战演出·3 选 1 旁观）——
+  {
+    id: "xh_a2_jiyin",
+    skipIf: (s) => s.flags.xh_a2_jiyin_done,
+    cond: (s) => s.flags.xh_a2_zuoling_done && !s.flags.xh_a2_jiyin_done,
+    bgm: "sorrow",
+    title: "蝎岛 · 极阴现身",
+    objTitle: "元婴之威 · 不可敌",
+    objHint: "一道幽冷身影自天际降临——乌丑。可他身上那股气息，绝非结丹期……极阴祖师，以附身之法借乌丑行事。藏拙，是唯一的活法。",
+    text: [
+      { scene: "蝎岛 · 阴云骤合" },
+      { cam: "zoom", scale: 1.05, ms: 320 },
+      "叛徒既清，众人正欲收兵——海天交界处，一道幽冷身影破空而降。是逆星盟的乌丑。",
+      { say: "乌丑", tone: "苍老阴冷、不似本人", text: "「妙音门的小丫头，倒会做局……可惜，本座要的人，你们动不得。」" },
+      { aside: "那声音……绝不是乌丑本人！苍老、阴冷、煌煌如渊——是元婴！极阴祖师，以附身之法借乌丑的口在说话。孙门主竟被一招活捉。藏拙！这等存在，结丹修士连喘息都是奢侈。" },
+    ],
+    onArrive(s) {
+      State.setFlag("xh_a2_jiyin_done");
+      Engine.meetNpc("jiyin_zushi", "极阴岛岛主、元婴初期顶峰的老怪物——以附身之法借乌丑行事。蝎岛上空一现身，便活捉孙门主，元婴威压煌煌如渊。");
+      Engine.meetNpc("wuchou", "逆星盟黑袍乌丑——此刻成了极阴祖师附身行事的傀儡。");
+    },
+    choices: [
+      {
+        text: "全力藏拙 · 屏息隐匿",
+        hint: "结丹小修的活法——别被元婴神识扫到",
+        effect(s) {
+          s.mood = Math.max(0, (s.mood || 0) - 2);
+          State.setFlag("xh_jiyin_hidden");
+          Engine.writeLedger("xh_jiyin_observe", "蝎岛·极阴现身——全力藏拙屏息，未被元婴神识扫到，悄然退避。");
+          return { text: "你将气息敛到极致，如一粒微尘隐于乱军——极阴的神识扫过，未作停留。藏拙，是凡人韩立刻进骨子里的本能。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "趁乱暗记极阴的手法",
+        hint: "险中取知——对极阴功法有所了解（远期）",
+        effect(s) {
+          s.mood = Math.max(0, (s.mood || 0) - 4);
+          State.setFlag("xh_jiyin_observe_deep");
+          Engine.writeLedger("xh_jiyin_observe", "蝎岛·极阴现身——冒险暗记极阴附身控魂、活捉孙门主的手法路数（远期：对极阴功法有了解）。");
+          return { text: "你冒着被神识扫中的风险，死死记下极阴附身控魂、举手活捉结丹门主的手法。多看一眼是一眼——这等元婴的路数，日后或许用得上。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "立刻催遁术先逃",
+        hint: "保命为先——被威压波及但脱身更快",
+        effect(s) {
+          s.hp = Math.max(1, Math.round(s.hp * 0.95));
+          State.setFlag("xh_jiyin_flee");
+          Engine.writeLedger("xh_jiyin_observe", "蝎岛·极阴现身——不恋战、立刻催遁术先撤，被元婴余威扫得气血一荡，却脱身更快。");
+          return { text: "你不作他想，催动遁术抢先撤离。元婴余威扫过，气血一荡——但你已遁出了那片死域。命，比什么都要紧。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 2-E·逃亡·天都炼傀追杀（锚⑥·硬锚·survive 战）——
+  {
+    id: "xh_a2_taowang",
+    skipIf: (s) => s.flags.xh_a2_taowang_done,
+    cond: (s) => s.flags.xh_a2_jiyin_done && !s.flags.xh_a2_taowang_done,
+    bgm: "combat",
+    title: "蝎岛 · 天都炼傀追杀",
+    objTitle: "逃亡 · 撑到海底遁避",
+    objHint: "杀赵峥惊动了极阴岛，一具结丹中期的天都炼傀循气追来。硬拼无益——撑到白玉蜘蛛吐丝掩护、遁入海底即脱身。",
+    text: [
+      { scene: "蝎岛外海 · 追亡" },
+      "退离蝎岛途中，一具通体玄铁的傀儡循气追来——天都炼傀，结丹中期的追杀利器，循气追命、一步躲不开。",
+      { aside: "硬拼无益。好在白玉蜘蛛尚在身畔——它那漫天蛛丝，足以将这傀儡迟滞片刻。撑住，遁入海底暗流就走得脱。" },
+    ],
+    choices: [
+      { text: "且战且退 · 撑到遁入海底", hint: "survive · 白玉蜘蛛吐丝掩护", resolve: "xh_taowang_fight" },
+    ],
+  },
+
+  // —— 节点 2-F·客卿长老·天雷竹（帆②·地点锚·大件链起点·S2 收口）——
+  {
+    id: "xh_a2_keqing",
+    skipIf: (s) => s.flags.xh_a2_keqing_done,
+    cond: (s) => s.flags.xh_a2_taowang_done && !s.flags.xh_a2_keqing_done,
+    bgm: "town",
+    title: "妙音门 · 客卿长老",
+    objTitle: "客卿 · 天雷竹 · 虚天残图",
+    objHint: "海底遁避一月后，紫灵正式邀你任妙音门客卿长老，以三大神木之一『天雷竹』为报；金魁更赐下『虚天残图』。青竹蜂云剑与虚天殿的引线，齐了。",
+    text: [
+      { scene: "天星城 · 妙音门商会" },
+      "海底遁避一月，风声渐歇。紫灵于商会设宴，郑重邀你正式担任妙音门客卿长老——这一回，是货真价实的名分。",
+      { say: "紫灵", emo: "smile", text: "「蝎岛一事，多谢韩大哥。这份报酬，旁人求都求不来——」她取出一只玉匣，匣中一截青翠竹枝，竹节间隐隐雷纹游走。" },
+      { aside: "天雷竹——界中三大神木之一！这正是青竹蜂云剑的命材。再以小绿瓶催熟为万年金雷竹，那七十二口本命飞剑，便有了根。" },
+      { say: "紫灵", tone: "low", text: "「还有一桩——星宫大长老金魁托我转交。」她又递来一片古图残卷，「虚天残图。三百年一开的虚天殿，要现世了。」" },
+      { aside: "天雷竹、小绿瓶、虚天残图……本命法宝的线索，与那座龙潭虎穴的引线，竟在同一日齐了。只是这天雷竹催熟需时，催熟之前，还有一道红尘劫要渡——那是后话了。" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.give("tianlei_zhu", 1);
+      State.give("xutian_tucan", 1);
+      State.setFlag("xh_a2_keqing_done");
+      State.setFlag("xh_keqing_accept");
+      Engine.writeLedger("xh_tianlei_zhu", "妙音门客卿之报——紫灵赠三大神木『天雷竹』（青竹蜂云剑命材·待小绿瓶催熟为万年金雷竹）；金魁赐『虚天残图』（虚天殿线启动）。大件链与虚天殿引线齐备。");
+      Engine.addMilestone("星海飞驰·客卿长老：天雷竹+虚天残图入手（青竹蜂云剑命材·虚天殿线）", "xinghaifeichi");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "fortune", text: "妙音门：散修韩立受聘为结丹期客卿长老，得赐神木一截。" });
+      s.worldNews.push({ t, kind: "world", text: "星海传闻：三百年一开的『虚天殿』将现世，星宫已暗中遣人勘定方位。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      {
+        text: "接下天雷竹 · 着手催熟",
+        hint: "青竹蜂云剑大件链启动——红尘劫在前（待续）",
+        effect(s) {
+          return { text: "你郑重收下天雷竹与虚天残图。这截神木催熟需以年月计，催熟之前，还有大衍诀三层的红尘劫要渡——本命法宝之路，自此铺开。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "先细问虚天殿的门道",
+        hint: "远方=惦记——多探一分虚实",
+        effect(s) {
+          Engine.writeLedger("xh_xutian_curious", "接天雷竹之余，先向紫灵细问虚天殿门道——虚天殿探索时多一条线索。");
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 1);
+          return { text: "你收下神木，却先就虚天殿多问了几句。紫灵将所知尽数相告：三关、元婴老怪云集、内藏通天灵宝……你默默记下。多知一分，少险一分。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
 ];
 
 window.STORY = STORY;

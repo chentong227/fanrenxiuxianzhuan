@@ -263,6 +263,12 @@ DATA.items = {
   tianleizhu_yujian: { name: "天雷竹·玉简", rarity: "epic", type: "book",
     desc: "乱星海所闻的一枚古玉简，载着青元剑诀十三层全本与『青竹蜂云剑』的炼制之法——须以界中神竹『天雷竹』为材，养成万年金雷竹，方能炼就七十二口本命飞剑、以银月为器灵。眼下材料、火候皆远不能及，先记下这条通天的引线。（青竹蜂云剑·银月·长线钩子·实装留星海飞驰篇）" },
 
+  /* —— 星海飞驰篇·S2 大件链材料/钩子（妙音门客卿之报）—— */
+  tianlei_zhu: { name: "天雷竹", rarity: "legendary", type: "material",
+    desc: "界中三大神木之一，通体青翠、竹节间隐隐有雷纹游走。寻常处千年方得一寸，是青竹蜂云剑的命材。紫灵以妙音门客卿之报相赠——得了它，再以小绿瓶催熟为万年金雷竹，那七十二口本命飞剑便有了根。（青竹蜂云剑·命材·待催熟）" },
+  xutian_tucan: { name: "虚天残图", rarity: "epic", type: "key",
+    desc: "星宫大长老金魁赐下的一片古图残卷，绘着三百年一开的『虚天殿』方位与开启之机。图不全，却已是无数元婴老怪求而不得的引线——内藏上古大能遗宝：虚天鼎、乾蓝冰焰……持此，便有了踏入那座龙潭虎穴的资格。（虚天殿·线启动）" },
+
   ks_chenqiaoqian: { name: "陈家药引", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "chenqiaoqian",
     desc: "陈巧倩从陈家药圃匀来的稀罕药引，寻常炼丹师有价无市。她只淡淡说一句「顺路」，绝口不提坊市归途那一夜的相欠。" },
   ks_wanxiaoshan: { name: "护身符袋", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "wanxiaoshan",

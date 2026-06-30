@@ -4877,6 +4877,136 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  /* ============================================================
+   * 星海飞驰篇 · S2「蝎岛之战」三战（设计 docs/xinghaifeichi-design.md §十·10.2）
+   *   敌人内联装配（仿 showdown/jiuziling 先例·不污染 WORLD.enemies）。
+   *   数值锚定 §八结丹标度：越级大妖 hp520·假丹人修 hp380·寻常妖兽 hp200。
+   * ============================================================ */
+
+  // —— 2-A·蝎岛团战（妙音门 vs 隐煞门·紫灵/妙音门客卿×2/曲魂并肩·群战）——
+  startXhXiedaoFight() {
+    const s = State.data;
+    this._nextFightType = "xh_xiedao";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;   // 团战满血上场
+    // 隐煞门弟子·结丹初期 pack 喽啰（人修·金/阴煞·阵型成网）
+    const dizi = () => ({
+      name: "隐煞门弟子", hp: 160, sense: 13, speed: 15, agility: 12, move: 2, mp: 50,
+      elem: "jin", nature: "human", tactics: "feral", stubborn: false, canFlee: false, armor: 2, formation: "pack",
+      attacks: [
+        { name: "隐煞刀光", dmg: 20, kind: "normal", weight: 12, elem: "jin", range: [1, 2], mp: 4 },
+        { name: "贴身阴斩", dmg: 26, kind: "charge", weight: 5, aim: "cell", lunge: true, range: [1, 3], mp: 6, elem: "jin" },
+      ],
+      reward: {}, namedLoot: null,
+    });
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    // 紫灵·妙音门少主（友军侧·音攻·结丹·调度有方）
+    sides.push({ id: "zi_ling", name: "紫灵", kind: "ally", art: "zi_ling",
+      hp: 150, hpMax: 150, guard: 0.4, elem: "shui",
+      persona: { aggr: 5, prot: 5, kite: 4 },
+      moves: [
+        { name: "妙音裂魂", dmg: 16, weight: 14, elem: "jin", range: [1, 4], line: "紫灵素手抚弦，一缕妙音裂空而至：「韩大哥只管放手，这些杂鱼交给妙音门！」" },
+        { name: "清音定神", dmg: 6, weight: 5, elem: "shui", range: [1, 3], line: "紫灵一声清越长音荡开，替你卸去缠身的隐煞之气" },
+      ] });
+    // 妙音门客卿×2（正面牵制·结丹·prot 偏高）
+    const keqing = (nm) => ({ id: "miaoyin_keqing_" + nm, name: "妙音门客卿·" + nm, kind: "ally", art: null,
+      hp: 130, hpMax: 130, guard: 0.45, elem: "shui",
+      persona: { aggr: 6, prot: 4, kite: 2 },
+      moves: [
+        { name: "音波荡", dmg: 14, weight: 14, elem: "shui", range: [1, 3], line: "妙音门客卿一道音波层层荡开，逼住隐煞门的攻势" },
+      ] });
+    sides.push(keqing("甲")); sides.push(keqing("乙"));
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [dizi(), dizi(), dizi()],
+      maxRounds: 22, W: 15, lanes: 3, sides,
+      playerPos: 4, enemyPos: 8,
+    });
+    this._combatMeta = { type: "xh_xiedao" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("妙音门两位客卿正面牵制，紫灵居中调度，你与曲魂自侧翼突入——隐煞门弟子结阵迎来。乱军中，赵峥的身影一闪，竟趁隙往后退去……");
+    this.log("蝎岛之战开打——妙音门强攻隐煞门据点，你随紫灵一侧突入。清开隐煞门弟子的阵列！（留意那个'撤退'的赵峥——此战另有玄机）", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 2-C·击杀赵峥（被紫灵暗算削弱·护体寸裂·结丹中期→初期·必胜恶战）——
+  startXhZhaozhengFight() {
+    const s = State.data;
+    this._nextFightType = "xh_zhaozheng";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    // 赵峥：结丹中期·被暗算削弱（真元逆乱·护体法宝寸裂）→ hp/armor 大降·困兽犹斗
+    const zhao = {
+      name: "赵峥", hp: 240, sense: 15, speed: 14, agility: 9, move: 1, mp: 60, qiLayer: 18,
+      elem: "jin", nature: "human", tactics: "guarded", stubborn: true, canFlee: false, armor: 1, boss: true,
+      introNote: "赵峥被紫灵暗算，护体法宝已裂、真元逆乱——这身结丹中期的修为只剩个空架子。但困兽犹斗、阴招狠辣，仍不可大意。",
+      attacks: [
+        { name: "逆乱掌风", dmg: 22, kind: "normal", weight: 12, elem: "jin", range: [1, 2], mp: 5 },
+        { name: "拼死阴斩", dmg: 30, kind: "charge", weight: 6, aim: "cell", lunge: true, range: [1, 3], mp: 8, elem: "jin" },
+      ],
+      reward: { lingshi: 16 }, namedLoot: null,
+    };
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [zhao], maxRounds: 18, W: 11, lanes: 2, sides,
+      playerPos: 4, enemyPos: 7,
+    });
+    this._combatMeta = { type: "xh_zhaozheng" };
+    s.combat = true;
+    this._combat.startRound();
+    this.log("赵峥护体法宝寸裂、真元逆乱——紫灵的局已成。困兽犹斗，了结这个勾结极阴岛的叛徒！", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 2-E·逃亡·天都炼傀追杀（objective:survive 6回合·白玉蜘蛛吐丝掩护·撑到海底遁避）——
+  startXhTaowangFight() {
+    const s = State.data;
+    this._nextFightType = "xh_taowang";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;   // 逃亡满血上场（避免残血死螺）
+    const solo = !!s.flags.xh_zuoling_solo;   // 独走分支：未除赵峥→追兵更凶（+1 喽啰）
+    // 天都炼傀·结丹中期·追击型傀儡（construct/百毒不侵·track 招式一步躲不开）
+    const liankui = {
+      name: "天都炼傀", hp: 460, sense: 16, speed: 18, agility: 13, move: 3, mp: 90, qiLayer: 18,
+      elem: "jin", nature: "corpse", tactics: "feral", stubborn: true, canFlee: false, armor: 6, boss: true,
+      introNote: "天都炼傀乃结丹中期的追击傀儡——尸傀死物、百毒不侵，「循气追命」一步躲不开。它非要不可，硬拼无益；撑到白玉蜘蛛吐丝掩护，遁入海底即脱身。",
+      attacks: [
+        { name: "循气追命", dmg: 34, kind: "charge", weight: 12, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 10, elem: "jin" },
+        { name: "傀儡铁臂", dmg: 26, kind: "normal", weight: 9, range: [1, 1], elem: "jin" },
+        { name: "锁魂钢索", dmg: 22, kind: "pierce", weight: 7, range: [1, 3], elem: "jin", mp: 6 },
+      ],
+      reward: {}, namedLoot: null,
+    };
+    const enemies = [liankui];
+    if (solo) enemies.push({
+      name: "隐煞门追兵", hp: 160, sense: 13, speed: 15, agility: 12, move: 2, mp: 50,
+      elem: "jin", nature: "human", tactics: "feral", canFlee: false, armor: 2, formation: "pack",
+      attacks: [{ name: "隐煞刀光", dmg: 20, kind: "normal", weight: 12, elem: "jin", range: [1, 2], mp: 4 }],
+      reward: {}, namedLoot: null,
+    });
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    // 白玉蜘蛛·掩护脱身（beast 侧·吐丝迟滞·低战·prot 拉满）
+    sides.push({ id: "baiyu_zhizhu_aid", name: "白玉蜘蛛", kind: "beast", art: null,
+      hp: 90, hpMax: 90, guard: 0.5, elem: "tu",
+      persona: { aggr: 2, prot: 8, kite: 5 },
+      moves: [
+        { name: "缚仙蛛丝", dmg: 6, weight: 16, elem: "tu", range: [1, 4], line: "白玉蜘蛛吐出漫天银丝，将天都炼傀的追势死死迟滞——「快走！这边我挡着！」" },
+      ] });
+    this._combat = new CombatAPI.Combat({
+      player, enemies,
+      objective: { kind: "survive", rounds: 6,
+        winLog: "白玉蜘蛛漫天蛛丝迟滞了追兵那一瞬——你趁隙遁入海底暗流，天都炼傀的循气追命被蛛丝缠在身后。脱身了！" },
+      maxRounds: 6, W: 15, lanes: 2, sides,
+      playerPos: 4, enemyPos: 8,
+    });
+    this._combatMeta = { type: "xh_taowang" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("【逃亡】天都炼傀循气追命、一步躲不开——硬拼无益。撑过 6 回合，白玉蜘蛛吐丝掩护，你便能遁入海底脱身！");
+    this.log(`天都炼傀结丹中期、专修追击之术，杀赵峥后循气追来。${solo ? "你未除赵峥，他竟联了隐煞门追兵一道压来——" : ""}硬拼无益，撑到白玉蜘蛛吐丝掩护、遁入海底即可。`, "bad");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -6008,6 +6138,64 @@ const Engine = {
         s.pendingEvent = "starsea_a3_waihai";
         this._retryAfterLoss = "starsea_a3_waihai";
       }
+    } else if (meta.type === "xh_xiedao") {
+      // 星海飞驰·2-A 蝎岛团战（妙音门 vs 隐煞门·紫灵/客卿×2/曲魂并肩）——胜→紫灵做局（2-B）
+      if (win) {
+        State.setFlag("xh_a2_xiedao_done");
+        this.writeLedger("xh_a2_xiedao_won", "蝎岛之战——随妙音门强攻隐煞门据点，紫灵居中调度、两客卿正面牵制，韩立携曲魂自侧翼荡平隐煞门弟子。乱军中赵峥趁隙'撤退'，玄机已伏。");
+        this.addMilestone("星海飞驰·蝎岛团战：荡平隐煞门弟子", "xinghaifeichi");
+        this.log("隐煞门的阵列被生生撕开、溃散——蝎岛之战，妙音门胜了这一场。可那'撤退'的赵峥，紫灵似乎并不急着追……", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_xh_xiedao = (s.flags.losses_xh_xiedao || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xh_xiedao) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`隐煞门弟子结阵死缠，一时撕不开口子——你与曲魂退半步、重整攻势（再战伤害+${bonus}%）。妙音门两位客卿还在牵制，再压上去！`, "bad");
+        s.pendingEvent = "xh_a2_xiedao";
+        this._retryAfterLoss = "xh_a2_xiedao";
+      }
+    } else if (meta.type === "xh_zhaozheng") {
+      // 星海飞驰·2-C 击杀赵峥（削弱版叛徒）——胜→极阴现身（2-D）
+      if (win) {
+        State.setFlag("xh_a2_zhaoyu_done");
+        this.meetNpc("zhao_zheng", "妙音门勾结极阴岛的叛徒客卿——被紫灵设局暗算削弱，伏诛于韩立之手。");
+        this.writeLedger("xh_zhaozheng_slain", "蝎岛·诛赵峥——紫灵的局已成，被暗算削弱、护体寸裂的赵峥困兽犹斗仍难逃一死。妙音门内勾结极阴岛的叛徒，清了一个。");
+        this.addMilestone("星海飞驰·诛赵峥（紫灵做局收口）", "xinghaifeichi");
+        this.log("赵峥逆乱的真元再也撑不住，颓然倒地——这个勾结极阴岛的叛徒，了结了。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_xh_zhaozheng = (s.flags.losses_xh_zhaozheng || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xh_zhaozheng) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`赵峥困兽犹斗、阴招狠辣，一时没能竟全功——你调息再上（再战伤害+${bonus}%）。他护体已裂，只是空架子，咬住他！`, "bad");
+        s.pendingEvent = "xh_a2_zhaozheng";
+        this._retryAfterLoss = "xh_a2_zhaozheng";
+      }
+    } else if (meta.type === "xh_taowang") {
+      // 星海飞驰·2-E 逃亡·天都炼傀追杀（survive 6·白玉蜘蛛掩护）——胜→客卿长老·天雷竹（2-F）
+      if (win) {
+        State.setFlag("xh_a2_taowang_done");
+        this.writeLedger("xh_baiyu_zhizhu_use", "蝎岛遁逃——杀赵峥后被结丹中期天都炼傀循气追命，硬拼无益；撑到白玉蜘蛛吐丝迟滞那一瞬，韩立携曲魂遁入海底暗流脱身。");
+        this.addMilestone("星海飞驰·逃亡：白玉蜘蛛掩护·遁入海底", "xinghaifeichi");
+        this.log("天都炼傀的循气追命被漫天蛛丝缠住那一瞬，你已遁入海底暗流——脱身了。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_xh_taowang = (s.flags.losses_xh_taowang || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xh_taowang) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`天都炼傀追得太急，白玉蜘蛛的蛛丝还差一口气没缠死它——你与曲魂再咬牙撑一阵（再战伤害+${bonus}%）。撑到它被缠住，就走得脱！`, "bad");
+        s.pendingEvent = "xh_a2_taowang";
+        this._retryAfterLoss = "xh_a2_taowang";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -6279,6 +6467,9 @@ const Engine = {
       starsea_yingli_fight:    function () { this.startStarseaYingliFight(); },
       starsea_jiuziling_fight: function () { this.startStarseaJiuzilingFight(); },
       starsea_waihai_fight:    function () { this.startStarseaWaihaiFight(); },
+      xh_xiedao_fight:         function () { this.startXhXiedaoFight(); },
+      xh_zhaozheng_fight:      function () { this.startXhZhaozhengFight(); },
+      xh_taowang_fight:        function () { this.startXhTaowangFight(); },
     });
   },
   hasFight(id) { return !!(id && this._fightRoutes()[id]); },
@@ -6507,6 +6698,11 @@ const Engine = {
 
     // —— 初入星海篇·第三幕战斗派发（增量6·外星海致富·噬金虫四用法实战）——
     if (choice.resolve === "starsea_waihai_fight")   { s.pendingEvent = null; this.startStarseaWaihaiFight();   return; }
+
+    // —— 星海飞驰篇·S2 蝎岛之战战斗派发 ——
+    if (choice.resolve === "xh_xiedao_fight")    { s.pendingEvent = null; this.startXhXiedaoFight();    return; }
+    if (choice.resolve === "xh_zhaozheng_fight") { s.pendingEvent = null; this.startXhZhaozhengFight(); return; }
+    if (choice.resolve === "xh_taowang_fight")   { s.pendingEvent = null; this.startXhTaowangFight();   return; }
 
     // 普通推进
     s.pendingEvent = null;
