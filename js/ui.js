@@ -1297,7 +1297,9 @@ const UI = {
     const far = this.el("story-far");
     if (url) {
       bg.style.backgroundImage = `url("${url}")`; bg.classList.add("on");
-      if (far) far.style.backgroundImage = `url("${url}")`;
+      // far=同图·模糊压暗版：竖屏 contain 呈现时填满信箱边带（杜绝方图 _p 被 cover 裁半）；
+      //   桌面横屏 story-bg 仍 cover 全盖、far 被遮＝零观感变化。
+      if (far) { far.style.backgroundImage = `url("${url}")`; far.classList.add("on"); }
     } else {
       bg.style.backgroundImage = ""; bg.classList.remove("on");
       if (far) { far.style.backgroundImage = ""; far.classList.remove("on"); }

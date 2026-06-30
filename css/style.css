@@ -4040,6 +4040,12 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 /* kenBurns 收敛到 1.04→1.0：保留推镜电影感，终态回到原始分辨率（不糊） */
 .story-bg.on { opacity: 1; animation: kenBurns 14s ease-out forwards; }
 @keyframes kenBurns { from { transform: scale(1.04); } to { transform: scale(1.0); } }
+/* 手机/竖屏·CG 信箱式呈现：完整图 contain 不裁，story-far（同图·模糊压暗版）填满边带。
+   根因：批量 _p「竖版」多为方图 1024²，超窄竖屏（如 430×932）用 cover 居中会裁掉近半宽度、主体常被切；
+   contain＋自身模糊填充＝全貌保留、无黑条、留白氛围。仅竖屏生效，桌面横屏 cover 不变（far 被全盖＝零回归）。 */
+@media (orientation: portrait) {
+  .story-bg { background-size: contain; }
+}
 .story-scrim {
   position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(12,10,8,.55) 0%, rgba(12,10,8,.1) 35%, rgba(12,10,8,.4) 70%, rgba(12,10,8,.92) 100%);
