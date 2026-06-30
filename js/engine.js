@@ -4653,7 +4653,10 @@ const Engine = {
     });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
     this._combat = new CombatAPI.Combat({
-      player, enemies: [enemy], fieldCycle, maxRounds: 14, W: 13, lanes: 2, sides,
+      // v266：缩开局间距（玩家 pos3·敌 pos7·gap4＝近4格内）——落海绝境是"被扑求生"，
+      //   张力来自海妖逼身、非前几回合空走；曲魂(pos4)并肩贴前。
+      player, enemies: [enemy], fieldCycle, maxRounds: 14, W: 11, lanes: 2, sides,
+      playerPos: 3, enemyPos: 7,
     });
     this._combatMeta = { type: "ss_yaoshou" };
     s.combat = true;
@@ -4681,7 +4684,10 @@ const Engine = {
       reward: { lingshi: 3 }, namedLoot: null,
     };
     this._combat = new CombatAPI.Combat({
+      // v266：擂台藏拙纯演出战——缩开局间距（玩家 pos4·敌 pos7·gap3＝即可接战），
+      //   砍掉"走两步才打到"的空转，让"假苦战"的演出立刻开场。
       player, enemies: [foe], maxRounds: 12, W: 11, lanes: 2, sides: [],
+      playerPos: 4, enemyPos: 7,
     });
     this._combatMeta = { type: "ss_leitai" };
     s.combat = true;
@@ -4846,7 +4852,10 @@ const Engine = {
     });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
     this._combat = new CombatAPI.Combat({
-      player, enemies: [yao], waves: [[yao2]], fieldCycle, maxRounds: 20, W: 13, lanes: 2, sides,
+      // v266：外海致富猎杀战——缩开局间距（玩家 pos3·敌 pos7·gap4），引妖即战、
+      //   噬金虫四用法立刻上桌，不空走（致富战节奏要爽快）。
+      player, enemies: [yao], waves: [[yao2]], fieldCycle, maxRounds: 20, W: 11, lanes: 2, sides,
+      playerPos: 3, enemyPos: 7,
     });
     this._combatMeta = { type: "ss_waihai" };
     s.combat = true;
