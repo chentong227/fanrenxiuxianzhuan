@@ -20,7 +20,8 @@
         "browser_evaluate",
         "browser_wait_for",
         "browser_console_messages",
-        "browser_close"
+        "browser_close",
+        "browser_tabs"
       ]
     }
   }

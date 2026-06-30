@@ -2676,18 +2676,31 @@ const UI = {
       { title: "青竹蜂云剑 · 大庚剑阵", done: () => false, far: true },
       { title: "元婴之路 · 问鼎天南", done: () => false, far: true },
     ];
-    const aheadHtml = AHEAD.map(a => {
-      const ok = a.done();
+    const aheadDone = AHEAD.map(a => !!a.done());
+    // 单调性守卫：这些是大致按时序的里程碑——达成了后程，必然走过前程。
+    // 反向回填：任一后项已达成，则其之前各项一并视作已达成（杜绝"再别天南✦ 却 魔道争锋○"的乱序）。
+    for (let i = aheadDone.length - 2; i >= 0; i--) {
+      if (aheadDone[i + 1]) aheadDone[i] = true;
+    }
+    const aheadHtml = AHEAD.map((a, i) => {
+      const ok = aheadDone[i];
       return `<div class="chron-item ${ok ? 'breakthrough' : ''}" style="${ok ? '' : 'opacity:.55'}">
         ${ok ? "✦ " : "○ "}<b>${a.title}</b>${ok ? '<span style="color:var(--jade-bright);font-size:11px;margin-left:6px">已达成</span>' : (a.far ? '<span style="color:var(--ink-faint);font-size:11px;margin-left:6px">前路遥遥</span>' : '')}
       </div>`;
     }).join("");
     // 风云榜：彩霞山一带的座次（石碑）——名声是挣来的，名字是事迹堆出来的
+    // 自身头衔随境界/篇章刷新（杜绝"金丹大成仍挂七玄门·药师"的过时名牌·上层惦记须随进度刷新）
+    const meTier = (State.realm && State.realm()) ? State.realm().tier : "qi";
+    const meTitle = s.flags.arc1_complete
+      ? (meTier === "core" ? "金丹散修 · 江湖称尊" : meTier === "foundation" ? "筑基散修 · 游历天南" : "游方散修 · 离了彩霞山")
+      : (s.flags.is_modafu ? "七玄门 · 药师" : "七玄门 · 记名弟子");
+    // 离了彩霞山后，这方石碑只是"当年旧座次"——明牌这块榜的时效，不冒充当下天下名次
+    const boardStale = !!s.flags.arc1_complete;
     const deadIds = { jinguang: s.flags.jinguang_dead, modafu: s.flags.modafu_dead };
     let board = (typeof WORLD !== "undefined" && WORLD.fameBoard ? WORLD.fameBoard : []).map(f => ({
       name: f.name, title: f.title, fame: f.fame, note: f.note, dead: !!deadIds[f.id],
     }));
-    if ((s.fame || 0) > 0) board.push({ name: s.name, title: "七玄门 · 药师", fame: s.fame, note: "事迹渐传，名声渐起。", me: true });
+    if ((s.fame || 0) > 0) board.push({ name: s.name, title: meTitle, fame: s.fame, note: "事迹渐传，名声渐起。", me: true });
     board.sort((a, b) => (b.fame - a.fame));
     const boardHtml = board.map((f, i) => `
       <div class="fame-row ${f.me ? 'me' : ''} ${f.dead ? 'dead' : ''}">
@@ -2709,8 +2722,9 @@ const UI = {
 
     this.openModal(`
       <h2>风云录 · 道途</h2>
-      <h3 class="panel-title" style="margin-top:8px">风云榜（彩霞山座次）</h3>
+      <h3 class="panel-title" style="margin-top:8px">风云榜（彩霞山座次${boardStale ? " · 旧档" : ""}）</h3>
       <div class="fame-stone">${boardHtml}</div>
+      ${boardStale ? `<p style="color:var(--ink-faint);font-size:12px;margin:4px 0 0">这方石碑刻的是当年彩霞山一带的座次——你早已远行，天下之大，另有排场。</p>` : ""}
       ${myFameNote}
       ${(() => { const te = (typeof Engine !== "undefined" && Engine.temperamentEcho) ? Engine.temperamentEcho() : null; return te ? `<h3 class="panel-title" style="margin-top:8px">心性 · 你是谁</h3><div class="temperament-echo temperament-${te.tone}">${te.text}</div>` : ""; })()}
       <h3 class="panel-title" style="margin-top:8px">名场面回廊（重温关键演出）</h3>
