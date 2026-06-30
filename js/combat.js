@@ -1148,7 +1148,9 @@
             if (steps > 0) this._log(`【护送】小紫灵距撤离点还差${steps}步——清开追兵护她过去！或再撑 ${left} 回合由曲魂兜底。`);
           }
         } else if (left > 0) {
-          this._log(`【拖时布阵】师兄妹与傀儡蜥蜴正催动「真·颠倒五行阵」——再撑 ${left} 回合，阵即可成！`);
+          // 进度提示：objective.holdLog(left) 自定义（皇宫拖时布阵专属台词），否则通用死守提示
+          this._log(this.objective.holdLog ? this.objective.holdLog(left)
+            : `【死守】再撑 ${left} 回合——撑过去，便是你的机会！`);
         }
       }
       // —— 护送/保护目标进度提示（objective:protect）——

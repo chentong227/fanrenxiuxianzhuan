@@ -4334,6 +4334,7 @@ const Engine = {
       player,
       enemies: [boss],
       objective: { kind: "survive", rounds: 6,
+        holdLog: (left) => `【拖时布阵】师兄妹与傀儡蜥蜴正催动「真·颠倒五行阵」——再撑 ${left} 回合，阵即可成！`,
         winLog: "「阵成了——！」最后一道阵旗插定，整座广场五行光华暴涨——总算拖到了这一刻！" },
       maxRounds: 6,
       W: 15, lanes: 2,
