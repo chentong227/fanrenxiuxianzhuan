@@ -4791,9 +4791,9 @@ const Engine = {
       reward: {}, namedLoot: null,
     });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
-    // 小紫灵·护送对象（VIP·不参战·移动由 _afterEnemyTick 接管）
+    // 小紫灵·护送对象（VIP·不参战·移动由 _afterEnemyTick 接管）——hp 抬至 170 撑住护送（防被古长老+黑袍集火秒杀）
     sides.push({ id: "wang_ning", name: "小紫灵", kind: "ally", art: "wang_ning",
-      hp: 50, hpMax: 50, guard: 0, elem: "shui",
+      hp: 170, hpMax: 170, guard: 0.25, elem: "shui",
       noAct: true, persona: { aggr: 0, prot: 0, kite: 0 }, moves: [],
     });
     this._combat = new CombatAPI.Combat({
@@ -4836,7 +4836,7 @@ const Engine = {
     this._combat._enemyTargetBias = function(e) {
       const zl = this.sides.find(sd => sd.id === "wang_ning");
       if (!zl || zl.hp <= 0) return null;
-      if (this.dist(e, zl) <= 4) return zl;
+      if (this.dist(e, zl) <= 2) return zl;   // 仅贴近(≤2格)的追兵扑紫灵——给玩家挡线/清场空间
       return null;
     };
     this._combatMeta = { type: "ss_jiuziling" };
