@@ -3565,6 +3565,13 @@ const Engine = {
         if (!spells.includes(sk)) spells.push(sk);
       });
     }
+    // 青竹蜂云剑·本命法宝（星海飞驰篇·S5 炼成后持有即入战）——本命飞剑 qingzhu_jian + 辟邪神雷二式
+    // （雷遁 leidun 需御「风雷翅」方可施展·留外海风云篇；此处不注入）
+    if (State.count("qingzhu_fengyun_jian") > 0) {
+      ["qingzhu_jian", "shenlei_pi", "shenlei_fujian"].forEach(sk => {
+        if (!spells.includes(sk)) spells.push(sk);
+      });
+    }
     // 越阶催动（跨大境界）：driveRealm > realmTier → 灵力消耗倍增（杀手锏设计）
     // 连续衰减：含小境界（初期/中期/后期/大圆满），大圆满接近达标→灵力倍率更低
     const pTier = Chapters.realmTier();
@@ -3649,6 +3656,7 @@ const Engine = {
       charges: (() => {
         const ch = {};
         if (State.count("shijinchong") > 0) ch.shijinchong = { name: "噬金虫", cur: 6, max: 6 };
+        if (State.count("qingzhu_fengyun_jian") > 0) ch.shenlei = { name: "辟邪神雷", cur: 9, max: 9 };
         return Object.keys(ch).length ? ch : null;
       })(),
     });

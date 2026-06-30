@@ -5851,14 +5851,14 @@ const STORY = [
     bgm: "town",
     title: "妙音门 · 客卿长老",
     objTitle: "客卿 · 天雷竹 · 虚天残图",
-    objHint: "海底遁避一月后，紫灵正式邀你任妙音门客卿长老，以三大神木之一『天雷竹』为报；金魁更赐下『虚天残图』。青竹蜂云剑与虚天殿的引线，齐了。",
+    objHint: "海底遁避一月后，紫灵正式邀你任妙音门客卿长老，以三大神木之一『天雷竹』为报；又将金魁因蝎岛之功赐予她的『虚天残图』取出，邀你同探。青竹蜂云剑与虚天殿的引线，齐了。",
     text: [
       { scene: "天星城 · 妙音门商会" },
       "海底遁避一月，风声渐歇。紫灵于商会设宴，郑重邀你正式担任妙音门客卿长老——这一回，是货真价实的名分。",
       { say: "紫灵", emo: "smile", text: "「蝎岛一事，多谢韩大哥。这份报酬，旁人求都求不来——」她取出一只玉匣，匣中一截青翠竹枝，竹节间隐隐雷纹游走。" },
       { aside: "天雷竹——界中三大神木之一！这正是青竹蜂云剑的命材。再以小绿瓶催熟为万年金雷竹，那七十二口本命飞剑，便有了根。" },
-      { say: "紫灵", tone: "low", text: "「还有一桩——星宫大长老金魁托我转交。」她又递来一片古图残卷，「虚天残图。三百年一开的虚天殿，要现世了。」" },
-      { aside: "天雷竹、小绿瓶、虚天残图……本命法宝的线索，与那座龙潭虎穴的引线，竟在同一日齐了。只是这天雷竹催熟需时，催熟之前，还有一道红尘劫要渡——那是后话了。" },
+      { say: "紫灵", tone: "low", text: "「还有一桩——蝎岛清查叛徒之功，金魁大长老赐了我一片『虚天残图』。」她将残卷轻轻推到你面前，「三百年一开的虚天殿要现世了……韩大哥，可愿与我同探？」" },
+      { aside: "原来这虚天残图，是紫灵从金魁处得来的赏赐——她竟愿与你共此通天之线。天雷竹、小绿瓶、虚天残图……本命法宝的线索，与那座龙潭虎穴的引线，竟在同一日齐了。只是这天雷竹催熟需时，催熟之前，还有一道红尘劫要渡——那是后话了。" },
     ],
     onArrive(s) {
       s.location = "tianxing_city";
@@ -5866,12 +5866,12 @@ const STORY = [
       State.give("xutian_tucan", 1);
       State.setFlag("xh_a2_keqing_done");
       State.setFlag("xh_keqing_accept");
-      Engine.writeLedger("xh_tianlei_zhu", "妙音门客卿之报——紫灵赠三大神木『天雷竹』（青竹蜂云剑命材·待小绿瓶催熟为万年金雷竹）；金魁赐『虚天残图』（虚天殿线启动）。大件链与虚天殿引线齐备。");
-      Engine.addMilestone("星海飞驰·客卿长老：天雷竹+虚天残图入手（青竹蜂云剑命材·虚天殿线）", "xinghaifeichi");
+      Engine.writeLedger("xh_tianlei_zhu", "妙音门客卿之报——紫灵赠三大神木『天雷竹』（青竹蜂云剑命材·待小绿瓶催熟为万年金雷竹）；又将金魁因蝎岛清查叛徒之功赐予她的『虚天残图』与韩立共探（残图源出金魁→紫灵→共享·非金魁直授韩立）。大件链与虚天殿引线齐备。");
+      Engine.addMilestone("星海飞驰·客卿长老：天雷竹入手·与紫灵共探虚天殿（虚天残图源出金魁赐紫灵）", "xinghaifeichi");
       s.worldNews = s.worldNews || [];
       const t = `第${s.year}年${s.month}月`;
       s.worldNews.push({ t, kind: "fortune", text: "妙音门：散修韩立受聘为结丹期客卿长老，得赐神木一截。" });
-      s.worldNews.push({ t, kind: "world", text: "星海传闻：三百年一开的『虚天殿』将现世，星宫已暗中遣人勘定方位。" });
+      s.worldNews.push({ t, kind: "world", text: "星海传闻：三百年一开的『虚天殿』将现世，星宫已暗中遣人勘定方位、赐图于功臣。" });
       if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
     },
     choices: [
@@ -5890,6 +5890,299 @@ const STORY = [
           Engine.writeLedger("xh_xutian_curious", "接天雷竹之余，先向紫灵细问虚天殿门道——虚天殿探索时多一条线索。");
           s.mood = Math.min(s.moodMax, (s.mood || 0) + 1);
           return { text: "你收下神木，却先就虚天殿多问了几句。紫灵将所知尽数相告：三关、元婴老怪云集、内藏通天灵宝……你默默记下。多知一分，少险一分。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+  // —— 节点 3-0·天雷竹催熟（帆③→锚·小绿瓶催熟天雷竹→万年金雷竹·叙事时间压缩）——
+  {
+    id: "xh_a3_cuishu",
+    skipIf: (s) => s.flags.xh_a3_cuishu_done,
+    cond: (s) => s.flags.xh_a2_keqing_done && !s.flags.xh_a3_cuishu_done,
+    bgm: "journey",
+    title: "洞府 · 催熟天雷竹",
+    objTitle: "小绿瓶 · 万年金雷竹",
+    objHint: "天雷竹催熟需以年月计——所幸你有那只七玄门带出的小绿瓶。日夜以其灵液温养，催数十年之功于数载，方得『万年金雷竹』，青竹蜂云剑的成材。",
+    text: [
+      { scene: "天星城 · 洞府静室" },
+      { cam: "zoom", scale: 1.04, ms: 300 },
+      "你将天雷竹移入洞府静室，取出那只伴你半生的小绿瓶——自青牛镇墨大夫处得来的至宝，催灵第一神物。",
+      "一滴灵液落下，天雷竹便贪婪地舒展开来；日夜温养，数载光阴压着数十年之功，那截青翠竹枝一寸寸转作流金，竹身雷纹奔涌如活物。",
+      { fx: "material", at: "center", elem: "mu", ms: 600 },
+      { sfx: "success" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「万年金雷竹……成了。七十二口本命飞剑的料，齐了。」" },
+      { aside: "可金雷竹虽熟，炼剑却还须再等——大衍诀三层未圆，神识不足以同时驭使七十二口飞剑。那道『红尘劫』，是绕不过去的关。" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a3_cuishu_done");
+      if (State.count("tianlei_zhu") > 0) State.take("tianlei_zhu", 1);
+      State.give("jinleizhu", 1);
+      s.year += 5; s.age = (s.age || 0) + 5;
+      Engine.writeLedger("xh_jinleizhu", "以小绿瓶灵液催熟天雷竹·数载温养得『万年金雷竹』（青竹蜂云剑成材）。炼剑尚须渡大衍诀三层红尘劫——神识圆满方可驭七十二剑。");
+      Engine.addMilestone("星海飞驰·万年金雷竹炼成（青竹蜂云剑成材·待红尘劫后开炉）", "xinghaifeichi");
+    },
+    choices: [
+      { text: "金雷竹既成——去渡那道红尘劫", hint: "大衍诀三层·入世修心（待续）", resolve: "advance" },
+    ],
+  },
+
+  // —— 节点 4-0·红尘劫·入世（锚⑦·独占玩法开场·青竹小轩开张）——
+  {
+    id: "xh_a3_hongchen_open",
+    skipIf: (s) => s.flags.xh_a3_hongchen_open_done,
+    cond: (s) => s.flags.xh_a3_cuishu_done && !s.flags.xh_a3_hongchen_open_done,
+    bgm: "daily",
+    title: "红尘劫 · 青竹小轩",
+    objTitle: "入世修心 · 开张",
+    objHint: "大衍诀三层须渡红尘劫——非闭关可成，唯入世可破。你在天星城凡人区盘下一间小铺，唤作『青竹小轩』，卖些符箓丹药给凡人。人间疾苦，皆是修行。",
+    text: [
+      { scene: "天星城 · 凡人坊巷" },
+      "大衍诀三层的修炼之法，玄之又玄：不在闭门苦参，而在入世历劫——所谓『红尘劫』，要你于市井烟火里照见人心、磨砺道念。",
+      "你寻了天星城凡人区一处僻静街角，盘下一间小铺，挂上『青竹小轩』的幌子。柜上摆些最浅近的符箓、丹药，卖给那些连修士都算不上的凡人。",
+      { say: "韩立", tone: "low", text: "「修了这些年仙……倒是头一回，这样近地看着凡人的日子。」" },
+      { aside: "青牛镇的爹娘、墨大夫、七玄门……那些尘封的旧影，竟在这市井烟火里一一浮了上来。这一关，渡的不是劫，是自己的心。" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a3_hongchen_open_done");
+      Engine.writeLedger("xh_hongchen_open", "红尘劫起——天星城凡人区开『青竹小轩』，入世修心以渡大衍诀三层。");
+    },
+    choices: [
+      { text: "开张——看一看这红尘众生", hint: "入世修心，照见人心", resolve: "advance" },
+    ],
+  },
+
+  // —— 节点 4-1·红尘小故事·情侣定情符（凡人小故事①·帮/不帮·心境）——
+  {
+    id: "xh_a3_hc_couple",
+    skipIf: (s) => s.flags.xh_a3_hc_couple_done,
+    cond: (s) => s.flags.xh_a3_hongchen_open_done && !s.flags.xh_a3_hc_couple_done,
+    bgm: "daily",
+    title: "青竹小轩 · 一对凡人",
+    objTitle: "红尘 · 定情符",
+    objHint: "一对衣着寒素的凡人男女走进小轩，怯生生地问：可有保平安的符箓？女子要远嫁，男子凑不齐聘礼，只想求一道符，求个心安。",
+    text: [
+      { scene: "青竹小轩 · 柜前" },
+      "一对凡人男女站在柜前，男的攥着几枚铜板，女的低着头。「先生……可有保平安的符？她要远嫁了，我……我只想她路上平安。」",
+      { aside: "几枚铜板，连一张最浅的平安符都不够。可那男子的眼神，让你想起很多年前，也曾有人那样攥着几块干粮，想给家里挣个好日子。" },
+    ],
+    onArrive(s) { State.setFlag("xh_a3_hc_couple_done"); },
+    choices: [
+      {
+        text: "送他一道平安符",
+        hint: "举手之劳——心境+",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 4);
+          Engine.writeLedger("hongchen_helped_couple", "红尘劫·赠凡人情侣平安符——举手之善，照见自己当年那点微末心愿。");
+          return { text: "你随手画了道平安符递过去，分文未取。那男子愣住，反复道谢，女子的眼圈红了。门外天光正好——这一道符，渡的是你自己的心。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "按规矩收钱·分文不取不合店规",
+        hint: "公道买卖——无对错",
+        effect(s) {
+          Engine.writeLedger("hongchen_helped_couple", "红尘劫·凡人情侣无力购符——你按店规未予施舍，公道买卖，各取所需。");
+          return { text: "你照实说了价。那男子默然把铜板收回，拉着女子讪讪退去。买卖本无错，可望着那对背影，你心里到底空落了一下。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 4-2·红尘小故事·老者求延寿（凡人小故事②·呼应墨彩环·仙凡有别）——
+  {
+    id: "xh_a3_hc_elder",
+    skipIf: (s) => s.flags.xh_a3_hc_elder_done,
+    cond: (s) => s.flags.xh_a3_hc_couple_done && !s.flags.xh_a3_hc_elder_done,
+    bgm: "sorrow",
+    title: "青竹小轩 · 白发老者",
+    objTitle: "红尘 · 求一道延寿符",
+    objHint: "一位白发老者颤巍巍进门，求一道延寿符——不是为自己，是为缠绵病榻的老妻。他攒了半辈子的积蓄，想换妻子多陪他几年。",
+    text: [
+      { scene: "青竹小轩 · 柜前" },
+      "白发老者把一小袋碎银推到柜上，声音发抖：「先生，我听说……仙家有延寿的符。我这把老骨头不要紧，求您……救救我那老婆子，让她多陪我几年。」",
+      { aside: "你比谁都清楚：凡人的命，是扳不动的。一道符箓续不了将尽的灯油。仙凡有别——这是修了半生仙也改不了的铁律。可那双浑浊的眼睛里，盛着的全是不甘。" },
+    ],
+    onArrive(s) { State.setFlag("xh_a3_hc_elder_done"); },
+    choices: [
+      {
+        text: "画一道安神符·实言相告·只能宽心",
+        hint: "仙凡有别·只给陪伴的窗口——心境+",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 5);
+          Engine.writeLedger("hongchen_helped_elder", "红尘劫·凡人老者求延寿——你实言『凡命难扳』，只赠安神符宽其心。仙凡有别的铁律，又一次硌在心头（呼应墨彩环）。");
+          return { text: "你没有骗他。你画了道安神符，告诉他：凡人的寿数，仙家也扳不动；这道符只能让她睡得安稳些。老者捧着符，老泪纵横地谢了又谢。你忽然想起远在嘉元城的某个人……（心境+5）", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "收下银子·画一道无用的'延寿符'哄他",
+        hint: "善意的谎——心魔微涨",
+        effect(s) {
+          s.demon = Math.min(100, (s.demon || 0) + 3);
+          Engine.writeLedger("hongchen_helped_elder", "红尘劫·凡人老者求延寿——你画了道无用的『延寿符』哄他、收了银子。善意也好欺瞒也罢，那点不安，悄悄压在了心底（心魔+3）。");
+          return { text: "你到底没忍心说破，画了道寻常符箓充作『延寿符』，宽慰几句。老者千恩万谢地走了。可那袋碎银压在手里，沉得很——这点自欺的善意，终究在道心上落了一丝尘。", kind: "bad" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 4-3·红尘小故事·恶客强买（凡人小故事③·忍/反击·小冲突）——
+  {
+    id: "xh_a3_hc_bully",
+    skipIf: (s) => s.flags.xh_a3_hc_bully_done,
+    cond: (s) => s.flags.xh_a3_hc_elder_done && !s.flags.xh_a3_hc_bully_done,
+    bgm: "tense",
+    title: "青竹小轩 · 强买的散修",
+    objTitle: "红尘 · 强买强卖",
+    objHint: "一个练气期的小散修闯进小轩，看中柜上一枚丹药，丢下半价铜钱便要强取，仗着修为欺你这'凡人店主'。藏拙的你，要不要计较？",
+    text: [
+      { scene: "青竹小轩 · 柜前" },
+      "一个练气小散修大喇喇闯进来，抓起柜上一枚丹药，丢下半价的铜钱：「这个我要了。老东西，识相点——别以为开个破店就敢跟修士叫板。」",
+      { aside: "他哪知道柜台后这个'凡人店主'，一根指头就能让他魂飞魄散。藏拙是你的活法，可这红尘劫……到底是磨性子，还是磨棱角？" },
+    ],
+    onArrive(s) { State.setFlag("xh_a3_hc_bully_done"); },
+    choices: [
+      {
+        text: "一笑置之·由他去",
+        hint: "藏拙忍让·心境+（红尘劫磨的就是这份定力）",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 4);
+          Engine.writeLedger("hongchen_helped_bully", "红尘劫·散修强买——你藏拙一笑置之，由他去。红尘劫磨的正是这份'明明能碾死你却懒得动'的定力。");
+          return { text: "你只是笑笑，由他拿了丹药扬长而去。区区一枚浅丹，何必与一个井底之蛙计较？这一忍，心境反倒更沉了几分——藏拙的真意，原在'忍得'二字（心境+4）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "略施手段·让他知难而退（不露境界）",
+        hint: "敲打而不露真相——分寸即修行",
+        effect(s) {
+          Engine.writeLedger("hongchen_helped_bully", "红尘劫·散修强买——你略施小手段让他莫名栽个跟头、知难而退，却始终不露真实境界。分寸拿捏，也是一种磨。");
+          return { text: "你不动声色，指尖一缕微不可察的灵力——那散修脚下一滑，结结实实摔了个狗啃泥，丹药滚回柜上。他骂骂咧咧、莫名其妙地走了，到底没敢再放肆。露而不显的分寸，你拿捏得正好。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 4-4·红尘劫·渡过（锚⑦收口·24年弹指·侧重3选1·Build三路）——
+  {
+    id: "xh_a3_hongchen_du",
+    skipIf: (s) => s.flags.xh_a3_hongchen_done,
+    cond: (s) => s.flags.xh_a3_hc_bully_done && !s.flags.xh_a3_hongchen_done,
+    cg: "jindan",
+    bgm: "triumph",
+    title: "红尘劫 · 渡过",
+    objTitle: "二十四年 · 一朝悟道",
+    objHint: "青竹小轩开了二十四年。生老病死、悲欢离合，你都看在眼里、记在心上。某个寻常的午后，你忽然心念通明——大衍诀第三层，成了。",
+    text: [
+      { scene: "青竹小轩 · 二十四年后" },
+      { cam: "zoom", scale: 1.05, ms: 360 },
+      "二十四年，弹指而过。情侣白头、老者送妻、顽童长大成人……青竹小轩的柜台后，你看尽了一茬又一茬的红尘众生。",
+      "这一日午后，阳光斜照进小轩，你正给一个孩童画着平安符——忽然心念一通，万般尘缘如潮水般在识海里涨落又退去，澄澈如洗。",
+      { fx: "burst", at: "center", elem: "jin", ms: 420 },
+      { sfx: "success" },
+      { say: "韩立", emo: "joy", tone: "low", text: "「原来如此……大衍诀第三层，要的不是闭门苦参，是这二十四年的红尘。神识，圆满了。」" },
+      { aside: "红尘劫渡过，大衍诀三层大成。神识之广，已足以同时驭使七十二口飞剑——青竹蜂云剑，可以开炉了。" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a3_hongchen_done");
+      State.setFlag("dayan_layer3");   // 大衍诀三层大成（神识圆满·可驭72剑）
+      s.year += 24; s.age = (s.age || 0) + 24;
+      Engine.writeLedger("xh_hongchen", "红尘劫渡过·24年入世修心——青竹小轩看尽红尘众生，一朝心念通明，大衍诀第三层大成（神识圆满·足驭72飞剑）。");
+      Engine.addMilestone("红尘劫渡过·大衍诀三层大成（神识圆满）", "xinghaifeichi");
+    },
+    choices: [
+      {
+        text: "苦修大衍诀·神识更进一层",
+        hint: "剑道侧重——神识控剑",
+        effect(s) {
+          s.sense = (s.sense || 0) + 3;
+          Engine.writeLedger("xh_hongchen_focus", "红尘劫侧重·苦修大衍诀——神识永久精进（剑道·控剑之基）。");
+          return { text: "你将这二十四年的感悟尽数化入大衍诀，神识又厚实了一分。日后驭使飞剑、布设阵法，皆赖这缕日益广阔的神识（神识+3）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "悟道红尘·道心更澄一寸",
+        hint: "心境侧重——道心稳则万事稳",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 12);
+          s.demon = Math.max(0, (s.demon || 0) - 10);
+          Engine.writeLedger("xh_hongchen_focus", "红尘劫侧重·悟道红尘——道心澄明、心魔消减（丹道/渡劫之基）。");
+          return { text: "你将这二十四年的悲欢化作道心的养分——红尘看尽，反生出一份'看山仍是山'的通透。心境大涨、心魔消减，往后无论炼丹渡劫，都多了一份稳如磐石的定力（心境+12·心魔-10）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "制符积药·把这二十四年的手艺攒下",
+        hint: "丹道/阵法侧重——制符即阵法之基",
+        effect(s) {
+          s.skills = s.skills || {};
+          s.skills.alchemy = (s.skills.alchemy || 0) + 3;
+          State.give("lingshi", 80);
+          Engine.writeLedger("xh_hongchen_focus", "红尘劫侧重·制符积药——丹道熟练度精进、积下灵石（阵法/丹道之基）。");
+          return { text: "二十四年卖符卖药，手上的功夫也实打实地涨了。出关时，你的丹道符法都比从前精熟了几分，柜上积攒的灵石也颇为可观（丹道熟练+3·灵石+80）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 5-0·青竹蜂云剑炼成（锚⑧·终极大件兑现·本命法宝成·用户最在意节点）——
+  {
+    id: "xh_a3_lianjian",
+    skipIf: (s) => s.flags.xh_a3_lianjian_done,
+    cond: (s) => s.flags.xh_a3_hongchen_done && !s.flags.xh_a3_lianjian_done,
+    cg: "jindan",
+    bgm: "triumph",
+    title: "青竹蜂云剑 · 炼成",
+    objTitle: "本命法宝 · 七十二口飞剑",
+    objHint: "红尘劫渡过、神识圆满，万年金雷竹也已成材。是时候开炉——以金雷竹为胎、辟邪神雷为魂，炼就七十二口本命飞剑。这是韩立战力质变的一刻。",
+    text: [
+      { scene: "天星城 · 洞府炼器室" },
+      { cam: "zoom", scale: 1.06, ms: 360 },
+      "洞府深处，地火幽幽。你取出万年金雷竹，以圆满的神识为引、地火为炉，一节节金雷竹在烈焰中抽丝、淬炼、塑形——",
+      { fx: "material", at: "center", elem: "mu", ms: 500 },
+      "七十二道青碧剑光自炉中飞起，绕着你的身周盘旋成阵，剑随神念、应念分袭。金雷竹本蕴的辟邪神雷被你一并炼入剑身——青芒之间，金雷游走。",
+      { fx: "lightning", at: "center", elem: "jin", ms: 560 },
+      { sfx: "thunder" },
+      { say: "韩立", emo: "joy", tone: "low", text: "「七十二口青竹蜂云剑……成了！剑随心动、雷随剑发——这一回，我韩立，总算有了一件真正的本命法宝。」" },
+      { fx: "burst", at: "center", elem: "mu", ms: 420 },
+      { sfx: "success" },
+      { aside: "剑成之时，剑阵深处似有一缕微弱的灵识一闪而过——那是银月，尚在沉睡，要待来日虚天殿中以狼首玉如意为引，方能真正苏醒。自此一剑在手，你的战斗方式将整个改变。" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a3_lianjian_done");
+      if (State.count("jinleizhu") > 0) State.take("jinleizhu", 1);
+      State.give("qingzhu_fengyun_jian", 1);   // 持有即入战：playerFighter 注入 qingzhu_jian + 辟邪神雷二式 + charges.shenlei
+      Engine.writeLedger("xh_qingzhu_jian", "青竹蜂云剑炼成（本命法宝·大件兑现）——万年金雷竹为胎、辟邪神雷为魂，炼就72口青碧飞剑：swordOrbit 绕身剑阵、剑随神念分袭、辟邪神雷可附剑/横扫（克邪魔×1.8）。器灵银月尚沉睡（待虚天殿狼首玉如意苏醒）。韩立战力自此质变。");
+      Engine.addMilestone("青竹蜂云剑炼成（本命法宝·七十二口飞剑·辟邪神雷·战力质变）", "medal");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+      Engine.toast("本命法宝到手：青竹蜂云剑（战斗自动入战·辟邪神雷三式）");
+    },
+    choices: [
+      {
+        text: "立即试剑·感受这七十二口飞剑之威",
+        hint: "战斗中即可驭剑·辟邪神雷三式登场",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 10);
+          return { text: "你心念一动，七十二口飞剑齐齐震鸣、绕身急旋——剑随神念、收发由心。这一刻你清楚地知道：从前的韩立，和此刻的韩立，已是两个人。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "闭关参悟·与飞剑神识相合",
+        hint: "剑道轴推进·人剑相合更深",
+        effect(s) {
+          s.sense = (s.sense || 0) + 2;
+          return { text: "你没有急着出关，而是静心参悟人剑相合之道。七十二缕神念与七十二口飞剑日渐相契——驭剑愈发如臂使指（神识+2）。", kind: "good" };
         },
         resolve: "advance",
       },
