@@ -325,3 +325,33 @@
 - 自动核验四场开局位置：落海/外海 gap4、擂台/婴鲤 gap3、护送 gap13（保留）✓。
 - run.js + combat.test.js（25组）全绿，无回归。
 
+---
+
+## v268 实装（前面篇章按同逻辑补齐·2026-06-30）
+
+> 用户："把前面篇章也按这个逻辑修和补"。逐场甄别开局间距——碾压/演出/单挑缩距，群战/护送/拖时保留。
+
+### 摸排结论：早期篇章大多已修，缺口在「再别天南篇」+ 通用遭遇
+- **已有缩距（前人已做·七玄门/离门/黄枫谷）**：showdown(W9·enemyPos5)、jinguang(enemyPos5)、
+  revenge(W11·enemyPos5)、wanhunt(W9)、luyunfeng(enemyPos6)——确认无需再动。
+- **群战/拖时/护送（设计就该宽·保留）**：santuan皇宫三战区(W30·fronts)、xuwang阵成决战(W15)、
+  tuoshi拾旗(W15·survive)、jingu金鼓原(W15·群战)、hushan/hudao/kuangdong(survive)、
+  救小紫灵护送(W15·gap13=护送路程)——全部保留。
+
+### 本次修（engine.js）
+1. **通用遭遇 startEncounterFight 接敌距离 7→4（beast 6→4）**：一处改动覆盖**所有** encounter 型
+   boss/妖王单挑（mojiao/fengyue/tieluo/tieluo2/wuse/xuanle/xueyu/zhanwangchan/异闻妖王/落海遭遇…）。
+   开局 gap=4（玩家 pos1·敌 pos5）：射程≤4 法术开局即命中、近战一步接战。
+   **战场仍按地点开阔度展开（W 9~27 不变）**，多出的宽度全留作身后/侧翼——大战场观感不丢，只去掉空走。
+   洞窟无缝继承(caveCfg.enemyPos)不受影响。
+2. **再别天南·金背妖螂(jinbei)**：W13→11·playerPos3/enemyPos7(gap4)。
+3. **再别天南·夺剑(duoshe)**：W13→11·playerPos3/enemyPos7(gap4)。
+
+### 验证
+- 核位：mojiao/tieluo/wuse/fengyue gap4；jinbei/duoshe gap4；jingu群战保持 W15·gap13。
+- 宽场佐证：houshan/road(W17) 下 boss 仍 enemyPos5(gap4)，余 12 格作身后侧翼——大战场感保留。
+- run.js / combat.test.js(25组) / journey.test.js / scale.bal / encounter.bal 全绿，无回归。
+
+### 「补」的部分——尚未做（需走设计流程·交用户拍）
+- P1 越阶生存恶战锚点（初入星海或更早篇章），属新内容编排，待拍方向。
+

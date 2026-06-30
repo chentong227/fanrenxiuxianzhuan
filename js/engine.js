@@ -3972,7 +3972,10 @@ const Engine = {
     const caveCfg = this._caveFightCfg || {};
     // 场景即战场：宽度随地点开阔度展开（9~27），接敌距离照旧——多出来的全是身后与侧翼
     const sceneW = caveCfg.W || this._fieldWidthFor(s.location);
-    const engage = Math.min(sceneW - 2, (tmpl.engageDist || (enemyId.indexOf("beast_") === 0 ? 6 : 7)));
+    // v267：接敌距离收近（7→4·beast 同）——开局 gap=4（玩家 pos1·敌 pos5），
+    //   射程≤4 的法术开局即可命中、近战一步即接战，砍掉"前2~3回合空走等敌走过来"的空转。
+    //   战场仍可宽（身后/侧翼留白不变），只是把"敌人"摆到够得着的接战位。洞窟无缝继承不受影响。
+    const engage = Math.min(sceneW - 2, (tmpl.engageDist || 4));
     this._combat = new CombatAPI.Combat(Object.assign({
       player: this.playerFighter(),
       enemies: [enemy],
@@ -4427,7 +4430,10 @@ const Engine = {
     const enemy = Object.assign({}, WORLD.enemies.jinbei_yaolang);
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
     this._combat = new CombatAPI.Combat({
-      player, enemies: [enemy], fieldCycle, maxRounds: 16, W: 13, lanes: 2, sides,
+      // v267：1v1 险战缩开局间距（玩家 pos3·敌 pos7·gap4）——颠倒五行阵图逐回合反制即刻生效，
+      //   不空走（再别天南篇遗漏·补齐全篇接战距离一致）。
+      player, enemies: [enemy], fieldCycle, maxRounds: 16, W: 11, lanes: 2, sides,
+      playerPos: 3, enemyPos: 7,
     });
     this._combatMeta = { type: "zb_jinbei" };
     s.combat = true;
@@ -4446,7 +4452,9 @@ const Engine = {
     const p2 = Object.assign({}, WORLD.enemies.yuling_zhenshen);
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
     this._combat = new CombatAPI.Combat({
-      player, enemies: [p1], waves: [[p2]], maxRounds: 18, W: 13, lanes: 2, sides,
+      // v267：越阶恶战(1v1+waves)缩开局间距（玩家 pos3·敌 pos7·gap4）——夺剑硬撼即刻接战，不空走。
+      player, enemies: [p1], waves: [[p2]], maxRounds: 18, W: 11, lanes: 2, sides,
+      playerPos: 3, enemyPos: 7,
     });
     this._combatMeta = { type: "zb_duoshe" };
     s.combat = true;
