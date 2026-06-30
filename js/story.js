@@ -6063,7 +6063,7 @@ const STORY = [
           s.mood = Math.min(s.moodMax, (s.mood || 0) + 4);
           s.skills = s.skills || {}; s.skills.alchemy = (s.skills.alchemy || 0) + 1;
           Engine.writeLedger("hongchen_helped_bully", "红尘劫·救治有灵根的半残少年小龙——没了小绿瓶，全凭一身药理一寸寸接续他的断脉。救回一条灵根，也照见自己当年那个攥着灵根的凡人少年（药理+1）。");
-          return { text: "你没了那只催灵神瓶，便像个寻常郎中一样，一味味地配药、一寸寸地接他断裂的经脉。数月之后，小龙能下地了，灵根也保住了。你只淡淡叮嘱他：「这身根骨，莫再糟践了。」——救他，也像在救当年那个一无所有的自己（药理+1）。", kind: "good" };
+          return { text: "你没了那只催灵神瓶，便像个寻常郎中一样，一味味地配药、一寸寸地接他断裂的经脉。数月之后，小龙能下地了，灵根也保住了。你只淡淡叮嘱他一句：「这身根骨，莫再糟践了。」（药理+1）", kind: "good" };
         },
         resolve: "advance",
       },
@@ -6073,7 +6073,7 @@ const STORY = [
         effect(s) {
           s.mood = Math.min(s.moodMax, (s.mood || 0) + 2);
           Engine.writeLedger("hongchen_helped_bully", "红尘劫·止住小龙伤势、点醒他身负灵根——救命指路，路怎么走由他自己选。一句话或许就改了一个凡人少年的一生。");
-          return { text: "你先止住他的伤势，临了点了一句：「你这身子骨，本是修仙的料。混帮派，是把好端端一条命往泥里踩。」少年怔怔地望着你，眼里第一次有了别的光。路怎么走，是他自己的事了——可这一句话，或许就是一生的岔口。", kind: "good" };
+          return { text: "你先止住他的伤势，临了点了一句：「你这身子骨，本是修仙的料。混帮派，是把好端端一条命往泥里踩。」少年怔怔地望着你，眼里第一次有了别的光。路怎么走，是他自己的事了。", kind: "good" };
         },
         resolve: "advance",
       },
