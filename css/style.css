@@ -2999,7 +2999,7 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
     border-radius: 14px 14px 0 0;
     padding: 6px 10px calc(10px + env(safe-area-inset-bottom, 0px));
   }
-  .dock-actions .btn-action { min-width: 90px; padding: 9px 12px; font-size: 13px; }
+  .dock-actions .btn-action { min-width: 90px; min-height: 44px; padding: 11px 14px; font-size: 13px; }
 
   /* 地图模式·手机端：全屏地图，HUD 隐藏（用底栏 tab 切换查看） */
   .worldmap-canvas:not([hidden]) ~ .layout {
