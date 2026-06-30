@@ -4723,10 +4723,14 @@ const Engine = {
     // 困兽暴走（waves 二阶段：水牢将合·巨兽负伤狂暴反扑，残血更凶，正是极限斩杀之机）
     const yingRage = Object.assign({}, WORLD.enemies.yingli_beast, {
       name: "婴鲤兽·困兽暴走", hp: 170, armor: 6,
-      introNote: "水牢将合，婴鲤兽负伤狂暴，赤鳞倒竖、猩红双目尽是疯狂——这是它力竭前的最后反扑，也正是极限斩杀的一线之机！",
+      introNote: "水牢将合，婴鲤兽负伤狂暴，赤鳞倒竖、猩红双目尽是疯狂——这是它力竭前的最后反扑，也正是极限斩杀的一线之机！它已蓄起「绝命冲撞」——你只有一回合：要么抢在它爆发前斩落／打断（重击震断·定身符封死），要么挨这雷霆一撞。",
       attacks: [
-        { name: "狂暴撕咬", dmg: 30, kind: "pierce", weight: 12, range: [1, 1], elem: "shui", mp: 6 },
-        { name: "绝命尾扫", dmg: 26, kind: "normal", weight: 8, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front", elem: "shui", mp: 7 },
+        // —— 「绝命冲撞」蓄力杀招（v268·一致感修）：剧情许诺的"凶险越阶恶战"须数值兑现——
+        //   kind:"charge" 蓄力一回合（破绽毕露·可被重击/定身打断），爆发约 ×2≈88 伤（玩家半血级威胁）。
+        //   把"极限斩杀·一线之机"做成真决策：抢先秒/打断/定身/硬扛——不再是毫发无伤的表演。
+        { name: "绝命冲撞", dmg: 44, kind: "charge", weight: 13, aim: "cell", lunge: true, track: true, range: [1, 5], elem: "shui", mp: 12 },
+        { name: "狂暴撕咬", dmg: 30, kind: "pierce", weight: 9, range: [1, 1], elem: "shui", mp: 6 },
+        { name: "绝命尾扫", dmg: 26, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front", elem: "shui", mp: 7 },
       ],
       reward: {}, namedLoot: null,
     });
