@@ -287,6 +287,17 @@ DATA.items = {
   xuese_pifeng: { name: "血色披风", rarity: "epic", type: "treasure",
     desc: "宝光阁所得的古宝，血色猎猎、内蕴一缕遁光之力，护身遁走两便。（宝光阁古宝）" },
 
+  /* —— 星海飞驰篇·S8/S9 虚天殿内殿·终战收获（通天灵宝·至阴寒焰·魔功·养魂木·银月载体）—— */
+  xutian_ding: { name: "虚天鼎", rarity: "legendary", type: "treasure", natal: true,
+    desc: "乱星海第一秘宝——上古大能炼制的通天灵宝，鼎身万纹流转、内可纳天地。虚天殿中血玉蜘蛛拉鼎而出，元婴老怪混战夺鼎，韩立浑水摸鱼智取而得。日后炼化，可成镇压一世的大杀招。（通天灵宝·韩立第一件·远期炼化）" },
+  qianlan_zhu: { name: "乾蓝珠", rarity: "legendary", type: "treasure",
+    desc: "玄骨身死、修罗圣火瓦解之际，那缕环绕虚天鼎的至阴寒焰『乾蓝冰焰』汇聚成的一枚蓝晶。极致之寒、可冻元婴真元。元婴期彻底炼化，便是与紫罗极火并称的超级大杀招之引。（至阴寒焰·远期炼化=超级杀招）" },
+  yanghun_mu: { name: "养魂木", rarity: "epic", type: "material",
+    desc: "虚天殿内殿所出的奇木，温养神魂、可镇识海。元瑶为复活亡友妍丽而来，韩立向她要了一部分做成念珠，与婆罗珠一同用以安神固魂。（辅助修炼·念珠）" },
+  langshou_ruyi: { name: "狼首玉如意", rarity: "legendary", type: "treasure",
+    desc: "虚天殿所得的一柄古玉如意，柄端雕作狼首、双目幽碧。其中似封着一缕沉睡的器灵——便是日后名动星海、韩立最重要的伙伴之一『银月』。眼下她尚在沉睡，要待来日机缘方能真正苏醒。（银月载体·器灵沉睡·远期唤醒）" },
+
+
 
 
   ks_chenqiaoqian: { name: "陈家药引", rarity: "epic", type: "treasure", keepsake: true, bound: true, from: "chenqiaoqian",

@@ -6588,6 +6588,181 @@ const STORY = [
       },
     ],
   },
+  // —— 节点 4-I·寒骊台破阵（锚·智谋·戏耍乌丑·获虚天殿地图）——
+  {
+    id: "xh_a4_hanli",
+    skipIf: (s) => s.flags.xh_a4_hanli_done,
+    cond: (s) => s.flags.xh_a4_jimiao_done && !s.flags.xh_a4_hanli_done,
+    bgm: "tense",
+    title: "虚天殿 · 寒骊台破阵",
+    objTitle: "智谋 · 戏耍乌丑",
+    objHint: "内殿寒骊台需四方位同破。蛮胡子、极阴、青易居士分头去找，你被支去跟乌丑找第四方位——正好凭你对阵法的研究，戏耍这个蠢货，顺手在夹层里摸到虚天殿全图。",
+    text: [
+      { scene: "虚天殿 · 内殿 · 寒骊台" },
+      "内殿寒骊台镇着一座四方大阵，须四个方位同时破才能入。三位元婴各占一方，你被支去和乌丑找第四方位。",
+      { aside: "乌丑（极阴的提线木偶）对阵法一窍不通，全凭你。你心思电转——与其老实破阵，不如借机戏耍这蠢货、自己摸清门道。果然，在阵眼夹层里，你摸到了一卷东西：虚天殿全图！这逃命的关键，神不知鬼不觉落进了你手里。" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a4_hanli_done");
+      State.setFlag("xh_xutian_ditu");   // 虚天殿全图入手（逃命关键·flag 记）
+      Engine.writeLedger("xh_xutian_ditu", "寒骊台破阵——跟乌丑找第四方位、戏耍这提线木偶，于阵眼夹层摸到虚天殿全图（后续逃命关键）。韩立对阵法之研究的智谋节点。");
+      Engine.addMilestone("虚天殿·寒骊台破阵（戏耍乌丑·得虚天殿全图）", "xinghaifeichi");
+    },
+    choices: [
+      {
+        text: "大力戏耍 · 让乌丑出尽洋相",
+        hint: "情绪爽·乌丑记恨（玄骨杀乌丑时更有戏）",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 3);
+          State.setFlag("xh_hanli_humiliate");
+          return { text: "你故意把乌丑支得团团转，看他在错误的方位上白费力气、急得跳脚，心头那口失曲魂的闷气，总算泄了几分。地图，你早揣进了怀里。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "低调取图 · 不结无谓的仇",
+        hint: "稳健·神不知鬼不觉",
+        effect(s) {
+          State.setFlag("xh_hanli_lowkey");
+          return { text: "你不动声色地配合，趁乌丑不备摸走夹层里的地图，半分破绽不露。多一事不如少一事——这虚天殿里，谁知道哪根葱日后会要你的命。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 4-J·内殿·取鼎+元婴大战（锚·cutscene观战·皇鳞甲救命·3选1夺鼎策略）——
+  {
+    id: "xh_a4_neidian",
+    skipIf: (s) => s.flags.xh_a4_neidian_done,
+    cond: (s) => s.flags.xh_a4_hanli_done && !s.flags.xh_a4_neidian_done,
+    cg: "luanxinghai",
+    bgm: "boss",
+    title: "虚天殿 · 内殿 · 元婴大战",
+    objTitle: "观战 · 藏拙求生",
+    objHint: "正道万天明用金丝蚕取鼎失败、假意离去；魔道三元婴以你的血玉蜘蛛拉鼎成功——虚天鼎现世！元婴混战骤起，一道杀机扫向你，皇鳞甲在这一刻替你挡下致命一击。",
+    text: [
+      { scene: "虚天殿 · 内殿 · 虚天塔" },
+      "寒骊台破开，内殿虚天塔现出真容。万法门万天明先以金丝蚕取鼎——失败，假意愤然离去（金魁分化正魔的一步棋）。",
+      "随后，极阴、蛮胡子、青易居士合力，以你那只血玉蜘蛛为引，竟将虚天鼎缓缓拉出！蓝光冲天——通天灵宝，现世了。",
+      { fx: "burst", at: "center", elem: "shui", ms: 420 },
+      "鼎一出世，元婴老怪再无半分情面，混战骤起！万天明一行去而复返，六个元婴杀作一团。乱流之中，一道凌厉杀机毫无征兆地扫向你——",
+      { say: "韩立", emo: "fear", tone: "low", text: "「不好——！」" },
+      { fx: "burst", at: "center", elem: "jin", ms: 360 },
+      { sfx: "danger" },
+      { aside: "千钧一发，蛮胡子赠的皇鳞甲鳞光暴涨，硬生生替你接下了那记元婴一击！甲碎人安——若没这件甲，你早已魂飞魄散。蛮胡子那点'真'，救了你一命。虚天鼎中更爆出一枚补天丹，元婴们争得更凶了。" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a4_neidian_done");
+      Engine.meetNpc("wan_tianming", "万法门元婴修士——金丝蚕取鼎失败假意离去（金魁分化正魔之棋），后率众闯入元婴大战。");
+      Engine.writeLedger("xh_neidian", "虚天殿内殿·元婴大战——正道万天明金丝蚕取鼎失败、魔道三元婴以韩立血玉蜘蛛拉鼎成功，虚天鼎现世。六元婴混战，皇鳞甲替韩立挡下致命一击（蛮胡子保命之恩兑现）；虚天鼎爆出补天丹，元婴争夺更烈。");
+      Engine.addMilestone("虚天殿·元婴大战（虚天鼎现世·皇鳞甲救命）", "xinghaifeichi");
+    },
+    choices: [
+      {
+        text: "趁乱偷鼎 · 浑水摸鱼",
+        hint: "虚天鼎到手·但仇恨增（动漫核定·韩立智取）",
+        effect(s) {
+          State.setFlag("xh_neidian_steal");
+          Engine.writeLedger("xh_dingce", "元婴大战·趁乱浑水摸鱼智取虚天鼎——韩立的胆识与智谋（仇恨增·四大势力追杀的根）。");
+          return { text: "你瞅准元婴们杀红眼、谁也顾不上鼎的那一瞬，催动青竹蜂云剑卷起虚天鼎，借血色披风的遁光闪身而退——通天灵宝，竟被你这结丹小修浑水摸鱼夺了去！", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "稳住 · 等元婴内讧再下手",
+        hint: "稳健·风险低",
+        effect(s) {
+          State.setFlag("xh_neidian_wait");
+          Engine.writeLedger("xh_dingce", "元婴大战·按兵不动等内讧——更稳，待时机再取鼎。");
+          return { text: "你强压贪念，藏在暗处冷眼旁观，待元婴们两败俱伤、玄骨发难杀乌丑的混乱时刻，才悄然取鼎。稳，是你活到现在的本钱。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 4-K·玄骨终战（锚⑰·Combat·全章最高潮·以下克上）——
+  {
+    id: "xh_a4_xuangu_fight",
+    skipIf: (s) => s.flags.xh_a4_xuangu_fight_done,
+    cond: (s) => s.flags.xh_a4_neidian_done && !s.flags.xh_a4_xuangu_fight_done,
+    cg: "sorrow",
+    bgm: "boss",
+    title: "虚天殿 · 玄骨终战",
+    objTitle: "了断 · 修罗圣火",
+    objHint: "夺鼎之后，夺你曲魂的玄骨拦在出路上。他手握修罗圣火、实力远胜于你——硬拼无益。撑到他强融圣火、失控自毁那一刻，以辟邪神雷+啼魂兽以下克上，了断这段血仇。",
+    text: [
+      { scene: "虚天殿 · 内殿 · 出路" },
+      "得了虚天鼎，正欲脱身——一道鬼气拦在出路上。是玄骨，那具曾属于曲魂的躯壳，此刻盛满了元婴级的死气与一团金红的修罗圣火。",
+      { say: "玄骨", tone: "森冷", text: "「夺了老夫看中的鼎，还想走？把命，还有那虚天鼎，都留下。」" },
+      { aside: "他强得可怕。可你看得分明——那修罗圣火，与结丹后期的曲魂躯壳，根本不兼容。撑住，待他驾驭不住、圣火失控的那一刻，便是你以下克上的机会。辟邪神雷克他鬼道，啼魂兽收他残魂，皇鳞甲替你挡命。" },
+    ],
+    choices: [
+      { text: "了断 · 撑到修罗圣火失控", hint: "survive·辟邪神雷+啼魂兽以下克上", resolve: "xh_xuangu_fight" },
+    ],
+  },
+
+  // —— 节点 4-L·虚天殿收获（锚⑱·结算·大件丰收·S8-S9 收口）——
+  {
+    id: "xh_a4_shouhuo",
+    skipIf: (s) => s.flags.xh_a4_shouhuo_done,
+    cond: (s) => s.flags.xh_a4_xuangu_fight_done && !s.flags.xh_a4_shouhuo_done,
+    cg: "jindan",
+    bgm: "triumph",
+    title: "虚天殿 · 收获",
+    objTitle: "满载而归 · 大件丰收",
+    objHint: "玄骨身死，修罗圣火瓦解成乾蓝冰焰。虚天鼎、乾蓝珠、玄阴经、养魂木、狼首玉如意（银月）——这一趟虚天殿，满载而归。",
+    text: [
+      { scene: "虚天殿 · 内殿" },
+      { cam: "zoom", scale: 1.05, ms: 360 },
+      "玄骨灰飞烟灭，那团修罗圣火失了驾驭者，竟缓缓瓦解、汇聚成一枚幽蓝冰晶——乾蓝冰焰，至阴寒焰，落入你手。",
+      "你清点这一趟的收获：通天灵宝虚天鼎、至阴寒焰乾蓝珠、玄骨遗下的完整版玄阴诀、向元瑶讨来的一截养魂木，还有一柄雕作狼首的古玉如意——其中似封着一缕沉睡的器灵。",
+      { fx: "burst", at: "center", elem: "shui", ms: 420 },
+      { sfx: "success" },
+      { aside: "虚天鼎、乾蓝冰焰——这两件，是你将来问鼎元婴的资本。那柄狼首玉如意里沉睡的器灵，会在来日某个机缘下苏醒，成为你最重要的伙伴之一。失了曲魂，却也得了这许多。修仙路上，从来都是有失有得。" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「曲魂……这一趟的收获，我替你一起带出去了。」" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a4_shouhuo_done");
+      State.give("xutian_ding", 1);
+      State.give("qianlan_zhu", 1);
+      State.give("langshou_ruyi", 1);
+      State.give("yanghun_mu", 1);
+      if (State.count("butian_dan") < 1) State.give("butian_dan", 1);   // 虚天鼎补天丹（外星海闭关服食·改善灵根）
+      if (State.count("xuanyin_jue") < 1) State.give("xuanyin_jue", 1);
+      State.setFlag("xuanyin_full");   // 完整版玄阴诀（身外化身线·远期第二元婴/法体双修前置）
+      Engine.writeLedger("xh_xutian_harvest", "虚天殿收获结算——虚天鼎（通天灵宝·第一件）+乾蓝珠（至阴寒焰·远期超级杀招）+完整版玄阴诀（身外化身线）+养魂木（念珠安神）+狼首玉如意（银月载体·器灵沉睡待唤）+补天丹（外星海闭关改善灵根）。失曲魂、得大件，有失有得。");
+      Engine.addMilestone("虚天殿满载而归（虚天鼎+乾蓝冰焰+玄阴经+养魂木+银月载体）", "medal");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+      Engine.toast("虚天殿大丰收：虚天鼎·乾蓝珠·养魂木·狼首玉如意（银月）");
+    },
+    choices: [
+      {
+        text: "向元瑶要一截养魂木做念珠",
+        hint: "动漫核定·与婆罗珠同用安神",
+        effect(s) {
+          State.setFlag("xh_yanghun_share");
+          return { text: "你向元瑶要了一截养魂木，做成念珠，与婆罗珠一同用以安神固魂。元瑶也不吝惜——她得偿所愿，要去复活亡友的心愿，便也圆满了大半。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "养魂木尽数让给元瑶",
+        hint: "利他·元瑶关系+（远期还阳助力）",
+        effect(s) {
+          State.setFlag("xh_yanghun_give");
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 4);
+          Engine.writeLedger("xh_yuanyao_deal", "养魂木尽让元瑶——成全她复活妍丽的心愿（外海风云篇还阳术助力增）。");
+          return { text: "你把养魂木尽数让给元瑶——她为复活亡友奔波至此，你这点成全，权当还她赠啼魂兽之情。元瑶深深一礼，眼里有泪光：「此恩，元瑶记下了。」", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
 ];
 
 window.STORY = STORY;

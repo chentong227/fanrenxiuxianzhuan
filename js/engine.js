@@ -5144,6 +5144,49 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // —— S9·玄骨终战（全章最高潮·survive 撑到修罗圣火失控自毁+啼魂吞食残魂·以下克上）——
+  //    玄骨=前元婴后期·夺曲魂身躯·约结丹后期·修罗圣火（触之必死）。韩立底牌：青竹蜂云剑+辟邪神雷+啼魂兽+皇鳞甲。
+  startXhXuanguFight() {
+    const s = State.data;
+    this._nextFightType = "xh_xuangu_fight";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    // 皇鳞甲：替韩立硬抗元婴一击（开局护体厚盾·保命法宝兑现）
+    if (State.count("huanglin_jia") > 0) player.shield = (player.shield || 0) + 60;
+    // 收果：6-B 反应影响玄骨备防（暴怒=他有防备更难；藏拙=他轻敌更易）
+    const wary = !!s.flags.xh_xuangu_rage;       // 暴怒露过辟邪神雷→玄骨有防备
+    const careless = !!s.flags.xh_xuangu_endure; // 藏拙示弱→玄骨轻敌
+    const dmgMul = wary ? 1.12 : (careless ? 0.9 : 1.0);
+    const D = (n) => Math.round(n * dmgMul);
+    const xuangu = {
+      name: "玄骨上人", hp: 620, sense: 22, speed: 18, agility: 13, move: 2, mp: 160, qiLayer: 24,
+      elem: "huo", nature: "demon", tactics: "cunning", canFlee: false, armor: 6, boss: true, regen: 6,
+      shield: wary ? 40 : 0,
+      introNote: "玄骨夺舍曲魂身躯、改修鬼道，仍远胜于你。他手握修罗圣火——触之必死。但修罗圣火与曲魂身躯不兼容……撑住，待他强融圣火、失控自毁的那一刻，便是你的机会。辟邪神雷克其鬼道、啼魂兽收其残魂。",
+      attacks: [
+        { name: "鬼煞夺魂", dmg: D(34), kind: "normal", weight: 12, elem: "shui", range: [1, 4], mp: 6 },
+        { name: "修罗业火", dmg: D(40), kind: "normal", weight: 9, aim: "zone", zoneSpan: 3, range: [1, 6], depth: "front", elem: "huo", mp: 12 },
+        { name: "蚀骨阴爪", dmg: D(44), kind: "pierce", weight: 7, range: [1, 1], elem: "shui", mp: 8 },
+      ],
+      reward: {}, namedLoot: null,
+    };
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);   // 啼魂兽（克鬼物·吞噬残魂）
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [xuangu],
+      objective: { kind: "survive", rounds: 8,
+        winLog: "玄骨强融修罗圣火、结丹后期的躯壳再也压不住那股至焰——圣火轰然失控，曲魂的身躯在金红烈焰中崩塌！你抓住这一线，粘有修罗圣火的飞剑刺入再收回，玄骨粘火灰飞烟灭。残魂欲遁——啼魂兽一声厉鸣扑上，将那缕藏于金雷竹小箭中的残魂一口吞食。玄骨，彻底消亡了。" },
+      maxRounds: 8, W: 13, lanes: 2, sides,
+      playerPos: 4, enemyPos: 8,
+    });
+    this._combatMeta = { type: "xh_xuangu_fight" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("【终战】玄骨实力远胜于你——硬拼无益。撑过 8 回合：辟邪神雷克其鬼道、啼魂兽收其残魂、皇鳞甲替你挡命，待修罗圣火与曲魂身躯相冲、失控自毁的那一刻，便是了断之时！");
+    if (State.count("huanglin_jia") > 0) this._combat._log("（皇鳞甲鳞光层叠，替你撑起一道厚盾——蛮胡子这件保命法宝，此刻派上了用场。）");
+    this.log("玄骨终战——夺你曲魂的鬼骷髅，今日了断。撑到修罗圣火失控、以辟邪神雷+啼魂兽以下克上，斩前元婴后期！", "bad");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -6386,6 +6429,23 @@ const Engine = {
         this.log(`铁火蚁甲坚难破、火毒缠身，一时杀不透——你调息再上（再战伤害+${bonus}%）。噬金虫附体抗咬、化刃破甲，再冲！`, "bad");
         s.pendingEvent = "xh_a4_binghuo"; this._retryAfterLoss = "xh_a4_binghuo";
       }
+    } else if (meta.type === "xh_xuangu_fight") {
+      // 星海飞驰·S9 玄骨终战（survive·修罗圣火失控+啼魂收尾·以下克上）——胜→虚天殿收获
+      if (win) {
+        State.setFlag("xh_a4_xuangu_fight_done");
+        this.writeLedger("xh_xuangu_kill", "玄骨终战——撑到修罗圣火与曲魂身躯相冲失控自毁，韩立以粘火飞剑补刀、啼魂兽吞食残魂，斩前元婴后期玄骨（萧诧）。以下克上的两大底牌（辟邪神雷克鬼道+啼魂兽收残魂）兑现。曲魂之仇，了结。");
+        this.addMilestone("玄骨终战·以下克上（斩前元婴后期·全章最高潮）", "medal");
+        this.log("修罗圣火失控、玄骨灰飞烟灭，啼魂兽吞下最后那缕残魂——这个夺你曲魂的鬼骷髅，彻底消亡了。结丹初期斩前元婴后期，以下克上！", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_xh_xuangu = (s.flags.losses_xh_xuangu || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xh_xuangu) * 8;
+        s.hp = s.hpMax; s.demon = clamp(s.demon + 8, 0, 100);
+        this.log(`修罗圣火太盛、玄骨太强，没能撑到他自毁那一刻——你浴血整顿、备齐底牌再战（再战伤害+${bonus}%）。辟邪神雷克他、啼魂兽护你、皇鳞甲挡命——撑住八回合，他必自焚！`, "bad");
+        s.pendingEvent = "xh_a4_xuangu_fight"; this._retryAfterLoss = "xh_a4_xuangu_fight";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -6663,6 +6723,7 @@ const Engine = {
       xh_guxiushi_fight:       function () { this.startXhGuxiushiFight(); },
       xh_guiyuan_fight:        function () { this.startXhGuiyuanFight(); },
       xh_binghuo_fight:        function () { this.startXhBinghuoFight(); },
+      xh_xuangu_fight:         function () { this.startXhXuanguFight(); },
     });
   },
   hasFight(id) { return !!(id && this._fightRoutes()[id]); },
@@ -6899,6 +6960,7 @@ const Engine = {
     if (choice.resolve === "xh_guxiushi_fight")  { s.pendingEvent = null; this.startXhGuxiushiFight();  return; }
     if (choice.resolve === "xh_guiyuan_fight")   { s.pendingEvent = null; this.startXhGuiyuanFight();   return; }
     if (choice.resolve === "xh_binghuo_fight")   { s.pendingEvent = null; this.startXhBinghuoFight();   return; }
+    if (choice.resolve === "xh_xuangu_fight")    { s.pendingEvent = null; this.startXhXuanguFight();    return; }
 
     // 普通推进
     s.pendingEvent = null;
