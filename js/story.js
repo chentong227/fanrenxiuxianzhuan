@@ -5654,7 +5654,6 @@ const STORY = [
         effect(s) {
           State.give("lingshi", 120);
           State.setFlag("xh_miaoyin_trade_only");
-          Engine.writeLedger("xh_miaoyin_trade_only", "只交易外海妖材、婉拒客卿（灵石+120）——与妙音门保持距离，蝎岛之战将以散修身份延后入局。");
           return { text: "你只将妖材作了交易，换得灵石一百二，客卿之事婉言推后。紫灵也不勉强，只浅浅一笑：「韩大哥还是这般谨慎。无妨，门常开着，差事也留着。」", kind: "event" };
         },
         resolve: "advance",
@@ -5718,7 +5717,6 @@ const STORY = [
         hint: "妙音门关系最深 · 客卿长老顺理成章",
         effect(s) {
           State.setFlag("xh_zuoling_ally");
-          Engine.writeLedger("xh_zuoling_choice", "蝎岛做局——配合紫灵清理门户、击杀叛徒赵峥，与妙音门结深。");
           return { text: "你颔首应下。既已看清这局棋，便替她落下这一子——勾结极阴岛的叛徒，留不得。", kind: "good" };
         },
         resolve: "advance",
@@ -5729,7 +5727,6 @@ const STORY = [
         effect(s) {
           State.setFlag("xh_zuoling_question");
           s.mood = Math.min(s.moodMax, (s.mood || 0) + 2);
-          Engine.writeLedger("xh_zuoling_choice", "蝎岛做局——先质疑紫灵、要她把因由说清，再决意诛赵峥；谨慎持重，紫灵亦尊重。");
           return { text: "你不急着动手，先要她把前因后果说个明白。紫灵也不恼，将赵峥通敌的证据一一道来——你这才点头。谨慎，是你一贯的活法。", kind: "good" };
         },
         resolve: "advance",
@@ -5739,7 +5736,6 @@ const STORY = [
         hint: "保持独立 · 后续逃亡难度增（赵峥仍活）",
         effect(s) {
           State.setFlag("xh_zuoling_solo");
-          Engine.writeLedger("xh_zuoling_choice", "蝎岛做局——不掺和妙音门内部清算、独善其身，赵峥得以脱身（后续天都炼傀追杀时他将联手追兵）。");
           return { text: "你摇头——妙音门的家务事，你不愿沾手。紫灵深深看你一眼，也不勉强。赵峥趁这空隙，遁走了。", kind: "event" };
         },
         resolve: "advance",
@@ -5794,7 +5790,6 @@ const STORY = [
         effect(s) {
           s.mood = Math.max(0, (s.mood || 0) - 2);
           State.setFlag("xh_jiyin_hidden");
-          Engine.writeLedger("xh_jiyin_observe", "蝎岛·极阴现身——全力藏拙屏息，未被元婴神识扫到，悄然退避。");
           return { text: "你将气息敛到极致，如一粒微尘隐于乱军——极阴的神识扫过，未作停留。藏拙，是凡人韩立刻进骨子里的本能。", kind: "good" };
         },
         resolve: "advance",
@@ -5805,7 +5800,7 @@ const STORY = [
         effect(s) {
           s.mood = Math.max(0, (s.mood || 0) - 4);
           State.setFlag("xh_jiyin_observe_deep");
-          Engine.writeLedger("xh_jiyin_observe", "蝎岛·极阴现身——冒险暗记极阴附身控魂、活捉孙门主的手法路数（远期：对极阴功法有了解）。");
+          Engine.writeLedger("xh_jiyin_observe", "蝎岛·极阴现身——冒险暗记极阴附身控魂、活捉孙门主的手法路数。日后若与极阴一脉再交手，这一线对其功法的了解便是伏笔。");
           return { text: "你冒着被神识扫中的风险，死死记下极阴附身控魂、举手活捉结丹门主的手法。多看一眼是一眼——这等元婴的路数，日后或许用得上。", kind: "event" };
         },
         resolve: "advance",
@@ -5816,7 +5811,6 @@ const STORY = [
         effect(s) {
           s.hp = Math.max(1, Math.round(s.hp * 0.95));
           State.setFlag("xh_jiyin_flee");
-          Engine.writeLedger("xh_jiyin_observe", "蝎岛·极阴现身——不恋战、立刻催遁术先撤，被元婴余威扫得气血一荡，却脱身更快。");
           return { text: "你不作他想，催动遁术抢先撤离。元婴余威扫过，气血一荡——但你已遁出了那片死域。命，比什么都要紧。", kind: "event" };
         },
         resolve: "advance",
@@ -5947,7 +5941,6 @@ const STORY = [
     onArrive(s) {
       s.location = "tianxing_city";
       State.setFlag("xh_a3_hongchen_open_done");
-      Engine.writeLedger("xh_hongchen_open", "红尘劫起——天星城凡人区开『青竹小轩』，入世修心以渡大衍诀三层。");
     },
     choices: [
       { text: "开张——看一看这红尘众生", hint: "入世修心，照见人心", resolve: "advance" },
@@ -6096,6 +6089,12 @@ const STORY = [
       s.year += 24; s.age = (s.age || 0) + 24;
       Engine.writeLedger("xh_hongchen", "红尘劫渡过·24年入世修心——青竹小轩看尽红尘众生，一朝心念通明，大衍诀第三层大成（神识圆满·足驭72飞剑）。");
       Engine.addMilestone("红尘劫渡过·大衍诀三层大成（神识圆满）", "xinghaifeichi");
+      // 远雷·红尘小故事兑现（铁律3）：青竹小轩里待过的那一茬茬凡人，正是渡过红尘劫的道心养料——点名出处
+      let hcEcho = 0;
+      if (Engine.settleLedger("hongchen_helped_couple", "那对求平安符的凡人男女，多年后竟还托人捎来一篮自家晒的果干——你当年柜前那一念，原来一直被人记着。红尘劫渡的，正是这些不起眼的牵念")) hcEcho += 2;
+      if (Engine.settleLedger("hongchen_helped_elder", "那位求延寿符的白发老者，到底没能留住老妻，却在她走后到小轩谢过你那句实话——『仙凡有别，可你没骗我』。这份释然，熔进了你今日的道心")) hcEcho += 2;
+      if (Engine.settleLedger("hongchen_helped_bully", "当年强买丹药的那个小散修，多年后路过小轩竟认不出你——你看着他，只觉那点『忍得』早已化作通透。藏拙的真意，红尘替你磨圆了")) hcEcho += 2;
+      if (hcEcho) s.mood = Math.min(s.moodMax, (s.mood || 0) + hcEcho);
     },
     choices: [
       {
@@ -6103,7 +6102,6 @@ const STORY = [
         hint: "剑道侧重——神识控剑",
         effect(s) {
           s.sense = (s.sense || 0) + 3;
-          Engine.writeLedger("xh_hongchen_focus", "红尘劫侧重·苦修大衍诀——神识永久精进（剑道·控剑之基）。");
           return { text: "你将这二十四年的感悟尽数化入大衍诀，神识又厚实了一分。日后驭使飞剑、布设阵法，皆赖这缕日益广阔的神识（神识+3）。", kind: "good" };
         },
         resolve: "advance",
@@ -6114,7 +6112,6 @@ const STORY = [
         effect(s) {
           s.mood = Math.min(s.moodMax, (s.mood || 0) + 12);
           s.demon = Math.max(0, (s.demon || 0) - 10);
-          Engine.writeLedger("xh_hongchen_focus", "红尘劫侧重·悟道红尘——道心澄明、心魔消减（丹道/渡劫之基）。");
           return { text: "你将这二十四年的悲欢化作道心的养分——红尘看尽，反生出一份'看山仍是山'的通透。心境大涨、心魔消减，往后无论炼丹渡劫，都多了一份稳如磐石的定力（心境+12·心魔-10）。", kind: "good" };
         },
         resolve: "advance",
@@ -6126,7 +6123,6 @@ const STORY = [
           s.skills = s.skills || {};
           s.skills.alchemy = (s.skills.alchemy || 0) + 3;
           State.give("lingshi", 80);
-          Engine.writeLedger("xh_hongchen_focus", "红尘劫侧重·制符积药——丹道熟练度精进、积下灵石（阵法/丹道之基）。");
           return { text: "二十四年卖符卖药，手上的功夫也实打实地涨了。出关时，你的丹道符法都比从前精熟了几分，柜上积攒的灵石也颇为可观（丹道熟练+3·灵石+80）。", kind: "good" };
         },
         resolve: "advance",
@@ -6507,7 +6503,6 @@ const STORY = [
         hint: "五行流转·阵法一道有妙用",
         effect(s) {
           State.give("wuxing_huan", 1);
-          Engine.writeLedger("xh_baoguang", "宝光阁取五行环（五行流转·阵法古宝）。");
           return { text: "你切断能量罩，取下五枚循五行流转的色环——五行环入手。阵法一道，又添一臂之力。", kind: "good" };
         },
         resolve: "advance",
@@ -6517,7 +6512,6 @@ const STORY = [
         hint: "护身+遁走两便",
         effect(s) {
           State.give("xuese_pifeng", 1);
-          Engine.writeLedger("xh_baoguang", "宝光阁取血色披风（护身+遁光古宝）。");
           return { text: "你取下那件血色猎猎的披风——内蕴一缕遁光之力，护身遁走两便。血色披风入手。", kind: "good" };
         },
         resolve: "advance",
@@ -6528,7 +6522,6 @@ const STORY = [
         effect(s) {
           s.skills = s.skills || {}; s.skills.alchemy = (s.skills.alchemy || 0) + 2;
           State.give("lingshi", 30);
-          Engine.writeLedger("xh_baoguang", "宝光阁取功法残篇（丹道/阵法熟练度+·灵石+30）。");
           return { text: "你取下一卷古修士的功法残篇——参研之下，丹道阵法的火候都精进了几分（熟练度+2·灵石+30）。", kind: "good" };
         },
         resolve: "advance",
@@ -6538,7 +6531,6 @@ const STORY = [
         hint: "不取宝·节省时间",
         effect(s) {
           s.mood = Math.min(s.moodMax, (s.mood || 0) + 2);
-          Engine.writeLedger("xh_baoguang", "宝光阁直通第三关——不贪宝物、稳妥为上。");
           return { text: "你不为宝物所动，径直走向通往第三关的光路。元婴环伺、大限将近——稳妥，比贪宝要紧。", kind: "event" };
         },
         resolve: "advance",
@@ -6607,6 +6599,11 @@ const STORY = [
       State.setFlag("xh_xutian_ditu");   // 虚天殿全图入手（逃命关键·flag 记）
       Engine.writeLedger("xh_xutian_ditu", "寒骊台破阵——跟乌丑找第四方位、戏耍这提线木偶，于阵眼夹层摸到虚天殿全图（后续逃命关键）。韩立对阵法之研究的智谋节点。");
       Engine.addMilestone("虚天殿·寒骊台破阵（戏耍乌丑·得虚天殿全图）", "xinghaifeichi");
+      // 远雷·虚天殿门道兑现（铁律3）：早先打听的风声、细问的门道，此刻在破阵识图时全派上用场——点名出处
+      let xtEcho = 0;
+      if (Engine.settleLedger("xh_a1_curious", "金丹初成时在天星城坊市茶肆听来的那些『虚天残图、上古至宝』的传闻，今日站在寒骊台前一一对上了号——先探后动的谨慎，让你比旁人早一步看穿这阵的门道")) xtEcho += 2;
+      if (Engine.settleLedger("xh_xutian_curious", "当初接天雷竹那日，多向紫灵细问的几句虚天殿门道——三关、阵眼、夹层藏图——此刻成了你戏耍乌丑、摸到全图的底气。多知一分，果然少险一分")) xtEcho += 2;
+      if (xtEcho) s.mood = Math.min(s.moodMax, (s.mood || 0) + xtEcho);
     },
     choices: [
       {
@@ -6754,7 +6751,7 @@ const STORY = [
         effect(s) {
           State.setFlag("xh_yanghun_give");
           s.mood = Math.min(s.moodMax, (s.mood || 0) + 4);
-          Engine.writeLedger("xh_yuanyao_deal", "养魂木尽让元瑶——成全她复活妍丽的心愿（外海风云篇还阳术助力增）。");
+          Engine.writeLedger("xh_yuanyao_deal", "养魂木尽让元瑶——成全她复活妍丽的心愿（日后外海风云篇还阳术助力增·埋下一线人情）。");
           return { text: "你把养魂木尽数让给元瑶——她为复活亡友奔波至此，你这点成全，权当还她赠啼魂兽之情。元瑶深深一礼，眼里有泪光：「此恩，元瑶记下了。」", kind: "good" };
         },
         resolve: "advance",
@@ -6780,7 +6777,7 @@ const STORY = [
       s.location = "tianxing_city";
       State.setFlag("xh_a5_wentianren_done");
       Engine.meetNpc("wen_tianren", "六道极圣之徒·结丹后期，虚天殿出口看守——正面对决留外海风云篇，此处只是初遇。");
-      Engine.writeLedger("xh_wentianren_encounter", "出殿·温天仁拦路——结丹后期的六道极圣之徒看守离岛，韩立初遇。正面对决留外海风云篇。");
+      Engine.writeLedger("xh_wentianren_encounter", "出殿·温天仁拦路——结丹后期的六道极圣之徒看守离岛，韩立初遇。正面对决留待外海风云篇日后了断。");
     },
     choices: [
       {
@@ -6789,7 +6786,7 @@ const STORY = [
         requireItem: "qingming_zhen",
         effect(s) {
           State.setFlag("xh_wentianren_fake");
-          Engine.writeLedger("xh_wentianren_react", "出殿·凭青冥针冒充青易居士之徒蒙混过关——青易赠宝的虚情假意，竟阴差阳错帮了韩立。");
+          Engine.writeLedger("xh_wentianren_react", "出殿·凭青冥针冒充青易居士之徒蒙混过关——青易赠宝的虚情假意，竟阴差阳错帮了韩立。温天仁这一面之缘，日后外海风云篇还会再算。");
           return { text: "你不慌不忙取出青冥针：「南鹤岛青易居士门下。」温天仁盯着那枚青易的符宝看了一瞬，终是颔首放行。青易那点虚情假意，倒成了你脱身的护身符。", kind: "good" };
         },
         resolve: "advance",

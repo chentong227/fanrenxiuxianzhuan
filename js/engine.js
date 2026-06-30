@@ -6511,6 +6511,7 @@ const Engine = {
       if (win) {
         State.setFlag("xh_a4_xuangu_fight_done");
         this.writeLedger("xh_xuangu_kill", "玄骨终战——撑到修罗圣火与曲魂身躯相冲失控自毁，韩立以粘火飞剑补刀、啼魂兽吞食残魂，斩前元婴后期玄骨（萧诧）。以下克上的两大底牌（辟邪神雷克鬼道+啼魂兽收残魂）兑现。曲魂之仇，了结。");
+        this.settleLedger("xh_xuangu_react", "当初眼睁睁看曲魂被夺时你那一念——是暴怒劈雷露了底，是藏拙示弱诱他轻敌，还是忍痛退走——都在今日这一战玄骨的备防与破绽里，结成了了断的果。");
         this.addMilestone("玄骨终战·以下克上（斩前元婴后期·全章最高潮）", "medal");
         this.log("修罗圣火失控、玄骨灰飞烟灭，啼魂兽吞下最后那缕残魂——这个夺你曲魂的鬼骷髅，彻底消亡了。结丹初期斩前元婴后期，以下克上！", "good");
         if (typeof Sfx !== "undefined") Sfx.play("success");
