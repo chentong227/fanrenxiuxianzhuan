@@ -5015,6 +5015,57 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // —— S6·古修士洞府练手（金青邀约·石蝶法修+老胡甲坚·结丹遭遇·组队则金青侧助）——
+  //    韩立此时已炼成青竹蜂云剑（playerFighter 自动注入）——这是本命法宝的首场实战练手。
+  startXhGuxiushiFight() {
+    const s = State.data;
+    this._nextFightType = "xh_guxiushi";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    // 石蝶·法修型（远程法术·脆皮高输出）
+    const shidie = {
+      name: "石蝶", hp: 280, sense: 17, speed: 16, agility: 13, move: 2, mp: 90, qiLayer: 17,
+      elem: "jin", nature: "human", tactics: "kite", canFlee: false, armor: 2, boss: true,
+      introNote: "石蝶修的是远程法修一路，灵光锋锐、走位刁钻——放任她拉开距离便要吃苦头，须贴身逼杀。",
+      attacks: [
+        { name: "锋芒灵光", dmg: 26, kind: "normal", weight: 12, elem: "jin", range: [1, 5], mp: 6 },
+        { name: "破空锥", dmg: 32, kind: "pierce", weight: 7, range: [1, 4], elem: "jin", mp: 8 },
+      ],
+      reward: { lingshi: 12 }, namedLoot: null,
+    };
+    // 老胡·甲坚型（高护甲·硬碰硬）
+    const laohu = {
+      name: "老胡", hp: 340, sense: 13, speed: 12, agility: 8, move: 1, mp: 70, qiLayer: 17,
+      elem: "tu", nature: "human", tactics: "guarded", canFlee: false, armor: 8, boss: true,
+      introNote: "老胡一身横练护体、甲坚如铁——寻常法术挠不动他，须以破甲/重击或辟邪神雷破其防。",
+      attacks: [
+        { name: "厚土撞", dmg: 28, kind: "normal", weight: 12, elem: "tu", range: [1, 1] },
+        { name: "崩山压顶", dmg: 36, kind: "charge", weight: 6, aim: "cell", lunge: true, range: [1, 3], mp: 8, elem: "tu" },
+      ],
+      reward: { lingshi: 12 }, namedLoot: null,
+    };
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    // 组队径：金青为结丹辅助侧位（独行径则无援·但叙事多一分凶险）
+    if (s.flags.xh_guxiushi_team) {
+      sides.push({ id: "jin_qing", name: "金青", kind: "ally", art: null,
+        hp: 130, hpMax: 130, guard: 0.35, elem: "jin",
+        persona: { aggr: 5, prot: 3, kite: 4 },
+        moves: [
+          { name: "青锋符光", dmg: 14, weight: 14, elem: "jin", range: [1, 4], line: "金青打出一道青锋符光：「韩道友，这两个交给咱俩了！」" },
+        ] });
+    }
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [shidie, laohu], maxRounds: 22, W: 15, lanes: 3, sides,
+      playerPos: 4, enemyPos: 9,
+    });
+    this._combatMeta = { type: "xh_guxiushi" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("古修士洞府机关重重，石蝶老胡守在宝室之前。你心念一引，七十二口青竹蜂云剑应念出鞘——本命法宝的第一战，便在此地。");
+    this.log("古修士洞府练手——石蝶远程刁钻、老胡甲坚难破。试试新成的青竹蜂云剑与辟邪神雷之威！", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -6204,6 +6255,25 @@ const Engine = {
         s.pendingEvent = "xh_a2_taowang";
         this._retryAfterLoss = "xh_a2_taowang";
       }
+    } else if (meta.type === "xh_guxiushi") {
+      // 星海飞驰·S6 古修士洞府练手（石蝶/老胡·青竹蜂云剑首战）——胜→玄骨夺曲魂（6-B）
+      if (win) {
+        State.setFlag("xh_a4_guxiushi_done");
+        this.writeLedger("xh_guxiushi_won", "古修士洞府练手——青竹蜂云剑首战，斩石蝶老胡、破宝室之守。本命法宝之威，初露锋芒。");
+        this.addMilestone("星海飞驰·古修士洞府：青竹蜂云剑首战告捷", "xinghaifeichi");
+        this.log("石蝶老胡先后倒下——七十二口青竹蜂云剑收发由心，辟邪神雷金光灼灼。本命法宝的第一战，赢得漂亮。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_xh_guxiushi = (s.flags.losses_xh_guxiushi || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xh_guxiushi) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`石蝶刁钻、老胡甲坚，一时没能竟全功——你调息再上（再战伤害+${bonus}%）。青竹蜂云剑在手，没有打不破的局！`, "bad");
+        s.pendingEvent = "xh_a4_guxiushi_fight";
+        this._retryAfterLoss = "xh_a4_guxiushi_fight";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -6478,6 +6548,7 @@ const Engine = {
       xh_xiedao_fight:         function () { this.startXhXiedaoFight(); },
       xh_zhaozheng_fight:      function () { this.startXhZhaozhengFight(); },
       xh_taowang_fight:        function () { this.startXhTaowangFight(); },
+      xh_guxiushi_fight:       function () { this.startXhGuxiushiFight(); },
     });
   },
   hasFight(id) { return !!(id && this._fightRoutes()[id]); },
@@ -6711,6 +6782,7 @@ const Engine = {
     if (choice.resolve === "xh_xiedao_fight")    { s.pendingEvent = null; this.startXhXiedaoFight();    return; }
     if (choice.resolve === "xh_zhaozheng_fight") { s.pendingEvent = null; this.startXhZhaozhengFight(); return; }
     if (choice.resolve === "xh_taowang_fight")   { s.pendingEvent = null; this.startXhTaowangFight();   return; }
+    if (choice.resolve === "xh_guxiushi_fight")  { s.pendingEvent = null; this.startXhGuxiushiFight();  return; }
 
     // 普通推进
     s.pendingEvent = null;

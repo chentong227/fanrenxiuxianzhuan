@@ -205,8 +205,8 @@ const State = {
     // 灵力池永久加成（突破水准+特殊境遇累计）。老档按"普通水准"补偿已突破的层数
     if (d.poolBonus == null) d.poolBonus = (d.realmIndex || 0) * 2;
     if (!d.visitedNodes) d.visitedNodes = ["caixia"];
-    // 老档补发：已反杀墨大夫者，曲魂幡尸傀随行
-    if (d.flags && d.flags.modafu_dead && !d.sideUnit && !d.flags.quhun_stay_jiayuan) {
+    // 老档补发：已反杀墨大夫者，曲魂幡尸傀随行（玄骨夺曲魂后 quhun_lost·不再补发）
+    if (d.flags && d.flags.modafu_dead && !d.sideUnit && !d.flags.quhun_stay_jiayuan && !d.flags.quhun_lost) {
       d.sideUnit = { id: "zhangtie_corpse", name: "曲魂", hp: 70, hpMax: 70, atk: 12,
                      atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
     }

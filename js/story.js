@@ -6188,6 +6188,140 @@ const STORY = [
       },
     ],
   },
+  // —— 节点 6-A·金青邀约·古修士洞府（锚⑨·练手前奏·组队/独行 2选1）——
+  {
+    id: "xh_a4_guxiushi",
+    skipIf: (s) => s.flags.xh_a4_guxiushi_intro_done,
+    cond: (s) => s.flags.xh_a3_lianjian_done && !s.flags.xh_a4_guxiushi_intro_done,
+    bgm: "journey",
+    title: "古修士洞府 · 金青邀约",
+    objTitle: "练手 · 入殿前奏",
+    objHint: "旧识金青寻来，邀你同探一处古修士遗址——石蝶、老胡同行，正好试试新成的青竹蜂云剑。这是踏入虚天殿前的练手。",
+    text: [
+      { scene: "外星海 · 古修士遗址外" },
+      "本命法宝既成，你正欲择日往虚天殿一探，旧识金青却寻上门来——他探得一处古修士遗址，邀你同去练手淘宝。",
+      { say: "金青", emo: "smile", text: "「韩道友！这古修士洞府机关重重，寻常人进不去。石蝶老胡都是老搭档，路上有个照应——同去开开眼界？」" },
+      { aside: "去虚天殿之前，正好拿这古修士洞府试试七十二口青竹蜂云剑的成色。只是……你心底那点说不清的不安，是从何而来？" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a4_guxiushi_intro_done");
+      Engine.meetNpc("jin_qing", "乱星海一名结丹散修、消息灵通的旧交——邀韩立同探古修士遗址练手。");
+    },
+    choices: [
+      {
+        text: "与金青组队探索",
+        hint: "团队探索·金青入战侧助",
+        effect(s) {
+          State.setFlag("xh_guxiushi_team");
+          return { text: "你与金青一行结伴而入。石蝶老胡在前探路，金青与你押后——人多照应，稳妥些。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "独自先行探路",
+        hint: "独行·多一分险、多一分得（灵石+）",
+        effect(s) {
+          State.setFlag("xh_guxiushi_solo");
+          State.give("lingshi", 20);
+          return { text: "你谢过金青的好意，独自先行——你这般修为，反倒嫌人多碍事。一路暗格机关被你摸了个透，顺手淘换了些散碎灵石（灵石+20）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 6-A 战·古修士洞府守卫（Combat·青竹蜂云剑首战）——
+  {
+    id: "xh_a4_guxiushi_fight",
+    skipIf: (s) => s.flags.xh_a4_guxiushi_done,
+    cond: (s) => s.flags.xh_a4_guxiushi_intro_done && !s.flags.xh_a4_guxiushi_done,
+    bgm: "combat",
+    title: "古修士洞府 · 宝室之守",
+    objTitle: "练手 · 石蝶与老胡",
+    objHint: "宝室之前，石蝶（远程法修）与老胡（甲坚横练）拦路。试试新成的青竹蜂云剑与辟邪神雷——这是本命法宝的第一战。",
+    text: [
+      { scene: "古修士洞府 · 宝室前" },
+      "层层机关之后，一座宝室赫然在目，石蝶老胡守在阶前。你心念一引——七十二口青竹蜂云剑应念出鞘，绕身成阵。",
+      { aside: "本命法宝的第一战。石蝶走位刁钻须贴身逼杀，老胡甲坚如铁须破甲——辟邪神雷，正好破他这身横练。" },
+    ],
+    choices: [
+      { text: "出手 · 青竹蜂云剑首战", hint: "石蝶远程·老胡甲坚（练手恶战）", resolve: "xh_guxiushi_fight" },
+    ],
+  },
+
+  // —— 节点 6-B·玄骨夺曲魂（锚⑩·硬锚·cutscene·情感冲击·失去曲魂）——
+  {
+    id: "xh_a4_xuangu",
+    skipIf: (s) => s.flags.xh_a4_xuangu_done,
+    cond: (s) => s.flags.xh_a4_guxiushi_done && !s.flags.xh_a4_xuangu_done,
+    cg: "sorrow",
+    bgm: "sorrow",
+    title: "玄骨上人 · 夺舍",
+    objTitle: "曲魂 · 失去",
+    objHint: "宝室深处，鬼骷髅现身——金青被一击秒杀。你眼睁睁看着玄骨上人夺舍了曲魂的身躯。从七玄门一路陪伴至今的曲魂，在这一刻……失去了。",
+    text: [
+      { scene: "古修士洞府 · 宝室深处" },
+      { cam: "zoom", scale: 1.05, ms: 320 },
+      "宝室深处骤起阴风，一具鬼骷髅自黑暗里飘出——元婴级的死气铺天盖地压下。金青甚至来不及惨叫，便被一击打得形神俱灭。",
+      { say: "玄骨", tone: "森冷", text: "「这具尸傀的躯壳……倒是难得的好皮囊。」" },
+      { aside: "鬼骷髅的目光，落在了你身畔的曲魂身上。你想拦——可在元婴级的威压下，你连动一根手指都艰难万分。" },
+      "一道鬼气没入曲魂体内。那具从青牛镇张铁、到七玄门尸傀、再到身外化身、一路沉默地陪你从天南走到星海的躯壳，竟被玄骨生生夺舍占据。",
+      { fx: "burst", at: "center", elem: "jin", ms: 420 },
+      { sfx: "danger" },
+      { aside: "张铁……铁奴……曲魂。那个憨厚地说『以后你就是我兄弟』的少年，那具替你挡过无数刀光的身外化身——在这一刻，被夺走了。从今往后，并肩的位置，空了。" },
+      { say: "韩立", emo: "anger", tone: "low", text: "「……曲魂！」" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a4_xuangu_done");
+      Engine.meetNpc("xuangu", "本名萧诧、改修鬼道的前元婴后期老怪——古修士洞府中一击秒杀金青、夺舍曲魂身躯重获肉身。日后虚天殿的终战之敌。");
+      s.sideUnit = null;                 // 曲魂被夺——侧位永久失去
+      State.setFlag("quhun_lost");       // 防 _migrate 老档补发再生曲魂
+      s.demon = Math.min(100, (s.demon || 0) + 8);
+      s.mood = Math.max(0, (s.mood || 0) - 10);
+      Engine.writeLedger("xh_quhun_lost", "古修士洞府·玄骨夺曲魂——鬼骷髅萧诧一击秒杀金青、夺舍曲魂身躯重获肉身。从青牛镇张铁、七玄门尸傀、身外化身一路陪伴至今的曲魂，自此失去（侧位永久移除·情感低谷·心魔+8）。这笔账，留待虚天殿终战。");
+      Engine.addMilestone("曲魂被夺·情感低谷（玄骨夺舍·终战之敌结仇）", "story");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "sorrow", text: "古修士洞府：散修金青身死，韩立失其相伴多年的身外化身曲魂——夺舍者，一个改修鬼道的元婴老怪。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      {
+        text: "暴怒出手 · 辟邪神雷劈向玄骨",
+        hint: "玄骨记下你有辟邪神雷·终战他有防备",
+        effect(s) {
+          s.mood = Math.max(0, (s.mood || 0) - 3);
+          State.setFlag("xh_xuangu_rage");
+          Engine.writeLedger("xh_xuangu_react", "玄骨夺曲魂·暴怒——辟邪神雷劈向玄骨却被轻松挡下，玄骨记住了你有此物（终战他有防备）。");
+          return { text: "你再忍不住，一道金色神雷劈出！玄骨随手一挡，鬼气翻卷间冷笑：「辟邪神雷？有点意思。」——他记住了你的底牌。你重伤之下，被迫退走。", kind: "bad" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "强忍怒火 · 藏拙示弱",
+        hint: "玄骨轻视你·终战他轻敌",
+        effect(s) {
+          State.setFlag("xh_xuangu_endure");
+          Engine.writeLedger("xh_xuangu_react", "玄骨夺曲魂·强忍——藏拙示弱、不露辟邪神雷，玄骨只当你是个寻常结丹小修（终战他轻敌）。");
+          return { text: "你死死压住翻涌的杀意，佯作惊惧退避。玄骨扫你一眼，懒得多顾——一个结丹小修罢了。藏拙的本能，让你把辟邪神雷的底牌，死死藏住了。这笔账，来日再算。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "趁乱撤退 · 保命为先",
+        hint: "中间路线·留得青山",
+        effect(s) {
+          s.hp = Math.max(1, Math.round((s.hp || s.hpMax) * 0.9));
+          State.setFlag("xh_xuangu_flee");
+          Engine.writeLedger("xh_xuangu_react", "玄骨夺曲魂·撤退——保命为先、趁乱遁走，玄骨未追。曲魂之仇，记在心里。");
+          return { text: "你强压悲愤，催遁光趁乱遁走。玄骨夺舍方成、肉身未稳，懒得追击。你逃出洞府，胸中那口血气堵得发疼——曲魂的仇，你记下了。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
 ];
 
 window.STORY = STORY;
