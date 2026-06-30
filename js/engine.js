@@ -5187,6 +5187,82 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  // —— S10·救凌玉灵（objective survive·护星宫双圣之女·关系线种子）——
+  startXhLingyulingFight() {
+    const s = State.data;
+    this._nextFightType = "xh_lingyuling";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    const yaoshou = () => ({
+      name: "外海妖兽", hp: 180, sense: 13, speed: 16, agility: 12, move: 2, mp: 40,
+      elem: "shui", nature: "beast", tactics: "feral", canFlee: false, armor: 3, formation: "pack",
+      attacks: [
+        { name: "獠牙撕咬", dmg: 22, kind: "normal", weight: 12, elem: "shui", range: [1, 1] },
+        { name: "扑击", dmg: 28, kind: "charge", weight: 6, aim: "cell", lunge: true, range: [1, 4], mp: 6, elem: "shui" },
+      ],
+      reward: {}, namedLoot: null,
+    });
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);   // 啼魂兽随行
+    // 凌玉灵·护送对象（VIP·不参战·筑基后期·护住勿令气绝）
+    sides.push({ id: "ling_yuling", name: "凌玉灵", kind: "ally", art: null,
+      hp: 70, hpMax: 70, guard: 0.2, elem: "shui", noAct: true, persona: { aggr: 0, prot: 0, kite: 0 }, moves: [] });
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [yaoshou(), yaoshou(), yaoshou()],
+      objective: { kind: "survive", rounds: 4,
+        winLog: "外海妖兽尽数退散——凌玉灵脱险了。星宫双圣之女承你这一份救命之情，星宫的关系线，自此种下。" },
+      maxRounds: 4, W: 15, lanes: 3, sides,
+      playerPos: 5, enemyPos: 9,
+    });
+    // 妖兽优先扑凌玉灵（护送：清开近身追兵）
+    this._combat._enemyTargetBias = function(e) {
+      const ly = this.sides.find(sd => sd.id === "ling_yuling");
+      if (!ly || ly.hp <= 0) return null;
+      return this.dist(e, ly) <= 4 ? ly : null;
+    };
+    this._combat._afterEnemyTick = function() {
+      const ly = this.sides.find(sd => sd.id === "ling_yuling");
+      if (ly && ly.hp <= 0 && this.status === "ongoing") {
+        this._log("凌玉灵气绝倒地——你没能护住星宫双圣之女！");
+        this.status = "lose";
+      }
+    };
+    this._combatMeta = { type: "xh_lingyuling" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("【护人】外海妖兽群围攻凌玉灵——护住她、撑过 4 回合（清开近身妖兽，别让她气绝）！");
+    this.log("出殿途中，星宫双圣之女凌玉灵被外海妖兽围困。护住她撑过 4 回合——不必恋战。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— S10·海王兽斩杀（战力验证·碾压·章末扬眉）——
+  startXhHaiwangFight() {
+    const s = State.data;
+    this._nextFightType = "xh_haiwang";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    const haiwang = {
+      name: "海王兽", hp: 360, sense: 16, speed: 17, agility: 13, move: 2, mp: 80, qiLayer: 18,
+      elem: "shui", nature: "beast", tactics: "feral", canFlee: false, armor: 5, boss: true,
+      introNote: "七级海王兽——搁在开篇是要逃命的对手。如今你结丹中期、青竹蜂云剑在手、辟邪神雷+噬金虫俱全……正好拿它验一验这一身的脱胎换骨。",
+      attacks: [
+        { name: "巨涛碾压", dmg: 30, kind: "normal", weight: 12, elem: "shui", range: [1, 2] },
+        { name: "海王怒吼", dmg: 26, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 3], depth: "front", elem: "shui", mp: 7 },
+        { name: "吞天巨口", dmg: 38, kind: "pierce", weight: 6, range: [1, 1], elem: "shui", mp: 8 },
+      ],
+      reward: { lingshi: 20 }, namedLoot: null,
+    };
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [haiwang], maxRounds: 18, W: 13, lanes: 2, sides,
+      playerPos: 4, enemyPos: 8,
+    });
+    this._combatMeta = { type: "xh_haiwang", canQuick: true };
+    s.combat = true;
+    this._combat.startRound();
+    this.log("外星海闭关出关，七级海王兽撞上枪口。开篇要逃的对手，如今且看你结丹中期+青竹蜂云剑，如何从容斩之——章末扬眉吐气。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -6446,6 +6522,42 @@ const Engine = {
         this.log(`修罗圣火太盛、玄骨太强，没能撑到他自毁那一刻——你浴血整顿、备齐底牌再战（再战伤害+${bonus}%）。辟邪神雷克他、啼魂兽护你、皇鳞甲挡命——撑住八回合，他必自焚！`, "bad");
         s.pendingEvent = "xh_a4_xuangu_fight"; this._retryAfterLoss = "xh_a4_xuangu_fight";
       }
+    } else if (meta.type === "xh_lingyuling") {
+      // 星海飞驰·S10 救凌玉灵（护送 survive·星宫关系种子）——胜→外星海闭关
+      if (win) {
+        State.setFlag("xh_a5_lingyuling_done");
+        this.meetNpc("ling_yuling", "星宫双圣之女——出殿途中被外海妖兽围困、为韩立所救，星宫关系线的种子。");
+        this.writeLedger("ling_yuling_saved", "出殿·救凌玉灵——护星宫双圣之女撑过外海妖兽围攻，结下星宫关系线（外海风云篇星宫双圣之缘）。");
+        this.addMilestone("星海飞驰·救凌玉灵（星宫关系种子）", "xinghaifeichi");
+        this.log("妖兽退散，凌玉灵脱险——星宫双圣之女承你救命之情。这份善缘，日后自有回响。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_xh_lingyuling = (s.flags.losses_xh_lingyuling || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xh_lingyuling) * 8;
+        s.hp = s.hpMax; s.demon = clamp(s.demon + 4, 0, 100);
+        this.log(`妖兽扑得太急，护人有些手忙脚乱——你调息再上（再战伤害+${bonus}%）。清开她近身的妖兽，撑住 4 回合！`, "bad");
+        s.pendingEvent = "xh_a5_lingyuling"; this._retryAfterLoss = "xh_a5_lingyuling";
+      }
+    } else if (meta.type === "xh_haiwang") {
+      // 星海飞驰·S10 海王兽斩杀（战力验证·碾压·章末扬眉）——胜→四大势力追杀（章末钩）
+      if (win) {
+        State.setFlag("xh_a5_haiwang_done");
+        this.writeLedger("xh_haiwang_won", "外星海出关·斩七级海王兽——开篇要逃的对手，如今结丹中期+青竹蜂云剑从容碾压。对比开篇的挣扎，章末扬眉吐气。");
+        this.addMilestone("星海飞驰·海王兽斩杀（结丹中期从容碾压·章末扬眉）", "xinghaifeichi");
+        this.addFame(8, "外星海·结丹修士韩立轻取七级海王兽");
+        this.log("海王兽庞大的躯体沉入碧波——七级妖兽，今日于你不过探囊取物。这一身脱胎换骨，对得起虚天殿那一趟九死一生。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_xh_haiwang = (s.flags.losses_xh_haiwang || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_xh_haiwang) * 8;
+        s.hp = s.hpMax; s.demon = clamp(s.demon + 4, 0, 100);
+        this.log(`海王兽到底是七级巨妖，一时大意没拿稳——你调息再上（再战伤害+${bonus}%）。青竹蜂云剑+辟邪神雷俱全，碾过去！`, "bad");
+        s.pendingEvent = "xh_a5_haiwang"; this._retryAfterLoss = "xh_a5_haiwang";
+      }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）
       this._resolveBreakthroughResult(win, c.player.hpMax > 0 ? c.player.hp / c.player.hpMax : 0);
@@ -6724,6 +6836,8 @@ const Engine = {
       xh_guiyuan_fight:        function () { this.startXhGuiyuanFight(); },
       xh_binghuo_fight:        function () { this.startXhBinghuoFight(); },
       xh_xuangu_fight:         function () { this.startXhXuanguFight(); },
+      xh_lingyuling_fight:     function () { this.startXhLingyulingFight(); },
+      xh_haiwang_fight:        function () { this.startXhHaiwangFight(); },
     });
   },
   hasFight(id) { return !!(id && this._fightRoutes()[id]); },
@@ -6961,6 +7075,8 @@ const Engine = {
     if (choice.resolve === "xh_guiyuan_fight")   { s.pendingEvent = null; this.startXhGuiyuanFight();   return; }
     if (choice.resolve === "xh_binghuo_fight")   { s.pendingEvent = null; this.startXhBinghuoFight();   return; }
     if (choice.resolve === "xh_xuangu_fight")    { s.pendingEvent = null; this.startXhXuanguFight();    return; }
+    if (choice.resolve === "xh_lingyuling_fight"){ s.pendingEvent = null; this.startXhLingyulingFight();return; }
+    if (choice.resolve === "xh_haiwang_fight")   { s.pendingEvent = null; this.startXhHaiwangFight();   return; }
 
     // 普通推进
     s.pendingEvent = null;

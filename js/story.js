@@ -6763,6 +6763,212 @@ const STORY = [
       },
     ],
   },
+  // —— 节点 5-A·出殿·温天仁拦路（锚⑲·关键抉择·冒充/硬闯）——
+  {
+    id: "xh_a5_wentianren",
+    skipIf: (s) => s.flags.xh_a5_wentianren_done,
+    cond: (s) => s.flags.xh_a4_shouhuo_done && !s.flags.xh_a5_wentianren_done,
+    bgm: "tense",
+    title: "出殿 · 温天仁拦路",
+    objTitle: "拦路 · 冒充蒙混",
+    objHint: "虚天殿出口，温天仁（六道极圣之徒·结丹后期）看守离岛。正面打不过——但你有青易居士赠的青冥针，可冒充其徒弟蒙混过关。",
+    text: [
+      { scene: "虚天殿 · 出口" },
+      "满载而归，出口却立着一人——温天仁，六道极圣的徒弟，结丹后期。他逐一盘问出殿之人的来路。",
+      { aside: "正面硬闯，绝非这结丹后期的对手。好在……青易居士那枚青冥针还在身上——拿它作信物，冒充青易的徒弟蒙混过关，最是稳妥。" },
+      { say: "温天仁", tone: "冷峻", text: "「出殿者，报上名号师承。」" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a5_wentianren_done");
+      Engine.meetNpc("wen_tianren", "六道极圣之徒·结丹后期，虚天殿出口看守——正面对决留外海风云篇，此处只是初遇。");
+      Engine.writeLedger("xh_wentianren_encounter", "出殿·温天仁拦路——结丹后期的六道极圣之徒看守离岛，韩立初遇。正面对决留外海风云篇。");
+    },
+    choices: [
+      {
+        text: "冒充青易居士的徒弟·蒙混过关",
+        hint: "需青冥针为信物（动漫核定·不暴露）",
+        requireItem: "qingming_zhen",
+        effect(s) {
+          State.setFlag("xh_wentianren_fake");
+          Engine.writeLedger("xh_wentianren_react", "出殿·凭青冥针冒充青易居士之徒蒙混过关——青易赠宝的虚情假意，竟阴差阳错帮了韩立。");
+          return { text: "你不慌不忙取出青冥针：「南鹤岛青易居士门下。」温天仁盯着那枚青易的符宝看了一瞬，终是颔首放行。青易那点虚情假意，倒成了你脱身的护身符。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "强行突围 · 以遁术脱身",
+        hint: "暴露身份·温天仁记下你（远期仇恨）",
+        effect(s) {
+          s.hp = Math.max(1, Math.round((s.hp || s.hpMax) * 0.7));
+          State.setFlag("xh_wentianren_force");
+          Engine.writeLedger("xh_wentianren_react", "出殿·强行突围——青竹蜂云剑+血色披风遁光强闯，暴露了身份，温天仁记下了韩立（外海风云篇仇恨增）。");
+          return { text: "你懒得废话，青竹蜂云剑卷起一道剑光、血色披风遁光暴涨，强行突围而去！温天仁一击未能拦下，眯起眼记住了你这道身影——这梁子，外海风云再算。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 5-B·救凌玉灵（锚⑳·Combat·survive 护人·星宫关系种子）——
+  {
+    id: "xh_a5_lingyuling",
+    skipIf: (s) => s.flags.xh_a5_lingyuling_done,
+    cond: (s) => s.flags.xh_a5_wentianren_done && !s.flags.xh_a5_lingyuling_done,
+    bgm: "combat",
+    title: "出殿途中 · 救凌玉灵",
+    objTitle: "护人 · 星宫之女",
+    objHint: "出殿途中，一名星宫双圣之女凌玉灵被外海妖兽围困。护住她、撑过 4 回合即可——不必恋战。",
+    text: [
+      { scene: "外星海 · 离岛海域" },
+      "离岛途中，一阵呼救——一名年轻女修被外海妖兽群围在礁石上，眼看不支。她身上那缕气息，是星宫一脉。",
+      { aside: "举手之劳。护她撑过这一阵——结个善缘，日后星海行走，总比多一个敌人要好。" },
+    ],
+    choices: [
+      { text: "出手 · 护住凌玉灵", hint: "survive 4 回合·清开近身妖兽", resolve: "xh_lingyuling_fight" },
+    ],
+  },
+
+  // —— 节点 5-C·外星海闭关（帆⑦·时间跳跃·补天丹改善灵根·玄阴诀·噬金虫变异·3选1侧重）——
+  {
+    id: "xh_a5_biguan",
+    skipIf: (s) => s.flags.xh_a5_biguan_done,
+    cond: (s) => s.flags.xh_a5_lingyuling_done && !s.flags.xh_a5_biguan_done,
+    cg: "waihai_lie",
+    bgm: "journey",
+    title: "外星海 · 闭关",
+    objTitle: "蛰伏 · 整理战利品",
+    objHint: "携虚天殿满载之获，躲入外星海一处偏僻孤岛开辟洞府。服补天丹改善灵根、修炼完整版玄阴诀、培育噬金虫变异——二三十年弹指而过。",
+    text: [
+      { scene: "外星海 · 孤岛洞府" },
+      { cam: "zoom", scale: 1.04, ms: 320 },
+      "虚天鼎在手，天下皆敌。你不敢张扬，寻了外星海一处偏僻孤岛，开辟洞府、闭死关，整理这一趟泼天的收获。",
+      { aside: "补天丹服下——伪灵根之体如逢甘霖，经脉滞涩为之一畅，资质竟真改善了几分；完整版玄阴诀参研入门；从虚天殿带出的灵机喂养下，噬金虫也隐隐有了变异三色的征兆。二三十年，弹指即过。" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「虚天鼎、乾蓝冰焰、玄阴诀……这一身的底子，够我在这星海里，走得更远了。」" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("xh_a5_biguan_done");
+      s.year += 25; s.age = (s.age || 0) + 25;
+      // 补天丹·改善灵根（外星海闭关服食）——take 一枚、narrate；不叠既有 butian_used 速率，避免数值漂移
+      if (State.count("butian_dan") > 0 && !s.flags.xh_butian_used) {
+        State.take("butian_dan", 1);
+        State.setFlag("xh_butian_used");
+      }
+      Engine.writeLedger("xh_biguan", "外星海闭关二三十年——服补天丹改善灵根、修炼完整版玄阴诀、噬金虫变异征兆。携虚天鼎蛰伏，整理战利品。");
+      Engine.addMilestone("外星海闭关·二三十年蛰伏（补天丹改善灵根·玄阴诀）", "xinghaifeichi");
+    },
+    choices: [
+      {
+        text: "潜修玄阴诀 · 真元更进一层",
+        hint: "剑道/真元侧重",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 6);
+          s.sense = (s.sense || 0) + 2;
+          Engine.writeLedger("xh_biguan_focus", "闭关侧重·潜修玄阴诀——真元/神识精进。");
+          return { text: "你将大半光阴倾注于完整版玄阴诀，真元一层层淬炼得愈发精纯，神识也更上一层（神识+2）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "温养金丹 · 巩固结丹中期",
+        hint: "稳固境界·心境侧重",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 10);
+          s.demon = Math.max(0, (s.demon || 0) - 8);
+          Engine.writeLedger("xh_biguan_focus", "闭关侧重·温养金丹——境界稳固、道心澄明（心魔消减）。");
+          return { text: "你不急着求进，只温养金丹、稳固结丹中期的根基。二三十年沉淀下来，道心愈发澄明，心魔消减（心境大涨·心魔-8）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "培育噬金虫变异 · 三色虫群",
+        hint: "虫群战力·阵法侧重",
+        effect(s) {
+          s.skills = s.skills || {}; s.skills.alchemy = (s.skills.alchemy || 0) + 2;
+          State.give("lingshi", 60);
+          Engine.writeLedger("xh_biguan_focus", "闭关侧重·培育噬金虫——三色变异征兆、虫群战力渐长（灵石+60）。");
+          return { text: "你以虚天殿带出的灵机喂养噬金虫，那一窝灵虫渐渐显出变异三色的征兆，虫群更显灵性。闲暇炼丹制符，也攒下不少灵石（熟练+2·灵石+60）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 5-D·海王兽斩杀（锚㉑·Combat·战力验证·碾压·章末扬眉）——
+  {
+    id: "xh_a5_haiwang",
+    skipIf: (s) => s.flags.xh_a5_haiwang_done,
+    cond: (s) => s.flags.xh_a5_biguan_done && !s.flags.xh_a5_haiwang_done,
+    bgm: "combat",
+    title: "外星海 · 海王兽",
+    objTitle: "战力验证 · 从容碾压",
+    objHint: "出关途中，一头七级海王兽撞上枪口。开篇要逃的对手，如今你结丹中期、青竹蜂云剑在手——正好验一验这一身脱胎换骨。",
+    text: [
+      { scene: "外星海 · 怒涛之上" },
+      "出关试手，恰逢一头七级海王兽掀涛而来。搁在初入星海那会儿，这是要拼命逃的对手。",
+      { aside: "如今么——结丹中期、青竹蜂云剑七十二口、辟邪神雷、噬金虫俱全。来得正好，拿你验一验这一身的本事。" },
+    ],
+    choices: [
+      { text: "斩之 · 验这一身脱胎换骨", hint: "碾压·章末扬眉", resolve: "xh_haiwang_fight" },
+    ],
+  },
+
+  // —— 节点 5-E·四大势力追杀（锚㉒·章末钩·通关·解锁外海风云篇）——
+  {
+    id: "xh_a5_zhuisha",
+    skipIf: (s) => s.flags.arc6_complete,
+    cond: (s) => s.flags.xh_a5_haiwang_done && !s.flags.arc6_complete,
+    cg: "luanxinghai",
+    bgm: "tense",
+    title: "星海飞驰 · 终 · 四大势力追杀",
+    objTitle: "章末 · 危机四伏",
+    objHint: "虚天鼎的消息终究泄露——极阴、碧云门、万法门、星宫四路追杀接踵而至。你携至宝遁入外星海深处，闭关二三十年避风头……下一篇章『外海风云』，自此开始。",
+    text: [
+      { scene: "外星海 · 深处" },
+      { cam: "zoom", scale: 1.06, ms: 360 },
+      "纸终究包不住火——你夺走虚天鼎的消息，到底走漏了。极阴岛、碧云门、万法门、星宫……四方势力的追杀令，接踵而至。",
+      { say: "韩立", tone: "low", text: "「虚天鼎在手，天下皆敌……可这，不正是修仙路该有的样子么。」" },
+      { aside: "你携虚天鼎、乾蓝冰焰、青竹蜂云剑，遁入外星海最深处，开辟洞府、闭死关——避过这一波风头，再图后计。结丹初成时的那个韩立，如今已能在元婴老怪环伺的星海里，挣出一条活路。" },
+      {
+        guide: {
+          tag: "星海飞驰篇 · 终　——　满载而归·危机四伏",
+          title: "章末钩 · 下一篇：外海风云篇",
+          hint: "青竹蜂云剑、辟邪神雷、虚天鼎、乾蓝冰焰、银月（沉睡）、玄阴诀……一身底牌已成。远处的钩子已隐隐浮现：风雷翅炼制、银月苏醒、温天仁的正面对决、元瑶的还阳术、蛮胡子之困、星宫双圣之缘——这一切，都留待《外海风云篇》。",
+          cta: "（遁入外星海深处·闭关避风头——星海飞驰篇 终）",
+        },
+      },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      State.setFlag("arc6_complete");
+      // 篇章契约：通关解锁下一篇（外海风云篇·钩子）
+      if (typeof Chapters !== "undefined") {
+        const next = Chapters.active().nextChapter;
+        if (next) Chapters.unlock(next);
+      }
+      Engine.writeLedger("xh_arc6_complete", "星海飞驰篇·终——虚天鼎消息泄露，极阴/碧云门/万法门/星宫四大势力追杀，韩立携至宝遁入外星海深处闭关避风头。一身底牌（青竹蜂云剑/辟邪神雷/虚天鼎/乾蓝冰焰/玄阴诀/银月沉睡）已成。下一篇章外海风云。星海飞驰篇·终。");
+      Engine.addMilestone("星海飞驰篇通关·四大势力追杀（章末钩·realmTier 结丹中期）", "medal");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "乱星海：虚天鼎下落成谜，极阴岛/碧云门/万法门/星宫四方势力悬赏追缉一名结丹散修。" });
+      s.worldNews.push({ t, kind: "fortune", text: "传闻那结丹散修携至宝遁入外星海深处，自此销声匿迹——明眼人都知道，这不过是下一场风云的序幕。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+      Engine.toast("星海飞驰篇通关！携虚天鼎遁入外星海");
+    },
+    choices: [
+      {
+        text: "（遁入外星海深处·闭关避风头——且待外海风云）",
+        hint: "满载而归·危机四伏——星海飞驰篇 终",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 8);
+          return { text: "你抚着储物镯中那尊温润的虚天鼎，遁光一闪，没入外星海无边的妖雾深处。结丹初成到满载而归——这一篇星海飞驰，你走得九死一生，却也脱胎换骨。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
 ];
 
 window.STORY = STORY;
