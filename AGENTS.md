@@ -172,7 +172,9 @@
   推送后 GitHub Pages 自动部署，验 `curl https://chentong227.github.io/fanrenxiuxianzhuan/ver.txt` = 新版本号（部署有几十秒延迟，带 `?cb=` 绕缓存）。
 - **测试**：`node test/run.js`（存档迁移）、`node test/journey.test.js`（E2E 主线）、
   `node test/combat.test.js`、平衡蒙特卡洛 `node test/encounter.bal.js`、`node test/elem.bal.js`、
-  `node test/tier.bal.js`（标度公式）、`node test/scale.bal.js`（A2 标度校准·几何 realmBand+驱动门槛）。
+  `node test/tier.bal.js`（标度公式）、`node test/scale.bal.js`（A2 标度校准·几何 realmBand+驱动门槛）、
+  `node test/climax.bal.js`（高潮越阶战·一致感锚点——真引擎跑真存档真战斗装配·防高潮战滑成无牙/底牌路径失效，
+  改高潮战/boss 数值必跑；其辅助 `test/_loadgame.js` 在 node 下垫片加载真实引擎全链）。
   改战斗/数值必跑平衡脚本，胜率锚点见 combat-balance-design.md。
 - **⚠ 移动端测试基准（2026-06-16 起·硬约束，用户明令"要记住"）**：本游戏**主攻手机端**，
   一切浏览器可视化测试/验收/录屏**一律用 iPhone 14 Pro Max 视口（430×932，DPR 3）**跑——
