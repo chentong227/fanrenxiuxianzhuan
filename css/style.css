@@ -719,6 +719,22 @@ body.dock-active .layout .mid-col {
 .month-cell.autumn { border-color: rgba(212,176,106,.4); }
 .month-cell.winter { border-color: rgba(111,159,200,.4); }
 
+/* 修为进度·顶栏常驻条（全 tab 可见·锚住闭关核心循环的即时反馈） */
+.top-cul {
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.top-cul .tc-realm { font-size: 12px; color: var(--jade-bright); letter-spacing: 1px; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+.top-cul .tc-track {
+  width: 90px; height: 5px; border-radius: 3px; overflow: hidden;
+  background: var(--bg-panel-2); border: 1px solid var(--border-soft);
+}
+.top-cul .tc-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--jade), var(--jade-bright));
+  transition: width .8s cubic-bezier(.22,.61,.36,1);
+}
+.top-cul .tc-text { font-size: 11px; color: var(--ink-dim); }
+
 /* 季节染色：叠在 scene-tint 之上（z-index:2.5）*/
 .scene-season {
   position: absolute; inset: 0; z-index: 2; pointer-events: none;
@@ -2952,6 +2968,12 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   .char-brief { gap: 8px; }
   .game-logo { font-size: 14px; letter-spacing: 2px; }
   .t-name { font-size: 16px; }
+  /* 手机端顶栏紧凑：月历条收窄、修为条只留细轨（境界名/数值在「状态」页看），两者一行并存 */
+  .month-bar { gap: 1px; }
+  .month-cell { width: 9px; }
+  .top-cul .tc-realm, .top-cul .tc-text { display: none; }
+  .top-cul .tc-track { width: 56px; }
+  .top-cul { gap: 0; }
   .topbar-actions { gap: 5px; }
   .btn-mini { padding: 5px 9px; font-size: 12px; }
   .topbar-actions .tb-full { display: none; }

@@ -860,6 +860,19 @@ const UI = {
     this._renderMonthBar(s.month);
     // 季节染色
     this._updateSeason(s.month);
+    // 修为进度（顶栏常驻·全 tab 可见）：核心循环「闭关→看修为涨→再闭关」不必切到状态页
+    //   ——把 float-gain「+修为」锚到一条始终在场的进度条上（嗑瓜子即时反馈·时间=货币）。
+    const realm = (typeof State.realm === "function") ? State.realm() : null;
+    if (realm) {
+      const rn = this.el("top-cul-realm");
+      const stg = (typeof State.realmStage === "function") ? State.realmStage(s) : null;
+      if (rn) rn.textContent = realm.name + (stg ? "·" + stg.name : "");
+      const max = realm.culMax || 1;
+      const fill = this.el("top-cul-fill");
+      if (fill) fill.style.width = clamp((s.cultivation / max) * 100, 0, 100) + "%";
+      const ct = this.el("top-cul-text");
+      if (ct) ct.textContent = `${Math.round(s.cultivation)}/${max}`;
+    }
     // 角色卡
     const hn = this.el("hero-name"); if (hn) hn.textContent = s.name;
     const ha = this.el("hero-age"); if (ha) ha.textContent = `${s.age} 岁`;
