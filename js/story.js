@@ -5540,6 +5540,127 @@ const STORY = [
       },
     ],
   },
+
+  /* ============================================================
+   * 星海飞驰篇 · S1（章节注册 + 天星城主场景 + 结丹后日常）
+   *   设计：docs/xinghaifeichi-design.md §十·10.1（节点 1-A / 1-C）
+   *   切片边界：1-A 切章 + 帆①天星城日常（home 已可 cultivate/breakthrough/alchemy）
+   *   + 1-C 妙音门·紫灵登场（蝎岛之战 S2 待续）。战斗/虚天殿等高风险切片后排。
+   *   注：本批节点 APPEND 在 STORY 末尾——不移动既有 storyStage 索引，存档零迁移。
+   * ============================================================ */
+
+  // —— 节点 1-A·结丹后过渡（锚①·硬锚 cutscene·切入星海飞驰篇）——
+  {
+    id: "xh_a1_jieguo",
+    skipIf: (s) => s.flags.xh_a1_done,
+    cond: (s) => s.flags.arc5_complete && !s.flags.xh_a1_done,
+    bgm: "town",
+    title: "星海飞驰 · 金丹初成",
+    objTitle: "结丹后 · 新程",
+    objHint: "金丹既成，天星城的日子却与想象中不同——结丹初期的修士，在这片星海里不过刚刚站稳脚跟。先沉下心来，巩固金丹、打理日常。",
+    text: [
+      { scene: "天星城 · 洞府静室" },
+      { cam: "zoom", scale: 1.06, ms: 320 },
+      "丹田之内，那枚温润金丹缓缓旋转，吐纳间将百窍灵力压炼得越发凝实。结丹之后，识海开阔、神识倍增——你能清晰感到，体内那座『法力之池』比筑基时深了不止一倍。",
+      { aside: "金丹大成的实惠，不止是打得过同阶。新的法术位、法宝悬浮祭出的余裕、伴身法宝的额外槽——结丹修士的底子，正一点点在你身上铺开。" },
+      { scene: "天星城 · 坊市长街" },
+      "推开洞府石门，天星城的喧嚣扑面而来。这座内星海中枢的修仙大都会，坊市林立、飞舟往来，结丹修士在街上不算稀奇——你这枚新成的金丹，在这里只是刚刚够格。",
+      { say: "韩立", tone: "low", text: "「结丹，不过是又一个起点。这星海万里……该往哪里去？」" },
+      "茶肆酒楼间，隐隐有传闻飘来：三百年一开的『虚天殿』将现世，内藏上古大能的至宝……你心头微动，却不动声色。修为未稳，凑这等热闹只是取死。",
+      { aside: "正思忖间，一名妙音门的执事寻上门来，递来一封素笺邀帖——落款，是个你既陌生又莫名熟悉的名字。" },
+    ],
+    onArrive(s) {
+      s.activeChapter = "xinghaifeichi";   // 切入星海飞驰篇（章名/境界上限 realmCap=22 由此读）
+      s.location = "tianxing_city";
+      State.setFlag("xh_a1_done");
+      State.setFlag("tianxing_open");      // 防御性：确保天星城 home 可进（前篇应已设）
+      s.flags.xh_a1_month = State.absMonth();   // 记录开篇月——帆①自由期满 2 月方触发 1-C 妙音门
+      Engine.writeLedger("xh_a1_jieguo", "星海飞驰篇·开篇——金丹大成后落定天星城，结丹初期立身内星海中枢；虚天殿传闻初起，妙音门邀帖至。");
+      Engine.addMilestone("星海飞驰篇·启：金丹初成·天星城立身", "xinghaifeichi");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "天星城：结丹散修韩立落户内星海中枢，于坊市间打理金丹后的修行日常。" });
+      s.worldNews.push({ t, kind: "world", text: "星海传闻：三百年一开的『虚天殿』将现世之说渐起，内外星海诸多修士闻风而动。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      {
+        text: "低调闭关·先巩固金丹",
+        hint: "结丹初期·稳为上——闭关/打理日常皆可",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 3);
+          s.hp = s.hpMax;
+          State.setFlag("xh_a1_lowkey");
+          return { text: "你压下凑热闹的念头，回洞府静心吐纳——金丹初成，稳固为先。天星城的坊市、猎场、修炼，都随你慢慢打理。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "去坊市打听虚天殿的消息",
+        hint: "远方=惦记——先探探风声",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 1);
+          State.setFlag("xh_a1_curious");
+          Engine.writeLedger("xh_a1_curious", "开篇即留意虚天殿风声——天生谨慎，先探后动。");
+          return { text: "你在坊市茶肆间不动声色地听了几耳朵：虚天殿、虚天残图、上古至宝……传闻纷杂，真假难辨。心里有了底，眼下还是先把金丹养稳要紧。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 节点 1-C·材料交易·妙音门线（锚②·地点锚·紫灵登场·蝎岛之战 S2 待续）——
+  {
+    id: "xh_a1_miaoyin",
+    skipIf: (s) => s.flags.xh_a1_miaoyin_done,
+    cond: (s) => s.flags.xh_a1_done && !s.flags.xh_a1_miaoyin_done && (State.absMonth() - (s.flags.xh_a1_month || 0) >= 2),
+    where: "tianxing_city",
+    bgm: "town",
+    title: "天星城 · 妙音门商会",
+    objTitle: "材料交易 · 紫灵邀约",
+    objHint: "妙音门商会愿以公道价收购你外海挣下的妖兽材料，少主紫灵更亲递邀帖，要谈一桩合作。回天星城商会一见便知。",
+    text: [
+      { scene: "天星城 · 妙音门商会" },
+      "妙音门商会金碧辉煌，乐声隐隐。一名身着淡紫宫装的女修自屏风后转出——结丹气息温润内敛，眉眼间却有几分说不出的熟稔。",
+      { say: "紫灵", emo: "calm", text: "「韩大哥，别来无恙。」" },
+      { aside: "韩大哥……这称呼，这眉眼，还有那缕莫名让人心安的熟悉之感——你一时怔住。当年镇妖大典的乱军里，那个躲在你身后、哭着说『就剩我一个了』的小丫头汪凝，竟已长大成这般模样。" },
+      { say: "紫灵", emo: "smile", text: "「这些年，我做到了当初说的——变得很强很强。如今妙音门的事，多半也由我做主了。」" },
+      "她不提那些旧事，只笑吟吟地引你入座：妙音门商会愿以公道价收购你外海挣下的妖兽材料；另有一桩差事，想请你这位结丹道友帮衬。",
+      { say: "紫灵", tone: "low", text: "「妙音门正缺一位结丹期的客卿长老。报酬么——」她顿了顿，眸光微亮，「绝不会亏待故人。」" },
+      { aside: "（你心头那缕莫名的熟悉始终散不去，却又说不上来由——只当是救命之缘的余温。这丫头的心计眼界，早已不是当年那个孤雏了。）" },
+    ],
+    onArrive(s) {
+      s.location = "tianxing_city";
+      Engine.meetNpc("zi_ling", "镇妖大典惊变中你从乱军里救下的孤雏汪凝（小紫灵），如今已长大成人——结丹修为、妙音门少主，名动内星海的紫灵。");
+      State.setFlag("xh_a1_miaoyin_done");
+      Engine.writeLedger("xh_miaoyin_meet", "天星城妙音门商会重逢长大成人的紫灵（汪凝）——她以少主之姿邀韩立任结丹客卿长老、收购外海妖材，蝎岛之战的线头自此牵起。故人钟·墨彩环转世的软伏笔在『莫名熟悉』里轻轻应了一声（不写死）。");
+      Engine.addMilestone("星海飞驰篇·妙音门线：紫灵重逢·客卿邀约", "xinghaifeichi");
+    },
+    choices: [
+      {
+        text: "答应合作·先把外海妖材交易了",
+        hint: "妙音门客卿——蝎岛之战将启（待续）",
+        effect(s) {
+          State.give("lingshi", 200);
+          State.setFlag("xh_miaoyin_ally");
+          Engine.writeLedger("xh_miaoyin_ally", "应下妙音门客卿长老之职、交易外海妖材（灵石+200）——与紫灵/妙音门结深，蝎岛之战将以妙音门一员入局。");
+          return { text: "你应下了客卿之职，外海积攒的妖兽材料尽数交予妙音门商会，换得灵石二百。紫灵眉眼舒展：「那蝎岛的差事，便托付韩大哥了——只是眼下时机未到，且容我从长计议。」", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "只卖材料·客卿之事容后再议",
+        hint: "保持独立——蝎岛之战延后（待续）",
+        effect(s) {
+          State.give("lingshi", 120);
+          State.setFlag("xh_miaoyin_trade_only");
+          Engine.writeLedger("xh_miaoyin_trade_only", "只交易外海妖材、婉拒客卿（灵石+120）——与妙音门保持距离，蝎岛之战将以散修身份延后入局。");
+          return { text: "你只将妖材作了交易，换得灵石一百二，客卿之事婉言推后。紫灵也不勉强，只浅浅一笑：「韩大哥还是这般谨慎。无妨，门常开着，差事也留着。」", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
 ];
 
 window.STORY = STORY;

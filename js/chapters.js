@@ -87,7 +87,7 @@ const Chapters = {
       nextChapter: "waihaifengyun", // 章末四大势力追杀→外海风云篇（钩子·后续实装）
       currencyName: "灵石",
       // 设计全文见 docs/xinghaifeichi-design.md（最重篇章·52集·青竹蜂云剑/虚天殿/曲魂线收束/银月）。
-      // 实装切片 S1~S10（设计稿§十一）：当前=S0 章节 shell 注册（解锁钩子可解析·内容待按切片推进）。
+      // 实装切片 S1~S10（设计稿§十一）：S1 已落地（1-A 切章过渡 + 天星城日常 home + 1-C 妙音门·紫灵登场，蝎岛之战 S2 待续）。后续切片按序推进。
     },
   ],
 
