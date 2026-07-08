@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>playtest 存档导出</title>
+<style>body{font-family:monospace;background:#111;color:#ddd;padding:20px}#out{white-space:pre-wrap;word-break:break-all}</style>
+</head>
+<body>
+<h3>playtest 存档导出</h3>
+<div id="out">working...</div>
+<script>
+(async () => {
+  const out = document.getElementById("out");
+  const raw = localStorage.getItem("frxxz_save_v1");
+  if (!raw) { out.textContent = "NO_SAVE: localStorage 里没有 frxxz_save_v1"; return; }
+  const name = new URLSearchParams(location.search).get("name") || "save-dump";
+  try {
+    const r = await fetch("http://127.0.0.1:8098/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Save-Name": name },
+      body: raw,
+    });
+    const j = await r.json();
+    let brief = "";
+    try {
+      const s = JSON.parse(raw);
+      brief = `year=${s.year} month=${s.month} realmIndex=${s.realmIndex} cultivation=${s.cultivation} storyStage=${s.storyStage} location=${s.location}`;
+    } catch (e) {}
+    out.textContent = "DUMP_OK " + JSON.stringify(j) + "\n" + brief;
+  } catch (e) {
+    out.textContent = "DUMP_FAIL " + e.message;
+  }
+})();
+</script>
+</body>
+</html>
