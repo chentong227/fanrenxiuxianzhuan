@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>playtest 存档注入</title>
+<style>body{font-family:monospace;background:#111;color:#ddd;padding:20px}#out{white-space:pre-wrap;word-break:break-all}</style>
+</head>
+<body>
+<h3>playtest 存档注入</h3>
+<div id="out">working...</div>
+<script>
+// 用法：/playtest/_load.html?name=save-jiayuan  → 读同源 /playtest/<name>.json 写入 localStorage 后跳回游戏
+(async () => {
+  const out = document.getElementById("out");
+  const q = new URLSearchParams(location.search);
+  const name = q.get("name");
+  if (!name) { out.textContent = "缺参数 ?name=save-xxx（不带 .json）"; return; }
+  try {
+    const r = await fetch(`/playtest/${name}.json`);
+    if (!r.ok) { out.textContent = `LOAD_FAIL ${r.status}：/playtest/${name}.json`; return; }
+    const raw = await r.text();
+    const s = JSON.parse(raw);   // 校验 JSON 合法
+    localStorage.setItem("frxxz_save_v1", raw);
+    out.textContent = `INJECT_OK year=${s.year} month=${s.month} realmIndex=${s.realmIndex} storyStage=${s.storyStage} location=${s.location}\n即将进入游戏……`;
+    if (!q.get("stay")) setTimeout(() => { location.href = "/"; }, 600);
+  } catch (e) {
+    out.textContent = "INJECT_FAIL " + e.message;
+  }
+})();
+</script>
+</body>
+</html>

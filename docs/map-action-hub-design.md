@@ -473,17 +473,27 @@ const ay = from.y + (to.y - from.y) * progress;
 - [ ] 复用 `renderActions()` / `Env.apply()` / `renderLocation()`
 - **验收**：缩放到据点 → 场景图出现 + 行动按钮可用；缩回 → 回到地图
 
-**阶段 3：旅途整合**
-- [ ] `engine.js`：`startJourney` 时头像开始沿路线移动
-- [ ] `engine.js`：`_journeyLeg` 时头像推进 + 旅途行动面板弹出
-- [ ] `engine.js`：`_journeyArrive` 时头像停在目标位置
-- **验收**：点目标节点 → 头像沿路线移动 → 旅途面板每月弹出 → 到达
+**阶段 3：旅途整合** ✅ 已落地（v297·2026-07-09 浏览器 430×932 全程实测）
+- [x] `engine.js`：`startJourney` 时头像开始沿路线移动（`UI._enterJourneyMap` 切地图 Z3）
+- [x] `engine.js`：`_journeyLeg` 时头像推进 + 旅途行动面板弹出——**面板改锁定底部 sheet**
+  （`openFortune` journeyPanel 分支 + `openSheet({lock:true})`：无 ×、点遮罩不关、须择一行动；
+  遮罩透明 `pointer-events:none`，上半屏地图全程可见）
+- [x] `engine.js`：`_journeyArrive` 时头像停在目标位置（`_journeyArriveTransition`→`_returnToLocale` 场景淡入+行动 dock）
+- [x] **移动一拍**（`UI._journeyReveal`）：走段先让头像沿路线滑行 ~950ms（CSS left/top 过渡 1.4s）再弹面板——旅途"走"被看见
+- [x] **当前路线高亮**：`.wm-route.journey` 墨金流动虚线（深墨描边+金芯投影，米色纸面可读；`route-flow` dashoffset 动画）
+- [x] **旅途镜头可见带**：面板占下半屏 ⇒ 缩放钳制 `k=clamp(32/span,1.15,2.2)`、焦点下移 `fy=midY+28/k`——
+  路线整条落进上方 0~40% 屏高可见带，头像全程不被面板遮住
+- [x] **坐标系修复**：`worldmap-svg` `preserveAspectRatio` meet→none——svg 0~100 与 pin/头像百分比投影同坐标系
+  （meet 在竖屏信箱式居中导致路线整体偏移 ~250px 与 pin 错位）
+- **验收** ✅：点太南谷 pin → 启程 sheet → 头像沿墨金路线逐月滑行（1/4→4/4）→ 每月旅途面板底部弹出（地图可见）→
+  旅途事件（茶棚风闻）走全屏 modal 与面板区分 → 到达太南谷场景淡入+行动 dock。journey.test/run/combat/saveload/backbone/ledger/smoke 全绿。
 
-**阶段 4：HUD 浮窗化 + 手机适配**
-- [ ] `style.css`：三栏 grid → 浮窗/dock 布局
-- [ ] `style.css`：手机端底部 sheet + 底栏 tab 调整
-- [ ] `ui.js`：浮窗折叠/展开逻辑
-- **验收**：iPhone 14 Pro Max 视口下地图全屏 + 浮窗可折叠 + 底部 sheet 流畅
+**阶段 4：HUD 浮窗化 + 手机适配** ✅ 核心已落地（先行批次 + v297 收尾）
+- [x] `style.css`：地图模式三栏浮窗化（`.worldmap-canvas:not([hidden]) ~ .layout` 浮窗定位+半透明+backdrop-filter）
+- [x] `style.css`：手机端地图页全屏（`data-mtab="map"` 隐藏三栏）+ 行动 dock 底部 sheet 化 + 底栏 tab（舆图/行动/状态）
+- [x] `ui.js`：浮窗折叠（`_toggleHudPanels` + `.hud-toggle` 桌面钮；手机以底栏 tab 代替）
+- [x] v297 收尾：旅途进度浮标 `journey-status` 手机端下移至天命栏下（top 136px，不再被 fixed 天命栏遮住）
+- **验收** ✅：430×932 地图全屏、缩放钮可用、行动 sheet 流畅、旅途全程 UI 无遮挡；桌面 1280×800 地图模式正常
 
 **阶段 5：细节打磨**
 - [ ] 缩放级别间的平滑动画（viewBox transition）

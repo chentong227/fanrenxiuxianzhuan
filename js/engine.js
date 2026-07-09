@@ -51,6 +51,25 @@ const Engine = {
     return true;
   },
 
+  // 在场人物是否应显示真名（metNpcs / 剧情旗 / 交情）
+  isNpcKnown(id) {
+    const s = State.data;
+    if (!id) return false;
+    if ((s.metNpcs || []).includes(id)) return true;
+    if (typeof INTERACTIONS !== "undefined") {
+      const rel = INTERACTIONS.relationOf(s, id);
+      if (rel && rel > 0) return true;
+    }
+    const KNOWN = {
+      lifeiyu: () => !!s.flags.met_friends,
+      zhangtie: () => !!s.flags.met_friends && !s.flags.zhangtie_dead,
+      modafu: () => !!s.flags.met_modafu,
+      mocaihuan: () => !!s.flags.mo_met,
+      wanxiaoshan: () => !!s.flags.wan_met,
+    };
+    return KNOWN[id] ? KNOWN[id]() : false;
+  },
+
   /* -------- 时间流逝（以月为单位）-------- */
   passTime(months) {
     const s = State.data;
@@ -303,11 +322,21 @@ const Engine = {
     const choice = built.choices[idx];
     if (!choice) return;
     if (choice.cond && !choice.cond(s)) { this.toast("条件不足，无法如此"); return; }
+    // 应战切磋：进真实斗法（结算在 _finishCombat 的 spar 分支）
+    if (choice.spar) {
+      s._pendingInteraction = null;
+      UI.closeModal();
+      this.startSparFight(inter);
+      State.save();
+      return;
+    }
     const r = choice.effect ? choice.effect(s) : { text: "", kind: "event" };
     s._pendingInteraction = null;
     this.log(`【${built.title}·${inter.npcName}】${r.text}`, r.kind || "event");
     this.flushNpcGifts();
-    UI.closeModal();
+    // 结果就地呈现（不黑箱）：同一个弹窗切成结算页，玩家看清后再自己关
+    if (typeof UI !== "undefined" && UI.showInteractionResult) UI.showInteractionResult(built.title, r);
+    else UI.closeModal();
     this.checkLifespan();
     this.checkStory();
     State.save();
@@ -2288,11 +2317,16 @@ const Engine = {
     this.passTime(1);
     if (s.combat || s.pendingEvent) { State.save(); UI.renderAll(); return; }   // 旅途被世界打断（剧情/战斗）：事毕由钩子续走
     // 旅途行动面板：每月主动抉择
-    this._pendingFortune = this._buildJourneyPanel(j);
+    const panel = this._buildJourneyPanel(j);
+    panel.journeyPanel = true;   // P3：底部 sheet 呈现——地图与头像移动不被遮挡
+    this._pendingFortune = panel;
     this.log(`【旅途】第${j.leg}/${j.total}月：行至半途，须择路而行。`, "sys");
     State.save();
     UI.renderAll();
-    UI.openFortune(this._pendingFortune);
+    // P3 移动一拍：先让头像沿路线滑行（CSS 过渡），再弹面板——旅途「走」被看见
+    const openIt = () => { if (Engine._pendingFortune === panel) UI.openFortune(panel); };
+    if (typeof UI !== "undefined" && UI._journeyReveal) UI._journeyReveal(openIt);
+    else openIt();
   },
 
   // 旅途行动面板构建（P0）
@@ -2890,7 +2924,7 @@ const Engine = {
     if (s.spirit < 15) {
       this.log("灵力枯竭，难以入定。你勉强收功，不得寸进。", "bad");
       this.rest(true);
-      return;
+      return 0;
     }
     // months: 闭关时长（月）。时长越久，修为越多，但耗时（寿元）也越多，心境/心魔波动更大。
     months = Math.max(1, months || 1);
@@ -2944,6 +2978,7 @@ const Engine = {
 
     // 闭关插曲：时长越久，越可能在静室中生变（顿悟 / 走火入魔 / 外界变故 / 灵感枯滞）
     this._seclusionInterlude(months, gain);
+    return gain;
   },
 
   // 闭关插曲（体现"闭关是孤注一掷的赌博"）
@@ -3109,29 +3144,64 @@ const Engine = {
   doCultivate(months) {
     const s = State.data;
     if (s.pendingEvent || s.combat) return;
-    // 长闭关分段执行：心境将告急时自动收功，避免"一键到底反受其害"
+    // 长闭关分段执行：心境将告急时不再收功赶人（旧版=玩家反复重开菜单的死循环），
+    // 而是「停功调息」——在静室里自己打坐几月再续闭。时间照扣、寿元照耗（代价不变），
+    // 但决策只做一次：这才是"闭一次关"该有的样子。
     let remaining = Math.max(1, months);
     let done = 0;
-    while (remaining > 0) {
+    let restMonths = 0;                                // 途中停功调息的月数（额外耗时·如实报账）
+    let totalGain = 0;
+    let cutReason = "";                                // 中断原因（空=修满到期）
+    let guard = 0;
+    while (remaining > 0 && guard++ < 300) {
+      // 心浮气躁：先停功调息到心境安稳再续（低心境硬修=六折效率+走火风险，不替玩家踩坑）
+      let calmed = 0;
+      while ((s.mood < s.moodMax * 0.45 || s.spirit < 20) && calmed < 4) {
+        this.rest(true);
+        restMonths++; calmed++;
+        if (s.combat || s.pendingEvent) break;
+      }
+      if (s.combat || s.pendingEvent) { if (remaining > 0) cutReason = "静室生变"; break; }
       // 预估几个月后心境就会跌破警戒线
       const safeMonths = Math.max(1, Math.floor((s.mood - s.moodMax * 0.35) / 3));
       const step = Math.min(remaining, Math.max(1, safeMonths));
-      this.cultivate(step);
+      totalGain += this.cultivate(step) || 0;
       done += step;
       remaining -= step;
-      if (s.combat || s.pendingEvent) break;          // 闭关插曲触发事件则中断
-      if (s.mood < s.moodMax * 0.4 && remaining > 0) { // 心境见底，自动收功
-        this.log(`你察觉心绪渐乱，及时收了功——再强撑下去，恐有走火入魔之险。（原拟闭关 ${months} 月，实修 ${done} 月）`, "sys");
+      if (s.combat || s.pendingEvent) {                // 闭关插曲触发事件则中断
+        if (remaining > 0) cutReason = "静室生变";
         break;
       }
     }
+    // 闭关结算暂存：无论到期/中断，前台都给一条明白账（中断被事件演出接管时，事件完了再报）
+    this._retreatSettle = { plan: months, done, rest: restMonths, gain: totalGain, reason: cutReason, remain: remaining, at: State.absMonth() };
     this.checkLifespan();
     this.checkStory();
     if (!s.pendingEvent && !s.combat && !this._pendingFortune) this._maybeInteraction();
-    // 即时反馈（嗑瓜子）：闭关结算后亮一条最近见闻，玩家不必切「见闻」段也知道刚发生了什么
-    if (!s.pendingEvent && !s.combat) this._flashLastLog();
+    if (!s.pendingEvent && !s.combat) this.flushRetreatSettle();
     State.save();
     UI.renderAll();
+  },
+
+  // 闭关结算前台化：闭了几月、修为+多少、为何中止——主界面一条结算 toast + 见闻留档
+  // 被事件/战斗接管时由 UI.renderActions 在空闲帧补报（不与演出抢屏）
+  flushRetreatSettle() {
+    const r = this._retreatSettle;
+    if (!r) return;
+    const s = State.data;
+    if (s.pendingEvent || s.combat) return;            // 演出中不抢屏，等下一次渲染
+    this._retreatSettle = null;
+    const restNote = r.rest ? `（另停功调息 ${r.rest} 月）` : "";
+    if (r.reason) {
+      this.toast(`闭关中断（${r.reason}）：实修 ${r.done}/${r.plan} 月${restNote}，修为 +${r.gain}`, false);
+    } else {
+      this.toast(`闭关圆满：${r.done} 月${restNote}，修为 +${r.gain}`, false);
+      this.log(`这一程闭关圆满收功：潜修 ${r.done} 月${restNote}，修为共精进 ${r.gain}。`, "sys");
+    }
+    // 中断且还差得多：留一个限时续闭快捷（renderActions 读取），玩家不必重开菜单再点两下
+    if (r.reason && r.remain > 0) {
+      this._retreatResume = { months: r.remain, until: State.absMonth() + 3 };
+    }
   },
 
   // 把最近一条见闻闪成 toast（行动即时反馈）——剧情/战斗/奇遇接管时不弹（各自有演出）
@@ -3279,6 +3349,7 @@ const Engine = {
     // 仅当本次不会立刻进入战斗/后续事件面板时弹（那些自带演出，不需重复）。
     if (result.text && !this._fortuneFight && !this._pendingJourneyEvent) this.toast(result.text, result.kind === "bad");
     UI.closeModal();
+    if (UI.closeSheet) UI.closeSheet(true);   // 旅途面板走锁定 sheet——选完强制收起
     // 奇遇选项可声明引发战斗（如硬闯野狼帮关卡）
     if (this._fortuneFight) {
       const enemy = this._fortuneFight;
@@ -3391,7 +3462,11 @@ const Engine = {
         && !(typeof Loadout !== "undefined" && Loadout.isLearned(s, "changchun_full"))) {
       return { ok: false, reason: "《长春功》前篇止于七层，再往上无诀可依。须得后篇全本（听闻太南小会上偶有流出），方能冲击八层。" };
     }
-    if (s.cultivation < realm.culMax * 0.6) return { ok: false, reason: "修为尚浅，强行突破必败。再多苦修些时日。" };
+    if (s.cultivation < realm.culMax * 0.6) {
+      const pct = Math.round(s.cultivation / realm.culMax * 100);
+      const need = Math.ceil(realm.culMax * 0.6);
+      return { ok: false, reason: `修为约 ${pct}%（须满盈逾六成，约 ${need} 点方可冲关）。再多苦修些时日。` };
+    }
     // 大境界：须备齐秘仪
     if (this.isBigRealmBreakthrough()) {
       const rite = this._bigRealmRite();
@@ -3507,6 +3582,7 @@ const Engine = {
         const dmg = Math.round(s.hpMax * 0.45);
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
         s.demon = clamp(s.demon + 25, 0, 100);
+        if (typeof UI !== "undefined" && UI.breakthroughSetback) UI.breakthroughSetback({ big: true, loss, dmg, demonGain: 25, pity: s.btPity });
         s.mood = clamp(s.mood - 25, 0, s.moodMax);
         this.log(`心魔劫中道心崩动，灵力反噬如怒涛！渡劫失败——你修为大损(-${loss})、气血重创(-${dmg})，心魔几乎吞噬神智。大境界之关，岂容轻忽。`, "bad");
         this.toast("渡劫失败！反受重创", true);
@@ -3521,6 +3597,7 @@ const Engine = {
         s.mood = clamp(s.mood - 15, 0, s.moodMax);
         this.log(`心魔未能降伏，灵力逆冲——突破失败！修为-${loss}，气血-${dmg}，心魔滋长。`, "bad");
         this.toast("突破失败，反受其害", true);
+        if (typeof UI !== "undefined" && UI.breakthroughSetback) UI.breakthroughSetback({ big: false, loss, dmg, demonGain, pity: s.btPity });
       }
     }
     this._btWasBig = false;
@@ -4023,6 +4100,97 @@ const Engine = {
     this._combat.startRound();
     this.log(`你在${State.location().name}遭遇「${tmpl.name}」，斗法一触即发！`, "bad");
     if (enemy.introNote) this._combat._log(`【敌情】${enemy.introNote}`);
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  /* -------- 登门切磋 = 真实斗法（战斗引擎 × 社交事件·乘法）--------
+   * 世间修士不再是日志里的一行结算——按其练气层数现场生成战斗档案，摆开路数站到你对面。
+   * 点到即止规则：败不重伤不长心魔（演武非仇杀）、对方残血自会抱拳认输（canFlee）；
+   * 曲魂不上场（尸傀是不能见光的秘密，公开演武绝不能露）。 */
+  _SPAR_STYLES: {
+    jin: { n1: "金刃诀", n2: "金锋贯刺", n3: "金煞蓄势", intro: "使一手金行刀法，刃气凌厉、招招走直线" },
+    mu:  { n1: "青木鞭影", n2: "木刺缠身", n3: "凝青蓄势", intro: "行木行功法，鞭影缠绵、后劲绵长" },
+    shui:{ n1: "寒水箭", n2: "冰棱贯刺", n3: "凝霜蓄势", intro: "修水行道基，寒气渗人、打法阴柔" },
+    huo: { n1: "流火弹", n2: "赤焰贯刺", n3: "聚炎蓄势", intro: "一身火行灵力，出手爆烈、越打越急" },
+    tu:  { n1: "土遁石击", n2: "石锋贯刺", n3: "聚灵蓄势", intro: "土行功底扎实、皮糙肉厚，是耐磨的路数" },
+  },
+  // 按练气层数生成切磋对手（数值锚=encounter.bal makePlayer 同一把尺——公平的同道，不是怪物模板）
+  _makeSparFoe(f) {
+    const L = Math.max(1, Math.min(13, f.realm || 1));
+    const elems = ["jin", "mu", "shui", "huo", "tu"];
+    // 行属对人稳定（同一 NPC 每次切磋同路数——世界的一致感）：按 id 哈希定行属
+    let h = 0; for (const ch of (f.id || f.name || "x")) h = (h * 31 + ch.charCodeAt(0)) % 997;
+    const elem = elems[h % 5];
+    const st = this._SPAR_STYLES[elem];
+    // 成长曲线刻意缓于玩家（spar.bal 校准：玩家法术池到练气八层才换代，
+    // 对手 dmg 若走 3/层，七层同层胜率会塌到 39%）——演武是社交内容，不是墙
+    return {
+      name: f.name, hp: 95 + (L - 1) * 12, mp: 40 + L * 6,
+      sense: 4 + L * 2, speed: 10 + Math.floor(L / 3), agility: Math.round((9 + L) * 0.6),
+      move: 1, qiLayer: L, elem, armor: elem === "tu" ? 2 : L >= 5 ? 1 : 0,
+      tactics: L >= 5 ? "cunning" : undefined, nature: "human",
+      introNote: `${f.name}${st.intro}。演武较技、点到即止——但拳脚无眼，把他当真对手打。`,
+      attacks: [
+        { name: st.n1, dmg: 14 + L * 2, kind: "normal", weight: 12, elem, mp: 5 + Math.floor(L / 2), range: [1, 3] },
+        { name: st.n2, dmg: 10 + Math.round(L * 1.8), kind: "pierce", weight: 8, mp: 6, range: [1, 1] },
+        { name: st.n3, dmg: 17 + Math.round(L * 2.8), kind: "charge", weight: 5, mp: 9 + Math.floor(L / 2), range: [1, 4] },
+      ],
+    };
+  },
+  startSparFight(inter) {
+    const s = State.data;
+    const f = (s.npcFates || []).find(x => x.id === inter.npcId) || { id: inter.npcId, name: inter.npcName, realm: 1 };
+    const foe = this._makeSparFoe(f);
+    this.passTime(1);   // 演武较技也是一桩正事（回合=月）
+    this._nextFightType = "spar";
+    const player = this.playerFighter();
+    const myLayer = (State.realm() || {}).layer || 1;
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [foe], maxRounds: 18, W: 11, lanes: 2, sides: [],   // 演武无侧位：曲魂是秘密
+      enemyPos: 5,
+    });
+    this._combatMeta = {
+      type: "spar", npcId: f.id, enemyName: f.name,
+      canQuick: myLayer - (foe.qiLayer || 1) >= 2,
+    };
+    s.combat = true;
+    this._combat.startRound();
+    this.log(`你与「${f.name}」在场院里摆开架势——演武较技，点到即止。`, "event");
+    this._combat._log(`【敌情】${foe.introNote}`);
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  /* -------- 风云榜·夺名比斗（spar 管线 × fameBoard × npcFates 三乘）--------
+   * 扬名赛道：向彩霞山一带的散修下战书、公开比斗——胜则名声入账、在石碑上步步攀高。
+   * 藏拙的代价在此兑现：当众赢下的比斗做不得假，示人境界随之抬到对方层数（露一手=扬名时刻）。
+   * 红线：只打背景修士（npcFates）；金光上人/王门主/厉飞雨等剧情人物命运忠于动漫，不入赛道。 */
+  fameOfNpc(f) { return (f.realm || 1) * 8 + (f.apt > 1 ? 6 : 0); },
+  startFameDuel(npcId) {
+    const s = State.data;
+    if (s.pendingEvent || s.combat) return;
+    if (s.flags.arc1_complete) { this.toast("你早已远行——彩霞山的座次，与你无关了"); return; }
+    const f = (s.npcFates || []).find(x => x.id === npcId);
+    if (!f || f.status !== "alive") { this.toast("此人已不在江湖"); return; }
+    const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
+    if (I && I.onCooldown(s, npcId)) { this.toast("本月已与其照过面——下月再去下战书"); return; }
+    if (I) I.markInteract(s, npcId);
+    const foe = this._makeSparFoe(f);
+    this.passTime(1);
+    this._nextFightType = "fame_duel";
+    const player = this.playerFighter();
+    const myLayer = (State.realm() || {}).layer || 1;
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [foe], maxRounds: 18, W: 11, lanes: 2, sides: [],   // 公开比斗：曲魂更不能露
+      enemyPos: 5,
+    });
+    this._combatMeta = {
+      type: "fame_duel", npcId: f.id, enemyName: f.name, foeLayer: f.realm || 1,
+      canQuick: myLayer - (foe.qiLayer || 1) >= 2,
+    };
+    s.combat = true;
+    this._combat.startRound();
+    this.log(`你向「${f.name}」下了战书。消息传开，看热闹的修士围了一圈——这一场，是当众的比斗，赢了名声入账，输了也当众。`, "event");
+    this._combat._log(`【敌情】${foe.introNote}`);
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -5276,6 +5444,7 @@ const Engine = {
       enemies: [wolf, Object.assign({}, WORLD.enemies.wild_wolf)],
       W: 9,
       maxRounds: 14,
+      enemyPos: 5,   // 林间遭遇·起手近距，一两回合即接战（playtest：灵狼战勿空转等走近）
       side: { id: "wanxiaoshan", name: "万小山", kind: "ally", art: "wanxiaoshan",
               hp: 60, hpMax: 60, guard: 0.15, elem: "huo",
               // 人格=背景：商贾子弟野路子——惜命后排扔火球，绝不上前挡刀
@@ -5494,9 +5663,16 @@ const Engine = {
     const attacked = c._pActsUsed > 0 || c._pQuickUsed;
     if (attacked) { c._idleRounds = 0; }
     else { c._idleRounds = (c._idleRounds || 0) + 1; }
-    if (c._idleRounds >= 3 && !c._idleHinted) {
+    if (c._idleRounds >= 2 && !c._idleHinted) {
       c._idleHinted = true;
-      this.toast("试试点击法术按钮攻击敌人");
+      // 根据手牌是否够得着给不同提示（比笼统「点法术」更有用）
+      let hint = "点法术出牌，或点「结束回合」等候敌方行动";
+      if (typeof UI !== "undefined" && UI._anySpellInRange) {
+        const reach = UI._anySpellInRange(c);
+        if (reach === false) hint = "术法够不着——先点脚下格子「走」贴近，再点法术";
+        else if (reach === "only_defend") hint = "够不着敌身——先「走」贴近；或先防御蓄势";
+      }
+      this.toast(hint);
     }
     c.endRound();
     if (typeof UI !== "undefined" && UI.flushCombatFx) UI.flushCombatFx(this._combat);
@@ -5938,6 +6114,60 @@ const Engine = {
         UI.renderAll();
         this._resumeJourneyIfAny();
         return;
+      }
+    } else if (meta.type === "spar") {
+      // 登门切磋收场（点到即止）：胜负皆有所得、皆不结仇——演武是交情，不是仇杀
+      const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
+      s.body += 1;
+      if (win) {
+        if (I) { I.markInteract(s, meta.npcId); I.favor(s, meta.npcId, 6); }
+        s.mood = clamp(s.mood + 5, 0, s.moodMax);
+        const hid = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
+        this.log(`「${meta.enemyName}」收势抱拳，心服口服："受教了！"${hid > 0 ? "他上下打量你半晌，终究没看透你的深浅。" : ""}演武见真章，交情反而更近了（体魄+1，心境+5）。`, "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+      } else {
+        // 败也点到即止：对方收手指点破绽——不重伤、不长心魔，挨打也是长进
+        s.hp = Math.max(s.hp, Math.round(s.hpMax * 0.35));
+        if (I) { I.markInteract(s, meta.npcId); I.favor(s, meta.npcId, 4); }
+        const gotInsight = Math.random() < 0.5;
+        if (gotInsight) s.insight += 1;
+        this.log(`「${meta.enemyName}」一招将你逼出圈外，随即收势扶你起身，指了你招式里的破绽——演武点到即止，挨打也是长进（体魄+1${gotInsight ? "，悟性+1" : ""}）。`, "event");
+      }
+    } else if (meta.type === "fame_duel") {
+      // 风云榜·夺名比斗收场：当众之战，赢了扬名、输了也当众——但江湖比斗留手，不至重伤结仇
+      const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
+      s.body += 1;
+      const wonBefore = !!s.flags[`duel_won_${meta.npcId}`];
+      if (win) {
+        if (I) I.favor(s, meta.npcId, 3);
+        s.mood = clamp(s.mood + 6, 0, s.moodMax);
+        // 公开比斗做不得假：示人境界随之抬到对方层数（藏拙的代价在此兑现——露一手=扬名时刻）
+        const shownIdx = s.revealedRealm != null ? s.revealedRealm : s.realmIndex;
+        const needIdx = Math.min(s.realmIndex, Math.max(0, (meta.foeLayer || 1) - 1));
+        let revealNote = "";
+        if (needIdx > shownIdx) {
+          s.revealedRealm = needIdx;
+          revealNote = `当众放开的手脚做不得假——江湖眼里，你的修为如今至少是「${DATA.realms[needIdx].name}」。`;
+        }
+        if (wonBefore) {
+          this.addFame(2, `再胜「${meta.enemyName}」（旧闻不再新鲜）`);
+          this.log(`你再度胜过「${meta.enemyName}」。围观的修士点点头便散了——赢过的人再赢一次，江湖不会多看第二眼。${revealNote}`, "event");
+        } else {
+          s.flags[`duel_won_${meta.npcId}`] = true;
+          const gain = (meta.foeLayer || 1) * 3 + 4;
+          this.addFame(gain, `当众比斗胜「${meta.enemyName}」`);
+          this.addMilestone(`比斗胜「${meta.enemyName}」·座次又进一步`, "deed");
+          this.log(`「${meta.enemyName}」收势认负，围观的修士一片哗然。这一场当众的胜利做不得假——茶馆酒肆间，你的名号今夜就会传开。${revealNote}`, "good");
+          if (typeof Sfx !== "undefined") Sfx.play("success");
+        }
+      } else {
+        // 当众落败：名声受挫（不至归零）、心境受挫——但比斗留手，不重伤不长心魔
+        s.hp = Math.max(s.hp, Math.round(s.hpMax * 0.35));
+        const loss = Math.min(s.fame || 0, 4);
+        if (loss > 0) { s.fame -= loss; }
+        s.mood = clamp(s.mood - 6, 0, s.moodMax);
+        if (I) I.favor(s, meta.npcId, 2);
+        this.log(`「${meta.enemyName}」一招将你逼出圈外。围观的窃语像针一样扎人${loss > 0 ? `（名声-${loss}）` : ""}——当众下的战书，输了也得当众咽下。回去练，再来。`, "bad");
       }
     } else if (meta.type === "showdown") {
       if (win) {

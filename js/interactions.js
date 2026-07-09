@@ -103,8 +103,25 @@ const INTERACTIONS = {
     kinds.push("secret_realm", "spar_request");
     // 寿元将尽者更可能上门求救命丹
     if (who.desperate) kinds.push("beg_pill", "beg_pill");
-    const kind = kinds[Math.floor(rng() * kinds.length)];
+    let kind = kinds[Math.floor(rng() * kinds.length)];
+    // 一致感：切磋者只按【示人境界】找上门（世界只认它看见的你）——
+    //   练气八层不会跑来"讨教"一个示人练气一层的药童。挑不出同档对手就不来。
+    if (kind === "spar_request") {
+      const shown = this.shownLayer(s);
+      const peers = alive.filter(f => Math.abs((f.realm || 1) - shown) <= 2);
+      if (!peers.length) kind = "secret_realm";
+      else {
+        const p = peers[Math.floor(rng() * peers.length)];
+        return { kind, npcId: p.id, npcName: p.name };
+      }
+    }
     return { kind, npcId: who.id, npcName: who.name };
+  },
+
+  // 玩家的【示人境界】折算成练气层数（1~13）——藏拙者以此示人，NPC 一律按它行事
+  shownLayer(s) {
+    const idx = (s.revealedRealm != null ? s.revealedRealm : s.realmIndex) || 0;
+    return Math.min(13, idx + 1);
   },
 
   // 构造交互内容（标题/正文/选项）。选项 effect(s) 返回结算文案。
@@ -235,26 +252,37 @@ const INTERACTIONS = {
             { text: "婉拒（修仙惜命，不涉险）", effect() { return { text: "你谢绝了邀约。来历不明的秘境，多是葬身之地。", kind: "sys" }; } },
           ],
         };
-      case "spar_request":
-        return {
-          title: "登门切磋",
-          text: `${f.name}（${realm}）听闻你修为不凡，前来讨教，欲与你切磋一场。`,
-          choices: [
-            {
-              text: "应战切磋", hint: "胜负皆增见识",
-              effect(st) {
-                Engine.passTime(1);
-                INTERACTIONS.favor(st, f.id, 5);
-                st.body += 1;
-                return { text: `你与${f.name}过了几招，点到即止。互有进益，也算不打不相识。`, kind: "good" };
-              },
+      case "spar_request": {
+        // 来由按【示人身份】写（藏拙者的世界只认它看见的你）：
+        //   墨大夫=慕医毒之名顺道讨教；寻常散修=听闻你身手利落。绝不写"修为不凡"。
+        const trueLayer = (s.realmIndex || 0) + 1;
+        const hidden = trueLayer - this.shownLayer(s);   // 深藏的层数
+        const intro = s.flags.is_modafu
+          ? `${f.name}（${realm}）慕"墨大夫"之名登门求药，闲谈间起了较技之心，欲与你切磋一场。`
+          : `${f.name}（${realm}）听闻你身手利落，前来讨教，欲与你切磋一场。`;
+        const choices = [
+          // 应战=真实斗法（战斗引擎×社交事件——乘法）：演武较技、点到即止，
+          //   世间修士不再是日志里的一行字，而是摆开路数站到你对面的人。
+          { text: "应战切磋", hint: "演武较技·点到即止——真刀真枪见高下", spar: true },
+        ];
+        if (hidden > 0 && trueLayer - (f.realm || 1) >= 2) {
+          choices.push({
+            text: "藏拙应付", hint: "压着修为陪练，不露真功",
+            effect(st) {
+              Engine.passTime(1);
+              st.body += 1;
+              INTERACTIONS.favor(st, f.id, 4);
+              st.mood = Math.min(st.moodMax, st.mood + 4);
+              return { text: `你压着修为陪${f.name}过招，胜负拿捏在方寸之间——对方只当棋逢对手，尽兴而去。收放由心，这份分寸也是修行（体魄+1，心境+4）。`, kind: "good" };
             },
-            {
-              text: "闭门谢客",
-              effect(st) { INTERACTIONS.favor(st, f.id, -3); return { text: "你闭门不见。对方悻悻而去，似有不快。", kind: "sys" }; },
-            },
-          ],
-        };
+          });
+        }
+        choices.push({
+          text: "闭门谢客",
+          effect(st) { INTERACTIONS.favor(st, f.id, -3); return { text: "你闭门不见。对方悻悻而去，似有不快。", kind: "sys" }; },
+        });
+        return { title: "登门切磋", text: intro, choices };
+      }
     }
     return null;
   },

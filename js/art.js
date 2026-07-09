@@ -87,6 +87,20 @@
     wang_ning: { sad: 1 },
   };
 
+  // 地点 id → 已有场景图（库里有图但地点 id 不同名）
+  const LOC_SCENE = {
+    fangshi: "huangfeng_gate",       // 坊市·万宝楼飞檐≈山门坊市
+    modao_front: "pano_kuangdong",   // 前线待命营·矿道舆图
+  };
+  // 地点 id → CG 兜底（横/竖版 cg_* 已在库，地点屏复用为场景底）
+  const LOC_CG = {
+    yuanwu: "yuanwu_diku",
+    yanjiabao: "yanjia_jiaochang",
+    jinguyuan: "jingu_yuan",
+    yuekuang: "chuansong_zhen",
+    luanxinghai: "luanxinghai",
+  };
+
   // 场景（p:1 = 竖版已生成，竖屏自动启用）
   const SCENES = {
     yaolu: { p: 1 }, houshan: { p: 1 }, town: { p: 1 }, wuting: { p: 1 },
@@ -259,8 +273,16 @@
       return this._v(`assets/scenes/${id}.png`);
     },
 
-    // 地点配图：直接按地点 id 取图
-    locUrl(loc, opts) { return loc ? this.sceneUrl(loc.id, opts) : null; },
+    // 地点配图：场景 id 优先，无则 CG 兜底（消 playtest 黑屏——资产在库但未按地点 id 注册）
+    locUrl(loc, opts) {
+      if (!loc) return null;
+      const sid = LOC_SCENE[loc.id] || loc.id;
+      const scene = this.sceneUrl(sid, opts);
+      if (scene) return scene;
+      const cgId = LOC_CG[loc.id];
+      if (cgId && CG[cgId]) return this.cgUrl(cgId);
+      return null;
+    },
 
     // 战斗全身立绘（对阵轴单位图）
     battlerUrl(id) { return BATTLERS[id] ? this._v(`assets/battlers/${id}.png`) : null; },

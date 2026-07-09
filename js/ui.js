@@ -169,6 +169,26 @@ const UI = {
           : "入选两事：① 修为到练气十一层（修炼／长春功后篇是正路）　② 去万宝楼坊市备货，顺道听向之礼指点门道。修为到了即可参选，不必赶时间。"}</span>
       </div>`;
     }
+    // 禁地临行三月·互斥备战：待决或已选路径，天命栏明示（M3 经营可视化）
+    if (sx && sx.flags && sx.flags.xueshi_opened && !sx.flags.jindi_entered) {
+      if (!sx.flags.jindi_prep_done) {
+        fate += `<div class="obj-task urgent" style="border-left-color:var(--cinnabar)">
+          <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">备战</span>
+          <b>临行三月 · 血色禁地</b>
+          <span class="obj-hint">血幕未开，尚余三月——闭关冲修为、坊市备底牌、丹房精炼，<b>三者只能择一</b>。留意眼前剧情抉择。</span>
+        </div>`;
+      } else {
+        const path = sx.flags.jindi_prep_cultivate ? "闭关冲修为"
+          : sx.flags.jindi_prep_stock ? "坊市囤底牌（符箓暗器）"
+          : sx.flags.jindi_prep_alchemy ? "丹房精炼（药理+回元丹）" : "已备战";
+        fate += `<div class="obj-task" style="border-left-color:var(--jade)">
+          <span class="obj-key" style="background:var(--jade);color:#08140f">备战</span>
+          <b>临行抉择已定</b>
+          <span class="obj-prog">${path}</span>
+          <span class="obj-hint">互斥窗口已关——另两条路禁地里须用更贵的代价补救。</span>
+        </div>`;
+      }
+    }
     if (tasks.length) {
       fate += tasks.map(t => {
         const urgent = t.left <= 2;
@@ -458,7 +478,8 @@ const UI = {
     box.style.display = "";
     // 透明底立绘直接"站"在场景里；未结识者呈剪影
     box.innerHTML = locals.map(n => {
-      const met = (s.metNpcs || []).includes(n.id);
+      const met = (typeof Engine !== "undefined" && Engine.isNpcKnown)
+        ? Engine.isNpcKnown(n.id) : (s.metNpcs || []).includes(n.id);
       const line = (n.lines && n.lines.length) ? n.lines[0] : "";
       const url = (typeof Art !== "undefined") ? Art.url(n.id) : null;
       const fig = url
@@ -828,6 +849,21 @@ const UI = {
     const layout = document.querySelector(".layout");
     if (layout) layout.classList.toggle("has-hotspots", !!hasHotspots);
 
+    // 闭关结算补报：被事件/战斗接管时压下的结算，空闲帧一次性报清
+    if (Engine.flushRetreatSettle) Engine.flushRetreatSettle();
+
+    // 续闭快捷：闭关被打断后，事件处理完直接一键接着闭（限时 3 月内有效，免去重开菜单）
+    // ⚠ 判断用 loc.actions 原始表——hotspots 地点 acts 被清空，误判会把快捷提前抹掉
+    let resumeBtn = "";
+    const rr = Engine._retreatResume;
+    if (rr && !loc.scene && !storyPending && !State.data.combat) {
+      if (State.absMonth() > rr.until || !(loc.actions && loc.actions.includes("cultivate"))) {
+        Engine._retreatResume = null;
+      } else {
+        resumeBtn = `<button class="btn btn-action btn-window" onclick="Engine._retreatResume=null;Engine.doCultivate(${rr.months})">继续闭关 <span class="win-left">余${rr.months}月</span></button>`;
+      }
+    }
+
     // 涟漪窗口：限时机会在对应地点浮现（过期即逝）
     let windowBtn = "";
     const rw = State.data.rippleWindow;
@@ -843,8 +879,8 @@ const UI = {
 
     // 演出即引导：落幕时指定的行动按钮脉冲高亮一次（指明"该点哪个"），消费即清
     const focus = this._pendingFocus; this._pendingFocus = null;
-    box.innerHTML = (acts.length || windowBtn)
-      ? windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
+    box.innerHTML = (acts.length || windowBtn || resumeBtn)
+      ? resumeBtn + windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
       : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>`
       : (hasHotspots ? `<div class="act-hint">— 点场景中发光标记行事 —</div>` : ""));
     box.querySelectorAll("[data-action]").forEach(btn => {
@@ -1188,16 +1224,11 @@ const UI = {
       if (staged && typeof Fx !== "undefined" && Fx.ensure) Fx.ensure(overlay);
     } else if (bg) { bg.classList.remove("story-cam"); }
     if (skip) skip.hidden = false;
-    // 败北重试：剧情已看过，跳过题字与正文直达抉择（免重复演出之扰）。重温(replay)不走此径。
-    if (!opts.replay && typeof Engine !== "undefined" && Engine._retryStage) {
-      Engine._retryStage = false;
-      this._story.idx = beats.length;
-      const stageName = this.el("story-stage-name");
-      if (stageName) stageName.textContent = stage.title || "";
-      const sp = this.el("story-speaker"), tx = this.el("story-text");
-      if (sp) sp.innerHTML = "";
-      if (tx) tx.innerHTML = `<span class="story-line narr">（你重整旗鼓，伤势已敷、底牌再备——这一次，结局会不同。）</span>`;
-      this._storyShowChoices();
+    overlay.onclick = (e) => this._storyOverlayTap(e);
+    // 败北重试 / 已看过：跳过题字与正文直达抉择（免重复演出之扰）。重温(replay)不走此径。
+    if (!opts.replay && this._storyShouldSkipIntro(stage)) {
+      if (typeof Engine !== "undefined" && Engine._retryStage) Engine._retryStage = false;
+      this._storySkipToChoices(stage, !!State.data.flags["story_seen_" + stage.id]);
       return;
     }
     // 转场题字卡（番剧分集感）：黑场亮出章节题字，轻触或稍候自动入戏
@@ -1358,6 +1389,35 @@ const UI = {
     }
   },
 
+  // 剧情是否跳过题字/正文（败北重试或已看过）
+  _storyShouldSkipIntro(stage) {
+    if (typeof Engine !== "undefined" && Engine._retryStage) return true;
+    return !!(stage && stage.id && State.data.flags && State.data.flags["story_seen_" + stage.id]);
+  },
+
+  _storySkipToChoices(stage, seenBefore) {
+    const st = this._story; if (!st) return;
+    st.idx = st.beats.length;
+    const stageName = this.el("story-stage-name");
+    if (stageName) stageName.textContent = stage.title || "";
+    const sp = this.el("story-speaker"), tx = this.el("story-text");
+    if (sp) sp.innerHTML = "";
+    const msg = seenBefore
+      ? "（这一幕你已了然于胸——直入抉择。）"
+      : "（你重整旗鼓，伤势已敷、底牌再备——这一次，结局会不同。）";
+    if (tx) tx.innerHTML = `<span class="story-line narr">${msg}</span>`;
+    this._storyShowChoices();
+  },
+
+  // 全屏点按推进：CG/立绘区轻触亦可续演（不限底部对话框）
+  _storyOverlayTap(e) {
+    if (!this._story || this._story.done || this._story.titling) return;
+    const t = e.target;
+    if (t.closest(".story-choices") || t.closest("#story-skip") || t.closest(".story-titlecard")) return;
+    if (t.closest("#story-dialog")) return;
+    this.storyAdvance();
+  },
+
   // 逐句推进：每次轻触显示下一节拍；打字中则先补完；到末尾给出选项。
   // 演出原语（cam/actor/fx/sfx/bgm）是舞台指令，自动连演不阻塞；撞上台词/交互/wait 才停。
   storyAdvance() {
@@ -1457,7 +1517,7 @@ const UI = {
     const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
     const far = this.el("story-far"); if (far) far.classList.remove("on");
     this._archiveStory(stage);        // 名场面入风云录「名场面回廊」（可重温），同 storyChoose
-    this.el("story-overlay").hidden = true;
+    const ovDrop = this.el("story-overlay"); if (ovDrop) { ovDrop.hidden = true; ovDrop.onclick = null; }
     document.body.classList.remove("story-on");
     this._story = null;
     // guard.hint：落幕坠入前顺势提示底牌（不阻塞、不拦截）
@@ -1859,11 +1919,12 @@ const UI = {
   _storyShowChoices() {
     const st = this._story; if (!st) return;
     st.done = true;
+    const stage = st.stage;
+    if (stage && stage.id && !st.replay) State.setFlag("story_seen_" + stage.id);
     // 收束演出层：停计时、退跳过键、清交互 beat 残留
     if (this._cutTimer) { clearTimeout(this._cutTimer); this._cutTimer = null; }
     if (typeof Cutscene !== "undefined") Cutscene.clear();
     const skip = this.el("story-skip"); if (skip) skip.hidden = true;
-    const stage = st.stage;
     const cue = this.el("story-cue"); if (cue) cue.textContent = "";
     const box = this.el("story-choices");
     box.classList.remove("cut-beat-on");
@@ -1948,7 +2009,7 @@ const UI = {
     const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
     const far = this.el("story-far"); if (far) far.classList.remove("on");
     this._archiveStory(stage);
-    this.el("story-overlay").hidden = true;
+    const ovCh = this.el("story-overlay"); if (ovCh) { ovCh.hidden = true; ovCh.onclick = null; }
     document.body.classList.remove("story-on");
     this._story = null;
     Engine.chooseStory(STORY[State.data.storyStage], i);
@@ -1976,7 +2037,7 @@ const UI = {
     const skip = this.el("story-skip"); if (skip) skip.hidden = true;
     const bg = this.el("story-bg"); if (bg) bg.classList.remove("story-cam");
     const far = this.el("story-far"); if (far) far.classList.remove("on");
-    const ov = this.el("story-overlay"); if (ov) ov.hidden = true;
+    const ovRp = this.el("story-overlay"); if (ovRp) { ovRp.hidden = true; ovRp.onclick = null; }
     document.body.classList.remove("story-on");
     this._story = null;
     if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(this._bgmForLocation(State.location()));
@@ -2372,7 +2433,8 @@ const UI = {
       <h2>闭关修炼</h2>
       ${this._statusStrip()}
       <p style="color:var(--ink-dim)">于修仙者而言，光阴最是宝贵，也最不值钱。闭得越久，修为越深，可寿元、心境亦在流逝。
-      当前每月约可精进修为 ${perMonth}；距本层圆满约需 <b style="color:var(--gold)">${need}</b> 月。</p>
+      当前每月约可精进修为 ${perMonth}；距本层圆满约需 <b style="color:var(--gold)">${need}</b> 月。
+      <span style="color:var(--ink-faint);font-size:12px">静室之中自会张弛有度——心浮气躁时停功调息几月再续（额外耗时，结算时如实报账）。</span></p>
       <div class="modal-actions">
         ${toFullBtn}
         ${optHtml}
@@ -2498,7 +2560,7 @@ const UI = {
         <div class="pinfo"><div class="pname">${crop.name}</div><div class="pstat">成熟度 ${Math.round(p.growth)}%${crop.use ? ` · ${crop.use}` : ""}</div></div>
         ${ready
           ? `<button class="btn btn-mini" onclick="Engine.harvestCrop(${i}); UI.renderBottleModal();">收获</button>`
-          : `<span class="pstat">培育中…</span>`}
+          : `<span class="pstat" style="white-space:nowrap">培育中…</span>`}
       </div>`;
     }).join("");
 
@@ -2559,12 +2621,34 @@ const UI = {
         ${c.hint ? `<span class="c-hint">${c.hint}${disabled ? '（条件不足）' : ''}</span>` : ""}
       </button>`;
     }).join("");
+    // P3：旅途每月行动面板走底部 sheet——上半屏地图与头像移动保持可见（旅途"走"被看见）。
+    // 奇遇/旅途事件仍走全屏 modal（有叙事重量）。
+    if (f.journeyPanel) {
+      this.openSheet(`
+        <div class="fortune-tag" style="border-color:var(--jade);color:var(--jade)">旅 途</div>
+        <h2>${f.title}</h2>
+        <p style="color:var(--ink-dim);font-size:13px">${f.text}</p>
+        <div class="choices" style="margin-top:10px">${choices}</div>
+      `, { lock: true });
+      return;
+    }
     this.openModal(`
       <div class="fortune-tag">奇 遇</div>
       <h2>${f.title}</h2>
       <p>${f.text}</p>
       <div class="choices" style="margin-top:14px">${choices}</div>
     `);
+  },
+
+  // P3：旅途走段的"移动一拍"——先确保地图可见并让头像沿路线滑行，稍候再弹行动面板。
+  _journeyReveal(openPanel) {
+    const s = State.data;
+    const canvas = this.el("worldmap-canvas");
+    if (!s || !s.journey || !canvas) { openPanel(); return; }
+    if (canvas.hidden) this._enterJourneyMap();
+    else this.renderWorldmap();   // 重投影：头像 left/top 变化吃 CSS 过渡=滑行
+    clearTimeout(this._journeyRevealT);
+    this._journeyRevealT = setTimeout(openPanel, 950);
   },
 
   /* -------- NPC 主动交互弹窗 -------- */
@@ -2582,6 +2666,16 @@ const UI = {
       <h2>${built.title}</h2>
       <p>${built.text}</p>
       <div class="choices" style="margin-top:14px">${choices}</div>
+    `);
+  },
+
+  // 交互结算页：选择的后果就地看清（黑箱结算是体验大忌——结果只进日志=「点了没反应」）
+  showInteractionResult(title, r) {
+    const tone = r.kind === "bad" ? "var(--red)" : r.kind === "good" ? "var(--jade-bright)" : "var(--ink)";
+    this.openModal(`
+      <div class="fortune-tag" style="border-color:var(--blue);color:var(--blue)">${title} · 事毕</div>
+      <p style="color:${tone};line-height:1.8;margin-top:10px">${r.text}</p>
+      <div class="modal-actions"><button class="btn btn-primary" onclick="UI.closeModal()">知道了</button></div>
     `);
   },
 
@@ -2732,16 +2826,29 @@ const UI = {
     let board = (typeof WORLD !== "undefined" && WORLD.fameBoard ? WORLD.fameBoard : []).map(f => ({
       name: f.name, title: f.title, fame: f.fame, note: f.note, dead: !!deadIds[f.id],
     }));
+    // 夺名赛道：世间散修（npcFates）也在座次上——他们的名头按境界折算（名实一致），
+    // 且个个可下战书（当众比斗·胜则扬名）。剧情人物不入赛道（命运忠于动漫）。
+    if (!boardStale && (s.npcFates || []).length && typeof Engine !== "undefined" && Engine.fameOfNpc) {
+      s.npcFates.forEach(f => {
+        if (f.status !== "alive") return;
+        board.push({
+          name: f.name, title: `${NPCSIM.realmName(f.realm)} · 散修`, fame: Engine.fameOfNpc(f),
+          duelId: f.id, won: !!s.flags[`duel_won_${f.id}`],
+        });
+      });
+    }
     if ((s.fame || 0) > 0) board.push({ name: s.name, title: meTitle, fame: s.fame, note: "事迹渐传，名声渐起。", me: true });
     board.sort((a, b) => (b.fame - a.fame));
     const boardHtml = board.map((f, i) => `
       <div class="fame-row ${f.me ? 'me' : ''} ${f.dead ? 'dead' : ''}">
-        <span class="fame-rank">${["甲","乙","丙","丁","戊","己","庚"][i] || i + 1}</span>
-        <span class="fame-name">${f.name}${f.dead ? '<span class="fame-dead">殁</span>' : ''}</span>
+        <span class="fame-rank">${["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"][i] || i + 1}</span>
+        <span class="fame-name">${f.name}${f.dead ? '<span class="fame-dead">殁</span>' : ''}${f.won ? '<span class="fame-dead" style="color:var(--jade)">胜</span>' : ''}</span>
         <span class="fame-title">${f.title}</span>
         <span class="fame-val">${f.fame}</span>
+        ${f.duelId && !boardStale ? `<button class="btn btn-mini fame-duel-btn" onclick="UI.closeModal();Engine.startFameDuel('${f.duelId}')">战</button>` : ""}
       </div>`).join("");
     const myFameNote = (s.fame || 0) > 0 ? "" : `<p style="color:var(--ink-faint);font-size:12px;margin:4px 0 0">你尚籍籍无名——伏诛异闻、赢得漂亮、惊世一战，名声自来。</p>`;
+    const duelNote = boardStale ? "" : `<p style="color:var(--ink-faint);font-size:12px;margin:4px 0 0">带「战」字的散修可下战书——当众比斗，胜则扬名、座次攀高；但当众赢下的比斗做不得假，示人境界随之抬升（藏拙者慎）。</p>`;
     // §9-6 名场面回廊：已演完的"含演出"剧情可在此原样重温（最近见到的在前）
     const scenes = (s.scenes || []).slice().reverse();
     const scenesHtml = scenes.length
@@ -2758,6 +2865,7 @@ const UI = {
       <div class="fame-stone">${boardHtml}</div>
       ${boardStale ? `<p style="color:var(--ink-faint);font-size:12px;margin:4px 0 0">这方石碑刻的是当年彩霞山一带的座次——你早已远行，天下之大，另有排场。</p>` : ""}
       ${myFameNote}
+      ${duelNote}
       ${(() => { const te = (typeof Engine !== "undefined" && Engine.temperamentEcho) ? Engine.temperamentEcho() : null; return te ? `<h3 class="panel-title" style="margin-top:8px">心性 · 你是谁</h3><div class="temperament-echo temperament-${te.tone}">${te.text}</div>` : ""; })()}
       <h3 class="panel-title" style="margin-top:8px">名场面回廊（重温关键演出）</h3>
       <div class="scene-gallery">${scenesHtml}</div>
@@ -3035,6 +3143,13 @@ const UI = {
  requestAnimationFrame(() => canvas.classList.remove("fade-out"));
  stage.classList.add("fade-out");
  this._showActionDock(false);
+ // P4 桌面：进地图默认收起侧栏，让地图占满视野（☰ 可再展开）
+ if (!this._isMobile()) {
+   const rail = document.querySelector(".side-rail");
+   const stg = document.querySelector(".stage-col");
+   if (rail) rail.classList.add("collapsed");
+   if (stg) stg.classList.add("collapsed");
+ }
  const hudBtn = this.el("hud-toggle");
  if (hudBtn) hudBtn.hidden = false;
     } else {
@@ -3116,6 +3231,17 @@ const UI = {
     }
     // 注：地图主界面化后，行动 sheet 始终列出据点行动（即使该地点也有场景热点）——
     // sheet 是主入口，场景热点退为可选的氛围交互（不再清空 dock 行动）。
+    // 闭关结算补报 + 续闭快捷（手机端 dock 与 renderActions 双路径都要有，否则"改了等于没改"）
+    if (Engine.flushRetreatSettle) Engine.flushRetreatSettle();
+    let resumeBtn = "";
+    const rr = Engine._retreatResume;
+    if (rr && !loc.scene && !s.pendingEvent && !s.combat) {
+      if (State.absMonth() > rr.until || !(loc.actions && loc.actions.includes("cultivate"))) {
+        Engine._retreatResume = null;
+      } else {
+        resumeBtn = `<button class="btn btn-action btn-window" onclick="Engine._retreatResume=null;Engine.doCultivate(${rr.months})">继续闭关 <span class="win-left">余${rr.months}月</span></button>`;
+      }
+    }
     // 涟漪窗口
     let windowBtn = "";
     const rw = s.rippleWindow;
@@ -3129,8 +3255,8 @@ const UI = {
       }
     }
     const focus = this._pendingFocus; this._pendingFocus = null;
-    dockBox.innerHTML = (acts.length || windowBtn)
-      ? windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
+    dockBox.innerHTML = (acts.length || windowBtn || resumeBtn)
+      ? resumeBtn + windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
       : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>`
       : (loc.hotspots ? `<div class="act-hint">— 点场景中发光标记行事 —</div>` : ""));
     dockBox.querySelectorAll("[data-action]").forEach(btn => {
@@ -3313,7 +3439,7 @@ const UI = {
           const dCls = danger === "高" ? "d-hi" : danger === "中" ? "d-mid" : "d-lo";
           meta = `<span class="wm-pin-meta">${danger ? `<i class="wm-danger ${dCls}">${danger}险</i>` : ""}约${months}月</span>`;
         }
-        return `<div class="wm-pin ${here ? 'here' : ''} ${cls}" data-mx="${n.pos.x}" data-my="${n.pos.y}" onclick="UI._wmPickNode('${n.id}')" title="${n.desc}">
+        return `<div class="wm-pin ${here ? 'here' : ''} ${cls}" role="button" aria-label="${label}" data-mx="${n.pos.x}" data-my="${n.pos.y}" onclick="UI._wmPickNode('${n.id}')" title="${n.desc}">
           <span class="wm-pin-dot"></span>
           <span class="wm-pin-label">${label}${here ? ' ·在此' : ''}</span>
           ${meta}
@@ -3371,6 +3497,30 @@ const UI = {
     pinsBox.innerHTML = pinsHtml;
     labelsBox.innerHTML = labelsHtml;
     if (hint) hint.textContent = hintText;
+
+    // P3：旅途中自动聚焦当前路线（头像在动、镜头跟着走）
+    if (s.journey && (z === 3 || z === 4)) {
+      const j = s.journey;
+      const fromNode = C.nodes.find(n => n.id === j.from);
+      const toNode = C.nodes.find(n => n.id === j.to);
+      if (fromNode && toNode) {
+        fx = (fromNode.pos.x + toNode.pos.x) / 2;
+        const midY = (fromNode.pos.y + toNode.pos.y) / 2;
+        const span = Math.max(
+          Math.abs(toNode.pos.x - fromNode.pos.x),
+          Math.abs(toNode.pos.y - fromNode.pos.y),
+          10
+        );
+        // 旅途面板占据下半屏 ⇒ 路线须整条落进上方可见带（约屏高 0~40%）：
+        // 缩放让路线纵向投影 ≤32% 屏高，焦点下移让路线中点投影到 22% 屏高处。
+        k = Math.max(1.15, Math.min(2.2, 32 / span));
+        fy = midY + 28 / k;
+        // 当前行进路线高亮（journey 墨金流动虚线，与走过的 trod 区分）——svg 已赋 innerHTML，直接追加
+        svg.insertAdjacentHTML("beforeend",
+          `<line class="wm-route journey" x1="${fromNode.pos.x}" y1="${fromNode.pos.y}" x2="${toNode.pos.x}" y2="${toNode.pos.y}" vector-effect="non-scaling-stroke"/>`);
+        if (hint) hint.textContent = `旅途 ${j.leg}/${j.total} 月 · 赴${j.toName}`;
+      }
+    }
 
     // 应用连续缩放变换（只缩底图/SVG）；pin/文字按投影坐标定位（原生分辨率，不糊）
     this._applyWmZoom(k, fx, fy);
@@ -3613,6 +3763,7 @@ const UI = {
 
     if (ax != null && ay != null) {
       pin.hidden = false;
+      pin.classList.toggle("traveling", !!s.journey);
       // 韩立头像（地图上"人在走"——比纯光圈更有代入感；id 随境界换装）
       const port = this.el("avatar-pin-portrait");
       if (port && typeof Art !== "undefined") {
@@ -3627,6 +3778,7 @@ const UI = {
       pin.style.top = (50 + (ay - fy) * k) + "%";
     } else {
       pin.hidden = true;
+      pin.classList.remove("traveling");
     }
     // 旅途状态浮标
     const js = this.el("journey-status");
@@ -4330,8 +4482,28 @@ const UI = {
     this._warmCombatArt(combat, meta);
     this.renderCombat(combat, meta);
     this._flashCombatBanner(meta, combat);
+    this._combatBriefing(combat, meta);
     // 开场扫场（B3）：多战线团战横扫各战区一遍再落回韩立（_frontSweep 自带多战线/宽轴守卫）
     this._frontSweep(combat);
+  },
+
+  // 首战战法提示 + 灵力→法力池说明（零教学≠零提示：挂在修仙常识上）
+  _combatBriefing(combat, meta) {
+    const s = State.data;
+    if (!combat || !s) return;
+    const pct = s.spiritMax > 0 ? Math.round((s.spirit / s.spiritMax) * 100) : 100;
+    const mp = combat.player && combat.player.mpMax != null ? combat.player.mpMax : null;
+    if (!s.flags.combat_briefed) {
+      State.setFlag("combat_briefed");
+      combat._log("【战法】术法够不着时，先点脚下格子「走」贴近，再点法术出牌；牌上标「射程外」= 还差几步。点「结束回合」让敌方行动。");
+    }
+    if (mp != null && pct < 55) {
+      combat._log(`【战前】灵力充盈 ${pct}% → 本战法力约 ${mp}。灵力偏低，术法连用要省着点。`);
+    } else if (mp != null && !s.flags.combat_mp_noted) {
+      s.flags.combat_mp_noted = true;
+      combat._log(`【战前】灵力 ${pct}% → 本战法力 ${mp}（斗法耗的是法力池，与气血分开）。`);
+    }
+    State.save();
   },
 
   // 敌人名 → 立绘（剧情人物用其立绘；心魔用业障之人的脸，无业障用韩立暗影）
@@ -4855,6 +5027,25 @@ const UI = {
     return best;
   },
 
+  // 战斗 idle 提示：是否有攻击法术够得着任一活敌（engine.combatEndRound 消费）
+  _anySpellInRange(c) {
+    if (!c || !c.player) return null;
+    const p = c.player;
+    const SP = (typeof CombatAPI !== "undefined" && CombatAPI.SPELLS) || {};
+    const atkSpells = (p.spells || []).filter(id => {
+      const sp = SP[id];
+      return sp && !sp.quick && sp.type !== "float" && sp.type !== "buff" && sp.type !== "defend" && sp.type !== "move";
+    });
+    if (!atkSpells.length) return "only_defend";
+    for (const id of atkSpells) {
+      const sp = SP[id];
+      const inR = (sp.range && sp.range[1] === 0) ? true
+        : c.enemies.some((e2, i2) => e2.alive && c.castableAt(id, i2));
+      if (inR) return true;
+    }
+    return false;
+  },
+
   // 神识料敌：根据意图类型给出"该如何应对"的提示（看穿意图=真决策，三型攻防语言）
   _intentHint(intent) {
     const dmg = intent.dmg || 0;
@@ -5262,9 +5453,13 @@ const UI = {
         const res = this.el("co-result");
         if (res) { res.textContent = win ? (allEscaped ? "逐" : "胜") : fled ? "遁" : "败"; res.className = "co-result " + (win ? "co-win" : fled ? "co-flee" : "co-lose"); }
         // 敌人结局名单：死的是死、跑的是跑，一目了然
+        // 演武/比斗点到即止：没人死——"伏诛/走脱"换成"认负/收势"（措辞跟规则走）
+        const friendly = meta.type === "spar" || meta.type === "fame_duel";
         const foes = this.el("co-foes");
         if (foes) foes.innerHTML = c.enemies.map(e => {
-          const fate = e.hp <= 0 ? '<b class="cf-slain">伏诛</b>' : e.escaped ? '<b class="cf-fled">走脱</b>' : win ? '<b class="cf-fled">退散</b>' : '<b class="cf-stand">未竟</b>';
+          const fate = friendly
+            ? (win ? '<b class="cf-fled">认负</b>' : '<b class="cf-stand">收势</b>')
+            : (e.hp <= 0 ? '<b class="cf-slain">伏诛</b>' : e.escaped ? '<b class="cf-fled">走脱</b>' : win ? '<b class="cf-fled">退散</b>' : '<b class="cf-stand">未竟</b>');
           return `<div class="co-foe">${e.name} · ${fate}</div>`;
         }).join("");
         // 复盘：关键手 / 消耗 / 余裕
@@ -6749,6 +6944,42 @@ const UI = {
     this.renderAll();
   },
 
+  /* -------- 突破受挫：与大典同一演出语言（失败也要被"看见"——账目+保底进度，败有所得）-------- */
+  breakthroughSetback(r) {
+    let ov = this.el("ceremony-overlay");
+    if (!ov) {
+      ov = document.createElement("div");
+      ov.id = "ceremony-overlay";
+      ov.className = "ceremony-overlay";
+      document.body.appendChild(ov);
+    }
+    const rows = [
+      `· 修为 -${r.loss}`,
+      `· 气血 -${r.dmg}`,
+      `· 心魔 +${r.demonGain}（滋长）`,
+      ...(r.pity ? [`· 屡败弥坚：连败 ${r.pity} 次，下次冲关成功率 +${r.pity * 2}%`] : []),
+    ];
+    ov.innerHTML = `
+      <div class="cer-inner cer-fail">
+        <div class="cer-title">受 挫</div>
+        <div class="cer-realm" style="color:var(--red)">${r.big ? "渡劫失利" : "冲关失利"}</div>
+        <div class="cer-text">${r.big
+          ? "劫云散去，你僵坐原地，口鼻溢血——这一步，终究还是差了半口气。但你还活着，活着就还有下一次。"
+          : "灵力行至关窍处轰然溃散，你闷哼一声跌坐在地。道途千折，摔的每一跤都作数。"}</div>
+        <div class="cer-gains">${rows.map(g => `<div class="cer-gain">${g}</div>`).join("")}</div>
+        <div class="cer-actions">
+          <button class="btn btn-secondary" onclick="UI._setbackEnd()">拂袖起身，从头再来</button>
+        </div>
+        <div class="cer-note">失败在攒成功：修满火候、调息压心魔、灵力充盈时再冲，把成功率经营上去。</div>
+      </div>`;
+    ov.classList.add("show");
+  },
+  _setbackEnd() {
+    const ov = this.el("ceremony-overlay");
+    if (ov) ov.classList.remove("show");
+    this.renderAll();
+  },
+
   /* -------- 系统菜单（手机端 ☰ 收纳全部系统入口）-------- */
   openSystemMenu() {
     const soundOn = (typeof Sfx !== "undefined") && Sfx.enabled();
@@ -6861,12 +7092,22 @@ const UI = {
   closeModal() { this._selPref = null; this.el("modal-overlay").hidden = true; },
 
   /* -------- 底部 sheet（L1b：轻量面板，不遮挡场景/地图） -------- */
-  openSheet(html) {
+  openSheet(html, opts) {
     const s = this.el("bottom-sheet");
-    s.innerHTML = `<span class="sheet-close" onclick="UI.closeSheet()">×</span>` + html;
-    this.el("sheet-overlay").hidden = false;
+    const locked = !!(opts && opts.lock);   // 锁定 sheet（旅途面板等须做出选择的）：无 ×、点遮罩不关
+    s.innerHTML = (locked ? "" : `<span class="sheet-close" onclick="UI.closeSheet()">×</span>`) + html;
+    const ov = this.el("sheet-overlay");
+    ov.dataset.lock = locked ? "1" : "";
+    ov.classList.toggle("sheet-lock", locked);
+    ov.hidden = false;
   },
-  closeSheet() { this.el("sheet-overlay").hidden = true; },
+  closeSheet(force) {
+    const ov = this.el("sheet-overlay");
+    if (!force && ov.dataset.lock === "1") return;
+    ov.dataset.lock = "";
+    ov.classList.remove("sheet-lock");
+    ov.hidden = true;
+  },
 
   toast(msg, bad = false) {
     const t = this.el("toast");

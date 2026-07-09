@@ -1524,13 +1524,13 @@ WORLD.npcs = [
     id: "zhangtie", name: "张铁", role: "同乡挚友 · 习武",
     bio: "与韩立同赴七玄门补考入门的同乡少年，憨厚仗义。无法引气入体，止步长春功第一层，改修象甲功强身。",
     lines: ["韩立，又在捣鼓你那些草药？", "咱俩好歹也是从青牛镇一块儿出来的，可得互相照应。"],
-    where: ["wuting", "yaolu"], cond: (s) => !s.flags.zhangtie_dead,
+    where: ["wuting", "yaolu"], cond: (s) => s.flags.met_friends && !s.flags.zhangtie_dead,
   },
   {
     id: "lifeiyu", name: "厉飞雨", role: "好友 · 武学有成",
     bio: "七玄门弟子，爽朗仗义，武学天赋出众。常赞韩立记性奇佳，唤他天才。后凭服食精元丹在门派大比中崭露头角。",
     lines: ["韩立！又躲在药庐？走，陪我过两招！", "你这记性简直是妖孽，换我早成高手了。"],
-    where: ["wuting"],
+    where: ["wuting"], cond: (s) => s.flags.met_friends,
   },
   {
     id: "modafu", name: "墨大夫", role: "授业之师 · 医毒",

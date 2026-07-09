@@ -305,6 +305,17 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   stroke: rgba(201,169,106,.5); stroke-dasharray: none;
   stroke-width: 0.4;
 }
+/* 旅途当前路线：墨金流动虚线（P3——头像脚下这条路被点亮）。
+ * 底图为米色宣纸——线色须深于纸面才可见；深墨描边+金芯双重投影提可读性。 */
+.wm-route.journey {
+  stroke: #7a5a24; stroke-width: 3;
+  stroke-dasharray: 7 5; stroke-linecap: round;
+  animation: route-flow 1.6s linear infinite;
+  filter: drop-shadow(0 0 2px rgba(236,217,168,.9)) drop-shadow(0 1px 2px rgba(0,0,0,.45));
+}
+@keyframes route-flow {
+  to { stroke-dashoffset: -12; }
+}
 
 /* avatar pin（韩立头像在地图上"走"——比纯光圈更像"人在地图上"） */
 .avatar-pin {
@@ -329,6 +340,14 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 @keyframes avatar-pulse {
   0% { transform: translate(-50%, -50%) scale(.9); opacity: 0.6; }
   100% { transform: translate(-50%, -50%) scale(1.9); opacity: 0; }
+}
+
+.avatar-pin.traveling .avatar-pin-ring {
+  animation: avatar-travel 1.1s ease-in-out infinite;
+}
+@keyframes avatar-travel {
+  0%, 100% { transform: translate(-50%, -50%) scale(.95); opacity: 0.7; }
+  50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
 }
 
 /* 缩放控制 */
@@ -764,7 +783,11 @@ body.dock-active .layout .mid-col {
   display: flex; align-items: flex-end; justify-content: center;
   animation: fadein 0.2s ease;
 }
+/* 锁定 sheet（旅途行动面板）：不压暗上半屏、地图可透过遮罩交互——头像移动全程可见 */
+.sheet-overlay.sheet-lock { background: transparent; pointer-events: none; }
+.sheet-overlay.sheet-lock .bottom-sheet { pointer-events: auto; box-shadow: 0 -10px 36px rgba(0,0,0,.65); }
 .bottom-sheet {
+  position: relative; /* 锚定 .sheet-close——缺它时 × 逃逸到视口右上角被顶栏遮死 */
   width: 460px; max-width: 94vw; max-height: 65vh; overflow-y: auto;
   background: var(--bg-panel); border: 1px solid var(--border-soft);
   border-bottom: none; border-radius: 12px 12px 0 0;
@@ -781,7 +804,9 @@ body.dock-active .layout .mid-col {
   margin-bottom: 10px; padding-right: 28px;
 }
 .bottom-sheet .sheet-close {
-  position: absolute; top: 12px; right: 16px;
+  /* sticky+float：长内容（见闻全录）滚动时 × 始终可点；absolute 会随内容滚出视野 */
+  position: sticky; top: 0; float: right; z-index: 2;
+  margin: -6px -6px 0 0; padding: 6px 10px;
   color: var(--ink-faint); font-size: 20px; cursor: pointer;
   line-height: 1; transition: color .15s;
 }
@@ -2650,6 +2675,9 @@ body.story-on .toast {
 .cer-actions { display: flex; gap: 10px; justify-content: center; margin-top: 22px; animation: fadein 1s ease 1.4s both; }
 .cer-actions .btn { width: auto; margin: 0; }
 .cer-note { margin-top: 12px; color: var(--ink-faint); font-size: 11.5px; animation: fadein 1s ease 1.6s both; }
+/* 受挫变奏：同一演出语言、冷色调（失败也要被"看见"，但不给它庆典的暖光） */
+.cer-inner.cer-fail .cer-title { color: #c9b8b4; text-shadow: 0 0 34px rgba(160, 80, 70, .35), 0 4px 30px rgba(0,0,0,.8); }
+.cer-inner.cer-fail .cer-gain { color: var(--ink-dim); }
 
 /* ===== 弹窗内状态摘要条（闭关/服药数值可见）===== */
 .status-strip {
@@ -2991,7 +3019,8 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 
   /* 手机端隐藏 HUD 切换按钮（用底栏 tab 代替） */
   .hud-toggle { display: none !important; }
-  .journey-status { top: 48px; font-size: 11px; padding: 4px 12px; }
+  /* 旅途进度浮标：下移到天命栏（fixed top48 高~80）之下，不被遮 */
+  .journey-status { top: 136px; font-size: 11px; padding: 4px 12px; }
 
   /* 行动 dock·手机端：底部 sheet 风格 */
   .action-dock {
@@ -3032,6 +3061,11 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   /* 韩立页：隐藏场景，显示角色卡+储物 */
   #screen-game[data-mtab="hero"] .layout { display: block; }
   .layout[data-mtab="hero"] .side-rail { display: block; }
+
+  /* 舆图页：全屏地图，隐藏场景与三栏（底栏「舆图」tab 专用） */
+  #screen-game[data-mtab="map"] .scene-stage { display: none !important; }
+  #screen-game[data-mtab="map"] .layout { display: none !important; }
+  #screen-game[data-mtab="map"] .objective-bar { display: flex; }
 
   .stage-col .narrative { max-height: none; flex: none; }
   .stage-col > .panel-title { display: none; }   /* 页签已标明"见闻"，免重复 */
@@ -3351,6 +3385,12 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 .fame-row.me { background: rgba(166, 77, 58, 0.10); border-radius: 4px; }
 .fame-row.me .fame-name { color: var(--cinnabar-bright, #d4836a); }
 .fame-row.dead .fame-name { text-decoration: line-through; opacity: 0.55; }
+/* 夺名比斗：座次上的「战」钮——挑战即内容（手机可点 28px 高） */
+.fame-duel-btn {
+  flex-shrink: 0; margin-left: 6px; padding: 3px 9px; min-height: 24px;
+  font-size: 11.5px; letter-spacing: 1px;
+  color: var(--cinnabar-bright, #d4836a); border-color: rgba(178, 58, 50, 0.45);
+}
 .fame-dead {
   margin-left: 4px; font-size: 10px; color: var(--red);
   border: 1px solid rgba(178, 58, 50, 0.5); border-radius: 2px; padding: 0 3px; text-decoration: none;
@@ -4192,9 +4232,12 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 .story-skip {
   position: absolute; top: 18px; right: 18px; z-index: 8;
   color: var(--ink-dim); font-size: 12px; letter-spacing: 1px;
-  padding: 5px 12px; border: 1px solid rgba(212,176,106,.32); border-radius: 14px;
+  min-width: 44px; min-height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 14px; border: 1px solid rgba(212,176,106,.32); border-radius: 14px;
   background: rgba(14,11,9,.7); cursor: pointer; user-select: none;
 }
+.story-overlay { cursor: pointer; }
 .story-skip:hover { color: var(--gold); border-color: rgba(212,176,106,.6); }
 /* 交互 beat：把"操作"嵌进演出（伺机出手 / 限信息抉择）*/
 .story-choices.cut-beat-on { background: transparent; }
