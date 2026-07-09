@@ -110,11 +110,23 @@
     pick(c) { tone(c, { freq: 1175, dur: 0.1, gain: 0.035 }); tone(c, { freq: 1568, dur: 0.12, gain: 0.025, delay: 0.06 }); },
     // 打字机轻嗒（对话逐字，极轻——气口不是轰炸）
     type(c) { noise(c, { dur: 0.025, gain: 0.012, band: 2600 }); },
+    // 棋子落枰（红尘劫·棋友坐化——一子落定的脆响，木与玉的短击）
+    goClick(c) {
+      noise(c, { dur: 0.03, gain: 0.05, band: 3400 });
+      tone(c, { freq: 1720, slideTo: 1180, dur: 0.09, gain: 0.045, delay: 0.004 });
+      tone(c, { freq: 430, dur: 0.14, gain: 0.02, delay: 0.01 });
+    },
     // —— 远声（声纹梯度：离战团越近听得越真——音量刻意极低，是"远方"不是"耳边"）——
     // 远方妖吼：低频下滑长音 + 闷雷噪
     farRoar(c) {
       tone(c, { freq: 92, slideTo: 48, type: "sawtooth", dur: 1.1, gain: 0.022 });
       noise(c, { dur: 0.9, gain: 0.014, low: 190, delay: 0.08 });
+    },
+    // 远雷先声（S2 神雷预兆拍）：低频滚雷自远处压来——"要来了"的酝酿
+    thunderFar(c) {
+      noise(c, { dur: 1.5, gain: 0.022, low: 105 });
+      tone(c, { freq: 56, slideTo: 33, type: "sine", dur: 1.4, gain: 0.024, delay: 0.06 });
+      noise(c, { dur: 0.7, gain: 0.012, low: 180, delay: 0.55 });
     },
     // 天雷劈落：高频炸裂 + 低频滚雷尾（fx.js 闪电配套）
     thunder(c) {

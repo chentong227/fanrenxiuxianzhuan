@@ -4722,6 +4722,7 @@ const UI = {
       [/血茧铁罗|血茧|化茧/, "bt_tieluo_mao"],
       [/铁罗/, "bt_tieluo"],
       [/王蝉/, "bt_zhanwangchan"],     // 鬼灵门少主（2026-07-09 考据勘误后专属战姿）
+      [/温天仁/, "bt_wentianren"],     // 六道极圣之徒（正典：麻衣高冠赤足·眉宇金芒）
       [/王管事/, "bt_wuse"],
       // 增量H·皇宫决战：黑煞教低阶血侍 mook（须在「铁罗」之后——"血侍铁罗"含"铁罗"已先命中一阶段 boss 立绘）
       [/血侍/, "bt_xueshi"],
@@ -4857,12 +4858,15 @@ const UI = {
     const ti = targetIndex != null ? targetIndex : (c0 ? this.curTarget(c0) : this._combatTarget);
     const tgt = this._axisAnchor(`enemy:${ti}`);
     const me = this._axisAnchor("player");
-    // 出手身法：贴身技=大步前冲；远程=前倾发力（打击感的"人动了"）
+    // 出手身法·三拍（S1）：预备后撤→突进→收势。方向朝目标（--atk 注入，翻面立绘也冲对方向）
     if (sp && me && sp.type === "atk") {
       const melee = sp.range && sp.range[1] <= 1;
+      me.style.setProperty("--atk", this._relDir(me, tgt));
       me.classList.remove("strike-melee", "strike-cast"); void me.offsetWidth;
       me.classList.add(melee ? "strike-melee" : "strike-cast");
-      setTimeout(() => me.classList.remove("strike-melee", "strike-cast"), 500);
+      setTimeout(() => me.classList.remove("strike-melee", "strike-cast"), 600);
+      // S3 姿态替换：出手瞬间换 _atk/_cast 变体立绘（已入库的角色才换），收势换回
+      this._poseSwap(me, melee ? "_atk" : "_cast");
     }
     // 催动绕身法宝阵列出袭（通用闭环协议）：青竹剑阵/子母刃等绕身阵列攻击时，飞行体各自汇聚
     // 射向目标 → 拖尾暴涨 → 命中 → 回归。取代额外配方光效（真实剑/刃出动，不再叠独立光块）
@@ -4871,8 +4875,8 @@ const UI = {
       && this._launchOrbit(me, tgt, sp));
     if (useOrbit) {
       if (typeof Sfx !== "undefined") Sfx.play("swordWhoosh");   // 群剑出袭·破空锐啸
-      // 命中那拍（出袭飞达目标≈40%×0.92s≈0.37s）目标震动
-      setTimeout(() => { if (tgt) { tgt.classList.remove("shake"); void tgt.offsetWidth; tgt.classList.add("shake"); } }, 370);
+      // 命中那拍（出袭飞达目标≈40%×0.92s≈0.37s）目标方向化击退
+      setTimeout(() => this._hitKnock(tgt, me), 370);
     }
     // 辟邪神雷·劈·横扫（problem 5）：金雷自人物身畔轰发→左右贯场雷幕→所及诸敌天降金雷劈落
     const useSweep = !!(sp && sp.aoe && sp.type === "atk" && me && typeof Fx !== "undefined");
@@ -4881,8 +4885,8 @@ const UI = {
       const box = this.el("axis-units");
       const foes = box ? [...box.querySelectorAll('[data-uid^="enemy:"]')] : [];
       if (Fx.ensure(field)) Fx.shenleiSweep(me, foes.length ? foes : (tgt ? [tgt] : []));
-      // 横扫命中：所及诸敌依次震（错相，配合逐敌雷击节奏）
-      foes.forEach((f, i) => setTimeout(() => { f.classList.remove("shake"); void f.offsetWidth; f.classList.add("shake"); }, 180 + i * 90));
+      // 横扫命中：所及诸敌依次方向化击退（S2 三拍制——预兆 520ms 后爆发拍逐敌雷落，与 fx 同步）
+      foes.forEach((f, i) => setTimeout(() => this._hitKnock(f, me, { amp: 18 }), 660 + i * 90));
     }
     // 御使飞行：攻击类且非贴身武学——一道法器印划过战场 + fx 流光弹道（出袭法宝/横扫已自有演出，跳过）
     if (!useOrbit && !useSweep && sp && me && tgt && sp.type === "atk" && sp.range && sp.range[1] >= 2) {
@@ -4901,13 +4905,13 @@ const UI = {
         fly.classList.add("gone");
       });
       setTimeout(() => fly.remove(), 480);
-      setTimeout(() => { if (tgt) { tgt.classList.remove("shake"); void tgt.offsetWidth; tgt.classList.add("shake"); } }, 320);
+      setTimeout(() => this._hitKnock(tgt, me), 320);
       // fx：分功法配方特效（每个法术一张脸——青芒/火蛇/冰棱/金砖各不相同）
       if (typeof Fx !== "undefined" && Fx.ensure(field)) {
         Fx.castSpell(spellId, me, tgt, sp);
       }
     } else if (!useOrbit && !useSweep && tgt) {
-      tgt.classList.remove("shake"); void tgt.offsetWidth; tgt.classList.add("shake");
+      this._hitKnock(tgt, me);
       // 贴身武学/自身术：同走配方分发
       if (typeof Fx !== "undefined" && sp) {
         const field = this.el("axis-field");
@@ -4944,6 +4948,47 @@ const UI = {
         if (sp.source === "treasure") Sfx.play("bell");   // 法宝催动叠一记钟鸣（仪式感）
       }
     }
+  },
+
+  /* —— S1 动作手感小件 —— */
+  // 相对方位：a 看向 b 在屏幕上的方向（1=右，-1=左）；缺参回退 1
+  _relDir(a, b) {
+    try {
+      if (a && b) {
+        const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+        return (rb.left + rb.width / 2) >= (ra.left + ra.width / 2) ? 1 : -1;
+      }
+    } catch (e) {}
+    return 1;
+  },
+  // S3 姿态替换：出手/施法瞬间换姿态变体立绘（bt_xxx → bt_xxx_atk/_cast），收势换回。
+  // 变体未入库=静默跳过；只改 img.src 不动 img._src——下一次 reconcile 自愈，无残留。
+  _poseSwap(anchor, suffix, ms = 560) {
+    if (!anchor || typeof Art === "undefined" || !Art.battlerUrl) return;
+    const img = anchor.querySelector("img.au-img");
+    if (!img || !img.src) return;
+    const m = img.src.match(/\/(bt_[a-z0-9_]+)\.png/i);
+    if (!m) return;
+    const base = m[1].replace(/_fly$/, "");
+    const url = Art.hasBattler(base + suffix) ? Art.battlerUrl(base + suffix) : null;
+    if (!url) return;
+    const back = img.src;
+    img.src = url;
+    clearTimeout(img._poseT);
+    img._poseT = setTimeout(() => { if (img.isConnected && img.src === url) img.src = back; }, ms);
+  },
+
+  // 受击反作用：背向攻击者的方向化击退+倾斜+回弹（CSS hitKnock 吃 --kb/--kbAmp）。
+  // ⚠ 只设 CSS 变量不写定位内联（v88 reconcile 红线：不给 axis-unit 写会赖着不走的样式）
+  _hitKnock(anchor, fromEl, opts = {}) {
+    if (!anchor) return;
+    // 方向：从攻击者指向受击者（被打飞离攻击者）；无来源时按敌我兜底（敌向右弹、我向左弹）
+    const dir = fromEl ? this._relDir(fromEl, anchor)
+      : (anchor.dataset && /^enemy/.test(anchor.dataset.uid || "") ? 1 : -1);
+    anchor.style.setProperty("--kb", dir);
+    anchor.style.setProperty("--kbAmp", (opts.amp || 13) + "px");
+    anchor.classList.remove("shake"); void anchor.offsetWidth;
+    anchor.classList.add("shake");
   },
 
   // 催动绕身法宝阵列出袭（通用协议）：为每个阵列(.au-swords/.au-blades…)的飞行体注入
@@ -5020,10 +5065,12 @@ const UI = {
     //   只有韩立本人、或离他足够近（同一摊交火）的行动者才递镜；远处战线靠画框徽标提示、
     //   玩家点一下才巡过去。这样镜头不再在 30 格上左右乱甩、看不清“谁打谁”。
     let lastPeek = null;
+    let lastActor = null;   // S1：最近行动者——受击方向化击退的"来向"依据
     for (const f of fx) {
       // 行动者切镜（B1 镜头导演·teamfight-camera-design §3.B）：
       //   turn 拍＝该行动者的回合；fxcast 的 from 作兜底。仅当其在韩立视角带内才跟。
       const actor = f.kind === "turn" ? f.ref : ((f.kind === "fxcast" && f.from) ? f.from : null);
+      if (actor) lastActor = actor;
       let peeked = false;
       if (actor && actor !== lastPeek && this._peekWorthy(c, actor)) {
         lastPeek = actor;
@@ -5060,6 +5107,14 @@ const UI = {
               const castSnd = { jin: "castJin", mu: "castMu", shui: "castShui", huo: "castHuo", tu: "castTu" };
               Sfx.play(f.melee ? "meleeWhoosh" : castSnd[f.elem] || "sword");
             }
+            // S1：敌/侧出手也有三拍身法——预备后撤→朝目标突进→收势（同规则铁律：敌我一个规则）
+            if (fromA) {
+              fromA.style.setProperty("--atk", this._relDir(fromA, anchor));
+              fromA.classList.remove("strike-melee", "strike-cast"); void fromA.offsetWidth;
+              fromA.classList.add(f.melee ? "strike-melee" : "strike-cast");
+              setTimeout(() => fromA.classList.remove("strike-melee", "strike-cast"), 600);
+              this._poseSwap(fromA, f.melee ? "_atk" : "_cast");   // S3：敌/侧姿态变体（已入库才换）
+            }
             const to = Fx.at(anchor);
             if (!to) return;
             if (f.melee) {
@@ -5083,6 +5138,7 @@ const UI = {
         setTimeout(() => {
           if (typeof Sfx !== "undefined") Sfx.play("die");
           this._camPunch();   // 终结一击：镜头轻推近（燃点 B4），叠在水墨慢放之上
+          if (fxReady && Fx.hitStop) Fx.hitStop(115);   // S1：终结顿帧——这一下"咔"地定住
           anchor.classList.add("slaying");
           const burst = document.createElement("div");
           burst.className = "ink-burst";
@@ -5093,6 +5149,7 @@ const UI = {
         delay += 300;
         continue;
       }
+      const lastActorAt = lastActor;   // 捕获"这一拍"的行动者（延时闭包里 lastActor 会继续漂）
       setTimeout(() => {
         this._popFloat(anchor, f.kind, f.text);
         // 受击/事件音（T7）：背袭寒刃、重创骨裂、暴击重锤、升降风啸——每一记都有"形"
@@ -5111,9 +5168,12 @@ const UI = {
           }
         }
         if (f.kind === "hurt" || f.kind === "dmg" || f.kind === "crit" || f.kind === "pierce") {
-          anchor.classList.remove("shake", "hitflash"); void anchor.offsetWidth;
-          anchor.classList.add("shake", "hitflash");
+          // S1：方向化击退（背向最近行动者）+ 白闪；暴击退得更远 + 顿帧（抖到一半被冻=打击感翻倍）
+          const fromA = lastActorAt ? this._axisAnchor(lastActorAt) : null;
+          this._hitKnock(anchor, fromA, { amp: f.kind === "crit" ? 22 : 13 });
+          anchor.classList.add("hitflash");
           setTimeout(() => anchor.classList.remove("hitflash"), 360);
+          if (f.kind === "crit" && fxReady && Fx.hitStop) Fx.hitStop(85);
           // fx 爆点：受击位迸溅（暴击金芒更盛+轻震屏；带行属按行属调色；砸地带尘环）
           if (fxReady) {
             const at = Fx.at(anchor);

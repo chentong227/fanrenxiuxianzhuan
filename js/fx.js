@@ -505,36 +505,109 @@
       });
     },
 
-    /* 辟邪神雷·劈·横扫：金雷自人物身畔轰发→左右贯场雷幕→逐敌天降金雷劈落（区别于法宝飞袭）。
+    /* ═══ S2 三拍特效·屏幕级组件（预兆→爆发→余韵的可复用件）═══ */
+    /* 预兆·战场压暗（DOM overlay 渐入渐出）：大招前天光骤暗——全屏幕为这一击让路 */
+    dimField(ms = 1800, depth = 0.4) {
+      const h = this._host;
+      if (!h || this._reduced()) return;
+      let d = h.querySelector(":scope > .fx-dim");
+      if (!d) {
+        d = document.createElement("i");
+        d.className = "fx-dim";
+        h.appendChild(d);
+        void d.offsetWidth;   // 先入 DOM 再改 opacity，让 transition 生效
+      }
+      d.style.opacity = depth;
+      clearTimeout(d._t);
+      d._t = setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 800); }, ms);
+    },
+    /* 预兆·金云汇聚：天幕顶部金色云团脉动 + 施法者身上金尘引雷上冲 */
+    goldGather(from, ms = 500) {
+      if (!this._ctx) return;
+      const W = this._w;
+      for (let i = 0; i < 10 * this._degraded; i++) {
+        this.mote(rnd(W * 0.18, W * 0.82), rnd(4, 34), {
+          vx: rnd(-0.5, 0.5), vy: rnd(0.1, 0.4), wob: 9, life: ms + 500,
+          size: rnd(9, 16), c: i % 3 ? "#ffdf8a" : "#fff3c4", delay: rnd(0, ms * 0.5),
+        });
+      }
+      for (let i = 0; i < 12 * this._degraded; i++) {
+        this.spark(from.x + rnd(-14, 14), from.y - rnd(0, 10),
+          { vy: rnd(-6.5, -3.5), c: i % 2 ? "#ffe39a" : "#fff7d6", life: ms, delay: rnd(0, ms * 0.4) });
+      }
+      this._run();
+    },
+    /* 余韵·焦痕 decal（DOM 地面残留渐隐——世界记住这一击）。红线：同屏 ≤6 */
+    scorch(x, y, ms = 6000) {
+      const h = this._host;
+      if (!h) return;
+      const marks = h.querySelectorAll(":scope > .fx-scorch");
+      if (marks.length >= 6) marks[0].remove();
+      const d = document.createElement("i");
+      d.className = "fx-scorch";
+      d.style.left = (x - 34) + "px";
+      d.style.top = (y - 6) + "px";
+      h.appendChild(d);
+      requestAnimationFrame(() => d.classList.add("on"));
+      setTimeout(() => { d.classList.remove("on"); setTimeout(() => d.remove(), 1300); }, ms);
+    },
+
+    /* 辟邪神雷·劈·横扫（S2 完全体·三拍标杆模板）：
+     *  预兆(0~520ms) 天光骤暗+金云汇聚+远雷压来 → 爆发 白闪+聚雷+贯场雷幕+逐敌金雷（首雷顿帧）
+     *  → 余韵 焦痕残留+金烬上飘+残雷爬体+雷声长尾。
      * fromAnchor=施法者；toAnchors=横扫所及诸敌锚点数组 */
     shenleiSweep(fromAnchor, toAnchors) {
       if (!this._ctx) return;
       const from = this.at(fromAnchor, 0.5);
       if (!from) return;
       const tos = (toAnchors || []).map(a => this.at(a, 0.5)).filter(Boolean);
-      // ① 起手·人物聚雷：天幕金闪 + 上冲金光柱 + 脚下金环（雷"自人而发"的发力点）
-      this.flash("#fff2c8", 90, .34);
-      this.ring(from.x, from.y + 10, { c: "#ffd970", vr: 5.2, life: 440, lw: 3.6 });
-      this.ring(from.x, from.y + 10, { c: "#fff", vr: 3.0, life: 320, lw: 1.8 });
-      for (let i = 0; i < 16 * this._degraded; i++) this.spark(from.x + rnd(-10, 10), from.y, { vy: rnd(-8.5, -3), c: i % 2 ? "#ffe39a" : "#fff7d6", life: 320 });
-      this.burst(from.x, from.y, "jinlei", 22, { power: 5.2 });
-      this.shake(10);
-      // ② 横扫雷幕：自人物向左右各拉一道贯场金雷（"左右十格"的具象）
-      const allX = [from.x, ...tos.map(t => t.x)];
-      const sweepY = tos.length ? tos.reduce((s, t) => s + t.y, 0) / tos.length : from.y;
-      this._horizBolt(from.x, from.y, Math.max(...allX) + 60, sweepY, { life: 460, w: 3.2 });
-      this._horizBolt(from.x, from.y, Math.min(...allX) - 60, sweepY, { life: 460, w: 3.2 });
-      // ③ 逐敌雷击（错相 90ms）：每敌一道金雷劈落 + 命中金环冲击 + 金雷迸散
-      tos.forEach((t, i) => setTimeout(() => {
-        if (!this._ctx) return;
-        this.lightning(t.x, t.y, { gold: true, life: 520 });
-        this.ring(t.x, t.y + 8, { c: "#ffd970", vr: 4.8, life: 340, lw: 3 });
-        this.ring(t.x, t.y + 8, { c: "#fff", vr: 2.8, life: 260, lw: 1.6 });
-        this.burst(t.x, t.y, "jinlei", 24, { power: 5.6 });
-        this._run();
-      }, 120 + i * 90));
-      if (typeof Sfx !== "undefined") Sfx.play("thunder");
+      const feet = (toAnchors || []).map(a => this.at(a, 0.94)).filter(Boolean);
+      // ═══ 预兆拍：天光骤暗 + 金云自天幕汇聚 + 低频远雷先声（"要来了"）═══
+      this.dimField(2200, .42);
+      this.goldGather(from, 500);
+      if (typeof Sfx !== "undefined") Sfx.play("thunderFar");
       this._run();
+      setTimeout(() => {
+        if (!this._ctx) return;
+        // ═══ 爆发拍 ═══
+        // ⓪ 全屏白闪（爆发只有一帧的巅峰）
+        this.flash("#fff7dd", 80, .6);
+        // ① 起手·人物聚雷：上冲金光柱 + 脚下金环（雷"自人而发"的发力点）
+        this.ring(from.x, from.y + 10, { c: "#ffd970", vr: 5.2, life: 440, lw: 3.6 });
+        this.ring(from.x, from.y + 10, { c: "#fff", vr: 3.0, life: 320, lw: 1.8 });
+        for (let i = 0; i < 16 * this._degraded; i++) this.spark(from.x + rnd(-10, 10), from.y, { vy: rnd(-8.5, -3), c: i % 2 ? "#ffe39a" : "#fff7d6", life: 320 });
+        this.burst(from.x, from.y, "jinlei", 22, { power: 5.2 });
+        this.shake(10);
+        // ② 横扫雷幕：自人物向左右各拉一道贯场金雷（"左右十格"的具象）
+        const allX = [from.x, ...tos.map(t => t.x)];
+        const sweepY = tos.length ? tos.reduce((s, t) => s + t.y, 0) / tos.length : from.y;
+        this._horizBolt(from.x, from.y, Math.max(...allX) + 60, sweepY, { life: 460, w: 3.2 });
+        this._horizBolt(from.x, from.y, Math.min(...allX) - 60, sweepY, { life: 460, w: 3.2 });
+        // ③ 逐敌雷击（错相 90ms）：金雷劈落 + 冲击环 + 迸散；首雷顿帧——那一下"咔"地定住
+        tos.forEach((t, i) => setTimeout(() => {
+          if (!this._ctx) return;
+          this.lightning(t.x, t.y, { gold: true, life: 520 });
+          if (i === 0) this.hitStop(110);
+          this.ring(t.x, t.y + 8, { c: "#ffd970", vr: 4.8, life: 340, lw: 3 });
+          this.ring(t.x, t.y + 8, { c: "#fff", vr: 2.8, life: 260, lw: 1.6 });
+          this.burst(t.x, t.y, "jinlei", 24, { power: 5.6 });
+          // ═══ 余韵拍：焦痕残留 + 金烬上飘 + 残雷爬体（它真的发生过）═══
+          const ft = feet[i];
+          if (ft) this.scorch(ft.x, ft.y);
+          for (let k = 0; k < 3; k++) {
+            setTimeout(() => this._ctx && this.lightning(t.x + rnd(-16, 16), t.y + rnd(-8, 6), { gold: true, small: true, life: 150 }), 300 + k * 220);
+          }
+          for (let k = 0; k < 8 * this._degraded; k++) {
+            this.mote(t.x + rnd(-22, 22), t.y + rnd(-4, 10), {
+              vy: rnd(-1.2, -0.5), wob: 6, life: rnd(900, 1600),
+              size: rnd(2.5, 4), c: k % 2 ? "#ffd97a" : "#fff3c4", delay: 220 + rnd(0, 520),
+            });
+          }
+          this._run();
+        }, 140 + i * 90));
+        if (typeof Sfx !== "undefined") Sfx.play("thunder");
+        this._run();
+      }, 520);
     },
 
     /* 放射状金雷（落地炸开的零件）：自中心向 ang 方向射出一道之字闪电 */
@@ -705,26 +778,37 @@
        * 辟邪神雷三连（v98 用户点名"做最好看的金色雷"）——金芯白炽，雷者天威
        * 金色雷：辟邪神雷克鬼魅邪魔（青竹蜂云剑·七十二雷）
        * ============================================================ */
-      /* 劈：天幕金闪→自天而降的粗金雷柱（金晕白芯三层）→分支→命中金环冲击+残雷爬体 */
+      /* 劈（S2 三拍完全体）：预兆 压暗+金云+远雷 → 爆发 白闪+粗金雷柱+顿帧 → 余韵 焦痕+金烬+残雷爬体 */
       shenlei_pi(F, from, to) {
         if (!to) return;
-        // ① 天幕预闪（雷前的静——金芒漫天）
-        F.flash("#fff2c8", 80, .28);
+        // ═ 预兆拍：天光骤暗 + 金云汇聚 + 远雷先声
+        F.dimField(1900, .4);
+        F.goldGather(from, 460);
+        if (typeof Sfx !== "undefined") Sfx.play("thunderFar");
         setTimeout(() => {
-          // ② 主雷：自天幕最高处劈落（gold=金色三层描边+起点拉到画顶）
+          // ═ 爆发拍：全屏白闪 + 主雷自天幕最高处劈落（gold=金色三层描边+起点拉到画顶）+ 顿帧
+          F.flash("#fff7dd", 80, .6);
           F.lightning(to.x, to.y, { gold: true, life: 600 });
+          F.hitStop(110);
           setTimeout(() => F.lightning(to.x + rnd(-16, 16), to.y, { gold: true, small: true, life: 320 }), 90);
-          // ③ 命中：金色冲击环×2+金雷迸散+金闪+重震
+          // 命中：金色冲击环×2+金雷迸散+金闪+重震
           F.ring(to.x, to.y + 8, { c: "#ffd970", vr: 5.4, life: 380, lw: 3.6 });
           setTimeout(() => F.ring(to.x, to.y + 8, { c: "#fff", vr: 3.4, life: 300, lw: 1.8 }), 70);
           F.burst(to.x, to.y, "jinlei", 32, { power: 6.2 });
           F.flash("#ffe39a", 200, .5);
           F.shake(13);
-          // ④ 残雷爬体：金弧在目标身上窜 600ms
+          // ═ 余韵拍：焦痕残留 + 残雷爬体 + 金烬上飘（它真的发生过）
+          F.scorch(to.x, to.y + 26);
           for (let i = 0; i < 4; i++) {
             setTimeout(() => F.lightning(to.x + rnd(-18, 18), to.y + rnd(-10, 6), { gold: true, small: true, life: 170 }), 180 + i * 130);
           }
-        }, 120);
+          for (let i = 0; i < 8 * F._degraded; i++) {
+            F.mote(to.x + rnd(-20, 20), to.y + rnd(-4, 10), {
+              vy: rnd(-1.2, -0.5), wob: 6, life: rnd(900, 1500),
+              size: rnd(2.5, 4), c: i % 2 ? "#ffd97a" : "#fff3c4", delay: 240 + rnd(0, 500),
+            });
+          }
+        }, 480);
         F._run();
       },
       /* 附剑：金雷自天落于身→七十二青竹云剑应雷而出、剑身缠金电（buff 的仪式感）。

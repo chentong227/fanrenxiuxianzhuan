@@ -228,6 +228,26 @@
 
 ## 五、当前状态指针（2026-06-16）
 
+- **v304 · 战斗演出跃迁 S1~S4 + 名场面演出打磨（2026-07-10·docs/action-fx-design.md 必读）**：
+  ①**S1 动作手感 v1**：hitstop 接入战斗（暴击 85ms/终结 115ms·Fx.hitStop 复用）+ 攻击三拍（strikeMelee/strikeCast
+  预备后撤→突进→收势·方向 `--atk` 注入·敌我同规则 fxcast 也冲）+ 受击方向化击退（`UI._hitKnock` `--kb/--kbAmp`
+  背向攻击者+倾斜回弹·暴击退更远）+ 死亡沉坠（slayFade 加 translateY+rotate"倒下去"）。
+  ②**S2 神雷完全体**（三拍标杆模板）：shenleiSweep/RECIPES.shenlei_pi 三拍化——预兆（`Fx.dimField` 战场压暗 +
+  `Fx.goldGather` 金云汇聚 + `thunderFar` 远雷先声〔audio 新 recipe〕）→ 爆发（全屏白闪+首雷 hitStop 110）→
+  余韵（`Fx.scorch` 焦痕 decal≤6 + 金烬上飘 + 残雷爬体）。屏幕级组件可复用——其余大招后续批次照模板翻新。
+  ③**S3 姿态替换**：`UI._poseSwap`——出手/施法瞬间换 `_atk/_cast` 变体立绘 560ms 换回（未入库静默跳过·不动
+  img._src reconcile 自愈）。已入库：bt_hanli_jindan_atk/cast、bt_hanli_wentianren_atk/cast（atk 生成后目检翻面）。
+  ④**温天仁正典勘误重生成**：旧"玄黑华袍魔修"不符——正典=**清秀斯文·麻衣·高冠·赤足·眉宇金芒**（Bangumi/起点互证）；
+  wen_tianren 半身像+bt_wentianren 战姿已重生成入库（face:"c"），world.js codex bio 已勘正（六道极圣=逆星盟魁首·非万法门）。
+  ⑤**S4 温天仁战骨架**：`Engine.startWentianrenFight`——一阶段法宝对决（金针 pierce/蟠龙带/金光镜 guardMove·mastery2）
+  → 血≤60% 祭魔 → 六魔各司其职（攻/御〔全体甲+6〕/阵〔每回合穿甲6〕/疗〔4.5%续伤·正典解法先诛〕/袭/幻〔全体闪避+〕·
+  每诛一魔本体减伤 8%）。`?demo=wentianren` 满配入口（结丹后期+activeChapter 必须设 xinghaifeichi 否则法力池缩水）。
+  `node test/wentianren.bal.js` 冒烟（祭魔必触发断言·贪婪地板 ~18% 非死局）。
+  **⚠ 六魔登场演出/台词/招式编排细节留空待用户给接地信息（勿凭记忆编）；六魔生图×6 等编排定稿。**
+  ⑥**名场面演出打磨首批**（action-fx-design §四·五 五件套标准）：红尘劫全串（开张 market+establish/情侣 candle+pushIn/
+  小龙 rain+shock/**棋友坐化=市声骤收 amb:null+静默拍+goClick 落子声〔audio 新 recipe〕+pushIn 遗书+pullOut 留白**/
+  渡过=顿悟拍 amb 收+金光+bell）+ 结丹三节点（首败 shock/金丹大成=凝丹三拍+故人钟）+ 曲魂被夺（shock+夺舍 pushIn+失去拍静默）。
+  430×932 浏览器实测：demo 加载/立绘/三拍特效/六魔机制播报全过、console 零报错。37 套回归全绿。
 - **v303 · 精品化三线收官：L2 场景可交互 + M5 星海深水区 + L4 传播素材（2026-07-10）**：
   ①**L2 氛围地标**（ux-overhaul D2/D6 最后一块）：`loc.landmarks[]` 数据 + `Engine.lookLandmark`（零耗月「看一眼」·flavor 随 flag 变·
   首看一次性微反馈）+ `_renderHotspots` 双类渲染（action 热点玉青脉冲 / look 地标暗金低调）。八个地点铺 17 处地标

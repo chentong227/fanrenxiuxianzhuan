@@ -5602,6 +5602,130 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  /* —— 温天仁·六极真魔功之战（S4 骨架·docs/action-fx-design.md §四）——
+   * 考据（≥2源互证）：温天仁=六道极圣亲传·结丹后期巅峰·"乱星海元婴之下第一人"；
+   * 法宝=仿八门金光镜/天阳鎏金针/四象蟠龙带；六极真魔功=幻化六魔各司其职
+   * （攻/防/阵/疗/袭/幻·动画138话明演）；正典解法=必先诛疗魔+辟邪神雷克魔功。
+   * 正典战果=苦斗未分生死、双双被鬼雾卷入阴冥之地——本战归《外海风云篇》，
+   * 现阶段仅 ?demo=wentianren 打样（demo 打到胜利=演出收卡；正剧版以鬼雾收场）。
+   * ⚠ 六魔登场演出/台词/招式编排细节【留空待用户裁决】——机制骨架先行，演出词条勿自行发挥。 */
+  startWentianrenFight() {
+    const s = State.data;
+    this._nextFightType = "wentianren_demo";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    // 一阶段·法宝对决（招式吃考据：金针快刺/蟠龙带缚困/金光镜护体）
+    const boss = {
+      name: "温天仁", art: "wentianren", boss: true, mastery: 2,
+      hp: 560, sense: 22, speed: 19, agility: 15, move: 2, mp: 200, qiLayer: 19,
+      elem: "huo", nature: "human", tactics: "guarded", canFlee: false, armor: 6,
+      guardMove: { name: "八门金光镜", shield: 30 },   // 仿品金光镜=血危固盾（考据：护体至宝）
+      introNote: "六道极圣亲传·结丹后期巅峰——乱星海元婴之下第一人。仿八门金光镜护体、天阳鎏金针夺命、四象蟠龙带缚人；血压过六成，他便会祭出压箱底的六极真魔功。六魔各司其职——治疗不除，此战无光。",
+      attacks: [
+        { name: "天阳鎏金针", dmg: 34, kind: "pierce", weight: 10, range: [1, 6], elem: "huo", mp: 8 },
+        { name: "四象蟠龙带", dmg: 22, kind: "normal", weight: 7, range: [1, 4], elem: "tu", mp: 8 },
+      ],
+      reward: {}, namedLoot: null,
+    };
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [boss], maxRounds: 30, W: 15, lanes: 3,
+      playerPos: 4, enemyPos: 10,
+    });
+    this._combat.enemies[0]._wtr = true;   // 二阶段触发标记（⚠ 须设在 Fighter 实例上——构造器不透传未知字段）
+    // —— 二阶段·祭魔（血≤60% 触发一次）：六魔上轴各司其职，本体退居后排 ——
+    const F = CombatAPI.Fighter;
+    this._combat._afterEnemyTick = function () {
+      const wtr = this.enemies.find(e => e._wtr);
+      if (!wtr) return;
+      // 触发祭魔
+      if (!this._liumoUp && wtr.alive && wtr.hp <= wtr.hpMax * 0.6) {
+        this._liumoUp = true;
+        // 【留空待用户】祭魔仪式演出词与登场编排（此处仅机制骨架的最简战报）
+        this._log("温天仁周身黑雾暴涨——六极真魔功！六道魔影自其身后次第升起、各踞一方！");
+        this._log("【敌情】六魔各司其职：攻魔夺命、御魔横身、阵魔布煞、疗魔续伤、袭魔循隙、幻魔乱目——治疗不除，此战无光。");
+        wtr.lane = 2; wtr.pos = Math.min(this.W - 1, wtr.pos + 2);   // 本体退居后排压阵
+        wtr.attacks.forEach(a => { a.weight = Math.max(2, Math.round((a.weight || 8) * 0.4)); });   // 低频出手（魔功维系分神）
+        const mk = (cfg) => { const f = new F(cfg); f.team = "enemy"; f._mo = cfg._mo; return f; };   // _mo 须手动透传（构造器不带未知字段）
+        const demons = [
+          { name: "攻魔", _mo: "gong", hp: 85, elem: "huo", nature: "demon", speed: 17, agility: 12, move: 2, mp: 60, qiLayer: 18, lane: 0,
+            attacks: [{ name: "魔影撕裂", dmg: 24, kind: "normal", weight: 10, range: [1, 2] }, { name: "魔炎贯胸", dmg: 21, kind: "pierce", weight: 6, range: [1, 4], mp: 6 }] },
+          { name: "御魔", _mo: "yu", hp: 110, elem: "tu", nature: "demon", speed: 12, agility: 8, move: 1, mp: 40, qiLayer: 18, armor: 10, lane: 0,
+            attacks: [{ name: "魔盾横扫", dmg: 13, kind: "normal", weight: 8, range: [1, 1] }] },
+          { name: "阵魔", _mo: "zhen", hp: 75, elem: "tu", nature: "demon", speed: 13, agility: 10, move: 1, mp: 60, qiLayer: 18, lane: 2,
+            attacks: [{ name: "煞阵引力", dmg: 11, kind: "normal", weight: 6, range: [2, 6], mp: 5 }] },
+          { name: "疗魔", _mo: "liao", hp: 75, elem: "shui", nature: "demon", speed: 14, agility: 11, move: 1, mp: 80, qiLayer: 18, lane: 2,
+            attacks: [{ name: "魔息侵蚀", dmg: 10, kind: "normal", weight: 5, range: [2, 5], mp: 4 }] },
+          { name: "袭魔", _mo: "xi", hp: 80, elem: "jin", nature: "demon", speed: 20, agility: 16, move: 3, mp: 60, qiLayer: 18, lane: 1,
+            attacks: [{ name: "循隙冷刺", dmg: 22, kind: "pierce", weight: 9, range: [1, 1], mp: 5 }] },
+          { name: "幻魔", _mo: "huan", hp: 75, elem: "shui", nature: "demon", speed: 15, agility: 14, move: 2, mp: 60, qiLayer: 18, lane: 1,
+            attacks: [{ name: "幻影错位", dmg: 10, kind: "normal", weight: 5, range: [1, 4], mp: 4 }] },
+        ].map(mk);
+        // 站位：围踞轴右半（战位/僚位/深排各二）
+        const spots = [wtr.pos - 3, wtr.pos - 2, wtr.pos - 1, wtr.pos, wtr.pos - 2, wtr.pos - 1];
+        demons.forEach((d, i) => { d.pos = Math.max(this.player.pos + 2, Math.min(this.W - 1, spots[i])); });
+        this.enemies.push(...demons);
+        this._rollEnemyIntents();
+        return;
+      }
+      if (!this._liumoUp) return;
+      const alive = (mo) => this.enemies.find(e => e._mo === mo && e.alive);
+      // 御魔在世：本体+众魔披甲（登场时一次性生效，殒落即撤）
+      const yu = alive("yu");
+      if (yu && !this._yuAuraOn) {
+        this._yuAuraOn = true;
+        this.enemies.forEach(e => { if (e.alive && e !== yu) e._yuArmor = true, e.armor = (e.armor || 0) + 6; });
+        this._log("御魔横身——魔气结甲，护住诸魔与本体！");
+      } else if (!yu && this._yuAuraOn) {
+        this._yuAuraOn = false;
+        this.enemies.forEach(e => { if (e._yuArmor) e.armor = Math.max(0, (e.armor || 0) - 6), e._yuArmor = false; });
+        this._log("御魔既灭，魔甲应声而碎！");
+      }
+      // 幻魔在世：敌方全体幻影错位（闪避+·登场生效，殒落即撤）
+      const huan = alive("huan");
+      if (huan && !this._huanAuraOn) {
+        this._huanAuraOn = true;
+        this.enemies.forEach(e => { if (e.alive) e._huanAg = true, e.agility = (e.agility || 0) + 5; });
+        this._log("幻魔展术——诸魔身形忽实忽虚，刀锋难落实处（先破幻，刀才落得实）。");
+      } else if (!huan && this._huanAuraOn) {
+        this._huanAuraOn = false;
+        this.enemies.forEach(e => { if (e._huanAg) e.agility = Math.max(0, (e.agility || 0) - 5), e._huanAg = false; });
+        this._log("幻魔既灭，虚影散尽——众魔身形落实！");
+      }
+      // 阵魔在世：每回合魔阵反噬（穿甲小伤）
+      if (alive("zhen") && this.player.hp > 0) {
+        const dmg = 6;
+        this.player.hp = Math.max(0, this.player.hp - dmg);
+        this._log(`阵魔煞阵吞吐，魔煞蚀体——你受 ${dmg} 点穿甲之伤。`);
+        this._emitFx("player", "hurt", `-${dmg} 魔煞`);
+      }
+      // 疗魔在世：每回合替本体与血最低之魔续伤（正典解法：必先杀之）
+      const liao = alive("liao");
+      if (liao) {
+        const pool = this.enemies.filter(e => e.alive && e !== liao);
+        if (pool.length) {
+          const low = pool.reduce((a, b) => (a.hp / a.hpMax) < (b.hp / b.hpMax) ? a : b);
+          const heal = Math.round(low.hpMax * 0.045);
+          low.hp = Math.min(low.hpMax, low.hp + heal);
+          this._log(`疗魔吐纳魔息，替 ${low.name} 续回 ${heal} 点伤势——治疗不除，此战无光！`);
+        }
+      }
+      // 每诛一魔：本体气势跌一层（六极缺一，魔功已破其X）
+      const deadN = this.enemies.filter(e => e._mo && !e.alive).length;
+      if (deadN > (this._moDead || 0)) {
+        this._moDead = deadN;
+        if (wtr.alive) {
+          wtr.attacks.forEach(a => { if (a.dmg) a.dmg = Math.max(6, Math.round(a.dmg * 0.92)); });
+          this._log(`六极缺一，魔功已破其${"一二三四五六"[deadN - 1]}——温天仁的气势，肉眼可见地跌了一层！`);
+        }
+      }
+    };
+    this._combatMeta = { type: "wentianren_demo" };
+    s.combat = true;
+    this._combat.startRound();
+    this.log("温天仁，六道极圣亲传、结丹后期巅峰——乱星海元婴之下第一人。金针、蟠龙带、金光镜轮番祭起；把他的血压过六成，便要见识那门压箱底的六极真魔功了。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -6963,6 +7087,14 @@ const Engine = {
         s.hp = s.hpMax; s.demon = clamp(s.demon + 4, 0, 100);
         this.log(`海王兽到底是七级巨妖，一时大意没拿稳——你调息再上（再战伤害+${bonus}%）。青竹蜂云剑+辟邪神雷俱全，碾过去！`, "bad");
         s.pendingEvent = "xh_a5_haiwang"; this._retryAfterLoss = "xh_a5_haiwang";
+      }
+    } else if (meta.type === "wentianren_demo") {
+      // 温天仁·六极真魔功演武（?demo=wentianren·S4 骨架）——不动任何剧情 flag
+      if (win) {
+        this.log("六魔尽诛、温天仁力竭——乱星海结丹第一人，败了。（演武收卡：正剧版此处将接「鬼雾骤至」·正面对决归外海风云篇）", "good");
+      } else {
+        s.hp = s.hpMax;
+        this.log("演武告负——结丹后期巅峰名不虚传。刷新页面再战（记住正典解法：先诛疗魔、神雷克魔）。", "bad");
       }
     } else if (meta.type === "breakthrough") {
       // 心战收束的道心余裕=这次突破的"水准"（刻进气海的永久差异）

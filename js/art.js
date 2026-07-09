@@ -156,9 +156,13 @@
     bt_hanli_zhuji_xing: { face: "r" }, bt_hanli_zhuji_xing_fly: { face: "r" },
     bt_hanli_yexing: { face: "r" }, bt_hanli_yexing_fly: { face: "r" },
     bt_hanli_jindan: { face: "r" }, bt_hanli_jindan_fly: { face: "r" },
+    // S3 姿态变体（出手/施法瞬间替换，ui._poseSwap 自动拾取）
+    bt_hanli_jindan_atk: { face: "r" }, bt_hanli_jindan_cast: { face: "r" },
+    bt_hanli_wentianren_atk: { face: "r" }, bt_hanli_wentianren_cast: { face: "r" },
     bt_hanli_jindan_changfu: { face: "r" }, bt_hanli_jindan_changfu_fly: { face: "r" },
     bt_hanli_jindan_jinzhuang: { face: "r" }, bt_hanli_jindan_jinzhuang_fly: { face: "r" },
     bt_hanli_wentianren: { face: "r" }, bt_hanli_wentianren_fly: { face: "r" },
+    bt_wentianren: { face: "c" },   // 温天仁正典战姿（麻衣高冠赤足·正面近对称，永不镜像）
     bt_hanli_jindan_kouguan: { face: "r" }, bt_hanli_jindan_kouguan_fly: { face: "r" },
     bt_luyunfeng: { face: "c" }, bt_jinguang: { face: "c" },
     bt_modafu: { face: "c" }, bt_tienu: { face: "c" }, bt_wanxiaoshan: { face: "c" },

@@ -209,7 +209,7 @@ const Main = {
     //    克制教学+材质反应）+ 战中采集热点 + 空层（升空/俯击/击落）+ 全套底牌 + 分功法特效
     try {
       const q = new URLSearchParams(location.search);
-      if (q.get("demo") && q.get("demo") !== "palace") {
+      if (q.get("demo") && q.get("demo") !== "palace" && q.get("demo") !== "wentianren") {
         State.create("韩立", DATA.fixedRootId);
         const s = State.data;
         s.realmIndex = 10;   // 练气十一层
@@ -331,6 +331,35 @@ const Main = {
         }, 300);
       }
     } catch (e) { console.error("demo=palace 失败", e); }
+
+    // —— 温天仁·六极真魔功演武：?demo=wentianren ——（S4 骨架·docs/action-fx-design.md §四）
+    //    结丹后期满配韩立（青竹蜂云剑+辟邪神雷9充+噬金虫四用法+定身符）vs 温天仁二阶段战。
+    //    ⚠ 六魔登场演出/台词编排细节留空待用户裁决——本入口先跑机制骨架。
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get("demo") === "wentianren") {
+        State.create("韩立", DATA.fixedRootId);
+        const s = State.data;
+        s.realmIndex = 19;   // 结丹后期（对位温天仁·满配演武）
+        s.activeChapter = "xinghaifeichi";   // realmTier 2——法力池/标度按结丹档（不设则按七玄门 tier0 缩水）
+        s.hpMax = 420; s.hp = 420;
+        s.spirit = (DATA.realms[19] || {}).spMax || 400;
+        s.technique = "changchun"; s.name = "韩立";
+        s.heroSkin = "hanli_wentianren"; State.setFlag("skin_wentianren");   // 玄氅金戈造型（姿态变体已入库）
+        s.spells = ["tuna", "huti", "ningshen", "zhayan", "weidu", "huodan", "zimu_ren", "ruyi_hualan"];
+        State.give("qingzhu_fengyun_jian", 1);   // 本命飞剑（playerFighter 自动挂 qingzhu_jian+神雷二式+9充）
+        State.give("shijinchong", 1);            // 噬金虫（四用法共池 6 灵机）
+        State.give("jinguang_zhuan", 1); State.give("jinguang_zhuan_charge", 2);
+        State.give("huixue_dan", 2); State.give("huiyuan_dan", 2); State.give("dingshen_fu", 3);
+        State.give("yunling_zhu", 1); State.give("hugen_jia", 1);
+        s.sideTreasures = ["yunling_zhu", "hugen_jia"];
+        State.setFlag("dayan_learned"); State.setFlag("dayan_layer3");
+        State.setFlag("fly_unlocked");
+        s.storyStage = STORY.length;
+        this.enterGame();
+        setTimeout(() => Engine.startWentianrenFight(), 300);
+      }
+    } catch (e) { console.error("demo=wentianren 失败", e); }
 
     // —— 嘉元城可操作 demo：?citydemo=1 直接进嘉元城地点屏（仿演武场，免跑剧情）——
     //    一键进城；底部切换条在三段剧情态间来回切，亲手看复访变迁（描述/告示/风声随 flag 改写）。

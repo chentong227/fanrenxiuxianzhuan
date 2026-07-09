@@ -578,6 +578,24 @@ const P2_DEFS = {
 };
 Object.assign(DEFS, P2_DEFS);
 
+/* ============ S3 动作姿态批（2026-07-10 action-fx-design §三：出手/施法姿态替换 + 温天仁正典勘误）============
+ * 温天仁正典外貌（Bangumi/起点百科互证）：清秀斯文约二十七八、麻衣、高冠、赤足、眉宇间隐有金芒——
+ * 旧版"玄黑华袍魔修"不符，重生成。姿态变体以战姿 ref 锁脸锁服饰，只改动作（出手挥击 / 扬手引诀）。 */
+const S3_DEFS = {
+  wen_tianren: { kind: "portrait", hq: true, prompt: "六道极圣亲传弟子温天仁，二十七八岁清秀斯文的结丹后期魔修，面容俊雅白皙、眉宇之间隐隐透出一缕金芒，神情骄纵倨傲、目光张扬狠戾，乌发束在一顶高高的古式高冠之下，身着素色麻衣道袍（粗麻质地、朴而不俗、衣襟整洁），领袖处绣一圈极细的暗金六道轮环纹，指间捏着一枚金光流转的细长金针，乱星海结丹第一人的骄狂气焰与仙风道骨的诡异混合" },
+  bt_wentianren: { kind: "battler", hq: true, holes: true, ref: "portraits/wen_tianren.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰的完整全身战斗像：温天仁，麻衣高冠、赤足（光脚完整可见），腰束一条四兽纹的古玉带，三分之四侧身倨傲而立，一手负后、一手抬于胸前捻着一枚金光细针，眉宇金芒隐现，周身淡金魔焰将起未起，骄狂张扬的结丹第一人气势，脚部完整不裁切" },
+  bt_hanli_jindan_atk: { kind: "battler", hq: true, ref: "battlers/bt_hanli_jindan.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一画风的出手瞬间变体：墨绿外袍白内衫的结丹韩立，身体前倾重心前压成弓步，一手向前挥出剑指、袍袖向后翻卷激扬，眼神迸出杀意，衣摆下摆被劲风掀起，出剑一击的爆发瞬间，脚部完整不裁切" },
+  bt_hanli_jindan_cast: { kind: "battler", hq: true, ref: "battlers/bt_hanli_jindan.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一画风的施法变体：墨绿外袍白内衫的结丹韩立，一手高扬过顶掐诀引动天雷、指尖凝着一点金芒，另一手于胸前结印，仰首蓄势、长发与袍袖向上飘卷，引雷施法的庄重爆发感，脚部完整不裁切" },
+  bt_hanli_wentianren_atk: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_wentianren.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一画风的出手瞬间变体：玄氅金戈韩立，双手持金光长枪向前突刺、枪尖指向画面右前方，身体前倾弓步发力，战氅与绶带向后激扬，杀意迸发的突刺瞬间，脚部完整不裁切" },
+  bt_hanli_wentianren_cast: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_wentianren.png", cut: { tol: 8, choke: 1 },
+                prompt: "同一人物同一服饰同一画风的施法变体：玄氅金戈韩立，金枪拄地或斜背，一手高扬过顶掐诀引动天雷、指尖凝着一点金芒，仰首蓄势、玄氅向上翻卷，引雷施法的庄重爆发感，脚部完整不裁切" },
+};
+Object.assign(DEFS, S3_DEFS);
+
 const STYLES = {
   portrait: STYLE_PORTRAIT,
   scene: STYLE_SCENE, scene_p: STYLE_SCENE_P,

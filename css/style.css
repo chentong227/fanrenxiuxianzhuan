@@ -1584,24 +1584,38 @@ body.story-on .toast {
 .axis-cell.zone-mizong .zone-ring { border-color: rgba(154,127,212,.6); box-shadow: 0 0 12px rgba(154,127,212,.3), inset 0 0 10px rgba(154,127,212,.2); }
 @keyframes zonePulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
 
-/* 出手身法：贴身大步前冲 / 远程前倾发力（"人动了"的打击感） */
-.axis-unit.strike-melee .au-img, .axis-unit.strike-melee .au-glyph { animation: strikeMelee .48s cubic-bezier(.2,.9,.3,1); }
+/* 出手身法·三拍制（S1 动作手感 v1）：预备后撤微沉 → 突进 → 收势缓归。
+ * 方向由 JS 注入 --atk（1=向右，-1=向左）——翻面立绘 scaleX(-1) 不会翻 translate，必须显式给向。 */
+.axis-unit.strike-melee .au-img, .axis-unit.strike-melee .au-glyph { animation: strikeMelee .56s cubic-bezier(.2,.9,.3,1); }
 @keyframes strikeMelee {
   0% { translate: 0 0; }
-  28% { translate: 26px -6px; rotate: 2.5deg; }
-  55% { translate: 18px -2px; }
+  18% { translate: calc(var(--atk, 1) * -10px) 3px; rotate: calc(var(--atk, 1) * -1.6deg); }
+  40% { translate: calc(var(--atk, 1) * 30px) -7px; rotate: calc(var(--atk, 1) * 2.8deg); }
+  62% { translate: calc(var(--atk, 1) * 18px) -2px; }
   100% { translate: 0 0; rotate: 0deg; }
 }
-.axis-unit.strike-cast .au-img, .axis-unit.strike-cast .au-glyph { animation: strikeCast .42s ease; }
+.axis-unit.strike-cast .au-img, .axis-unit.strike-cast .au-glyph { animation: strikeCast .5s ease; }
 @keyframes strikeCast {
   0% { translate: 0 0; }
-  30% { translate: 9px -3px; rotate: 1.2deg; }
+  20% { translate: calc(var(--atk, 1) * -6px) 2px; }
+  44% { translate: calc(var(--atk, 1) * 11px) -4px; rotate: calc(var(--atk, 1) * 1.4deg); }
   100% { translate: 0 0; rotate: 0deg; }
 }
 /* 命中白闪：挨打的那一下看得见 */
 .axis-unit.hitflash .au-img, .axis-unit.hitflash .au-glyph {
   filter: brightness(2.1) saturate(.6) drop-shadow(0 0 14px rgba(255,220,180,.8)) !important;
   transition: filter .06s;
+}
+/* 受击反作用（S1）：方向化击退+倾斜+回弹——方向 --kb（1=向右弹）与力度 --kbAmp 由 JS 按攻守相对位注入。
+ * ⚠ 只动 .au-img/.au-glyph/.au-shade 的 translate，不碰外壳 left/transform（reconcile 红线） */
+.axis-unit.shake .au-img, .axis-unit.shake .au-glyph, .axis-unit.shake .au-shade {
+  animation: hitKnock .42s cubic-bezier(.16, .84, .32, 1);
+}
+@keyframes hitKnock {
+  0% { translate: 0 0; rotate: 0deg; }
+  22% { translate: calc(var(--kb, 1) * var(--kbAmp, 13px)) -2px; rotate: calc(var(--kb, 1) * -3.2deg); }
+  58% { translate: calc(var(--kb, 1) * var(--kbAmp, 13px) * .34) 0; rotate: calc(var(--kb, 1) * -1deg); }
+  100% { translate: 0 0; rotate: 0deg; }
 }
 
 /* 脚下血量数字（用户裁决：数值必须可见） */
@@ -2207,8 +2221,10 @@ body.story-on .toast {
 }
 @keyframes slayFade {
   0% { filter: grayscale(0) brightness(1.3); transform: scale(1.05); }
-  35% { filter: grayscale(.6) brightness(1.05); }
-  100% { filter: grayscale(1) brightness(.4) blur(1.5px); transform: scale(.97); opacity: .35; }
+  35% { filter: grayscale(.6) brightness(1.05); transform: scale(1.01); }
+  /* S1 死亡演出：身形一沉一倾——"倒下去"而不只是"变灰"（水墨溅散叠其上） */
+  70% { filter: grayscale(.85) brightness(.7); transform: translateY(5px) rotate(2.5deg) scale(.98); }
+  100% { filter: grayscale(1) brightness(.4) blur(1.5px); transform: translateY(11px) rotate(5deg) scale(.94); opacity: .3; }
 }
 .ink-burst { position: absolute; left: 50%; top: 40%; pointer-events: none; z-index: 8; }
 .ink-burst i {
@@ -4997,6 +5013,21 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 }
 .fx-canvas-back  { z-index: 1; }
 .fx-canvas-front { z-index: 26; }
+/* S2 预兆·战场压暗层：大招前天光骤暗（opacity 由 Fx.dimField 注入，雷幕(z26)仍在其上炸亮） */
+.fx-dim {
+  position: absolute; inset: 0; z-index: 25; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 118%, rgba(6, 4, 2, .5) 0%, rgba(4, 3, 2, .96) 120%);
+  opacity: 0; transition: opacity .5s ease;
+}
+/* S2 余韵·焦痕 decal：命中点地面残留（z1=踩在人物脚下，慢慢淡去——世界记住这一击） */
+.fx-scorch {
+  position: absolute; z-index: 1; width: 68px; height: 20px; pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(16, 10, 4, .8), rgba(28, 17, 6, .4) 55%, transparent 72%);
+  box-shadow: inset 0 0 16px rgba(255, 176, 30, .22);
+  opacity: 0; transition: opacity .6s ease;
+}
+.fx-scorch.on { opacity: .85; }
 /* 震屏：天雷/重击的物理反馈（位移量由 --fx-shake 注入） */
 @keyframes fxShake {
   0%, 100% { translate: 0 0; }
