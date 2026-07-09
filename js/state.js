@@ -359,11 +359,14 @@ const State = {
 
   effectiveSpeed() {
     const ft = this.flightTreasure();
+    // 元武国代工·精工神风舟（M3 取舍）：帆骨风纹——御舟遁速+2（仅御神风舟时生效）
+    const fineZhou = (this.data.flags && this.data.flags.daigong_fine_zhou && this.data.flightId === "shen_feng_zhou") ? 2 : 0;
     return (this.data.speed || 0)
       + this.realmSpeedBonus()
       + this.movementArtBonus()
       + (ft ? ft.speedBonus || 0 : 0)
-      + this.gearBonus("speed");
+      + this.gearBonus("speed")
+      + fineZhou;
   },
 
   // ---- 物品操作 ----

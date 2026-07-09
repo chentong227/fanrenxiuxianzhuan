@@ -440,6 +440,8 @@ const STORY = [
     id: "showdown_prep",
     cg: "qixuan_ye",
     cond: (s) => s.flags.zhangtie_dead,
+    objTitle: "决战备战",
+    objHint: "夺舍真相已明——以毒为先、以武为先、或速战速决，三选一互斥。留意眼前剧情抉择。",
     title: "夺舍之谋",
     text(s) {
       const t = [
@@ -2116,34 +2118,32 @@ const STORY = [
       Engine.meetNpc("qiyunxiao", "元武国百艺坊的巧匠，一炉好风火——墨蛟皮、千年灵草这等好料，到他手里方不算糟蹋。");
       Engine.writeLedger("yuanwu_first", "北上元武国百艺坊，会巧匠齐云霄代工——首访不遇辛如音");
     },
+    /* M3·代工取舍（chapter-differentiation §三·黄枫谷「经营」）：三件皆炼，但齐云霄只有一双手——
+     * 「首炼」那件由他亲手精工（永久乘性微增益·A2 承重墙合规），余下两件徒弟按图代锤（标准品质）。
+     * 舟=旅途遁速（时间货币）／夺=主战爪锋（战斗）／阵=洞府聚灵（修炼）——Build 三向真取舍。 */
     choices: [
       {
-        text: "「尽数托付。」把墨蛟的皮鳞角，连同这一程赶路与搏命的指望，都交进这炉火里。",
+        text: "先炼乌龙夺——搏命的家伙，须他亲手淬锋。",
+        hint: "互斥·精工乌龙夺：佩夺出战伤害+6%（余两件徒弟代锤）",
         effect(s) {
-          const made = [];
-          if (State.count("wulong_duo") < 1 && State.take("mojiao_jiao", 1)) {
-            State.give("wulong_duo", 1);
-            made.push("乌龙夺（御物·破甲水属攻击法宝——继金蚨子母刃后的筑基主战法器）");
-          }
-          if (s.flightId !== "shen_feng_zhou" && State.take("mojiao_pi", 1)) {
-            State.take("mojiao_lin", 1);   // 龙骨贴片：有则用，缺亦不阻
-            s.flightId = "shen_feng_zhou";
-            if (DATA.flightTreasures.shen_feng_zhou) DATA.flightTreasures.shen_feng_zhou.locked = false;
-            made.push("神风舟（御风疾驰的小舟形法器——前期赶路全靠它）");
-          }
-          if (State.count("wuxing_zhen") < 1) {
-            State.take("qiannian_lingcao", 1);   // 引子：自带千年灵草则耗，缺则齐云霄以自家老底补
-            State.give("wuxing_zhen", 1);
-            made.push("颠倒五行阵图·基础版（洞府护阵——他日魔道重逢齐云霄，可加强为「真·颠倒五行阵」）");
-          }
-          State.setFlag("daigong_done");
-          Engine.addMilestone("元武国代工：齐云霄一炉三件（神风舟·乌龙夺·颠倒五行阵基础版）", "bigitem");
-          Engine.writeLedger("daigong_done", "墨蛟之料托元武国齐云霄炼成三件大件——神风舟、乌龙夺、颠倒五行阵基础版");
-          if (typeof Sfx !== "undefined") Sfx.play("success");
-          const body = made.length
-            ? "炉火三日不熄。再开炉时——\n\n" + made.map(m => "· " + m).join("\n") + "\n\n齐云霄拍去掌上的灰：「拿好。墨蛟没白杀，你也没白来这一趟。」"
-            : "你料囊空空，齐云霄两手一摊：「巧妇难为无米之炊。下回带足墨蛟的料，再来寻我。」";
-          return { text: body, kind: "good" };
+          State.setFlag("daigong_fine_wulong");
+          return Engine.daigongForge(s, "齐云霄把墨蛟双角亲自上炉，七日淬锋、爪尖喂毒：「搏命的东西，我不放手给徒弟。」——此后你佩乌龙夺出战，四爪更利（伤害+6%）。");
+        },
+      },
+      {
+        text: "先炼神风舟——路在脚下，赶路的家伙不能将就。",
+        hint: "互斥·精工神风舟：旅途遁速+2（行程更省月）",
+        effect(s) {
+          State.setFlag("daigong_fine_zhou");
+          return Engine.daigongForge(s, "齐云霄亲手裁皮为帆、削角为骨，帆骨间暗刻风纹：「船是脚，脚快一步，命长一寸。」——此后神风舟御风更疾（遁速+2，行程更省月）。");
+        },
+      },
+      {
+        text: "先推演阵图——洞府是根本，阵成则家安。",
+        hint: "互斥·精推阵图：洞府闭关修炼+4%（聚灵入阵）",
+        effect(s) {
+          State.setFlag("daigong_fine_zhen");
+          return Engine.daigongForge(s, "齐云霄闭门三日、亲手把千年灵草的药性推进阵枢：「阵是家底。灵气聚得拢，家才立得住。」——此后洞府闭关，聚灵入阵（修炼+4%）。");
         },
       },
     ],
@@ -2330,6 +2330,88 @@ const STORY = [
         resolve: "advance",
       },
     ],
+  },
+  /* ---- 增量D·燕家堡·临战三日（侦察玩法：五处可探只够走三处——篇章动词「侦察」落地）
+   *  chapter-differentiation §三：这章的自由在"信息收集"。5 选 3 互斥取舍，探得越足决战越有底。
+   *  驻留选项（choice.stay）：一张卡内多轮分配——选一处、卡还在、余下的接着选。
+   *  兑现：兵器架/药房/墨彩环=即时入袋；望塔/董萱儿=写 ledger→战王蝉战开局兑现（护体/伤害+）。 ---- */
+  {
+    id: "yanjia_scout",
+    skipIf: (s) => s.flags.yanjia_scout_done,
+    cond: (s) => s.flags.yanjia_reunion_done && !s.flags.yanjia_scout_done,
+    objTitle: "临战三日 · 堡内侦察",
+    objHint: "战王蝉破阵在即。堡内五处可探，三日只够走三处——探得越足，那一战越有底。",
+    title: "燕家堡 · 临战三日",
+    text(s) {
+      const n = s.flags.yanjia_scout_n || 0;
+      if (n === 0) {
+        return [
+          { scene: "燕家堡 · 堡内" },
+          { amb: "wind" },
+          "堡外妖氛一日浓过一日。望气的老修士掐指一算，声音发颤：三日之内，战王蝉必至。",
+          "三日。武库兵器架、堡中药房、堡墙望塔、按剑而立的董萱儿、安置家眷的墨彩环——五处可探，脚程只够走三处。",
+          { aside: "临阵磨枪也好、打探敌情也罢——韩立的道理从来只有一条：多备一分，多活一分。这三日，一步都不能走空。" },
+        ];
+      }
+      const left = 3 - n;
+      return [
+        `第${["一", "二", "三"][n - 1]}日已过，堡外妖啸又近了几分。${left > 0 ? `你还余${left > 1 ? "两日" : "最后一日"}脚程。` : "三日已尽——该上堡墙了。"}`,
+      ];
+    },
+    choices(s) {
+      const n = s.flags.yanjia_scout_n || 0;
+      const out = [];
+      const mk = (key, text, hint, apply) => {
+        if (s.flags["yanjia_scout_" + key]) return;
+        out.push({
+          text, hint, stay: true,
+          effect(st) {
+            State.setFlag("yanjia_scout_" + key);
+            st.flags.yanjia_scout_n = (st.flags.yanjia_scout_n || 0) + 1;
+            return apply(st);
+          },
+        });
+      };
+      if (n < 3) {
+        mk("arms", "翻检武库兵器架——挑几件称手的应急物", "互斥·得火蛇符与暗器（战中底牌）", () => {
+          State.give("huoshe_fu", 1); State.give("anqi", 3);
+          return { text: "武库已被搬得半空。你在架底翻出一张火蛇符、三枚淬好的飞针，尽数收进袖里。（火蛇符+1、暗器+3）", kind: "good" };
+        });
+        mk("meds", "搜罗堡中药房——伤药备足才敢言战", "互斥·得回血丹（战中续命）", () => {
+          State.give("huixue_dan", 2);
+          return { text: "药房掌柜自顾收拾细软，你按市价留下银钱，取走两枚回血丹。（回血丹+2）", kind: "good" };
+        });
+        mk("tower", "登堡墙望塔——看熟地形走势", "互斥·决战开局占地形先机（开局护体）", () => {
+          Engine.writeLedger("yanjia_scout_tower", "临战登望塔看熟堡墙走势——妖物破阵之处、瓦砾退路与落脚位，尽在胸中");
+          return { text: "你在望塔上站了半日：堡墙哪段最薄、瓦砾堆在何处、退路通向哪条巷——尽收眼底。真打起来，这些就是命。", kind: "good" };
+        });
+        mk("dong", "寻董萱儿——打探战王蝉的路数", "互斥·得弱点情报（决战伤害+8%）", () => {
+          Engine.writeLedger("yanjia_scout_dong", "向董萱儿打探战王蝉路数——振翅冲撞后翼根旧伤破绽，红拂门档册里记得明白");
+          return { text: "董萱儿斜了你一眼，到底还是开了口：「红拂门档册记着——它振翅冲撞之后，翼根旧伤会露半息破绽。接得住，就是你的机会。」", kind: "good" };
+        });
+        mk("mo", "帮墨彩环安置墨府家眷", "互斥·得养元丹、心境+（她会记得）", (st) => {
+          st.mood = Math.min(st.moodMax, st.mood + 6);
+          State.give("qingyuan_dan", 2);
+          Engine.writeLedger("yanjia_scout_mo", "临战三日帮墨彩环把墨府老小安置进堡心地窖——乱世里的一点人情");
+          return { text: "你帮着把墨府老小安置进堡心地窖。墨彩环把仅剩的两枚养元丹塞进你手里：「韩大哥，活着回来。」（养元丹+2，心境+6）", kind: "good" };
+        });
+      }
+      const done = n >= 3;
+      out.push({
+        text: done ? "三日已尽——列阵，赴堡墙。" : (n > 0 ? "不再探了——提前列阵备战。" : "什么都不备——径直列阵。"),
+        hint: done ? "战王蝉将至" : "余下的机会就此作罢（互斥·过时不候）",
+        effect(st) {
+          State.setFlag("yanjia_scout_done");
+          const got = ["arms", "meds", "tower", "dong", "mo"].filter(k => st.flags["yanjia_scout_" + k]).length;
+          return {
+            text: got ? `该备的备了，该探的探了（${got}/5 处）。你握紧乌龙夺，走向堡墙。` : "你两手空空走向堡墙。艺高，未必胆大到这份上——但事已至此。",
+            kind: got ? "event" : "bad",
+          };
+        },
+        next: true,
+      });
+      return out;
+    },
   },
   {
     id: "yanjia_boss",

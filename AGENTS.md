@@ -226,6 +226,16 @@
 
 ## 五、当前状态指针（2026-06-16）
 
+- **v298 · M 系列精品化收官（2026-07-09）**：精品独立游戏化方案 M3~M6 一次落齐（全部乘法设计·零新系统·37 套测试全绿·浏览器 430×932 实测验收）：
+  ①**M4 燕家堡侦察玩法**＝篇章动词「侦察」落地：`yanjia_scout` 节点（reunion→boss 之间）临战三日 5 选 3 互斥（兵器架/药房/望塔/董萱儿/墨彩环），
+  望塔/董萱儿写 ledger→战王蝉战开局兑现（护体+10/伤害+8%）、胜后 settleLedger 点名；**引擎新增 `choice.stay` 驻留选项**（chooseStory 支持动态 `choices(s)` 函数+选完重掷同卡——"一张卡内多轮取舍"的通用件）。
+  ②**M3 元武国代工取舍**＝`qiyunxiao_daigong` 单选改「首炼精工」三选一（三件皆得，精工件带永久乘性微增益）：舟=御舟遁速+2（state.effectiveSpeed）/夺=佩夺出战伤害×1.06（playerFighter dmgBonus 乘区）/阵=洞府闭关×1.04（cultivate fineZhenMul）——Build 三向（时间/战斗/修炼）真取舍，共用 `Engine.daigongForge`。
+  ③**M5 外海猎妖循环**＝外星海猎场加 `hunt` 月行动（`startWaihaiHunt`·须主线 starsea_zhifu_done 立起路数）：霓裳草引妖→真战斗（waihai_yaoshou 拷贝·血量±15% 波动）→剖丹 2~3 颗（encounter 管线复用），22% 空手月只捞霓裳草——「立足」篇的帆时段可重复致富循环。
+  ④**M6 闭关兼修方向**＝`openSeclusion` 加「闭关方向」四选一（纯粹吐纳/兼修剑意/药理/制符）：兼修=主修 ×0.85 分心成本（cultivate 内）+副轴按实修月入账（剑意+1/月·药理与制符+1/3月，doCultivate 收功结算·停功调息月不算）——Build 三路时间互斥的闭关切口。
+  ⑤**M6 道途名帖分享卡**＝`UI.openShareCard`（风云录·道途年表入口）：canvas 手绘水墨名帖（道号/境界/名望/此生几桩 top6/朱印/落款）→ 长按保存/下载 PNG——「想截图发朋友」的传播件。
+  顺手修：`lingpu_fulu.test.js` 凝神谱断言补 gateFlag（dan_ms_anshen 里程碑门——测试漏了既有门禁，非代码错）。
+  ⚠ 余项（设计稿有、本批未做）：小寰岛 20 年分段选方向（现为尾声三选一）、风希事件三分支（现为 cutscene+2 尾声选择）、结丹备料多路径（雪灵水/天火液仍剧情直给——妖丹已可猎）、NPC 台词接 honorific 改口——随后续篇章增量。
+
 - **v149 · 游玩体验修复 + 巨剑术实装（2026-06-16）**：四项用户实测反馈闭环（手机端复测·iPhone 14 Pro Max）：
   ①**巨剑术**＝用户裁决直授：获《青元剑诀》即解锁 `jujian_shu` 法术（combat.js source"art"·mu·dmg40·破甲·cd2；
   data.js `qingyuan_sword.layerUnlocks[3]`；story.js `qingyuan_gift` onArrive `equipSkill`；fx.js RECIPE 聚芒→自天倾斩→落点重震·吃 `_degraded`·无 shadowBlur）；不走严格 canon 金页桥段（标记设计取舍·非考据）。

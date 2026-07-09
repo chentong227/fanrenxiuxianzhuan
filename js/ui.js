@@ -169,6 +169,26 @@ const UI = {
           : "入选两事：① 修为到练气十一层（修炼／长春功后篇是正路）　② 去万宝楼坊市备货，顺道听向之礼指点门道。修为到了即可参选，不必赶时间。"}</span>
       </div>`;
     }
+    // 七玄门·夺舍决战备战：张铁之死→决战前三选一（互斥，与 jindi_prep 同范式）
+    if (sx && sx.flags && sx.flags.zhangtie_dead && !sx.flags.modafu_dead) {
+      if (!sx.flags.showdown_ready) {
+        fate += `<div class="obj-task urgent" style="border-left-color:var(--cinnabar)">
+          <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">备战</span>
+          <b>夺舍决战 · 三选一</b>
+          <span class="obj-hint">以毒为先、以武为先、或速战速决——<b>互斥</b>，选了即定今夜路数。留意眼前剧情抉择。</span>
+        </div>`;
+      } else {
+        const path = sx.flags.showdown_prep_poison ? "以毒为先（毒草暗器）"
+          : sx.flags.showdown_martial_focus ? "以武为先（眨眼剑法）"
+          : sx.flags.showdown_prep_swift ? "速战速决（抢先机）" : "已备战";
+        fate += `<div class="obj-task" style="border-left-color:var(--jade)">
+          <span class="obj-key" style="background:var(--jade);color:#08140f">备战</span>
+          <b>夺舍之夜将至</b>
+          <span class="obj-prog">${path}</span>
+          <span class="obj-hint">回「墨大夫药庐」了结此局——备得越足，胜算越大。</span>
+        </div>`;
+      }
+    }
     // 禁地临行三月·互斥备战：待决或已选路径，天命栏明示（M3 经营可视化）
     if (sx && sx.flags && sx.flags.xueshi_opened && !sx.flags.jindi_entered) {
       if (!sx.flags.jindi_prep_done) {
@@ -829,7 +849,7 @@ const UI = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
-      liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声",
+      liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
@@ -2384,8 +2404,27 @@ const UI = {
     const demonPenalty = 1 - (s.demon / 200);
     const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty));
     const toFull = Math.max(0, realm.culMax - s.cultivation);
-    const need = perMonth > 0 ? Math.ceil(toFull / perMonth) : 99;
 
+    // M6·兼修方向（Build 三路时间互斥的闭关切口）：纯粹吐纳 / 兼修剑意 / 兼修药理 / 兼修制符——
+    // 兼修=主修吐纳×0.85 + 副轴按月入账（副轴积累慢于专职行动，但闭关期不再"颗粒无收"）
+    const focus = this._seclusionFocus || null;
+    const focusMul = focus ? 0.85 : 1;
+    const focusOpts = [{ id: null, label: "纯粹吐纳", note: "修为全额" }];
+    if (s.spells && s.spells.includes("zhayan") && !s.swordMastery) {
+      focusOpts.push({ id: "sword", label: "兼修剑意", note: "修为×0.85 · 剑意+1/月" });
+    }
+    focusOpts.push({ id: "alchemy", label: "兼修药理", note: "修为×0.85 · 药理+1/3月" });
+    if ((s.skills && s.skills.fulu > 0) || (s.fuluPlans || []).length) {
+      focusOpts.push({ id: "fulu", label: "兼修制符", note: "修为×0.85 · 制符+1/3月" });
+    }
+    const focusHtml = focusOpts.length > 1 ? `
+      <h3 class="panel-title" style="margin-top:4px">闭关方向 <span style="color:var(--ink-faint);font-size:11px;letter-spacing:0">同一程闭关只能推一条轴</span></h3>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        ${focusOpts.map(f => `<button class="btn btn-mini ${focus === f.id ? "btn-primary" : "btn-ghost"}"
+          onclick="UI._seclusionFocus=${f.id ? `'${f.id}'` : "null"}; UI.openSeclusion();">${f.label}<span style="font-size:10px;opacity:.75">　${f.note}</span></button>`).join("")}
+      </div>` : "";
+    const focusArg = focus ? `'${focus}'` : "null";
+    const need = perMonth > 0 ? Math.ceil(toFull / Math.max(1, Math.round(perMonth * focusMul))) : 99;
     const opts = [
       { m: 1, label: "闭关一月", note: "浅尝即止" },
       { m: 6, label: "闭关半年", note: "稳步精进" },
@@ -2393,13 +2432,13 @@ const UI = {
       { m: 36, label: "闭关三年", note: "心无旁骛，岁月如梭" },
     ];
     const optHtml = opts.map(o =>
-      `<button class="btn btn-secondary" style="text-align:left" onclick="UI.closeSheet(); Engine.doCultivate(${o.m});">
-        ${o.label}　<span style="color:var(--ink-dim);font-size:12px">预计修为+${perMonth * o.m}　${o.note}</span>
+      `<button class="btn btn-secondary" style="text-align:left" onclick="UI.closeSheet(); Engine.doCultivate(${o.m}, ${focusArg});">
+        ${o.label}　<span style="color:var(--ink-dim);font-size:12px">预计修为+${Math.round(perMonth * o.m * focusMul)}　${o.note}</span>
       </button>`
     ).join("");
     // 一键闭关至本层圆满（省去反复点击，但插曲/耗时照常结算）
     const toFullBtn = (toFull > 0 && need > 0 && need < 200)
-      ? `<button class="btn btn-primary" onclick="UI.closeSheet(); Engine.doCultivate(${need});">闭关至本层圆满　<span style="font-size:12px;opacity:.85">约 ${need} 月</span></button>`
+      ? `<button class="btn btn-primary" onclick="UI.closeSheet(); Engine.doCultivate(${need}, ${focusArg});">闭关至本层圆满　<span style="font-size:12px;opacity:.85">约 ${need} 月</span></button>`
       : "";
 
     // 闭关研习功法（持有未习的典籍时）
@@ -2433,8 +2472,9 @@ const UI = {
       <h2>闭关修炼</h2>
       ${this._statusStrip()}
       <p style="color:var(--ink-dim)">于修仙者而言，光阴最是宝贵，也最不值钱。闭得越久，修为越深，可寿元、心境亦在流逝。
-      当前每月约可精进修为 ${perMonth}；距本层圆满约需 <b style="color:var(--gold)">${need}</b> 月。
+      当前每月约可精进修为 ${Math.round(perMonth * focusMul)}；距本层圆满约需 <b style="color:var(--gold)">${need}</b> 月。
       <span style="color:var(--ink-faint);font-size:12px">静室之中自会张弛有度——心浮气躁时停功调息几月再续（额外耗时，结算时如实报账）。</span></p>
+      ${focusHtml}
       <div class="modal-actions">
         ${toFullBtn}
         ${optHtml}
@@ -2765,6 +2805,97 @@ const UI = {
       .catch(() => { out.textContent = "请求失败（请检查密钥/网络）"; });
   },
 
+  /* -------- 道途名帖（M6·分享卡）：canvas 手绘水墨名帖——境界/年岁/名望/此生几桩，长按即存、发予道友 -------- */
+  openShareCard() {
+    const s = State.data;
+    if (!s) return;
+    const realm = (State.realm && State.realm()) ? State.realm().name : "凡夫";
+    const W = 750, H = 1000;
+    const cv = document.createElement("canvas");
+    cv.width = W; cv.height = H;
+    const g = cv.getContext("2d");
+    const FONT = '"Kaiti SC","STKaiti","KaiTi","Noto Serif SC",serif';
+
+    // 宣纸底：米色渐变 + 四角暗角
+    const bg = g.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, "#efe5cd"); bg.addColorStop(0.55, "#e9dcbe"); bg.addColorStop(1, "#e0d0ac");
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    const vg = g.createRadialGradient(W / 2, H / 2, H * 0.32, W / 2, H / 2, H * 0.75);
+    vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(60,40,16,0.18)");
+    g.fillStyle = vg; g.fillRect(0, 0, W, H);
+    // 双重边框：外墨内金
+    g.strokeStyle = "rgba(58,42,20,.75)"; g.lineWidth = 5; g.strokeRect(26, 26, W - 52, H - 52);
+    g.strokeStyle = "rgba(150,110,42,.6)"; g.lineWidth = 1.5; g.strokeRect(40, 40, W - 80, H - 80);
+
+    // 题头
+    g.fillStyle = "rgba(90,66,30,.85)"; g.font = `26px ${FONT}`; g.textAlign = "center";
+    g.fillText("凡 人 修 仙 传 · 人 界 篇", W / 2, 96);
+    g.fillStyle = "#3a2a14"; g.font = `bold 64px ${FONT}`;
+    g.fillText("道 途 名 帖", W / 2, 178);
+    g.strokeStyle = "rgba(150,110,42,.5)"; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(140, 206); g.lineTo(W - 140, 206); g.stroke();
+
+    // 道号 + 境界
+    g.fillStyle = "#2c1f0e"; g.font = `bold 56px ${FONT}`;
+    g.fillText(s.name || "韩立", W / 2, 292);
+    g.fillStyle = "#8a5a18"; g.font = `bold 38px ${FONT}`;
+    g.fillText(realm, W / 2, 348);
+    const fame = s.fame || 0;
+    const fameTxt = fame >= 30 ? "威名赫赫" : fame >= 12 ? "薄有名声" : fame > 0 ? "籍籍之间" : "默默无名";
+    g.fillStyle = "rgba(90,66,30,.8)"; g.font = `26px ${FONT}`;
+    g.fillText(`${s.age || 13} 岁 · 修行 ${s.year || 1} 载 · ${fameTxt}`, W / 2, 396);
+
+    // 此生几桩（按分量取前 6，时序排）
+    const KIND_RANK = { breakthrough: 5, bigitem: 4, showdown: 4, medal: 3, story: 2, deed: 1, minor: 0 };
+    const KIND_ICON = { breakthrough: "▲", bigitem: "◆", showdown: "⚔", medal: "★" };
+    const ms = (s.milestones || []).slice();
+    const top = ms.map((m, i) => ({ m, i }))
+      .sort((a, b) => ((KIND_RANK[b.m.kind] || 0) - (KIND_RANK[a.m.kind] || 0)) || (b.i - a.i))
+      .slice(0, 6).sort((a, b) => a.i - b.i).map(x => x.m);
+    g.fillStyle = "rgba(90,66,30,.7)"; g.font = `24px ${FONT}`;
+    g.fillText("—— 此 生 几 桩 ——", W / 2, 468);
+    g.textAlign = "left";
+    let y = 522;
+    if (top.length) {
+      for (const m of top) {
+        let t = `${KIND_ICON[m.kind] || "·"} ${m.title}`;
+        if (t.length > 22) t = t.slice(0, 22) + "…";
+        g.fillStyle = "#3a2a14"; g.font = `27px ${FONT}`;
+        g.fillText(t, 110, y);
+        g.fillStyle = "rgba(120,95,55,.7)"; g.font = `18px ${FONT}`;
+        g.fillText(m.t || "", 110, y + 26);
+        y += 66;
+      }
+    } else {
+      g.fillStyle = "rgba(90,66,30,.6)"; g.font = `26px ${FONT}`; g.textAlign = "center";
+      g.fillText("道途尚浅，来日方长。", W / 2, 540);
+      g.textAlign = "left";
+    }
+
+    // 落款 + 朱印
+    g.textAlign = "center";
+    g.fillStyle = "rgba(90,66,30,.75)"; g.font = `24px ${FONT}`;
+    g.fillText(`第 ${s.year || 1} 年 ${s.month || 1} 月 谨记`, W / 2, H - 96);
+    const sx = W - 168, sy = H - 208, sw = 96;
+    g.fillStyle = "rgba(172,44,32,.88)";
+    g.fillRect(sx, sy, sw, sw);
+    g.fillStyle = "#f3e4d0"; g.font = `bold 40px ${FONT}`;
+    const nm = (s.name || "韩立");
+    g.fillText(nm[0] || "韩", sx + sw / 2, sy + 44);
+    g.fillText(nm[1] || "立", sx + sw / 2, sy + 84);
+
+    const url = cv.toDataURL("image/png");
+    this.openModal(`
+      <h2>道途名帖</h2>
+      <p style="color:var(--ink-dim);font-size:12px">长按图片保存，发予道友——你走过的道，值得被看见。</p>
+      <img src="${url}" alt="道途名帖" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      <div class="modal-actions">
+        <a class="btn btn-secondary" href="${url}" download="daotu-mingtie.png">保存图片</a>
+        <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
+      </div>
+    `);
+  },
+
   /* -------- 风云录（世间修士命途）-------- */
   openChronicle() {
     const s = State.data;
@@ -2869,7 +3000,8 @@ const UI = {
       ${(() => { const te = (typeof Engine !== "undefined" && Engine.temperamentEcho) ? Engine.temperamentEcho() : null; return te ? `<h3 class="panel-title" style="margin-top:8px">心性 · 你是谁</h3><div class="temperament-echo temperament-${te.tone}">${te.text}</div>` : ""; })()}
       <h3 class="panel-title" style="margin-top:8px">名场面回廊（重温关键演出）</h3>
       <div class="scene-gallery">${scenesHtml}</div>
-      <h3 class="panel-title" style="margin-top:8px">道途年表（你挣来的每一步）</h3>
+      <h3 class="panel-title" style="margin-top:8px">道途年表（你挣来的每一步）
+        <button class="btn btn-mini btn-ghost" style="float:right;margin-top:-4px" onclick="UI.openShareCard()">道途名帖 📜</button></h3>
       <div class="chronicle">${msHtml}</div>
       <h3 class="panel-title">前路（已知的远方）</h3>
       <div class="chronicle">${aheadHtml}</div>
@@ -3220,7 +3352,7 @@ const UI = {
       cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
-      liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声",
+      liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
     };
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {

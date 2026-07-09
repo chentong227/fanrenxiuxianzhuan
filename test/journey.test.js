@@ -515,7 +515,11 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(s.pendingEvent === "qiyunxiao_daigong", `元武国代工触发（${s.pendingEvent}）`);
   assert(s.metNpcs.includes("qiyunxiao"), "齐云霄入图鉴");
   assert(!s.metNpcs.includes("xinruyin"), "首访不遇辛如音（留再别天南）");
-  Engine.chooseStory(sandbox.STORY.find(x => x.id === "qiyunxiao_daigong"), 0);
+  // M3 取舍：三选一「首炼精工」——idx0=先炼乌龙夺（三件皆得，精工那件带永久乘性微增益）
+  const daigongNode = sandbox.STORY.find(x => x.id === "qiyunxiao_daigong");
+  assert(daigongNode.choices.length === 3, `代工首炼三选一（${daigongNode.choices.length}）`);
+  Engine.chooseStory(daigongNode, 0);
+  assert(s.flags.daigong_fine_wulong, "首炼精工=乌龙夺（互斥取舍已锁定）");
   assert(State.count("wulong_duo") === 1, "乌龙夺到手（御物·破甲水攻法宝）");
   assert(s.flightId === "shen_feng_zhou", "神风舟到手（御风提速）");
   assert(State.count("wuxing_zhen") === 1, "颠倒五行阵图·基础版到手");
@@ -546,12 +550,30 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(s.metNpcs.includes("mocaihuan"), "重逢墨彩环（入图鉴）");
   assert(s.metNpcs.includes("dongxuaner"), "结识董萱儿（入图鉴）");
   assert(s.flags.yanjia_reunion_done && s.flags.mocaihuan_reunion, "重逢节点收口（reunion_done）");
-  // 重逢 → 大BOSS（战王蝉）
+  // 重逢 → 临战三日（侦察玩法：5 选 3 互斥取舍——篇章动词「侦察」落地）
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "yanjia_reunion"), 0);
+  assert(s.pendingEvent === "yanjia_scout", `临战三日触发（${s.pendingEvent}）`);
+  const scoutNode = sandbox.STORY.find(x => x.id === "yanjia_scout");
+  assert(scoutNode.choices(s).length === 6, `五处可探+收束共6项（${scoutNode.choices(s).length}）`);
+  Engine.chooseStory(scoutNode, 2);   // 望塔（idx2）
+  assert(s.pendingEvent === "yanjia_scout" && s.flags.yanjia_scout_tower, "望塔已探（驻留·卡未推进）");
+  assert(s.ledger.yanjia_scout_tower, "望塔先机入账本");
+  Engine.chooseStory(scoutNode, 2);   // 董萱儿（望塔摘除后顶上 idx2）
+  assert(s.flags.yanjia_scout_dong && s.ledger.yanjia_scout_dong, "董萱儿弱点情报已探+入账");
+  Engine.chooseStory(scoutNode, 2);   // 墨彩环（再顶上 idx2）
+  assert(s.flags.yanjia_scout_mo && sandbox.State.count("qingyuan_dan") >= 2, "墨彩环家眷已安置（养元丹+2）");
+  assert((s.flags.yanjia_scout_n || 0) === 3, `三日走满（n=${s.flags.yanjia_scout_n}）`);
+  assert(scoutNode.choices(s).length === 1, "三日尽——只剩列阵一途（5选3互斥）");
+  Engine.chooseStory(scoutNode, 0);   // 列阵赴堡墙
+  assert(s.flags.yanjia_scout_done, "临战三日收口（yanjia_scout_done）");
+  // 侦察 → 大BOSS（战王蝉）
   assert(s.pendingEvent === "yanjia_boss", `战王蝉破阵（${s.pendingEvent}）`);
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "yanjia_boss"), 0);
   const zc = Engine._combat;
   assert(zc && zc.enemies[0].name === "战王蝉", "战王蝉大BOSS入战");
+  // 侦察兑现：望塔=开局护体10 / 董萱儿=伤害+8%（准备越充分，决战越轻松）
+  assert((zc.player.shield || 0) >= 10, `望塔先机兑现（开局护体=${zc.player.shield}）`);
+  assert((zc.player.dmgBonus || 1) > 1.05, `董萱儿情报兑现（dmgBonus=${(zc.player.dmgBonus || 1).toFixed(2)}）`);
   assert(zc.enemies[0].boss && !zc.enemies[0].canFlee, "BOSS·不可逃（撑过血线收口，非诛杀）");
   assert(WORLD.enemies.zhanwangchan.armor >= 8 && WORLD.enemies.zhanwangchan.reward == null, "战王蝉护甲厚·无掉落（逃逸式BOSS）");
   // 撑过血线（打到溃退）= 剧情撤离

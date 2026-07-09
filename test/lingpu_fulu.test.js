@@ -67,13 +67,16 @@ console.log("\n=== D 随身灵圃 v2：多灵草谱 + 境界迁移 ===");
   assert(!s.bottle.plots[0].crop, "收获后地块清空");
 }
 
-// 凝神谱：灵草→凝神丹
+// 凝神谱：灵草→凝神丹（gateFlag：须丹道里程碑「自炼凝神丹」参透后方可种）
 {
   State.create("韩立", "si");
   const s = State.data;
   Engine.unlockBottle();
   s.bottle.unlocked = true;
   State.give("lingcao", 2);
+  Engine.plantCrop(0, "anshen");
+  assert(!s.bottle.plots[0].crop, "凝神谱未参透（gateFlag）：种不下");
+  s.flags.dan_ms_anshen = true;   // 丹道熟练度 40 里程碑：参透凝神丹火候
   Engine.plantCrop(0, "anshen");
   for (let i = 0; i < 6 && s.bottle.plots[0].growth < 100; i++) Engine.tendBottle();
   const dan0 = State.count("ningshen_dan");

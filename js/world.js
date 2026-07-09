@@ -365,7 +365,9 @@ WORLD.locations = [
     travelCost: 3,
     // 外星海猎场：2.5D 前景＝水景框（底缘水汀+两角岸影·冷碧），远雾偏浓（海天一色）
     env: { depth: { fg: "water", far: 0.55 } },
-    actions: ["rest", "cultivate"],
+    // M5·外海猎妖循环：主线立起路数（starsea_zhifu_done）后，每月可重复「猎妖取丹」——
+    // 篇章动词「立足」的帆时段：霓裳草引妖→战斗→剖丹，妖丹是结丹资粮也是星海硬通货
+    actions: ["hunt", "rest", "cultivate"],
     map: { x: 81, y: 53 },
     unlock: (s) => !!(s.flags && s.flags.luanxinghai_chaos),
     encounters: [],
@@ -1882,6 +1884,7 @@ WORLD.activities = {
   market:      { name: "采买",   timeCost: 1, desc: "用纹银购置丹药与材料。" },
   alchemy:     { name: "炼药",   timeCost: 1, desc: "以草药炼制丹药（七玄门篇从简）。" },
   investigate: { name: "探查",   timeCost: 1, desc: "暗中查访，搜寻线索。" },
+  hunt:        { name: "猎妖",   timeCost: 1, desc: "外星海猎场：霓裳草引妖、噬金虫群猎，剖妖丹换灵石。" },
 };
 
 window.WORLD = WORLD;

@@ -2724,13 +2724,13 @@ html, body { touch-action: manipulation; }
 .obj-sect { display: flex; flex-direction: column; gap: 6px; }
 .obj-sect.fate { padding-left: 0; }
 .obj-sect.luck {
-  position: relative; padding: 8px 0 0;
+  position: relative; padding: 20px 0 0; margin-top: 2px;
   border-top: 1px dashed rgba(140,120,90,.28);
 }
 .obj-sect-tag {
-  position: absolute; top: -8px; left: 8px; padding: 0 8px;
+  position: absolute; top: 4px; left: 8px; padding: 0 8px; z-index: 1;
   font-size: 10.5px; letter-spacing: 2px; color: var(--ink-faint);
-  background: var(--bg);
+  background: var(--bg-panel-2);
 }
 .obj-main, .obj-task {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -2991,7 +2991,8 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   /* 际遇栏：fixed 常驻于顶栏下方，不随 tab 切换隐藏 */
   .objective-bar {
     position: fixed; top: 48px; left: 8px; right: 8px; z-index: 13;
-    max-height: 80px; overflow-y: auto;
+    max-height: min(32vh, 132px); overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .char-brief { gap: 8px; }
   .game-logo { font-size: 14px; letter-spacing: 2px; }
@@ -4271,9 +4272,9 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
      旁白时无立绘，对话干净 */
   .story-portrait { display: none; }
   .story-portrait.on:not(.dim) {
-    display: block; height: 46vh; max-height: 430px;
+    display: block; height: 42vh; max-height: 400px;
     left: 50%; right: auto; transform: translateX(-50%);
-    bottom: 232px;   /* 立绘下缘没入对话框后方一截，头与上身在框上完整露出（不再"拦腰斩断"）*/
+    bottom: 268px;   /* 立绘下缘没入对话框后方一截，头胸完整露出（心声框不再遮脸）*/
     z-index: 3;
   }
   .story-portrait.left.on:not(.dim) { transform: translateX(-50%) scaleX(-1); }

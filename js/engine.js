@@ -648,6 +648,7 @@ const Engine = {
     else if (action === "travel") { UI.openTravel(); return; }  // openTravel 已重定向到世界地图 Z4
     else if (action === "wujian") { this.doWujian(); return; }
     else if (action === "liandan") { this.lianZhujiDan(); return; }
+    else if (action === "hunt") { this.startWaihaiHunt(); return; }
 
     this.checkLifespan();
     this.checkStory();
@@ -2942,8 +2943,12 @@ const Engine = {
     const zhuanMul = s.zhuanImprint || 1;
     // 阵法·洞府聚灵阵里程碑：阵眼吐灵，闭关增速再进一档（乘性·与灵泉/补天/三转叠乘——小绿瓶×灵泉×阵法三重乘法）
     const formationMul = s.flags && s.flags.zhen_ms_juling ? 1.08 : 1;
-    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * dongfuMul * butianMul * zhuanMul * formationMul));
+    // 元武国代工·精推阵图（M3 取舍）：千年灵草药性入阵枢——洞府闭关聚灵+4%（乘性·须已落洞府）
+    const fineZhenMul = (s.flags && s.flags.daigong_fine_zhen && s.flags.dongfu_done) ? 1.04 : 1;
+    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * dongfuMul * butianMul * zhuanMul * formationMul * fineZhenMul));
     let gain = perMonth * months;
+    // M6·兼修分心成本：闭关兼修剑意/药理/制符时，主修吐纳打 85 折（时间互斥的代价——doCultivate 收功时副轴入账）
+    if (this._cultFocus) gain = Math.round(gain * 0.85);
 
     // 心境告急：心乱则修为难进、心魔易侵（杂念丛生，事倍功半）
     const lowMood = s.mood < s.moodMax * 0.35;
@@ -3141,9 +3146,12 @@ const Engine = {
   },
 
   // 由闭关时长选择器调用：执行闭关并做后续结算
-  doCultivate(months) {
+  doCultivate(months, focus) {
     const s = State.data;
     if (s.pendingEvent || s.combat) return;
+    // M6·闭关兼修方向（Build 三路时间互斥的闭关切口）：剑意/药理/制符 三选一兼修——
+    // 修为吃 ×0.85 分心成本（cultivate() 内结算），副轴按实修月数在收功时一并入账。
+    this._cultFocus = focus || null;
     // 长闭关分段执行：心境将告急时不再收功赶人（旧版=玩家反复重开菜单的死循环），
     // 而是「停功调息」——在静室里自己打坐几月再续闭。时间照扣、寿元照耗（代价不变），
     // 但决策只做一次：这才是"闭一次关"该有的样子。
@@ -3173,8 +3181,35 @@ const Engine = {
         break;
       }
     }
+    this._cultFocus = null;
+    // 兼修副轴入账（按实修月数 done——停功调息的月份不算兼修）
+    let sideNote = "";
+    if (focus && done > 0) {
+      if (focus === "sword" && !s.swordMastery && s.spells && s.spells.includes("zhayan")) {
+        const before = s.swordIntent || 0;
+        s.swordIntent = clamp(before + done, 0, 100);
+        const dd = s.swordIntent - before;
+        if (dd > 0) sideNote = `剑意+${dd}`;
+        if (s.swordIntent >= 100 && !s.flags.sword_intent_full) { State.setFlag("sword_intent_full"); this.toast("剑意圆满！可回药庐悟剑"); }
+      } else if (focus === "alchemy") {
+        const dd = Math.floor(done / 3);
+        if (dd > 0) {
+          s.skills = s.skills || { alchemy: 0, scouting: 0 };
+          s.skills.alchemy = (s.skills.alchemy || 0) + dd;
+          sideNote = `药理+${dd}`;
+          this._checkSkillMilestones && this._checkSkillMilestones("alchemy");
+        }
+      } else if (focus === "fulu") {
+        const dd = Math.floor(done / 3);
+        if (dd > 0) {
+          s.skills = s.skills || { alchemy: 0, scouting: 0 };
+          s.skills.fulu = (s.skills.fulu || 0) + dd;
+          sideNote = `制符+${dd}`;
+        }
+      }
+    }
     // 闭关结算暂存：无论到期/中断，前台都给一条明白账（中断被事件演出接管时，事件完了再报）
-    this._retreatSettle = { plan: months, done, rest: restMonths, gain: totalGain, reason: cutReason, remain: remaining, at: State.absMonth() };
+    this._retreatSettle = { plan: months, done, rest: restMonths, gain: totalGain, reason: cutReason, remain: remaining, side: sideNote, at: State.absMonth() };
     this.checkLifespan();
     this.checkStory();
     if (!s.pendingEvent && !s.combat && !this._pendingFortune) this._maybeInteraction();
@@ -3192,11 +3227,12 @@ const Engine = {
     if (s.pendingEvent || s.combat) return;            // 演出中不抢屏，等下一次渲染
     this._retreatSettle = null;
     const restNote = r.rest ? `（另停功调息 ${r.rest} 月）` : "";
+    const sideNote = r.side ? `，${r.side}` : "";
     if (r.reason) {
-      this.toast(`闭关中断（${r.reason}）：实修 ${r.done}/${r.plan} 月${restNote}，修为 +${r.gain}`, false);
+      this.toast(`闭关中断（${r.reason}）：实修 ${r.done}/${r.plan} 月${restNote}，修为 +${r.gain}${sideNote}`, false);
     } else {
-      this.toast(`闭关圆满：${r.done} 月${restNote}，修为 +${r.gain}`, false);
-      this.log(`这一程闭关圆满收功：潜修 ${r.done} 月${restNote}，修为共精进 ${r.gain}。`, "sys");
+      this.toast(`闭关圆满：${r.done} 月${restNote}，修为 +${r.gain}${sideNote}`, false);
+      this.log(`这一程闭关圆满收功：潜修 ${r.done} 月${restNote}，修为共精进 ${r.gain}${sideNote ? `（兼修所得：${r.side}）` : ""}。`, "sys");
     }
     // 中断且还差得多：留一个限时续闭快捷（renderActions 读取），玩家不必重开菜单再点两下
     if (r.reason && r.remain > 0) {
@@ -3717,7 +3753,9 @@ const Engine = {
       airGrade: Math.max(1, Math.min(3, Chapters.realmTier())),
       // fail-forward：决战每败一次=看破对方几分路数，再战伤害+8%（至多+24%）——
       // 韩立吃的每次亏都是学费（爽文契约：失败向前走）
-      dmgBonus: 1 + Math.min(3, (s.flags[`losses_${this._nextFightType || ""}`] || 0)) * 0.08,
+      // ×元武国代工·精工乌龙夺（M3 取舍）：亲手淬的爪锋——佩夺出战伤害+6%（乘性·A2 合规）
+      dmgBonus: (1 + Math.min(3, (s.flags[`losses_${this._nextFightType || ""}`] || 0)) * 0.08)
+        * ((s.flags.daigong_fine_wulong && s.gear && s.gear.weapon === "wulong_duo") ? 1.06 : 1),
       // 底牌：平时准备的毒草、暗器、符箓带进战斗（准备内化进战斗）。
       // 探索中：临时袋里刚采的毒草/暗器当场可用（multiply-design 乘法D——采集即底牌）
       pouch: (() => {
@@ -3741,6 +3779,34 @@ const Engine = {
 
   /* -------- 地火之屋炼筑基丹（筑基丹链的"造"环节：血色主药→二十颗丹的底气）--------
    * 动漫口径：韩立以禁地所采主药炼出二十余颗（旁人三五颗已是高产）——药理与主药数定产量。 */
+  /* -------- 元武国代工·开炉（M3 取舍配套）：三件皆炼——首炼精工由选项 flag 定，此处只管入袋 -------- */
+  daigongForge(s, fineLine) {
+    const made = [];
+    if (State.count("wulong_duo") < 1 && State.take("mojiao_jiao", 1)) {
+      State.give("wulong_duo", 1);
+      made.push("乌龙夺（御物·破甲水属攻击法宝——继金蚨子母刃后的筑基主战法器）");
+    }
+    if (s.flightId !== "shen_feng_zhou" && State.take("mojiao_pi", 1)) {
+      State.take("mojiao_lin", 1);   // 龙骨贴片：有则用，缺亦不阻
+      s.flightId = "shen_feng_zhou";
+      if (DATA.flightTreasures.shen_feng_zhou) DATA.flightTreasures.shen_feng_zhou.locked = false;
+      made.push("神风舟（御风疾驰的小舟形法器——前期赶路全靠它）");
+    }
+    if (State.count("wuxing_zhen") < 1) {
+      State.take("qiannian_lingcao", 1);   // 引子：自带千年灵草则耗，缺则齐云霄以自家老底补
+      State.give("wuxing_zhen", 1);
+      made.push("颠倒五行阵图·基础版（洞府护阵——他日魔道重逢齐云霄，可加强为「真·颠倒五行阵」）");
+    }
+    State.setFlag("daigong_done");
+    this.addMilestone("元武国代工：齐云霄一炉三件（神风舟·乌龙夺·颠倒五行阵基础版）", "bigitem");
+    this.writeLedger("daigong_done", "墨蛟之料托元武国齐云霄炼成三件大件——神风舟、乌龙夺、颠倒五行阵基础版");
+    if (typeof Sfx !== "undefined") Sfx.play("success");
+    const body = made.length
+      ? "炉火三日不熄。再开炉时——\n\n" + made.map(m => "· " + m).join("\n") + "\n\n" + (fineLine || "") + "\n\n齐云霄拍去掌上的灰：「拿好。墨蛟没白杀，你也没白来这一趟。」"
+      : "你料囊空空，齐云霄两手一摊：「巧妇难为无米之炊。下回带足墨蛟的料，再来寻我。」";
+    return { text: body, kind: "good" };
+  },
+
   lianZhujiDan() {
     const s = State.data;
     if (!s.flags.mojiao_resolved) { this.toast("血色主药未备齐——禁地之行在前"); return; }
@@ -4074,6 +4140,17 @@ const Engine = {
     if (enemy._wary) {
       this._combat.enemies[0].shield = 12;
       this.log(`「${tmpl.name}」眯起眼："彩霞山那位……久闻大名。"——你的名声在外，对方早有防备（开局护体12）。`, "sys");
+    }
+    // 燕家堡侦察兑现（篇章动词「侦察」）：望塔=地形先机（开局护体），董萱儿=弱点情报（伤害+8%）
+    if (enemyId === "zhanwangchan") {
+      if (s.ledger && s.ledger.yanjia_scout_tower) {
+        this._combat.player.shield = (this._combat.player.shield || 0) + 10;
+        this._combat._log("【望塔·先机】堡墙走势早在你胸中——落脚位、退路、瓦砾掩体，抢先占定（开局护体+10）。");
+      }
+      if (s.ledger && s.ledger.yanjia_scout_dong) {
+        this._combat.player.dmgBonus = (this._combat.player.dmgBonus || 1) * 1.08;
+        this._combat._log("【情报·弱点】董萱儿所述在目：振翅冲撞之后，翼根旧伤露半息破绽——认准了打（伤害+8%）。");
+      }
     }
     // 羁绊·战斗支援兑现：护体/疗伤已在 _maybeCombatAid 安排，此处落地到战场单位 + 见闻/风云录留痕
     if (this._pendingAidBuff) {
@@ -5054,6 +5131,48 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  /* -------- M5·外海猎妖循环（篇章动词「立足」的帆时段·可重复月行动）--------
+   * 主线 starsea_a3_waihai 立起路数（starsea_zhifu_done）之后，外星海猎场每月可「猎妖」：
+   * 霓裳草引妖→真战斗→剖丹（妖丹=结丹资粮+星海硬通货 sell:60）。复用 encounter 管线零新系统；
+   * 两成月份引妖空手（只捞霓裳草），世界不是自动售货机。 */
+  startWaihaiHunt() {
+    const s = State.data;
+    if (s.pendingEvent || s.combat) { this.toast("先处理眼前之事"); return; }
+    if (!s.flags.starsea_zhifu_done) { this.toast("猎妖取丹的路数未立——先随主线在外星海开张头一猎", true); return; }
+    this.passTime(1);
+    // 引妖空手月（~22%）：妖踪杳然，只捞得霓裳草——下月的饵
+    if (Math.random() < 0.22) {
+      State.give("nichang_cao", 1);
+      this.log("这一月外海妖踪杳然，霓裳草悬了半月也无妖来食。你顺手多采了一束霓裳草收好（霓裳草+1）——猎场的日子，本就有空手的时候。", "sys");
+      this.checkLifespan(); this.checkStory();
+      State.save(); UI.renderAll();
+      this._flashLastLog && this._flashLastLog();
+      return;
+    }
+    // 中阶海妖（模板拷贝·血量±15% 波动——每头妖都不一样）：剖丹 2~3 颗+灵石
+    const tmpl = WORLD.enemies.waihai_yaoshou;
+    const hpMul = 0.85 + Math.random() * 0.3;
+    const yao = Object.assign({}, tmpl, {
+      hp: Math.round(tmpl.hp * hpMul), canFlee: false,
+      introNote: "霓裳草引来的中阶海妖——妖元雄浑、水行扑击凶蛮。困而后杀、剖丹取财：这是你在外海立足的营生。",
+      reward: { xinghai_yaodan: 2 + (Math.random() < 0.35 ? 1 : 0), lingshi: 2 },
+      namedLoot: null,
+    });
+    this._nextFightType = "waihai_hunt";
+    const player = this.playerFighter();
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [yao], maxRounds: 18, W: 11, lanes: 2, sides,
+      playerPos: 3, enemyPos: 7,
+    });
+    this._combatMeta = { type: "encounter", reward: yao.reward, enemyName: yao.name, canQuick: true };
+    s.combat = true;
+    this._combat.startRound();
+    this.log("你把霓裳草悬上礁石，海风送香——不多时，浪里一头中阶海妖循味扑来。猎妖取丹，开工。", "event");
+    this._combat._log(`【敌情】${yao.introNote}`);
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   /* ============================================================
    * 星海飞驰篇 · S2「蝎岛之战」三战（设计 docs/xinghaifeichi-design.md §十·10.2）
    *   敌人内联装配（仿 showdown/jiuziling 先例·不污染 WORLD.enemies）。
@@ -5926,6 +6045,10 @@ const Engine = {
           this.meetNpc("zhanwangchan", "燕家堡破阵的魔道巨擘——重伤遁空，与你结下不死不休之仇。");
           this.writeLedger("zhanwangchan_grudge", "燕家堡之战力挫战王蝉——魔道巨擘重伤遁空，与你结下不死不休之仇");
           this.addMilestone("燕家堡之战：力挫战王蝉（不死不休之仇已结）", "showdown");
+          // 远雷·临战三日侦察兑现（铁律3）：望塔的脚力、董萱儿的档册、墨彩环的丹——都在血夜里开花
+          this.settleLedger("yanjia_scout_tower", "望塔上看熟的堡墙走势，让你在振翅冲撞里始终快半步——临战三日的脚力，没有白费");
+          this.settleLedger("yanjia_scout_dong", "董萱儿口中那道翼根旧伤，在血夜里成了你反复叩击的破绽——红拂门的档册，值一条命");
+          this.settleLedger("yanjia_scout_mo", "墨彩环塞进你手里的那两枚养元丹、那句「活着回来」——你做到了。堡心地窖里，墨府老小全须全尾");
           this.log("战王蝉甲胄迸裂、振翅遁空——这等魔道巨擘岂是一战可诛？它临去前那一眼死死咬住你的气息：不死不休。这一关，你撑过来了。", "event");
           if (typeof Sfx !== "undefined") Sfx.play("success");
           s.storyStage += 1;   // 越过 yanjia_boss → 由公共尾部 checkStory 接 yanjia_escape
@@ -6970,9 +7093,22 @@ const Engine = {
   },
 
   // 当前际遇指引：告诉玩家下一段主线的触发条件（开放世界的"目标"提示）
+  _storyStageById(id) {
+    if (!id || typeof STORY === "undefined") return null;
+    for (let i = 0; i < STORY.length; i++) if (STORY[i].id === id) return STORY[i];
+    return null;
+  },
   currentObjective() {
     const s = State.data;
-    if (s.pendingEvent) return null;
+    // 待决剧情仍给指引（否则 pendingEvent 时天命栏空白——玩家不知眼前卡要干啥）
+    if (s.pendingEvent) {
+      const pend = this._storyStageById(s.pendingEvent);
+      if (pend) {
+        const hint = typeof pend.objHint === "function" ? pend.objHint(s) : pend.objHint;
+        return { title: pend.objTitle || pend.title || "眼前际遇", hint: hint || "做出抉择，推进剧情。" };
+      }
+      return null;
+    }
     const next = STORY[s.storyStage];
     if (!next) return { title: "逍遥自在", hint: "本篇主线已了，你可继续自由修行。" };
     const condOk = !next.cond || next.cond(s);
@@ -7115,10 +7251,13 @@ const Engine = {
   // 玩家在剧情选项上做出选择
   chooseStory(stage, choiceIndex) {
     const s = State.data;
-    if (!stage || !stage.choices || choiceIndex < 0 || choiceIndex >= stage.choices.length) {
+    // 动态选项：choices 可为函数（按 state 生成）——与 playStage 同一解析。
+    // 驻留节点（stay）重掷后按当前 state 重新生成，索引与界面渲染保持一致。
+    const chs = stage && (typeof stage.choices === "function" ? stage.choices(s) : stage.choices);
+    if (!stage || !chs || choiceIndex < 0 || choiceIndex >= chs.length) {
       this.toast("选项无效"); return;
     }
-    const choice = stage.choices[choiceIndex];
+    const choice = chs[choiceIndex];
 
     // 需要特定物品的选项
     if (choice.requireItem && !State.count(choice.requireItem)) {
@@ -7142,6 +7281,24 @@ const Engine = {
     if (choice.effect) {
       const r = choice.effect(s) || {};
       if (r.text) { this.log(r.text, r.kind || "event"); this.toast(r.text, r.kind === "bad"); }
+    }
+
+    // 驻留选项（stay）：选完不推进剧情——同一张卡按新 state 重掷（动态 text/choices 重新解析）。
+    // 用于"一张卡内多轮取舍"节点（燕家堡临战三日 5 选 3 等）：选一处、卡还在、余下的接着选。
+    if (choice.stay) {
+      State.save();
+      const st = STORY[s.storyStage];
+      if (st) {
+        const resolved = (typeof st.text === "function" || typeof st.choices === "function")
+          ? Object.assign({}, st, {
+              text: typeof st.text === "function" ? st.text(s) : st.text,
+              choices: typeof st.choices === "function" ? st.choices(s) : st.choices,
+            })
+          : st;
+        UI.renderStory(resolved);
+      }
+      UI.renderAll();
+      return;
     }
 
     // 复仇战：万小山之仇（三散修——同阶之争你无敌；第三人遁走是远雷）
