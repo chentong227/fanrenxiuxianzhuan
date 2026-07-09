@@ -680,6 +680,34 @@ const Engine = {
   /* -------- 城味·复访变迁：细读告示 / 城南探风声 -------- */
   /* 把既有剧情 flag 投影成市井见闻（门庭冷落→豺狗缩爪→寒毒解·太南榜文）。
    * 驻足一瞬不耗月；文案单一数据源＝据点风味 ExploreMap.MAPS（箱庭退役为风味库，只留战斗探索）。 */
+  /* -------- L2 场景可交互化：氛围地标「看一眼」（点场景里的物件，世界回应你）--------
+   * 零耗月（如"城中走走"）；flavor 随剧情 flag 变（复访见变迁）；首看可带一次性微反馈（心境/线索/见闻）。
+   * 数据在 WORLD.locations[].landmarks[].look(s) → 返回 { text, kind?, once?, effect? }。 */
+  lookLandmark(spotId) {
+    const s = State.data;
+    if (s.combat || s.pendingEvent) { this.toast("此刻无心他顾"); return; }
+    const loc = State.location();
+    const spot = loc && loc.landmarks && loc.landmarks.find(h => h.id === spotId);
+    if (!spot || typeof spot.look !== "function") return;
+    const seenKey = "look_" + loc.id + "_" + spotId;
+    const r = spot.look(s) || {};
+    if (r.once && s.flags[seenKey]) {
+      // 已看过一次性内容：给一句简短复看（不再重复发反馈）
+      this.toast(r.repeat || spot.label, false);
+      return;
+    }
+    if (r.text) this.log(r.text, r.kind || "event");
+    if (!s.flags[seenKey]) {
+      State.setFlag(seenKey);
+      if (typeof r.effect === "function") r.effect(s);   // 首看微反馈（心境+/线索/微物），刻意克制
+    }
+    if (typeof Sfx !== "undefined") Sfx.play("page");
+    this.checkLifespan();
+    State.save();
+    if (UI.renderAll) UI.renderAll();
+    if (this._flashLastLog) this._flashLastLog();
+  },
+
   cityRead(kind) {
     const s = State.data;
     const loc = State.location();
@@ -5140,24 +5168,45 @@ const Engine = {
     if (s.pendingEvent || s.combat) { this.toast("先处理眼前之事"); return; }
     if (!s.flags.starsea_zhifu_done) { this.toast("猎妖取丹的路数未立——先随主线在外星海开张头一猎", true); return; }
     this.passTime(1);
-    // 引妖空手月（~22%）：妖踪杳然，只捞得霓裳草——下月的饵
+    // 引妖空手月（~22%）：妖踪杳然——半数只捞霓裳草；半数寻得「寒潭海眼」（结丹备料多路径：
+    // 雪灵水可挣，不必等剧情直给——首得雪灵水×1，复访采寒髓换灵石）
     if (Math.random() < 0.22) {
-      State.give("nichang_cao", 1);
-      this.log("这一月外海妖踪杳然，霓裳草悬了半月也无妖来食。你顺手多采了一束霓裳草收好（霓裳草+1）——猎场的日子，本就有空手的时候。", "sys");
+      if (Math.random() < 0.5) {
+        if (!s.flags.hunt_hanyan_found) {
+          State.setFlag("hunt_hanyan_found");
+          State.give("xueling_shui", 1);
+          this.log("这一月妖踪杳然，你却在退潮的礁盘深处寻得一眼「寒潭海眼」——潭心寒气凝而不散，你以玉瓶封了一捧潭心寒髓：正是结丹所需的「雪灵水」！（雪灵水+1）", "good");
+        } else {
+          State.give("lingshi", 4);
+          this.log("你又去了那眼寒潭海眼，采得一囊寒髓——不及潭心头一捧精纯，坊市倒也识货（灵石+4）。", "good");
+        }
+      } else {
+        State.give("nichang_cao", 1);
+        this.log("这一月外海妖踪杳然，霓裳草悬了半月也无妖来食。你顺手多采了一束霓裳草收好（霓裳草+1）——猎场的日子，本就有空手的时候。", "sys");
+      }
       this.checkLifespan(); this.checkStory();
       State.save(); UI.renderAll();
       this._flashLastLog && this._flashLastLog();
       return;
     }
-    // 中阶海妖（模板拷贝·血量±15% 波动——每头妖都不一样）：剖丹 2~3 颗+灵石
+    // 精英遭遇（~12%）：火鬣海蛟——比寻常海妖更凶，颅内一腔真火（结丹备料多路径：天火液可猎）
+    const elite = Math.random() < 0.12;
     const tmpl = WORLD.enemies.waihai_yaoshou;
     const hpMul = 0.85 + Math.random() * 0.3;
-    const yao = Object.assign({}, tmpl, {
-      hp: Math.round(tmpl.hp * hpMul), canFlee: false,
-      introNote: "霓裳草引来的中阶海妖——妖元雄浑、水行扑击凶蛮。困而后杀、剖丹取财：这是你在外海立足的营生。",
-      reward: { xinghai_yaodan: 2 + (Math.random() < 0.35 ? 1 : 0), lingshi: 2 },
-      namedLoot: null,
-    });
+    const yao = elite
+      ? Object.assign({}, tmpl, {
+          name: "火鬣海蛟", hp: Math.round(tmpl.hp * 1.35), elem: "huo", armor: (tmpl.armor || 0) + 2, canFlee: false,
+          introNote: "海面无风起浪，一头鬣毛燃着赤焰的海蛟破水而出——外海猎人口中的「火鬣」，凶名远在寻常海妖之上。它颅内那一腔灼髓真火，正是炼丹师梦寐以求的「天火液」之源。险，但值。",
+          attacks: (tmpl.attacks || []).map(a => Object.assign({}, a, { dmg: Math.round((a.dmg || 10) * 1.2), elem: "huo" })),
+          reward: { tianhuo_ye: 1, xinghai_yaodan: 3, lingshi: 4 },
+          namedLoot: null,
+        })
+      : Object.assign({}, tmpl, {
+          hp: Math.round(tmpl.hp * hpMul), canFlee: false,
+          introNote: "霓裳草引来的中阶海妖——妖元雄浑、水行扑击凶蛮。困而后杀、剖丹取财：这是你在外海立足的营生。",
+          reward: { xinghai_yaodan: 2 + (Math.random() < 0.35 ? 1 : 0), lingshi: 2 },
+          namedLoot: null,
+        });
     this._nextFightType = "waihai_hunt";
     const player = this.playerFighter();
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
@@ -5165,10 +5214,12 @@ const Engine = {
       player, enemies: [yao], maxRounds: 18, W: 11, lanes: 2, sides,
       playerPos: 3, enemyPos: 7,
     });
-    this._combatMeta = { type: "encounter", reward: yao.reward, enemyName: yao.name, canQuick: true };
+    this._combatMeta = { type: "encounter", reward: yao.reward, enemyName: yao.name, canQuick: !elite };
     s.combat = true;
     this._combat.startRound();
-    this.log("你把霓裳草悬上礁石，海风送香——不多时，浪里一头中阶海妖循味扑来。猎妖取丹，开工。", "event");
+    this.log(elite
+      ? "霓裳草的甜香刚漫开，海面便无风起浪——鬣毛燃焰的「火鬣海蛟」破水而出！这一注凶险的横财，接不接得住全看本事。"
+      : "你把霓裳草悬上礁石，海风送香——不多时，浪里一头中阶海妖循味扑来。猎妖取丹，开工。", "event");
     this._combat._log(`【敌情】${yao.introNote}`);
     UI.openCombat(this._combat, this._combatMeta);
   },

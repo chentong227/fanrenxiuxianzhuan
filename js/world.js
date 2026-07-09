@@ -56,6 +56,30 @@ WORLD.locations = [
       { id: "bottle", icon: "🫗", x: 78, y: 62, action: "bottle", label: "小瓶", cond: s => s.bottle.unlocked },
       { id: "alchemy", icon: "⚗", x: 22, y: 68, action: "alchemy", label: "炼药" },
     ],
+    // L2 氛围地标（看一眼·零耗月·随剧情变）：药柜/丹炉/密室门缝——药庐是韩立的起点，每一处都埋着故事
+    landmarks: [
+      { id: "yaogui", icon: "🗄", x: 15, y: 30, label: "药柜",
+        look(s) {
+          if (s.flags.modafu_dead) return { text: "药柜还是老样子，一格格码着墨大夫生前辨过的药。如今这药庐、这身份，都归了你——你伸手抚过抽屉上他写的蝇头小楷，一时说不清是什么滋味。", kind: "event" };
+          if ((s.skills && s.skills.alchemy) >= 20) return { text: "药柜里三百六十味药，你如今闭着眼也摸得准。墨大夫偶尔瞥你一眼，那眼神里有赞许，也有别的什么——你装作没看见。", kind: "event" };
+          return { text: "满墙药柜，抽屉上贴着墨大夫的字。你辨药的手艺，就是从一格格拉开这些抽屉练出来的。", kind: "event",
+            once: true, repeat: "满墙药柜，草木清苦。", effect(st) { st.mood = Math.min(st.moodMax, st.mood + 2); } };
+        } },
+      { id: "danlu", icon: "🔥", x: 84, y: 34, label: "丹炉",
+        look(s) {
+          if ((s.skills && s.skills.alchemy) >= 40) return { text: "旧丹炉炉壁结着经年药垢。你如今火候已成，一炉双丹是常事——当初蹲在这炉子前手忙脚乱的日子，恍如隔世。", kind: "event" };
+          return { text: "墙角一座半旧丹炉，炉膛还留着上回煎药的余温。修仙人的家底，多半是从这样一炉一炉里熬出来的。", kind: "event",
+            once: true, repeat: "半旧丹炉，余温尚存。" };
+        } },
+      { id: "mimen", icon: "🚪", x: 50, y: 22, label: "里屋门缝",
+        cond: (s) => !s.flags.modafu_dead,
+        look(s) {
+          if (s.flags.qi_layer_4 || s.flags.early_suspicion) return { text: "里屋那道门，墨大夫从不许你进。门缝里渗出一丝极淡的血腥气，混在药香里，寻常人闻不出。你修为渐深，鼻子却越来越尖——那味道，不像药。", kind: "bad",
+            once: true, repeat: "里屋门虚掩着，门缝里那丝气味挥之不去。", effect(st) { State.setFlag("early_suspicion"); } };
+          return { text: "里屋的门总是关着。墨大夫说那是他静修之所，不许外人打扰。你恭顺地应下——修仙人各有各的秘密，你懂这个道理。", kind: "event",
+            once: true, repeat: "里屋的门，总是关着。" };
+        } },
+    ],
   },
   {
     id: "houshan",
@@ -78,6 +102,20 @@ WORLD.locations = [
     hotspots: [
       { id: "explore", icon: "🌲", x: 50, y: 50, action: "explore", label: "深入探索" },
     ],
+    landmarks: [
+      { id: "yaocong", icon: "🌿", x: 22, y: 62, label: "灵草丛",
+        look(s) {
+          const a = (s.skills && s.skills.alchemy) || 0;
+          if (a >= 20) return { text: "你一眼扫过草丛，哪几株是三年份的雪参、哪几株是虚长的凡草，分得清清楚楚。采药这门手艺，山不亏人。", kind: "event" };
+          return { text: "向阳的坡上灵草丛生，混着不少凡草。哪些能用、哪些是空长样子，还得蹲下来一株株辨。", kind: "event",
+            once: true, repeat: "灵草丛在风里晃着。" };
+        } },
+      { id: "shoujing", icon: "🐾", x: 74, y: 44, label: "兽径",
+        look(s) {
+          return { text: "草叶上一道新踩的兽径，蹄印比寻常野物大一圈。后山深处从不太平——采药也好、历练也罢，眼睛都得放亮些。", kind: "event",
+            once: true, repeat: "兽径隐入林深处。", effect(st) { st.skills = st.skills || { alchemy: 0, scouting: 0 }; st.skills.scouting = (st.skills.scouting || 0) + 1; } };
+        } },
+    ],
   },
   {
     id: "wuting",
@@ -95,6 +133,20 @@ WORLD.locations = [
       { id: "rumor", weight: 18, kind: "rumor" },
       { id: "npc", weight: 18, kind: "npc" },
       { id: "temper", weight: 16, kind: "temper" },
+    ],
+    landmarks: [
+      { id: "bingjia", icon: "⚔", x: 20, y: 46, label: "兵器架",
+        look(s) {
+          if (s.swordMastery) return { text: "架上各式刀剑你都试过手。如今眨眼剑法已成，木剑铁剑于你并无分别——剑快不在手，在心，这道理是在这架子前一遍遍磨出来的。", kind: "event" };
+          return { text: "兵器架上刀枪剑戟森然而列。你伪灵根修为不显，倒是厉飞雨教的那几手凡人武学，让你在这架子前不算太寒碜。", kind: "event",
+            once: true, repeat: "兵器架森然而列。" };
+        } },
+      { id: "muren", icon: "🎯", x: 76, y: 50, label: "木人桩",
+        look(s) {
+          if (s.flags.zhangtie_dead) return { text: "墙角那座木人桩，当年张铁总在这儿傻乎乎地打。桩子还在，人没了。你握了握拳，什么也没说。", kind: "bad" };
+          if (s.flags.met_friends) return { text: "木人桩被打得坑坑洼洼——多半是张铁。那憨货一根筋，认准的事就往死里练。你看着，忽然觉得这门派的日子也没那么冷。", kind: "event", once: true, repeat: "木人桩被打得坑坑洼洼。" };
+          return { text: "一座旧木人桩立在墙角，桩身被历代弟子打得凹凸不平。武道一途，从来是水磨的功夫。", kind: "event", once: true, repeat: "旧木人桩立在墙角。" };
+        } },
     ],
   },
   {
@@ -116,6 +168,19 @@ WORLD.locations = [
     ],
     hotspots: [
       { id: "market", icon: "🏪", x: 50, y: 55, action: "market", label: "采买" },
+    ],
+    landmarks: [
+      { id: "gaoshi", icon: "📜", x: 22, y: 40, label: "告示墙",
+        look(s) {
+          if (s.rippleWindow && s.rippleWindow.id === "wolf_bounty") return { text: "镖局的悬赏红榜盖过了半墙告示：野狼帮劫镖伤人，取其打手首级者，赏纹银若干。红纸墨字，杀气腾腾。", kind: "event" };
+          return { text: "土墙上贴满了泛黄的告示：寻人、悬赏、招工、通缉……凡俗镇子的悲欢喜怒，都糊在这一堵墙上。修仙人眼里的蝼蚁世界，你却曾是其中一只。", kind: "event",
+            once: true, repeat: "告示墙上，纸片层层叠叠。" };
+        } },
+      { id: "jiufan", icon: "🍶", x: 76, y: 52, label: "酒肆",
+        look(s) {
+          return { text: "街角酒肆飘出浊酒与炖肉的香气，脚夫走卒高声划拳。你在门口站了站——这份热腾腾的人间烟火，往后的路上，会越来越少。", kind: "event",
+            once: true, repeat: "酒肆里人声鼎沸。", effect(st) { st.mood = Math.min(st.moodMax, st.mood + 2); } };
+        } },
     ],
   },
   {
@@ -158,6 +223,20 @@ WORLD.locations = [
     flavorRef: { map: "jiayuan_city_l1", node: "mofu" },
     reads: { board: "chengmen", rumor: "tangkou" },
     encounters: [],
+    landmarks: [
+      { id: "zhumen", icon: "🏛", x: 20, y: 44, label: "朱门",
+        look(s) {
+          if (s.flags.han_du_cured) return { text: "墨府那道朱漆大门重新挂起了灯笼。寒毒解了、故人安了，这座宅子总算缓过一口气——你在门前立了立，没进去，转身汇入长街。", kind: "event" };
+          if (s.flags.mo_warned) return { text: "墨府朱门虚掩，门庭冷落。豺狗环伺的日子里，这样一座大宅像风中残烛。你压低斗笠，快步走过。", kind: "bad" };
+          return { text: "岚州第一城的朱门大宅鳞次栉比，飞檐上蹲着脊兽。你借住的墨府也在其间——朱门再阔，也挡不住暗处的算计。", kind: "event",
+            once: true, repeat: "朱门大宅，飞檐蹲兽。" };
+        } },
+      { id: "changjie", icon: "🏮", x: 78, y: 56, label: "长街",
+        look(s) {
+          return { text: "长街车马如流，绸缎庄、银楼、脚店招幌连成一片，叫卖声不绝。岚州的富庶扑面而来——凡人一世营营，修仙人一眼千年，你走在其间，恍如两个世界的过客。", kind: "event",
+            once: true, repeat: "长街车马如流，市声鼎沸。" };
+        } },
+    ],
   },
 
   /* —— 离门远行章 · 太南小会（修仙者的集市）——
@@ -173,6 +252,19 @@ WORLD.locations = [
     env: { depth: { fg: "mist", far: 0.68 } },
     actions: ["fair", "rest", "cultivate"],
     encounters: [],
+    landmarks: [
+      { id: "lingtan", icon: "✨", x: 24, y: 46, label: "灵物摊",
+        look(s) {
+          return { text: "雾里一个个摊位灵光隐现：泛寒的玉简、缠着符纸的兽骨、装在琉璃瓶里游动的虫豸……你头一回置身真正的修仙人之间，看什么都新鲜，又强压着不敢露怯。", kind: "event",
+            once: true, repeat: "灵物摊上，异光明灭。" };
+        } },
+      { id: "xiushi", icon: "🧙", x: 74, y: 50, label: "往来修士",
+        look(s) {
+          if (s.flags.wan_dead) return { text: "集市上人来人往，遮着行藏。你想起万小山也是在这样的雾里迎上来的——那个心善的胖子。人没了，谷里的雾却还是老样子。", kind: "bad" };
+          return { text: "往来修士皆以斗篷、面纱遮掩行藏，擦身而过时能感到一道道审视的目光。这里没有门派庇护，全凭自己的分量说话——你把气息压到最低。", kind: "event",
+            once: true, repeat: "修士往来，各遮行藏。" };
+        } },
+    ],
   },
 
   /* —— 黄枫谷（驻地章主场）：外门居所（修行）+ 百药园（差事/大帆主轴）—— */
@@ -188,6 +280,19 @@ WORLD.locations = [
     env: { depth: { fg: "interior", far: 0.34 } },
     actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
     encounters: [],
+    landmarks: [
+      { id: "qingshan", icon: "👘", x: 20, y: 40, label: "青衫",
+        look(s) {
+          if (s.flags.zhuji_done) return { text: "衣架上挂着新领的内门青衫——你已是筑基修士，这身外门弟子的旧衫，该换了。窗外太岳云海翻涌，你的道，才刚上正轨。", kind: "event" };
+          return { text: "居所一角挂着黄枫谷发的外门青衫，衣料比七玄门的粗布好上太多。你抚过衣襟——从凡俗武馆的记名药童，到仙家宗门的外门弟子，这一步走了多久，只有你自己知道。", kind: "event",
+            once: true, repeat: "青衫挂在架上，衣料细密。", effect(st) { st.mood = Math.min(st.moodMax, st.mood + 2); } };
+        } },
+      { id: "yunhai", icon: "⛰", x: 78, y: 34, label: "窗外云海",
+        look(s) {
+          return { text: "推窗望去，太岳山脉云海千里、峰峦如岛。真正的仙家洞天气象——你站在窗前看了很久。筑基、结丹、元婴……那些遥不可及的词，头一回像是有了着落。", kind: "event",
+            once: true, repeat: "窗外云海翻涌，峰峦如岛。" };
+        } },
+    ],
   },
   {
     id: "baiyao_yuan",
@@ -201,6 +306,20 @@ WORLD.locations = [
     env: { depth: { fg: "mountain", far: 0.5 } },
     actions: ["yaoyuan", "gather", "rest"],
     encounters: [],
+    landmarks: [
+      { id: "sizhong", icon: "🌱", x: 24, y: 60, label: "园角自留地",
+        look(s) {
+          if (s.flags.yaoyuan_private >= 3) return { text: "园角那块无人过问的自留地，你偷偷种的几批药苗长得正好。马师伯睁只眼闭只眼——这点心照不宣的默许，是你三年家底里最实在的一笔。", kind: "event" };
+          return { text: "药园东南角一小块地界无人过问，土也松。修仙人攒家底，有时靠的不是明面上的差事，而是这样一处没人管的角落。", kind: "event",
+            once: true, repeat: "园角自留地，土松草稀。" };
+        } },
+      { id: "danfang", icon: "🏚", x: 76, y: 54, label: "旧丹房",
+        look(s) {
+          if (s.flags.zhuji_lian_done) return { text: "园角那间旧丹房，你在这儿炼成了满匣筑基丹。三年看园辨药的火候，全熔进了那一炉——马师伯说得对，他没看错你这双手。", kind: "event" };
+          return { text: "园角一间积灰的旧丹房，久无人用。你打量着那座冷丹炉，心里已在盘算——总有一天，要在这儿炼出改命的东西。", kind: "event",
+            once: true, repeat: "旧丹房积着灰，冷炉静立。" };
+        } },
+    ],
   },
   {
     id: "fangshi",

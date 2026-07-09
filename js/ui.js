@@ -458,16 +458,27 @@ const UI = {
   },
 
   // L2: 在场景图上叠加可点击热点（独立层，不与 pins 混）
+  //   两类：action 热点（点=执行行动，doAction）；look 地标（点=看一眼，零耗时氛围交互·世界会回应你）
   _renderHotspots(loc) {
     const s = State.data;
     const layer = this.el("scene-hotspots");
     if (!layer) return;
-    if (!loc.hotspots || loc.scene || s.pendingEvent || s.combat) { layer.innerHTML = ""; return; }
-    const visible = loc.hotspots.filter(h => !h.cond || h.cond(s));
-    layer.innerHTML = visible.map(h =>
-      `<button class="scene-hotspot" style="left:${h.x}%;top:${h.y}%" onclick="Engine.doAction('${h.action}')" title="${h.label}">
-        <span class="sh-icon">${h.icon}</span><span class="sh-label">${h.label}</span>
-      </button>`).join("");
+    if (loc.scene || s.pendingEvent || s.combat) { layer.innerHTML = ""; return; }
+    let html = "";
+    if (loc.hotspots) {
+      html += loc.hotspots.filter(h => !h.cond || h.cond(s)).map(h =>
+        `<button class="scene-hotspot" style="left:${h.x}%;top:${h.y}%" onclick="Engine.doAction('${h.action}')" title="${h.label}">
+          <span class="sh-icon">${h.icon}</span><span class="sh-label">${h.label}</span>
+        </button>`).join("");
+    }
+    // L2 场景可交互化：氛围地标（点场景里的物件——药柜/告示/梁燕/寒烟草…有反应，不耗月）
+    if (loc.landmarks) {
+      html += loc.landmarks.filter(h => !h.cond || h.cond(s)).map(h =>
+        `<button class="scene-hotspot scene-look" style="left:${h.x}%;top:${h.y}%" onclick="Engine.lookLandmark('${h.id}')" title="${h.label}">
+          <span class="sh-icon">${h.icon}</span><span class="sh-label">${h.label}</span>
+        </button>`).join("");
+    }
+    layer.innerHTML = html;
   },
 
   // 兼容旧调用（已由 renderSceneStage 取代）
@@ -7097,6 +7108,7 @@ const UI = {
           <button class="btn btn-secondary" onclick="UI._ceremonyEnd(false)">不动声色（深藏不露）</button>
           <button class="btn btn-ghost" onclick="UI._ceremonyEnd(true)">渐露锋芒（示人以真）</button>
         </div>
+        <button class="cer-share" onclick="UI.breakthroughShareCard('${realm.name}', ${wasBig ? "true" : "false"})">留影 · 破境帖 📜</button>
         ${hidden > 0 ? `<div class="cer-note">藏拙：示人境界不变，他人小觑于你——关键一战亮出真修为，方有雷霆之势。</div>` : ""}
       </div>`;
     ov.classList.add("show");
@@ -7115,6 +7127,64 @@ const UI = {
     if (ov) ov.classList.remove("show");
     State.save();
     this.renderAll();
+  },
+
+  /* -------- 破境帖（L4 传播素材·分享卡二号）：突破是最强截图时刻——canvas 水墨帖，长按即存 --------
+   * 与道途名帖同一画风族（宣纸底/墨金字/朱印），构图更"炸"：巨字境界名+雷金描边。 */
+  breakthroughShareCard(realmName, wasBig) {
+    const s = State.data;
+    if (!s) return;
+    const W = 750, H = 1000;
+    const cv = document.createElement("canvas");
+    cv.width = W; cv.height = H;
+    const g = cv.getContext("2d");
+    const FONT = '"Kaiti SC","STKaiti","KaiTi","Noto Serif SC",serif';
+    // 玄墨底（与名帖米色相区分：破境=夜空惊雷的黑金）
+    const bg = g.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, "#1a150d"); bg.addColorStop(0.5, "#14100a"); bg.addColorStop(1, "#0c0906");
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    const glow = g.createRadialGradient(W / 2, H * 0.42, 40, W / 2, H * 0.42, H * 0.55);
+    glow.addColorStop(0, "rgba(212,175,106,.22)"); glow.addColorStop(1, "rgba(212,175,106,0)");
+    g.fillStyle = glow; g.fillRect(0, 0, W, H);
+    g.strokeStyle = "rgba(201,169,106,.55)"; g.lineWidth = 3; g.strokeRect(26, 26, W - 52, H - 52);
+    g.strokeStyle = "rgba(201,169,106,.25)"; g.lineWidth = 1; g.strokeRect(40, 40, W - 80, H - 80);
+    // 题头
+    g.textAlign = "center";
+    g.fillStyle = "rgba(201,169,106,.75)"; g.font = `26px ${FONT}`;
+    g.fillText("凡 人 修 仙 传 · 人 界 篇", W / 2, 104);
+    g.fillStyle = "#e8d9b8"; g.font = `bold 58px ${FONT}`;
+    g.fillText(wasBig ? "破 境" : "突 破", W / 2, 196);
+    // 巨字境界名（金芒描边）
+    g.font = `bold 120px ${FONT}`;
+    g.shadowColor = "rgba(240,200,120,.55)"; g.shadowBlur = 34;
+    g.fillStyle = "#f0dfae";
+    g.fillText(realmName, W / 2, H * 0.46);
+    g.shadowBlur = 0;
+    // 铭句
+    g.fillStyle = "rgba(220,200,160,.85)"; g.font = `28px ${FONT}`;
+    g.fillText(wasBig ? "旧日瓶颈，訇然中开" : "灵力冲开窍穴，眼底神光更盛", W / 2, H * 0.56);
+    // 落款
+    g.fillStyle = "rgba(201,169,106,.8)"; g.font = `30px ${FONT}`;
+    g.fillText(`${s.name || "韩立"} · ${s.age || "?"} 岁`, W / 2, H - 208);
+    g.fillStyle = "rgba(160,135,90,.75)"; g.font = `24px ${FONT}`;
+    g.fillText(`第 ${s.year || 1} 年 ${s.month || 1} 月`, W / 2, H - 164);
+    // 朱印
+    const sx = W - 168, sy = H - 150, sw = 88;
+    g.fillStyle = "rgba(172,44,32,.9)"; g.fillRect(sx, sy, sw, sw);
+    g.fillStyle = "#f3e4d0"; g.font = `bold 36px ${FONT}`;
+    const nm = (s.name || "韩立");
+    g.fillText(nm[0] || "韩", sx + sw / 2, sy + 40);
+    g.fillText(nm[1] || "立", sx + sw / 2, sy + 76);
+    const url = cv.toDataURL("image/png");
+    this.openModal(`
+      <h2>破境帖 · 留影</h2>
+      <p style="color:var(--ink-dim);font-size:12px">长按图片保存——这一步，值得被记住。</p>
+      <img src="${url}" alt="破境帖" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      <div class="modal-actions">
+        <a class="btn btn-secondary" href="${url}" download="pojing-tie.png">保存图片</a>
+        <button class="btn btn-ghost" onclick="UI.closeModal()">回到大典</button>
+      </div>
+    `);
   },
 
   /* -------- 突破受挫：与大典同一演出语言（失败也要被"看见"——账目+保底进度，败有所得）-------- */

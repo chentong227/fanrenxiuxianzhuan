@@ -4811,38 +4811,53 @@ const STORY = [
       { say: "韩立", emo: "calm", tone: "low", text: "「二十年……总算把根基重新夯实了。这一回重修过的真元，比当年更听使唤。」" },
       { aside: "孤岛一隅，二十年如一日。曲魂静立洞府之侧，从不言语，却让这份清苦的苦修，多了一丝不至于太冷的暖意。" },
     ],
+    // M5·二十载分两段（各十年）各择一向：复用 choice.stay 驻留——前十年选完卡还在，接着选后十年。
+    //   两段同向=专精（加成叠满）／分两头=均衡；三转重元功一转在收关时统一结算（doReforge）。
     onArrive(s) {
       s.location = "xiaohuan_island";
-      State.setFlag("starsea_biguan_done");
-      Engine.doReforge();   // 三转重元功·一转：散功重修，刻入真元精纯乘性印记 zhuanImprint（闭关增速永久略增·不剥层数）
-      Engine.addMilestone("初入星海·一幕：小寰岛闭关二十载，拾回筑基后期巅峰（三转一转）", "starsea");
-      Engine.writeLedger("starsea_biguan", "初入星海·孤岛立身——小寰岛闭关苦修二十载，行三转重元功一转，散功重修而真元愈纯（乘性印记 zhuanImprint），拾回落海暂失之修为，重回筑基后期巅峰。");
+      // 分两段的进度计数（不入永久 schema——本节点内瞬态，收关清）
+      s._biguanSeg = 0;
     },
-    choices: [
-      { text: "苦修剑诀——青元剑芒再淬一寸", hint: "二十载苦修，剑上功夫最该磨",
-        effect: (s) => {
-          if (!s.swordMastery) {
-            s.swordIntent = Math.min(100, (s.swordIntent || 0) + 25);
-            if (s.swordIntent === 100) { State.setFlag("sword_intent_full"); Engine.toast && Engine.toast("剑意圆满！可回药庐悟剑"); }
-            return { text: "二十载寒暑，你将青元剑诀一寸寸打磨。孤岛潮声中，剑意日渐纯熟——出关之时，指间与剑意已隐隐相通（剑意+25）。", kind: "good" };
+    // 每段的三个方向：剑意/体魄/道心（effect 幂等·可叠加，专精=同向两次）
+    choices(s) {
+      const seg = s._biguanSeg || 0;
+      const applyDir = (dir, st) => {
+        if (dir === "sword") {
+          if (!st.swordMastery) {
+            st.swordIntent = Math.min(100, (st.swordIntent || 0) + 15);
+            if (st.swordIntent >= 100 && !st.flags.sword_intent_full) { State.setFlag("sword_intent_full"); Engine.toast && Engine.toast("剑意圆满！可回洞府悟剑"); }
+            return "剑意+15";
           }
-          s.mood = Math.min(s.moodMax, (s.mood || 0) + 10);
-          return { text: "二十载寒暑，你将青元剑诀一寸寸打磨。眨眼剑法既已大成，你便将心力倾于青元剑芒——出关之时，剑势更沉了几分（心境+10）。", kind: "good" };
-        },
-        resolve: "advance" },
-      { text: "磨砺体魄——以曲魂为假想敌推演战法", hint: "纸上谈兵终觉浅，拿曲魂练手",
-        effect: (s) => {
-          s.hpMax += 15; s.hp = s.hpMax;
-          return { text: "二十载寒暑，你时常以曲魂为假想敌推演战法。它不知疲倦、不会受伤，正好让你把每一招的破绽都摸透。日复一日的实战模拟，你的体魄与反应都比闭门前更扎实了几分（气血上限+15）。", kind: "good" };
-        },
-        resolve: "advance" },
-      { text: "澄心悟道——打坐参悟，道心再澄一寸", hint: "根基要紧，心境更要紧",
-        effect: (s) => {
-          s.zhuanImprint = Math.round((s.zhuanImprint || 1) * 1.03 * 1000) / 1000;
-          return { text: "二十载寒暑，你除日常功课外，更多了几分打坐参悟的功夫。潮起潮落间，道心比从前更澄明了几分——三转重元功的精纯印记，又添了一层（闭关修为增速额外+3%）。", kind: "good" };
-        },
-        resolve: "advance" },
-    ],
+          st.mood = Math.min(st.moodMax, (st.mood || 0) + 6); return "剑势更沉（心境+6）";
+        }
+        if (dir === "body") { st.hpMax += 9; st.hp = st.hpMax; return "气血上限+9"; }
+        st.zhuanImprint = Math.round((st.zhuanImprint || 1) * 1.02 * 1000) / 1000; return "闭关增速+2%";
+      };
+      if (seg < 2) {
+        const yr = seg === 0 ? "前十年" : "后十年";
+        return [
+          { text: `${yr}·苦修剑诀——青元剑芒再淬一寸`, hint: "剑上功夫最该磨", stay: true,
+            effect(st) { const g = applyDir("sword", st); st._biguanSeg = (st._biguanSeg || 0) + 1; return { text: `${yr}，你把心力倾在青元剑诀上，一寸寸打磨（${g}）。`, kind: "good" }; } },
+          { text: `${yr}·磨砺体魄——以曲魂为假想敌推演战法`, hint: "拿曲魂练手，把破绽摸透", stay: true,
+            effect(st) { const g = applyDir("body", st); st._biguanSeg = (st._biguanSeg || 0) + 1; return { text: `${yr}，你以曲魂为假想敌日夜推演战法（${g}）。`, kind: "good" }; } },
+          { text: `${yr}·澄心悟道——打坐参悟，道心再澄一寸`, hint: "根基要紧，心境更要紧", stay: true,
+            effect(st) { const g = applyDir("dao", st); st._biguanSeg = (st._biguanSeg || 0) + 1; return { text: `${yr}，你除日常功课外多了几分打坐参悟（${g}）。`, kind: "good" }; } },
+        ];
+      }
+      // 两段皆定 → 收关（doReforge + 里程碑 + 账本；一次性）
+      return [
+        { text: "二十载功成，出关。", hint: "根基重夯，真元更纯——启程外星海",
+          effect(st) {
+            State.setFlag("starsea_biguan_done");
+            Engine.doReforge();
+            Engine.addMilestone("初入星海·一幕：小寰岛闭关二十载，拾回筑基后期巅峰（三转一转）", "starsea");
+            Engine.writeLedger("starsea_biguan", "初入星海·孤岛立身——小寰岛闭关苦修二十载（分两段各择一向），行三转重元功一转，散功重修而真元愈纯（乘性印记 zhuanImprint），拾回落海暂失之修为，重回筑基后期巅峰。");
+            delete st._biguanSeg;   // 节点内瞬态计数，收关即清（不留进存档长期字段）
+            return { text: "二十载寒暑，在小寰岛的潮声里悄然流过。你一寸寸拾回落海暂失的修为，重回筑基后期巅峰——重修过的真元，比当年更听使唤。", kind: "good" };
+          },
+          next: true },
+      ];
+    },
   },
 
   // —— 第二幕①·魁星城寻药未果·再遇文樯·听闻镇妖大典与降尘丹·途中擦肩小紫灵 ——
@@ -5025,22 +5040,42 @@ const STORY = [
       Engine.writeLedger("starsea_jingbian", "镇妖大典惊变——逆星盟乌丑勾结妖修风希、六连殿长老反水，炸开镇妖台禁制，放出镇压百年的十级雷鹏并打通内外星海通道；雷鹏破封屠戮、踩碎星宫双圣石像，旋为风希斩杀、夺走双翅（风雷翅之材料）离场。本篇仅得材料线索，炼制留外海风云篇。");
       Engine.addMilestone("镇妖大典惊变：雷鹏破封·风希斩雷鹏夺翅（风雷翅材料钩）", "starsea");
     },
+    /* M5·惊变三分支（chapter-differentiation §三「立足」）：元婴级厮杀你插不了手（一致感红线），
+     * 但大乱里怎么活、怎么算计——是你的选择：躲藏观戏（情报）/危中救人（人情）/乱中捡漏（实利+险）。 */
     choices: [
       {
-        text: "（雷鹏陨、风希去——这场大乱，才刚刚开始）",
-        hint: "震撼之余——记下风希的弱点",
+        text: "藏身断壁——把风希出手的每一式看在眼里。",
+        hint: "躲藏·最稳——元婴的手段，记下日后有用（情报径）",
         effect(s) {
-          Engine.writeLedger("starsea_jingbian_observe", "镇妖大典惊变·将风希出手的每一式看在眼里——元婴修士的手段，今日记下，日后或有用处（星海后续伏笔）");
-          return { text: "你将风希出手的每一式都看在眼里——元婴的手段，今日记下，日后或有用处。", kind: "event" };
+          State.setFlag("jingbian_hid");
+          Engine.writeLedger("starsea_jingbian_observe", "镇妖大典惊变·藏身断壁将风希出手的每一式看在眼里——元婴修士的手段，今日记下，日后或有用处（星海后续伏笔）");
+          return { text: "你缩进崩塌的看台断壁之后，把风希出手的每一式都看在眼里——元婴的手段，今日记下，日后或有用处。全场奔逃的人流里，你毫发无伤。", kind: "event" };
         },
         resolve: "advance",
       },
       {
-        text: "「先保命要紧。」不去多看，转身就跑。",
-        hint: "果断撤离——不多看一眼",
+        text: "冲进塌方——拽出那个被石梁压住的散修。",
+        hint: "救人·担险——气血-15%，换一份星海人情（人情径）",
         effect(s) {
-          s.hp = Math.min(s.hpMax, s.hp + Math.floor(s.hpMax * 0.05));
-          return { text: "你没有多看——元婴的厮杀不是你该掺和的。转身就跑，反而比旁人快了一步。", kind: "event" };
+          const dmg = Math.floor(s.hpMax * 0.15);
+          s.hp = Math.max(1, s.hp - dmg);
+          s.mood = Math.min(s.moodMax, s.mood + 6);
+          State.setFlag("jingbian_saved");
+          Engine.recordTemperament("jingbian_save", "sentiment", "镇妖大典惊变·雷罡横扫中折返塌方救人——险地里没把命看得比人情重");
+          Engine.writeLedger("jingbian_saved_one", "镇妖大典惊变·从塌方里拽出一名素不相识的散修——雷罡余波掀伤了你，他捂着断腿只来得及喊出一句「魁星城丙字丹铺，恩公来寻我」。这份星海的人情，日后有用处（伏笔）");
+          return { text: `雷罡横扫，看台成片垮塌。你折返冲进塌方，拽出一个被石梁压住的散修——余波掀得你气血翻涌（气血-${dmg}），那人捂着断腿朝你嘶声喊：「魁星城丙字丹铺！恩公来寻我！」`, kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "反身扑向雷鹏坠处——乱中拾遗。",
+        hint: "捡漏·行险——雷鹏遗落之物就在眼前，心魔+（实利径）",
+        effect(s) {
+          s.demon = Math.min(100, s.demon + 5);
+          State.give("leipeng_yu", 1);
+          State.setFlag("jingbian_loot");
+          Engine.writeLedger("jingbian_leiyu", "镇妖大典惊变·众人奔逃你独行险——自雷鹏坠处拾得一枚犹带雷光的「雷鹏遗羽」。风希只取双翅主翎，这枚散落的遗羽成了你的：风雷翅之材的线索实物，日后有大用处（外海风云伏笔）");
+          return { text: "众人往外逃，你偏往里冲。雷鹏坠处焦土百丈，风希只取了双翅主翎——你在碎石间拾起一枚犹带雷光的遗羽，入手微麻。贪险入怀，心口那点躁意也重了几分（心魔+5）。得：雷鹏遗羽×1。", kind: "good" };
         },
         resolve: "advance",
       },
@@ -5422,9 +5457,21 @@ const STORY = [
       State.setFlag("starsea_ziliang_done");
       State.setFlag("dayan_learned");   // 大衍诀入修·神识伴身位（slot 由 balance.js 自读）
       State.setFlag("dayan_layer3");    // 大衍诀三层·神识淬炼大成（结丹关 require 之一）
-      if (State.count("xueling_shui") < 1) State.give("xueling_shui", 1);   // 雪灵水（凝丹灵材·结丹关 require/consume）
-      if (State.count("tianhuo_ye") < 1) State.give("tianhuo_ye", 1);       // 天火液（淬丹真火·结丹关 require/consume）
+      // M5·结丹备料多路径：外海猎妖已可挣雪灵水（寒潭海眼）/天火液（火鬣海蛟）——自己猎来的不再重复给；
+      // 未挣到者此处仍以天星城财力补齐（兜底，主线不因运气卡死）
+      const hadXue = State.count("xueling_shui") >= 1, hadHuo = State.count("tianhuo_ye") >= 1;
+      if (hadXue || hadHuo) {
+        Engine.log(`结丹两味主料，你在外海便已亲手挣下${hadXue && hadHuo ? "雪灵水与天火液" : hadXue ? "雪灵水" : "天火液"}——省下的灵石，是猎场里一刀一刀换来的。${hadXue && hadHuo ? "（两味俱全·分文未花）" : ""}`, "good");
+        State.give("lingshi", hadXue && hadHuo ? 12 : 6);   // 自己挣来=省下购药灵石（时间投入的回报）
+      }
+      if (!hadXue) State.give("xueling_shui", 1);   // 雪灵水（凝丹灵材·结丹关 require/consume）
+      if (!hadHuo) State.give("tianhuo_ye", 1);     // 天火液（淬丹真火·结丹关 require/consume）
       if (State.count("jiangchen_dan") < 1) State.give("jiangchen_dan", 1); // 降尘丹兜底（镇妖大典若漏得）
+      // 远雷·惊变救人兑现（铁律3）：塌方里拽出的那位断腿散修——丙字丹铺的人情，在求药最难处开花
+      if (Engine.settleLedger("jingbian_saved_one", "镇妖大典塌方里拽出的那位断腿散修，果真在丙字丹铺候着你——他辗转托同乡捎来一小匣上品凝神香并几味稀缺辅药：「恩公结丹，小人帮不上大忙，这点心意务必收下。」乱世星海，一命换来的人情最重")) {
+        s.mood = Math.min(s.moodMax, s.mood + 5);
+        State.give("ningshen_dan", 2);
+      }
       Engine.writeLedger("starsea_ziliang", "初入星海·四幕——集齐结丹资粮：大衍诀催至三层（dayan_layer3·神识淬炼大成）、补齐雪灵水/天火液，合三转一转之精纯真元、外海妖丹、镇妖大典所得降尘丹，结丹六资齐备（喂 bigRealmRites.core）。");
       Engine.addMilestone("结丹资粮齐备：大衍诀三层＋雪灵水/天火液（觅长生·攒资源）", "starsea");
     },

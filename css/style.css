@@ -764,6 +764,19 @@ body.dock-active .layout .mid-col {
   0%, 100% { box-shadow: 0 0 0 0 rgba(126,185,142,.3); }
   50% { box-shadow: 0 0 0 6px rgba(126,185,142,0); }
 }
+/* L2 氛围地标（看一眼）：比行动热点更低调——不脉冲、暗金边、半透明，鼠标近了才亮
+ * （行动=玉青脉冲抢眼；看一眼=可发现不打扰，"点场景里的东西有反应"的松弛感） */
+.scene-hotspot.scene-look {
+  width: 34px; height: 34px; animation: none;
+  background: rgba(18,14,10,.4); border-color: rgba(201,169,106,.28);
+  opacity: .55;
+}
+.scene-hotspot.scene-look:hover, .scene-hotspot.scene-look:active {
+  opacity: 1; border-color: rgba(201,169,106,.7);
+  box-shadow: 0 0 12px rgba(201,169,106,.4);
+}
+.scene-hotspot.scene-look .sh-icon { font-size: 15px; filter: saturate(.7); }
+.scene-hotspot.scene-look .sh-label { color: var(--gold); }
 
 /* ===== 底部 sheet（L1b：轻量信息面板，不遮挡场景） ===== */
 
@@ -2751,6 +2764,14 @@ body.story-on .toast {
 .cer-actions { display: flex; gap: 10px; justify-content: center; margin-top: 22px; animation: fadein 1s ease 1.4s both; }
 .cer-actions .btn { width: auto; margin: 0; }
 .cer-note { margin-top: 12px; color: var(--ink-faint); font-size: 11.5px; animation: fadein 1s ease 1.6s both; }
+/* 破境帖留影（L4 传播素材）：低调金字小钮——不抢藏拙抉择的戏，想留念的人找得到 */
+.cer-share {
+  margin-top: 16px; padding: 7px 18px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(201,169,106,.35); border-radius: 16px;
+  color: rgba(212,175,106,.8); font-family: inherit; font-size: 12.5px; letter-spacing: 2px;
+  animation: fadein 1s ease 1.9s both; transition: border-color .2s ease, color .2s ease;
+}
+.cer-share:hover { border-color: rgba(212,175,106,.75); color: var(--gold-bright); }
 /* 受挫变奏：同一演出语言、冷色调（失败也要被"看见"，但不给它庆典的暖光） */
 .cer-inner.cer-fail .cer-title { color: #c9b8b4; text-shadow: 0 0 34px rgba(160, 80, 70, .35), 0 4px 30px rgba(0,0,0,.8); }
 .cer-inner.cer-fail .cer-gain { color: var(--ink-dim); }
@@ -5245,8 +5266,9 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   #screen-game[data-mtab="act"] .scene-stage { flex: 1 1 auto; min-height: 0; }
   #screen-game[data-mtab="act"] .scene-pins { display: none; }
   #screen-game[data-mtab="act"] .scene-confirm { display: none; }
-  /* 行动已收进底部 sheet——场景上的悬浮行动图标圈是冗余，隐藏让场景干净沉浸 */
-  #screen-game[data-mtab="act"] .scene-hotspots-layer { display: none; }
+  /* 行动已收进底部 sheet——场景上的悬浮"行动"图标圈是冗余，隐藏让场景干净沉浸；
+   * 但 L2 氛围地标（.scene-look）保留——"点场景里的东西有反应"正是场景可交互的本体（v303） */
+  #screen-game[data-mtab="act"] .scene-hotspots-layer .scene-hotspot:not(.scene-look) { display: none; }
   /* 在场人物立绘：站在场景里、浮在底部 sheet 之上（不被边框盖住）。
    * sheet 收起态约占底部 210px，立绘抬到其上方 */
   #screen-game[data-mtab="act"] .locals { bottom: 222px; }
