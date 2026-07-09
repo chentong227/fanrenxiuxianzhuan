@@ -324,6 +324,11 @@ const UI = {
     if (luck) html += `<div class="obj-sect luck"><div class="obj-sect-tag">机缘</div>${luck}</div>`;
     box.innerHTML = html;
     box.style.display = html ? "" : "none";
+    // 手机端：把天命栏实际高度写成 CSS 变量——场景题字动态让位，不再被压边（审美审计 jank#10）
+    requestAnimationFrame(() => {
+      const sg = this.el("screen-game");
+      if (sg) sg.style.setProperty("--obj-h", (html ? box.offsetHeight : 0) + "px");
+    });
   },
 
   // 地点 → BGM 轨（场景换乐：每处地方有自己的声音）
@@ -911,7 +916,25 @@ const UI = {
   renderTopbar() {
     const s = State.data;
     const t = this.el("top-time");
-    if (t) t.textContent = `第${s.year}年${s.month}月`;
+    // D5 时间可感知（审美审计 jank#7）：月轮转有"一拍"——日期翻动微动效；跨年一声远钟。
+    const abs = State.absMonth ? State.absMonth() : (s.year * 12 + s.month);
+    if (t) {
+      const txt = `第${s.year}年${s.month}月`;
+      if (t.textContent !== txt) {
+        t.textContent = txt;
+        if (this._lastAbsMonth != null && abs !== this._lastAbsMonth) {
+          t.classList.remove("time-tick"); void t.offsetWidth;
+          t.classList.add("time-tick");
+        }
+      }
+    }
+    if (this._lastAbsMonth != null && abs > this._lastAbsMonth) {
+      const prevYear = Math.floor((this._lastAbsMonth - 1) / 12);
+      const curYear = Math.floor((abs - 1) / 12);
+      // 跨年：一声远钟（岁月有重量——闭关数年也只敲一声，不轰炸）
+      if (curYear > prevYear && typeof Sfx !== "undefined") Sfx.play("yearBell");
+    }
+    this._lastAbsMonth = abs;
     // 月历条
     this._renderMonthBar(s.month);
     // 季节染色
@@ -3456,12 +3479,18 @@ const UI = {
   },
 
   // 完整见闻浮层（从行动 sheet 的「见闻」段点开）
+  // 按年月分组（审美审计 jank#11）：同月见闻归到一条月份分隔线下，长卷有了"日历的骨架"
   openLogSheet() {
     const s = State.data;
     const log = (s && s.log) || [];
-    const rows = log.slice().reverse().map(e =>
-      `<div class="ls-row"><span class="ls-tag">${e.t}</span><div class="ls-body entry-${e.kind || 'event'}">${e.body || ""}</div></div>`
-    ).join("") || `<div class="act-hint">— 暂无见闻 —</div>`;
+    let lastT = null;
+    const rows = log.slice().reverse().map(e => {
+      const divider = e.t !== lastT
+        ? `<div class="ls-month"><span>${e.t}</span></div>`
+        : "";
+      lastT = e.t;
+      return `${divider}<div class="ls-row"><div class="ls-body entry-${e.kind || 'event'}">${e.body || ""}</div></div>`;
+    }).join("") || `<div class="act-hint">— 暂无见闻 —</div>`;
     this.openSheet(`<h2>见闻 · 全录</h2><div class="log-sheet">${rows}</div>`);
   },
 

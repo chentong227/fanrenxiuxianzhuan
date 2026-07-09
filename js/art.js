@@ -25,6 +25,8 @@
     lvtianmeng: 1, xuanle: 1, xueyu_zhizhu: 1, baiyu_zhizhu: 1,
     // 增量G·魔道争锋第三幕·京城暗流
     xiaocui: 1, mengshan_wuyou: 1,
+    // P2 视听一致性：青纹道人（文件早已在库，一直漏注册——audit 盘点补上）
+    qingwen: 1,
     // 再别天南篇·辛如音（阵法大家·赴乱星海之钥）
     xinruyin: 1,
     // 初入星海篇·全量补绘：魁星岛旧识/妙音门/六连殿/逆星盟/妖修/星宫
@@ -92,6 +94,8 @@
     fangshi: "huangfeng_gate",       // 坊市·万宝楼飞檐≈山门坊市
     modao_front: "pano_kuangdong",   // 前线待命营·矿道舆图
   };
+  // P2 视听一致性（审美审计 jank#9）：库存 CG 补映射——金鼓原/越矿地点屏不再落水墨兜底
+  // （wulong_tan/guwai_lin/tainan_yelin 专属场景随 P2 生图批入库后在 SCENES 注册）
   // 地点 id → CG 兜底（横/竖版 cg_* 已在库，地点屏复用为场景底）
   const LOC_CG = {
     yuanwu: "yuanwu_diku",
@@ -99,6 +103,9 @@
     jinguyuan: "jingu_yuan",
     yuekuang: "chuansong_zhen",
     luanxinghai: "luanxinghai",
+    wulong_tan: "mojiao",          // 乌龙潭：墨蛟之战 CG 同地（专属场景随 P2 生图批替换）
+    guwai_lin: "huangfeng_lin",    // 谷外山林：黄枫谷山间小路 CG 兜底
+    tainan_yelin: "tainan_lin",    // 太南野林：太南暮色密林 CG 兜底
   };
 
   // 场景（p:1 = 竖版已生成，竖屏自动启用）

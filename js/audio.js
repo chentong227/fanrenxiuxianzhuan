@@ -96,6 +96,12 @@
       tone(c, { freq: 392 * 2.76, dur: 1.4, gain: 0.03, delay: 0.01 });
       tone(c, { freq: 392 * 4.07, dur: 0.9, gain: 0.016, delay: 0.02 });
     },
+    // 岁末远钟（D5 时间可感知）：跨年那一拍——比突破钟远、轻、低（是山寺的钟，不是耳边的钟）
+    yearBell(c) {
+      tone(c, { freq: 196, dur: 2.6, gain: 0.028 });
+      tone(c, { freq: 196 * 2.76, dur: 1.5, gain: 0.011, delay: 0.02 });
+      noise(c, { dur: 0.5, gain: 0.006, low: 400, delay: 0.05 });
+    },
     // 得益三音
     success(c) { [523, 659, 784].forEach((f, i) => tone(c, { freq: f, dur: 0.22, gain: 0.04, delay: i * 0.085 })); },
     // 失利沉音

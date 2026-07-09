@@ -63,12 +63,12 @@
 | 3 | 建号屏 | 「测灵根」结果跳变生硬，无揭示仪式 | P1 | ✅ v299 已修（灵光汇聚→揭示动效） |
 | 4 | 主界面·见闻 | 读档后叙事区一次性糊 30+ 行历史日志（文字墙第一现场） | P0 | ✅ v299 已修（读档只展开最近 3 条，余下折叠为「早前之事 · 展开」） |
 | 5 | 全局按钮 | 所有按钮共用同一 click 音；部分（sheet 内联 onclick）无按压视觉 | P1 | ✅ v299 部分修（btn 按压态统一 + confirm/cancel/open/close 分音）|
-| 6 | 剧情演出 | 序章纯文本拍偏多，部分拍无立绘无音（详见 P1 审计记录） | P1 | ⬜ 随 P2 资产批处理 |
-| 7 | 时间流逝 | 月份变化无任何视觉反馈（D5 从未做） | P1 | ⬜ P3 主攻 |
-| 8 | 立绘 | 厉飞雨大笑张臂被图片矩形边直切 | P1 | ⬜ P2 资产返修 |
-| 9 | 场景 | 魔道后篇章 10+ NPC 无立绘、部分地点靠 CG 兜底风格不齐 | P1 | ⬜ P2 资产批 |
-| 10 | 主界面（手机） | 地点题字「所在·墨大夫药庐」上沿被天命栏（objective-bar）压住一截 | P2 | ⬜ 布局重排随 P3 |
-| 11 | 见闻·全录 sheet | 明细仍是通栏长列表（用户主动点开可接受，但排版可再分组：按月分隔线） | P2 | ⬜ P3 去文字墙一并 |
+| 6 | 剧情演出 | 序章纯文本拍偏多，部分拍无立绘无音（详见 P1 审计记录） | P1 | ✅ v300 已修（青牛镇 bgm+wait+page、选拔场 amb:market+fail/success 声相节拍） |
+| 7 | 时间流逝 | 月份变化无任何视觉反馈（D5 从未做） | P1 | ✅ v300 已修（顶栏日期翻动 time-tick 一拍 + 跨年岁末远钟 yearBell；月历条/四季染色此前已有底子） |
+| 8 | 立绘 | 厉飞雨大笑张臂被图片矩形边直切 | P1 | ⏸ 生图 DEFS 已返修就绪（双臂收拢入画）——**genart 管线被 OpenRouter key 403 阻塞**（见 §六） |
+| 9 | 场景 | 魔道后篇章 20+ NPC 无立绘、部分地点靠 CG 兜底风格不齐 | P1 | 🟡 部分修：qingwen 已注册（文件早在库）、乌龙潭/谷外林/太南野林补 CG 兜底映射（不再纯渐变）；**23 张半身像+8 张战姿+3 场景×2 的 P2_DEFS 生图批已全部写好**（genart.js），key 恢复后一条命令跑完（见 §六） |
+| 10 | 主界面（手机) | 地点题字「所在·墨大夫药庐」上沿被天命栏（objective-bar）压住一截 | P2 | ✅ v300 已修（renderObjective 实测高度写 `--obj-h` CSS 变量——铭牌动态让位，浏览器 430×932 已验） |
+| 11 | 见闻·全录 sheet | 明细仍是通栏长列表（用户主动点开可接受，但排版可再分组：按月分隔线） | P2 | ✅ v300 已修（同月归组·月份分隔线——长卷有了日历骨架） |
 
 ## 四·五、P1 首轮审计记录（2026-07-09 · 430×932 全程实玩）
 
@@ -86,3 +86,29 @@
 2. 每屏截图 → 对 §二 八问逐条勾。
 3. 新发现 jank → 补录 §四；本批目标内的 jank → 勾掉。
 4. 回归测试全绿 → bump → push → 线上复核。
+
+## 六、P2 生图批 · 待跑清单（2026-07-09 管线阻塞·待 key 恢复）
+
+**阻塞现场**：历史会话中的两把 OpenRouter key，一把「User not found」（账号已注销），另一把 key 有效、
+余额 $11.5，但**对全部模型（Google/OpenAI 皆试）一律 403 "provider Terms Of Service violation"**——
+纯英文极简 prompt 也拒，故非内容问题；代理出口东京（非封锁区）。判断为**账号级风控/数据策略设置问题**，
+需账号主人登录 openrouter.ai 检查（Settings→Privacy 数据策略 / 账号状态），或换新 key。
+
+**key 恢复后一条命令跑完全部缺口**（DEFS 已全部写好在 `scripts/genart.js` P2_DEFS 段）：
+
+```powershell
+node scripts/genart.js <KEY>  lifeiyu_laugh,wanbao_zhanggui,qiyunxiao,dongxuaner,zi_ling,liujing,songmeng,zhongweiniang,wuxuan,tieluo,wuse_menzhu,zhanwangchan,xuwang,zhao_zheng,sun_menzhu,jiyin_zushi,jin_qing,xuangu,yuan_yao,man_huzi,qingyi_jushi,wan_tianming,wen_tianren,ling_yuling,bt_zi_ling,bt_lihuayuan,bt_chenqiaoqian,bt_xinruyin,bt_wang_ning,bt_fengyue,bt_feng_sanniang,bt_kuilei,wulong_tan,guwai_lin,tainan_yelin,wulong_tan_p,guwai_lin_p,tainan_yelin_p,cg_mojiao_p
+```
+
+跑完后的注册动作（一并做）：
+1. `js/art.js` PORTRAITS 加 23 个新 id；SCENES 加 `wulong_tan/guwai_lin/tainan_yelin: { p: 1 }`（并删 LOC_CG 三条兜底映射）；
+   CG 表 `mojiao: {}` 改 `{ p: 1 }`。
+2. `BATTLERS` 加 8 个 bt_*（**逐张目检朝向再注册 face**——v83 教训）。
+3. `node scripts/trimfeet.js` 裁 battler 底部留白；跑 `node test/assetref.test.js`。
+
+## 七、BGM 9 轨现状（P2·验收需用户耳朵）
+
+`assets/audio/` 在库 12 轨 BGM（daily/town/fair/journey/tense/sorrow/triumph/boss/combat/combat_wild/
+combat_secret + _cand 候选 3 版）+ 6 轨环境床。**全部已实装接线**（场景换乐/战斗分轨见 ui.js `_bgmForLocation`/`_combatBgm`）。
+待办的是**主观验收**：你戴耳机把每轨听一遍，不满意的点名（哪轨、什么感觉不对），我重生成候选。
+`bgm_combat` 低强度版此前因上游 429 未出，可与本轮一并重跑。

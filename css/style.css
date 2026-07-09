@@ -494,6 +494,16 @@ body.motion-off .title-seal, body.motion-off .create-title-block .subtitle { ani
 .log-sheet .ls-row { border-bottom: 1px solid var(--border-soft); padding-bottom: 8px; }
 .log-sheet .ls-tag { color: var(--gold); font-size: 11px; }
 .log-sheet .ls-body { color: var(--ink); font-size: 13px; line-height: 1.6; margin-top: 3px; }
+/* 月份分隔线（审美审计 jank#11）：同月归组，长卷有日历的骨架 */
+.log-sheet .ls-month {
+  display: flex; align-items: center; gap: 10px; margin-top: 6px;
+  color: var(--gold); font-size: 11.5px; letter-spacing: 2px;
+}
+.log-sheet .ls-month::before, .log-sheet .ls-month::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201, 169, 106, .3), transparent);
+}
+.log-sheet .ls-month:first-child { margin-top: 0; }
 
 /* ===== P4: 地图模式下的 HUD 浮窗化 ===== */
 /* 地图可见时：layout 变为浮在地图上的半透明面板 */
@@ -758,6 +768,13 @@ body.dock-active .layout .mid-col {
 /* ===== 底部 sheet（L1b：轻量信息面板，不遮挡场景） ===== */
 
 /* ===== 月历条 + 季节染色（L4：时间流逝可感知） ===== */
+/* 月轮转一拍（审美审计 jank#7/D5）：日期翻动微动效——时间被"看见" */
+.time-tick { display: inline-block; animation: timeTick .5s cubic-bezier(.22, 1, .36, 1); }
+@keyframes timeTick {
+  0%   { opacity: .2; transform: translateY(-6px); color: var(--gold-bright); }
+  60%  { opacity: 1; transform: translateY(1px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
 .month-bar {
   display: flex; gap: 2px; margin-top: 4px; height: 16px;
 }
@@ -5204,10 +5221,11 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
     background: linear-gradient(180deg,
       rgba(12,10,8,0) 0%, rgba(12,10,8,.34) 44%, rgba(12,10,8,.8) 78%, var(--bg) 100%);
   }
-  /* 地名归位顶部（避开天命栏：objective-bar 浮于 top48~128，故据点铭牌从 ~134 起）：
+  /* 地名归位顶部（避开天命栏：--obj-h 由 renderObjective 实测写入——天命栏几条就让几条的位，
+     不再按定值 134px 猜、被多条目的天命栏压边·审美审计 jank#10）：
      据点铭牌——名号+风物小字，填充上半空旷、点明"此地何处" */
   #screen-game[data-mtab="act"] .scene-head {
-    left: 12px; right: 12px; top: 134px; bottom: auto; max-width: none;
+    left: 12px; right: 12px; top: calc(52px + var(--obj-h, 82px) + 6px); bottom: auto; max-width: none;
     /* 可读性衬底：场景图亮部（山门天空）下，暗金文字会糊——加一层左起深色软渐变托住文字 */
     background: linear-gradient(180deg, rgba(8,6,4,.62) 0%, rgba(8,6,4,.40) 60%, rgba(8,6,4,0) 100%);
     padding: 10px 14px 16px; border-radius: 10px;
