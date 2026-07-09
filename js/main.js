@@ -397,6 +397,7 @@ const Main = {
       resultEl.textContent = r.name;
       resultEl.className = "sr-result";
       resultEl.style.color = r.color;
+      if (typeof Sfx !== "undefined") Sfx.play("type");   // 灵光流转的细响（一拍一嗒）
       i++;
       if (i >= rolls) {
         clearInterval(timer);
@@ -405,8 +406,12 @@ const Main = {
         resultEl.classList.remove("rolling");
         resultEl.textContent = fixed.name;
         resultEl.style.color = fixed.color;
+        // 揭示仪式（审美审计 jank#3）：定数落下——放大定格动效 + 一声入戏磬
+        resultEl.classList.add("revealed");
+        if (typeof Sfx !== "undefined") Sfx.play("chime");
         descEl.textContent = fixed.desc;
         UI.el("btn-start").disabled = false;
+        UI.el("btn-start").classList.add("ready-pulse");   // 下一步会呼吸（一次性引导）
         UI.el("btn-test-root").disabled = false;
         UI.el("btn-test-root").textContent = "命定如此（四灵根）";
       }

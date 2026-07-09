@@ -101,12 +101,38 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   padding: 18px 14px;
   border-left: 1px solid rgba(201,169,106,.4); border-right: 1px solid rgba(201,169,106,.4);
 }
+/* 题字入场（审美审计 jank#2）：逐字水墨浮现——墨迹自雾中凝出、微沉落定，一字一拍 */
+.game-title.vertical .tc {
+  display: inline-block;
+  opacity: 0;
+  animation: inkChar 1s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+.game-title.vertical .tc:nth-child(1) { animation-delay: .25s; }
+.game-title.vertical .tc:nth-child(2) { animation-delay: .5s; }
+.game-title.vertical .tc:nth-child(3) { animation-delay: .75s; }
+.game-title.vertical .tc:nth-child(4) { animation-delay: 1s; }
+.game-title.vertical .tc:nth-child(5) { animation-delay: 1.25s; }
+@keyframes inkChar {
+  0%   { opacity: 0; filter: blur(7px); transform: translateY(-8px) scale(1.12); }
+  55%  { opacity: 1; filter: blur(0.5px); }
+  100% { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+}
+body.motion-off .game-title.vertical .tc { animation-duration: .01s; animation-delay: 0s; }
 .title-seal {
   writing-mode: vertical-rl; text-orientation: upright;
   background: var(--cinnabar); color: #f5e8dc;
   font-size: 14px; letter-spacing: 4px; padding: 8px 5px;
   border-radius: 2px; box-shadow: 0 3px 12px rgba(0,0,0,.55);
+  /* 印章落款：题字写完后"钤印"一拍（微过冲落定） */
+  opacity: 0; animation: sealStamp .45s cubic-bezier(.34, 1.56, .64, 1) 1.7s forwards;
 }
+@keyframes sealStamp {
+  0%   { opacity: 0; transform: scale(1.6) rotate(-6deg); }
+  70%  { opacity: 1; transform: scale(.96) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+.create-title-block .subtitle { opacity: 0; animation: fadein .8s ease 2.1s forwards; }
+body.motion-off .title-seal, body.motion-off .create-title-block .subtitle { animation-duration: .01s; animation-delay: 0s; }
 .create-title-block .subtitle { margin: 0; }
 
 .create-box {
@@ -131,6 +157,11 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 
 .subtitle { color: var(--ink-dim); letter-spacing: 4px; margin: 10px 0 28px; font-size: 13px; }
 .build-tag { margin-top: 12px; color: var(--ink-faint); font-size: 11px; letter-spacing: 1px; }
+/* 工程信息退到屏角（审美审计 jank#2）：不进玩家视线主路径 */
+.build-tag.corner {
+  position: absolute; right: 10px; bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  margin: 0; z-index: 3; opacity: .5; font-size: 10px;
+}
 
 .field { text-align: left; margin-bottom: 22px; }
 .field label { display: block; color: var(--gold); margin-bottom: 8px; letter-spacing: 2px; font-size: 14px; }
@@ -161,6 +192,12 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
   color: var(--ink); transition: all 0.15s ease;
 }
 .btn:hover { border-color: var(--jade); color: var(--jade-bright); }
+/* 按压态（审美审计 jank#5）：每次点按有"被按下去"的物理反馈——全局统一 */
+.btn:active:not(:disabled), .choice:active, .spell-btn:active:not(:disabled), .scene-hotspot:active {
+  transform: translateY(1px) scale(.985);
+  filter: brightness(1.12);
+  transition: transform .06s ease, filter .06s ease;
+}
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn:disabled:hover { border-color: var(--border); color: var(--ink); }
 
@@ -851,6 +888,15 @@ body.dock-active .layout .mid-col {
 
 /* ===== 叙事区 ===== */
 .narrative .entry { margin-bottom: 14px; }
+/* 早前之事折叠行（审美审计 jank#4：读档不糊文字墙） */
+.narrative .entry-fold {
+  margin: 2px 0 14px; padding: 8px 12px; cursor: pointer;
+  color: var(--ink-faint); font-size: 12px; letter-spacing: 1px;
+  border: 1px dashed rgba(140, 120, 90, .35); border-radius: 8px;
+  background: rgba(255, 250, 240, .02); text-align: center;
+  transition: color .15s ease, border-color .15s ease;
+}
+.narrative .entry-fold:hover { color: var(--gold); border-color: rgba(201, 169, 106, .5); }
 .narrative .entry.latest { animation: fadein 0.4s ease; }
 .narrative .entry .time-stamp { color: var(--gold); font-size: 12px; letter-spacing: 1px; opacity: 0.7; }
 .narrative .entry .time-stamp .ek-icon { margin-right: 5px; opacity: .8; }
@@ -2632,6 +2678,19 @@ body.story-on .toast {
 .sr-result { transition: color .2s, text-shadow .2s; }
 .sr-result.rolling { animation: srpulse .5s infinite; }
 @keyframes srpulse { 0%,100%{ opacity: 1 } 50%{ opacity: .5 } }
+/* 测灵根·揭示仪式（审美审计 jank#3）：定数落下的那一拍——放大定格+金芒扫过 */
+.sr-result.revealed { animation: srReveal .65s cubic-bezier(.22, 1, .36, 1); }
+@keyframes srReveal {
+  0%   { transform: scale(1.7); filter: blur(4px) brightness(2.2); opacity: 0; }
+  45%  { transform: scale(1.12); filter: blur(0) brightness(1.5); opacity: 1; }
+  100% { transform: scale(1); filter: none; opacity: 1; }
+}
+/* 「踏入此界」就绪脉冲：测完灵根，下一步会呼吸（一次性引导，不常驻打扰） */
+.btn-primary.ready-pulse { animation: readyPulse 1.6s ease-in-out 2; }
+@keyframes readyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 169, 106, 0); }
+  50%      { box-shadow: 0 0 18px 2px rgba(201, 169, 106, .45); }
+}
 .create-box { animation: fadein .5s ease; }
 .create-title-block { animation: fadein .8s ease; }
 

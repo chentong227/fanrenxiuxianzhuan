@@ -1185,11 +1185,22 @@ const UI = {
     const s = State.data;
     const icons = { good: "✦", bad: "⚠", event: "·", sys: "…" };
     const last = s.log.length - 1;
-    box.innerHTML = s.log.map((e, i) => `
+    // 去文字墙（审美审计 jank#4）：默认只展开最近 3 条，早前的折叠成一行「早前之事」——
+    // 读档进来不再一次糊 30+ 行；点开可看全录（本会话内保持展开）。
+    const KEEP = 3;
+    const collapsed = !this._narrExpanded && s.log.length > KEEP + 2;
+    const start = collapsed ? s.log.length - KEEP : 0;
+    const foldRow = collapsed
+      ? `<div class="entry-fold" onclick="UI._narrExpanded=true;UI.renderNarrative()">▸ 早前之事 ${s.log.length - KEEP} 条 · 展开</div>`
+      : "";
+    box.innerHTML = foldRow + s.log.slice(start).map((e, idx) => {
+      const i = start + idx;
+      return `
       <div class="entry ${e.kind}${i === last ? ' latest' : ''}">
         <div class="time-stamp"><span class="ek-icon">${icons[e.kind] || "·"}</span>${e.t}</div>
         <div class="body">${e.body}</div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
     this._scrollNarrativeBottom();
   },
   // 滚到最新见闻：桌面滚 .narrative 自身；手机上滚动容器是 .layout（修复"回到最上面"）
@@ -7219,9 +7230,16 @@ const UI = {
     const m = this.el("modal");
     m.innerHTML = html;
     m.className = "modal" + (variant ? " modal-" + variant : "");
-    this.el("modal-overlay").hidden = false;
+    const ov = this.el("modal-overlay");
+    if (ov.hidden && typeof Sfx !== "undefined") Sfx.play("open");   // 绢帛轻展（重复渲染不重响）
+    ov.hidden = false;
   },
-  closeModal() { this._selPref = null; this.el("modal-overlay").hidden = true; },
+  closeModal() {
+    this._selPref = null;
+    const ov = this.el("modal-overlay");
+    if (!ov.hidden && typeof Sfx !== "undefined") Sfx.play("close");
+    ov.hidden = true;
+  },
 
   /* -------- 底部 sheet（L1b：轻量面板，不遮挡场景/地图） -------- */
   openSheet(html, opts) {
@@ -7229,6 +7247,7 @@ const UI = {
     const locked = !!(opts && opts.lock);   // 锁定 sheet（旅途面板等须做出选择的）：无 ×、点遮罩不关
     s.innerHTML = (locked ? "" : `<span class="sheet-close" onclick="UI.closeSheet()">×</span>`) + html;
     const ov = this.el("sheet-overlay");
+    if (ov.hidden && typeof Sfx !== "undefined") Sfx.play("open");   // 绢帛轻展（sheet 内重绘不重响）
     ov.dataset.lock = locked ? "1" : "";
     ov.classList.toggle("sheet-lock", locked);
     ov.hidden = false;
@@ -7236,6 +7255,7 @@ const UI = {
   closeSheet(force) {
     const ov = this.el("sheet-overlay");
     if (!force && ov.dataset.lock === "1") return;
+    if (!ov.hidden && typeof Sfx !== "undefined") Sfx.play("close");
     ov.dataset.lock = "";
     ov.classList.remove("sheet-lock");
     ov.hidden = true;

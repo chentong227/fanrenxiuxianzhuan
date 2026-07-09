@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="build" content="298" />
+  <meta name="build" content="299" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -51,16 +51,16 @@
     } catch (e) {}
   })();
   </script>
-  <title>凡人修仙传 · 修仙模拟 MVP</title>
-  <link rel="stylesheet" href="css/style.css?v=298" />
+  <title>凡人修仙传 · 人界篇</title>
+  <link rel="stylesheet" href="css/style.css?v=299" />
   <!-- PWA：可装主屏 / 离线可玩 / 全屏（v105 起） -->
-  <link rel="manifest" href="manifest.webmanifest?v=298" />
+  <link rel="manifest" href="manifest.webmanifest?v=299" />
   <meta name="theme-color" content="#14110b" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="凡人修仙传" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=298" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=299" />
 </head>
 <body>
   <div id="app">
@@ -69,8 +69,9 @@
       <div class="create-bg"></div>
       <div class="create-veil"></div>
       <div class="create-title-block">
-        <h1 class="game-title vertical">凡人修仙传</h1>
-        <span class="title-seal">七玄门篇</span>
+        <!-- 题字入场：逐字水墨浮现（审美审计 jank#2）——每字独立 span 走错峰动画 -->
+        <h1 class="game-title vertical"><span class="tc">凡</span><span class="tc">人</span><span class="tc">修</span><span class="tc">仙</span><span class="tc">传</span></h1>
+        <span class="title-seal">人界篇</span>
         <p class="subtitle">凡人之躯 · 逆天改命</p>
       </div>
       <div class="create-box">
@@ -92,8 +93,9 @@
 
         <button id="btn-start" class="btn btn-primary" disabled>踏 入 此 界</button>
         <button id="btn-load" class="btn btn-ghost">读取存档</button>
-        <div class="build-tag">build v298</div>
       </div>
+      <!-- build 号退到屏角（审美审计 jank#2：工程信息不进玩家视线主路径） -->
+      <div class="build-tag corner">build v299</div>
     </section>
 
     <!-- 主游戏界面：场景大图铺满全屏做底，HUD 浮于其上 -->
@@ -417,38 +419,38 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=298"></script>
-  <script src="js/state.js?v=298"></script>
-  <script src="js/settings.js?v=298"></script>
-  <script src="js/chapters.js?v=298"></script>
-  <script src="js/balance.js?v=298"></script>
-  <script src="js/world.js?v=298"></script>
-  <script src="js/env.js?v=298"></script>
-  <script src="js/npcsim.js?v=298"></script>
-  <script src="js/interactions.js?v=298"></script>
-  <script src="js/warlines.js?v=298"></script>
-  <script src="js/combat.js?v=298"></script>
-  <script src="js/explore.js?v=298"></script>
-  <script src="js/exploremap.js?v=298"></script>
-  <script src="js/loadout.js?v=298"></script>
-  <script src="js/dialogue.js?v=298"></script>
-  <script src="js/llm.js?v=298"></script>
-  <script src="js/audio.js?v=298"></script>
-  <script src="js/fx.js?v=298"></script>
-  <script src="js/art.js?v=298"></script>
-  <script src="js/cutscene.js?v=298"></script>
-  <script src="js/stage.js?v=298"></script>
-  <script src="js/fortunes.js?v=298"></script>
-  <script src="js/quests.js?v=298"></script>
-  <script src="js/story.js?v=298"></script>
-  <script src="js/engine.js?v=298"></script>
-  <script src="js/ui.js?v=298"></script>
-  <script src="js/main.js?v=298"></script>
+  <script src="js/data.js?v=299"></script>
+  <script src="js/state.js?v=299"></script>
+  <script src="js/settings.js?v=299"></script>
+  <script src="js/chapters.js?v=299"></script>
+  <script src="js/balance.js?v=299"></script>
+  <script src="js/world.js?v=299"></script>
+  <script src="js/env.js?v=299"></script>
+  <script src="js/npcsim.js?v=299"></script>
+  <script src="js/interactions.js?v=299"></script>
+  <script src="js/warlines.js?v=299"></script>
+  <script src="js/combat.js?v=299"></script>
+  <script src="js/explore.js?v=299"></script>
+  <script src="js/exploremap.js?v=299"></script>
+  <script src="js/loadout.js?v=299"></script>
+  <script src="js/dialogue.js?v=299"></script>
+  <script src="js/llm.js?v=299"></script>
+  <script src="js/audio.js?v=299"></script>
+  <script src="js/fx.js?v=299"></script>
+  <script src="js/art.js?v=299"></script>
+  <script src="js/cutscene.js?v=299"></script>
+  <script src="js/stage.js?v=299"></script>
+  <script src="js/fortunes.js?v=299"></script>
+  <script src="js/quests.js?v=299"></script>
+  <script src="js/story.js?v=299"></script>
+  <script src="js/engine.js?v=299"></script>
+  <script src="js/ui.js?v=299"></script>
+  <script src="js/main.js?v=299"></script>
   <script>
   /* 注册 Service Worker（离线/装主屏）。注册 URL 带 ?v=，每次发版自动更新 SW。 */
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js?v=298", { scope: "./" }).catch(function () {});
+      navigator.serviceWorker.register("sw.js?v=299", { scope: "./" }).catch(function () {});
     });
   }
   </script>

@@ -67,6 +67,15 @@
   const RECIPES = {
     // 玉磬轻击：通用点击
     click(c) { tone(c, { freq: 1560, dur: 0.09, gain: 0.035 }); tone(c, { freq: 3120, dur: 0.05, gain: 0.012 }); },
+    // —— 交互分音（审美审计 §3.2：确认/取消/开合各有其声，不共用一记 click）——
+    // 确认：暖玉双音上行（比 click 沉半分、多一分"落定"）
+    confirm(c) { tone(c, { freq: 988, dur: 0.1, gain: 0.038 }); tone(c, { freq: 1319, dur: 0.14, gain: 0.03, delay: 0.05 }); },
+    // 取消/收起：低玉单音下行（轻、短、不抢戏）
+    cancel(c) { tone(c, { freq: 740, slideTo: 590, dur: 0.09, gain: 0.026 }); },
+    // 面板开：绢帛轻展（弹窗/sheet 滑出）
+    open(c) { noise(c, { dur: 0.09, gain: 0.016, band: 2200 }); tone(c, { freq: 1175, dur: 0.07, gain: 0.014, delay: 0.02 }); },
+    // 面板合：绢帛收拢（更低更短）
+    close(c) { noise(c, { dur: 0.07, gain: 0.013, band: 1400 }); },
     // 翻纸：剧情推进
     page(c) { noise(c, { dur: 0.1, gain: 0.028, band: 1500 }); },
     // 入戏磬：题字卡
@@ -689,12 +698,16 @@
   };
 
   // 通用点击音：按钮/选项等（委托监听，轻量）
+  // 交互分音（审美审计 §3.2）：确认类=confirm 暖玉双音 / 取消收起类=cancel 低玉下行 / 其余=click 玉磬
   if (root.document) {
-    const SEL = ".btn,.choice,.spell-btn,.inv-item,.local-npc,.scene-pin,.mtab,.dpad-btn,.skill-chip,.nw-act,.ex-cell.reach";
+    const SEL = ".btn,.choice,.spell-btn,.inv-item,.local-npc,.scene-pin,.mtab,.dpad-btn,.skill-chip,.nw-act,.ex-cell.reach,.sheet-close";
     root.document.addEventListener("click", (ev) => {
       if (muted || !ev.target || !ev.target.closest) return;
       const hit = ev.target.closest(SEL);
-      if (hit && !hit.disabled) Sfx.play("click");
+      if (!hit || hit.disabled) return;
+      if (hit.classList.contains("btn-primary")) Sfx.play("confirm");
+      else if (hit.classList.contains("btn-ghost") || hit.classList.contains("sheet-close")) Sfx.play("cancel");
+      else Sfx.play("click");
     }, true);
   }
 
