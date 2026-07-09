@@ -36,6 +36,14 @@
     hanli_zhuji: 1, hanli_zhuji_xing: 1, hanli_yexing: 1,
     hanli_jindan: 1, hanli_jindan_changfu: 1, hanli_jindan_jinzhuang: 1,
     hanli_wentianren: 1, hanli_jindan_kouguan: 1, quhun_huashen: 1,
+    // P2 视听一致性批（v301·审美审计 jank#9 清零）：活跃 NPC 半身像补齐——
+    // 据点临场/魔道同袍/星海全线，自此对话与图鉴不再"无脸"
+    wanbao_zhanggui: 1, qiyunxiao: 1, dongxuaner: 1, zi_ling: 1,
+    liujing: 1, songmeng: 1, zhongweiniang: 1, wuxuan: 1,
+    tieluo: 1, wuse_menzhu: 1, zhanwangchan: 1, xuwang: 1,
+    zhao_zheng: 1, sun_menzhu: 1, jiyin_zushi: 1, jin_qing: 1,
+    xuangu: 1, yuan_yao: 1, man_huzi: 1, qingyi_jushi: 1,
+    wan_tianming: 1, wen_tianren: 1, ling_yuling: 1,
   };
 
   // —— v213 三级换装：境界默认 / 场景强制 / 手动窗口 ——
@@ -103,9 +111,7 @@
     jinguyuan: "jingu_yuan",
     yuekuang: "chuansong_zhen",
     luanxinghai: "luanxinghai",
-    wulong_tan: "mojiao",          // 乌龙潭：墨蛟之战 CG 同地（专属场景随 P2 生图批替换）
-    guwai_lin: "huangfeng_lin",    // 谷外山林：黄枫谷山间小路 CG 兜底
-    tainan_yelin: "tainan_lin",    // 太南野林：太南暮色密林 CG 兜底
+    // （乌龙潭/谷外山林/太南野林已有专属场景入 SCENES——v301 生图批兑现，CG 兜底退役）
   };
 
   // 场景（p:1 = 竖版已生成，竖屏自动启用）
@@ -133,6 +139,8 @@
     // 初入星海篇·地点（横版底 + 竖版 _p）：魁星岛/小寰岛/外星海猎场/天星城/极阴岛/内外星海通道
     kuixing_island: { p: 1 }, xiaohuan_island: { p: 1 }, waixinghai: { p: 1 },
     tianxing_city: { p: 1 }, jiyin_island: { p: 1 }, xinghai_tongdao: { p: 1 },
+    // P2 视听一致性批（v301）：三个曾落兜底的探索地点专属场景（横+竖 _p）
+    wulong_tan: { p: 1 }, guwai_lin: { p: 1 }, tainan_yelin: { p: 1 },
   };
 
   // 战斗全身立绘（battlers/：轴上单位图——妖兽/人形敌/剧情人物战斗姿态）
@@ -168,6 +176,12 @@
     bt_yingli: { face: "c" }, bt_waihai: { face: "c" }, bt_guzhanglao: { face: "c" },
     // stage beat 补缺：矿道同袍吕天蒙 / 七派武炫 / 魔修游猎小队
     bt_lvtianmeng: { face: "c" }, bt_wuxuan: { face: "c" }, bt_moxiu: { face: "c" },
+    // P2 视听一致性批（v301）：战场上曾用剪影/玉牌兜底的同道与单位——朝向已逐张目检（v83 教训）
+    bt_zhanwangchan: { face: "c" },   // 王蝉（考据勘误后专属战姿：面具贵公子·血灵大法）
+    bt_zi_ling: { face: "c" }, bt_lihuayuan: { face: "c" },
+    bt_chenqiaoqian: { face: "l" }, bt_xinruyin: { face: "c" },
+    bt_wang_ning: { face: "l" }, bt_fengyue: { face: "c" },
+    bt_feng_sanniang: { face: "c" }, bt_kuilei: { face: "l" },
   };
 
   const HERO_BATTLERS = {
@@ -183,10 +197,10 @@
   };
 
   // 剧情 CG（p:1 = 竖版已生成）
-  const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 }, mojiao: {},
+  const CG = { bottle: { p: 1 }, duoshe: { p: 1 }, jinguang: { p: 1 }, departure: { p: 1 }, mojiao: { p: 1 },
     // 增量E·矿道箱庭演出 CG（横版底 + 竖版 _p）
     kuangchang: { p: 1 }, kuangdong: { p: 1 }, jiyuan_shi: { p: 1 },
-    // §4 全量演出 CG 补绘（七玄门/嘉元/升仙/太南/黄枫谷/战王蝉燕家堡/皇宫决战/再别天南）——横版底 + 竖版 _p
+    // §4 全量演出 CG 补绘（七玄门/嘉元/升仙/太南/黄枫谷/王蝉燕家堡/皇宫决战/再别天南）——横版底 + 竖版 _p
     qixuan_ye: { p: 1 }, mofu: { p: 1 }, xianhui_tai: { p: 1 }, tainan_lin: { p: 1 },
     huangfeng_zhishi: { p: 1 }, huangfeng_lin: { p: 1 }, huangfeng_dadian: { p: 1 },
     yanjia_jiaochang: { p: 1 }, yanjia_xueye: { p: 1 }, yanjia_kuiwei: { p: 1 }, yanjia_canyuan: { p: 1 },

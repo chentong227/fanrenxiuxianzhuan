@@ -6039,17 +6039,17 @@ const Engine = {
             s.mood = clamp(s.mood + 2, 0, s.moodMax);
           }
         }
-        // —— 燕家堡之战·战王蝉（增量D）：撑过血线=打到其溃退（剧情撤离，非诛杀）——
-        if (meta.enemyName === "战王蝉") {
+        // —— 燕家堡之战·王蝉（增量D·2026-07-09 考据勘误：鬼灵门少主，非虫妖）：撑过血线=打到其溃退（剧情撤离，非诛杀）——
+        if (meta.enemyName === "王蝉") {
           State.setFlag("yanjia_boss_done");
-          this.meetNpc("zhanwangchan", "燕家堡破阵的魔道巨擘——重伤遁空，与你结下不死不休之仇。");
-          this.writeLedger("zhanwangchan_grudge", "燕家堡之战力挫战王蝉——魔道巨擘重伤遁空，与你结下不死不休之仇");
-          this.addMilestone("燕家堡之战：力挫战王蝉（不死不休之仇已结）", "showdown");
-          // 远雷·临战三日侦察兑现（铁律3）：望塔的脚力、董萱儿的档册、墨彩环的丹——都在血夜里开花
-          this.settleLedger("yanjia_scout_tower", "望塔上看熟的堡墙走势，让你在振翅冲撞里始终快半步——临战三日的脚力，没有白费");
-          this.settleLedger("yanjia_scout_dong", "董萱儿口中那道翼根旧伤，在血夜里成了你反复叩击的破绽——红拂门的档册，值一条命");
+          this.meetNpc("zhanwangchan", "鬼灵门少主——血祭大阵被你搅局，重伤遁走，与你结下不死不休之仇（他记下的名字是「厉飞雨」）。");
+          this.writeLedger("zhanwangchan_grudge", "燕家堡之战力挫鬼灵门少主王蝉——血祭大阵被搅、其人重伤遁走，结下不死不休之仇（背锅的名字：厉飞雨）");
+          this.addMilestone("燕家堡之战：力挫王蝉（不死不休之仇已结）", "showdown");
+          // 远雷·临会三日侦察兑现（铁律3）：望塔的脚力、董萱儿的档册、墨彩环的丹——都在血夜里开花
+          this.settleLedger("yanjia_scout_tower", "望塔上看熟的堡墙走势，让你在血遁突袭里始终快半步——临会三日的脚力，没有白费");
+          this.settleLedger("yanjia_scout_dong", "董萱儿口中那处血遁后的气门破绽，在血夜里成了你反复叩击的要害——红拂门的档册，值一条命");
           this.settleLedger("yanjia_scout_mo", "墨彩环塞进你手里的那两枚养元丹、那句「活着回来」——你做到了。堡心地窖里，墨府老小全须全尾");
-          this.log("战王蝉甲胄迸裂、振翅遁空——这等魔道巨擘岂是一战可诛？它临去前那一眼死死咬住你的气息：不死不休。这一关，你撑过来了。", "event");
+          this.log("王蝉血煞溃散、掩面遁走——鬼灵门少主岂是一战可诛？血雾里他那声「报上名来」你扔还了三个字：厉飞雨。这笔不死不休的账，先让别人记着吧。这一关，你撑过来了。", "event");
           if (typeof Sfx !== "undefined") Sfx.play("success");
           s.storyStage += 1;   // 越过 yanjia_boss → 由公共尾部 checkStory 接 yanjia_escape
         }
@@ -6107,14 +6107,14 @@ const Engine = {
           if (typeof Sfx !== "undefined") Sfx.play("success");
           s.storyStage += 1;   // 越过 modao_e3_wuse → 公共尾部 checkStory 接 modao_e3_farewell（墨彩环·不遗憾的告别）
         }
-      } else if (meta.enemyName === "战王蝉") {
+      } else if (meta.enemyName === "王蝉") {
         // 撑不住血线：浴血退守、就地整顿再战（fail-forward·不设死局）——不诛杀、不死亡螺旋
         this._bountyFight = false;
         s.flags.losses_zhanwangchan = (s.flags.losses_zhanwangchan || 0) + 1;
         const bonus = Math.min(3, s.flags.losses_zhanwangchan) * 8;
         s.hp = s.hpMax;
         s.demon = clamp(s.demon + 10, 0, 100);
-        this.log(`战王蝉势大如崩山，你浴血退守、就地整顿（再战伤害+${bonus}%）。这一蝉不死不休——你不退，它更不会退。调息再上！`, "bad");
+        this.log(`王蝉血灵大法势大如潮，你浴血退守、就地整顿（再战伤害+${bonus}%）。血祭大阵还在抽人精魄——你不上，满场的人都得死。调息再上！`, "bad");
         s.pendingEvent = "yanjia_boss";
         this._retryAfterLoss = "yanjia_boss";
       } else if (meta.enemyName === "宣乐" || meta.enemyName === "血玉蜘蛛") {

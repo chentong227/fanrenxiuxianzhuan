@@ -566,24 +566,24 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(scoutNode.choices(s).length === 1, "三日尽——只剩列阵一途（5选3互斥）");
   Engine.chooseStory(scoutNode, 0);   // 列阵赴堡墙
   assert(s.flags.yanjia_scout_done, "临战三日收口（yanjia_scout_done）");
-  // 侦察 → 大BOSS（战王蝉）
-  assert(s.pendingEvent === "yanjia_boss", `战王蝉破阵（${s.pendingEvent}）`);
+  // 侦察 → 大BOSS（王蝉·鬼灵门少主——2026-07-09 考据勘误：非虫妖"战王蝉"）
+  assert(s.pendingEvent === "yanjia_boss", `血祭大阵起·王蝉现身（${s.pendingEvent}）`);
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "yanjia_boss"), 0);
   const zc = Engine._combat;
-  assert(zc && zc.enemies[0].name === "战王蝉", "战王蝉大BOSS入战");
+  assert(zc && zc.enemies[0].name === "王蝉", "王蝉大BOSS入战（鬼灵门少主·人修）");
   // 侦察兑现：望塔=开局护体10 / 董萱儿=伤害+8%（准备越充分，决战越轻松）
   assert((zc.player.shield || 0) >= 10, `望塔先机兑现（开局护体=${zc.player.shield}）`);
   assert((zc.player.dmgBonus || 1) > 1.05, `董萱儿情报兑现（dmgBonus=${(zc.player.dmgBonus || 1).toFixed(2)}）`);
   assert(zc.enemies[0].boss && !zc.enemies[0].canFlee, "BOSS·不可逃（撑过血线收口，非诛杀）");
-  assert(WORLD.enemies.zhanwangchan.armor >= 8 && WORLD.enemies.zhanwangchan.reward == null, "战王蝉护甲厚·无掉落（逃逸式BOSS）");
+  assert(WORLD.enemies.zhanwangchan.armor >= 8 && WORLD.enemies.zhanwangchan.reward == null, "王蝉护甲厚·无掉落（逃逸式BOSS·内部id保留存档兼容）");
   // 撑过血线（打到溃退）= 剧情撤离
   Engine._combat.enemies.forEach(e => { e.hp = 0; });
   Engine._combat._checkEnd();
   Engine._finishCombat();
-  assert(s.flags.yanjia_boss_done, "力挫战王蝉（yanjia_boss_done）");
+  assert(s.flags.yanjia_boss_done, "力挫王蝉（yanjia_boss_done）");
   assert(s.ledger.zhanwangchan_grudge, "不死不休之仇入账本（zhanwangchan_grudge）");
-  assert(!s.flags.zhanwangchan_slain, "本战不诛杀战王蝉（他日再别天南重现）");
-  assert(s.metNpcs.includes("zhanwangchan"), "战王蝉入「人物图鉴」（宿敌codex）");
+  assert(!s.flags.zhanwangchan_slain, "本战不诛杀王蝉（他日再别天南重现）");
+  assert(s.metNpcs.includes("zhanwangchan"), "王蝉入「人物图鉴」（宿敌codex）");
   // 大BOSS → 逃出强征入伍
   if (!s.pendingEvent) Engine.checkStory();
   assert(s.pendingEvent === "yanjia_escape", `逃出生天（${s.pendingEvent}）`);

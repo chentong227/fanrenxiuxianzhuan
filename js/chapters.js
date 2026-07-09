@@ -45,7 +45,7 @@ const Chapters = {
       completeFlag: "arc3_complete",
       nextChapter: "zaibie",    // 京城血夜了结→回天南（modao_e4b_likjing 接 再别天南篇）
       currencyName: "灵石",
-      // 前置·燕家堡之战（特别篇）已实装：李化元强制调令→重逢墨彩环/结识董萱儿→战王蝉大BOSS→逃出强征入伍。
+      // 前置·燕家堡之战（特别篇）已实装：李化元强制调令→重逢墨彩环/结识董萱儿→鬼灵门王蝉血祭大阵大BOSS→逃出强征入伍。
     },
     {
       id: "zaibie",

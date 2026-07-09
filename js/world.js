@@ -272,11 +272,11 @@ WORLD.locations = [
 
   /* —— 魔道争锋篇·前置（增量D）——
    *   燕家堡：天南正道七派齐聚御魔的临时大堡（⚠燕家堡≠天阙堡，modao-design 考据红线）。
-   *   李化元一纸调令把伪灵根筑基的韩立也压了进来——战王蝉破阵的血夜由此而起。过场地点，循剧情前行。 */
+   *   李化元一纸调令把伪灵根筑基的韩立也压了进来——王蝉血祭大阵的血夜由此而起。过场地点，循剧情前行。 */
   {
     id: "yanjiabao", arc: "modao", scene: true,
     name: "燕家堡",
-    desc: "魔道入侵前夜，天南正道七派齐聚的临时大堡。堡墙旌旗猎猎，堡内人心惶惶——李化元一纸调令，连你这伪灵根筑基也压了进来。堡外妖氛冲天，魔道巨擘战王蝉，正在破阵。",
+    desc: "魔道入侵前夜的燕家大堡，夺宝大会宾客云集。堡墙旌旗猎猎，堡内却暗流涌动——李化元一纸调令，连你这伪灵根筑基也压了进来。那位借医病联姻入堡的鬼灵门「贵客」，正笑吟吟地布着一张血祭大网。",
     // 御魔临时大堡·堡内：2.5D 前景＝殿堂框（上檐+左右石柱·庄重肃然），远雾偏浓（堡外妖氛）
     env: { depth: { fg: "hall", far: 0.4 } },
     travelCost: 1, actions: [], encounters: [],
@@ -816,22 +816,25 @@ WORLD.enemies = {
     reward: { lingshi: 4 }, namedLoot: { mojiao_jiao: 1, mojiao_pi: 1, mojiao_lin: 3, xueshi_zhuyao: 2 },
   },
 
-  /* 战王蝉（增量D·燕家堡之战大BOSS）——魔道争锋中威名赫赫的巨擘。
-   * 撑过血线即剧情撤离：本战不诛杀（考据：他日再别天南重现），故 reward/namedLoot 皆无。
-   * 数值参照墨蛟(hp270)上抬一档至筑基初期：破甲(pierce)/范围(zone)/追击(charge·track) 俱全，护甲更厚，
-   * 行金属（甲胄如铁·金鸣）——金克木，对主修木系功法的韩立是一场货真价实的硬仗（败则浴血整顿·再战+伤，fail-forward）。 */
+  /* 王蝉（增量D·燕家堡之战大BOSS）——鬼灵门少主，魔道入侵天南的主力人物。
+   * ⚠ 考据勘误（2026-07-09 用户指正·双源核实：百度百科"王蝉"词条 + 动漫观影指南）：
+   *   旧版误作"战王蝉"虫妖巨擘——实装时未查档（modao-design §前置早写明"王蝉=鬼灵门少主"），
+   *   把"蝉"望文生义成了昆虫。正典：人修·贵公子·常戴面具·修《血灵大法》，燕家夺宝大会布血祭大阵。
+   * 撑过血线即剧情撤离：本战不诛（考据：韩立报厉飞雨之名背锅、再别天南仍缠斗），故 reward/namedLoot 皆无。
+   * 数值结构原样保留（hp/kind/weight/range 未动·平衡不漂移）：破甲/范围/追击(track) 俱全；
+   * elem 金→火（血煞邪焰·同铁罗血煞系）——失去金克木压制后 dmg 上调补偿，climax.bal 校准硬仗胜率带。 */
   zhanwangchan: {
-    name: "战王蝉", hp: 360, sense: 12, speed: 15, agility: 11, move: 2, mp: 110, elem: "jin", nature: "beast",
-    tactics: "feral", stubborn: true, canFlee: false, boss: true,
+    name: "王蝉", hp: 360, sense: 13, speed: 15, agility: 12, move: 2, mp: 130, elem: "huo", nature: "human",
+    tactics: "cunning", stubborn: true, canFlee: false, boss: true,
     counter: 8,
-    introNote: "燕家堡破阵而出的魔道巨擘——甲胄如铁，双镰开阖，振翅之间裂石分风！它的「振翅冲撞」会循着你的气息追击，破甲贯刺更是专破护体灵光。这一战不为诛它，只为撑过它的杀势、活着退出燕家堡。甲坚势猛，破甲与符宝方能扛得住。",
+    introNote: "鬼灵门少主王蝉——面具之下笑意森冷，周身血煞邪焰翻涌如潮！他的「血遁突袭」循着你的气息折转追击，「血煞贯指」专破护体灵光。这一战不为诛他，只为撑过他的杀势、护着人活着杀出燕家堡。血灵大法霸道，破甲与符宝方能扛得住。",
     attacks: [
-      { name: "镰爪斩", dmg: 30, kind: "normal", weight: 12, range: [1, 1] },
-      // 裂翅横扫=扫战位前排（depth:front——僚位躲得掉）
-      { name: "裂翅横扫", dmg: 22, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front" },
-      { name: "破甲贯刺", dmg: 26, kind: "pierce", weight: 7, range: [1, 2] },
-      { name: "振翅冲撞", dmg: 36, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, mp: 12, range: [1, 5] },
-      { name: "金鸣音波", dmg: 16, kind: "normal", weight: 6, elem: "jin", aim: "zone", zoneSpan: 1, range: [2, 5], mp: 8 },
+      { name: "血灵爪", dmg: 34, kind: "normal", weight: 12, elem: "huo", range: [1, 1] },
+      // 血云横扫=扫战位前排（depth:front——僚位躲得掉）
+      { name: "血云横扫", dmg: 25, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 2], depth: "front", elem: "huo" },
+      { name: "血煞贯指", dmg: 30, kind: "pierce", weight: 7, range: [1, 2] },
+      { name: "血遁突袭", dmg: 41, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, mp: 12, range: [1, 5], elem: "huo" },
+      { name: "血祭咒火", dmg: 18, kind: "normal", weight: 6, elem: "huo", aim: "zone", zoneSpan: 1, range: [2, 5], mp: 8 },
     ],
     armor: 8,
     reward: null, namedLoot: null,
@@ -1642,14 +1645,14 @@ WORLD.npcs = [
   {
     id: "dongxuaner", name: "董萱儿", role: "红拂门下 · 名门之后",
     bio: "出身名门的红拂门下女修，眉眼高华、心思深沉。陆云风当年正是为攀附她这条线，才对道侣陈巧倩痛下杀手（那笔血债，最终算在了你手上）。燕家堡之战中她与你并肩御魔——这位心高气傲的名门之后，记下了你这个伪灵根筑基。",
-    lines: ["（她淡淡扫你一眼，目光在你那柄乌龙夺上停了一瞬）", "伪灵根能筑基，倒是稀奇。活着出了这堡，再论你够不够格同我说话。", "战王蝉那一蝉……记着，它也记着你了。"],
+    lines: ["（她淡淡扫你一眼，目光在你那柄乌龙夺上停了一瞬）", "伪灵根能筑基，倒是稀奇。活着出了这堡，再论你够不够格同我说话。", "鬼灵门那位王少主……记着，他也记着『厉飞雨』了。"],
     where: ["yanjiabao"], cond: (s) => s.flags.yanjia_reunion_done,
   },
   {
-    id: "zhanwangchan", name: "战王蝉", role: "魔道巨擘 · 不死宿敌",
-    bio: "魔道争锋中威名赫赫的巨擘，甲胄如铁、双镰开阖，振翅裂石分风。燕家堡一战你力挫其锋，却未能诛之——它带伤遁空，结下不死不休之仇。再见之日，必在更凶险的杀场（再别天南）。",
-    lines: ["（甲叶摩擦的森然声响，自黑暗里步步逼近）", "蝼蚁……也敢挡我的路。", "记住这口气息——下次，我啃碎你的骨头。"],
-    where: [],   // 纯图鉴宿敌：燕家堡力挫后由 meetNpc("zhanwangchan") 录入「人物图鉴」
+    id: "zhanwangchan", name: "王蝉", role: "鬼灵门少主 · 不死宿敌",
+    bio: "鬼灵门少主，天生暗灵根，修《血灵大法》，魔道入侵天南的主力人物。燕家夺宝大会上，他以为燕家小姐治病联姻为饵，布下血祭大阵、将与会七派弟子尽数血祭。你识破阴谋护人突围，与他恶斗一场两败俱伤——临走你报的是「厉飞雨」的名号，这笔不死不休的血仇，他记在了那个名字头上。再见之日，必在更凶险的杀场（再别天南）。",
+    lines: ["（面具之下，一双眼睛含笑望来，笑意却冷入骨髓）", "血祭大阵既起，诸位道友——就都留下吧。", "报上名来。本少主记仇，向来记得很牢。"],
+    where: [],   // 纯图鉴宿敌：燕家堡力挫后由 meetNpc("zhanwangchan") 录入「人物图鉴」（内部 id 保留·存档兼容）
   },
   {
     id: "lvtianmeng", name: "吕天蒙", role: "魔道争锋 · 矿场队官",

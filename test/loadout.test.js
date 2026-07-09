@@ -214,7 +214,7 @@ console.log("\n=== 10. 元武国·齐云霄代工（增量C：一炉三件大件
   }
 }
 
-console.log("\n=== 11. 燕家堡之战·战王蝉（增量D：逃逸式大BOSS + 魔道篇章容器）===");
+console.log("\n=== 11. 燕家堡之战·王蝉（增量D·2026-07-09 考据勘误：鬼灵门少主·血灵大法）===");
 {
   // 11a. 魔道争锋篇章容器：realmCap 抬进筑基（realmTier 1 / realmCapIndex 13）
   const modao = Chapters.list.find(c => c.id === "modao");
@@ -222,10 +222,11 @@ console.log("\n=== 11. 燕家堡之战·战王蝉（增量D：逃逸式大BOSS +
   assert(modao.startLocation === "yanjiabao", "modao 起始地=燕家堡（强制进场）");
   const hf = Chapters.list.find(c => c.id === "huangfeng");
   assert(hf && hf.nextChapter === "modao", "黄枫谷篇 nextChapter 接 modao");
-  // 11b. 战王蝉=逃逸式大BOSS：护甲厚、不可逃、无掉落、范围/破甲/追击俱全，本战不诛杀
+  // 11b. 王蝉=逃逸式大BOSS：护甲厚、不可逃、无掉落、范围/破甲/追击俱全，本战不诛杀
   const zw = sandbox.WORLD.enemies.zhanwangchan;
   assert(!!zw && zw.boss && zw.canFlee === false, "WORLD.enemies.zhanwangchan 大BOSS·不可逃（撑过血线收口）");
-  assert(zw.elem === "jin" && zw.armor >= 8, "战王蝉行金·护甲厚（金克木·对韩立的硬仗）");
+  assert(zw.name === "王蝉" && zw.nature === "human", "王蝉=鬼灵门少主·人修（考据勘误：非虫妖'战王蝉'）");
+  assert(zw.elem === "huo" && zw.armor >= 8, "王蝉行火（血煞邪焰）·护甲厚（血灵大法·对韩立的硬仗）");
   assert(zw.reward == null && zw.namedLoot == null, "逃逸式BOSS：无奖励/无具名掉落（非诛杀）");
   assert((zw.attacks || []).some(a => a.kind === "pierce") && (zw.attacks || []).some(a => a.aim === "zone") && (zw.attacks || []).some(a => a.kind === "charge"), "招式带破甲/范围/冲撞追击（不靠裸+N堆数值）");
   // 11c. 燕家堡过场地点 + 前线待命营（home）落位
