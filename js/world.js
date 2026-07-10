@@ -512,6 +512,43 @@ WORLD.locations = [
     unlock: (s) => !!(s.flags && s.flags.tianxing_open),
     encounters: [],
   },
+
+  /* ========== 外海风云篇（waihaifengyun·动漫125~152）·docs/waihaifengyun-design.md ========== */
+  {
+    id: "waihai_dongfu", arc: "waihaifengyun",
+    name: "外海孤崖洞府",
+    desc: "外星海深处一座孤悬怒涛之上的黑崖，韩立避四大势力追杀所辟的隐修洞府。崖下暗礁环伺、常年雾锁——本是万无一失的藏身地，直到山外传来了不速之客的打斗声。",
+    travelCost: 3,
+    home: true,
+    // 孤崖隐修：2.5D 前景＝水景框（怒涛崖影·冷碧），远雾浓（海天雾锁）
+    env: { depth: { fg: "water", far: 0.58 } },
+    actions: ["cultivate", "breakthrough", "rest", "alchemy"],
+    map: { x: 87, y: 62 },
+    unlock: (s) => !!(s.flags && s.flags.whfy_open),
+    encounters: [],
+  },
+  {
+    id: "waihai_fangshi", arc: "waihaifengyun",
+    name: "沧澜坊市",
+    desc: "外星海边缘依礁群而建的散修坊市，鱼龙混杂、消息灵通。近来市面上人人色变地传着一个名字——「韩老魔」：据说此人所过之处杀人夺宝、鸡犬不留。你听着自己的名字，眉头越皱越紧。",
+    travelCost: 2,
+    env: { depth: { fg: "market", far: 0.5 } },
+    actions: ["market", "rumor", "rest"],
+    map: { x: 79, y: 57 },
+    unlock: (s) => !!(s.flags && s.flags.whfy_chuguan),
+    encounters: [],
+  },
+  {
+    id: "liefeng_dao", arc: "waihaifengyun",
+    name: "裂风岛",
+    desc: "外海深处一座妖气冲天的火山孤岛，八级妖兽裂风兽的巢穴盘踞地底。传闻岛上长着炼制傀儡奇物的「伴妖草」——可妖兽的洞口，从来不是白进的。",
+    travelCost: 3,
+    env: { phase: "dusk", depth: { fg: "cave", far: 0.55 } },
+    actions: ["explore", "rest"],
+    map: { x: 90, y: 48 },
+    unlock: (s) => !!(s.flags && s.flags.whfy_liefeng_open),
+    encounters: [],
+  },
 ];
 
 /* ---------- 大陆层（world-architecture L0）：天南 · 胥国一带 ----------
@@ -1938,6 +1975,18 @@ WORLD.npcs = [
     id: "wen_tianren", name: "温天仁", role: "结丹后期巅峰 · 六道极圣之徒",
     bio: "逆星盟魔道魁首·六道极圣的亲传弟子，结丹后期巅峰，号称乱星海元婴之下第一人。清秀斯文、麻衣高冠赤足，眉宇间隐有金芒，性情却骄纵张扬。修魔界顶级功法六极真魔功（可幻化六魔各司其职），持仿品八门金光镜、天阳鎏金针、四象蟠龙带等顶级法宝。虚天殿出口看守离岛时与韩立初遇——韩立凭青易居士所赠的青冥针冒充其徒弟蒙混过关。两人真正的正面对决，留在外海风云篇。",
     lines: ["出殿者留下名号——你是哪一脉的？", "青易居士的徒弟？……也罢，过去吧。", "（目光在你身上停留一瞬，似有疑窦）"],
+    where: [],
+  },
+  {
+    id: "gongsun_xing", name: "公孙杏", role: "青灵门弟子 · 筑基后期",
+    bio: "外海小宗青灵门的年轻女修，为寻灵药遭鹰鸢兽追杀、误闯韩立孤崖洞府所在而获救。性情刚毅重诺，为救真元逆转的父亲甘愿为奴为婢。裂风岛地底洞穴崩塌时，人族修士的飞行法器多由她奔走筹措——恶名满海的岁月里，青灵门是少数肯为『韩老魔』三个字辩白的人。",
+    lines: ["前辈救命之恩，公孙杏没齿难忘。", "外海但有青灵门在处，前辈的名字，我们替你洗。", "（她把丹方折得整整齐齐，贴身收着）"],
+    where: [],
+  },
+  {
+    id: "wen_siyue", name: "文思月", role: "文樯之女 · 筑基中期",
+    bio: "镇妖大典故人文樯之女。家道中落后被妙音门余孽掳掠，于沧澜坊市地下拍场被当作『压轴拍品』标价——为韩立所救。以裂风岛八级妖兽巢穴与『伴妖草』的情报相报：那是她家商队用命换来的消息。",
+    lines: ["哪位前辈肯救思月出去……", "家父生前常说，镇妖大典上那位韩道友，是信得过的人。", "裂风岛的洞口……前辈千万小心。"],
     where: [],
   },
   {

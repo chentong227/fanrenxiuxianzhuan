@@ -5754,6 +5754,65 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  /* ===================== 外海风云篇 · 幕一战斗编排（S1·docs/waihaifengyun-design.md）===================== */
+
+  // —— 幕一②·孤崖救场·鹰鸢兽×2（beast·会飞的七级妖禽——对空压力首战）——
+  startWhfyYingyuanFight() {
+    const s = State.data;
+    this._nextFightType = "whfy_yingyuan";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    const mk = (n) => ({
+      name: `鹰鸢兽·${n}`, hp: 190, sense: 15, speed: 18, agility: 14, move: 2, mp: 60, qiLayer: 17,
+      elem: "jin", nature: "beast", tactics: "feral", canFlee: true, canFly: true, airGrade: 1, armor: 3,
+      introNote: n === "雌" ? "七级妖禽成对猎杀——雌兽性狡，专挑破绽俯击。" : "七级妖禽·雄兽凶横，利爪带金属寒光（antiAir 凌空扑杀）。",
+      antiAir: { name: "凌空扑杀", dmg: 24 },
+      attacks: [
+        { name: "利爪撕掠", dmg: 26, kind: "normal", weight: 10, range: [1, 1], elem: "jin" },
+        { name: "振翅锋雨", dmg: 20, kind: "normal", weight: 6, aim: "zone", zoneSpan: 1, range: [1, 3], elem: "jin", mp: 6 },
+        { name: "俯冲贯袭", dmg: 30, kind: "pierce", weight: 6, range: [1, 2], elem: "jin", mp: 7 },
+      ],
+      reward: {}, namedLoot: null,
+    });
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [mk("雄"), mk("雌")], maxRounds: 14, W: 13, lanes: 2,
+      playerPos: 3, enemyPos: 8,
+    });
+    this._combat.sea = true;   // 礁滩海畔（bt_xinghai 底图+踏浪）
+    this._combatMeta = { type: "whfy_yingyuan", canQuick: true };
+    s.combat = true;
+    this._combat.startRound();
+    this.log("两头七级鹰鸢兽被血腥气引得性起，弃了残兵、双双扑向出手的你——结丹后期对七级妖禽，正好活动一下三年没松过的筋骨。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 幕一④·沧澜坊市立威·云天啸（duel·碾压快战——名场面演出）——
+  startWhfyYuntFight() {
+    const s = State.data;
+    this._nextFightType = "whfy_yunt";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    const foe = {
+      name: "云天啸", art: "yuntianxiao", hp: 260, sense: 17, speed: 15, agility: 11, move: 2, mp: 110, qiLayer: 18,
+      elem: "huo", nature: "human", tactics: "cunning", canFlee: true, armor: 4, mastery: 1,
+      introNote: "结丹中期魔修——欺世盗名之辈，惯会挑软柿子当众立威。今日他挑错了人：碾过去，一招都别多给。",
+      attacks: [
+        { name: "赤煞刀罡", dmg: 26, kind: "normal", weight: 10, range: [1, 3], elem: "huo", mp: 6 },
+        { name: "血焰蚀空", dmg: 22, kind: "pierce", weight: 6, range: [1, 4], elem: "huo", mp: 8 },
+      ],
+      reward: { lingshi: 30 }, namedLoot: null,
+    };
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [foe], maxRounds: 12, W: 11, lanes: 2,
+      playerPos: 3, enemyPos: 7,
+    });
+    this._combatMeta = { type: "whfy_yunt", canQuick: true };
+    s.combat = true;
+    this._combat.startRound();
+    this.log("满街修士屏息围观——「韩老魔」对叫阵的魔修。云天啸刀罡未起，你已按剑而立：这一战不为杀人，为立威。快、狠、干净。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
   startWanHunt() {
     const s = State.data;
@@ -7121,6 +7180,37 @@ const Engine = {
         this.log(`海王兽到底是七级巨妖，一时大意没拿稳——你调息再上（再战伤害+${bonus}%）。青竹蜂云剑+辟邪神雷俱全，碾过去！`, "bad");
         s.pendingEvent = "xh_a5_haiwang"; this._retryAfterLoss = "xh_a5_haiwang";
       }
+    } else if (meta.type === "whfy_yingyuan") {
+      // 外海风云·幕一② 孤崖救场（鹰鸢兽×2·会飞妖禽首战）
+      if (win) {
+        State.setFlag("whfy_yingyuan_won");
+        this.writeLedger("whfy_yingyuan_won", "孤崖礁滩·斩双鹰鸢兽救青灵门众——结丹后期出关第一剑，三年蛰伏锋芒未钝。");
+        this.log("两头鹰鸢兽坠落怒涛——三年没出鞘的剑，锋芒未钝。青灵门众人劫后余生，为首的青衫女修快步上前拜谢。", "good");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_whfy_yingyuan = (s.flags.losses_whfy_yingyuan || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_whfy_yingyuan) * 8;
+        s.hp = s.hpMax;
+        this.log(`双禽合击一时失了先手——你退回崖口调息再上（再战伤害+${bonus}%）。它们还在追杀那群修士，快！`, "bad");
+        s.pendingEvent = "whfy_a1_gongsun"; this._retryAfterLoss = "whfy_a1_gongsun";
+      }
+    } else if (meta.type === "whfy_yunt") {
+      // 外海风云·幕一④ 沧澜坊市立威（云天啸·碾压快战·名场面）
+      if (win) {
+        State.setFlag("whfy_yunt_won");
+        this.writeLedger("whfy_yunt_won", "沧澜坊市·当街一招败魔修云天啸——「威胁言语，道友还是少说些的好。否则厉某心情不好的话，血洗了这里也说不定。」真韩老魔立威，满市噤声。");
+        this.addFame(10, "沧澜坊市·真『韩老魔』当街立威，一招败云天啸");
+        this.log("云天啸的刀罡碎了满地，人跌出三丈、面如金纸。你收剑负手，环视满街屏息的修士，淡淡撂下一句——「威胁的言语，还是少说些的好。否则我心情不好的话，血洗了这里也说不定。」满市，噤若寒蝉。", "good");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_whfy_yunt = (s.flags.losses_whfy_yunt || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_whfy_yunt) * 8;
+        s.hp = s.hpMax;
+        this.log(`当众失手——云天啸的气焰更嚣张了。你退开半街、调匀气息（再战伤害+${bonus}%）：这一战，必须赢得干净。`, "bad");
+        s.pendingEvent = "whfy_a1_chuguan"; this._retryAfterLoss = "whfy_a1_chuguan";
+      }
     } else if (meta.type === "wentianren_demo") {
       // 温天仁·六极真魔功演武（?demo=wentianren·S4 骨架）——不动任何剧情 flag
       if (win) {
@@ -7422,6 +7512,8 @@ const Engine = {
       xh_xuangu_fight:         function () { this.startXhXuanguFight(); },
       xh_lingyuling_fight:     function () { this.startXhLingyulingFight(); },
       xh_haiwang_fight:        function () { this.startXhHaiwangFight(); },
+      whfy_yingyuan_fight:     function () { this.startWhfyYingyuanFight(); },
+      whfy_yunt_fight:         function () { this.startWhfyYuntFight(); },
     });
   },
   hasFight(id) { return !!(id && this._fightRoutes()[id]); },
@@ -7682,6 +7774,9 @@ const Engine = {
     if (choice.resolve === "xh_xuangu_fight")    { s.pendingEvent = null; this.startXhXuanguFight();    return; }
     if (choice.resolve === "xh_lingyuling_fight"){ s.pendingEvent = null; this.startXhLingyulingFight();return; }
     if (choice.resolve === "xh_haiwang_fight")   { s.pendingEvent = null; this.startXhHaiwangFight();   return; }
+    // —— 外海风云篇战斗派发 ——
+    if (choice.resolve === "whfy_yingyuan_fight") { s.pendingEvent = null; this.startWhfyYingyuanFight(); return; }
+    if (choice.resolve === "whfy_yunt_fight")     { s.pendingEvent = null; this.startWhfyYuntFight();     return; }
 
     // 普通推进
     s.pendingEvent = null;

@@ -7168,6 +7168,288 @@ const STORY = [
       },
     ],
   },
+
+  /* ============================================================
+   *  外海风云篇（动漫 125~152 · docs/waihaifengyun-design.md）
+   *  幕一 · 恶名与出关（S1）：孤崖蛰伏→公孙杏误闯→出关立威→拍卖会
+   *  境界轴：全程结丹后期→大圆满（破元婴留重返天南篇·用户核定）
+   * ============================================================ */
+
+  // —— 幕一①·开篇·孤崖岁月（时间跳跃·三载蛰伏·3选1侧重）——
+  {
+    id: "whfy_a1_open",
+    skipIf: (s) => s.flags.whfy_open,
+    cond: (s) => s.flags.arc6_complete && !s.flags.whfy_open,
+    bgm: "journey",
+    title: "外海风云 · 孤崖蛰伏",
+    objTitle: "蛰伏 · 风声渐紧",
+    objHint: "携虚天鼎遁入外星海深处，你在一座怒涛孤崖下开辟洞府、闭关三载避风头。风声没有小下去——反而越来越邪门：外面有人顶着你的名字，杀人夺宝。",
+    text: [
+      { scene: "外星海 · 孤崖洞府" },
+      { amb: "wind" },
+      { shot: "establish" },
+      "怒涛孤崖之下，你盘膝已三载。虚天鼎的风头未过，四大势力的缉令仍贴满内海坊市——蛰伏，是眼下唯一的正路。",
+      "可偶尔潜出补给的散修口中，风声却越来越邪门：外海各处，接连有修士洞府被屠、宝物被掠——下手之人自报名号，「韩老魔」。",
+      { say: "韩立", emo: "serious", tone: "low", text: "「韩、老、魔？……我在此地闭关三年，何曾杀过一人。有人顶着我的名字，替我在外面『扬名』。」" },
+      { aside: "极阴岛与万法门找不到你，便造一个「你」出来——败你名声，再借死者亲友之手，替他们满天下地找你。好狠的阳谋。" },
+    ],
+    onArrive(s) {
+      s.activeChapter = "waihaifengyun";   // 切入外海风云篇（realmCap=结丹大圆满）
+      s.location = "waihai_dongfu";
+      State.setFlag("whfy_open");
+      s.year += 3; s.age = (s.age || 0) + 3;   // 三载蛰伏
+      Engine.writeLedger("whfy_a1_open", "外海风云篇·开篇——孤崖洞府蛰伏三载；极阴岛/万法门假扮『韩老魔』杀人夺宝败其名声，借死者亲友之手满海寻他。恶名阳谋始。");
+      Engine.addMilestone("外海风云篇·启：孤崖蛰伏·韩老魔恶名起", "waihaifengyun");
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "rumor", text: "外海血案频传：魔修「韩老魔」连屠三处洞府、杀人夺宝——各方遗属悬红寻仇，风声鹤唳。" });
+      s.worldNews.push({ t, kind: "world", text: "极阴岛、万法门明面收缩了对虚天鼎的追缉——明眼人却觉得，这潭水只是变深了。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      {
+        text: "温养金丹 · 直指结丹大圆满",
+        hint: "境界侧重——为破婴打底",
+        effect(s) {
+          s.cultivation = (s.cultivation || 0) + 9000;
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 5);
+          Engine.writeLedger("whfy_a1_focus", "蛰伏侧重·温养金丹——三载水磨，修为直指结丹大圆满。");
+          return { text: "三载死关，你把心神尽数沉入丹田那枚金丹——温养、压炼、再温养。出关之日，金丹圆润欲滴，离大圆满只隔一层窗纸（修为大进）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "参研玄阴诀 · 神识再进",
+        hint: "神识侧重——秘术更深",
+        effect(s) {
+          s.sense = (s.sense || 0) + 3;
+          Engine.writeLedger("whfy_a1_focus", "蛰伏侧重·参研完整版玄阴诀——神识淬炼再进一层。");
+          return { text: "你以三载光阴深研完整版玄阴诀，阴煞真元与神识相互淬炼，出关时神识之锐，几可匹敌寻常结丹大圆满（神识+3）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "整备炼器 · 底牌再磨一层",
+        hint: "资粮侧重——符丹器全面整备",
+        effect(s) {
+          s.skills = s.skills || {}; s.skills.alchemy = (s.skills.alchemy || 0) + 2;
+          State.give("dingshen_fu", 2); State.give("huiyuan_dan", 2);
+          Engine.writeLedger("whfy_a1_focus", "蛰伏侧伏·整备符丹器——底牌磨得更利。");
+          return { text: "你把三载光阴摊在丹炉与符案上——定身符、回元丹一摞摞码进储物镯。风雨欲来，底牌越厚，腰杆越硬（熟练+2·符丹入囊）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 幕一②·公孙杏误闯（鹰鸢兽追杀·救/旁观抉择）——
+  {
+    id: "whfy_a1_gongsun",
+    skipIf: (s) => s.flags.whfy_gongsun_done,
+    cond: (s) => s.flags.whfy_open && !s.flags.whfy_gongsun_done,
+    bgm: "tense",
+    title: "孤崖 · 不速之客",
+    objTitle: "误闯 · 救或不救",
+    objHint: "一群青灵门修士为寻灵药被鹰鸢兽追杀，慌不择路逃到你洞府外的礁滩。出手，行踪必露；不出手，这群人撑不过一炷香。",
+    text: [
+      { scene: "孤崖洞府外 · 礁滩" },
+      { amb: null },
+      { shot: "shock", scale: 1.1, px: 7 },
+      "闭关尾声，崖外骤起打斗声与哭喊——你神识一扫：七八名筑基修士被两头七级鹰鸢兽追得走投无路，正朝你洞府所在的礁滩亡命奔逃。",
+      "为首的青衫女修且战且退，把两名重伤同门护在身后。她的剑光已经散了，鹰鸢兽的利爪堪堪掠过她的肩头。",
+      { aside: "出手，三年蛰伏的行踪便露了；不出手……这滩礁石上今日就要多七八具尸首。「韩老魔」杀人如麻——真韩立呢？" },
+    ],
+    onArrive(s) { State.setFlag("whfy_gongsun_done"); },
+    choices: [
+      {
+        text: "出手 · 崖上一剑清场",
+        hint: "救人=行踪暴露（动漫线）",
+        effect(s) {
+          State.setFlag("whfy_saved_gongsun");
+          Engine.writeLedger("whfy_saved_gongsun", "孤崖·出手救下被鹰鸢兽追杀的青灵门公孙杏一行——恶名满海之时的一缕善声。行踪因此暴露。");
+          Engine.recordTemperament("whfy_saved_gongsun", "sentiment", "孤崖救青灵门众——恶名压顶仍不改本心，杀伐由我、善恶也由我");
+          return { text: "你一步跨出洞府，青竹蜂云剑破匣而出。", kind: "event" };
+        },
+        resolve: "whfy_yingyuan_fight",
+      },
+      {
+        text: "静观 · 蛰伏为重",
+        hint: "不暴露——但这滩上要见血",
+        effect(s) {
+          s.demon = Math.min(100, (s.demon || 0) + 4);
+          s.mood = Math.max(0, (s.mood || 0) - 6);
+          State.setFlag("whfy_gongsun_watched");
+          Engine.writeLedger("whfy_gongsun_watched", "孤崖·未第一时间出手——迟了半刻，青灵门两名弟子殒命爪下，韩立终究还是出剑清了场。这半刻，记在了心魔账上。");
+          return { text: "你按住了剑。半刻之后，两声惨叫刺进耳膜——你到底还是跨了出去，一剑清场。可那两名弟子，已经凉了。公孙杏跪谢救命之恩时，你没敢受全这个礼。", kind: "bad" };
+        },
+        resolve: "whfy_yingyuan_fight",
+      },
+    ],
+  },
+
+  // —— 幕一③·战后·公孙杏之请（救父一次抉择·用户拍板=不展开支线）——
+  {
+    id: "whfy_a1_gongsun2",
+    skipIf: (s) => s.flags.whfy_gongsun2_done,
+    cond: (s) => s.flags.whfy_yingyuan_won && !s.flags.whfy_gongsun2_done,
+    bgm: "daily",
+    title: "孤崖 · 公孙杏之请",
+    objTitle: "结缘 · 一诺",
+    objHint: "青灵门女修公孙杏拜谢救命之恩，又硬着头皮再求一事：其父真元逆转、命悬一线，愿为奴为婢换一线生机。",
+    text: [
+      { scene: "孤崖洞府外 · 礁滩" },
+      "青衫女修敛衽下拜，自报家门：青灵门公孙杏。谢过救命之恩，她却没有起身。",
+      { say: "公孙杏", tone: "soft", text: "「前辈修为通天……小女子斗胆再求一事。家父修炼出岔、真元逆转，命不久矣。若前辈肯施援手，公孙杏……甘愿为奴为婢，绝无二话。」" },
+      { aside: "真元逆转——是疑难，却难不倒一个丹道浸淫多年、又见过大世面的结丹修士。难的从来不是病，是要不要多沾一桩因果。" },
+    ],
+    onArrive(s) { State.setFlag("whfy_gongsun2_done"); },
+    choices: [
+      {
+        text: "赠丹赐方 · 「为奴为婢就免了」",
+        hint: "药理仁心——结青灵门之谊",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 5);
+          State.setFlag("whfy_gongsun_father_saved");
+          Engine.writeLedger("whfy_gongsun_father", "孤崖·赠丹赐方救公孙杏之父（真元逆转）——为奴为婢免谈，结下青灵门一门之谊。她说：外海但有青灵门处，前辈的名字我们替你洗。");
+          return { text: "你取出两枚调元丹，又提笔写下一张温养方子：「按方服用，百日可稳。为奴为婢就免了——把人照顾好。」公孙杏怔怔接过，眼圈通红：「外海但有青灵门在处，『韩老魔』这三个字的真假，我们替前辈说与人听。」", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "婉拒 · 「令尊之疾，另请高明」",
+        hint: "少沾因果——乱世自保",
+        effect(s) {
+          Engine.writeLedger("whfy_gongsun_father", "孤崖·婉拒公孙杏救父之请——乱世之中少沾一桩因果。她没有怨怼，只再拜了一拜，扶着伤者走了。");
+          return { text: "你摇了摇头：「我一身麻烦缠身，令尊之疾，另请高明吧。」公孙杏眼底的光黯了黯，却没有怨怼，只又深深拜了一拜，扶起伤者，一行人消失在海雾里。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 幕一④·出关·沧澜坊市立威（云天啸挑衅→碾压战）——
+  {
+    id: "whfy_a1_chuguan",
+    skipIf: (s) => s.flags.whfy_yunt_done,
+    cond: (s) => s.flags.whfy_gongsun2_done && !s.flags.whfy_yunt_done,
+    bgm: "town",
+    title: "沧澜坊市 · 韩老魔",
+    objTitle: "出关 · 立威",
+    objHint: "行踪既露，蛰伏已无意义。你现身外海沧澜坊市采买破境资粮——满市风声都是「韩老魔」的血案。一名魔修当众叫破你的身份，狮子大开口。",
+    text: [
+      { scene: "沧澜坊市 · 大街" },
+      { amb: "market" },
+      "行踪既露，缩回孤崖已无意义。你索性现身沧澜坊市，采买冲击大圆满的资粮——一路行来，满市都在议论「韩老魔」新添的几桩血案。",
+      "一声冷笑自身后炸起。魔修云天啸拦住去路，声音故意放得满街都听得见：",
+      { say: "云天啸", tone: "冷笑", text: "「韩老魔？好大的名头。把储物镯留下，再自废一臂——云某便当没见过你。否则，今日这满街的人，都是见证！」" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「威胁的言语，道友还是少说些的好。」" },
+      { aside: "他要的是名，是财，是当众踩着「韩老魔」上位。那便让他看看——韩老魔这三个字，究竟是谁在替谁扬名。" },
+    ],
+    onArrive(s) {
+      s.location = "waihai_fangshi";
+      State.setFlag("whfy_chuguan");
+    },
+    choices: [
+      { text: "出手 · 「否则厉某心情不好，血洗了这里也说不定」", hint: "一招立威（动漫名场面）", resolve: "whfy_yunt_fight" },
+    ],
+  },
+
+  // —— 幕一⑤·拍卖会·救文思月（故人之女·铜片+巢穴情报）——
+  {
+    id: "whfy_a1_paimai",
+    skipIf: (s) => s.flags.whfy_paimai_done,
+    cond: (s) => s.flags.whfy_yunt_won && !s.flags.whfy_paimai_done,
+    bgm: "fair",
+    title: "沧澜坊市 · 地下拍卖会",
+    objTitle: "拍卖 · 故人之女",
+    objHint: "立威之后，无人再敢当街聒噪。你循线摸进地下拍卖会寻破境资粮——压轴「拍品」却是个活人：故人文樯之女文思月，被妙音门余孽当货卖。",
+    text: [
+      { scene: "沧澜坊市 · 地下拍场" },
+      { amb: "candle" },
+      "地下拍场鱼龙混杂。你压着气息连拍了几味辅药，又见一枚来历不明的残破铜片流拍——铜片上隐有三头六臂的法相纹路，你心头莫名一动，顺手低价收了。",
+      { shot: "pushIn", ms: 1200 },
+      "压轴的「拍品」被推上台时，你的眼神冷了下来——竟是个被禁制锁住的年轻女修。报名之时，她咬着唇报出家门：文氏思月。",
+      { aside: "文樯之女。镇妖大典上与你并肩报名的那个爽朗汉子——他的女儿，如今被妙音门余孽当货物一样标价。" },
+      { say: "文思月", tone: "soft", text: "「哪位前辈肯救思月出去……思月愿执箕帚、为侍为妾，绝无怨言！」" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_paimai_done");
+      State.give("santou_tongpian", 1);
+      Engine.writeLedger("whfy_tongpian", "地下拍场低价拍得一枚三头六臂法相纹残破铜片——来历不明，心头莫名一动（远线法宝·只种不收）。");
+    },
+    choices: [
+      {
+        text: "拍下并解禁 · 「令尊与我有一面之缘」",
+        hint: "救故人之女（动漫线）——得裂风岛情报",
+        effect(s) {
+          State.setFlag("whfy_saved_wensiyue");
+          State.setFlag("whfy_liefeng_open");
+          Engine.writeLedger("whfy_saved_wensiyue", "地下拍场·拍下并解禁文思月（文樯之女）——为侍为妾免谈，念故人之谊放她自去。她以裂风岛八级妖兽巢穴与『伴妖草』的情报相报。");
+          return { text: "你抬手报出一个无人敢跟的价，当场解了她的禁制：「令尊与我有一面之缘。为侍为妾就免了——好自珍重。」文思月泣拜于地，临别低声相报：外海裂风岛地底有八级妖兽巢穴，巢外崖缝生着炼傀奇物「伴妖草」——那是她被掳前家中商队用命换来的情报。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "不趟浑水 · 散场后再暗中跟去",
+        hint: "谨慎——救人于无人处（代价：多费周章）",
+        effect(s) {
+          s.spirit = Math.max(0, (s.spirit || 0) - 300);
+          State.setFlag("whfy_saved_wensiyue");
+          State.setFlag("whfy_liefeng_open");
+          Engine.writeLedger("whfy_saved_wensiyue", "地下拍场·未当场出手，散场后循气暗蹑、于海上截杀押送者救下文思月——不显山露水，却多费了一夜周章。同样得裂风岛情报。");
+          return { text: "你没有举牌。散场后循着押送灵舟的气息追出百里，一剑沉舟、于无人海域救下文思月——不显山不露水。她惊魂甫定，同样以裂风岛「伴妖草」与八级妖兽巢穴的情报相报（耗灵力·多费一夜周章）。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 幕一收口·裂风岛之引（幕二钩）——
+  {
+    id: "whfy_a1_close",
+    skipIf: (s) => s.flags.whfy_a1_done,
+    cond: (s) => s.flags.whfy_paimai_done && !s.flags.whfy_a1_done,
+    bgm: "journey",
+    title: "外海 · 裂风岛之引",
+    objTitle: "幕一收口 · 目标伴妖草",
+    objHint: "破境大圆满需一味主药引，「伴妖草」正合用——它就长在八级妖兽裂风兽的洞口。恶名未清、强敌环伺，你决意先取此草。",
+    text: [
+      { scene: "沧澜坊市 · 客舍" },
+      "灯下盘点：三头六臂铜片来历成谜；「韩老魔」的血案还在外海各处添新账；而文思月所报的「伴妖草」，恰是你冲击结丹大圆满缺的那味主药引。",
+      { say: "韩立", emo: "serious", tone: "low", text: "「八级妖兽的洞口……虎口拔牙。可这毛，不拔也得拔了。」" },
+      {
+        guide: {
+          tag: "外海风云 · 幕一终 —— 恶名与出关",
+          title: "下一步：裂风岛 · 采伴妖草",
+          hint: "舆图前往「裂风岛」探索采药。八级裂风兽的巢穴就在地底——脚步放轻些。（幕二 · 智夺风雷翅，即将展开）",
+          cta: "（整备行装 · 往裂风岛去）",
+        },
+      },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_a1_done");
+      Engine.addMilestone("外海风云·幕一终：立威沧澜·得裂风岛之引", "waihaifengyun");
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews = s.worldNews || [];
+      s.worldNews.push({ t, kind: "rumor", text: "沧澜坊市传遍：真「韩老魔」当街一招败云天啸——「威胁言语少说，血洗此地也说不定」。真伪韩老魔之说，自此四起。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      // —— 铁律3·幕一账本收口（近响在此结清；远线由 flags/实物继续承载：
+      //    whfy_saved_gongsun flag→幕二夺翅撤离、santou_tongpian 实物→远线法宝、恶名→幕四清算抉择）——
+      let echo = 0;
+      if (Engine.settleLedger("whfy_a1_focus", "孤崖三载的侧重，在出关这几日一一显了形——蛰伏没有虚度，你带出关的每一分底气，都是那一千多个日夜一寸寸磨出来的")) echo += 2;
+      if (Engine.settleLedger("whfy_yingyuan_won", "出关第一剑斩双鹰鸢兽的风声，比你先一步到了沧澜坊市——听过的人都说：那一剑，不像传闻里滥杀的『韩老魔』，倒像个救人的")) echo += 1;
+      if (Engine.settleLedger("whfy_yunt_won", "云天啸当街跪着爬走的样子，成了坊市这半月最热的谈资——从此在沧澜地界，再没人敢当面聒噪『韩老魔』三个字")) echo += 2;
+      if (Engine.settleLedger("whfy_saved_gongsun", "青灵门的谢礼悄悄送到了客舍门口：一匣外海灵材，附一张字条——『前辈之名，青灵门记下了』。恶名满海的日子里，这一匣子东西烫得暖手")) { echo += 2; State.give("lingshi", 40); }
+      if (Engine.settleLedger("whfy_gongsun_watched", "那半刻的迟疑换来两条人命——夜里打坐，爪撕布帛的声音总在耳边。你把这笔账记在自己头上：下一次，剑要快过算计")) echo -= 1;
+      if (Engine.settleLedger("whfy_gongsun_father", "公孙杏托商船捎来口信：其父按方服药，真元逆转之势已稳。信末只有一句——『青灵门上下，不信韩老魔杀人』")) echo += 2;
+      if (Engine.settleLedger("whfy_saved_wensiyue", "文思月的情报当夜就兑了现——裂风岛的海图与巢穴方位详尽得可怕，那是文家商队用命换来的东西，如今原原本本交在你手上")) echo += 1;
+      Engine.settleLedger("whfy_tongpian", "三头六臂铜片收进乾坤袋最深处——它安安静静，可你总觉得，这枚残片与你之间有条看不见的线（远线·实物在囊即惦记）");
+      if (echo) s.mood = Math.min(s.moodMax, Math.max(0, (s.mood || 0) + echo));
+    },
+    choices: [
+      { text: "整备行装 · 往裂风岛去", hint: "幕二 · 智夺风雷翅（待续）", resolve: "advance" },
+    ],
+  },
 ];
 
 window.STORY = STORY;

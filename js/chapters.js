@@ -89,6 +89,20 @@ const Chapters = {
       // 设计全文见 docs/xinghaifeichi-design.md（最重篇章·52集·青竹蜂云剑/虚天殿/曲魂线收束/银月）。
       // 实装切片 S1~S10（设计稿§十一）：★全部已落地·整章 S1~S10 主线闭环（开篇→蝎岛→青竹蜂云剑大件链→古修士洞府/夺曲魂→虚天殿外殿三关→内殿元婴大战→玄骨终战·以下克上→收获→出殿/救凌玉灵/外星海闭关/海王兽/四大势力追杀通关·解锁外海风云篇）。完整箱庭(虚天殿L2)/部分CG为后续增量。
     },
+    {
+      id: "waihaifengyun",
+      name: "外海风云篇",
+      order: 7,
+      locked: true,             // 由星海飞驰篇章末「四大势力追杀」(arc6_complete)解锁
+      realmTier: 2,             // 结丹期收官章（全程结丹后期→大圆满·破元婴留重返天南篇——用户 2026-07-01 核定）
+      realmCapIndex: 20,        // 结丹大圆满（DATA.realms 索引20）——幕二碧焰酒"被迫进步"破至此
+      startLocation: "waihai_dongfu",
+      completeFlag: "arc7_complete",
+      nextChapter: "chongfantiannan", // 章末脱阴冥·见天南故土→重返天南篇（钩子·后续实装）
+      currencyName: "灵石",
+      // 设计全文见 docs/waihaifengyun-design.md（四幕：恶名出关/智夺风雷翅/还阳术·温天仁六魔战/阴冥之地凡人终结战）。
+      // 用户已拍板8项决议（设计稿§八）；凡人终结战演出逐拍待用户口述（钩子）。
+    },
   ],
 
   get(id) { return this.list.find(c => c.id === id) || null; },

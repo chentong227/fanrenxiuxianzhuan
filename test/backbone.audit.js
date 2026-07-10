@@ -72,7 +72,7 @@ s.flags.jingcheng_intel = 2;   // 情报拉满→刘靖示警 live 支线（皇�
 s.storyStage = STORY.findIndex(n => n.id === "modao_e4_shenxun");
 if (STORY[s.storyStage] && STORY[s.storyStage].where) s.location = STORY[s.storyStage].where;
 
-const ms = { e4: false, xuwang: false, zaibie: false, starsea: false, xinghai: false, hongchenOpen: false, hongchenDone: false, lianjian: false, xutian: false, arc6: false };
+const ms = { e4: false, xuwang: false, zaibie: false, starsea: false, xinghai: false, hongchenOpen: false, hongchenDone: false, lianjian: false, xutian: false, arc6: false, whfy: false, whfyA1: false };
 let steps = 0, stuck = 0, deadlock = null, maxStage = 0;
 const visited = new Set();
 
@@ -103,6 +103,8 @@ while (steps++ < 1500) {
     try { Engine.chooseStory(st, ci); } catch (e) { deadlock = `chooseStory(${st.id}) 抛错: ${e.message}`; break; }
     if (s.flags.xh_a3_hongchen_done) ms.hongchenDone = true;
     if (s.flags.arc6_complete) ms.arc6 = true;
+    if (s.flags.whfy_open) ms.whfy = true;
+    if (s.flags.whfy_a1_done) ms.whfyA1 = true;
     stuck = 0; continue;
   }
   // 无 pending 无战斗：清时间锚 + 对位地点 + 资粮兜底，推进主线
@@ -145,7 +147,9 @@ assert(ms.hongchenDone, "红尘劫渡过·情侣→小龙→老者→渡过全�
 assert(ms.lianjian, "青竹蜂云剑炼成可达（xh_a3_lianjian）");
 assert(ms.xutian, "虚天殿寒骊台可达（xh_a4_hanli）");
 assert(ms.arc6, "星海飞驰章末·四大势力追杀·arc6 收口（xh_arc6_complete）");
-assert(!deadlock, deadlock ? ("发现卡点/死链：" + deadlock) : "魔道四幕→再别→初入星海→星海飞驰 主干无死链、无缺派发、无抛错");
+assert(ms.whfy, "外海风云篇开篇可达（whfy_a1_open·孤崖蛰伏）");
+assert(ms.whfyA1, "外海风云·幕一全链贯通（公孙杏→立威→拍卖会→whfy_a1_done）");
+assert(!deadlock, deadlock ? ("发现卡点/死链：" + deadlock) : "魔道四幕→再别→初入星海→星海飞驰→外海风云幕一 主干无死链、无缺派发、无抛错");
 
 console.log(`\n========== 星海盲区无死链审计：${failures === 0 ? "全部通过 \u2713" : failures + " 项失败 \u2717"} ==========\n`);
 process.exit(failures === 0 ? 0 : 1);
