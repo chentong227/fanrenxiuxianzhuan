@@ -326,38 +326,45 @@ body.motion-off .title-seal, body.motion-off .create-title-block .subtitle { ani
   transform: translate(-50%, -50%) scale(1.3);
   box-shadow: 0 0 16px rgba(201,169,106,.8);
 }
+/* 据点名/副信息（v313 与 wm-label 同步换「墨字+纸晕」——浅色水墨底图上一律可读） */
 .wm-pin-label {
   position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-  margin-top: 2px;
-  font-size: 11px; color: var(--ink); white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(0,0,0,.8);
+  margin-top: 2px; font-weight: 600;
+  font-size: 11px; color: #33281a; white-space: nowrap;
+  text-shadow: 0 0 3px rgba(246, 238, 216, .95), 0 0 6px rgba(246, 238, 216, .85), 0 1px 2px rgba(246, 238, 216, .9);
   letter-spacing: 1px;
 }
-.wm-pin.here .wm-pin-label { color: var(--jade-bright); }
-.wm-pin.gated .wm-pin-label { color: var(--ink-dim); }
+.wm-pin.here .wm-pin-label { color: #1c6a4a; }
+.wm-pin.gated .wm-pin-label { color: #6f604a; }
 /* pin 副信息行（舆图显示更多：凶险/行程/状态）——浮在名字下方 */
 .wm-pin-meta {
   position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
   white-space: nowrap; font-size: 9.5px; letter-spacing: .5px;
-  color: var(--ink-dim); text-shadow: 0 1px 3px rgba(0,0,0,.85);
+  color: #5c4c36; text-shadow: 0 0 3px rgba(246, 238, 216, .95), 0 0 6px rgba(246, 238, 216, .8);
 }
-.wm-pin-meta.here { color: var(--jade); }
-.wm-pin-meta.lock { color: var(--ink-faint); }
+.wm-pin-meta.here { color: #1c6a4a; }
+.wm-pin-meta.lock { color: #7c6c54; }
 .wm-danger { font-style: normal; margin-right: 4px; padding: 0 4px; border-radius: 4px; }
-.wm-danger.d-lo { color: #9fd0a8; }
-.wm-danger.d-mid { color: #e2c277; }
-.wm-danger.d-hi { color: #f4a08c; }
+.wm-danger.d-lo { color: #256e44; }
+.wm-danger.d-mid { color: #96660e; }
+.wm-danger.d-hi { color: #ad3f2a; }
 
-/* 地图标签（州名/区块名） */
+/* 地图标签（州名/区块名）——v313 用户实锤"看不清"：
+ * 旧版金字+黑影在米黄/淡青水墨底上全糊。改「浓墨题字+纸色光晕」：
+ * 深墨色是宣纸舆图的天然正字色，四向纸色 halo 保证压在任何山水纹理上都读得出 */
 .wm-label {
   position: absolute; transform: translate(-50%, -50%);
-  font-size: 13px; color: var(--gold); letter-spacing: 3px;
-  text-shadow: 0 1px 4px rgba(0,0,0,.9);
+  font-family: var(--font-title, serif); font-weight: 700;
+  font-size: 13.5px; color: #3a2d1a; letter-spacing: 3px;
+  text-shadow:
+    0 0 3px rgba(246, 238, 216, .98), 0 0 7px rgba(246, 238, 216, .9),
+    -1px 0 2px rgba(246, 238, 216, .9), 1px 0 2px rgba(246, 238, 216, .9),
+    0 -1px 2px rgba(246, 238, 216, .9), 0 1px 2px rgba(246, 238, 216, .9);
   pointer-events: auto; cursor: pointer;
-  opacity: 0.7; transition: opacity 0.2s;
+  opacity: 0.95; transition: opacity 0.2s;
 }
 .wm-label:hover { opacity: 1; }
-.wm-label.sel { color: var(--gold-bright); opacity: 1; }
+.wm-label.sel { color: #8a4d16; opacity: 1; }
 
 /* SVG 路线 */
 .wm-route {

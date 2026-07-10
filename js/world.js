@@ -562,7 +562,8 @@ WORLD.locations = [
  * 血色禁地在建州北部；岚州=南部产粮大州（第二富足），嘉元城=岚州第一城（岚州中部），
  * 广贵城=岚州最南（三面环山一面靠湖），太南山在广贵城西四十里；越京=胥国京城（郊外白菊山）。
  * 节点 pos 与 assets/maps/tiannan_map.png 地貌对位（西北五色峰=彩霞山）。 */
-WORLD.continent = {
+WORLD._landContinent = {
+  id: "yueguo",
   name: "胥国",
   atlasId: "yueguo",   // 舆图叶层：胥国（动画即原著越国）十三州（水墨舆图）属「天南」大区
   parent: "tiannan",
@@ -648,6 +649,75 @@ WORLD.continent = {
       desc: "胥国南部产粮大州，沃野千里、富庶仅次京畿。嘉元城为岚州第一城；最南广贵城外太南山中，数年一度太南小会。" },
   ],
 };
+
+/* ============================================================
+ * 乱星海·海图大陆层（v313——修「开场地图位置不对」：星海诸章的地图不再错落胥国）
+ * 节点 pos 与 assets/maps/xinghai_map.png 地貌对位：
+ *   左上大岛城郭=天星城 / 左下大岛=魁星岛 / 中左小岛=小寰岛 / 中上小岛群西缘=沧澜坊市 /
+ *   右侧妖雾岛礁群=外星海猎场 / 右上火山=裂风岛 / 右下黑色孤崖=外海孤崖洞府。
+ * WORLD.continent 自此为 getter：当前地点属海图节点 → 乱星海；否则胥国（land）。
+ * ============================================================ */
+WORLD._seaContinent = {
+  id: "xinghai",
+  name: "乱星海",
+  atlasId: "yueguo",   // 舆图上卷兜底（Z1/Z2 仍是人界/天南图——乱星海在人界图西北块）
+  parent: "renjie",
+  map: "xinghai_map",
+  nodes: [
+    { id: "tianxing", name: "天星城", pos: { x: 23, y: 28 }, locs: ["tianxing_city"], months: 2, danger: "低",
+      gate: (s) => (s.flags && s.flags.tianxing_open) ? null : "内海中枢——尚无引路",
+      desc: "内星海中枢的修仙大都会，星宫治下、坊市林立。韩立金丹大成之地。" },
+    { id: "kuixing", name: "魁星岛", pos: { x: 21, y: 78 }, locs: ["kuixing_island"], months: 2, danger: "低",
+      desc: "乱星海西南缘外星岛，顾家坐地经营、镇妖台擂台日日有妖兽相搏——韩立落海登陆的首站。" },
+    { id: "xiaohuan", name: "小寰岛", pos: { x: 11, y: 57 }, locs: ["xiaohuan_island"], months: 1, danger: "低",
+      gate: (s) => (s.flags && s.flags.kuixing_resident) ? null : "荒僻外岛——先在魁星岛取得居留",
+      desc: "荒僻无人的外岛，韩立散功重修的洞府所在。礁缝里那只贪金的灵虫，后来名动外海。" },
+    { id: "canglan", name: "沧澜坊市", pos: { x: 63, y: 40 }, locs: ["waihai_fangshi"], months: 2, danger: "中",
+      gate: (s) => (s.flags && s.flags.whfy_chuguan) ? null : "外海散修坊市——尚无进出的由头",
+      desc: "外星海边缘依礁群而建的散修坊市，鱼龙混杂、消息灵通——「韩老魔」的传闻在这里最凶。" },
+    { id: "lieyu", name: "外星海猎场", pos: { x: 72, y: 52 }, locs: ["waixinghai"], months: 3, danger: "高",
+      gate: (s) => (s.flags && s.flags.luanxinghai_chaos) ? null : "外海妖域——大乱未起，无路可入",
+      desc: "妖兽横行的外海猎场，遍地是财也遍地是险——霓裳草引妖、噬金虫围杀的发家之地。" },
+    { id: "liefeng", name: "裂风岛", pos: { x: 82, y: 12 }, locs: ["liefeng_dao"], months: 3, danger: "高",
+      gate: (s) => (s.flags && s.flags.whfy_liefeng_open) ? null : "妖气冲天的火山孤岛——尚不知其方位",
+      desc: "八级裂风兽的巢穴盘踞地底，伴妖草生于洞口——虎口拔牙之地。" },
+    { id: "guya", name: "孤崖洞府", pos: { x: 82, y: 80 }, locs: ["waihai_dongfu"], months: 2, danger: "低",
+      gate: (s) => (s.flags && s.flags.whfy_open) ? null : "无名黑崖——尚未开辟",
+      desc: "外星海深处孤悬怒涛的黑崖，韩立避四大势力追杀所辟的隐修洞府。" },
+  ],
+  routes: [
+    { from: "tianxing", to: "kuixing", terrain: "海路" },
+    { from: "kuixing", to: "xiaohuan", terrain: "海路" },
+    { from: "tianxing", to: "canglan", terrain: "海路" },
+    { from: "canglan", to: "lieyu", terrain: "海路" },
+    { from: "canglan", to: "guya", terrain: "海路" },
+    { from: "canglan", to: "liefeng", terrain: "海路" },
+    { from: "guya", to: "lieyu", terrain: "海路" },
+  ],
+  prefectures: [
+    { id: "neihai", name: "内星海", label: { x: 18, y: 14 }, nodes: ["tianxing"],
+      desc: "星宫治下的人修海域——大阵一度失守，妖潮曾长驱直入。" },
+    { id: "waihai", name: "外星海", label: { x: 84, y: 33 }, nodes: ["lieyu", "liefeng"],
+      desc: "妖修与妖兽的天下——人族修士到这儿，都是刀口上讨生活。" },
+  ],
+};
+
+// WORLD.continent = 动态 getter：按当前地点归属选大陆层（海图节点→乱星海；否则胥国）。
+// 引擎/UI 全部 `WORLD.continent` 调用零改动——地图、旅途、avatar pin 自动吃对的图。
+WORLD._seaLocIds = (function () {
+  const set = {};
+  WORLD._seaContinent.nodes.forEach(n => (n.locs || []).forEach(id => { set[id] = 1; }));
+  return set;
+})();
+Object.defineProperty(WORLD, "continent", {
+  get() {
+    try {
+      const s = (typeof State !== "undefined" && State.data) ? State.data : null;
+      if (s && s.location && WORLD._seaLocIds[s.location]) return WORLD._seaContinent;
+    } catch (e) {}
+    return WORLD._landContinent;
+  },
+});
 
 /* ============================================================
  * 舆图（分层大地图）——人界 ▸ 大区 ▸ 国别/联盟 ▸ 据点

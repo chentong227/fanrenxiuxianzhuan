@@ -7722,6 +7722,7 @@ const STORY = [
     ],
     onArrive(s) {
       State.setFlag("whfy_lianhua_done");
+      s.location = "waihai_dongfu";   // 甩脱追杀退回孤崖洞府炼化（地图归位）
       s.flightId = "feng_lei_chi";   // 御风雷翅（traits: fenglei 雷遁 / fly——State.gearTrait 直读）
       State.setFlag("fly_unlocked");
       if (s.flags.whfy_zhulian_canwu) {

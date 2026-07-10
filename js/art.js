@@ -252,7 +252,7 @@
     hongchen: { p: 1 }, qingzhu: { p: 1 }, hongchen_du: { p: 1 } };
 
   // 舆图
-  const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1 };
+  const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1, xinghai_map: 1 };
 
   // 竖用图判定：视口高>宽（真机竖屏）或窄视口（桌面窄窗）——决定因素是画幅而非设备方向
   const isPortraitScreen = () =>

@@ -3624,7 +3624,7 @@ const UI = {
         }
         return `<div class="wm-pin ${here ? 'here' : ''} ${cls}" role="button" aria-label="${label}" data-mx="${n.pos.x}" data-my="${n.pos.y}" onclick="UI._wmPickNode('${n.id}')" title="${n.desc}">
           <span class="wm-pin-dot"></span>
-          <span class="wm-pin-label">${label}${here ? ' ·在此' : ''}</span>
+          <span class="wm-pin-label">${label}</span>
           ${meta}
         </div>`;
       }).join("");
@@ -3636,7 +3636,7 @@ const UI = {
       }).join("");
 
       if (z === 3) {
-        hintText = "胥国 · 十三州 · 点据点查看";
+        hintText = C.id === "xinghai" ? "乱星海 · 星罗诸岛 · 点海岛查看" : "胥国 · 十三州 · 点据点查看";
       } else {
         // Z4：聚焦当前据点，放大显示其下地点（地点 pin 在据点 pos 周围成簇——同图放大）
         const focusId = this._mapFocusNode;
