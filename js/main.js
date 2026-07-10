@@ -5,7 +5,47 @@
 const Main = {
   testedRoot: null,
 
+  /* ===== 桌面手机框（S6·2026-07-10 用户实锤"宽屏 UI 错位严重"）=====
+   * 根治思路：本作全部布局/验收以手机竖屏（430×932）为唯一基准——桌面宽窗口不再跑
+   * 另一套宽屏样式（错位源头），而是把整个游戏装进一个居中的 430×932 iframe"手机框"：
+   * 框内视口=430px → 全部手机端媒体查询原样命中，与真机逐像素一致；框外是装饰性舞台。
+   * 等比缩放贴窗口高度；`?noframe=1` 逃生口（调试/坚持宽屏者用旧宽布局）。 */
+  _needDeskShell() {
+    try {
+      if (window.self !== window.top) return false;                    // 已在框内
+      const q = new URLSearchParams(location.search);
+      if (q.has("noframe") || q.has("framed")) return false;           // 逃生口 / 框内标记
+      if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return false;   // PWA 安装态=真机
+      return window.innerWidth > 760;                                  // 宽屏样式的临界线（≤760 本就是手机布局）
+    } catch (e) { return false; }
+  },
+  _buildDeskShell() {
+    document.body.innerHTML = "";
+    document.body.className = "desk-shell";
+    const wrap = document.createElement("div");
+    wrap.className = "shell-stage";
+    const frame = document.createElement("iframe");
+    frame.className = "shell-frame";
+    frame.setAttribute("allow", "autoplay; fullscreen");
+    const sep = location.search ? "&" : "?";
+    frame.src = location.pathname + location.search + sep + "framed=1" + location.hash;
+    wrap.appendChild(frame);
+    const hint = document.createElement("div");
+    hint.className = "shell-hint";
+    hint.innerHTML = "凡人修仙传 · 人界篇　—　手机竖屏体验最佳（此为桌面舞台框）";
+    document.body.appendChild(wrap);
+    document.body.appendChild(hint);
+    const fit = () => {
+      const k = Math.min((window.innerHeight - 36) / 932, (window.innerWidth - 24) / 430, 1.12);
+      wrap.style.transform = `scale(${Math.max(0.3, k).toFixed(4)})`;
+    };
+    fit();
+    window.addEventListener("resize", fit);
+  },
+
   init() {
+    // 桌面宽屏 → 手机框接管（框内的这行判定不成立，正常启动）
+    if (this._needDeskShell()) { this._buildDeskShell(); return; }
     // —— 一次性清理：旧版把实时配图(base64)塞进 localStorage，约 5MB 占满配额，
     //    导致密钥/存档存不进去。现已改为预生成固定图，这里把遗留的图缓存彻底清掉。——
     try {

@@ -56,6 +56,32 @@ b, strong, .num { font-variant-numeric: tabular-nums; }
 
 #app { height: 100vh; overflow: hidden; position: relative; }
 
+/* ===== 桌面手机框（S6·宽屏 UI 错位根治）：宽窗口=居中 430×932 舞台 =====
+ * 游戏在 iframe 内以手机视口渲染（全部 ≤640/760px 手机样式原样命中，与真机逐像素一致）；
+ * 框外是水墨装饰底。缩放由 main._buildDeskShell 按窗口尺寸注入 transform。 */
+body.desk-shell {
+  margin: 0; height: 100vh; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(1100px 650px at 50% 36%, rgba(58, 48, 38, .55), transparent 70%),
+    radial-gradient(ellipse at 50% 115%, rgba(90, 70, 44, .18), transparent 60%),
+    linear-gradient(180deg, #16120e, #0b0908);
+}
+body.desk-shell .shell-stage {
+  width: 430px; height: 932px; flex: none;
+  transform-origin: center center;
+  border-radius: 24px; overflow: hidden;
+  border: 1px solid rgba(201, 169, 106, .38);
+  box-shadow: 0 0 0 7px rgba(22, 17, 12, .92), 0 34px 90px rgba(0, 0, 0, .78), 0 0 46px rgba(201, 169, 106, .07);
+  background: #000;
+}
+body.desk-shell .shell-frame { width: 100%; height: 100%; border: 0; display: block; }
+body.desk-shell .shell-hint {
+  position: fixed; left: 0; right: 0; bottom: 10px; text-align: center;
+  font-family: var(--font-title, serif); font-size: 12px; letter-spacing: 3px;
+  color: rgba(214, 196, 160, .38); pointer-events: none;
+}
+
 /* 全局纸纹颗粒（极淡，盖在一切之上但不挡操作） */
 #app::after {
   content: ""; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
