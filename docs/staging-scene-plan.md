@@ -1,5 +1,35 @@
 # 剧情演出补完方案（Staging Backfill Plan）
 
+> **v314 增量（2026-07-10 · 设计对齐审计 + 全篇章演出补齐批）**：用户裁决"像独立的精品游戏而不是换皮游戏"——
+> 重扫全 story.js（含 §1 审计后新落地的星海飞驰尾段与外海风云 25 节点），按「名场面五件套」
+> （素材×台词×运镜×特效×音，见 action-fx-design §四·五）把裸奔的中高权重节点全部补齐演出原语。
+> **红线：只加 shot/fx/amb/sfx/wait 演出层，不新编台词剧情**；用户明令留空的「凡人终结战逐拍」未碰。
+>
+> 本批补齐清单（≈30 节点）：
+> - **外海风云篇（重灾区·v310-311 落地时全裸）**：开篇恶名/公孙杏误闯/沧澜立威（amb:null 市声骤收+pushIn）/
+>   地下拍卖/裂风岛风希现身（shock+farRoar+黑风 flash）/碧焰酒/破境（R-突破三拍）/助炼 montage/毒计/
+>   夺翅（岩浆 flash+thunder+focusRight）/风雷翅炼化（金雷三拍+whiff 喜剧拍）/元瑶重逢/护法蓝焰（castShui+burst）/
+>   温天仁妖辇（thunderFar+紫金 flash+紫灵 pushIn）/**鬼雾骤至（moqi 氛围粒漫场+死寂 wait+金丹无声留白拍）**/
+>   阴冥村/灰蜮夜袭（night→amb:null 骤收）/梅凝/暴风山狭路/**脱困见天南（白闪+金丹苏醒 bell+pullOut 乡愁长镜）**/
+>   银月化形（swordWhoosh+spirit 氛围粒）/章末。
+> - **再别天南情感线**：金鼓原群战（farClash+血色 flash）/护山大阵（castTu+focus 对切）/**李化元殉道
+>   （阵成 flash→amb:null 静默→pushIn 遗言→wait→spirit 流光+bell→pullOut）**/三人护道（shock+sword）/
+>   跌境（吸修 flash+pushIn）/**南宫婉赠别（pushIn 递灵石+wait+amb:null+pullOut 长镜留白）**/曲魂化身（candle+血煞 flash）。
+> - **星海两篇**：紫灵重逢（market+focusLeft+熟悉感 pushIn+wait）/极阴附身（shock+danger+阴冷 flash+wait）/
+>   青竹蜂云剑炼成（对标结丹三拍：swordWhoosh+青芒 flash+雷+pushIn/pullOut+器灵伏笔 wait）/虚天殿收获（银月伏笔 pushIn+wait）/
+>   温天仁拦路（establish+danger+focusLeft）/章末追杀（establish+pushIn+pullOut）/镇妖惊变（开场 shock）/
+>   殉难 wait/金魁炸岛（thunderFar 先声+炸岛 shake+wait+pullOut）/魔道离京（amb:null+wait+yearBell 收卡）。
+> - **管线修缮（写了等于没写的漏音/漏画）**：①`amb:"crowd"`×3→market；②audio.js 补 `cast`/`splash` 配方
+>   （story.js 早已在用、从未出声）；③story-bg 补 `no-repeat`+story-far 边带重虚化（竖屏信箱式"山叠山"根治）；
+>   ④nangongwan/ling_yuling 白衣抠图孔洞重生成（`test/_holescan.js` 全库扫描+目检）。
+> - **QA 工具**：`?debugstory=节点id[&loc=][&realm=]` 直播任意剧情演出（replay 路径零结算）；
+>   `test/_staging_names_check.js` 演出名称白名单校验（shot/amb/bgm/sfx 用错名=CI 时代结束）。
+>
+> **仍欠（记账不丢）**：~~外海风云篇情绪顶点 CG×3~~（✅ v315 用户批·guiwu/tiannan_gui/yinyue_hua 横竖六张生图入库）；
+> ~~大衍神君托付专拍~~（**❌ 勘误删除**：大衍神君=元婴期极西之地才登场，现阶段无此人戏份——见 action-fx-design §四·五 勘误行；
+> 此前"托付/残魂消散"提法系前任 agent 把「大衍诀传承」张冠李戴，story.js 未受污染）；
+> §3 旧计划中皇宫决战/七玄门三高潮等在先前批次已覆盖，见各节点现状。
+
 > 配套 `docs/staging-experience-design.md`。后者定义"演出引擎能做什么"（P0–P2 已全部实装上线 v199）；
 > **本文档定义"现有剧情还差哪些演出、各自怎么演"**——即把已就绪的演出工具（运镜预设 / 差速视差 / 危局血晕 / hit-stop / 声相 pan / 名场面回廊）逐节点落到 `js/story.js` 的 `text[]` 里。
 >

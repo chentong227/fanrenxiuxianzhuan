@@ -306,6 +306,20 @@
       tone(c, { freq: 1568, type: "triangle", dur: 0.4, gain: 0.012, delay: 0.1 });   // 群剑共鸣·细吟
       tone(c, { freq: 2352, dur: 0.3, gain: 0.007, delay: 0.16 });                     // 高泛音
     },
+    // 通用施法（无属性倾向）：剧情演出里 { sfx:"cast" } 的落点——灵光引诀的中性一记
+    // （story.js 多处早已写 "cast"，此前无此配方=静默漏音；以 castMu 为底的柔化变体补上）
+    cast(c) {
+      noise(c, { dur: 0.05, gain: 0.032, band: 4200 });
+      tone(c, { freq: 760, slideTo: 1900, type: "triangle", dur: 0.2, gain: 0.05 });
+      tone(c, { freq: 190, slideTo: 95, dur: 0.13, gain: 0.022, delay: 0.02 });
+    },
+    // 落水/浪涌：入水闷响+水花散溅+余波荡开（story.js 落海/海妖节点早已写 "splash"，此前无配方=静默漏音）
+    splash(c) {
+      tone(c, { freq: 180, slideTo: 60, dur: 0.18, gain: 0.055 });                 // 入水闷头
+      noise(c, { dur: 0.3, gain: 0.05, band: 2400, delay: 0.02 });                 // 水花主体
+      noise(c, { dur: 0.4, gain: 0.024, band: 1100, delay: 0.14 });                // 余波荡开
+      tone(c, { freq: 520, slideTo: 240, type: "triangle", dur: 0.22, gain: 0.016, delay: 0.06 });
+    },
   };
 
   let lastPlay = {};

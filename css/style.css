@@ -4250,8 +4250,10 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 .story-far {
   position: absolute; inset: -7%; background-size: cover; background-position: center;
   opacity: 0; transition: opacity .5s ease;
-  filter: saturate(.62) brightness(.46) blur(3px);
-  transform: scale(1.08);
+  /* v314：血泪修——3px 轻虚化在竖屏信箱边带上像"同图叠三份"（山叠山极出戏）。
+     重虚化+重压暗+提饱和降度：边带读作氛围底色，不再与主图抢内容。桌面横屏被主图全盖=零回归。 */
+  filter: saturate(.5) brightness(.32) blur(16px);
+  transform: scale(1.12);
   will-change: transform; backface-visibility: hidden; pointer-events: none;
   z-index: 0;
 }
@@ -4259,6 +4261,8 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 /* 场景背景（虚化压暗，做氛围）*/
 .story-bg {
   position: absolute; inset: 0; background-size: cover; background-position: center;
+  /* v314：no-repeat 必写——竖屏信箱式 contain 下缺省 repeat 会把同图在上下边带平铺成"三座山叠罗汉" */
+  background-repeat: no-repeat;
   opacity: 0; transition: opacity .4s ease;
   filter: saturate(.9) brightness(.62);
   will-change: transform; backface-visibility: hidden;

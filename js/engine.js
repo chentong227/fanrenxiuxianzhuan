@@ -4688,7 +4688,7 @@ const Engine = {
     s.combat = true;
     this._combat.startRound();
     this._combat._log("「阵成——压！」师兄妹齐声厉喝，颠倒五行阵轰然运转，五行之力如山倒灌向胥王。机会只此一次：底牌齐发，趁阵法镇住他的工夫，将这魔道巨擘连肉身带神魂一并轰碎！");
-    this.log("真·颠倒五行阵布成，五行倒转死死镇住胥王——轮到你了！金光砖、平天尺、重元珠、赤红剑……此刻不留底牌，更待何时？阵法逐回合反噬，底牌齐发，毕其功于一役！", "event");
+    this.log("真·颠倒五行阵布成，五行倒转死死镇住胥王——轮到你了！金光砖、平天尺、重元珠、赤虹剑……此刻不留底牌，更待何时？阵法逐回合反噬，底牌齐发，毕其功于一役！", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -4697,7 +4697,7 @@ const Engine = {
    * 曲魂·身外化身（s.sideUnit·假丹境·黑煞教主血刃）随章首祭炼，全程并肩——本章核心底牌。
    * 考据见 docs/zaibie-tiannan-design.md。 */
 
-  // 曲魂·身外化身随战（章首祭炼后 s.sideUnit 即此；越国矿洞落海前始终在场）
+  // 曲魂随战（canon C3：本章=尸傀·血刃附傀；身外化身祭炼在小寰岛闭关。留府线夺回前 sideUnit 为空=返 null）
   _quhunSide() { return this.sideUnitFor("zaibie"); },
 
   // —— C1 金背妖螂·险战（fieldCycle 复用：韩立祭出随身「颠倒五行阵图」逐回合反制金背大妖）——
@@ -4724,8 +4724,10 @@ const Engine = {
     this._combatMeta = { type: "zb_jinbei" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("「金克木，硬碰要吃亏——」你反手掷出颠倒五行阵图，五行光华铺地而开，逐相循环反制这头金背大妖。曲魂提着黑煞血刃，已抢上前去。");
-    this.log("嘉元城外，御灵宗夺舍者驱使一头金背妖螂拦下了你。金克木、甲坚镰利——你祭出颠倒五行阵图逐回合反制，曲魂·身外化身当先迎战。这是你回到天南的第一场硬仗。", "event");
+    this._combat._log(qu
+      ? "「金克木，硬碰要吃亏——」你反手掷出颠倒五行阵图，五行光华铺地而开，逐相循环反制这头金背大妖。曲魂提着黑煞血刃，已抢上前去。"
+      : "「金克木，硬碰要吃亏——」你反手掷出颠倒五行阵图，五行光华铺地而开，逐相循环反制这头金背大妖。独力破妖——为了夺回张铁的身子。");
+    this.log("嘉元城外，御灵宗夺舍者驱使一头金背妖螂拦路。金克木、甲坚镰利——你祭出颠倒五行阵图逐回合反制。这是你回到天南的第一场硬仗。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -4745,7 +4747,9 @@ const Engine = {
     this._combatMeta = { type: "zb_duoshe" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("绿煌剑光大盛，那夺舍者厉声冷笑：「区区筑基，也敢觊觎本座的本命之器？」曲魂血刃横在你身前——假丹之躯，正面硬撼那柄结丹古剑。");
+    this._combat._log(qu
+      ? "绿煌剑光大盛，那夺舍者厉声冷笑：「区区筑基，也敢觊觎本座的本命之器？」曲魂血刃横在你身前，正面硬撼那柄结丹古剑。"
+      : "绿煌剑光大盛，那夺舍者厉声冷笑：「区区筑基，也敢觊觎本座的本命之器？」你按住乌龙夺——碎他的躯壳，夺回张铁的身子。");
     this.log("御灵宗夺舍者执绿煌剑迎面而来。他神魂虽是结丹，强占的躯壳却催不全本命之力——这是一场势均的越阶恶战。打碎躯壳，他那缕结丹残念仍会负隅顽抗（二阶段）。胜，则绿煌剑归你。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
@@ -4759,23 +4763,30 @@ const Engine = {
     const zu = () => Object.assign({}, WORLD.enemies.moxiu_zu, { formation: "pack" });
     const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
-    // 李化元·黄枫谷大长老：老成持重、燃命护阵之楷模——前压镇魔、护中拉满（prot 高）
-    sides.push({ id: "lihuayuan", name: "李化元", kind: "ally", art: "lihuayuan",
-      hp: 150, hpMax: 150, guard: 0.4, elem: "tu",
-      persona: { aggr: 5, prot: 8, kite: 1 },
+    // canon-audit Z6（2026-07-10 修正）：正典金鼓原此战李化元不与韩立并肩（他去救红拂）、南宫婉不在场（ep58 才寻来）——
+    // 同伴改黄枫谷同门宋蒙/钟卫娘（皇宫决战同款侧位模板·师兄弟撤离小组）
+    sides.push({ id: "songmeng", name: "宋蒙", kind: "ally", art: "songmeng",
+      hp: 150, hpMax: 150, guard: 0.38, elem: "tu",
+      persona: { aggr: 4, prot: 8, kite: 2 },
       moves: [
-        { name: "调令剑光", dmg: 22, weight: 12, elem: "jin", range: [1, 2], line: "李化元一道沉雄剑光斩落，魔气崩散：「黄枫谷的弟子，给我顶住！」" },
-        { name: "厚土镇魔", dmg: 16, weight: 6, elem: "tu", range: [1, 2], line: "李化元沉喝一声，土行真元如壁压向魔修" },
+        { name: "重元珠击", dmg: 20, weight: 12, elem: "tu", range: [1, 3], line: "宋蒙一枚温润圆珠破空砸下：「韩师弟，杀领队——痛快！」" },
+        { name: "厚土镇压", dmg: 16, weight: 6, elem: "tu", range: [1, 2], line: "宋蒙沉喝一声，土行真元如壁压向魔修" },
       ] });
-    sides.push(this._nangongwanAlly());
+    sides.push({ id: "zhongweiniang", name: "钟卫娘", kind: "ally", art: "zhongweiniang",
+      hp: 108, hpMax: 108, guard: 0.18, elem: "huo",
+      persona: { aggr: 8, prot: 2, kite: 3 },
+      moves: [
+        { name: "烈焰掌", dmg: 18, weight: 12, elem: "huo", range: [1, 2], line: "「都是些役尸的玩意儿！」钟卫娘一掌烈焰拍出" },
+        { name: "火羽刺", dmg: 22, weight: 6, elem: "huo", range: [1, 3], line: "钟卫娘抖手一蓬火羽攒射" },
+      ] });
     this._combat = new CombatAPI.Combat({
       player, enemies: [leader, zu(), xs(), xs()], maxRounds: 24, W: 15, lanes: 2, sides,
     });
     this._combatMeta = { type: "zb_jingu" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("李化元白须猎猎、剑指魔阵：「韩立——先斩那领队，群势自溃！曲魂护住中路！」南宫婉广袖一扬，月华如练卷向魔修。");
-    this.log("金鼓原决战，黑煞教倾巢而出、灵兽山倒戈反水，正道节节败退。你与李化元、南宫婉并肩冲杀——擒贼先擒王，先斩魔修领队，撕开一条血路。", "event");
+    this._combat._log("宋蒙圆珠横空、钟卫娘烈焰开路——皇宫血夜的老伙计又聚齐了：「韩师弟，先斩那领队，群势自溃！」曲魂血刃当先。");
+    this.log("金鼓原决战，黑煞教倾巢而出、灵兽山倒戈反水，正道节节败退。你与宋蒙、钟卫娘的撤离小组并肩冲杀——擒贼先擒王，先斩魔修领队，撕开一条血路。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -4787,17 +4798,18 @@ const Engine = {
     player.hp = s.hpMax; player.hpMax = s.hpMax;   // 守阵满血上场（避免残血死螺）
     const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    // canon Z3 前置：护山大阵=黄枫谷既有设施——李化元坐镇「催阵」（非燃命布阵；燃命一笔在下节点赌约碎丹）
     sides.push({ id: "lihuayuan", name: "李化元", kind: "ally", art: "lihuayuan",
       hp: 130, hpMax: 130, guard: 0.45, elem: "tu",
       persona: { aggr: 3, prot: 9, kite: 0 },
       moves: [
-        { name: "燃命护阵", dmg: 14, weight: 12, elem: "tu", range: [1, 1], line: "李化元燃着本命真元死死撑住阵眼：「再撑一阵——护山大阵就要成了！」" },
+        { name: "催阵护山", dmg: 14, weight: 12, elem: "tu", range: [1, 1], line: "李化元十指翻飞催动阵枢：「再撑一阵——阵枢就要全开了！」" },
         { name: "调令剑幕", dmg: 10, weight: 6, elem: "jin", range: [1, 2], line: "李化元横剑挡在阵前，替众人卸下一记魔刃" },
       ] });
     this._combat = new CombatAPI.Combat({
       player, enemies: [xs(), xs(), xs()],
       objective: { kind: "survive", rounds: 6,
-        winLog: "「成了——护山大阵！」李化元燃尽最后一缕真元，整座山口腾起一道齐天光幕，魔潮被生生挡在阵外。" },
+        winLog: "「开了——护山大阵！」阵枢全开，整座山口腾起一道齐天光幕，魔潮被生生挡在阵外。" },
       maxRounds: 6, W: 15, lanes: 2, sides,
     });
     // 守点型钩子：李化元钉桩阵眼（pos=14），每回合若有敌人贴身则他额外受创——
@@ -4820,61 +4832,85 @@ const Engine = {
     this._combatMeta = { type: "zb_hushan" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("李化元盘膝阵心、白须无风自动：「韩立、曲魂——给我守住阵脚六息！我以残命换这一道护山大阵，护黄枫谷弟子退走！」");
-    this._combat._log("【守点】李化元钉桩阵眼不可移动——若有魔修突至他身旁，他本命真元将剧震受损。挡住每一波，别让敌人近阵心！");
-    this.log("溃局已不可挽。李化元盘坐阵心，燃起本命真元强布「护山大阵」——你与曲魂死守阵脚。这一战不必胜，只须撑住：拖到阵成，黄枫谷的弟子便能退走。", "event");
+    this._combat._log("李化元盘膝阵心、十指翻飞催动阵枢：「韩立、曲魂——给我守住阵脚六息！阵枢一开，弟子们就有活路了！」");
+    this._combat._log("【守点】李化元钉桩阵眼不可移动——若有魔修突至他身旁，催阵将剧震受损。挡住每一波，别让敌人近阵心！");
+    this.log("溃局已不可挽。李化元坐镇阵心催动黄枫谷世代经营的「护山大阵」——你与曲魂死守阵脚。这一战不必胜，只须撑住：拖到阵启，黄枫谷的弟子便能退走。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
-  // —— C5 三人护道战（objective:survive·移动型：原地不动则追兵咬住后背受额外伤害）——
+  // —— C5 蒙面相援战（objective:survive·保护型：韩立救被围重伤的南宫婉——她倒下即败。
+  //     canon-audit Z2（2026-07-10 用户拍板）：正典 ep60 方向=韩立蒙面救她；敌=童老（阴灵刃）/鬼老（七鬼珠）·王蝉一方；
+  //     董萱儿第 3 回合"卖破绽"相助（正典桥段→战中脚本拍）；陈巧倩不在场（ep51 白菊山已别）。——
   startHudaoFight() {
     const s = State.data;
     this._nextFightType = "zb_hudao";
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;
-    const leader = Object.assign({}, WORLD.enemies.moxiu_toumu, { formation: "pack", leader: true });
-    const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
-    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
-    sides.push(this._nangongwanAlly());
-    sides.push({ id: "chenqiaoqian", name: "陈巧倩", kind: "ally", art: "chenqiaoqian",
-      hp: 112, hpMax: 112, guard: 0.22, elem: "huo",
-      persona: { aggr: 7, prot: 4, kite: 2 },
-      moves: [
-        { name: "赤红剑光", dmg: 22, weight: 12, elem: "huo", range: [1, 2], line: "陈巧倩赤红剑光裂空，将扑近的魔修逼退" },
-        { name: "火羽攒射", dmg: 18, weight: 6, elem: "huo", range: [1, 3], line: "「韩师弟当心——」一蓬火羽朝缺口攒射而去" },
+    // 童老/鬼老：王蝉一方的两名老牌打手（数值沿用 moxiu_toumu 模板不动平衡；名称/招式/行属换皮）
+    const tonglao = Object.assign({}, WORLD.enemies.moxiu_toumu, {
+      name: "童老", elem: "jin", formation: "pack", leader: true,
+      introNote: "王蝉麾下的老牌打手——一柄「阴灵刃」阴寒彻骨，围杀重伤的南宫婉正是此獠领头。他在，围杀成网；先撼此人，围势自乱。",
+      attacks: [
+        { name: "阴灵刃", dmg: 24, kind: "normal", weight: 12, elem: "jin", range: [1, 1], mp: 6 },
+        { name: "灵刃掠斩", dmg: 30, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12 },
+        { name: "刃气贯刺", dmg: 22, kind: "pierce", weight: 7, range: [1, 2], mp: 8 },
+        { name: "阴风扫垣", dmg: 14, kind: "normal", weight: 6, elem: "jin", aim: "zone", zoneSpan: 1, range: [1, 3], depth: "front", mp: 6 },
       ] });
+    const guilao = Object.assign({}, WORLD.enemies.xueshi_zu, {
+      name: "鬼老", elem: "shui", hp: 150, formation: "pack",
+      introNote: "与童老焦不离孟的阴修——祭一串「七鬼珠」，鬼啸慑魂。",
+      attacks: [
+        { name: "七鬼珠·鬼啸", dmg: 18, kind: "normal", weight: 12, elem: "shui", range: [1, 2], mp: 5 },
+        { name: "鬼爪贯刺", dmg: 16, kind: "pierce", weight: 7, range: [1, 2], mp: 6 },
+        { name: "厉鬼扑咬", dmg: 22, kind: "charge", weight: 6, aim: "cell", lunge: true, track: true, range: [1, 4], mp: 9 },
+      ] });
+    const xs = Object.assign({}, WORLD.enemies.xueshi_zu, { name: "王蝉门下修士", formation: "pack" });
+    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    // 重伤的南宫婉：保护对象——血只剩三成、灵力见底、只能勉力自保（她倒下=围杀得手=败）
+    const ngw = this._nangongwanAlly();
+    ngw.hp = 34; ngw.mp = 18;
+    ngw.persona = { aggr: 2, prot: 2, kite: 8 };
+    sides.push(ngw);
     this._combat = new CombatAPI.Combat({
-      player, enemies: [leader, xs(), xs()],
+      player, enemies: [tonglao, guilao, xs],
       objective: { kind: "survive", rounds: 6,
-        winLog: "三人背靠背、寸土不让，终是撑过了这一波追杀——身后那条退路，护住了。" },
+        winLog: "童老的阴灵刃终于颓了势头——你反手擒过阵侧的董萱儿喝道：「再逼一步，休怪韩某对她不客气！」童鬼二老投鼠忌器，你携重伤的南宫婉破围而走。" },
       maxRounds: 6, W: 15, lanes: 2, sides,
     });
-    // 移动型钩子：玩家若本回合未移动则受额外伤害（追兵咬住后背）——
-    // 逼玩家每回合换位，不能原地防御
-    this._combat._lastPlayerPos = player.pos;
+    // 保护型钩子①：南宫婉阵亡=围杀得手=败
+    // 脚本拍②：第 3 回合董萱儿「卖破绽」（正典桥段）——童鬼二老阵脚一乱，护甲应声而裂（一次性 -4）
     this._combat._afterEnemyTick = function() {
-      if (this.player.hp <= 0) return;
-      if (this.player.pos === this._lastPlayerPos) {
-        const dmg = 10;
-        this.player.hp = Math.max(0, this.player.hp - dmg);
-        this._log(`原地不动——追兵从身后一刀劈来（-${dmg}）！边打边退，不能站死！`);
-        if (this.player.hp <= 0) {
-          this.deathCause = { by: "追兵", move: "背后一刀" };
-          this.status = "lose";
-        }
+      const ngw2 = this.sides.find(sd => sd.id === "nangongwan");
+      if (ngw2 && ngw2.hp <= 0) {
+        this._log("南宫婉终究没能撑住——白衣委地，阴灵刃的寒光罩了下来。你救晚了一步。");
+        this.deathCause = { by: "童老", move: "阴灵刃" };
+        this.status = "lose";
+        return;
       }
-      this._lastPlayerPos = this.player.pos;
+      if (this.round === 3 && !this._dongBroke) {
+        this._dongBroke = true;
+        this.enemies.forEach(e => { if (e.hp > 0) e.armor = Math.max(0, (e.armor || 0) - 4); });
+        this._log("阵侧的董萱儿忽然「失手」踉跄——一道口诀的间隙卖了出来，童鬼二老的护身罡气应声一滞（敌全体护甲-4）！她垂下眼，谁也没看。");
+      }
+    };
+    // 敌人优先扑最弱目标（重伤的南宫婉）——你须挡线掩护（≤3 格才扑她，给玩家清场空间）
+    this._combat._enemyTargetBias = function(e) {
+      const ngw2 = this.sides.find(sd => sd.id === "nangongwan");
+      if (!ngw2 || ngw2.hp <= 0) return null;
+      return this.dist(e, ngw2) <= 3 ? ngw2 : null;
     };
     this._combatMeta = { type: "zb_hudao" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("南宫婉与陈巧倩一左一右护住你的两翼：「韩立，护住退路——撑住这一波！」曲魂血刃翻飞，替三人挡下扑近的魔修。");
-    this._combat._log("【移动】追兵咬得极紧——每回合须移动换位，原地不动则背后挨刀！边打边退，撑过六息。");
-    this.log("追兵咬得极紧。你与南宫婉、陈巧倩三人结阵护道，曲魂当先——撑住这一波追杀，护住身后那条退往矿洞的退路。", "event");
+    this._combat._log("你蒙面自残垣间一跃而下，乌龙夺挟水煞砸开阴灵刃：「阁下要杀的人，韩某护定了。」南宫婉背抵断墙，认出那双眼睛，怔了一瞬。");
+    this._combat._log("【护持】她伤得太重、只能勉力自保——敌人会扑她。挡在她身前，撑过六息！");
+    this.log("你蒙上面巾出手，护住重伤的南宫婉。童老的阴灵刃、鬼老的七鬼珠自两翼绞来——挡住这一波围杀。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
-  // —— C6 矿洞拖时·启阵（objective:survive·保护型：辛如音修阵中不可阵亡，她死=失败）——
+  // —— C6 矿洞拖时·启阵（objective:survive·保护型：阵枢灵光被毁=传送阵断=败）——
+  //     canon Z4：正典修阵=韩立自己按图纸补全，辛如音不在矿洞（她的戏止于元武国赠图·人不死）——
+  //     保护对象由她改为「阵枢灵光」（钉桩不可移·机制 1:1 沿用，平衡不动）
   startKuangdongFight() {
     const s = State.data;
     this._nextFightType = "zb_kuangdong";
@@ -4883,43 +4919,42 @@ const Engine = {
     const leader = Object.assign({}, WORLD.enemies.moxiu_toumu, { formation: "pack", leader: true });
     const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
-    // 辛如音·耗尽精血修阵（低战·叼旗护阵脚，prot 拉满）——保护对象：她死=传送阵断=败
-    sides.push({ id: "xinruyin", name: "辛如音", kind: "ally", art: "xinruyin",
+    // 阵枢灵光·大挪移令蓄力中（钉桩阵心·不可移动）——保护对象：阵枢碎=传送阵断=败
+    sides.push({ id: "zhenshu", name: "阵枢灵光", kind: "ally", art: null, move: 0,
       hp: 88, hpMax: 88, guard: 0.4, elem: "shui",
-      persona: { aggr: 2, prot: 9, kite: 1 },
+      persona: { aggr: 1, prot: 0, kite: 0 },
       moves: [
-        { name: "凝血护阵", dmg: 10, weight: 12, elem: "shui", range: [1, 1], line: "辛如音咬破指尖，以精血催动残破阵纹：「韩道友再撑片刻——古阵就要启了！」" },
-        { name: "水盾凝形", dmg: 6, weight: 6, elem: "shui", range: [1, 2], line: "辛如音凝起一面水盾，替你挡下扑近的魔刃" },
+        { name: "阵光激荡", dmg: 8, weight: 12, elem: "shui", range: [1, 1], line: "蓄力中的阵纹灵光激荡，灼向贴近的" },
+        { name: "灵光涟漪", dmg: 5, weight: 6, elem: "shui", range: [1, 2], line: "一圈灵光涟漪荡开，逼退" },
       ] });
     this._combat = new CombatAPI.Combat({
       player, enemies: [leader, xs(), xs()],
       objective: { kind: "survive", rounds: 6,
-        winLog: "「阵启了——！」辛如音泣血一喝，古传送阵心爆起一道贯天光柱——大挪移令的契机，只在这一瞬。" },
+        winLog: "「嗡——！」古传送阵心爆起一道贯天光柱，大挪移令蓄力功成——催动的契机，只在这一瞬。" },
       maxRounds: 6, W: 15, lanes: 2, sides,
     });
-    // 保护型钩子：辛如音阵亡=传送阵断=败——
-    // 敌人优先追击辛如音（她是最弱目标），玩家须挡线掩护
+    // 保护型钩子：阵枢灵光被打碎=传送阵断=败
     this._combat._afterEnemyTick = function() {
-      const xin = this.sides.find(sd => sd.id === "xinruyin");
-      if (!xin) return;
-      if (xin.hp <= 0) {
-        this._log("辛如音精血耗尽、瘫倒阵心——古传送阵的光柱骤然黯灭！没了她，这阵启不了了。");
+      const zs = this.sides.find(sd => sd.id === "zhenshu");
+      if (!zs) return;
+      if (zs.hp <= 0) {
+        this._log("阵枢灵光被生生打碎——一个月补全的阵纹寸寸崩解，光柱骤然黯灭！这阵，启不了了。");
         this.status = "lose";
       }
     };
-    // 敌人优先目标偏向辛如音（保护型核心：敌人追最弱目标）
+    // 敌人优先扑阵枢（保护型核心：追兵是来毁阵断你后路的）
     this._combat._enemyTargetBias = function(e) {
-      const xin = this.sides.find(sd => sd.id === "xinruyin");
-      if (!xin || xin.hp <= 0) return null;
-      if (this.dist(e, xin) <= 3) return xin;   // 近距离时优先打辛如音
+      const zs = this.sides.find(sd => sd.id === "zhenshu");
+      if (!zs || zs.hp <= 0) return null;
+      if (this.dist(e, zs) <= 3) return zs;   // 近距离时优先毁阵
       return null;
     };
     this._combatMeta = { type: "zb_kuangdong" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("辛如音瘫坐阵心、指尖泣血，拼着最后一口精血补全那座万载古阵：「韩道友——拖住追兵六息！大挪移令一催，这古传送阵就能送你一步踏出天南！」");
-    this._combat._log("【保护】辛如音是唯一能修古阵之人——她若阵亡，传送阵断，万劫不复。魔修正追击她——挡在他们面前，护住辛如音！");
-    this.log("越国矿洞最深处，尘封的古传送阵幽光明灭。辛如音耗尽精血强行修阵，你与曲魂死守洞口——只须拖住追兵，待大挪移令催动古阵，便能离开天南。", "event");
+    this._combat._log("大挪移令嵌入阵枢，灵光一寸寸蓄涨——还差六息。追兵已破洞而入，直扑那团阵枢灵光：他们是来毁阵断路的！");
+    this._combat._log("【保护】阵枢灵光被打碎=传送阵断、万劫不复。魔修正扑向阵心——挡在他们面前，护住阵枢六息！");
+    this.log("越国矿洞最深处，你按辛如音所赠图纸补全的古传送阵幽光明灭。大挪移令蓄力须六息——你与曲魂死守阵心，拖住破洞而入的追兵。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -5537,12 +5572,13 @@ const Engine = {
     this._nextFightType = "xh_lingyuling";
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;
+    // canon P2·凌玉灵之围（ep120）：追兵=逆星盟修士（星宫-逆星盟开战余波），非妖兽——数值沿用原模板不动平衡
     const yaoshou = () => ({
-      name: "外海妖兽", hp: 180, sense: 13, speed: 16, agility: 12, move: 2, mp: 40,
-      elem: "shui", nature: "beast", tactics: "feral", canFlee: false, armor: 3, formation: "pack",
+      name: "逆星盟追兵", hp: 180, sense: 13, speed: 16, agility: 12, move: 2, mp: 40,
+      elem: "shui", tactics: "feral", canFlee: false, armor: 3, formation: "pack",
       attacks: [
-        { name: "獠牙撕咬", dmg: 22, kind: "normal", weight: 12, elem: "shui", range: [1, 1] },
-        { name: "扑击", dmg: 28, kind: "charge", weight: 6, aim: "cell", lunge: true, range: [1, 4], mp: 6, elem: "shui" },
+        { name: "煞刃斩", dmg: 22, kind: "normal", weight: 12, elem: "shui", range: [1, 1] },
+        { name: "血遁扑杀", dmg: 28, kind: "charge", weight: 6, aim: "cell", lunge: true, range: [1, 4], mp: 6, elem: "shui" },
       ],
       reward: {}, namedLoot: null,
     });
@@ -5553,11 +5589,11 @@ const Engine = {
     this._combat = new CombatAPI.Combat({
       player, enemies: [yaoshou(), yaoshou()],
       objective: { kind: "survive", rounds: 4,
-        winLog: "外海妖兽尽数退散——凌玉灵脱险了。星宫双圣之女承你这一份救命之情，星宫的关系线，自此种下。" },
+        winLog: "逆星盟追兵见讨不到便宜，悻悻遁走——凌玉灵脱险了。星宫双圣之女承你这一份救命之情，星宫的关系线，自此种下。" },
       maxRounds: 4, W: 15, lanes: 3, sides,
       playerPos: 5, enemyPos: 9,
     });
-    // 妖兽优先扑凌玉灵（护送：清开近身追兵）
+    // 追兵优先扑凌玉灵（护送：清开近身追兵）
     this._combat._enemyTargetBias = function(e) {
       const ly = this.sides.find(sd => sd.id === "ling_yuling");
       if (!ly || ly.hp <= 0) return null;
@@ -5574,8 +5610,8 @@ const Engine = {
     this._combatMeta = { type: "xh_lingyuling" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("【护人】外海妖兽群围攻凌玉灵——护住她、撑过 4 回合（清开近身妖兽，别让她气绝）！");
-    this.log("出殿途中，星宫双圣之女凌玉灵被外海妖兽围困。护住她撑过 4 回合——不必恋战。", "event");
+    this._combat._log("【护人】逆星盟追兵围杀凌玉灵——护住她、撑过 4 回合（清开近身追兵，别让她气绝）！");
+    this.log("出殿途中，星宫双圣之女凌玉灵被逆星盟追兵围杀（星宫-逆星盟开战余波）。护住她撑过 4 回合——不必恋战。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -6014,7 +6050,7 @@ const Engine = {
       pouch: {
         duyao_cao: State.count("duyao_cao"),
         anqi: State.count("anqi"),
-        jinchuang_yao: State.count("jinchuang_yao"),
+        huixue_dan: State.count("huixue_dan"),   // 服金疮药技能 consume=huixue_dan（物品 id）——旧键记错=战中永远"底牌已用尽"
       },
       speed: 11, agility: 12, sense: 8, qiLayer: 3, move: 2,
       // 武学底子=唯一加成：剑法大成/江湖岁月的身手（乘性·A2 合规）
@@ -6524,7 +6560,7 @@ const Engine = {
           this.addMilestone("燕家堡之战：力挫王蝉（不死不休之仇已结）", "showdown");
           // 远雷·临会三日侦察兑现（铁律3）：望塔的脚力、董萱儿的档册、墨彩环的丹——都在血夜里开花
           this.settleLedger("yanjia_scout_tower", "望塔上看熟的堡墙走势，让你在血遁突袭里始终快半步——临会三日的脚力，没有白费");
-          this.settleLedger("yanjia_scout_dong", "董萱儿口中那处血遁后的气门破绽，在血夜里成了你反复叩击的要害——红拂门的档册，值一条命");
+          this.settleLedger("yanjia_scout_dong", "董萱儿口中那处血遁后的气门破绽，在血夜里成了你反复叩击的要害——红拂座下的档册，值一条命");
           this.settleLedger("yanjia_scout_mo", "墨彩环塞进你手里的那两枚养元丹、那句「活着回来」——你做到了。堡心地窖里，墨府老小全须全尾");
           this.log("王蝉血煞溃散、掩面遁走——鬼灵门少主岂是一战可诛？血雾里他那声「报上名来」你扔还了三个字：厉飞雨。这笔不死不休的账，先让别人记着吧。这一关，你撑过来了。", "event");
           if (typeof Sfx !== "undefined") Sfx.play("success");
@@ -7085,12 +7121,13 @@ const Engine = {
         this._retryAfterLoss = "zaibie_a2_hushan";
       }
     } else if (meta.type === "zb_hudao") {
-      // 再别天南·Act4 三人护道战（objective:survive→战后吸修跌境·纯演出）
+      // 再别天南·Act4 蒙面相援战（canon Z2：韩立救被围的南宫婉·擒董萱儿为质破围→战后她失控吸修为=跌境·纯演出）
       if (win) {
         State.setFlag("zaibie_hudao_done");
-        this.writeLedger("zaibie_hudao_won", "再别天南·护道——与南宫婉、陈巧倩三人结阵护住退路，撑过追杀。然此役后韩立为吸修所趁、修为暴跌（跌境·纯演出·不动数值）。");
-        this.addMilestone("再别天南：三人护道，撑过追杀", "zaibie");
-        this.log("追兵那一波势头终于缓了下来——身后退往矿洞的退路，护住了。", "good");
+        this.writeLedger("zaibie_hudao_won", "再别天南·蒙面相援——韩立蒙面救下被童老/鬼老围杀的重伤南宫婉，董萱儿阵中卖破绽相助，韩立擒董萱儿为质、携南宫婉破围。然搀扶昏迷的她时，其护身功法失控暴走，吸去韩立大半修为（跌境·纯演出·不动数值）。");
+        this.settleLedger("dongxuaner_captured", "被掳入合欢宗的董萱儿，再见时已立在童老鬼老的围杀阵侧——可紧要关头那记『失手』的破绽，是她隔着阵光递给你的旧谊");
+        this.addMilestone("再别天南：蒙面相援，救下被围的南宫婉", "zaibie");
+        this.log("童鬼二老投鼠忌器、悻悻退去。你松开董萱儿——她整了整衣袖，只低声道：「这次，算我还燕家堡的。」便转身没入夜色。", "good");
         if (typeof Sfx !== "undefined") Sfx.play("success");
         s.storyStage += 1;
         this.checkStory();
@@ -7099,7 +7136,7 @@ const Engine = {
         const bonus = Math.min(3, s.flags.losses_zb_hudao) * 8;
         s.hp = s.hpMax;
         s.demon = clamp(s.demon + 6, 0, 100);
-        this.log(`追兵咬得太紧，护道阵脚一时松动——三人背靠背、重新结阵（再战伤害+${bonus}%）。护住退路，撑住这一波，再来！`, "bad");
+        this.log(`阴灵刃太急，你被逼得连连后退——不能再让她挨一刀了。你咬牙重整旗鼓（再战伤害+${bonus}%）。挡在她身前，再来！`, "bad");
         s.pendingEvent = "zaibie_a4_hudao";
         this._retryAfterLoss = "zaibie_a4_hudao";
       }
@@ -7107,7 +7144,7 @@ const Engine = {
       // 再别天南·Act4 矿洞拖时·启阵（objective:survive→大挪移令强启古传送阵·接演出①离开天南）
       if (win) {
         State.setFlag("zaibie_kuangdong_done");
-        this.writeLedger("zaibie_kuangdong_won", "再别天南·矿洞拖时——死守洞口六息，辛如音耗尽精血修阵，大挪移令催动万载古传送阵，一步踏出天南。");
+        this.writeLedger("zaibie_kuangdong_won", "再别天南·矿洞拖时——死守阵枢六息，按辛如音所赠图纸补全的古传送阵蓄力功成，大挪移令催动万载古阵，一步踏出天南。");
         this.addMilestone("再别天南：古阵强启，离开天南", "zaibie");
         this.log("贯天光柱自古阵心爆起——大挪移令催动的契机，只在这一瞬。该走了。", "good");
         if (typeof Sfx !== "undefined") Sfx.play("success");
@@ -7118,7 +7155,7 @@ const Engine = {
         const bonus = Math.min(3, s.flags.losses_zb_kuangdong) * 8;
         s.hp = s.hpMax;
         s.demon = clamp(s.demon + 6, 0, 100);
-        this.log(`追兵几乎要踏破洞口——你与曲魂死死封住隘口（再战伤害+${bonus}%）。辛如音的古阵就要成了，拖住这六息，再来！`, "bad");
+        this.log(`追兵几乎要扑到阵心——你与曲魂死死封住隘口（再战伤害+${bonus}%）。阵枢就要蓄满了，拖住这六息，再来！`, "bad");
         s.pendingEvent = "zaibie_a4_kuangdong";
         this._retryAfterLoss = "zaibie_a4_kuangdong";
       }
@@ -7165,11 +7202,11 @@ const Engine = {
       // 初入星海·二③ 镇妖大典·极限斩杀婴鲤兽（sides[冯三娘＋曲魂]＋waves＋fieldCycle＋越阶）——胜得降尘丹·夺彩扬名
       if (win) {
         State.setFlag("starsea_yingli_done");
-        if (State.count("jiangchen_dan") < 1) State.give("jiangchen_dan", 1);
-        this.writeLedger("starsea_yingli_won", "镇妖大典·极限斩杀——众修法阵难伤越级五阶婴鲤兽，韩立携曲魂后发，借冯三娘困兽阵图困而后杀，于巨兽力竭一线之机极限斩杀夺彩，得榜首奖『降尘丹』（降一分结丹门槛）。");
-        this.addMilestone("镇妖大典夺彩：极限斩杀婴鲤兽，得降尘丹", "starsea");
+        // canon S4：降尘丹是六连殿许诺之酬，但大典旋即惊变、未及颁下——实际到手=斩古长老后自其尸身缴获（ss_jiuziling win）
+        this.writeLedger("starsea_yingli_won", "镇妖大典·极限斩杀——众修法阵难伤越级五阶婴鲤兽，韩立携曲魂后发，借冯三娘困兽阵图困而后杀，于巨兽力竭一线之机极限斩杀夺彩。六连殿许诺的榜首奖『降尘丹』尚未颁下，大典已生惊变。");
+        this.addMilestone("镇妖大典夺彩：极限斩杀婴鲤兽（榜首·降尘丹未及颁）", "starsea");
         this.addFame(8, "镇妖大典·越阶极限斩杀婴鲤兽、夺彩榜首");
-        this.log("巨兽轰然倒在血泊里，满场死寂，旋即爆出震天喝彩。降尘丹入手——结丹之门，被你撬开了一线。", "good");
+        this.log("巨兽轰然倒在血泊里，满场死寂，旋即爆出震天喝彩。六连殿长老高唱『榜首之奖，稍后颁授』——可这枚降尘丹，你终究没能从颁奖台上拿到。", "good");
         if (typeof Sfx !== "undefined") Sfx.play("success");
         s.storyStage += 1;
         this.checkStory();
@@ -7187,10 +7224,12 @@ const Engine = {
       if (win) {
         State.setFlag("starsea_jiuziling_done");
         this.meetNpc("wang_ning", "你护下的紫衣小女孩——汪凝，小字紫灵，妙音门遗孤。她死死攥着你的衣袖，那张脸总叫你心头泛起一缕说不清的熟悉。");
-        this.writeLedger("starsea_jiuziling_won", "镇妖大典惊变·救小紫灵——妙音门门主夫妇为护女力竭殉难，韩立接住坠落的汪凝，于乱局中越阶斩逆星盟古长老（假丹/筑基巅峰人修）、杀出黑袍合围，携小紫灵脱身。");
-        this.addMilestone("大典惊变：救汪凝、斩古长老脱身", "starsea");
-        this.addFame(8, "乱星海大典惊变·越阶斩逆星盟古长老、护妙音门遗孤脱身");
-        this.log("古长老命门洞穿、颓然坠地。你抄起惊魂未定的小紫灵，趁这滔天乱局，杀出了重围。", "good");
+        // canon S4：降尘丹实际到手处——六连殿许诺之酬，从反水的古长老尸身缴获（原著385章「五粒降尘丹」·取一入账）
+        if (State.count("jiangchen_dan") < 1) State.give("jiangchen_dan", 1);
+        this.writeLedger("starsea_jiuziling_won", "镇妖大典惊变·救小紫灵——妙音门门主夫妇以命护女、殁于乌丑一伙之手，韩立接住坠落的汪凝，于乱局中越阶斩六连殿反水的古长老（结丹初期·强催虚浮）、杀出黑袍合围，携小紫灵脱身。自其储物袋中缴获降尘丹——六连殿许诺之酬，从叛徒身上取回。");
+        this.addMilestone("大典惊变：救汪凝、斩古长老脱身（缴获降尘丹）", "starsea");
+        this.addFame(8, "乱星海大典惊变·越阶斩六连殿反水古长老、护妙音门遗孤脱身");
+        this.log("古长老命门洞穿、颓然坠地。你顺手抄起他的储物袋——里头赫然躺着几枚降尘丹：六连殿许诺的榜首之酬，倒是从叛徒身上取回来了。你抱起惊魂未定的小紫灵，趁这滔天乱局，杀出了重围。", "good");
         if (typeof Sfx !== "undefined") Sfx.play("success");
         s.storyStage += 1;
         this.checkStory();

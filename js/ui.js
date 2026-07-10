@@ -2088,7 +2088,16 @@ const UI = {
     const stage = STORY.find(s => s && s.id === id);
     if (!stage) return;
     this.closeModal();
-    this.renderStory(stage, { replay: true });
+    // text/choices 可为函数（引擎 renderStoryStage 同款解析）——直接传原节点会让 compile 拿函数抛错
+    // （v315 修：动态文案节点〔showdown/ye_finale/zaibie_open…〕此前在回廊重温会 crash）
+    const sd = State.data;
+    const resolved = (typeof stage.text === "function" || typeof stage.choices === "function")
+      ? Object.assign({}, stage, {
+          text: typeof stage.text === "function" ? stage.text(sd) : stage.text,
+          choices: typeof stage.choices === "function" ? stage.choices(sd) : stage.choices,
+        })
+      : stage;
+    this.renderStory(resolved, { replay: true });
   },
 
   // 重温落幕：拆演出层、收环境床/氛围粒、复位镜头，回落地点轨——绝不动剧情指针与存档。

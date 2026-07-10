@@ -426,6 +426,44 @@ const Main = {
       }
     } catch (e) { console.error("citydemo 失败", e); }
 
+    // —— 调试入口：?debugstory=节点id[&loc=地点id][&realm=N] 直接播某段剧情演出（演出打磨验收免跑剧情；
+    //    replay 路径=只观赏不结算）。境界/地点须贴近该节点真实进度，否则立绘皮肤与回退场景图会失真。——
+    try {
+      const q = new URLSearchParams(location.search);
+      const sid = q.get("debugstory");
+      if (sid) {
+        const idx = STORY.findIndex(st => st.id === sid);
+        if (idx < 0) { console.error("debugstory: 未找到节点", sid); }
+        else {
+          State.create("韩立", DATA.fixedRootId);
+          const s = State.data;
+          const stage = STORY[idx];
+          const realm = parseInt(q.get("realm"), 10);
+          // 境界缺省按篇章前缀猜个贴近值（只影响立绘皮肤，不影响演出逻辑）
+          s.realmIndex = Number.isFinite(realm) ? realm
+            : /^whfy/.test(sid) ? 20 : /^xh_/.test(sid) ? 17 : /^(starsea|zaibie)/.test(sid) ? 12 : 10;
+          s.hpMax = 400; s.hp = 400;
+          s.spirit = (DATA.realms[s.realmIndex] || {}).spMax || 300;
+          // 地点：显式参数 > 节点 where 字段 > 篇章缺省（决定无 CG 时的回退场景图）
+          const loc = q.get("loc") || stage.where
+            || (/^whfy/.test(sid) ? "waihai_dongfu" : /^(xh_|starsea)/.test(sid) ? "tianxing_city" : null);
+          if (loc) s.location = loc;
+          s.storyStage = STORY.length;   // 不让顺序流接管
+          this.enterGame();
+          setTimeout(() => {
+            // text/choices 可为函数（引擎 renderStoryStage 同款解析）——直接传原节点会让 compile 拿函数抛错
+            const resolved = (typeof stage.text === "function" || typeof stage.choices === "function")
+              ? Object.assign({}, stage, {
+                  text: typeof stage.text === "function" ? stage.text(s) : stage.text,
+                  choices: typeof stage.choices === "function" ? stage.choices(s) : stage.choices,
+                })
+              : stage;
+            UI.renderStory(resolved, { replay: true });
+          }, 400);
+        }
+      }
+    } catch (e) { console.error("debugstory 失败", e); }
+
     // —— 调试入口：?debugmap=1 直接进血色禁地舆图（探索 v3 调试免跑剧情）——
     try {
       const q = new URLSearchParams(location.search);

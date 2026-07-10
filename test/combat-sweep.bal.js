@@ -42,7 +42,10 @@ const _failForward = (() => {
   const parts = src.split(/meta\.type === "/);
   for (let i = 1; i < parts.length; i++) {
     const t = parts[i].slice(0, parts[i].indexOf('"'));
-    if (/_retryAfterLoss/.test(parts[i].slice(0, 1800))) set.add(t);
+    const seg = parts[i].slice(0, 1800);
+    // 两类"败有所得"：①_retryAfterLoss（满血重试+累加伤害）②双向推进（胜负皆 storyStage++·如
+    //   whfy_wentianren 六魔战——正典鬼雾打断、败也照样进剧情=永不卡死）
+    if (/_retryAfterLoss/.test(seg) || /双向推进/.test(seg)) set.add(t);
   }
   return set;
 })();
@@ -79,7 +82,9 @@ function runOnce() {
       //   驱动器只 pump realmIndex 不切 activeChapter → 星海飞驰(结丹·tier2·realmBand5.5)的 boss
       //   会被当筑基(tier1·realmBand2.4·mpPool~140)的韩立打 = 大幅低估战力的假性偏险/死局。
       //   按战斗归属篇章重建玩家战力档：xh_*=星海飞驰(结丹中期)，ss_*=初入星海(结丹初期)，余=魔道(筑基)。
-      const chapMap = { xh: ["xinghaifeichi", 20], ss: ["starsea", 16] };
+      // v315：补 whfy=外海风云（结丹大圆满 realmIndex 20）——v311 整章落地后 sweep 漏校准，
+      //   曾把结丹大圆满内容按魔道筑基档打=假性 0%（温天仁战被误报死局）
+      const chapMap = { xh: ["xinghaifeichi", 20], ss: ["starsea", 16], whfy: ["waihaifengyun", 20] };
       const cm = chapMap[key.split("_")[0]];
       if (cm && s.activeChapter !== cm[0]) {
         s.activeChapter = cm[0];

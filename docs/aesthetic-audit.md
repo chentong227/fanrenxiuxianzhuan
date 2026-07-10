@@ -69,6 +69,9 @@
 | 9 | 场景 | 魔道后篇章 20+ NPC 无立绘、部分地点靠 CG 兜底风格不齐 | P1 | ✅ v301 已修（用户供 key·40 张生图批全落库：23 半身像+8 战姿+乌龙潭/谷外林/太南野林专属场景横竖+cg_mojiao_p；全部注册、朝向逐张目检、trimfeet、assetref 绿；bt_chenqiaoqian 首版黑底已重生成） |
 | 10 | 主界面（手机) | 地点题字「所在·墨大夫药庐」上沿被天命栏（objective-bar）压住一截 | P2 | ✅ v300 已修（renderObjective 实测高度写 `--obj-h` CSS 变量——铭牌动态让位，浏览器 430×932 已验） |
 | 11 | 见闻·全录 sheet | 明细仍是通栏长列表（用户主动点开可接受，但排版可再分组：按月分隔线） | P2 | ✅ v300 已修（同月归组·月份分隔线——长卷有了日历骨架） |
+| 12 | 剧情演出·声 | `{amb:"crowd"}`×3、`{sfx:"cast"}`×5、`{sfx:"splash"}`×4 用了不存在的配方名——**一直静默无声**（写了等于没写） | P1 | ✅ v314 已修（crowd→market；audio.js 补 cast/splash 配方；新增 `test/_staging_names_check.js` 白名单校验防复发） |
+| 13 | 剧情演出·竖屏背景 | 信箱式呈现的上下边带：story-far 同图 3px 轻虚化=「山叠山」三重影 + story-bg 缺 no-repeat=同图上下平铺（黑石岛叠罗汉·极出戏） | P0 | ✅ v314 已修（story-bg 补 no-repeat；story-far 边带改 blur16px+brightness.32 重虚化压暗=纯氛围底色） |
+| 14 | 立绘 | nangongwan / ling_yuling 半身像白衣被旧抠图管线洪泛吃出大片透明孔洞（用户实锤"这立绘扣的是啥"）| P0 | ✅ v314 已修（cut tol 收紧重生成两张；`test/_holescan.js` 全库触发扫描·其余高分项逐张目检均为动态姿势误报） |
 
 ## 四·五、P1 首轮审计记录（2026-07-09 · 430×932 全程实玩）
 

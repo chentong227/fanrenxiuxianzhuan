@@ -249,7 +249,9 @@
     // 初入星海篇·剧情 CG 补登记（资产 assets/cg/cg_*.png+_p 已在库，此前漏注册→剧情大图不显示走兜底）
     wenqiang: { p: 1 }, chuhai: { p: 1 }, shijin: { p: 1 }, tianxing: { p: 1 }, ziliang: { p: 1 }, jieguan: { p: 1 }, jinkui: { p: 1 },
     // 星海飞驰·红尘劫 CG（青竹小轩三拍：开张入世/棋枰坐化/三十年悟道·横+竖）
-    hongchen: { p: 1 }, qingzhu: { p: 1 }, hongchen_du: { p: 1 } };
+    hongchen: { p: 1 }, qingzhu: { p: 1 }, hongchen_du: { p: 1 },
+    // 外海风云篇·情绪顶点 CG（v315 用户批：鬼雾骤至/脱困见天南/银月化形·横+竖）
+    guiwu: { p: 1 }, tiannan_gui: { p: 1 }, yinyue_hua: { p: 1 } };
 
   // 舆图
   const MAPS = { tiannan_map: 1, renjie_map: 1, tiannan_atlas: 1, xinghai_map: 1 };
@@ -279,10 +281,11 @@
       const bid = HERO_BATTLERS[id] || "bt_hanli";
       return BATTLERS[bid] ? bid : "bt_hanli";
     },
-    // 曲魂立绘：练成身外化身且未留嘉园 → 玄笠化身；否则仍为尸傀。
+    // 曲魂立绘：祭成身外化身（canon C3：小寰岛闭关·quhun_avatar）→ 玄笠化身；否则仍为尸傀。
+    // （v315：去掉 quhun_stay_jiayuan 排除——留府线在再别天南开篇已夺回曲魂，两线殊途同归）
     quhunId() {
       const d = root.State && root.State.data;
-      if (d && d.flags && d.flags.quhun_avatar && !d.flags.quhun_stay_jiayuan) return "quhun_huashen";
+      if (d && d.flags && d.flags.quhun_avatar) return "quhun_huashen";
       return "tienu";
     },
     // 立绘文艺名（游戏内显示名；缺省回退 ID）
