@@ -5151,6 +5151,7 @@ const Engine = {
       player, enemies: [yao], waves: [[yao2]], fieldCycle, maxRounds: 20, W: 11, lanes: 2, sides,
       playerPos: 3, enemyPos: 7,
     });
+    this._combat.sea = true;   // 海战（S5）：外海猎妖踏浪凌空
     this._combatMeta = { type: "ss_waihai" };
     s.combat = true;
     this._combat.startRound();
@@ -5565,6 +5566,7 @@ const Engine = {
         this.status = "lose";
       }
     };
+    this._combat.sea = true;   // 海战（S5）：离岛海域踏浪凌空
     this._combatMeta = { type: "xh_lingyuling" };
     s.combat = true;
     this._combat.startRound();
@@ -5595,6 +5597,7 @@ const Engine = {
       player, enemies: [haiwang], maxRounds: 18, W: 13, lanes: 2, sides,
       playerPos: 4, enemyPos: 8,
     });
+    this._combat.sea = true;   // 海战（S5）：怒涛之上踏浪凌空
     this._combatMeta = { type: "xh_haiwang", canQuick: true };
     s.combat = true;
     this._combat.startRound();
@@ -5619,6 +5622,7 @@ const Engine = {
       name: "温天仁", art: "wentianren", boss: true, mastery: 2,
       hp: 560, sense: 22, speed: 19, agility: 15, move: 2, mp: 200, qiLayer: 19,
       elem: "huo", nature: "human", tactics: "guarded", canFlee: false, armor: 6,
+      canFly: true, airGrade: 2,   // 结丹后期御空（海战凌空对峙·你上天他也追得上）
       guardMove: { name: "八门金光镜", shield: 30 },   // 仿品金光镜=血危固盾（考据：护体至宝）
       introNote: "六道极圣亲传·结丹后期巅峰——乱星海元婴之下第一人。仿八门金光镜护体、天阳鎏金针夺命、四象蟠龙带缚人；血压过六成，他便会祭出压箱底的六极真魔功。六魔各司其职——治疗不除，此战无光。",
       attacks: [
@@ -5632,39 +5636,51 @@ const Engine = {
       playerPos: 4, enemyPos: 10,
     });
     this._combat.enemies[0]._wtr = true;   // 二阶段触发标记（⚠ 须设在 Fighter 实例上——构造器不透传未知字段）
+    this._combat.sea = true;   // 海战：怒涛之上全员踏浪凌空（bt_xinghai 底图 + sea-field 浮沉）
+    // 海战开场即凌空对峙（S5 用户反馈"韩立也没有飞"）：双方御器悬空入场——
+    // 凌空经济照常（airGrade 2 耗缓·可打持久），玩家可随时落浪面省灵
+    if (player.canFly) this._combat.player.alt = 1;
+    this._combat.enemies[0].alt = 1;
     // —— 二阶段·祭魔（血≤60% 触发一次）：六魔上轴各司其职，本体退居后排 ——
     const F = CombatAPI.Fighter;
     this._combat._afterEnemyTick = function () {
       const wtr = this.enemies.find(e => e._wtr);
       if (!wtr) return;
-      // 触发祭魔
+      // 触发祭魔（编排考据：小说571章/动漫138——六具高大虚影"或头上有角或身披鳞甲、灰白魔气缠身、犹如天魔降世"；
+      // 台词化用正典原句；黑雾漫场+乌云雷鸣的场面演出由 UI.liumoRitual 承接〔2026-07-10 用户拍板方向〕）
       if (!this._liumoUp && wtr.alive && wtr.hp <= wtr.hpMax * 0.6) {
         this._liumoUp = true;
-        // 【留空待用户】祭魔仪式演出词与登场编排（此处仅机制骨架的最简战报）
-        this._log("温天仁周身黑雾暴涨——六极真魔功！六道魔影自其身后次第升起、各踞一方！");
-        this._log("【敌情】六魔各司其职：攻魔夺命、御魔横身、阵魔布煞、疗魔续伤、袭魔循隙、幻魔乱目——治疗不除，此战无光。");
+        this._log("温天仁：「哼……能逼本座用出这门功法——你可以自傲了。」");
+        this._log("温天仁双手猛然一挥——周身黑雾暴涨、天色骤暗，六道高大虚影自其身后次第升起：或头生双角，或身披鳞甲，个个狰狞恐怖、口吐獠牙，灰白魔气缠绕周身——犹如天魔降世！");
+        this._log("温天仁：「这些虽只是六极圣尊的幻影——对付你一位结丹期修士，绰绰有余了。」");
+        this._log("【敌情】六魔各司其职：大力真魔夺命、御魔横身、阵魔布煞、疗魔续伤、袭魔循隙、幻魔乱目——治疗不除，此战无光。");
+        this._emitFx("global", "ult", "︻六极真魔功︼");
         wtr.lane = 2; wtr.pos = Math.min(this.W - 1, wtr.pos + 2);   // 本体退居后排压阵
+        wtr.art = "wentianren_mo";                                   // 魔功缠身变体立绘（已入库即换）
         wtr.attacks.forEach(a => { a.weight = Math.max(2, Math.round((a.weight || 8) * 0.4)); });   // 低频出手（魔功维系分神）
         const mk = (cfg) => { const f = new F(cfg); f.team = "enemy"; f._mo = cfg._mo; return f; };   // _mo 须手动透传（构造器不带未知字段）
         const demons = [
-          { name: "攻魔", _mo: "gong", hp: 85, elem: "huo", nature: "demon", speed: 17, agility: 12, move: 2, mp: 60, qiLayer: 18, lane: 0,
-            attacks: [{ name: "魔影撕裂", dmg: 24, kind: "normal", weight: 10, range: [1, 2] }, { name: "魔炎贯胸", dmg: 21, kind: "pierce", weight: 6, range: [1, 4], mp: 6 }] },
-          { name: "御魔", _mo: "yu", hp: 110, elem: "tu", nature: "demon", speed: 12, agility: 8, move: 1, mp: 40, qiLayer: 18, armor: 10, lane: 0,
-            attacks: [{ name: "魔盾横扫", dmg: 13, kind: "normal", weight: 8, range: [1, 1] }] },
-          { name: "阵魔", _mo: "zhen", hp: 75, elem: "tu", nature: "demon", speed: 13, agility: 10, move: 1, mp: 60, qiLayer: 18, lane: 2,
-            attacks: [{ name: "煞阵引力", dmg: 11, kind: "normal", weight: 6, range: [2, 6], mp: 5 }] },
-          { name: "疗魔", _mo: "liao", hp: 75, elem: "shui", nature: "demon", speed: 14, agility: 11, move: 1, mp: 80, qiLayer: 18, lane: 2,
-            attacks: [{ name: "魔息侵蚀", dmg: 10, kind: "normal", weight: 5, range: [2, 5], mp: 4 }] },
-          { name: "袭魔", _mo: "xi", hp: 80, elem: "jin", nature: "demon", speed: 20, agility: 16, move: 3, mp: 60, qiLayer: 18, lane: 1,
-            attacks: [{ name: "循隙冷刺", dmg: 22, kind: "pierce", weight: 9, range: [1, 1], mp: 5 }] },
-          { name: "幻魔", _mo: "huan", hp: 75, elem: "shui", nature: "demon", speed: 15, agility: 14, move: 2, mp: 60, qiLayer: 18, lane: 1,
-            attacks: [{ name: "幻影错位", dmg: 10, kind: "normal", weight: 5, range: [1, 4], mp: 4 }] },
+          // 大力真魔=正典名（最高大最凶恶·双巨臂·灰色魔火）；余五魔按司职命名
+          { name: "大力真魔", _mo: "gong", art: "mo_gong", hp: 85, elem: "huo", nature: "demon", canFlee: false, canFly: true, airGrade: 2, speed: 17, agility: 12, move: 2, mp: 60, qiLayer: 18, lane: 0,
+            attacks: [{ name: "巨臂魔掌", dmg: 24, kind: "normal", weight: 10, range: [1, 2] }, { name: "灰焰魔火", dmg: 21, kind: "pierce", weight: 6, range: [1, 4], mp: 6, elem: "huo" }] },
+          { name: "御魔", _mo: "yu", art: "mo_yu", hp: 110, elem: "tu", nature: "demon", canFlee: false, speed: 12, agility: 8, move: 1, mp: 40, qiLayer: 18, armor: 10, lane: 0,
+            attacks: [{ name: "鳞甲魔壁", dmg: 13, kind: "normal", weight: 8, range: [1, 1] }] },
+          { name: "阵魔", _mo: "zhen", art: "mo_zhen", hp: 75, elem: "tu", nature: "demon", canFlee: false, speed: 13, agility: 10, move: 1, mp: 60, qiLayer: 18, lane: 2,
+            attacks: [{ name: "骨幡煞引", dmg: 11, kind: "normal", weight: 6, range: [2, 6], mp: 5 }] },
+          { name: "疗魔", _mo: "liao", art: "mo_liao", hp: 75, elem: "shui", nature: "demon", canFlee: false, speed: 14, agility: 11, move: 1, mp: 80, qiLayer: 18, lane: 2,
+            attacks: [{ name: "腐息红雾", dmg: 10, kind: "normal", weight: 5, range: [2, 5], mp: 4 }] },
+          { name: "袭魔", _mo: "xi", art: "mo_xi", hp: 80, elem: "jin", nature: "demon", canFlee: false, canFly: true, airGrade: 2, speed: 20, agility: 16, move: 3, mp: 60, qiLayer: 18, lane: 1,
+            attacks: [{ name: "雾隙冷爪", dmg: 22, kind: "pierce", weight: 9, range: [1, 1], mp: 5 }] },
+          { name: "幻魔", _mo: "huan", art: "mo_huan", hp: 75, elem: "shui", nature: "demon", canFlee: false, speed: 15, agility: 14, move: 2, mp: 60, qiLayer: 18, lane: 1,
+            attacks: [{ name: "三面幻惑", dmg: 10, kind: "normal", weight: 5, range: [1, 4], mp: 4 }] },
         ].map(mk);
         // 站位：围踞轴右半（战位/僚位/深排各二）
         const spots = [wtr.pos - 3, wtr.pos - 2, wtr.pos - 1, wtr.pos, wtr.pos - 2, wtr.pos - 1];
         demons.forEach((d, i) => { d.pos = Math.max(this.player.pos + 2, Math.min(this.W - 1, spots[i])); });
         this.enemies.push(...demons);
         this._rollEnemyIntents();
+        // 祭魔仪式演出（乌云压顶+黑雾漫场+紫雷+六魔逐尊落位）——渲染批次落地后由 UI 承接
+        this._liumoRitualPending = true;
         return;
       }
       if (!this._liumoUp) return;
@@ -5715,14 +5731,15 @@ const Engine = {
         this._moDead = deadN;
         if (wtr.alive) {
           wtr.attacks.forEach(a => { if (a.dmg) a.dmg = Math.max(6, Math.round(a.dmg * 0.92)); });
-          this._log(`六极缺一，魔功已破其${"一二三四五六"[deadN - 1]}——温天仁的气势，肉眼可见地跌了一层！`);
+          if (deadN >= 6) this._log("最后一道魔影溃散成灰白雾气——温天仁面色煞白，踉跄半步：「不可能……六极圣尊的幻影，竟会败给一个同阶！」");
+          else this._log(`六极缺一，魔功已破其${"一二三四五六"[deadN - 1]}——温天仁的气势，肉眼可见地跌了一层！`);
         }
       }
     };
     this._combatMeta = { type: "wentianren_demo" };
     s.combat = true;
     this._combat.startRound();
-    this.log("温天仁，六道极圣亲传、结丹后期巅峰——乱星海元婴之下第一人。金针、蟠龙带、金光镜轮番祭起；把他的血压过六成，便要见识那门压箱底的六极真魔功了。", "event");
+    this.log("怒涛之上无立锥之地——你与温天仁各驾遁光、凌空对峙。六道极圣亲传、结丹后期巅峰，乱星海元婴之下第一人：金针、蟠龙带、金光镜轮番祭起；把他的血压过六成，便要见识那门压箱底的六极真魔功了。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -5973,6 +5990,11 @@ const Engine = {
     if (this._combat.status !== "ongoing") { this._combatOver(); return; }
     this._combat.startRound();
     UI.renderCombat(this._combat, this._combatMeta);
+    // 六极真魔功·祭魔仪式（S4）：六魔上轴的那一拍——黑雾漫场+乌云紫雷+六魔逐尊落位
+    if (this._combat._liumoRitualPending) {
+      this._combat._liumoRitualPending = false;
+      if (typeof UI !== "undefined" && UI.liumoRitual) UI.liumoRitual(this._combat);
+    }
   },
 
   // 轴上移动（不结束回合：移动与出手同回合内自由编排）

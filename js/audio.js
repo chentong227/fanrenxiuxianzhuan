@@ -110,6 +110,12 @@
     pick(c) { tone(c, { freq: 1175, dur: 0.1, gain: 0.035 }); tone(c, { freq: 1568, dur: 0.12, gain: 0.025, delay: 0.06 }); },
     // 打字机轻嗒（对话逐字，极轻——气口不是轰炸）
     type(c) { noise(c, { dur: 0.025, gain: 0.012, band: 2600 }); },
+    // 林间鸟鸣（S5 战场天象·森林战）：两声清亮短啭，极轻——远处的，不在耳边
+    bird(c) {
+      tone(c, { freq: 2900, slideTo: 2300, dur: 0.07, gain: 0.012 });
+      tone(c, { freq: 3300, slideTo: 2600, dur: 0.09, gain: 0.01, delay: 0.14 });
+      tone(c, { freq: 2500, slideTo: 3100, dur: 0.06, gain: 0.008, delay: 0.26 });
+    },
     // 棋子落枰（红尘劫·棋友坐化——一子落定的脆响，木与玉的短击）
     goClick(c) {
       noise(c, { dur: 0.03, gain: 0.05, band: 3400 });

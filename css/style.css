@@ -1606,6 +1606,24 @@ body.story-on .toast {
   filter: brightness(2.1) saturate(.6) drop-shadow(0 0 14px rgba(255,220,180,.8)) !important;
   transition: filter .06s;
 }
+/* 海战（S5）：怒涛之上无立锥之地——全员踏浪凌空。浮沉呼吸位移错相荡摆（nth 错开不齐浮）。
+ * ⚠ .axis-unit 的 translate 承载 --lx/--ly/--ax/--ay 排位/飞高——关键帧必须原样保留这组变量，
+ * 只在 Y 上叠浮沉量（否则升空/排深全被动画打回原点）。死亡单位不浮（deadFade 接管）。 */
+.sea-field .axis-unit:not(.dead) { animation: seaBob 3.4s ease-in-out infinite; }
+.sea-field .axis-unit:nth-child(2n):not(.dead) { animation-duration: 3.9s; animation-delay: -1.3s; }
+.sea-field .axis-unit:nth-child(3n):not(.dead) { animation-duration: 4.3s; animation-delay: -2.1s; }
+@keyframes seaBob {
+  0%, 100% { translate: calc(var(--lx, 0px) + var(--ax, 0px)) calc(var(--ly, 0px) + var(--ay, 0px)); }
+  50% { translate: calc(var(--lx, 0px) + var(--ax, 0px)) calc(var(--ly, 0px) + var(--ay, 0px) - 7px); }
+}
+/* 六极真魔功·祭魔（S4）：六魔蒙纱待现 → 自魔雾中降世显形（模糊沉降+暗到亮） */
+.au-fig.mo-veil .au-img { opacity: 0; }
+.au-fig.mo-descend .au-img { animation: moDescend .78s cubic-bezier(.2, .8, .3, 1) both; }
+@keyframes moDescend {
+  0% { opacity: 0; translate: 0 -30px; filter: blur(7px) brightness(.45); }
+  55% { opacity: 1; filter: blur(1.5px) brightness(.8) drop-shadow(0 0 18px rgba(140, 110, 190, .55)); }
+  100% { opacity: 1; translate: 0 0; filter: none; }
+}
 /* 受击反作用（S1）：方向化击退+倾斜+回弹——方向 --kb（1=向右弹）与力度 --kbAmp 由 JS 按攻守相对位注入。
  * ⚠ 只动 .au-img/.au-glyph/.au-shade 的 translate，不碰外壳 left/transform（reconcile 红线） */
 .axis-unit.shake .au-img, .axis-unit.shake .au-glyph, .axis-unit.shake .au-shade {
@@ -4956,18 +4974,19 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   bottom: calc(var(--feet, 40px) + var(--ay, 0px) + 8px);
   height: calc(-1 * var(--ay, 0px) - 12px);
   translate: -50% 0; pointer-events: none; z-index: -1;
-  background: linear-gradient(180deg, rgba(150,225,255,.34), rgba(150,225,255,.04));
+  background: linear-gradient(180deg, rgba(160,225,252,.15), rgba(160,225,252,.02));
   opacity: 0; transition: opacity .45s ease .12s;
 }
 .axis-unit.airborne .air-pillar { opacity: 1; }
-/* 遁光踏足：御器悬空的灵光平台（修仙者不是浮空，是踏光而立）——挂在光柱顶端=脚底 */
+/* 遁光踏足（S5 返修·用户实锤"光圈好丑"）：大而亮的青圈 → 极淡的脚底光晕——
+ * 遁光是"若有若无的托举"，不是发光呼啦圈：小一号、重虚化、低透明、慢脉动 */
 .axis-unit .air-pillar::before {
-  content: ""; position: absolute; left: 50%; top: -9px; width: 88px; height: 15px;
+  content: ""; position: absolute; left: 50%; top: -7px; width: 54px; height: 9px;
   translate: -50% 0; border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 58%, rgba(150,225,255,.55), rgba(110,195,240,.2) 55%, transparent 78%);
-  filter: blur(2.5px); animation: dunGlow 1.9s ease-in-out infinite;
+  background: radial-gradient(ellipse at 50% 55%, rgba(200,235,252,.3), rgba(150,205,240,.1) 52%, transparent 74%);
+  filter: blur(3.5px); animation: dunGlow 2.8s ease-in-out infinite;
 }
-@keyframes dunGlow { 0%, 100% { opacity: .6; scale: .9 1; } 50% { opacity: 1; scale: 1.1 1; } }
+@keyframes dunGlow { 0%, 100% { opacity: .45; scale: .95 1; } 50% { opacity: .8; scale: 1.05 1; } }
 @keyframes hoverFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -9px; } }
 /* 统一相机（v89）：世界层（axis-lane+axis-units+地台）吃同一个 scale(zoom)，
  * origin 贴地（50% 100%）——镜头后拉时人/格/地/影一体变小、脚位不漂；

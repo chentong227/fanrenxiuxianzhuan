@@ -123,6 +123,7 @@
     // 战斗场景底图（对阵轴战场：下半幅开阔地面，横版专用；v90 起为舞台盒构图——
     // 两翼近景收口环抱+中央开阔，"人被环境包住"）
     bt_forest: {}, bt_road: {}, bt_valley: {}, bt_night: {},
+    bt_xinghai: {},   // 乱星海外海（S5·海战=凌空于怒涛之上：温天仁战/海王兽/外海猎妖/救凌玉灵）
     // 增量H·魔道争锋第四幕·皇宫决战战场底图（夜·皇城宫门广场；非 bt_ 前缀→中性 biome 无色偏）
     huanggong: {},
     // 前景遮挡条带（v90）：近景失焦草石（透明 PNG），压在全部单位之前——最快视差层。
@@ -163,6 +164,11 @@
     bt_hanli_jindan_jinzhuang: { face: "r" }, bt_hanli_jindan_jinzhuang_fly: { face: "r" },
     bt_hanli_wentianren: { face: "r" }, bt_hanli_wentianren_fly: { face: "r" },
     bt_wentianren: { face: "c" },   // 温天仁正典战姿（麻衣高冠赤足·正面近对称，永不镜像）
+    bt_wentianren_mo: { face: "c" },   // 二阶段·魔功缠身变体（祭魔后 art 切换）
+    // 六极真魔功·六魔（S4·正典灰白魔气虚影：大力真魔/御/阵/疗/袭/幻）
+    bt_mo_gong: { face: "c" }, bt_mo_yu: { face: "c" }, bt_mo_zhen: { face: "c" },
+    bt_mo_liao: { face: "c" }, bt_mo_xi: { face: "l" }, bt_mo_huan: { face: "c" },
+    bt_chongyun: { face: "c" },   // 噬金虫群·出战形态（召唤助战位·虫云）
     bt_hanli_jindan_kouguan: { face: "r" }, bt_hanli_jindan_kouguan_fly: { face: "r" },
     bt_luyunfeng: { face: "c" }, bt_jinguang: { face: "c" },
     bt_modafu: { face: "c" }, bt_tienu: { face: "c" }, bt_wanxiaoshan: { face: "c" },

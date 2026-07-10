@@ -4569,6 +4569,13 @@ const UI = {
     this.el("combat-overlay").hidden = false;
     const titles = { encounter: "斗 法", showdown: "夺舍之夜 · 决战", breakthrough: "突破 · 心战", jinguang: "暗算金光上人", luyunfeng: "坊市归途 · 林中血" };
     this.el("combat-title").textContent = titles[meta.type] || "斗 法";
+    // 海战（S5）：怒涛之上无立锥之地——全员踏浪凌空（sea-field=单位浮沉呼吸+错相荡摆）
+    {
+      const fieldSea = this.el("axis-field");
+      if (fieldSea) fieldSea.classList.toggle("sea-field", !!(Engine._combat && Engine._combat.sea));
+    }
+    // 战场天象（S5 用户提案：三层分层+氛围粒的战场化——海战闪电浪风雷鸣/森林鸟鸣光束…）
+    this._startBattleAmbience(meta);
     // 战斗背景：心战用墨黑，其余用当前地点场景图（压暗虚化）。
     // 三层分级制（v88）：底名_far 远景层（无立物）+ 底名_mid 中景物件透明条带（人物身后
     // 独立视差）——两层齐备时人物真正"插在层间"；缺层回退单图，照旧可玩
@@ -4786,6 +4793,8 @@ const UI = {
   // 地点/战斗类型 → 战场底图基名（三层制：基名+_far/_mid 取层；单图回退用基名本身）
   _battleBaseFor(loc, meta) {
     if (meta && (meta.type === "showdown" || meta.type === "jinguang")) return "bt_night";
+    // 乱星海·海战（S5）：怒涛之上无立锥之地——外海系战斗一律走星海底图（战位带=浪面上空）
+    if (meta && ["wentianren_demo", "xh_haiwang", "xh_lingyuling", "ss_waihai"].indexOf(meta.type) >= 0) return "bt_xinghai";
     const id = loc ? loc.id : "";
     if (/road|town|jiayuan|qingniu/.test(id) || (State.data && State.data.journey)) return "bt_road";
     if (/huangfeng|baiyao|fangshi|tainan/.test(id)) return "bt_valley";
@@ -4838,9 +4847,60 @@ const UI = {
     this._perilLevel = 0;
     if (typeof Sfx !== "undefined" && Sfx.peril) Sfx.peril(0);
     this._armed = null;
+    this._stopBattleAmbience();   // 战场天象收束（S5：风暴远雷/林间鸟鸣定时器一并清）
     if (typeof Fx !== "undefined") Fx.clear();
     // 战罢归于地点轨（在哪打完，回哪的声音）
     if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(this._bgmForLocation(State.location()));
+  },
+
+  /* ===== 战场天象（S5·2026-07-10 用户提案）：据点氛围的战场化 =====
+   * 复用 Fx.ambient 氛围粒 + 屏幕级原语 + Sfx——按战场底图配"天地在动"：
+   * 乱星海=浪沫横飞+远雷天光+雷鸣；森林=天光光束+林间鸟鸣；山谷=灵气微光；官道=扬尘；皇宫=烬火。
+   * 定时器入 _battleAmbTimers，closeCombat 一并清（绝不漏到地图）。 */
+  _battleAmbTimers: null,
+  _startBattleAmbience(meta) {
+    this._stopBattleAmbience();
+    if (!meta || meta.type === "breakthrough") return;   // 心象空间无天象
+    const field = this.el("axis-field");
+    if (!field || typeof Fx === "undefined" || !Fx.ensure(field)) return;
+    const base = this._battleBaseFor(State.location(), meta);
+    const timers = this._battleAmbTimers = [];
+    // 随机循环定时器（每次间隔在 [lo,hi] 内重掷——天象不打拍子）；句柄对象入 timers 统一清
+    const loop = (lo, hi, fn) => {
+      const h = { id: 0 };
+      const tick = () => { fn(); h.id = setTimeout(tick, lo + Math.random() * (hi - lo)); };
+      h.id = setTimeout(tick, 600 + Math.random() * lo);
+      timers.push(h);
+    };
+    if (base === "bt_xinghai") {
+      // 风暴海战：浪沫横飞（常驻）+ 远雷天光 + 雷鸣——大决战的天地都在响
+      Fx.ambient("storm", { interval: 95, cap: 30 });
+      loop(5200, 11000, () => {
+        if (!Fx._ctx) return;
+        if (Math.random() < 0.55) {
+          // 远处天光一闪（海天线后的闷雷——只见其光）
+          Fx.flash("#c8d6ee", 150, .13);
+          if (typeof Sfx !== "undefined") Sfx.play("thunderFar");
+        } else {
+          // 一道远雷真劈下来（quiet：不震屏、弱闪、远雷声）
+          Fx.lightning(Fx._w * (0.12 + Math.random() * 0.76), Fx._h * (0.3 + Math.random() * 0.2),
+            { quiet: true, small: true, life: 380, bolt: ["96,128,186", "150,178,224", "225,238,255"] });
+        }
+      });
+    } else if (base === "bt_forest") {
+      Fx.ambient("beam", { alpha: 0.08 });   // 林间天光光束缓扫
+      loop(8000, 17000, () => { if (typeof Sfx !== "undefined") Sfx.play("bird"); });
+    } else if (base === "bt_valley") {
+      Fx.ambient("spirit", { interval: 300 });   // 灵秀山谷·灵气微光上浮
+    } else if (base === "bt_road") {
+      Fx.ambient("dust", { interval: 320 });     // 官道扬尘
+    } else if (base === "huanggong" || base === "bt_night") {
+      Fx.ambient("ash", { interval: 340 });      // 夜战/宫阙·烬屑浮沉
+    }
+  },
+  _stopBattleAmbience() {
+    (this._battleAmbTimers || []).forEach(h => clearTimeout(h && h.id != null ? h.id : h));
+    this._battleAmbTimers = null;
   },
 
   // 轴上锚点：data-uid 定位单位 sprite
@@ -4876,7 +4936,26 @@ const UI = {
     if (useOrbit) {
       if (typeof Sfx !== "undefined") Sfx.play("swordWhoosh");   // 群剑出袭·破空锐啸
       // 命中那拍（出袭飞达目标≈40%×0.92s≈0.37s）目标方向化击退
-      setTimeout(() => this._hitKnock(tgt, me), 370);
+      const leiOn = c0 && c0.player && (c0.player._leiEnchant || 0) > 0;
+      setTimeout(() => {
+        this._hitKnock(tgt, me, leiOn ? { amp: 17 } : undefined);
+        // 神雷附剑·带雷剑阵命中（S5 灵动感）：落点小金雷炸落 + 电弧窜体三小闪——附剑打谁谁带电
+        if (leiOn && typeof Fx !== "undefined" && Fx._ctx && tgt) {
+          const at = Fx.at(tgt, 0.5);
+          if (at) {
+            Fx.lightning(at.x, at.y, { gold: true, small: true, life: 240 });
+            for (let k = 0; k < 3; k++) {
+              setTimeout(() => {
+                if (!Fx._ctx) return;
+                const a0 = Math.random() * Math.PI * 2, r0 = 14 + Math.random() * 18;
+                Fx.arc(at.x + Math.cos(a0) * r0, at.y + Math.sin(a0) * r0 * 0.7,
+                  at.x + Math.cos(a0 + 1.2) * r0, at.y + Math.sin(a0 + 1.2) * r0 * 0.7,
+                  { c: "255,214,90", w: 1.8, life: 200 });
+              }, 90 + k * 140);
+            }
+          }
+        }
+      }, 370);
     }
     // 辟邪神雷·劈·横扫（problem 5）：金雷自人物身畔轰发→左右贯场雷幕→所及诸敌天降金雷劈落
     const useSweep = !!(sp && sp.aoe && sp.type === "atk" && me && typeof Fx !== "undefined");
@@ -5029,6 +5108,54 @@ const UI = {
       setTimeout(() => orbit.classList.remove("launch"), 1300);
     });
     return true;
+  },
+
+  /* 六极真魔功·祭魔仪式（S4·2026-07-10 用户拍板方向：黑雾漫场+乌云压顶+电闪雷鸣）——
+   * 机制已由引擎钩子落位（六魔已在轴上），此处纯演出：天色骤暗→魔雾常驻漫场→诡紫天雷→
+   * 六魔自魔雾中一尊一尊显形（每落一尊：雾爆+暗紫环+钟鸣+微顿帧）→雷鸣长尾收拍。 */
+  liumoRitual(c) {
+    const field = this.el("axis-field");
+    if (!field || typeof Fx === "undefined" || !Fx.ensure(field)) return;
+    // ① 天色骤暗 + 黑雾漫场（moqi 常驻整个魔功阶段——战斗结束 Fx.clear 自收）
+    Fx.dimField(5600, .5);
+    Fx.ambient("moqi", { cap: 26, interval: 120 });
+    if (typeof Sfx !== "undefined") Sfx.play("thunderFar");
+    // ② 乌云紫雷：两道诡紫天雷先后劈落（魔功天象——与韩立金雷色板对仗）
+    const PURPLE = ["120,60,180", "170,110,220", "240,225,255"];
+    setTimeout(() => { if (Fx._ctx) Fx.lightning(Fx._w * (0.30 + Math.random() * 0.15), Fx._h * 0.5, { bolt: PURPLE, life: 480 }); }, 420);
+    setTimeout(() => { if (Fx._ctx) Fx.lightning(Fx._w * (0.60 + Math.random() * 0.18), Fx._h * 0.46, { bolt: PURPLE, life: 480 }); }, 800);
+    // ③ 六魔逐尊显形：先蒙纱（mo-veil），再一尊一尊自魔雾中落位（mo-descend）
+    const demons = [];
+    c.enemies.forEach((e, i) => { if (e._mo && e.alive) demons.push(i); });
+    demons.forEach(ei => {
+      const a = this._axisAnchor(`enemy:${ei}`);
+      const f = a && a.querySelector(".au-fig");
+      if (f) f.classList.add("mo-veil");
+    });
+    demons.forEach((ei, k) => setTimeout(() => {
+      const anchor = this._axisAnchor(`enemy:${ei}`);
+      if (!anchor) return;
+      const fig = anchor.querySelector(".au-fig");
+      if (fig) {
+        fig.classList.remove("mo-veil", "mo-descend"); void anchor.offsetWidth;
+        fig.classList.add("mo-descend");
+        setTimeout(() => fig.classList.remove("mo-descend"), 1000);
+      }
+      if (Fx._ctx) {
+        const at = Fx.at(anchor, 0.6);
+        if (at) {
+          Fx.ring(at.x, at.y, { c: "#9a7fd4", vr: 4.2, life: 400, lw: 2.6 });
+          Fx.burst(at.x, at.y, "none", 12, { power: 3.4 });
+        }
+      }
+      if (typeof Sfx !== "undefined") Sfx.play("bell");
+      Fx.hitStop(60);
+    }, 1200 + k * 300));
+    // ④ 收拍：雷鸣长尾 + 镜头轻推（天魔降世，压迫感落定）
+    setTimeout(() => {
+      if (typeof Sfx !== "undefined") Sfx.play("thunder");
+      this._camPunch();
+    }, 1200 + demons.length * 300 + 260);
   },
 
   // 应雷仪式：神雷附剑施放、剑阵转金那一刻——剑阵应雷齐震 + 金雷光环暴胀涌现 + 金雷环从人物炸开

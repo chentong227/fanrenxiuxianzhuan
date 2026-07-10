@@ -151,9 +151,9 @@
     shijin_fu:    { name: "噬金·附体", mp: 5, range: [0, 0], type: "def", shield: 7, source: "treasure", tier: 2, elem: "jin",
                 chargeCost: { id: "shijinchong", n: 1 },
                 desc: "纵噬金虫附于体表、淬结一层金芒虫甲护身（结盾 36）。耗灵机一分，虫尽则止。" },
-    shijin_chao:  { name: "噬金·出战", mp: 6, range: [1, 5], type: "atk", dmg: 3, fixedSegs: 3, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
-                chargeCost: { id: "shijinchong", n: 1 },
-                desc: "放虫群如金云扑敌、分头撕咬（三段连噬、各自结算）——金芒专噬金铁，远近皆可笼罩。耗灵机一分，虫尽则止。" },
+    shijin_chao:  { name: "噬金·出战", mp: 6, range: [0, 0], type: "buff", source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
+                chargeCost: { id: "shijinchong", n: 1 }, summon: "chongyun",
+                desc: "纵虫群出战——万千噬金虫聚作金色虫云入「助战位」，自主扑咬撕噬（虫群有血条、被打散即失；简令可换攻/守/撤）。已在场时再纵一分灵机＝虫云复凝回血。耗灵机一分，虫尽则止。" },
     shijin_blade: { name: "噬金·变武器", mp: 8, range: [1, 3], type: "atk", dmg: 7, pierce: true, cd: 1, source: "treasure", tier: 2, elem: "jin", driveRealm: 2,
                 chargeCost: { id: "shijinchong", n: 2 },
                 desc: "聚虫群凝成一柄噬金巨刃御使斩落——专啮金铁、破甲裂宝（必破甲）。耗灵机二分；催动后须回气一回合。虫尽则止。" },
@@ -1294,6 +1294,34 @@
         this._pMoved = 0;   // 穿亚空间：本回合移动上限放大到全场（落点随心、长距离瞬移——只看落点空否）
         this._log(`你周身银光一闪、整个人没入亚空间——本回合穿空遁走、无视挡线困足，落点随心（移动范围大增）！`);
         this._emitFx("player", "miss", sp.name);
+        this._checkEnd();
+        return { ok: true };
+      }
+      // 召唤型（S5·噬金·出战）：虫群化作侧位单位入「助战位」——有血条、自主扑咬、简令可调；
+      // 已在场再纵灵机=虫云复凝回血（灵机→虫群续航的资源转换）
+      if (sp.summon) {
+        const exist = this.sides.find(sd => sd.id === sp.summon && sd.hp > 0);
+        if (exist) {
+          exist.hp = Math.min(exist.hpMax, exist.hp + Math.round(exist.hpMax * 0.5));
+          this._log(`你再纵一分灵机入阵——噬金虫群嗡鸣暴涨、金云复凝（虫群气血回复）！`);
+        } else {
+          const f = this._makeSideFighter({
+            id: sp.summon, name: "噬金虫群", kind: "pet", art: sp.summon,
+            hp: 60, hpMax: 60, guard: 0, elem: "jin", mp: 40, mpMax: 40,
+            canFly: true, airGrade: 2, move: 2, stance: "attack",
+            persona: { aggr: 9, prot: 0, kite: 0 },
+            moves: [
+              { name: "虫云噬咬", dmg: 9, weight: 10, range: [1, 1], mp: 0, line: "金云卷落、万虫齐噬" },
+              { name: "金砂溅射", dmg: 6, weight: 6, range: [1, 3], mp: 2, line: "虫群如金砂泼洒向" },
+            ],
+          });
+          f.mastery = 1;   // 灵虫受简令（非客随）
+          f.pos = clampNum(this.player.pos + 1, 0, this.W - 1);
+          f.lane = 0;
+          this.sides.push(f);
+          this._log(`万千噬金虫自袖中涌出、嗡鸣如潮，聚作一团金色虫云入阵助战——虫群有血条、被打散即失（点其简令章可换攻/守/撤）！`);
+        }
+        this._emitFx("player", "crit", sp.name);
         this._checkEnd();
         return { ok: true };
       }

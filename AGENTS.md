@@ -228,6 +228,14 @@
 
 ## 五、当前状态指针（2026-06-16）
 
+- **v305 · 六魔编排完全体 + 海战天象（2026-07-10 下午·用户实测五项反馈全闭环·action-fx-design.md v305 增量节必读）**：
+  ①六魔祭魔仪式 `UI.liumoRitual`（压暗→moqi 黑雾常驻→紫雷→六魔蒙纱逐尊显形+钟鸣顿帧）+六魔生图×6（正典灰白魔气虚影·
+  大力真魔=正典名）+温天仁魔功变体 art 切换；②乱星海海战底图 bt_xinghai + 四海战路由 + **c.sea 踏浪凌空**（sea-field 浮沉
+  ⚠seaBob 关键帧须保留 --lx/--ax/--ly/--ay）+demo 开场双方 alt=1；③**噬金·出战改召唤助战位**（sp.summon→sides[] 虫群
+  hp60 简令可调·bt_chongyun 立绘·再纵灵机=回血）；④神雷灵动感（劈=敌间连锁金弧+贴地窜雷；附剑=命中金雷+电弧窜体）；
+  ⑤温天仁霸气立绘重生成+遁光光圈返修（54px 重虚化）；⑥**战场天象 `UI._startBattleAmbience`**（按底图：乱星海=storm 浪沫+
+  远雷 quiet lightning+雷鸣；森林=beam+bird 鸟鸣；山谷 spirit/官道 dust/夜宫 ash——closeCombat 统一清）。
+  wentianren.bal 冒烟 25% 地板全绿、430×932 三项实测通过。
 - **v304 · 战斗演出跃迁 S1~S4 + 名场面演出打磨（2026-07-10·docs/action-fx-design.md 必读）**：
   ①**S1 动作手感 v1**：hitstop 接入战斗（暴击 85ms/终结 115ms·Fx.hitStop 复用）+ 攻击三拍（strikeMelee/strikeCast
   预备后撤→突进→收势·方向 `--atk` 注入·敌我同规则 fxcast 也冲）+ 受击方向化击退（`UI._hitKnock` `--kb/--kbAmp`

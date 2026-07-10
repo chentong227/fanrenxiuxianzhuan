@@ -293,6 +293,22 @@
           vx: rnd(-0.05, 0.05), vy: rnd(-0.32, -0.12), wob: rnd(8, 14),
           size: rnd(1.8, 3.0), c: pick(["#7fe5d2", "#bff3e8", "#9af0e0"]), life: rnd(3600, 6200),
         });
+      } else if (preset === "storm") {
+        // 风暴海战（S5 战场天象）：浪沫水线横飞——上半疏（风痕）、下半密（浪面溅沫），
+        // 高横速短命=风在吼；lighter 混合下取冷白蓝
+        const top = Math.random() < 0.35;
+        this.mote(rnd(-0.12 * W, W * 0.55), top ? rnd(0, H * 0.5) : rnd(H * 0.58, H * 0.95), {
+          vx: rnd(2.4, 4.6), vy: rnd(-0.25, 0.35), wob: 2,
+          size: top ? rnd(1.2, 2) : rnd(1.6, 2.9), c: pick(["#cfe0ec", "#b6cadb", "#e8f2f9"]), life: rnd(650, 1300),
+        });
+      } else if (preset === "moqi") {
+        // 六极真魔功·黑雾漫场（S4）：大团灰紫魔雾贴着地面横向流卷——天魔降世的"场"
+        // （lighter 混合下深色不显，取带微光的灰紫；大颗慢移=雾而非尘）
+        const dir = Math.random() < 0.72 ? 1 : -1;   // 主流向一致、偶有回卷
+        this.mote(dir > 0 ? rnd(-0.15 * W, W * 0.3) : rnd(W * 0.7, W * 1.15), rnd(H * 0.42, H * 0.96), {
+          vx: rnd(0.18, 0.5) * dir, vy: rnd(-0.06, 0.02), wob: rnd(10, 18),
+          size: rnd(9, 20), c: pick(["#6b5f78", "#584e66", "#7a7088", "#4e4460"]), life: rnd(3800, 6800),
+        });
       } else { // dust（默认）
         this.mote(rnd(0, W), rnd(0, H), {
           vx: rnd(-0.09, 0.09), vy: rnd(-0.03, 0.02), wob: rnd(5, 9),
@@ -476,6 +492,13 @@
         pts: main, branches, life: opts.life || (opts.small ? 280 : 460), t: 0, w: opts.small ? 2.2 : 3.4,
         bolt: opts.bolt || (gold ? ["255,176,30", "255,214,90", "255,248,210"] : ["122,168,255", "170,205,255", "244,250,255"]),
       });
+      // quiet（S5 战场天象·远雷）：天边的雷不进战局——不震屏、弱天光、远雷声、不迸粒
+      if (opts.quiet) {
+        this.flash("#c9d7ee", 130, .16);
+        if (typeof Sfx !== "undefined") Sfx.play("thunderFar");
+        this._run();
+        return;
+      }
       this.burst(x, y, gold ? "jinlei" : "lei", opts.small ? 14 : 26, { power: 5 });
       this.flash(gold ? "#ffe9ad" : "#d6e8ff", opts.small ? 110 : 190, opts.small ? .4 : .8);
       this.shake(opts.small ? 5 : 11);
@@ -583,11 +606,21 @@
         const sweepY = tos.length ? tos.reduce((s, t) => s + t.y, 0) / tos.length : from.y;
         this._horizBolt(from.x, from.y, Math.max(...allX) + 60, sweepY, { life: 460, w: 3.2 });
         this._horizBolt(from.x, from.y, Math.min(...allX) - 60, sweepY, { life: 460, w: 3.2 });
-        // ③ 逐敌雷击（错相 90ms）：金雷劈落 + 冲击环 + 迸散；首雷顿帧——那一下"咔"地定住
+        // ③ 逐敌雷击（错相 90ms）：金雷劈落 + 冲击环 + 迸散；首雷顿帧——那一下"咔"地定住。
+        //    S5 灵动感：雷不是各劈各的——前一个落雷向下一个目标"窜"出连锁金弧（雷在敌群间跳），
+        //    落点地面再窜两截贴地雷（电走地脉）
         tos.forEach((t, i) => setTimeout(() => {
           if (!this._ctx) return;
           this.lightning(t.x, t.y, { gold: true, life: 520 });
           if (i === 0) this.hitStop(110);
+          if (i > 0) {   // 连锁：自前一个雷点跳向本目标（略上挑的弧=电蛇腾跃）
+            const pv = tos[i - 1];
+            this.arc(pv.x, pv.y - 12, t.x, t.y - 12, { c: "255,214,90", w: 2.4, life: 300 });
+            setTimeout(() => this._ctx && this.arc(pv.x, pv.y - 4, t.x, t.y - 8, { c: "255,240,190", w: 1.4, life: 220 }), 70);
+          }
+          const gy = (feet[i] || t).y;   // 贴地窜雷：落点左右各一截短折雷贴地爬开
+          this._horizBolt(t.x, gy, t.x - rnd(34, 52), gy + rnd(-3, 3), { life: 260, w: 1.8 });
+          this._horizBolt(t.x, gy, t.x + rnd(34, 52), gy + rnd(-3, 3), { life: 260, w: 1.8 });
           this.ring(t.x, t.y + 8, { c: "#ffd970", vr: 4.8, life: 340, lw: 3 });
           this.ring(t.x, t.y + 8, { c: "#fff", vr: 2.8, life: 260, lw: 1.6 });
           this.burst(t.x, t.y, "jinlei", 24, { power: 5.6 });
