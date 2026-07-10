@@ -295,13 +295,22 @@
           size: rnd(1.8, 3.0), c: pick(["#7fe5d2", "#bff3e8", "#9af0e0"]), life: rnd(3600, 6200),
         });
       } else if (preset === "storm") {
-        // 风暴海战（S5 战场天象）：浪沫水线横飞——上半疏（风痕）、下半密（浪面溅沫），
-        // 高横速短命=风在吼；lighter 混合下取冷白蓝
-        const top = Math.random() < 0.35;
-        this.mote(rnd(-0.12 * W, W * 0.55), top ? rnd(0, H * 0.5) : rnd(H * 0.58, H * 0.95), {
-          vx: rnd(2.4, 4.6), vy: rnd(-0.25, 0.35), wob: 2,
-          size: top ? rnd(1.2, 2) : rnd(1.6, 2.9), c: pick(["#cfe0ec", "#b6cadb", "#e8f2f9"]), life: rnd(650, 1300),
-        });
+        // 风暴海战（S5 战场天象·v308 加雨）：斜掠雨线（上半）+ 浪沫水线横飞（下半）——
+        // 高速短命=风在吼雨在抽；lighter 混合下取冷白蓝
+        const roll = Math.random();
+        if (roll < 0.42) {
+          // 斜雨线：自上而下疾掠（vy 大 vx 侧偏——底图雨幕的"活"层）
+          this.mote(rnd(0, W), rnd(-0.06 * H, H * 0.4), {
+            vx: rnd(1.2, 2.2), vy: rnd(5.5, 8.5), wob: 0,
+            size: rnd(1.1, 1.7), c: pick(["#b9cddd", "#cfe0ec", "#a8bccd"]), life: rnd(360, 640),
+          });
+        } else {
+          const top = roll < 0.62;
+          this.mote(rnd(-0.12 * W, W * 0.55), top ? rnd(0, H * 0.5) : rnd(H * 0.58, H * 0.95), {
+            vx: rnd(2.4, 4.6), vy: rnd(-0.25, 0.35), wob: 2,
+            size: top ? rnd(1.2, 2) : rnd(1.6, 2.9), c: pick(["#cfe0ec", "#b6cadb", "#e8f2f9"]), life: rnd(650, 1300),
+          });
+        }
       } else if (preset === "moqi") {
         // 六极真魔功·黑雾漫场（S4）：大团灰紫魔雾贴着地面横向流卷——天魔降世的"场"
         // （lighter 混合下深色不显，取带微光的灰紫；大颗慢移=雾而非尘）

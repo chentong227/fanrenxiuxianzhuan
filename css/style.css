@@ -5007,16 +5007,18 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   background: linear-gradient(180deg, rgba(160,225,252,.15), rgba(160,225,252,.02));
   opacity: 0; transition: opacity .45s ease .12s;
 }
-.axis-unit.airborne .air-pillar { opacity: 1; }
-/* 遁光踏足（S5 返修·用户实锤"光圈好丑"）：大而亮的青圈 → 极淡的脚底光晕——
- * 遁光是"若有若无的托举"，不是发光呼啦圈：小一号、重虚化、低透明、慢脉动 */
-.axis-unit .air-pillar::before {
-  content: ""; position: absolute; left: 50%; top: -7px; width: 54px; height: 9px;
-  translate: -50% 0; border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 55%, rgba(200,235,252,.3), rgba(150,205,240,.1) 52%, transparent 74%);
-  filter: blur(3.5px); animation: dunGlow 2.8s ease-in-out infinite;
-}
+/* v308 用户裁决（"光球还是没删除，太丑了"）：遁光光柱/光台整个撤——
+ * 悬空感交给高度差+接触影+浮沉呼吸，不再画任何发光体 */
+.axis-unit .air-pillar { display: none !important; }
 @keyframes dunGlow { 0%, 100% { opacity: .45; scale: .95 1; } 50% { opacity: .8; scale: 1.05 1; } }
+/* v308 海战修正（用户实锤两处）：
+ * ① 灰色"阵型"（透视地台的排地线+雾带）在海面上是穿帮——海上无地，整层撤；
+ * ② 凌空高度收敛：海战里 alt=1 是常态（踏浪）不是冲天——飞高从 -36/-48/-60cqh
+ *   收到贴浪一档，人物不再钉在画框顶上（开场构图回到海天线） */
+.sea-field .axis-units::before { display: none; }
+.sea-field .axis-unit.airborne { --ay: -7cqh; }
+.sea-field .axis-unit.airborne.air-2 { --ay: -10cqh; }
+.sea-field .axis-unit.airborne.air-3 { --ay: -13cqh; }
 @keyframes hoverFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -9px; } }
 /* 统一相机（v89）：世界层（axis-lane+axis-units+地台）吃同一个 scale(zoom)，
  * origin 贴地（50% 100%）——镜头后拉时人/格/地/影一体变小、脚位不漂；

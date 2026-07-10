@@ -164,7 +164,8 @@
     bt_hanli_jindan_jinzhuang: { face: "r" }, bt_hanli_jindan_jinzhuang_fly: { face: "r" },
     bt_hanli_wentianren: { face: "r" }, bt_hanli_wentianren_fly: { face: "r" },
     bt_wentianren: { face: "c" },   // 温天仁正典战姿（麻衣高冠赤足·正面近对称，永不镜像）
-    bt_wentianren_mo: { face: "c" },   // 二阶段·魔功缠身变体（祭魔后 art 切换）
+    bt_wentianren_mo: { face: "c" },   // 二阶段·黑魔化（祭魔后 art 切换）
+    bt_wentianren_jinjiao: { face: "c" },   // 三阶段·魔化完全体（血≤28% 金角迸生）
     // 六极真魔功·六魔（S4·正典灰白魔气虚影：大力真魔/御/阵/疗/袭/幻）
     bt_mo_gong: { face: "c" }, bt_mo_yu: { face: "c" }, bt_mo_zhen: { face: "c" },
     bt_mo_liao: { face: "c" }, bt_mo_xi: { face: "l" }, bt_mo_huan: { face: "c" },

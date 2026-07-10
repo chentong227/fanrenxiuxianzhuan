@@ -4873,12 +4873,14 @@ const UI = {
       timers.push(h);
     };
     if (base === "bt_xinghai") {
-      // 风暴海战：浪沫横飞（常驻）+ 远雷天光 + 雷鸣——大决战的天地都在响
+      // 风暴海战：浪沫横飞（常驻）+ 远雷天光 + 雷鸣 + 风声环境床——大决战的天地都在响
       // （S5 性能收口：cap 30→22 / interval 95→130——用户实测"卡了"，氛围粒是常驻开销第一刀）
       Fx.ambient("storm", { interval: 130, cap: 22 });
-      loop(5200, 11000, () => {
+      // v308：风声床（duck:false=不压战斗 BGM——风是垫底的景，鼓是主角）
+      if (typeof Sfx !== "undefined" && Sfx.ambient) Sfx.ambient("wind", { vol: 0.3, duck: false });
+      loop(4200, 9000, () => {
         if (!Fx._ctx) return;
-        if (Math.random() < 0.55) {
+        if (Math.random() < 0.5) {
           // 远处天光一闪（海天线后的闷雷——只见其光）
           Fx.flash("#c8d6ee", 150, .13);
           if (typeof Sfx !== "undefined") Sfx.play("thunderFar");
@@ -4901,6 +4903,7 @@ const UI = {
   },
   _stopBattleAmbience() {
     (this._battleAmbTimers || []).forEach(h => clearTimeout(h && h.id != null ? h.id : h));
+    if (this._battleAmbTimers && typeof Sfx !== "undefined" && Sfx.ambientStop) Sfx.ambientStop();   // 风声等战场声床一并收
     this._battleAmbTimers = null;
   },
 
@@ -5049,13 +5052,18 @@ const UI = {
     if (!img || !img.src) return;
     const m = img.src.match(/\/(bt_[a-z0-9_]+)\.png/i);
     if (!m) return;
-    const base = m[1].replace(/_fly$/, "");
+    const base = m[1].replace(/_fly$/, "").replace(/_(atk|cast)$/, "");
     const url = Art.hasBattler(base + suffix) ? Art.battlerUrl(base + suffix) : null;
     if (!url) return;
-    const back = img.src;
+    // ⚠ 原姿只记一次（v307 实锤"劈完不变回"：连发时第二次 swap 把姿态图当原姿记下，
+    // 恢复时"变回"的还是施法图——永久卡在施法姿。_poseBack 未清=尚在姿态中，不覆写）
+    if (img._poseBack == null) img._poseBack = img.src;
     img.src = url;
     clearTimeout(img._poseT);
-    img._poseT = setTimeout(() => { if (img.isConnected && img.src === url) img.src = back; }, ms);
+    img._poseT = setTimeout(() => {
+      if (img.isConnected && img._poseBack != null) img.src = img._poseBack;
+      img._poseBack = null;
+    }, ms);
   },
 
   // 受击反作用：背向攻击者的方向化击退+倾斜+回弹（CSS hitKnock 吃 --kb/--kbAmp）。

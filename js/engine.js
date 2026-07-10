@@ -5684,6 +5684,17 @@ const Engine = {
         return;
       }
       if (!this._liumoUp) return;
+      // 三阶段·魔化完全体（v308 用户裁决·动漫参考：黑魔化之上头生金角）：
+      // 血压过三成——温天仁背水一搏，金角迸生、气势回涨（换 jinjiao 立绘 + 护体 + 攻势回升）
+      if (!this._jinjiaoUp && wtr.alive && wtr.hp <= wtr.hpMax * 0.28) {
+        this._jinjiaoUp = true;
+        wtr.art = "wentianren_jinjiao";
+        wtr.shield = Math.min(Math.round(wtr.hpMax * 0.5), (wtr.shield || 0) + 55);
+        wtr.attacks.forEach(a => { if (a.dmg) a.dmg = Math.round(a.dmg * 1.18); a.weight = (a.weight || 4) + 3; });
+        this._log("温天仁一声长啸震裂海雾——额侧迸生一对鎏金魔角、周身黑曜魔纹透出熔金之光：六极真魔功·魔化完全体！他的气势不跌反涨，攻势回潮！");
+        this._emitFx("global", "ult", "︻魔化·完全体︼");
+        return;
+      }
       const alive = (mo) => this.enemies.find(e => e._mo === mo && e.alive);
       // 御魔在世：本体+众魔披甲（登场时一次性生效，殒落即撤）
       const yu = alive("yu");

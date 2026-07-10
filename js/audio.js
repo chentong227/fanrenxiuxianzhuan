@@ -80,8 +80,12 @@
     page(c) { noise(c, { dur: 0.1, gain: 0.028, band: 1500 }); },
     // 入戏磬：题字卡
     chime(c) { tone(c, { freq: 988, dur: 1.0, gain: 0.05 }); tone(c, { freq: 1481, dur: 0.8, gain: 0.022, delay: 0.02 }); },
-    // 剑鸣：攻击
-    sword(c) { tone(c, { freq: 760, slideTo: 2300, type: "sawtooth", dur: 0.12, gain: 0.03 }); noise(c, { dur: 0.1, gain: 0.022, band: 3400 }); },
+    // 剑鸣：攻击（v308 加厚）
+    sword(c) {
+      tone(c, { freq: 760, slideTo: 2300, type: "sawtooth", dur: 0.14, gain: 0.055 });
+      noise(c, { dur: 0.12, gain: 0.04, band: 3400 });
+      tone(c, { freq: 190, slideTo: 85, dur: 0.1, gain: 0.022, delay: 0.02 });
+    },
     // 钝击：受创
     hit(c) { tone(c, { freq: 170, slideTo: 58, dur: 0.16, gain: 0.085 }); noise(c, { dur: 0.1, gain: 0.04, low: 320 }); },
     // 柔和回春：治疗
@@ -128,18 +132,23 @@
       tone(c, { freq: 92, slideTo: 48, type: "sawtooth", dur: 1.1, gain: 0.022 });
       noise(c, { dur: 0.9, gain: 0.014, low: 190, delay: 0.08 });
     },
-    // 远雷先声（S2 神雷预兆拍）：低频滚雷自远处压来——"要来了"的酝酿
+    // 远雷先声（S2 神雷预兆拍）：低频滚雷自远处压来——"要来了"的酝酿（v308 加厚）
     thunderFar(c) {
-      noise(c, { dur: 1.5, gain: 0.022, low: 105 });
-      tone(c, { freq: 56, slideTo: 33, type: "sine", dur: 1.4, gain: 0.024, delay: 0.06 });
-      noise(c, { dur: 0.7, gain: 0.012, low: 180, delay: 0.55 });
+      noise(c, { dur: 1.6, gain: 0.04, low: 120 });
+      tone(c, { freq: 54, slideTo: 30, type: "sine", dur: 1.6, gain: 0.042, delay: 0.05 });
+      noise(c, { dur: 0.9, gain: 0.022, low: 200, delay: 0.5 });
+      noise(c, { dur: 1.4, gain: 0.014, low: 80, delay: 0.9 });
     },
-    // 天雷劈落：高频炸裂 + 低频滚雷尾（fx.js 闪电配套）
+    // 天雷劈落 v2（v308 用户实锤"雷不是雷声，像8bit子弹"）：
+    // 撕裂炸头（宽带大电平）→ 中低频轰体 → 双段错相滚雷长尾（山海间的回响）——是雷，不是哔
     thunder(c) {
-      noise(c, { dur: 0.16, gain: 0.06, low: 2400 });
-      tone(c, { freq: 1900, slideTo: 220, type: "sawtooth", dur: 0.22, gain: 0.03 });
-      noise(c, { dur: 1.2, gain: 0.028, low: 140, delay: 0.1 });
-      tone(c, { freq: 64, slideTo: 38, type: "sine", dur: 1.1, gain: 0.03, delay: 0.12 });
+      noise(c, { dur: 0.07, gain: 0.15, band: 5600 });                                    // 撕空炸裂头
+      noise(c, { dur: 0.32, gain: 0.19, low: 3000 });                                     // 主爆宽带
+      tone(c, { freq: 1400, slideTo: 85, type: "sawtooth", dur: 0.5, gain: 0.06 });       // 电弧下坠
+      noise(c, { dur: 0.85, gain: 0.1, low: 480, delay: 0.06 });                          // 中低轰体
+      noise(c, { dur: 1.7, gain: 0.055, low: 150, delay: 0.28 });                         // 滚雷一段
+      noise(c, { dur: 2.4, gain: 0.032, low: 85, delay: 0.75 });                          // 滚雷二段（更远）
+      tone(c, { freq: 50, slideTo: 28, type: "sine", dur: 2.2, gain: 0.06, delay: 0.14 });// 次声沉底
     },
     // 远方斗法：绫帛破空的细啸 + 法器轻鸣（隐约金石声）
     farClash(c) {
@@ -150,34 +159,41 @@
 
     /* ===== 战斗音效全套（tactics T7：行属分系+战术事件——14PM 预算放开，
      * 每记都要"有形"：金石有锋、火有轰势、冰有脆裂、背袭有寒意） ===== */
-    // 金：金石锐鸣——法器破空带金属泛音（金光砖/子母刃）
+    // 金：金石锐鸣——法器破空带金属泛音（金光砖/子母刃）（v308 出手音全系加厚：用户实锤"太柔"）
     castJin(c) {
-      tone(c, { freq: 1320, slideTo: 2800, type: "sawtooth", dur: 0.14, gain: 0.034 });
-      tone(c, { freq: 2640, dur: 0.18, gain: 0.018, delay: 0.03 });
-      noise(c, { dur: 0.1, gain: 0.02, band: 4200, delay: 0.02 });
+      noise(c, { dur: 0.05, gain: 0.05, band: 6000 });                                    // 出鞘炸头
+      tone(c, { freq: 1320, slideTo: 2800, type: "sawtooth", dur: 0.16, gain: 0.062 });
+      tone(c, { freq: 2640, dur: 0.22, gain: 0.032, delay: 0.03 });
+      noise(c, { dur: 0.12, gain: 0.038, band: 4200, delay: 0.02 });
+      tone(c, { freq: 220, slideTo: 90, dur: 0.14, gain: 0.03, delay: 0.02 });            // 低频压底=分量
     },
     // 木：剑芒破空——嗖鸣上扬+叶簌尾（青元剑芒）
     castMu(c) {
-      tone(c, { freq: 880, slideTo: 2400, type: "triangle", dur: 0.16, gain: 0.032 });
-      noise(c, { dur: 0.14, gain: 0.022, band: 3000, delay: 0.02 });
-      tone(c, { freq: 1760, dur: 0.1, gain: 0.012, delay: 0.08 });
+      noise(c, { dur: 0.05, gain: 0.04, band: 4600 });
+      tone(c, { freq: 880, slideTo: 2400, type: "triangle", dur: 0.18, gain: 0.058 });
+      noise(c, { dur: 0.16, gain: 0.04, band: 3000, delay: 0.02 });
+      tone(c, { freq: 1760, dur: 0.12, gain: 0.022, delay: 0.08 });
+      tone(c, { freq: 180, slideTo: 80, dur: 0.12, gain: 0.026, delay: 0.02 });
     },
     // 水/冰：晶澈滑音+冰晶碎裂尾（寒冰符）
     castShui(c) {
-      tone(c, { freq: 2200, slideTo: 980, type: "sine", dur: 0.22, gain: 0.028 });
-      noise(c, { dur: 0.12, gain: 0.018, band: 5200, delay: 0.1 });
-      tone(c, { freq: 3300, dur: 0.08, gain: 0.011, delay: 0.13 });
+      tone(c, { freq: 2200, slideTo: 980, type: "sine", dur: 0.24, gain: 0.052 });
+      noise(c, { dur: 0.14, gain: 0.034, band: 5200, delay: 0.1 });
+      tone(c, { freq: 3300, dur: 0.1, gain: 0.02, delay: 0.13 });
+      tone(c, { freq: 160, slideTo: 70, dur: 0.14, gain: 0.024, delay: 0.03 });
     },
     // 火：轰燃低吼+噼啪火星（火蛇符/火弹术）
     castHuo(c) {
-      tone(c, { freq: 130, slideTo: 62, type: "sawtooth", dur: 0.3, gain: 0.05 });
-      noise(c, { dur: 0.26, gain: 0.034, low: 900 });
-      noise(c, { dur: 0.08, gain: 0.018, band: 2600, delay: 0.12 });
+      noise(c, { dur: 0.06, gain: 0.05, band: 2200 });
+      tone(c, { freq: 130, slideTo: 62, type: "sawtooth", dur: 0.34, gain: 0.09 });
+      noise(c, { dur: 0.3, gain: 0.06, low: 900 });
+      noise(c, { dur: 0.1, gain: 0.032, band: 2600, delay: 0.12 });
     },
     // 土：闷沉砸落——大地的分量（金光砖砸地/土系重击）
     castTu(c) {
-      tone(c, { freq: 96, slideTo: 44, type: "triangle", dur: 0.26, gain: 0.06 });
-      noise(c, { dur: 0.2, gain: 0.04, low: 260 });
+      tone(c, { freq: 96, slideTo: 44, type: "triangle", dur: 0.3, gain: 0.11 });
+      noise(c, { dur: 0.24, gain: 0.07, low: 260 });
+      noise(c, { dur: 0.05, gain: 0.04, band: 1200 });
     },
     // 贴身爪弧/拳风：短促破风+肉感收尾
     meleeWhoosh(c) {
@@ -222,18 +238,20 @@
       tone(c, { freq: 196, slideTo: 70, dur: 0.5, gain: 0.05 });
       noise(c, { dur: 0.5, gain: 0.02, low: 600, delay: 0.1 });
     },
-    // 应雷·群剑共鸣：神雷附剑施放——通电涌动(低频上涌+电滋) + 群剑齐应雷而吟(高频金属泛音叠)
+    // 应雷·群剑共鸣：神雷附剑施放——通电涌动(低频上涌+电滋) + 群剑齐应雷而吟（v308 加厚）
     leiCharge(c) {
-      tone(c, { freq: 80, slideTo: 340, type: "sawtooth", dur: 0.42, gain: 0.042 });   // 通电低涌
-      noise(c, { dur: 0.34, gain: 0.03, band: 3600 });                                  // 电流滋滋
-      tone(c, { freq: 1320, slideTo: 1980, type: "triangle", dur: 0.5, gain: 0.024, delay: 0.05 });  // 剑吟主
-      tone(c, { freq: 1760, dur: 0.56, gain: 0.015, delay: 0.09 });                     // 剑吟泛音
-      tone(c, { freq: 2640, dur: 0.4, gain: 0.009, delay: 0.13 });                      // 剑吟高泛
+      tone(c, { freq: 80, slideTo: 340, type: "sawtooth", dur: 0.46, gain: 0.075 });   // 通电低涌
+      noise(c, { dur: 0.4, gain: 0.055, band: 3600 });                                  // 电流滋滋
+      noise(c, { dur: 0.22, gain: 0.032, band: 5400, delay: 0.1 });                     // 高频电爆裂
+      tone(c, { freq: 1320, slideTo: 1980, type: "triangle", dur: 0.55, gain: 0.042, delay: 0.05 });  // 剑吟主
+      tone(c, { freq: 1760, dur: 0.6, gain: 0.026, delay: 0.09 });                      // 剑吟泛音
+      tone(c, { freq: 2640, dur: 0.44, gain: 0.015, delay: 0.13 });                     // 剑吟高泛
     },
-    // 飞剑出袭破空：群剑掠空的锐啸——高频噪扫 + 下滑嗖鸣
+    // 飞剑出袭破空：群剑掠空的锐啸——高频噪扫 + 下滑嗖鸣（v308 加厚）
     swordWhoosh(c) {
-      noise(c, { dur: 0.18, gain: 0.03, band: 4200 });
-      tone(c, { freq: 2400, slideTo: 620, type: "sawtooth", dur: 0.16, gain: 0.02 });
+      noise(c, { dur: 0.22, gain: 0.055, band: 4200 });
+      tone(c, { freq: 2400, slideTo: 620, type: "sawtooth", dur: 0.18, gain: 0.04 });
+      tone(c, { freq: 200, slideTo: 90, dur: 0.12, gain: 0.024, delay: 0.02 });
     },
     // 剑影分光术：群剑分影破空（青元剑诀七层·形A分影多段）——三道错拍掠空 + 群剑共鸣的细吟尾
     swordSplit(c) {
@@ -720,6 +738,26 @@
     },
     stopBgm() { if (bgmEl) { clearLoop(bgmEl); try { bgmEl.pause(); } catch (e) {} bgmEl = null; } },
   };
+
+  // v308 自动播放解锁（用户实锤"战斗没 BGM"）：demo/直链场景 BGM 在用户首次手势前起播会被
+  // 浏览器拦下（play() 被拒后不再自动重试）——首次真实手势时补一脚：恢复 AudioContext +
+  // 把"已选轨但没在响"的 BGM/环境床重新拉起。一次性监听，成功即卸。
+  if (root.document) {
+    const kick = () => {
+      try {
+        if (ctx && ctx.state === "suspended") ctx.resume();
+        if (!muted) {
+          if (bgmEl && bgmEl.paused) bgmEl.play().catch(() => {});
+          else if (!bgmEl && curTrack) { const t = curTrack; curTrack = null; Sfx.bgm(t); }
+          if (ambEl && ambEl.paused) ambEl.play().catch(() => {});
+        }
+      } catch (e) {}
+      root.document.removeEventListener("pointerdown", kick, true);
+      root.document.removeEventListener("keydown", kick, true);
+    };
+    root.document.addEventListener("pointerdown", kick, true);
+    root.document.addEventListener("keydown", kick, true);
+  }
 
   // 通用点击音：按钮/选项等（委托监听，轻量）
   // 交互分音（审美审计 §3.2）：确认类=confirm 暖玉双音 / 取消收起类=cancel 低玉下行 / 其余=click 玉磬
