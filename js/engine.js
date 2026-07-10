@@ -3707,11 +3707,12 @@ const Engine = {
       });
     }
     // 青竹蜂云剑·本命法宝（星海飞驰篇·S5 炼成后持有即入战）——本命飞剑 qingzhu_jian + 辟邪神雷二式
-    // （雷遁 leidun 需御「风雷翅」方可施展·留外海风云篇；此处不注入）
+    // 雷遁 leidun：御「风雷翅」方可施展（外海风云篇夺翅后 flightId=feng_lei_chi → gearTrait("fenglei") 即通）
     if (State.count("qingzhu_fengyun_jian") > 0) {
       ["qingzhu_jian", "shenlei_pi", "shenlei_fujian"].forEach(sk => {
         if (!spells.includes(sk)) spells.push(sk);
       });
+      if (State.gearTrait("fenglei") && !spells.includes("leidun")) spells.push("leidun");
     }
     // 越阶催动（跨大境界）：driveRealm > realmTier → 灵力消耗倍增（杀手锏设计）
     // 连续衰减：含小境界（初期/中期/后期/大圆满），大圆满接近达标→灵力倍率更低
@@ -3774,6 +3775,8 @@ const Engine = {
       qiLayer: realm.layer,                  // 灵气底蕴随练气层数成长
       // 腾空之能（空层 2.5D）：御器飞行（筑基）/风雷翅（后期）/调试旗——有翼方上天
       canFly: !!(s.flags.fly_unlocked || State.gearTrait("fly")),
+      // 身后挂件（S9 通用）：御风雷翅=左风右雷双翼挂身后（.au-wings 层+翻涌动轴+特效层窜雷）
+      wings: s.flightId === "feng_lei_chi" ? "fx_wings_fenglei" : null,
       // 雷遁穿空（风雷翅时代）：御「风雷翅」方可施雷遁瞬移——未解锁则神雷·遁置灰
       blink: !!State.gearTrait("fenglei"),
       // 飞行档（depth-design D2/D3）：境界即高度——升空高度/视野/凌空身法三联动。
@@ -5627,11 +5630,14 @@ const Engine = {
       hp: 560, sense: 22, speed: 19, agility: 15, move: 2, mp: 200, qiLayer: 19,
       elem: "huo", nature: "human", tactics: "guarded", canFlee: false, armor: 6,
       canFly: true, airGrade: 2,   // 结丹后期御空（海战凌空对峙·你上天他也追得上）
-      guardMove: { name: "八门金光镜", shield: 30 },   // 仿品金光镜=血危固盾（考据：护体至宝）
-      introNote: "六道极圣亲传·结丹后期巅峰——乱星海元婴之下第一人。仿八门金光镜护体、天阳鎏金针夺命、四象蟠龙带缚人；血压过六成，他便会祭出压箱底的六极真魔功。六魔各司其职——治疗不除，此战无光。",
+      guardMove: { name: "八门金光镜", shield: 34 },   // 仿品金光镜=血危固盾（考据：护体至宝）
+      // v312 反制窗口（用户实锤"没有克制反制"）：镜光护体期近身=原路反照——破盾才有近身窗口
+      counter: 15, counterShieldOnly: true,
+      introNote: "六道极圣亲传·结丹后期巅峰——乱星海元婴之下第一人。战术题面：①「六道燃金」蓄势一回合——趁蓄势打断它（定身符/重击）或雷遁拉开射程外；②「蟠龙带·缚地」砸你脚下格——看到『砸』就挪步；③八门金光镜护体期近身=镜光反噬——先破盾再欺身；④血压过六成，六极真魔功祭魔——治疗不除，此战无光。",
       attacks: [
-        { name: "天阳鎏金针", dmg: 34, kind: "pierce", weight: 10, range: [1, 6], elem: "huo", mp: 8 },
-        { name: "四象蟠龙带", dmg: 22, kind: "normal", weight: 7, range: [1, 4], elem: "tu", mp: 8 },
+        { name: "天阳鎏金针", dmg: 28, kind: "pierce", weight: 8, range: [1, 6], elem: "huo", mp: 8 },
+        { name: "蟠龙带·缚地", dmg: 32, kind: "normal", weight: 7, aim: "cell", range: [1, 5], elem: "tu", mp: 10 },   // 砸格——看意图挪步可全躲（躲闪三角）
+        { name: "六道燃金", dmg: 46, kind: "charge", weight: 6, range: [1, 6], elem: "huo", mp: 14 },                   // 蓄势——打断/拉开的拉扯窗口
       ],
       reward: {}, namedLoot: null,
     };
@@ -5666,7 +5672,8 @@ const Engine = {
         const demons = [
           // 大力真魔=正典名（最高大最凶恶·双巨臂·灰色魔火）；余五魔按司职命名
           { name: "大力真魔", _mo: "gong", art: "mo_gong", hp: 85, elem: "huo", nature: "demon", canFlee: false, canFly: true, airGrade: 2, speed: 17, agility: 12, move: 2, mp: 60, qiLayer: 18, lane: 0,
-            attacks: [{ name: "巨臂魔掌", dmg: 24, kind: "normal", weight: 10, range: [1, 2] }, { name: "灰焰魔火", dmg: 21, kind: "pierce", weight: 6, range: [1, 4], mp: 6, elem: "huo" }] },
+            attacks: [{ name: "巨臂魔掌", dmg: 24, kind: "normal", weight: 10, range: [1, 2] }, { name: "灰焰魔火", dmg: 21, kind: "pierce", weight: 6, range: [1, 4], mp: 6, elem: "huo" },
+              { name: "魔焰燎原", dmg: 40, kind: "charge", weight: 5, range: [1, 4], mp: 9, elem: "huo" }] },   // 蓄势大招——打断/走位的拉扯窗口
           { name: "御魔", _mo: "yu", art: "mo_yu", hp: 110, elem: "tu", nature: "demon", canFlee: false, speed: 12, agility: 8, move: 1, mp: 40, qiLayer: 18, armor: 10, lane: 0,
             attacks: [{ name: "鳞甲魔壁", dmg: 13, kind: "normal", weight: 8, range: [1, 1] }] },
           { name: "阵魔", _mo: "zhen", art: "mo_zhen", hp: 75, elem: "tu", nature: "demon", canFlee: false, speed: 13, agility: 10, move: 1, mp: 60, qiLayer: 18, lane: 2,
@@ -5674,9 +5681,11 @@ const Engine = {
           { name: "疗魔", _mo: "liao", art: "mo_liao", hp: 75, elem: "shui", nature: "demon", canFlee: false, speed: 14, agility: 11, move: 1, mp: 80, qiLayer: 18, lane: 2,
             attacks: [{ name: "腐息红雾", dmg: 10, kind: "normal", weight: 5, range: [2, 5], mp: 4 }] },
           { name: "袭魔", _mo: "xi", art: "mo_xi", hp: 80, elem: "jin", nature: "demon", canFlee: false, canFly: true, airGrade: 2, speed: 20, agility: 16, move: 3, mp: 60, qiLayer: 18, lane: 1,
-            attacks: [{ name: "雾隙冷爪", dmg: 22, kind: "pierce", weight: 9, range: [1, 1], mp: 5 }] },
+            attacks: [{ name: "雾隙冷爪", dmg: 22, kind: "pierce", weight: 9, range: [1, 1], mp: 5 },
+              { name: "雾隙扑杀", dmg: 27, kind: "normal", weight: 6, aim: "cell", range: [1, 3], mp: 5 }] },   // 砸格扑杀——看『砸』挪步可全躲
           { name: "幻魔", _mo: "huan", art: "mo_huan", hp: 75, elem: "shui", nature: "demon", canFlee: false, speed: 15, agility: 14, move: 2, mp: 60, qiLayer: 18, lane: 1,
-            attacks: [{ name: "三面幻惑", dmg: 10, kind: "normal", weight: 5, range: [1, 4], mp: 4 }] },
+            attacks: [{ name: "三面幻惑", dmg: 10, kind: "normal", weight: 5, range: [1, 4], mp: 4 },
+              { name: "三面乱心", dmg: 15, kind: "normal", weight: 5, aim: "zone", zoneSpan: 1, range: [1, 4], depth: "front", mp: 6 }] },   // 扫排——换排可避
         ].map(mk);
         // 站位：围踞轴右半（战位/僚位/深排各二）
         const spots = [wtr.pos - 3, wtr.pos - 2, wtr.pos - 1, wtr.pos, wtr.pos - 2, wtr.pos - 1];
@@ -5757,6 +5766,8 @@ const Engine = {
     if (storyMode && s.flags.whfy_saved_ziling) this._combat._log("（你分出一缕神识死死缠住辇中禁环——灵力少了一成半，可辇中人正在一寸寸重获自由。）");
     this.log("怒涛之上无立锥之地——你与温天仁各驾遁光、凌空对峙。六道极圣亲传、结丹后期巅峰，乱星海元婴之下第一人：金针、蟠龙带、金光镜轮番祭起；把他的血压过六成，便要见识那门压箱底的六极真魔功了。", "event");
     UI.openCombat(this._combat, this._combatMeta);
+    // boss 亮相拍：压暗→推镜→题字压屏（v312 开场张力）
+    if (typeof UI !== "undefined" && UI.bossIntro) setTimeout(() => UI.bossIntro({ title: "温天仁 · 元婴之下第一人" }), 500);
   },
 
   /* ===================== 外海风云篇 · 幕一战斗编排（S1·docs/waihaifengyun-design.md）===================== */

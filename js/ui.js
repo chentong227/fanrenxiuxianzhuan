@@ -4900,6 +4900,37 @@ const UI = {
     } else if (base === "huanggong" || base === "bt_night") {
       Fx.ambient("ash", { interval: 340 });      // 夜战/宫阙·烬屑浮沉
     }
+    // S9 风雷翅·翼上风雷（通用挂件特效层）：御翅单位翼间周期窜雷（右雷）+拂风（左风）
+    const c0 = Engine._combat;
+    const hasWings = c0 && ((c0.player && c0.player.wings) || (c0.sides || []).some(sd => sd.wings) || (c0.enemies || []).some(e => e.wings));
+    if (hasWings) {
+      loop(1300, 2800, () => {
+        if (!Fx._ctx || !Engine._combat) return;
+        const box = this.el("axis-units");
+        if (!box) return;
+        Engine._combat.units().forEach(u => {
+          if (!u.wings) return;
+          const uid = u === Engine._combat.player ? "player"
+            : (u.isSide ? ((Engine._combat.sides.indexOf(u) > 0 ? "side:" + Engine._combat.sides.indexOf(u) : "side"))
+              : "enemy:" + Engine._combat.enemies.indexOf(u));
+          const anchor = box.querySelector(`[data-uid="${CSS.escape(uid)}"]`);
+          if (!anchor) return;
+          const at = Fx.at(anchor, 0.4);
+          if (!at) return;
+          // 右翼·金雷窜弧（1~2 道小电蛇沿翼面跳）
+          for (let k = 0; k < 1 + (Math.random() < 0.4 ? 1 : 0); k++) {
+            const x0 = at.x + 16 + Math.random() * 30, y0 = at.y - 14 + Math.random() * 26;
+            Fx.arc(x0, y0, x0 + 12 + Math.random() * 22, y0 + (Math.random() - 0.5) * 22, { c: "255,214,90", w: 1.6, life: 220 });
+          }
+          // 左翼·青风拂羽（两三粒风streak 掠出）
+          for (let k = 0; k < 3; k++) {
+            Fx.mote(at.x - 20 - Math.random() * 26, at.y - 10 + Math.random() * 24,
+              { vx: -(1.2 + Math.random() * 1.6), vy: (Math.random() - 0.5) * 0.6, wob: 3, life: 500 + Math.random() * 400, size: 1.6 + Math.random() * 1.2, c: k % 2 ? "#9fe0cf" : "#cdeee2" });
+          }
+        });
+        Fx._run();
+      });
+    }
   },
   _stopBattleAmbience() {
     (this._battleAmbTimers || []).forEach(h => clearTimeout(h && h.id != null ? h.id : h));
@@ -5117,6 +5148,25 @@ const UI = {
       setTimeout(() => orbit.classList.remove("launch"), 1300);
     });
     return true;
+  },
+
+  /* boss 亮相拍（v312·用户实锤"场景/战斗没张力"）：开战即压暗全场→镜头推向 boss→
+   * 压屏题字+钟鸣→缓缓收回己方。所有 boss 战可复用（startXxxFight 开场调一下即可）。 */
+  bossIntro(opts = {}) {
+    const c = Engine._combat;
+    const field = this.el("axis-field");
+    if (!c || !field || typeof Fx === "undefined" || !Fx.ensure(field)) return;
+    Fx.dimField(2800, .42);
+    setTimeout(() => { try { this._camPeek(c, "enemy:0"); } catch (e) {} }, 150);
+    const g = this.el("fx-global");
+    if (g && opts.title) setTimeout(() => {
+      g.hidden = false; g.className = "fx-global fxg-ult";
+      g.innerHTML = `<span class="fxg-text">${opts.title}</span>`;
+      if (typeof Sfx !== "undefined") Sfx.play("bell");
+      clearTimeout(this._fxgTimer);
+      this._fxgTimer = setTimeout(() => { g.hidden = true; g.className = "fx-global"; }, 1600);
+    }, 400);
+    setTimeout(() => { try { this._camPeek(c, "player"); } catch (e) {} }, 2500);
   },
 
   /* 六极真魔功·祭魔仪式（S4·2026-07-10 用户拍板方向：黑雾漫场+乌云压顶+电闪雷鸣）——
@@ -5622,6 +5672,10 @@ const UI = {
     const fl = faceFlipped ? " flipped" : "";
     // 身侧悬浮法器（觅长生式拥有感）：已装备的武器/护身法器化作灵光绕身
     let orbit = "";
+    // S9 身后挂件（通用·风雷翅首例）：特殊道具生图挂身后 z-1，CSS 翻涌动轴 + _startWingFx 窜雷
+    if (u.wings && typeof Art !== "undefined" && Art.hasBattler && Art.hasBattler(u.wings)) {
+      orbit += `<div class="au-wings"><img src="${Art.battlerUrl(u.wings)}" alt="" /></div>`;
+    }
     if (isPlayer && typeof State !== "undefined" && State.gearOf) {
       const orbs = [];
       const w = State.gearOf("weapon"), a = State.gearOf("armor");
@@ -5643,9 +5697,9 @@ const UI = {
         const leiExtra = lei
           ? '<i class="lei-aura"></i>' + '<i class="lei-bolt"></i>'.repeat(6) + '<i class="lei-orbit"></i><i class="lei-orbit lo2"></i>'
           : '';
-        orbit = `<div class="au-swords ${lei ? "lei" : "arc"}${fl}">${'<i class="sw"><b></b></i>'.repeat(10)}${leiExtra}</div>`;
+        orbit += `<div class="au-swords ${lei ? "lei" : "arc"}${fl}">${'<i class="sw"><b></b></i>'.repeat(10)}${leiExtra}</div>`;   // ⚠ += 不可写 =（v312 实锤：赋值会把先拼进去的 au-wings 顶掉）
       } else if (hasMainTre) {
-        orbit = `<div class="au-blades${fl}">${'<i class="bld"></i>'.repeat(9)}</div>`;
+        orbit += `<div class="au-blades${fl}">${'<i class="bld"></i>'.repeat(9)}</div>`;
       } else if (wName) {
         orbs.push(`<span class="orb orb-w" title="${wName}">${sealChar(wName)}</span>`);
       }

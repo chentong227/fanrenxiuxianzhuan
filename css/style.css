@@ -1642,6 +1642,24 @@ body.story-on .toast {
   0%, 100% { translate: calc(var(--lx, 0px) + var(--ax, 0px)) calc(var(--ly, 0px) + var(--ay, 0px)); }
   50% { translate: calc(var(--lx, 0px) + var(--ax, 0px)) calc(var(--ly, 0px) + var(--ay, 0px) - 7px); }
 }
+/* S9 身后挂件（通用·风雷翅首例）：特殊道具素材挂单位身后——
+ * z-1 钻到立绘身后（同 au-swords 后半弧法）；wingSurge=双翼翻涌呼吸（缩放+亮度脉动，
+ * transform-origin 在翼根），配合 _startWingFx 的特效层窜雷=「左风右雷」活起来 */
+.axis-unit .au-wings {
+  position: absolute; left: 50%; bottom: calc(var(--feet, 40px) * .96);
+  width: 185%; translate: -50% 0; z-index: -1; pointer-events: none;
+}
+.axis-unit .au-wings img {
+  width: 100%; display: block;
+  animation: wingSurge 3s ease-in-out infinite;
+  transform-origin: 50% 82%;
+  filter: drop-shadow(0 0 14px rgba(150, 200, 255, .22));
+}
+@keyframes wingSurge {
+  0%, 100% { transform: scale(1, 1) rotate(0deg); filter: brightness(.96) drop-shadow(0 0 10px rgba(150, 200, 255, .16)); }
+  50% { transform: scale(1.05, .965) rotate(.4deg); filter: brightness(1.15) drop-shadow(0 0 20px rgba(255, 220, 120, .3)); }
+}
+
 /* 六极真魔功·祭魔（S4）：六魔蒙纱待现 → 自魔雾中降世显形（模糊沉降+暗到亮） */
 .au-fig.mo-veil .au-img { opacity: 0; }
 .au-fig.mo-descend .au-img { animation: moDescend .78s cubic-bezier(.2, .8, .3, 1) both; }

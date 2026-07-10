@@ -23,29 +23,73 @@
     return ctx;
   }
 
-  // §7 空间音/声相：合成 SFX 的最终落点——pan≠0 时经 StereoPanner 偏左右，否则直连。
+  /* ===== SFX 母链（v312·用户实锤"还是 8bit 的声音"根治）=====
+   * 裸振荡器直连 destination = 蜂鸣器质感的元凶。全部合成音改走母线：
+   *   软饱和(tanh waveshaper·去塑料感) → 压缩(黏合瞬态) → 干声 + 短混响湿声(空气感)。
+   * 加上 tone() 的随机失谐/双振荡器加厚（见下），合成音听感从"哔"变"器物"。 */
+  let _bus = null;
+  function makeImpulse(c, dur, decay) {
+    const rate = c.sampleRate, len = Math.max(1, Math.floor(rate * dur));
+    const buf = c.createBuffer(2, len, rate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+    return buf;
+  }
+  function bus(c) {
+    if (_bus && _bus.c === c) return _bus.input;
+    const input = c.createGain(); input.gain.value = 1;
+    const shaper = c.createWaveShaper();
+    const N = 256, curve = new Float32Array(N);
+    for (let i = 0; i < N; i++) { const x = (i / (N - 1)) * 2 - 1; curve[i] = Math.tanh(1.7 * x); }
+    shaper.curve = curve; shaper.oversample = "2x";
+    const comp = c.createDynamicsCompressor();
+    comp.threshold.value = -20; comp.knee.value = 22; comp.ratio.value = 4;
+    comp.attack.value = 0.004; comp.release.value = 0.16;
+    const dry = c.createGain(); dry.gain.value = 0.9;
+    const conv = c.createConvolver(); conv.buffer = makeImpulse(c, 1.2, 2.8);
+    const wet = c.createGain(); wet.gain.value = 0.17;
+    input.connect(shaper); shaper.connect(comp);
+    comp.connect(dry); dry.connect(c.destination);
+    comp.connect(conv); conv.connect(wet); wet.connect(c.destination);
+    _bus = { c, input };
+    return input;
+  }
+
+  // §7 空间音/声相：合成 SFX 的最终落点——pan≠0 时经 StereoPanner 偏左右，否则直连母线。
   //   _sfxPan 由 play(name,{pan}) 在同步执行配方期间临时置位（配方内建节点都会读到）。
   let _sfxPan = 0;
   function panOut(c, g) {
     if (_sfxPan && c.createStereoPanner) {
       const p = c.createStereoPanner();
       p.pan.value = Math.max(-1, Math.min(1, _sfxPan));
-      g.connect(p); p.connect(c.destination);
+      g.connect(p); p.connect(bus(c));
     } else {
-      g.connect(c.destination);
+      g.connect(bus(c));
     }
   }
 
-  // —— 合成原语 ——
+  // —— 合成原语（v312：随机失谐+双振荡器加厚——同一记不再一模一样，"器物"不"蜂鸣"）——
   function tone(c, { freq = 440, type = "sine", dur = 0.3, gain = 0.07, decay = true, slideTo = null, delay = 0 }) {
-    const o = c.createOscillator(), g = c.createGain();
     const t0 = c.currentTime + delay;
-    o.type = type; o.frequency.setValueAtTime(freq, t0);
-    if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t0 + dur);
+    const jitter = 1 + (Math.random() - 0.5) * 0.05;   // ±2.5% 随机失谐（每记微异）
+    const f0 = freq * jitter;
+    const g = c.createGain();
     g.gain.setValueAtTime(gain, t0);
     if (decay) g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
-    o.connect(g); panOut(c, g);
-    o.start(t0); o.stop(t0 + dur + 0.02);
+    const mk = (fMul, gMul, detune) => {
+      const o = c.createOscillator(), og = c.createGain();
+      o.type = type; o.frequency.setValueAtTime(f0 * fMul, t0);
+      if (detune && o.detune) o.detune.value = detune;
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo * jitter * fMul), t0 + dur);
+      og.gain.value = gMul;
+      o.connect(og); og.connect(g);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    };
+    mk(1, 1, 0);
+    if (type !== "sine") mk(1, 0.35, 9);   // 锯齿/三角加一路 +9 音分失谐副振——合唱式加厚
+    panOut(c, g);
   }
   function noise(c, { dur = 0.15, gain = 0.05, band = null, low = null, delay = 0 }) {
     const t0 = c.currentTime + delay;

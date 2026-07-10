@@ -233,6 +233,7 @@
       this.guardMove = cfg.guardMove || null;
       this.introNote = cfg.introNote || null;
       this.art = cfg.art || null;   // 专属立绘 key（侧位/敌人共用：渲染层 "bt_"+art 优先于按名匹配）
+      this.wings = cfg.wings || null;   // 身后挂件素材 key（S9 通用：风雷翅等特殊道具生图挂身后+动轴——全 NPC 可复用）
       this._dossier = !!cfg._dossier;
       this.technique = cfg.technique || null;
       this.grade = cfg.grade || 1;
@@ -1497,11 +1498,13 @@
             if (assassin) this._maim(target);
             { const av = this._allyVoice(); if (av) this._say(av, "backstabPraise"); }
           }
-          // 反击特性：近身受击时反伤（逼玩家换远程/破甲/时机）
-          if (target.counter && target.alive && sp.range && sp.range[1] <= 1 && totalDealt > 0 && caster === this.player) {
+          // 反击特性：近身受击时反伤（逼玩家换远程/破甲/时机）。
+          // counterShieldOnly（v312 温天仁·八门金光镜）：护体尚存才反噬——破盾即破反制窗口（克制反制的教科书）
+          if (target.counter && target.alive && sp.range && sp.range[1] <= 1 && totalDealt > 0 && caster === this.player
+            && (!target.counterShieldOnly || (target.shield || 0) > 0)) {
             const ctr = target.counter;
             const r2 = this.player.takeDamage(ctr, {});
-            this._log(`${target.name} 借着你近身的一瞬反噬一击（-${r2.dealt}）——近身强攻不是上策！`);
+            this._log(`${target.name} ${target.counterShieldOnly ? "镜光流转、原路反照" : "借着你近身的一瞬反噬"}一击（-${r2.dealt}）——${target.counterShieldOnly ? "护体宝光未破，近身就是送伤！先用破甲/远程敲碎它" : "近身强攻不是上策！"}`);
             this._emitFx("player", "hurt", r2.dealt);
           }
           if (anyCrit) this._log(`（神识料敌于先，一击中的！）`);

@@ -182,6 +182,7 @@
     bt_mo_gong: { face: "c" }, bt_mo_yu: { face: "c" }, bt_mo_zhen: { face: "c" },
     bt_mo_liao: { face: "c" }, bt_mo_xi: { face: "l" }, bt_mo_huan: { face: "c" },
     bt_chongyun: { face: "c" },   // 噬金虫群·出战形态（召唤助战位·虫云）
+    fx_wings_fenglei: { face: "c" },   // S9 身后挂件·风雷翅（左风右雷双翼素材·对称永不镜像）
     // 外海风云篇（S8·朝向入库后目检校正）
     bt_yuntianxiao: { face: "c" }, bt_fengxi_yao: { face: "c" },
     bt_yingyuan: { face: "l" }, bt_huiyu: { face: "r" },   // 灰蜮原生朝右（目检校正）

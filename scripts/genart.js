@@ -689,6 +689,16 @@ const S8_DEFS = {
 };
 Object.assign(DEFS, S8_DEFS);
 
+/* ============ S9 通用挂件批（2026-07-10 用户提案：特殊道具生图+动轴挂身上，全 NPC 可复用）============
+ * 首件=风雷翅（正典"左风右雷"）：一张展开双翼素材，中留身位，游戏内 .au-wings 层挂身后+CSS 翻涌+特效层窜雷。 */
+const S9_DEFS = {
+  fx_wings_fenglei: { kind: "battler", hq: true, cut: { tol: 8, choke: 1 },
+    ref: ["C:/Users/Administrator/.cursor/projects/d-fanrenxiuxianzhuan/assets/c__Users_Administrator_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_image-51c48fab-494e-41ff-b28b-b808ee77c1ca.png",
+          "C:/Users/Administrator/.cursor/projects/d-fanrenxiuxianzhuan/assets/c__Users_Administrator_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_image-f88cd570-9d6d-4264-af75-fe5645073d2b.png"],
+    prompt: "参考图中人物背后那对华丽羽翼法宝的独立素材图：只画一对完全展开的巨大风雷双翼（画面中不要人物不要身体——两翼之间留出一段干净的空隙用于放置人物），左翼为青蓝色风属羽毛、翼间缠绕淡青风纹流光，右翼为铁灰蓝雷属羽毛、翼间缠绕金色细雷电弧，羽毛层叠华丽如参考图、翼型舒展上扬，通体带辉光，正面对称构图，纯白背景" },
+};
+Object.assign(DEFS, S9_DEFS);
+
 /* ============ S5 演出返修批（2026-07-10 用户实测反馈：背景不对/温天仁不够霸气/虫群无形）============ */
 const S5_DEFS = {
   // 乱星海·外海战斗底图（海战=凌空于怒涛之上，战位带=浪面上空——底部 2/5 是翻涌海面而非地面）

@@ -388,6 +388,7 @@ const Main = {
         s.heroSkin = "hanli_wentianren"; State.setFlag("skin_wentianren");   // 玄氅金戈造型（姿态变体已入库）
         s.spells = ["tuna", "huti", "ningshen", "zhayan", "weidu", "huodan", "zimu_ren"];   // v308：撤如意花篮（悬浮光球被实锤丑）
         State.give("qingzhu_fengyun_jian", 1);   // 本命飞剑（playerFighter 自动挂 qingzhu_jian+神雷二式+9充）
+        s.flightId = "feng_lei_chi"; State.setFlag("whfy_chi_mastered");   // v312 考据：战温天仁时风雷翅已在手——雷遁三段瞬移入战（拉扯核心）
         State.give("shijinchong", 1);            // 噬金虫（四用法共池 6 灵机）
         State.give("jinguang_zhuan", 1); State.give("jinguang_zhuan_charge", 2);
         State.give("huixue_dan", 2); State.give("huiyuan_dan", 2); State.give("dingshen_fu", 3);
