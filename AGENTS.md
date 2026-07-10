@@ -228,6 +228,12 @@
 
 ## 五、当前状态指针（2026-06-16）
 
+- **v311 · 外海风云篇整章落地（2026-07-10·docs/waihaifengyun-design.md 状态块必读）**：四幕 25 节点+7 战全链
+  贯通（arc6→arc7）：恶名阳谋/智夺风雷翅（flightId=feng_lei_chi·雷遁/飞行 traits 经 gearTrait 直读·初驭减速弧）/
+  元瑶还阳术/温天仁六魔战转正（demo 资产复用·胜负双向推进）/**阴冥之地绝灵凡人战斗模式**（`Engine._mortalFighter`
+  ——武学/毒/暗器+气力小池，凡人终结战杀温天仁=母题闭环）/银月化形侧位同道（s.sideUnit）。
+  门禁：`test/whfy.bal.js` 七战胜率带 + ledger 25 条闭环 + backbone 护栏至 arc7。生图 16 张。
+  **返修池**（用户裁定统一后期返修）：阴冥独立走格图/凡人终结战演出逐拍（等用户口述）/恶名清算收口节点。
 - **v308 · 实测八项返修（2026-07-10 下午·用户 demo 实测反馈全闭环）**：
   ①**战斗 BGM 自动播放解锁**（audio.js 首次手势 kick：resume ctx+补拉已选轨——demo/直链 BGM 被 autoplay 政策拦下后不再哑）；
   ②**雷声重做**（用户实锤"像8bit子弹"）：thunder=撕裂炸头+宽带主爆+双段错相滚雷+次声沉底；thunderFar 加厚；

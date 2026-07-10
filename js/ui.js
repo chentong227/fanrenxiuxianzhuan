@@ -4745,7 +4745,7 @@ const UI = {
       [/野狼帮|喽啰/, "bt_yelang"],     // 野狼帮打手：兽皮坎肩+狼牙棒专属人形立绘
       [/山贼|贼|匪|流寇/, "bt_bandit"],
       [/弟子|武师|打手|蛮修/, "bt_wuren"],
-      [/散修|修士|枯修/, "bt_sanxiu"],
+      [/散修|修士|枯修|老怪/, "bt_sanxiu"],
     ];
     for (const [re, id] of MAP) { if (re.test(name) && Art.hasBattler(id)) return id; }
     return null;

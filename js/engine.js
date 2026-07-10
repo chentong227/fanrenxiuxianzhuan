@@ -5612,11 +5612,15 @@ const Engine = {
    * 正典战果=苦斗未分生死、双双被鬼雾卷入阴冥之地——本战归《外海风云篇》，
    * 现阶段仅 ?demo=wentianren 打样（demo 打到胜利=演出收卡；正剧版以鬼雾收场）。
    * ⚠ 六魔登场演出/台词/招式编排细节【留空待用户裁决】——机制骨架先行，演出词条勿自行发挥。 */
-  startWentianrenFight() {
+  startWentianrenFight(storyMode) {
     const s = State.data;
-    this._nextFightType = "wentianren_demo";
+    this._nextFightType = storyMode ? "whfy_wentianren" : "wentianren_demo";
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;
+    // 幕三·分神救紫灵（whfy_saved_ziling）：一缕神识缠着辇中禁环——开战灵力打八五折（险中带仁）
+    if (storyMode && s.flags.whfy_saved_ziling) {
+      player.mp = Math.round(player.mp * 0.85);
+    }
     // 一阶段·法宝对决（招式吃考据：金针快刺/蟠龙带缚困/金光镜护体）
     const boss = {
       name: "温天仁", art: "wentianren", boss: true, mastery: 2,
@@ -5747,9 +5751,10 @@ const Engine = {
         }
       }
     };
-    this._combatMeta = { type: "wentianren_demo" };
+    this._combatMeta = { type: storyMode ? "whfy_wentianren" : "wentianren_demo" };
     s.combat = true;
     this._combat.startRound();
+    if (storyMode && s.flags.whfy_saved_ziling) this._combat._log("（你分出一缕神识死死缠住辇中禁环——灵力少了一成半，可辇中人正在一寸寸重获自由。）");
     this.log("怒涛之上无立锥之地——你与温天仁各驾遁光、凌空对峙。六道极圣亲传、结丹后期巅峰，乱星海元婴之下第一人：金针、蟠龙带、金光镜轮番祭起；把他的血压过六成，便要见识那门压箱底的六极真魔功了。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
@@ -5763,19 +5768,19 @@ const Engine = {
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;
     const mk = (n) => ({
-      name: `鹰鸢兽·${n}`, hp: 190, sense: 15, speed: 18, agility: 14, move: 2, mp: 60, qiLayer: 17,
+      name: `鹰鸢兽·${n}`, art: "yingyuan", hp: 125, sense: 15, speed: 17, agility: 9, move: 2, mp: 40, qiLayer: 17,
       elem: "jin", nature: "beast", tactics: "feral", canFlee: true, canFly: true, airGrade: 1, armor: 3,
       introNote: n === "雌" ? "七级妖禽成对猎杀——雌兽性狡，专挑破绽俯击。" : "七级妖禽·雄兽凶横，利爪带金属寒光（antiAir 凌空扑杀）。",
-      antiAir: { name: "凌空扑杀", dmg: 24 },
+      antiAir: { name: "凌空扑杀", dmg: 22 },
       attacks: [
-        { name: "利爪撕掠", dmg: 26, kind: "normal", weight: 10, range: [1, 1], elem: "jin" },
-        { name: "振翅锋雨", dmg: 20, kind: "normal", weight: 6, aim: "zone", zoneSpan: 1, range: [1, 3], elem: "jin", mp: 6 },
-        { name: "俯冲贯袭", dmg: 30, kind: "pierce", weight: 6, range: [1, 2], elem: "jin", mp: 7 },
+        { name: "利爪撕掠", dmg: 22, kind: "normal", weight: 10, range: [1, 1], elem: "jin" },
+        { name: "振翅锋雨", dmg: 18, kind: "normal", weight: 6, aim: "zone", zoneSpan: 1, range: [1, 3], elem: "jin", mp: 6 },
+        { name: "俯冲贯袭", dmg: 27, kind: "pierce", weight: 6, range: [1, 2], elem: "jin", mp: 7 },
       ],
       reward: {}, namedLoot: null,
     });
     this._combat = new CombatAPI.Combat({
-      player, enemies: [mk("雄"), mk("雌")], maxRounds: 14, W: 13, lanes: 2,
+      player, enemies: [mk("雄"), mk("雌")], maxRounds: 20, W: 13, lanes: 2,
       playerPos: 3, enemyPos: 8,
     });
     this._combat.sea = true;   // 礁滩海畔（bt_xinghai 底图+踏浪）
@@ -5793,12 +5798,12 @@ const Engine = {
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;
     const foe = {
-      name: "云天啸", art: "yuntianxiao", hp: 260, sense: 17, speed: 15, agility: 11, move: 2, mp: 110, qiLayer: 18,
-      elem: "huo", nature: "human", tactics: "cunning", canFlee: true, armor: 4, mastery: 1,
+      name: "云天啸", art: "yuntianxiao", hp: 220, sense: 17, speed: 15, agility: 9, move: 2, mp: 110, qiLayer: 18,
+      elem: "huo", nature: "human", tactics: "cunning", canFlee: true, armor: 3, mastery: 1,
       introNote: "结丹中期魔修——欺世盗名之辈，惯会挑软柿子当众立威。今日他挑错了人：碾过去，一招都别多给。",
       attacks: [
-        { name: "赤煞刀罡", dmg: 26, kind: "normal", weight: 10, range: [1, 3], elem: "huo", mp: 6 },
-        { name: "血焰蚀空", dmg: 22, kind: "pierce", weight: 6, range: [1, 4], elem: "huo", mp: 8 },
+        { name: "赤煞刀罡", dmg: 22, kind: "normal", weight: 10, range: [1, 3], elem: "huo", mp: 6 },
+        { name: "血焰蚀空", dmg: 19, kind: "pierce", weight: 6, range: [1, 4], elem: "huo", mp: 8 },
       ],
       reward: { lingshi: 30 }, namedLoot: null,
     };
@@ -5811,6 +5816,199 @@ const Engine = {
     this._combat.startRound();
     this.log("满街修士屏息围观——「韩老魔」对叫阵的魔修。云天啸刀罡未起，你已按剑而立：这一战不为杀人，为立威。快、狠、干净。", "event");
     UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 幕二⑥·夺翅逃亡战（survive 撤离·风希不可力敌·岩浆崩塌灾象·毒计定开局）——
+  startWhfyDuoyiFight() {
+    const s = State.data;
+    this._nextFightType = "whfy_duoyi";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    const full = !!s.flags.whfy_duji_full;   // 斟酒全掺=三妖尽疲；专攻=风希重疲、二妖清醒
+    const fengxi = {
+      name: "风希", art: "fengxi_yao", boss: true, mastery: 2,
+      hp: full ? 1100 : 1400, sense: 26, speed: 22, agility: 16, move: 3, mp: 400, qiLayer: 22,
+      elem: "jin", nature: "beast", tactics: "cunning", canFlee: false, armor: 10,
+      canFly: true, airGrade: 3,
+      introNote: "九级化形妖王·癫狂追杀——不可力敌！撑住撤离的每一息（拖满即胜），别恋战。" + (full ? "（万年灵乳药力翻涌——他的爪子比平日慢了三分）" : "（灵乳只毒了他一个——但九级妖王的底子仍深不可测）"),
+      attacks: [
+        { name: "裂风爪", dmg: full ? 30 : 38, kind: "normal", weight: 10, range: [1, 2], elem: "jin" },
+        { name: "风啸千刃", dmg: full ? 24 : 30, kind: "normal", weight: 7, aim: "zone", zoneSpan: 1, range: [1, 4], depth: "front", elem: "jin", mp: 10 },
+        { name: "妖王撕天", dmg: full ? 40 : 52, kind: "charge", weight: 5, range: [1, 3], elem: "jin", mp: 14 },
+      ],
+      reward: {}, namedLoot: null,
+    };
+    const mk = (nm, el, weak) => ({
+      name: nm, hp: weak ? 130 : 300, sense: 18, speed: weak ? 10 : 15, agility: weak ? 6 : 11, move: 1, mp: 120, qiLayer: 20,
+      elem: el, nature: "beast", tactics: "guarded", canFlee: false, armor: 6,
+      guardMove: { name: "妖躯横挡", shield: 20 },
+      introNote: weak ? "化形大妖·药力炸腑——妖躯臃胀、破绽百出（速战可破）。" : "化形大妖——没喝到加料的那份，清醒得很。",
+      attacks: [
+        { name: nm === "毒蛟" ? "毒瘴喷吐" : "龟甲碾压", dmg: weak ? 16 : 26, kind: "normal", weight: 9, range: [1, 3], elem: el, mp: 6 },
+      ],
+      reward: {}, namedLoot: null,
+    });
+    const duojiao = mk("毒蛟", "shui", full);
+    const xuangui = mk("玄龟", "tu", full);
+    if (full) { duojiao.exposed = true; xuangui.exposed = true; }
+    // 岩浆崩塌灾象（fieldCycle·地火倒灌拖累妖躯——玩家有翅在手、灾象反成掩护）
+    const fieldCycle = [
+      { name: "灾·落石如雨", log: "洞顶岩块轰然砸落——巨物躲不开的，小个子躲得开。", suppress: 0.05, expose: true },
+      { name: "灾·地火喷柱", log: "脚下地火喷柱撩起，妖兽的皮毛燎出焦糊味。", suppress: 0.06 },
+      { name: "灾·烟瘴蔽目", log: "硫烟滚滚蔽目——追兵的爪子抓进了空处。", suppress: 0.04, player: { dodge: 0.06 } },
+      { name: "灾·大崩将至", log: "整座山腹在呻吟——快了，出口就在前面！", suppress: 0.05, player: { mp: 8 } },
+    ];
+    const sides = [];
+    if (s.flags.whfy_saved_gongsun) {
+      sides.push({ id: "gongsun_xing", name: "公孙杏", kind: "ally", art: "gongsun_xing",
+        hp: 120, hpMax: 120, guard: 0.2, elem: "mu", mp: 60, move: 1, mastery: 1,
+        persona: { aggr: 3, prot: 6, kite: 3 },
+        moves: [
+          { name: "青灵剑雨", dmg: 14, weight: 10, elem: "mu", range: [1, 3], mp: 4, line: "青芒如雨压向" },
+          { name: "护身青幕", dmg: 8, weight: 5, elem: "mu", range: [1, 1], mp: 2, line: "剑幕横挡" },
+        ] });
+    }
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [fengxi, duojiao, xuangui], sides, fieldCycle,
+      objective: { kind: "survive", rounds: 6 },
+      maxRounds: 6, W: 15, lanes: 2,
+      playerPos: 3, enemyPos: 9,
+    });
+    this._combatMeta = { type: "whfy_duoyi" };
+    s.combat = true;
+    this._combat.startRound();
+    this.log(`岩浆倒灌、地穴崩塌——${s.flags.whfy_saved_gongsun ? "公孙杏正指挥人族分发飞行法器登空，" : "地穴里的人族修士拖家带口往出口涌，"}你背负双翅断后。风希不可力敌：拖满六息、掩护撤离，就是胜利！`, "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 幕三②·护法三日·波次战（互斥策略改敌构成）——
+  startWhfyHufaFight() {
+    const s = State.data;
+    this._nextFightType = "whfy_hufa";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;
+    const zhen = !!s.flags.whfy_hufa_zhen, qing = !!s.flags.whfy_hufa_qing, ni = !!s.flags.whfy_hufa_ni;
+    const mkSan = (nm, i) => ({
+      name: nm, hp: 115, sense: 15, speed: 13, agility: 8, move: 1, mp: 90, qiLayer: 17,
+      elem: ["huo", "shui", "jin"][i % 3], nature: "human", tactics: "feral", canFlee: true, armor: 3,
+      introNote: "循异象而来的贪心散修——结丹初中期，仗着人多。",
+      attacks: [
+        { name: "夺宝连击", dmg: 20, kind: "normal", weight: 10, range: [1, 2] },
+        { name: "法器掷袭", dmg: 17, kind: "pierce", weight: 6, range: [1, 4], mp: 6 },
+      ], reward: {}, namedLoot: null,
+    });
+    const elite = {
+      name: "碧云门老怪", hp: qing ? 330 : 270, sense: 20, speed: 16, agility: 10, move: 2, mp: 160, qiLayer: 19,
+      elem: "mu", nature: "human", tactics: "cunning", canFlee: false, armor: 5, mastery: 2, boss: true,
+      introNote: qing ? "主动清场杀鸡儆猴之后，还敢第三日登门的——碧云门追缉虚天鼎的老怪，有备而来。" : "第三日压轴的硬茬——碧云门追缉虚天鼎的结丹后期老怪。",
+      attacks: [
+        { name: "碧藤绞杀", dmg: 24, kind: "normal", weight: 9, range: [1, 3], elem: "mu", mp: 8 },
+        { name: "青虹贯日", dmg: 29, kind: "pierce", weight: 6, range: [1, 5], elem: "mu", mp: 10 },
+      ], reward: { lingshi: 40 }, namedLoot: null,
+    };
+    // 策略改敌构成：清场=波少敌精；铁桶=人多但开局满阵；匿踪=首击先手
+    const wave1 = qing ? [mkSan("亡命散修", 0)] : [mkSan("贪心散修·甲", 0), mkSan("贪心散修·乙", 1)];
+    const enemies = wave1;
+    this._combat = new CombatAPI.Combat({
+      player, enemies, waves: [[elite]], maxRounds: 20, W: 13, lanes: 2,
+      playerPos: 3, enemyPos: 8,
+      // 铁桶阵策：开局困足+聚灵双阵已布（阵法 Build 主场）
+      zones: zhen ? [
+        { type: "kunzu", from: 6, to: 8, team: "player", turns: 5 },
+        { type: "juling", from: 2, to: 4, team: "player", turns: 8 },
+      ] : undefined,
+    });
+    this._combat.sea = true;
+    if (ni) {   // 匿踪守株：首敌破绽毕露（背袭先手窗口）
+      this._combat.enemies.forEach(e => { e.exposed = true; });
+      this._combat._log("（匿踪奏效——来敌摸到阵前才惊觉有伏，破绽毕露！）");
+    }
+    this._combatMeta = { type: "whfy_hufa" };
+    s.combat = true;
+    this._combat.startRound();
+    this.log("护法第三日——最难的一波来了。还阳阵蓝焰在身后冲天，元瑶的禁术已到最后关头：阵眼绝不能失！", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 幕四②·阴冥村生死战（绝灵凡人战斗首演·灰蜮群）——
+  startWhfyCunzhanFight() {
+    const s = State.data;
+    this._nextFightType = "whfy_cunzhan";
+    const player = this._mortalFighter();
+    const mkHui = (nm, i) => ({
+      name: nm, art: "huiyu", hp: 52, sense: 6, speed: 12, agility: 7, move: 2, mp: 20, qiLayer: 2,
+      elem: null, nature: "beast", tactics: "feral", canFlee: false, armor: 1, immunePoison: false,
+      introNote: i === 0 ? "阴冥之地的食腐异物——甲壳韧、爪牙利，成群猎食。绝灵之地它们不吃灵力这套，你也一样：拼的是刀口和胆气。" : null,
+      attacks: [
+        { name: "腐爪撕咬", dmg: 9, kind: "normal", weight: 10, range: [1, 1] },
+        { name: "扑压", dmg: 12, kind: "charge", weight: 5, range: [1, 2], aim: "cell" },
+      ], reward: {}, namedLoot: null,
+    });
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [mkHui("灰蜮·壹", 0), mkHui("灰蜮·贰", 1), mkHui("灰蜮·叁", 2)],
+      maxRounds: 16, W: 11, lanes: 2,
+      playerPos: 2, enemyPos: 6,
+    });
+    this._combatMeta = { type: "whfy_cunzhan" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("【绝灵】灵力尽失——法术法宝俱不可用。你手里只有：一口剑、一把毒、一袋暗器，和七玄门练出来的那身本事。");
+    s.combat = true;
+    this.log("灰蜮群撞上栅栏——凡人之躯的第一战。眨眼剑法贴身抢攻、毒和暗器省着用：气力（灵力条）耗尽就出不了招了。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // —— 幕四④·暴风山·凡人终结战（1v1 武学搏杀·正典韩立杀之）——
+  // ⚠ 演出逐拍=用户口述钩子（设计稿决议#3）——本函数为机制骨架，演出细节待补
+  startWhfyMortalFight() {
+    const s = State.data;
+    this._nextFightType = "whfy_mortal";
+    const player = this._mortalFighter();
+    const wtr = {
+      name: "温天仁", art: "wentianren", boss: true, mastery: 2,
+      hp: 300, sense: 9, speed: 14, agility: 13, move: 2, mp: 44, qiLayer: 3,
+      elem: null, nature: "human", tactics: "cunning", canFlee: false, armor: 4,
+      introNote: "被剥去一身法力的六道传人——可他的狠、他的傲、他杀人的经验一分没少。这一战没有底牌可言：拳拳到肉，招招搏命。（他的『气力』也有限——拖也能拖出破绽）",
+      attacks: [
+        { name: "裂石拳", dmg: 19, kind: "normal", weight: 10, range: [1, 1] },
+        { name: "锁喉夺刃", dmg: 16, kind: "pierce", weight: 6, range: [1, 1], mp: 4 },
+        { name: "崖石掷砸", dmg: 21, kind: "normal", weight: 5, range: [2, 3], mp: 5 },
+        { name: "拼命三连", dmg: 27, kind: "charge", weight: 4, range: [1, 1], mp: 7 },
+      ],
+      reward: {}, namedLoot: null,
+    };
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [wtr], maxRounds: 24, W: 9, lanes: 2,
+      playerPos: 2, enemyPos: 6,
+    });
+    this._combatMeta = { type: "whfy_mortal" };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("【绝灵·凡人相搏】没有法术、没有法宝、没有境界——全篇最高的一战，以最『凡人』的方式收束。");
+    this.log("暴风山罡风如刀。你与温天仁在窄窄的栈道上对峙——两个『凡人』，一场只能活一个的搏杀。凡人修仙的故事，从凡人开始，此刻也由凡人来做个了断。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
+  // 绝灵之地·凡人战力构造器（S4·阴冥小篇章特殊模式）：
+  // 法力池=「气力」（小池·耗尽出不了招）；手段=武学全套+毒+暗器（七玄门老本行）；
+  // 法宝/法术/充能全部剥离——「凡人修仙」母题的玩法化。
+  _mortalFighter() {
+    const s = State.data;
+    return {
+      name: s.name || "韩立", team: "player",
+      hp: Math.round((s.hpMax || 200) * 0.55), hpMax: Math.round((s.hpMax || 200) * 0.55),   // 没了法力护体，肉身七分
+      mp: 34, mpMax: 34,   // 气力——绝灵之地的全部"资源"
+      spells: ["zhayan", "zhayan_lian", "lianhuan", "weidu", "feizhen", "jinchuang_yao"],
+      pouch: {
+        duyao_cao: State.count("duyao_cao"),
+        anqi: State.count("anqi"),
+        jinchuang_yao: State.count("jinchuang_yao"),
+      },
+      speed: 11, agility: 12, sense: 8, qiLayer: 3, move: 2,
+      // 武学底子=唯一加成：剑法大成/江湖岁月的身手（乘性·A2 合规）
+      dmgBonus: 1 + (s.swordMastery ? 0.3 : 0.15),
+      armor: 1,
+    };
   },
 
   // 与万小山搭伴探山（同道系统首战：会期等待中的伙伴并肩）
@@ -7211,6 +7409,81 @@ const Engine = {
         this.log(`当众失手——云天啸的气焰更嚣张了。你退开半街、调匀气息（再战伤害+${bonus}%）：这一战，必须赢得干净。`, "bad");
         s.pendingEvent = "whfy_a1_chuguan"; this._retryAfterLoss = "whfy_a1_chuguan";
       }
+    } else if (meta.type === "whfy_duoyi") {
+      // 外海风云·幕二⑥ 夺翅逃亡（survive 撤离·风希不可力敌）
+      if (win) {
+        State.setFlag("whfy_duoyi_won");
+        this.writeLedger("whfy_duoyi_won", "裂风岛崩塌·背翅断后拖住三妖六息——人族修士尽数飞离火海，韩立最后一个冲出洞口。风希在身后的岩浆里发出震岛的咆哮。");
+        this.log(`最后一名人族修士冲出洞口的刹那，你反身钻进烟柱、贴着崩落的山岩激射而出——身后风希的咆哮震得整座海面发颤。${s.flags.whfy_saved_gongsun ? "公孙杏筹措的飞行法器一件没浪费——数十人，一个都没落下。" : "数十名人族修士回望火海，齐齐朝你的背影俯身一拜。"}`, "good");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_whfy_duoyi = (s.flags.losses_whfy_duoyi || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_whfy_duoyi) * 8;
+        s.hp = s.hpMax;
+        this.log(`断后一时失手被压回地穴深处——你借烟瘴脱身、回气再突（再战伤害+${bonus}%）。撤离未竟，人族还在等你！`, "bad");
+        s.pendingEvent = "whfy_a2_duoyi"; this._retryAfterLoss = "whfy_a2_duoyi";
+      }
+    } else if (meta.type === "whfy_hufa") {
+      // 外海风云·幕三② 护法三日波次战（策略改敌构成）
+      if (win) {
+        State.setFlag("whfy_hufa_won");
+        this.writeLedger("whfy_hufa_won", "护法三日·两波来敌尽退（含碧云门结丹后期老怪）——还阳阵蓝焰始终未熄。元瑶的禁术，进到了最后一夜。");
+        this.log("碧云门老怪的遁光消失在海平线——三日刀兵，阵眼寸土未失。身后还阳阵的蓝焰烧到了最亮：最后一夜了。", "good");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_whfy_hufa = (s.flags.losses_whfy_hufa || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_whfy_hufa) * 8;
+        s.hp = s.hpMax;
+        this.log(`来敌一时占了上风——你退守阵眼、借聚灵阵回气再战（再战伤害+${bonus}%）。元瑶的禁术不容有失！`, "bad");
+        s.pendingEvent = "whfy_a3_hufa"; this._retryAfterLoss = "whfy_a3_hufa";
+      }
+    } else if (meta.type === "whfy_wentianren") {
+      // 外海风云·幕三③ 温天仁六魔大战（正典 fail-forward：胜负未分——鬼雾骤至打断，双向推进）
+      State.setFlag("whfy_wtr_fought");
+      s.flags.whfy_wtr_result = win ? "upper" : "lower";
+      if (win) {
+        this.writeLedger("whfy_wtr_battle", "阴冥之地边缘·大战温天仁——金雷竹克魔、先诛疗魔，六极真魔功被你一尊尊拆解，胜势已成。可就在将竟全功之际，鬼雾骤至，吞没了一切。此战之势，你占了上风。");
+        this.log("最后一尊魔影溃散、温天仁踉跄后退——胜负只差一线！可就在此刻，海面骤然死寂……", "good");
+      } else {
+        s.hp = Math.max(1, Math.round(s.hpMax * 0.3));
+        this.writeLedger("whfy_wtr_battle", "阴冥之地边缘·大战温天仁——六极真魔功名不虚传，你渐落下风、底牌将尽。可就在他将竟全功之际，鬼雾骤至，吞没了一切。此战之势，他占了上风——这笔账，阴冥之地里算。");
+        this.log("六魔围杀、底牌将尽——你咬牙撑住最后一口真元。可就在温天仁狞笑合围之际，海面骤然死寂……", "bad");
+      }
+      s.storyStage += 1;
+      this.checkStory();
+    } else if (meta.type === "whfy_cunzhan") {
+      // 外海风云·幕四② 阴冥村生死战（绝灵凡人首战）
+      if (win) {
+        State.setFlag("whfy_cunzhan_won");
+        this.writeLedger("whfy_cunzhan_won", "阴冥村夜袭·凡人之躯率村民杀退灰蜮群——眨眼剑法二十年后重新沾血。村中老小自此把这几位『落难仙师』当自家人。");
+        this.log("最后一只灰蜮被钉死在栅栏上。村民们举着火把围拢过来——在这片灰白的绝地里，你久违地听见了人间的欢呼。", "good");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_whfy_cunzhan = (s.flags.losses_whfy_cunzhan || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_whfy_cunzhan) * 8;
+        s.hp = Math.max(1, Math.round(s.hpMax * 0.5));
+        this.log(`灰蜮的围攻一时凶猛——村民拼死把你拽回栅栏内包扎（再战伤害+${bonus}%）。凡人的仗，凡人的打法：毒和暗器，别省。`, "bad");
+        s.pendingEvent = "whfy_a4_cunzhan"; this._retryAfterLoss = "whfy_a4_cunzhan";
+      }
+    } else if (meta.type === "whfy_mortal") {
+      // 外海风云·幕四④ 暴风山凡人终结战（正典：韩立杀温天仁）⚠ 演出逐拍待用户口述（骨架版）
+      if (win) {
+        State.setFlag("whfy_mortal_won");
+        this.writeLedger("whfy_mortal_won", "暴风山·凡人终结战——没有法力、没有法宝，眨眼剑法对裂石拳，凡人之躯搏杀至最后一息：韩立杀温天仁。乱星海元婴之下第一人之争，以最『凡人』的方式落幕。六道传人，死于一个凡人少年练了一辈子的剑。");
+        this.addMilestone("外海风云·凡人终结战：杀温天仁（母题闭环）", "medal");
+        this.log("剑锋抽出的刹那，温天仁的倨傲终于从眼里褪尽——他到死都没想明白：剥去所有法力之后，自己会输给一套凡人剑法。风眼的白光在山顶亮起。你收剑，替紫灵割断了麻绳。", "good");
+        s.storyStage += 1;
+        this.checkStory();
+      } else {
+        s.flags.losses_whfy_mortal = (s.flags.losses_whfy_mortal || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_whfy_mortal) * 8;
+        s.hp = Math.max(1, Math.round(s.hpMax * 0.4));
+        this.log(`他的拳头比你想的更硬——你借地势滚下栈道脱身，撕了半幅衣襟裹伤（再战伤害+${bonus}%）。凡人相搏没有一击必杀：他也在喘。再上！`, "bad");
+        s.pendingEvent = "whfy_a4_baofeng"; this._retryAfterLoss = "whfy_a4_baofeng";
+      }
     } else if (meta.type === "wentianren_demo") {
       // 温天仁·六极真魔功演武（?demo=wentianren·S4 骨架）——不动任何剧情 flag
       if (win) {
@@ -7514,6 +7787,11 @@ const Engine = {
       xh_haiwang_fight:        function () { this.startXhHaiwangFight(); },
       whfy_yingyuan_fight:     function () { this.startWhfyYingyuanFight(); },
       whfy_yunt_fight:         function () { this.startWhfyYuntFight(); },
+      whfy_duoyi_fight:        function () { this.startWhfyDuoyiFight(); },
+      whfy_hufa_fight:         function () { this.startWhfyHufaFight(); },
+      whfy_wtr_fight:          function () { this.startWentianrenFight(true); },
+      whfy_cunzhan_fight:      function () { this.startWhfyCunzhanFight(); },
+      whfy_mortal_fight:       function () { this.startWhfyMortalFight(); },
     });
   },
   hasFight(id) { return !!(id && this._fightRoutes()[id]); },
@@ -7777,6 +8055,11 @@ const Engine = {
     // —— 外海风云篇战斗派发 ——
     if (choice.resolve === "whfy_yingyuan_fight") { s.pendingEvent = null; this.startWhfyYingyuanFight(); return; }
     if (choice.resolve === "whfy_yunt_fight")     { s.pendingEvent = null; this.startWhfyYuntFight();     return; }
+    if (choice.resolve === "whfy_duoyi_fight")    { s.pendingEvent = null; this.startWhfyDuoyiFight();    return; }
+    if (choice.resolve === "whfy_hufa_fight")     { s.pendingEvent = null; this.startWhfyHufaFight();     return; }
+    if (choice.resolve === "whfy_wtr_fight")      { s.pendingEvent = null; this.startWentianrenFight(true); return; }
+    if (choice.resolve === "whfy_cunzhan_fight")  { s.pendingEvent = null; this.startWhfyCunzhanFight();  return; }
+    if (choice.resolve === "whfy_mortal_fight")   { s.pendingEvent = null; this.startWhfyMortalFight();   return; }
 
     // 普通推进
     s.pendingEvent = null;

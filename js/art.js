@@ -40,6 +40,8 @@
     // 据点临场/魔道同袍/星海全线，自此对话与图鉴不再"无脸"
     wanbao_zhanggui: 1, qiyunxiao: 1, dongxuaner: 1, zi_ling: 1,
     liujing: 1, songmeng: 1, zhongweiniang: 1, wuxuan: 1,
+    // 外海风云篇（S8 生图批）
+    gongsun_xing: 1, wen_siyue: 1, mei_ning: 1, yinyue: 1,
     tieluo: 1, wuse_menzhu: 1, zhanwangchan: 1, xuwang: 1,
     zhao_zheng: 1, sun_menzhu: 1, jiyin_zushi: 1, jin_qing: 1,
     xuangu: 1, yuan_yao: 1, man_huzi: 1, qingyi_jushi: 1,
@@ -124,6 +126,8 @@
     // 两翼近景收口环抱+中央开阔，"人被环境包住"）
     bt_forest: {}, bt_road: {}, bt_valley: {}, bt_night: {},
     bt_xinghai: {},   // 乱星海外海（S5·海战=凌空于怒涛之上：温天仁战/海王兽/外海猎妖/救凌玉灵）
+    // 外海风云篇地点场景（S8：loc.id 即 scene id，locUrl 自动命中）
+    waihai_dongfu: { p: 1 }, waihai_fangshi: { p: 1 }, liefeng_dao: { p: 1 },
     // 增量H·魔道争锋第四幕·皇宫决战战场底图（夜·皇城宫门广场；非 bt_ 前缀→中性 biome 无色偏）
     huanggong: {},
     // 前景遮挡条带（v90）：近景失焦草石（透明 PNG），压在全部单位之前——最快视差层。
@@ -178,6 +182,10 @@
     bt_mo_gong: { face: "c" }, bt_mo_yu: { face: "c" }, bt_mo_zhen: { face: "c" },
     bt_mo_liao: { face: "c" }, bt_mo_xi: { face: "l" }, bt_mo_huan: { face: "c" },
     bt_chongyun: { face: "c" },   // 噬金虫群·出战形态（召唤助战位·虫云）
+    // 外海风云篇（S8·朝向入库后目检校正）
+    bt_yuntianxiao: { face: "c" }, bt_fengxi_yao: { face: "c" },
+    bt_yingyuan: { face: "l" }, bt_huiyu: { face: "r" },   // 灰蜮原生朝右（目检校正）
+    bt_gongsun_xing: { face: "l" }, bt_yinyue: { face: "c" },
     bt_hanli_jindan_kouguan: { face: "r" }, bt_hanli_jindan_kouguan_fly: { face: "r" },
     bt_luyunfeng: { face: "c" }, bt_jinguang: { face: "c" },
     bt_modafu: { face: "c" }, bt_tienu: { face: "c" }, bt_wanxiaoshan: { face: "c" },

@@ -7450,6 +7450,758 @@ const STORY = [
       { text: "整备行装 · 往裂风岛去", hint: "幕二 · 智夺风雷翅（待续）", resolve: "advance" },
     ],
   },
+
+  /* ============================================================
+   *  外海风云 · 幕二 · 风希做客·智夺风雷翅（S2·动漫129~134·原著风希视角互证）
+   * ============================================================ */
+
+  // —— 幕二①·裂风岛·洞口采药（采草惊主·风希现身）——
+  {
+    id: "whfy_a2_liefeng",
+    skipIf: (s) => s.flags.whfy_liefeng_done,
+    cond: (s) => s.flags.whfy_a1_done && !s.flags.whfy_liefeng_done,
+    bgm: "tense",
+    title: "裂风岛 · 洞口的草",
+    objTitle: "采药 · 虎口拔牙",
+    objHint: "伴妖草就长在裂风兽洞口的崖缝里。神识探过：洞中妖气深不见底——快取快走，别惊动里面的东西。",
+    text: [
+      { scene: "裂风岛 · 火山崖穴" },
+      { amb: "wind" },
+      "裂风岛妖气冲天。你敛尽气息贴崖而行，几株莹白的伴妖草果然生在洞口崖缝——探手便得。",
+      "指尖刚触到第三株，整座山腹忽地一沉。洞中黑风倒卷，一道人影负手立在洞口——化形妖修，周身妖压如山如渊。",
+      { say: "风希", tone: "含笑", text: "「进本座的洞，只拿了几株草？——有意思。人族小修士，胆子不小，眼力……也不错。」" },
+      { aside: "九级妖兽·化形！比结丹更高一头的存在。打，是万万打不过的；跑，他一爪就能按住你。他没动手——那便还有斡旋的余地。" },
+    ],
+    onArrive(s) {
+      s.location = "liefeng_dao";
+      State.setFlag("whfy_liefeng_done");
+      State.give("banyao_cao", 3);
+      Engine.meetNpc("fengxi", "裂风兽·刚化形的九级妖修，自号『风大善人』——笑里全是爪子。");
+      Engine.writeLedger("whfy_liefeng", "裂风岛洞口采伴妖草惊动风希（九级化形妖修）——他不杀反笑，邀『做客』。黄鼠狼给鸡拜年。");
+    },
+    choices: [
+      {
+        text: "拱手陪笑 · 「妖王当面，失礼了」",
+        hint: "顺着他——先活下来",
+        effect(s) {
+          return { text: "你把姿态放得极低，草也双手奉还。风希摆摆手，笑意更深：「草，送你了。走，随本座进洞喝一杯——本座请客，你敢不来么？」", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "不卑不亢 · 「拿草可以，命不奉陪」",
+        hint: "硬气三分——他反而高看一眼",
+        effect(s) {
+          State.setFlag("whfy_fengxi_hardline");
+          Engine.recordTemperament("whfy_fengxi_hardline", "sentiment", "九级妖王当面不折腰——命可以拼，膝盖不能软");
+          return { text: "风希盯着你看了三息，忽而放声大笑：「好胆色！几百年没见过敢和本座这么说话的人族了。走，进洞喝一杯——放心，本座`请`你。」那个『请』字，咬得极重。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 幕二②·做客·碧焰酒（被迫进步·破境结丹大圆满）——
+  {
+    id: "whfy_a2_zuoke",
+    skipIf: (s) => s.flags.whfy_zuoke_done,
+    cond: (s) => s.flags.whfy_liefeng_done && !s.flags.whfy_zuoke_done,
+    bgm: "tense",
+    title: "裂风兽洞 · 碧焰酒",
+    objTitle: "做客 · 杯中有物",
+    objHint: "风希设宴，一坛「碧焰酒」推到你面前——妖王亲酿，一杯可助破境。他笑得太热情了，热情得让人后颈发凉。",
+    text: [
+      { scene: "裂风兽洞 · 石殿" },
+      { amb: "candle" },
+      "石殿深处灯火煌煌。风希自称「风大善人」，绝口不提采草之事，只把一坛幽绿的酒推过来：",
+      { say: "风希", tone: "热络", text: "「碧焰酒——本座亲酿，妖界一绝。你这瓶颈卡了有些年头了吧？一杯下去，管保你破境。喝！」" },
+      { aside: "酒香里缠着一缕若有似无的异样气机。可妖王劝酒，推拒便是撕破脸……而且那酒里蕴的天地灵机，货真价实——他要控制你，也要先把你喂肥。" },
+    ],
+    onArrive(s) { State.setFlag("whfy_zuoke_done"); },
+    choices: [
+      {
+        text: "饮 · 顺水推舟破此境",
+        hint: "明知有诈也喝——境界是真的",
+        effect(s) {
+          State.setFlag("whfy_drank_open");
+          Engine.writeLedger("whfy_biyan_jiu", "裂风兽洞·明知碧焰酒有诈仍饮——混沌邪气与风灵劲入体受制于人，但借酒中灵机真的破境：结丹大圆满。被迫进步，货真价实。");
+          return { text: "你举杯一饮而尽。灵机如岩浆入喉、卡了数年的瓶颈应声而裂——可与此同时，两缕阴冷的异气顺着酒力钻入经脉深处，盘踞不去。风希笑眯眯看着你：「恭喜。从今日起，你我就是『自己人』了。」", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "饮 · 暗运玄阴诀锁截异气",
+        hint: "药理+神识——把『锁』咬松半扣（夺翅战开局占先）",
+        effect(s) {
+          State.setFlag("whfy_drank_guarded");
+          Engine.writeLedger("whfy_biyan_jiu", "裂风兽洞·饮碧焰酒破境（结丹大圆满），却暗运玄阴诀截流——混沌邪气与风灵劲只种进去半扣。风希自以为上了双保险，殊不知锁眼里早塞了沙。");
+          return { text: "你举杯而尽，酒力入体的刹那暗转玄阴诀——阴煞真元裹住那两缕异气，生生截下半数封入气海死角。瓶颈碎裂、境界破关，风希端详你片刻，满意点头：「好根骨。」他没看出来。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 幕二③·破境·结丹大圆满（碧焰酒兑现）——
+  {
+    id: "whfy_a2_pojing",
+    skipIf: (s) => s.flags.whfy_pojing_done,
+    cond: (s) => s.flags.whfy_zuoke_done && !s.flags.whfy_pojing_done,
+    bgm: "triumph",
+    title: "裂风兽洞 · 被迫进步",
+    objTitle: "破境 · 结丹大圆满",
+    objHint: "碧焰酒的灵机在丹田轰然炸开——结丹大圆满，成了。代价是经脉里那两缕受制于人的异气，和一场躲不开的『帮工』。",
+    text: [
+      { scene: "裂风兽洞 · 客洞" },
+      { amb: null },
+      "客洞之中你盘膝三日。碧焰酒的灵机如熔金淬体，金丹一圈圈涨圆——",
+      { fx: "burst", at: "center", elem: "jin", ms: 420 },
+      { sfx: "bell" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「结丹大圆满……离元婴，只差临门一脚了。这一杯，倒真没白喝。」" },
+      { aside: "只是经脉深处那缕「风灵劲」像一根看不见的缰绳——风希摊牌了：三妖合炼一件大宝，缺你的木属性灵力『帮工』。炼成之前，你哪儿也去不了。" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_pojing_done");
+      if ((s.realmIndex || 0) < 20) {
+        s.realmIndex = 20;   // 结丹大圆满（DATA.realms[20]）
+        s.cultivation = 0;
+        const nr = State.realm();
+        if (nr && nr.spMax) s.spirit = nr.spMax;
+        s.hpMax += 40; s.hp = s.hpMax;
+        s.sense = (s.sense || 0) + 5;
+      }
+      Engine.addMilestone("外海风云·碧焰酒破境：结丹大圆满（被迫进步）", "breakthrough");
+      Engine.writeLedger("whfy_pojing", "碧焰酒破境·结丹大圆满——妖王的酒喂肥了猎物，也喂出一头他按不住的狼。风灵劲缰绳在身，助炼风雷翅之局开场。");
+    },
+    choices: [
+      { text: "「帮工就帮工——先看看你炼的是什么宝贝。」", hint: "入局·伺机而动", resolve: "advance" },
+    ],
+  },
+
+  // —— 幕二④·助炼·时间跳跃（数月·3选1侧重——影响夺翅战开局）——
+  {
+    id: "whfy_a2_zhulian",
+    skipIf: (s) => s.flags.whfy_zhulian_done,
+    cond: (s) => s.flags.whfy_pojing_done && !s.flags.whfy_zhulian_done,
+    bgm: "journey",
+    title: "裂风兽洞 · 炉边岁月",
+    objTitle: "助炼 · 暗蓄一手",
+    objHint: "毒蛟、玄龟二妖应邀而至，三妖合炼「风雷翅」——雷鹏遗骸为材，你的木属性灵力司调和。炉边数月，你有的是时间留心眼。",
+    text: [
+      { scene: "裂风兽洞 · 炼宝石窟" },
+      "毒蛟阴测测、玄龟慢吞吞——两位化形大妖应邀而至。石窟中央，那对雷鹏遗骸的骨翅在阵中悬浮，风雷之气交缠如活物。",
+      "你的活计是以木灵调和风雷相冲之性。炉火经年，日日与那对骨翅相对——风希偶尔投来的目光，越来越像在看一块养熟的『材料』。",
+      { aside: "炼成之日，就是灭口之时。这几个月，每一天都得当最后一天来备。" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_zhulian_done");
+      s.year += 1;   // 助炼经年
+      s.age = (s.age || 0) + 1;
+      // 雷鹏遗羽伏笔兑现（前篇实物）
+      if (State.count("leipeng_yu") > 0) {
+        Engine.log("你袖中那枚镇妖大典拾得的雷鹏遗羽微微发烫——与阵中骨翅同源共鸣。原来那日乱空坠落的，就是眼前这对翅的主人。", "event");
+        Engine.writeLedger("whfy_leipeng_echo", "助炼风雷翅·袖中雷鹏遗羽与骨翅同源共鸣——镇妖大典乱中拾遗的伏笔，在裂风兽的炼宝炉前对上了号。");
+      }
+    },
+    choices: [
+      {
+        text: "偷师 · 参悟翅纹与风雷运转",
+        hint: "夺翅后驾驭更快（精通弧缩短）",
+        effect(s) {
+          State.setFlag("whfy_zhulian_canwu");
+          Engine.writeLedger("whfy_zhulian_focus", "助炼侧重·偷师参悟翅纹——风雷运转的每一道纹路都刻进神识。此宝到手之日，就是如臂使指之时。");
+          return { text: "调和之余，你把那对骨翅的每道纹路、风雷交缠的每分火候都默默刻进神识。风希只当你敬业——他不知道，你连『怎么飞』都学好了。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "固本 · 借炉火温养金丹",
+        hint: "气血上限+·大圆满坐稳",
+        effect(s) {
+          s.hpMax += 30; s.hp = s.hpMax;
+          Engine.writeLedger("whfy_zhulian_focus", "助炼侧重·借炼宝炉火温养金丹——大圆满境界彻底坐稳，气血雄浑更胜从前。");
+          return { text: "你借炼宝的地火余温日日淬体温丹，新破的大圆满境界一寸寸夯实（气血上限+30）。风希乐见其成——猎物越肥，他越高兴。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "谋逃 · 暗查地穴退路",
+        hint: "逃亡战有捷径（撤离更稳）",
+        effect(s) {
+          State.setFlag("whfy_zhulian_tuilu");
+          Engine.writeLedger("whfy_zhulian_focus", "助炼侧重·暗查退路——借采买灵材之机把地穴岔道、传送阵位置摸了个透。逃，也要逃得专业。");
+          return { text: "你借外出采买灵材的机会，把整座地穴的岔道、风口、乃至角落里那座半废的传送阵摸了个一清二楚。地图在心里，腿就有了主意。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 幕二⑤·毒计·万年灵乳（掺绿液时机抉择）——
+  {
+    id: "whfy_a2_duji",
+    skipIf: (s) => s.flags.whfy_duji_done,
+    cond: (s) => s.flags.whfy_zhulian_done && !s.flags.whfy_duji_done,
+    bgm: "tense",
+    title: "裂风兽洞 · 庆功酒",
+    objTitle: "毒计 · 就在今夜",
+    objHint: "风雷翅炼成在即，风希取出珍藏的「万年灵乳」设庆功宴——三妖分饮。你袖中还藏着最后一点小绿瓶灵液：掺进去，时机只有一次。",
+    text: [
+      { scene: "裂风兽洞 · 石殿" },
+      { amb: "candle" },
+      "翅成前夜，风希心情大好，取出一瓮乳白灵液：「万年灵乳！本座藏了三百年——今夜三妖同饮，明日开炉收翅！」",
+      { aside: "杀机也在这句话里：收翅之后，「帮工」就没用了。你袖中捏着此生最后小半滴小绿瓶灵液——催生万物，也能催得万年灵乳药力暴涨、涨到妖躯撑不住。掺，还是不掺？什么时候掺？" },
+      { say: "韩立", emo: "serious", tone: "low", text: "「风大善人……这杯酒，该我敬你才是。」" },
+    ],
+    onArrive(s) { State.setFlag("whfy_duji_done"); },
+    choices: [
+      {
+        text: "斟酒时掺 · 亲手替三妖满上",
+        hint: "剂量足——三妖尽疲（逃亡战最稳）",
+        effect(s) {
+          State.setFlag("whfy_duji_full");
+          Engine.writeLedger("whfy_duji", "庆功夜·借斟酒之机将绿液尽数掺入万年灵乳——三妖同饮，药力在妖躯里暴涨如潮。明日开炉，便是图穷匕见之时。");
+          return { text: "你抢过酒勺替三位『前辈』满上，袖口一翻，绿液无声没入瓮中。三妖仰头痛饮，浑然不觉那股狂暴的生机正在腑脏里生根。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "只投风希盏中 · 集中一击",
+        hint: "剂量专攻主敌——风希重创、二妖清醒",
+        effect(s) {
+          State.setFlag("whfy_duji_focus");
+          Engine.writeLedger("whfy_duji", "庆功夜·绿液只投风希盏中——主敌一人吃足全量。二妖清醒，但风希这头九级化形，明日将疲得像滩烂泥。");
+          return { text: "你把全部绿液拢进风希那一盏。九级妖王仰脖饮尽，咂了咂嘴：「好乳！」——好得他明日会终生难忘。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 幕二⑥·夺翅（图穷匕见→逃亡战）——
+  {
+    id: "whfy_a2_duoyi",
+    skipIf: (s) => s.flags.whfy_duoyi_done,
+    cond: (s) => s.flags.whfy_duji_done && !s.flags.whfy_duoyi_done,
+    bgm: "boss",
+    title: "裂风兽洞 · 图穷匕见",
+    objTitle: "夺翅 · 带人族走",
+    objHint: "开炉之日，三妖药力翻涌、妖躯臃胀——就是现在！夺翅、破阵、带地穴里的人族俘虏一起飞出去。风希不可力敌——撑住撤离的每一息。",
+    text: [
+      { scene: "裂风兽洞 · 炼宝石窟" },
+      { amb: null },
+      { shot: "shock", scale: 1.14, px: 9 },
+      "开炉刹那，三妖同时闷哼——万年灵乳的药力在腑脏里炸开，妖躯臃胀、灵力滞涩！",
+      { say: "风希", tone: "暴怒", text: "「灵乳有问题……是你！！人族小贼——本座要把你抽筋剥皮！！」" },
+      "你已一把攫住阵中双翅、反手一剑劈碎主阵眼！山腹地火倒灌、岩浆轰然上涌——整座裂风岛开始崩塌。地穴深处，是黑压压一片被掳来做苦役的人族修士。",
+      { say: "韩立", emo: "anger", tone: "low", text: "「要走一起走！人族的——跟我杀出去！！」" },
+    ],
+    onArrive(s) { State.setFlag("whfy_duoyi_done"); },
+    choices: [
+      { text: "背翅断后 · 护人族杀出崩塌的地穴", hint: "survive 撤离战·风希不可力敌", resolve: "whfy_duoyi_fight" },
+    ],
+  },
+
+  // —— 幕二⑦·炼化风雷翅（神雷染金+初驭喜剧+精通弧）——
+  {
+    id: "whfy_a2_lianhua",
+    skipIf: (s) => s.flags.whfy_lianhua_done,
+    cond: (s) => s.flags.whfy_duoyi_won && !s.flags.whfy_lianhua_done,
+    bgm: "triumph",
+    title: "外海 · 风雷染金",
+    objTitle: "大件到手 · 炼化风雷翅",
+    objHint: "甩脱癫狂的风希，你在一座无名礁岛落脚炼化风雷翅——以辟邪神雷为引，逼出原有蓝雷、金雷灌翅。宝是绝世的宝，就是……有点不听使唤。",
+    text: [
+      { scene: "无名礁岛 · 崖洞" },
+      "礁岛崖洞，你盘膝七日。辟邪神雷一道道注入翅中——翅上原生的蓝雷被一丝丝逼出，聚成雷球在洞外自爆；金雷反客为主，双翅通体染金。",
+      { fx: "lightning", at: "center", elem: "jin", ms: 520 },
+      { sfx: "thunder" },
+      { say: "韩立", emo: "joy", tone: "low", text: "「风雷翅——成了！」" },
+      "你振翅一试——嗖！人直接糊在了崖壁上。再试，一头扎进海里；三试，倒着飞出去二里地。",
+      { aside: "极速是真极速，脚刹是真没有。这宝贝烈得像匹没上过鞍的野马——得花些时日，一寸寸驯。" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_lianhua_done");
+      s.flightId = "feng_lei_chi";   // 御风雷翅（traits: fenglei 雷遁 / fly——State.gearTrait 直读）
+      State.setFlag("fly_unlocked");
+      if (s.flags.whfy_zhulian_canwu) {
+        State.setFlag("whfy_chi_mastered");   // 助炼时偷师参悟——到手即如臂使指（精通弧跳过）
+        Engine.log("助炼时偷师的翅纹运转此刻全数派上用场——旁人要驯数年的烈宝，你七日便如臂使指（风雷翅·精通）。", "good");
+      }
+      Engine.addMilestone("外海风云·风雷翅到手炼化（辟邪神雷染金·雷遁解锁）", "bigitem");
+      Engine.writeLedger("whfy_fenglei_chi", "智夺风雷翅并以辟邪神雷炼化染金——雷遁瞬移解锁、遁速冠绝同侪。风希癫狂追杀未果，帝国崩塌、双翅易主。" + (s.flags.whfy_zhulian_canwu ? "（助炼偷师·到手即精通）" : "（初驭不善——精通弧待磨）"));
+      Engine.settleLedger("whfy_leipeng_echo", "雷鹏的遗羽与它主人的双翅，最终都归了同一个人——镇妖大典那场乱，绕了一整篇章，在这对金翅上落定");
+      // —— 铁律3·幕二账本收口 ——
+      Engine.settleLedger("whfy_liefeng", "洞口那三株伴妖草，最终换来了一对风雷翅——裂风岛这趟虎口拔牙，连本带利");
+      Engine.settleLedger("whfy_biyan_jiu", "碧焰酒的『恩情』，你用他炼了一辈子的翅还了——风灵劲的缰绳随着风希道行大损，自行溃散无踪");
+      Engine.settleLedger("whfy_zhulian_focus", "炉边一年的那点侧重，在夺翅这一夜全数兑现——炉火没白看，心眼没白留");
+      Engine.settleLedger("whfy_duji", "小绿瓶最后半滴绿液，换了三妖一夜疲软——这瓶子陪你从青牛镇走到外海，最后一滴也用在了刀刃上");
+      Engine.settleLedger("whfy_duoyi_won", "裂风岛的火光熄了很多天后，外海还在传那一夜——数十名人族修士，是被『韩老魔』背着翅膀断后送出来的");
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews = s.worldNews || [];
+      s.worldNews.push({ t, kind: "world", text: "裂风岛一夜崩塌：九级妖王风希的『帝国』毁于地火，妖修圈盛传——是一个人族结丹修士，端了化形大妖的老巢。" });
+      s.worldNews.push({ t, kind: "rumor", text: "被掳的数十名人族修士尽数生还归来，人人都说：带他们杀出火海的，是那个被叫作『韩老魔』的人。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    },
+    choices: [
+      {
+        text: "驯翅 · 一寸寸磨这匹烈马",
+        hint: "偷过师=即刻精通；否则数月磨合",
+        effect(s) {
+          if (!s.flags.whfy_chi_mastered) {
+            State.setFlag("whfy_chi_mastered");
+            s.month += 3; while (s.month > 12) { s.month -= 12; s.year += 1; }
+            return { text: "三个月里你撞过礁、栽过海、在渔村上空表演过倒栽葱——但当最后一次振翅收势稳稳钉在浪尖上时，风雷翅终于认了主。自此，乱星海再没有你去不了、逃不掉的地方。", kind: "good" };
+          }
+          return { text: "翅随念动、风雷如臂——助炼时偷的师，一分都没白费。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  /* ============================================================
+   *  外海风云 · 幕三 · 还阳术·大战温天仁（S3·动漫135~140）
+   * ============================================================ */
+
+  // —— 幕三①·重遇元瑶（虚天殿养魂木之诺收果）——
+  {
+    id: "whfy_a3_yuanyao",
+    skipIf: (s) => s.flags.whfy_yuanyao_done,
+    cond: (s) => s.flags.whfy_lianhua_done && !s.flags.whfy_yuanyao_done,
+    bgm: "sorrow",
+    title: "内海 · 故人元瑶",
+    objTitle: "重逢 · 三十年之诺",
+    objHint: "内海航路上一叶素舟拦住去路——元瑶。虚天殿一别经年，她终于凑齐了还阳术所需，只差一个信得过的护法之人。",
+    text: [
+      { scene: "内星海 · 航路" },
+      { amb: "wind" },
+      "一叶素舟拦在航路正中，舟头女子面覆轻纱——元瑶。虚天殿养魂木分账的旧约，她记到今日。",
+      { say: "元瑶", tone: "soft", text: "「韩道友，别来无恙。妍丽师姐的魂灯……我养了三十年，养魂木、聚魂砂、还有那部禁术，都齐了。只差一个——肯在阴冥之地边缘，替我护法三日的人。」" },
+      { aside: "还阳术，逆天改命的禁术；阴冥之地，鬼雾出没的凶海。她把身家性命摊开在你面前——因为整片乱星海，她只信你一个。" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「三日护法。可以。」" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_yuanyao_done");
+      Engine.settleLedger("xh_yuanyao_deal", "虚天殿里分给元瑶的那半段养魂木，三十年后长成了妍丽复生的指望——她拦舟相托的这份信，是当年那一念之仁自己长出来的果");
+      Engine.writeLedger("whfy_hufa_promise", "内海重遇元瑶——应下阴冥之地边缘护法三日之诺（还阳术复活妍丽）。禁术异象必引各路修士，三日之内刀兵难免。");
+      Engine.meetNpc("yuan_yao", "结丹女修·为复活替她挡死的师姐妍丽奔走三十年——还阳术之约，托付于韩立。");
+    },
+    choices: [
+      { text: "随她赴阴冥之地边缘 · 布阵护法", hint: "三日之约·风雨将至", resolve: "advance" },
+    ],
+  },
+
+  // —— 幕三②·护法三日（互斥策略→护阵波次战）——
+  {
+    id: "whfy_a3_hufa",
+    skipIf: (s) => s.flags.whfy_hufa_done,
+    cond: (s) => s.flags.whfy_yuanyao_done && !s.flags.whfy_hufa_done,
+    bgm: "tense",
+    title: "阴冥之地边缘 · 护法三日",
+    objTitle: "护法 · 三日刀兵",
+    objHint: "还阳术的异象冲天而起，四方修士闻风而聚。三日护法怎么打，由你定策——策不同，来敌不同。",
+    text: [
+      { scene: "阴冥之地边缘 · 礁原" },
+      { amb: "wind" },
+      "元瑶咬破指尖，还阳阵蓝焰冲天——异象半海可见。第一天，就有零散修士循光而来。",
+      { aside: "三日之约。是把阵守成铁桶，是主动出去清场，还是敛尽气息装作无人？——策略定了，来的『客人』也就定了。" },
+    ],
+    onArrive(s) { State.setFlag("whfy_hufa_done"); },
+    choices: [
+      {
+        text: "铁桶阵 · 层层布阵死守阵眼",
+        hint: "阵法解——开局满阵佐助，敌蜂拥",
+        effect(s) {
+          State.setFlag("whfy_hufa_zhen");
+          Engine.writeLedger("whfy_hufa_plan", "护法定策·铁桶阵——三重阵法围着还阳阵眼层层布下，人来多少收多少。");
+          return { text: "三日里你把随身阵旗尽数布开——困足、聚灵、迷踪三重套叠。修士来了一茬又一茬，全在阵里撞得头破血流。第三日，来了硬茬。", kind: "good" };
+        },
+        resolve: "whfy_hufa_fight",
+      },
+      {
+        text: "主动清场 · 御翅巡海逐一驱杀",
+        hint: "剑道解——敌来得少但每个都硬",
+        effect(s) {
+          State.setFlag("whfy_hufa_qing");
+          Engine.writeLedger("whfy_hufa_plan", "护法定策·主动清场——风雷翅巡海百里，靠近者驱、顽抗者杀。杀鸡儆猴，第三日只剩不怕死的。");
+          return { text: "你御翅巡海，方圆百里凡有靠近者，先礼后剑。头两日驱走十七拨、斩顽抗者三人——第三日还敢来的，都是真不怕死的。", kind: "good" };
+        },
+        resolve: "whfy_hufa_fight",
+      },
+      {
+        text: "匿踪守株 · 敛息藏于阵侧",
+        hint: "藏拙解——放进来打，背袭先手",
+        effect(s) {
+          State.setFlag("whfy_hufa_ni");
+          Engine.writeLedger("whfy_hufa_plan", "护法定策·匿踪守株——不显山露水，放贪心人走到阵前，再从死角里给他们一个『惊喜』。");
+          return { text: "你敛尽气息伏于阵侧礁影。头两日，三拨蟊贼刚摸到阵前就被你从死角放翻，捆成粽子丢去下风口。第三日来的，闻见了同伴的血腥味。", kind: "good" };
+        },
+        resolve: "whfy_hufa_fight",
+      },
+    ],
+  },
+
+  // —— 幕三③·第三日·温天仁到场（前篇因果兑现+紫灵道岔→六魔战转正）——
+  {
+    id: "whfy_a3_wentianren",
+    skipIf: (s) => s.flags.whfy_wtr_done,
+    cond: (s) => s.flags.whfy_hufa_won && !s.flags.whfy_wtr_done,
+    bgm: "boss",
+    title: "阴冥之地边缘 · 六道传人",
+    objTitle: "决战 · 元婴之下第一人",
+    objHint: "第三日黄昏，一驾华贵妖辇压海而来——温天仁。辇中还锁着一个你认得的人：紫灵。元婴之下第一人之争，避无可避。",
+    text: [
+      { scene: "阴冥之地边缘 · 礁原" },
+      { amb: null },
+      { shot: "shock", scale: 1.12, px: 8 },
+      "第三日黄昏，海平线上压来一驾九首妖辇，紫金华盖遮天——来人麻衣早换作紫袍鎏金，眉宇金芒灼灼。",
+      { say: "温天仁", tone: "倨傲", text: "「还阳术？有点意思。……咦，你这气息——」" },
+      "辇帘掀起一角，一张你认得的脸撞进眼里：紫灵。腕上一圈紫金禁环，眸中half是惊喜half是急切，朝你无声地摇头——让你走。",
+      { aside: "虚天殿出口那一面，终究躲不过去。他身后是六道极圣、整个逆星盟；你身后，是还差最后一夜的还阳阵、和辇中那个朝你摇头的人。" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_wtr_done");
+      // 前篇因果兑现：虚天殿出口的应对方式，决定这一战怎么开场
+      if (s.flags.xh_wentianren_force) {
+        Engine.log("温天仁眯起眼，认出了你——「虚天殿外强闯的那道剑光！好，好得很，本座记你三年了。」（旧怨开局：他起手便是杀招）", "bad");
+        Engine.settleLedger("xh_wentianren_react", "虚天殿出口强行突围结下的梁子，三年后在阴冥之地边缘兑了现——他记了你三年，起手便不留余地");
+      } else if (s.flags.xh_wentianren_fake) {
+        Engine.log("温天仁盯着你看了三息，忽而嗤笑出声——「青易居士门下？本座后来查过，青易那老儿根本没有你这号弟子。敢骗本座……胆子不小。」（伪装被识破：他带着三分玩味、七分杀意）", "event");
+        Engine.settleLedger("xh_wentianren_react", "虚天殿出口冒充青易弟子的那一晃，终究被他查穿——三年后阴冥之地边缘对上，玩味与杀意各半");
+      }
+      Engine.writeLedger("whfy_wtr_open", "阴冥之地边缘·温天仁携妖辇到场（紫灵被紫金禁环锁于辇中）——元婴之下第一人之争，避无可避。");
+      // —— 铁律3·护法段收口 ——
+      Engine.settleLedger("whfy_hufa_promise", "三日之诺践到第三日黄昏——前两日你替她挡下的每一拨人，都是为这最后一夜攒的底");
+      Engine.settleLedger("whfy_hufa_plan", "三日定策此刻见了真章——小鱼小虾照单全收之后，真正的大鱼压海而来");
+      Engine.settleLedger("whfy_hufa_won", "碧云门老怪败走的消息还没传开，更硬的茬已经到了——可还阳阵的蓝焰，已经烧到了最后一夜：她只差一夜，你就给她争一夜");
+    },
+    choices: [
+      {
+        text: "应战 · 并分出一缕神识断辇中禁制",
+        hint: "战中救紫灵（分神·战斗稍险）",
+        effect(s) {
+          State.setFlag("whfy_saved_ziling");
+          Engine.writeLedger("whfy_saved_ziling", "决战之际分出一缕神识入辇、暗蚀紫灵腕上禁环——混战中她挣脱妖辇。战斗因分神而更险，但有些人不能不救。");
+          return { text: "你踏前一步应战，神识却悄然分出一缕缠上那圈紫金禁环——蚀、松、断。战端一起，辇中人便有了脱身之机。", kind: "good" };
+        },
+        resolve: "whfy_wtr_fight",
+      },
+      {
+        text: "应战 · 全力以赴不留余力",
+        hint: "专注对敌（战斗更稳）",
+        effect(s) {
+          Engine.writeLedger("whfy_wtr_focus", "决战·全力以赴——紫灵之事战后再说，眼前这个人，值得拿出十成十的力气。");
+          return { text: "你缓缓拔剑，把所有杂念压进剑鞘——元婴之下第一人之争，一分心神都不能省。", kind: "event" };
+        },
+        resolve: "whfy_wtr_fight",
+      },
+    ],
+  },
+
+  // —— 幕三④·鬼雾骤至（灵力尽失·五人陷落·元瑶先走〔用户拍板〕）——
+  {
+    id: "whfy_a3_guiwu",
+    skipIf: (s) => s.flags.whfy_guiwu_done,
+    cond: (s) => s.flags.whfy_wtr_fought && !s.flags.whfy_guiwu_done,
+    bgm: "tense",
+    title: "阴冥之地 · 鬼雾",
+    objTitle: "骤变 · 灵力尽失",
+    objHint: "胜负将分之际，天地骤暗——铺天盖地的灰白鬼雾自海底翻涌而上，吞没了战场上的所有人。",
+    text: [
+      { scene: "阴冥之地边缘 · 礁原" },
+      { amb: null },
+      "胜负将分之际，海面骤然死寂。下一瞬，铺天盖地的灰白浓雾自海底翻涌而上——所过之处，灵光尽灭。",
+      { say: "温天仁", tone: "骇然", text: "「鬼雾？！——不好，快退！！」" },
+      "迟了。雾墙合拢的刹那，你只来得及看见：还阳阵中元瑶抱着一具初成的躯壳破空而去（她的术，成了）——而你、温天仁、刚脱身的紫灵、还有一个仓皇的路人女修，尽数被雾浪卷了进去。",
+      { fx: "flash", color: "#9fb8a8", ms: 300 },
+      { aside: "坠落。无边的灰白里，你听见自己的心跳越来越响——因为丹田里那枚金丹，那枚温养了几十年、堪比性命的金丹……没有声音了。灵力，一丝都提不起来。" },
+      { say: "韩立", emo: "pain", tone: "low", text: "「绝灵之地……我们，都成凡人了。」" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_guiwu_done");
+      State.setFlag("whfy_yinming_in");
+      Engine.writeLedger("whfy_guiwu", "鬼雾骤至吞四人（韩立/温天仁/紫灵/路人女修梅凝）坠入阴冥之地——绝灵秘境，众皆法力尽失退回凡人。元瑶还阳术已成、抱妍丽新躯先行脱离（用户拍板：元瑶不同陷）。");
+      Engine.addMilestone("外海风云·鬼雾陷落：阴冥之地（绝灵·凡人小篇章开幕）", "story");
+      // —— 铁律3·决战段收口 ——
+      Engine.settleLedger("whfy_wtr_open", "妖辇压海那一幕成了这场大战的开场，也成了它的绝响——辇碎于鬼雾，人坠入绝地，恩怨全被雾墙卷着往下带");
+      Engine.settleLedger("whfy_wtr_focus", "十成十的专注换来将分的胜负——可老天在最后一线掀了棋盘。这口气，阴冥之地里找他算");
+    },
+    choices: [
+      { text: "落地 · 先活下来", hint: "阴冥之地·凡人玩法开幕", resolve: "advance" },
+    ],
+  },
+
+  /* ============================================================
+   *  外海风云 · 幕四 · 阴冥之地（S4·动漫140~144·绝灵凡人小篇章）
+   *  ⚠ 凡人终结战演出逐拍=用户口述钩子（决议#3）——本切片为机制骨架
+   * ============================================================ */
+
+  // —— 幕四①·阴冥村（绝灵规则+村中线索）——
+  {
+    id: "whfy_a4_cun",
+    skipIf: (s) => s.flags.whfy_cun_done,
+    cond: (s) => s.flags.whfy_guiwu_done && !s.flags.whfy_cun_done,
+    bgm: "tense",
+    title: "阴冥之地 · 阴冥村",
+    objTitle: "绝灵 · 凡人度日",
+    objHint: "灰白天穹下没有日月。你们寻到一座凡人聚落「阴冥村」——村民世代困居此地。村中长老知道离开的路径：暴风山。",
+    text: [
+      { scene: "阴冥之地 · 阴冥村" },
+      { amb: "wind" },
+      "灰白的天穹不见日月，荒原尽头蜷着一座石屋聚落——阴冥村。村民面色灰败，见到活人进来，眼神里先是惊、后是怜。",
+      "村中长老拄杖出迎，听罢来历只是叹气：「又是被鬼雾卷进来的……修仙人到了这儿，和我们一样，都是两条腿一双手。想出去？——只有暴风山。山顶风眼三十年一开，开时可通外界。」",
+      { aside: "灵力提不起、法宝催不动、神识出不了三尺——储物镯还打得开，可里面的每一件宝贝都成了『铁疙瘩』。眨眼剑法、喂毒、暗器……七玄门那些年的老本行，从来没有这么亲切过。" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「凡人就凡人。当年在七玄门，我本来就是个凡人。」" },
+    ],
+    onArrive(s) {
+      s.location = "waihai_dongfu";   // 地点轴暂驻（阴冥独立图为后期返修项——见设计稿§八决议6注）
+      State.setFlag("whfy_cun_done");
+      State.give("duyao_cao", 4); State.give("anqi", 4); State.give("jinchuang_yao", 2);
+      Engine.log("村民以粗盐草药相赠——阴冥村的待客礼。你回赠了几件『铁疙瘩』法器：在这儿，好铁比法宝金贵。", "event");
+      Engine.writeLedger("whfy_cun", "阴冥村落脚——长老指路暴风山（山顶风眼三十年一开）。绝灵之地凡人度日：毒草暗器金疮药重新成了保命的家当。");
+    },
+    choices: [
+      { text: "在村中休整 · 打探暴风山的路", hint: "凡人的路，一步步走", resolve: "advance" },
+    ],
+  },
+
+  // —— 幕四②·阴冥村生死战（绝灵凡人战斗首演）——
+  {
+    id: "whfy_a4_cunzhan",
+    skipIf: (s) => s.flags.whfy_cunzhan_done,
+    cond: (s) => s.flags.whfy_cun_done && !s.flags.whfy_cunzhan_done,
+    bgm: "combat",
+    title: "阴冥村 · 夜袭",
+    objTitle: "生死战 · 护村",
+    objHint: "入夜，村外荒原传来窸窣爬行声——「灰蜮」，阴冥之地的食腐异物，成群袭村。没有法术、没有法宝：一口剑、一把毒、一袋暗器。",
+    text: [
+      { scene: "阴冥村 · 栅栏" },
+      { amb: null },
+      { shot: "shock", scale: 1.1, px: 7 },
+      "入夜，荒原上亮起星星点点的灰白磷光——不是灯，是眼睛。长老嘶声敲响破锣：「灰蜮群！上栅栏！！」",
+      { aside: "灰扑扑的异物贴地爬来，甲壳、utile爪、成群结队。村里能打的男丁不足二十——你握紧了腰间那口许久没这样握过的剑。" },
+      { say: "韩立", emo: "serious", tone: "low", text: "「眨眼剑法——二十年没用它保过命了。手，还热着。」" },
+    ],
+    onArrive(s) { State.setFlag("whfy_cunzhan_done"); },
+    choices: [
+      { text: "上栅栏 · 凡人之躯迎战", hint: "绝灵战斗·武学/毒/暗器是全部本钱", resolve: "whfy_cunzhan_fight" },
+    ],
+  },
+
+  // —— 幕四③·梅凝（同陷之人·危机结缘）——
+  {
+    id: "whfy_a4_meining",
+    skipIf: (s) => s.flags.whfy_meining_done,
+    cond: (s) => s.flags.whfy_cunzhan_won && !s.flags.whfy_meining_done,
+    bgm: "sorrow",
+    title: "阴冥村 · 同是天涯",
+    objTitle: "同陷 · 梅凝",
+    objHint: "同陷的路人女修梅凝在村中养伤——夜袭中她为护一个村中孩童被灰蜮所伤。绝灵之地，修士的骄傲一文不值，人心却看得真真切切。",
+    text: [
+      { scene: "阴冥村 · 石屋" },
+      { amb: "candle" },
+      "同坠鬼雾的女修唤作梅凝——夜袭时她一身剑修的傲骨，却为护一个扑错方向的孩童，硬生生用背挡了一爪。",
+      { say: "梅凝", tone: "soft", text: "「笑话我吧。堂堂筑基剑修，在这儿连个孩子都护得这么狼狈。……你不一样，你那剑法——不是修士的剑，是杀出来的剑。」" },
+      { say: "韩立", emo: "calm", tone: "low", text: "「修仙之前，我在江湖门派烧了七年火。剑，是那时候学的。」" },
+      { aside: "绝灵之地像一面镜子——照掉境界、照掉法宝，剩下的才是这个人本来的样子。同路去暴风山的，又多了一个。" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_meining_done");
+      Engine.meetNpc("mei_ning", "同陷阴冥之地的筑基女剑修——夜袭中舍身护童。绝灵之地共赴暴风山的同路人。");
+      Engine.writeLedger("whfy_meining", "阴冥村结识梅凝（同陷女剑修·舍身护童）——与紫灵三人结伴，同赴暴风山。");
+    },
+    choices: [
+      {
+        text: "把金疮药分她一半 · 「路还长」",
+        hint: "同路人——雪中送炭",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 4);
+          State.setFlag("whfy_meining_helped");
+          Engine.writeLedger("whfy_meining_helped", "把仅有的金疮药分了梅凝一半——绝灵之地，一贴药比一件法宝重。她收下了，也把背转向你时不再设防。");
+          return { text: "你把金疮药分了一半过去。梅凝一怔，没推辞——绝灵之地，谁都知道这一贴药的分量。她低声道了句谢，从那天起，她守夜时的背，肯朝你这边转了。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "只指点她两手贴身短打",
+        hint: "授艺不授药——各留余地",
+        effect(s) {
+          Engine.writeLedger("whfy_meining_helped", "指点梅凝两手贴身短打——剑修的架子在绝灵之地不好使，江湖的野路子好使。药各自省着用，艺不藏私。");
+          return { text: "你没动药囊，只在她能下地后拆了两手贴身短打给她看——肘、膝、撤步、锁喉。剑修的章法讲究体面，江湖的路数只讲活命。她学得很快。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 幕四④·暴风山·狭路（终结战前夜）——
+  {
+    id: "whfy_a4_baofeng",
+    skipIf: (s) => s.flags.whfy_baofeng_done,
+    cond: (s) => s.flags.whfy_meining_done && !s.flags.whfy_baofeng_done,
+    bgm: "tense",
+    title: "暴风山 · 狭路",
+    objTitle: "攀登 · 冤家路窄",
+    objHint: "三十年一开的风眼将至，暴风山半腰——你们与另一支攀山的队伍狭路相逢：温天仁，和被他重新扣住的紫灵。",
+    text: [
+      { scene: "暴风山 · 半腰栈道" },
+      { amb: "wind" },
+      "暴风山黑岩如刃，罡风割面。攀至半腰，前方栈道转角处，一行人影迎面而来——为首者紫袍褴褛、发冠歪斜，可那双眼睛里的倨傲一分未减。",
+      { say: "温天仁", tone: "冷笑", text: "「真是……冤家路窄。韩、老、魔。」" },
+      "他身后，紫灵的手腕又被一根粗麻绳缚住——法力尽失的地方，他用的是最凡人的办法。",
+      { aside: "风眼只容一线先后。他杀意已决：在这个没有六极真魔功、没有八门金光镜的地方，用拳头、用刀，把所有旧账一并清了。" },
+      { say: "温天仁", tone: "森然", text: "「没了法力，本座倒要看看——你这条从虚天殿溜出去的泥鳅，骨头有多硬！」" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_baofeng_done");
+      Engine.writeLedger("whfy_baofeng", "暴风山半腰与温天仁狭路相逢（紫灵被麻绳缚于其后）——绝灵之地凡人相搏，避无可避。全篇最高之战，以最『凡人』的方式收束。");
+      // —— 铁律3·入山前收口 ——
+      Engine.settleLedger("whfy_wtr_battle", (s.flags.whfy_wtr_result === "upper"
+        ? "边缘那一战你占了上风——他记得。此刻他眼底的狠，一半是杀意，一半是雪耻"
+        : "边缘那一战他占了上风——他记得。此刻他眼底的轻蔑，比暴风山的罡风更刺骨"));
+      Engine.settleLedger("whfy_saved_ziling", "你战中蚀断的那圈紫金禁环救过她一次——所以这次他改用了麻绳，捆得更狠。紫灵看你的眼神里没有求救，只有『别管我，赢他』");
+      Engine.settleLedger("whfy_cun", "阴冥村相赠的毒草暗器金疮药，此刻全在腰间——凡人的家当，打凡人的仗");
+      Engine.settleLedger("whfy_cunzhan_won", "灰蜮夜袭那一战把你的手彻底打热了——眨眼剑法找回了当年在七玄门喂招的手感。正好，用在他身上");
+    },
+    choices: [
+      { text: "解剑鞘 · 「来。」", hint: "凡人终结战（正典：韩立杀之）", resolve: "whfy_mortal_fight" },
+    ],
+  },
+
+  /* ============================================================
+   *  外海风云 · 幕五/收口（S5·动漫145~152）
+   * ============================================================ */
+
+  // —— 收口①·脱困·见天南（乡愁名场面）——
+  {
+    id: "whfy_a5_tuokun",
+    skipIf: (s) => s.flags.whfy_tuokun_done,
+    cond: (s) => s.flags.whfy_mortal_won && !s.flags.whfy_tuokun_done,
+    bgm: "sorrow",
+    title: "暴风山顶 · 风眼",
+    objTitle: "脱困 · 故土",
+    objHint: "风眼开了。你带着紫灵与梅凝跃入那道撕裂天穹的白光——坠出雾墙的刹那，脚下的山河让你怔在原地。",
+    text: [
+      { scene: "暴风山顶 · 风眼" },
+      { amb: "wind" },
+      "山顶罡风如瀑，天穹裂开一线刺目的白。长老说的三十年一开——就是此刻。",
+      "你拽住紫灵与梅凝，纵身跃入白光。天旋地转、五感尽灭——再睁眼时，丹田里的金丹「嗡」的一声苏醒，灵力如潮水灌回四肢百骸。",
+      { amb: null },
+      { shot: "pushIn", ms: 1400, scale: 1.12 },
+      "而脚下……青山如黛，梯田如镜，一条官道蜿蜒入谷，道旁酒旗上一个褪色的「胥」字。",
+      { wait: 700 },
+      { say: "韩立", emo: "calm", tone: "low", text: "「这是——天南。……我回来了。」" },
+      { aside: "离乡渡海，星海沉浮几十年。鬼雾把你吞进九死一生的绝地，又把你吐回了故土的天空下。青牛镇的方向，你望了很久很久。" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_tuokun_done");
+      Engine.addMilestone("外海风云·脱阴冥：重返天南故土", "story");
+      Engine.writeLedger("whfy_tuokun", "暴风山顶风眼脱困——携紫灵/梅凝坠出雾墙，灵力尽复。落点竟是天南故土：离乡渡海数十年，鬼雾把人吐回了起点的天空下。");
+      // —— 铁律3·阴冥段收口 ——
+      Engine.settleLedger("whfy_meining", "同坠鬼雾的路人，最终成了同出生天的同路人——梅凝在风眼白光里抓住你手腕的力道，比任何道谢都重");
+      Engine.settleLedger("whfy_meining_helped", "阴冥村里分出去的那点东西，在暴风山换回了一个把后背交给你的人");
+      Engine.settleLedger("whfy_baofeng", "狭路的那场对峙，以他伏尸栈道作结——暴风山替全乱星海记下了这一笔：元婴之下第一人，死于凡人之剑");
+    },
+    choices: [
+      { text: "落下云头 · 先寻一处落脚", hint: "故土·蛰伏", resolve: "advance" },
+    ],
+  },
+
+  // —— 收口②·银月化形（侧位同道兑现·用户拍板）——
+  {
+    id: "whfy_a5_yinyue",
+    skipIf: (s) => s.flags.whfy_yinyue_done,
+    cond: (s) => s.flags.whfy_tuokun_done && !s.flags.whfy_yinyue_done,
+    bgm: "daily",
+    title: "天南 · 银月化形",
+    objTitle: "器灵 · 化形",
+    objHint: "天南山中觅洞府蛰伏，你祭出青竹蜂云剑温养——剑身银芒忽然大盛，沉睡经年的器灵银月，化形而出。",
+    text: [
+      { scene: "天南 · 无名山洞府" },
+      { amb: "candle" },
+      "山中洞府初定，你祭出青竹蜂云剑照例温养。剑身银芒忽然一涨——七十二口飞剑齐齐轻鸣，如群鸟朝凤。",
+      { fx: "flash", color: "#cdd8ee", ms: 300 },
+      { sfx: "bell" },
+      "银光凝成一道纤细的人影：银发银眸的少女悬在剑光中央，睡眼惺忪地打了个哈欠，随即恭恭敬敬一福：",
+      { say: "银月", tone: "soft", text: "「器灵银月，拜见主人。……睡了好久好久。主人的剑养得真好，银月在梦里都闻得到雷的味道。」" },
+      { aside: "狼首玉如意里沉睡的那缕灵识，借着本命飞剑与风雷之气终于化形。往后的路上，剑里住着一个会说话的伙伴——她能替你御剑、掌灯、看家，也能并肩而战。" },
+    ],
+    onArrive(s) {
+      State.setFlag("whfy_yinyue_done");
+      State.setFlag("yinyue_awake");
+      // 银月·器灵侧位（用户拍板=侧位同道）：随行出战（sideUnitFor 直读 s.sideUnit）
+      s.sideUnit = {
+        id: "yinyue", name: "银月", kind: "ally", art: "yinyue",
+        hp: 130, hpMax: 130, guard: 0.25, elem: "shui", mp: 90, mpMax: 90,
+        canFly: true, airGrade: 2, status: "ok", carry: true, mastery: 1,
+        persona: { aggr: 5, prot: 5, kite: 5 },
+        moves: [
+          { name: "银辉剑雨", dmg: 20, weight: 10, elem: "shui", range: [1, 3], mp: 5, line: "银芒漫卷，剑雨倾向" },
+          { name: "月华护幕", dmg: 10, weight: 5, elem: "shui", range: [1, 1], mp: 3, line: "银幕横展，月华挡下" },
+          { name: "器灵共鸣", dmg: 28, weight: 4, elem: "jin", range: [1, 2], mp: 9, line: "与本命剑共鸣，雷芒并剪斩向" },
+        ],
+      };
+      Engine.meetNpc("yinyue", "青竹蜂云剑器灵·化形银发少女——沉睡经年终于醒来。御剑、看家、并肩而战的『小秘书』。");
+      Engine.addMilestone("外海风云·银月化形（器灵伙伴·侧位随行）", "bigitem");
+      Engine.writeLedger("whfy_yinyue", "青竹蜂云剑器灵银月化形——银发少女自剑光中拜主。自此侧位随行出战（御剑/护幕/器灵共鸣）。");
+      Engine.toast("侧位随行：银月（器灵）");
+    },
+    choices: [
+      { text: "「醒了就好。往后——一起走。」", hint: "器灵伙伴·随行出战", resolve: "advance" },
+    ],
+  },
+
+  // —— 收口③·章末钩（卷入天南之争→重返天南篇）——
+  {
+    id: "whfy_a5_close",
+    skipIf: (s) => s.flags.arc7_complete,
+    cond: (s) => s.flags.whfy_yinyue_done && !s.flags.arc7_complete,
+    bgm: "journey",
+    title: "外海风云 · 终 · 故土暗流",
+    objTitle: "章末 · 天南棋局",
+    objHint: "蛰伏之地初定，你本想寻处灵山静修、冲击元婴——可银月夜巡带回的消息，让你眉头再度皱起：这片阔别数十年的故土，正在酝酿一场大乱。",
+    text: [
+      { scene: "天南 · 无名山洞府" },
+      "洞府初定不过数月，银月夜巡带回一串消息：云梦山三派放出「试剑大会」的风声、魔道六宗的探子在各州游走、落云宗在广收结丹客卿——故土的水面下，暗流已经涨到了喉咙口。",
+      { say: "韩立", emo: "serious", tone: "low", text: "「树欲静而风不止。……也罢。要在天南冲击元婴，总归绕不开这盘棋。」" },
+      {
+        guide: {
+          tag: "外海风云篇 · 终　——　凡人归乡·风云再起",
+          title: "章末钩 · 下一篇：重返天南篇",
+          hint: "风雷翅、银月、结丹大圆满、凡人之躯杀温天仁的胆气——一身行装已齐。远处的钩子：试剑大会、灵眼之树、落云宗、破婴之机、慕沛灵……这一切，都留待《重返天南篇》。",
+          cta: "（蛰伏天南·静待风起——外海风云篇 终）",
+        },
+      },
+    ],
+    onArrive(s) {
+      State.setFlag("arc7_complete");
+      if (typeof Chapters !== "undefined") {
+        const next = Chapters.active().nextChapter;
+        if (next) Chapters.unlock(next);
+      }
+      Engine.writeLedger("whfy_arc7_complete", "外海风云篇·终——恶名阳谋/智夺风雷翅/还阳术之诺/六魔大战/阴冥凡人终结战/银月化形，一篇走完。韩立携紫灵梅凝重返天南故土蛰伏，试剑大会与破婴之机在前。下一篇章重返天南。");
+      Engine.addMilestone("外海风云篇通关·重返天南故土（章末钩）", "medal");
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews = s.worldNews || [];
+      s.worldNews.push({ t, kind: "world", text: "天南暗流：云梦山三派试剑大会风声渐起，魔道探子游走各州——阔别数十年的故土，山雨欲来。" });
+      s.worldNews.push({ t, kind: "rumor", text: "乱星海旧闻渡海而来：『韩老魔』于阴冥绝地以凡人之躯搏杀六道传人——听过的人都说是渔夫的醉话。只有极少数人知道那是真的。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+      Engine.toast("外海风云篇通关！重返天南故土");
+    },
+    choices: [
+      {
+        text: "（蛰伏天南·静待风起——外海风云篇 终）",
+        hint: "凡人归乡·风云再起",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 8);
+          return { text: "你立于洞府崖口，望着天南熟悉又陌生的群山。从这里出发，也回到这里——只是当年那个攥着升仙令的少年，如今已是能以凡人之躯搏杀天骄的结丹大圆满。元婴之门，就在前方。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
 ];
 
 window.STORY = STORY;

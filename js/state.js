@@ -354,6 +354,13 @@ const State = {
         if (t) return t;
       }
     }
+    // 飞行法宝特性（外海风云·风雷翅兑现）：feng_lei_chi 的 fenglei（雷遁）/fly 挂在
+    // DATA.flightTreasures 上——御着它才生效（flightId 即"穿在身上"）
+    const ft = this.flightTreasure();
+    if (ft && ft.traits) {
+      const t = ft.traits.find(x => x.id === traitId);
+      if (t) return t;
+    }
     return null;
   },
 
@@ -361,10 +368,15 @@ const State = {
     const ft = this.flightTreasure();
     // 元武国代工·精工神风舟（M3 取舍）：帆骨风纹——御舟遁速+2（仅御神风舟时生效）
     const fineZhou = (this.data.flags && this.data.flags.daigong_fine_zhou && this.data.flightId === "shen_feng_zhou") ? 2 : 0;
+    // 风雷翅·初驭不善（外海风云·喜剧成长弧："使脚刹"）：未精通前只发挥一半脚力
+    let ftBonus = ft ? ft.speedBonus || 0 : 0;
+    if (this.data.flightId === "feng_lei_chi" && !(this.data.flags && this.data.flags.whfy_chi_mastered)) {
+      ftBonus = Math.round(ftBonus * 0.5);
+    }
     return (this.data.speed || 0)
       + this.realmSpeedBonus()
       + this.movementArtBonus()
-      + (ft ? ft.speedBonus || 0 : 0)
+      + ftBonus
       + this.gearBonus("speed")
       + fineZhou;
   },
