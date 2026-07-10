@@ -4874,7 +4874,8 @@ const UI = {
     };
     if (base === "bt_xinghai") {
       // 风暴海战：浪沫横飞（常驻）+ 远雷天光 + 雷鸣——大决战的天地都在响
-      Fx.ambient("storm", { interval: 95, cap: 30 });
+      // （S5 性能收口：cap 30→22 / interval 95→130——用户实测"卡了"，氛围粒是常驻开销第一刀）
+      Fx.ambient("storm", { interval: 130, cap: 22 });
       loop(5200, 11000, () => {
         if (!Fx._ctx) return;
         if (Math.random() < 0.55) {
@@ -5118,7 +5119,7 @@ const UI = {
     if (!field || typeof Fx === "undefined" || !Fx.ensure(field)) return;
     // ① 天色骤暗 + 黑雾漫场（moqi 常驻整个魔功阶段——战斗结束 Fx.clear 自收）
     Fx.dimField(5600, .5);
-    Fx.ambient("moqi", { cap: 26, interval: 120 });
+    Fx.ambient("moqi", { cap: 18, interval: 160 });   // S5 性能收口：魔雾大颗粒贵，18 团足够漫场
     if (typeof Sfx !== "undefined") Sfx.play("thunderFar");
     // ② 乌云紫雷：两道诡紫天雷先后劈落（魔功天象——与韩立金雷色板对仗）
     const PURPLE = ["120,60,180", "170,110,220", "240,225,255"];
@@ -5555,7 +5556,12 @@ const UI = {
     // 单位图优先级：战斗全身立绘（battlers/）> 剧情半身像 > 字符玉牌
     // （reconcile 改造：产出 src/类/玉牌三件，img 元素由 _syncUnits 持久管理——不再重建）
     let figSrc = null, figCls = "", figGlyph = null;
-    if (typeof Art !== "undefined" && Art.battlerUrl) {
+    // S5 粒子化身（虫群等）：不贴立绘——透明占位撑几何（血条/名牌/锚点仍在），
+    // "身体"由 Fx.swarmAttach 的持续粒子群绘制（_syncSwarms 管理生命周期）。
+    // 兜底：关动效/无特效环境退回立绘（否则虫群隐身）
+    if (u.swarmFx && typeof Fx !== "undefined" && Fx.swarmAttach && !Fx._reduced()) {
+      figGlyph = '<div class="au-swarmbox"></div>';
+    } else if (typeof Art !== "undefined" && Art.battlerUrl) {
       let bid = null;
       if (isPlayer) bid = Art.heroBattlerId ? Art.heroBattlerId() : (Art.hasBattler("bt_hanli") ? "bt_hanli" : null);
       else if (isSide) bid = u.art && Art.hasBattler("bt_" + u.art) ? "bt_" + u.art : this._battlerByName(u.name);
@@ -5565,7 +5571,7 @@ const UI = {
       if (bid && (u.alt || 0) === 1 && Art.hasBattler(bid + "_fly")) bid = bid + "_fly";
       if (bid) { figSrc = Art.battlerUrl(bid); figCls = " battler" + (demonized ? " demonized" : ""); }
     }
-    if (!figSrc) {
+    if (!figSrc && !figGlyph) {
       const aid = isPlayer ? (Art.heroId ? Art.heroId() : "hanli") : (isSide ? (u.art || null) : this._artIdByName(u.name));
       if (aid && typeof Art !== "undefined" && Art.has && Art.has(aid)) {
         figSrc = Art.url(aid); figCls = demonized ? " demonized" : "";
@@ -5809,6 +5815,28 @@ const UI = {
     }
   },
 
+  /* S5 粒子化身生命周期：swarmFx 单位（噬金虫群等）——在场即挂粒子群（绑定锚点跟走位/镜头），
+   * 亡/失即打散（scatter=群粒四溅，本体就是粒子、散了就是死了）。方案可复用：任何"活的群体"
+   * （魔雾缠身/鸦群/蜂云）都走 swarmFx + Fx.swarmAttach 的 cols/参数换皮。 */
+  _syncSwarms(c) {
+    if (typeof Fx === "undefined" || !Fx.swarmAttach || Fx._reduced()) return;   // 关动效=立绘兜底，不挂粒子群
+    const box = this.el("axis-units");
+    if (!box || !Fx.ensure(this.el("axis-field"))) return;
+    const want = [];
+    (c.sides || []).forEach((s, i) => {
+      if (s.swarmFx && s.hp > 0) {
+        const uid = i > 0 ? "side:" + i : "side";
+        want.push({ id: "swarm:" + (s.id || uid), uid });
+      }
+    });
+    want.forEach(w => Fx.swarmAttach(w.id, () => box.querySelector(`[data-uid="${CSS.escape(w.uid)}"]`)));
+    (Fx._swarms || []).slice().forEach(sw => {
+      if (String(sw.id).indexOf("swarm:") === 0 && !want.some(w => w.id === sw.id)) {
+        Fx.swarmDetach(sw.id, { scatter: true });
+      }
+    });
+  },
+
   /* 战斗结算卡：胜/遁/败 + 每个敌人的结局（伏诛/走脱）+ 复盘与战利——
    * 看清楚发生了什么再收功（防"莫名其妙就退出战斗"）。确认后才走 _finishCombat。 */
   showCombatOutro(c, meta, done) {
@@ -6021,6 +6049,7 @@ const UI = {
       unitList.push(this._axisSprite(c, e, { isBT, target, enemyIndex: i }));
     });
     this._syncUnits(c, unitList);
+    this._syncSwarms(c);   // S5 粒子化身：虫群等 swarmFx 单位的粒子群挂载/打散
 
     // —— 场景即战场：宽轴（W>11）拉镜头（死区跟随）——你在画面里走，镜头只在你贴近画框时才拉。
     //    镜头跟人不锁人：移动是"人滑过画面"，不是"世界从脚下滑走"。长卷背景以视差随镜头退行。 ——

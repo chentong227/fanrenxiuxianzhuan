@@ -22,6 +22,16 @@
 > ⑥ **温天仁霸气立绘重生成**（用户实锤"不够霸气"）：单手前压金芒迸射衣袂鼓荡+周身金焰；魔功变体=张臂狂笑獠牙魔雾。
 > ⑦ **遁光光圈返修**（用户实锤"好丑"）：88px 亮青圈→54px 重虚化低透光晕（托举感非呼啦圈）。
 > ⑧ **战场天象系统 UI._startBattleAmbience**（用户提案）：按底图配氛围——乱星海=storm 浪沫横飞+远雷天光 loop（quiet lightning：不震屏弱闪远雷声）+雷鸣；森林=beam 天光光束+bird 鸟鸣（audio 新 recipe）；山谷=spirit/官道=dust/夜战宫阙=ash。closeCombat 统一清定时器。
+>
+> **v306 增量（2026-07-10 午·用户两项反馈）**：
+> ⑨ **粒子化身 swarm（用户拍板"虫群做成粒子特效版"·方案可复用到所有地方）**：`Fx.swarmAttach(id, getAnchor, opts)` /
+> `swarmDetach(id, {scatter})`——绑定单位锚点的**持续粒子群**（每虫=双频轨道游走+振翅拖影+明暗闪烁），跟走位/浮沉/镜头一体动；
+> hit-stop dt=0 整群凝住（同规则）；scatter=被打散四溅（本体就是粒子，散了就是死了）。战斗侧 `f.swarmFx = true` 即启用：
+> _axisSprite 出透明 .au-swarmbox 占位撑几何（血条/名牌/锚点仍在）、`UI._syncSwarms` 管生命周期（renderCombat 每帧对账）。
+> 噬金虫群=首例；**魔雾缠身/鸦群/蜂云皆可 cols/参数换皮复用**。关动效（_reduced）自动退回 bt_chongyun 立绘兜底。
+> ⑩ **性能收口（用户实锤"卡了"）**：storm 氛围 cap 30→22/interval 95→130；moqi cap 26→18/interval 120→160；
+> swarm 每虫辉光 drawImage 降档时撤（_degraded<1）；每群 ≤26 粒吃 _degraded。
+> ⑪ 虫群输出正典化：噬金虫专噬金铁——虫云噬咬/金砂溅射带 pierce 破甲（对高甲 boss 不再挠痒），dmg 12/8。
 
 > 2026-07-10 立项。用户裁决：**"必须要做出极强的效果"**——人物纯静态、特效同质化是当前精品度的最后一堵墙。
 > 定位：战斗从"数值可视化"跃迁为"被导演过的演出"。范式对标《Darkest Dungeon》《Slay the Spire》

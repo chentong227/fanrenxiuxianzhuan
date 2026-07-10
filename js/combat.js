@@ -1310,12 +1310,14 @@
             hp: 60, hpMax: 60, guard: 0, elem: "jin", mp: 40, mpMax: 40,
             canFly: true, airGrade: 2, move: 2, stance: "attack",
             persona: { aggr: 9, prot: 0, kite: 0 },
+            // 正典：噬金虫专噬金铁——护甲法宝在虫嘴里如糖纸（pierce 破甲，否则平伤全被高甲 boss 吃掉）
             moves: [
-              { name: "虫云噬咬", dmg: 9, weight: 10, range: [1, 1], mp: 0, line: "金云卷落、万虫齐噬" },
-              { name: "金砂溅射", dmg: 6, weight: 6, range: [1, 3], mp: 2, line: "虫群如金砂泼洒向" },
+              { name: "虫云噬咬", dmg: 12, weight: 10, range: [1, 1], mp: 0, pierce: true, line: "金云卷落、万虫齐噬" },
+              { name: "金砂溅射", dmg: 8, weight: 6, range: [1, 3], mp: 2, pierce: true, line: "虫群如金砂泼洒向" },
             ],
           });
           f.mastery = 1;   // 灵虫受简令（非客随）
+          f.swarmFx = true;   // S5 粒子化身：轴上不贴立绘——由 Fx.swarmAttach 一团活粒子演（ui._syncSwarms 接管）
           f.pos = clampNum(this.player.pos + 1, 0, this.W - 1);
           f.lane = 0;
           this.sides.push(f);

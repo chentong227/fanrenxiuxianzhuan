@@ -61,6 +61,7 @@
     // _cvBack/_ctxBack 是 v111 新增的"身后层"(z:1，画在人物之后)。
     _cv: null, _ctx: null, _cvBack: null, _ctxBack: null, _host: null, _glow: null,
     _parts: [], _bolts: [], _strokes: [], _swords: [], _arcs: [], _raf: 0,
+    _swarms: [],            // S5 粒子化身（虫群等"活的单位"）：持续粒子群绑定单位锚点
     _budget: 420,           // 粒子全场封顶（手机红线）
     _degraded: 1,           // 降档系数：帧难看时减半出粒
     _dprCap: 2,             // 画布分辨率上限：帧难看时降到 1.75（v111 收窄降幅，回稳复原 2）
@@ -560,6 +561,80 @@
       }
       this._run();
     },
+    /* ===== S5 粒子化身（swarm）——"活的单位"不贴立绘，用一团持续粒子演 =====
+     * 可复用方案（用户拍板）：噬金虫群=首例；魔雾缠身/剑气环绕/蜂云鸦群皆可换 cols/参数复用。
+     * swarmAttach(id, getAnchor, opts)：绑定锚点——每帧重取 rect，跟走位/浮沉/镜头一起动；
+     * swarmDetach(id, {scatter})：解绑；scatter=被打散四溅（死亡演出）。
+     * 红线：每群 ≤26 粒（吃 _degraded 降档）；hit-stop dt=0 时整群凝住（同规则）。 */
+    swarmAttach(id, getAnchor, o = {}) {
+      if (this._swarms.some(s => s.id === id)) return;
+      const n = Math.max(8, Math.round((o.n || 26) * this._degraded));
+      const cols = o.cols || ["#ffd970", "#e8b84a", "#fff3c4", "#c9992e"];
+      const bugs = [];
+      for (let i = 0; i < n; i++) {
+        bugs.push({
+          t: rnd(0, TAU), spd: rnd(0.0016, 0.0044) * (Math.random() < 0.5 ? 1 : -1),
+          rx: rnd(10, 36), ry: rnd(8, 26), ph: rnd(0, TAU),
+          size: rnd(1.2, 2.4), tw: rnd(0.004, 0.010), c: pick(cols),
+        });
+      }
+      this._swarms.push({ id, getAnchor, bugs, cols, ay: o.ay != null ? o.ay : 0.45, _cx: null, _cy: null });
+      this._run();
+    },
+    swarmDetach(id, o = {}) {
+      const i = this._swarms.findIndex(s => s.id === id);
+      if (i < 0) return;
+      const s = this._swarms.splice(i, 1)[0];
+      // 被打散：群粒四溅坠散（虫群的"死亡演出"——本体就是粒子，散了就是死了）
+      if (o.scatter && this._ctx && s._cx != null) {
+        for (let k = 0; k < 18 * this._degraded; k++) {
+          this.spark(s._cx + rnd(-24, 24), s._cy + rnd(-18, 18),
+            { vy: rnd(-3.5, 2.5), c: pick(s.cols), life: rnd(320, 760) });
+        }
+        this.burst(s._cx, s._cy, "jin", 12, { power: 3.2 });
+      }
+    },
+    /* 逐帧绘制（front 层·lighter）：每虫=绕群心的双频轨道游走（振翅抖动）+
+     * 运动方向短拖影（虫身）+ 明暗闪烁（振翅反光）——一团"活"的金云 */
+    _drawSwarms(ctx, dt) {
+      const now = performance.now();
+      for (const s of this._swarms) {
+        let a = null;
+        try { a = s.getAnchor && s.getAnchor(); } catch (e) {}
+        if (!a || !a.isConnected) continue;
+        const at = this.at(a, s.ay);
+        if (!at) continue;
+        s._cx = at.x; s._cy = at.y;
+        for (const b of s.bugs) {
+          b.t += b.spd * dt;
+          const wob = Math.sin(b.t * 3.1 + b.ph) * 5;
+          const x = at.x + Math.cos(b.t) * b.rx + wob;
+          const y = at.y + Math.sin(b.t * 1.31 + b.ph) * b.ry * 0.72 + Math.cos(b.t * 2.3) * 4;
+          // 运动方向（解析导数近似）→ 虫身拖影线
+          const dxv = -Math.sin(b.t) * b.rx * Math.sign(b.spd) || 0.6;
+          const dyv = Math.cos(b.t * 1.31 + b.ph) * b.ry * 0.72 * Math.sign(b.spd) || 0.3;
+          const L = Math.hypot(dxv, dyv) || 1;
+          const tl = 3 + b.size * 1.6;   // 拖影长
+          const tw2 = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(now * b.tw + b.ph));
+          ctx.globalAlpha = tw2;
+          ctx.strokeStyle = b.c;
+          ctx.lineWidth = b.size;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(x - (dxv / L) * tl, y - (dyv / L) * tl);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+          // 头部亮点（振翅反光）——降档时撤（每虫一次 drawImage 是本群最贵的一笔）
+          if (this._glow && this._degraded >= 1) {
+            const gs = b.size * 5;
+            ctx.globalAlpha = tw2 * 0.5;
+            ctx.drawImage(this._glow, x - gs / 2, y - gs / 2, gs, gs);
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+    },
+
     /* 余韵·焦痕 decal（DOM 地面残留渐隐——世界记住这一击）。红线：同屏 ≤6 */
     scorch(x, y, ms = 6000) {
       const h = this._host;
@@ -1134,7 +1209,7 @@
     _frame(dt) {
       const ctxF = this._ctx, ctxB = this._ctxBack;
       // 无任何实体且未开氛围发射器 → 收循环（开了 _amb 则保活并续粒）
-      if (!ctxF || (!this._amb && !this._parts.length && !this._bolts.length && !this._strokes.length && !this._swords.length && !this._arcs.length)) {
+      if (!ctxF || (!this._amb && !this._parts.length && !this._bolts.length && !this._strokes.length && !this._swords.length && !this._arcs.length && !this._swarms.length)) {
         if (ctxF && this._cv) ctxF.clearRect(0, 0, this._cv.width, this._cv.height);
         if (ctxB && this._cvBack) ctxB.clearRect(0, 0, this._cvBack.width, this._cvBack.height);
         return false;
@@ -1328,6 +1403,8 @@
         }
         ctx.globalAlpha = 1;
       }
+      // S5 粒子化身（虫群等）：绑定单位锚点的持续粒子群——front 层压轴画（hit-stop dt=0 时整群凝住）
+      if (this._swarms.length) this._drawSwarms(ctxF, dt);
       this._bloomPass();
       return true;
     },
@@ -1370,7 +1447,7 @@
       this._frozenUntil = 0; clearTimeout(this._hsTimer);          // B3：解冻 hit-stop
       if (this._host && this._host.classList) this._host.classList.remove("fx-hitstop");
       this._parts.length = 0; this._bolts.length = 0; this._strokes.length = 0;
-      this._swords.length = 0; this._arcs.length = 0;
+      this._swords.length = 0; this._arcs.length = 0; this._swarms.length = 0;
       if (this._ctx && this._cv) this._ctx.clearRect(0, 0, this._cv.width, this._cv.height);
       if (this._ctxBack && this._cvBack) this._ctxBack.clearRect(0, 0, this._cvBack.width, this._cvBack.height);
     },
