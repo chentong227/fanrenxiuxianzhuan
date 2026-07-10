@@ -861,22 +861,24 @@
        * 自高天倾斩而下→落点重震破甲裂阵。无 shadowBlur；粒子吃 _degraded；剑体＝加宽光带摞白芯。 */
       jujian_shu(F, from, to) {
         const p = to || from;
-        // ① 聚芒：施法者周身青芒上旋汇聚（蓄力的仪式感）
+        // ═ 预兆拍（S7 三拍化）：天光微暗 + 施法者周身青芒上旋汇聚（蓄力的仪式感）
+        F.dimField(1500, .3);
         F.flash("#bdf2e6", 90, .16);
         for (let i = 0; i < 12 * F._degraded; i++) {
           const a = (i / 12) * TAU;
           F.mote(from.x + Math.cos(a) * 26, from.y - 8 + Math.sin(a) * 30,
             { vx: -Math.cos(a) * 1.4, vy: -Math.sin(a) * 1.0 - 0.6, life: 240, size: 3, c: i % 3 ? "#a8f0e0" : "#fff", delay: i * 10 });
         }
-        // ② 自天倾斩：丈余巨剑自高天落于目标——加宽青芒光带摞白芯成剑体，剑脊一线白芒
+        // ═ 爆发拍：丈余巨剑自高天倾斩——加宽青芒光带摞白芯成剑体，剑脊一线白芒
         const top = { x: p.x + 14, y: p.y - 168 };
         setTimeout(() => {
           F.ribbon(top, { x: p.x, y: p.y }, { core: "#7fe5d2", glowC: "#2fae9b", width: 17, flyMs: 150, tail: 0.95, hold: 150 });
           F.ribbon(top, { x: p.x, y: p.y }, { core: "#ffffff", glowC: "#bff3e8", width: 6, flyMs: 150, tail: 0.85, hold: 130 });
           F.ribbon({ x: top.x - 4, y: top.y }, { x: p.x - 3, y: p.y }, { core: "#eafff8", glowC: "#7fe5d2", width: 2.4, flyMs: 150, tail: 0.7, hold: 110 });
         }, 170);
-        // ③ 倾斩落地：重震＋破甲冲击环×2＋裂地横弧＋青芒迸碎
+        // 倾斩落地：顿帧＋重震＋破甲冲击环×2＋裂地横弧＋青芒迸碎
         setTimeout(() => {
+          F.hitStop(110);
           F.shake(15);
           F.ring(p.x, p.y + 8, { c: "#bff3e8", vr: 5.8, life: 360, lw: 4 });
           setTimeout(() => F.ring(p.x, p.y + 8, { c: "#fff", vr: 3.6, life: 300, lw: 2 }), 70);
@@ -888,7 +890,61 @@
             const a = rnd(-2.4, -0.7);
             F.shard(p.x, p.y, { vx: Math.cos(a) * rnd(3, 7), vy: Math.sin(a) * rnd(3, 7), c: i % 2 ? "#bff3e8" : "#fff", size: rnd(3, 6) });
           }
+          // ═ 余韵拍：斩痕残留（世界记住这一剑）+ 青芒余尘上飘
+          F.scorch(p.x, p.y + 24);
+          for (let k = 0; k < 8 * F._degraded; k++) {
+            F.mote(p.x + rnd(-24, 24), p.y + rnd(-4, 10), {
+              vy: rnd(-1.1, -0.5), wob: 6, life: rnd(800, 1400),
+              size: rnd(2.4, 3.8), c: k % 2 ? "#a8f0e0" : "#eafff8", delay: 220 + rnd(0, 460),
+            });
+          }
         }, 340);
+        F._run();
+      },
+      /* 噬金·变身外化身（S7 三拍化·虫群大招）：预兆 金尘自四方汇聚 → 爆发 虫王金云自天扑落
+       * 三段撕咬+顿帧 → 余韵 金砂散落。虫云=密集金砂 trail 拧成的"活体"，不画具象虫王（留给 swarm） */
+      shijin_huashen(F, from, to) {
+        if (!to) return;
+        // ═ 预兆：天光微暗 + 金尘自四方向施法者汇聚（倾巢而出的酝酿）
+        F.dimField(1400, .28);
+        for (let i = 0; i < 14 * F._degraded; i++) {
+          const a = rnd(0, TAU), r = rnd(40, 90);
+          const px = from.x + Math.cos(a) * r, py = from.y + Math.sin(a) * r * 0.7;
+          F.mote(px, py, { vx: (from.x - px) * 0.045, vy: (from.y - py) * 0.045, life: 340, size: rnd(2, 3.4), c: i % 2 ? "#ffd970" : "#e8b84a", delay: rnd(0, 180) });
+        }
+        // ═ 爆发：三股金砂洪流错拍扑咬（各自弧线=虫云拧身），末段顿帧
+        [0, 130, 260].forEach((d, i) => setTimeout(() => {
+          F.trail({ x: from.x + rnd(-8, 8), y: from.y - rnd(4, 18) }, { x: to.x + rnd(-12, 12), y: to.y + rnd(-10, 8) },
+            { core: "#ffe9ad", elem: "jin", size: 4.6, flyMs: 180, gap: 6, fade: 160, curve: (i % 2 ? 1 : -1) * rnd(24, 44) });
+          setTimeout(() => {
+            F.burst(to.x, to.y, "jin", 16, { power: 4.2 });
+            if (i === 2) { F.hitStop(95); F.shake(9); F.flash("#ffe9ad", 120, .3); }
+          }, 180);
+        }, 400 + d));
+        // ═ 余韵：金砂自目标身上簌簌散落
+        setTimeout(() => {
+          for (let k = 0; k < 10 * F._degraded; k++) {
+            F.mote(to.x + rnd(-20, 20), to.y + rnd(-16, 6), { vy: rnd(0.6, 1.6), wob: 4, life: rnd(500, 900), size: rnd(1.6, 2.8), c: k % 2 ? "#ffd970" : "#c9992e", delay: rnd(0, 300) });
+          }
+          F._run();
+        }, 1050);
+        F._run();
+      },
+      /* 噬金·变武器（巨刃斩落）：金砂拧成一柄巨刃自侧上方斩下——快、狠、破甲 */
+      shijin_blade(F, from, to) {
+        if (!to) return;
+        const top = { x: to.x - 40, y: to.y - 120 };
+        F.ribbon(top, { x: to.x, y: to.y }, { core: "#ffe9ad", glowC: "#c9992e", width: 12, flyMs: 130, tail: 0.9, hold: 120 });
+        F.ribbon({ x: top.x - 3, y: top.y }, { x: to.x - 2, y: to.y }, { core: "#fff", glowC: "#ffd970", width: 3.5, flyMs: 130, tail: 0.75, hold: 100 });
+        setTimeout(() => {
+          F.hitStop(80);
+          F.burst(to.x, to.y, "jin", 20, { power: 5 });
+          F.ring(to.x, to.y + 6, { c: "#ffd970", vr: 4.4, life: 320, lw: 3 });
+          F.shake(8);
+          for (let i = 0; i < 8 * F._degraded; i++) {
+            F.shard(to.x, to.y, { vx: rnd(-3.5, 3.5), vy: rnd(-4, 0.5), c: i % 2 ? "#ffe9ad" : "#ffd970", size: rnd(2.2, 4.6) });
+          }
+        }, 150);
         F._run();
       },
       /* ============================================================

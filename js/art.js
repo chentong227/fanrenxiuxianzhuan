@@ -157,9 +157,17 @@
     bt_hanli_zhuji_xing: { face: "r" }, bt_hanli_zhuji_xing_fly: { face: "r" },
     bt_hanli_yexing: { face: "r" }, bt_hanli_yexing_fly: { face: "r" },
     bt_hanli_jindan: { face: "r" }, bt_hanli_jindan_fly: { face: "r" },
-    // S3 姿态变体（出手/施法瞬间替换，ui._poseSwap 自动拾取）
+    // S3/S7 姿态变体（出手/施法瞬间替换，ui._poseSwap 自动拾取——全皮肤铺开·十版精品化复用）
     bt_hanli_jindan_atk: { face: "r" }, bt_hanli_jindan_cast: { face: "r" },
     bt_hanli_wentianren_atk: { face: "r" }, bt_hanli_wentianren_cast: { face: "r" },
+    bt_hanli_atk: { face: "r" }, bt_hanli_cast: { face: "r" },
+    bt_hanli_zhuji_atk: { face: "r" }, bt_hanli_zhuji_cast: { face: "r" },
+    bt_hanli_zhuji_xing_atk: { face: "r" }, bt_hanli_zhuji_xing_cast: { face: "r" },
+    bt_hanli_yexing_atk: { face: "r" }, bt_hanli_yexing_cast: { face: "r" },
+    bt_hanli_jindan_changfu_atk: { face: "r" }, bt_hanli_jindan_changfu_cast: { face: "r" },
+    bt_hanli_jindan_jinzhuang_atk: { face: "r" }, bt_hanli_jindan_jinzhuang_cast: { face: "r" },
+    bt_hanli_jindan_kouguan_atk: { face: "r" }, bt_hanli_jindan_kouguan_cast: { face: "r" },
+    bt_zhanwangchan_atk: { face: "c" }, bt_fengyue_atk: { face: "c" },   // boss 出手变体（enemy fxcast 自动拾取）
     bt_hanli_jindan_changfu: { face: "r" }, bt_hanli_jindan_changfu_fly: { face: "r" },
     bt_hanli_jindan_jinzhuang: { face: "r" }, bt_hanli_jindan_jinzhuang_fly: { face: "r" },
     bt_hanli_wentianren: { face: "r" }, bt_hanli_wentianren_fly: { face: "r" },

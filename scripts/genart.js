@@ -619,6 +619,46 @@ const S4_DEFS = {
 };
 Object.assign(DEFS, S4_DEFS);
 
+/* ============ S7 姿态变体铺开批（2026-07-10 用户拍板"十版优化复用到所有地方"）============
+ * 韩立余下全皮肤 + 关键 boss 各补 _atk/_cast（出手/施法瞬间替换·ui._poseSwap 自动拾取）。
+ * 全部 ref 锁各自战姿底图，只改动作。 */
+const S7_DEFS = {
+  bt_hanli_atk: { kind: "battler", hq: true, ref: "battlers/bt_hanli.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的出手瞬间变体：青衫少年韩立，身体前倾重心前压成弓步，一手向前挥出剑指、袍袖向后翻卷，眼神迸出狠劲，出手一击的爆发瞬间，脚部完整不裁切" },
+  bt_hanli_cast: { kind: "battler", hq: true, ref: "battlers/bt_hanli.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的施法变体：青衫少年韩立，一手高扬过顶掐诀、指尖凝着一点灵光，另一手于胸前结印，仰首蓄势、衣袖向上飘卷，引灵施法的专注爆发感，脚部完整不裁切" },
+  bt_hanli_zhuji_atk: { kind: "battler", hq: true, ref: "battlers/bt_hanli_zhuji.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的出手瞬间变体：筑基韩立，身体前倾重心前压成弓步，一手向前挥出剑指、袍袖向后翻卷激扬，眼神迸出杀意，出剑一击的爆发瞬间，脚部完整不裁切" },
+  bt_hanli_zhuji_cast: { kind: "battler", hq: true, ref: "battlers/bt_hanli_zhuji.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的施法变体：筑基韩立，一手高扬过顶掐诀引灵、指尖凝光，另一手于胸前结印，仰首蓄势、袍袖向上飘卷，施法的庄重爆发感，脚部完整不裁切" },
+  bt_hanli_zhuji_xing_atk: { kind: "battler", hq: true, ref: "battlers/bt_hanli_zhuji_xing.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的出手瞬间变体：行装韩立，身体前倾弓步发力，一手向前挥出剑指、行装束带向后激扬，杀意迸发的出手瞬间，脚部完整不裁切" },
+  bt_hanli_zhuji_xing_cast: { kind: "battler", hq: true, ref: "battlers/bt_hanli_zhuji_xing.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的施法变体：行装韩立，一手高扬过顶掐诀、指尖凝光，另一手胸前结印，仰首蓄势、束带飘卷，施法爆发感，脚部完整不裁切" },
+  bt_hanli_yexing_atk: { kind: "battler", hq: true, ref: "battlers/bt_hanli_yexing.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的出手瞬间变体：玄甲夜行装韩立，身体前倾弓步突进，一手向前挥出斩击、夜行披风向后狂卷，冷冽杀意的出手瞬间，脚部完整不裁切" },
+  bt_hanli_yexing_cast: { kind: "battler", hq: true, ref: "battlers/bt_hanli_yexing.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的施法变体：玄甲夜行装韩立，一手高扬过顶掐诀、指尖凝光，另一手胸前结印，仰首蓄势、披风飘卷，施法爆发感，脚部完整不裁切" },
+  bt_hanli_jindan_changfu_atk: { kind: "battler", hq: true, ref: "battlers/bt_hanli_jindan_changfu.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的出手瞬间变体：月白常服韩立，身体前倾弓步，一手向前挥出剑指、素袖向后翻卷，从容中迸出锋芒的出手瞬间，脚部完整不裁切" },
+  bt_hanli_jindan_changfu_cast: { kind: "battler", hq: true, ref: "battlers/bt_hanli_jindan_changfu.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的施法变体：月白常服韩立，一手高扬过顶掐诀、指尖凝光，另一手胸前结印，仰首蓄势、素袖飘卷，施法的从容爆发感，脚部完整不裁切" },
+  bt_hanli_jindan_jinzhuang_atk: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_jindan_jinzhuang.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的出手瞬间变体：银纹战袍韩立，身体前倾弓步突进，一手向前挥出剑指、战袍下摆向后激扬，战意凌霜的出手瞬间，脚部完整不裁切" },
+  bt_hanli_jindan_jinzhuang_cast: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_jindan_jinzhuang.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的施法变体：银纹战袍韩立，一手高扬过顶掐诀引雷、指尖凝光，另一手胸前扣符，仰首蓄势、战袍飘卷，施法的凌厉爆发感，脚部完整不裁切" },
+  bt_hanli_jindan_kouguan_atk: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_jindan_kouguan.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的出手瞬间变体：月白叩关装韩立，身体前倾弓步，两指并剑向前挥出、白袍向后翻卷，宝相威严中迸出锋芒，脚部完整不裁切" },
+  bt_hanli_jindan_kouguan_cast: { kind: "battler", hq: true, holes: true, ref: "battlers/bt_hanli_jindan_kouguan.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的施法变体：月白叩关装韩立，一手高扬过顶掐诀、指尖凝光，另一手拢袖结印，仰首蓄势、白袍飘卷，庄重的施法爆发感，脚部完整不裁切" },
+  // 关键 boss 出手变体（敌方 fxcast 已自动拾取 _atk）
+  bt_zhanwangchan_atk: { kind: "battler", hq: true, ref: "battlers/bt_zhanwangchan.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的出手瞬间变体：银面具玄袍的王蝉，五指箕张向前疾抓、掌心血煞邪焰暴涨成爪影，锦袍向后狂卷、身体前倾扑击，优雅尽敛杀机毕露的出手瞬间，脚部完整不裁切" },
+  bt_fengyue_atk: { kind: "battler", hq: true, ref: "battlers/bt_fengyue.png", cut: { tol: 8, choke: 1 },
+    prompt: "同一人物同一服饰同一画风的出手瞬间变体：狙杀者封岳，身体前倾弓步突进、一手向前挥出致命一击，衣袂向后激扬，狠戾杀意迸发的出手瞬间，脚部完整不裁切" },
+};
+Object.assign(DEFS, S7_DEFS);
+
 /* ============ S5 演出返修批（2026-07-10 用户实测反馈：背景不对/温天仁不够霸气/虫群无形）============ */
 const S5_DEFS = {
   // 乱星海·外海战斗底图（海战=凌空于怒涛之上，战位带=浪面上空——底部 2/5 是翻涌海面而非地面）
