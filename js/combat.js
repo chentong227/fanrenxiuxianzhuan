@@ -2584,8 +2584,11 @@
         this.cast("dingshen_fu", ri);
       }
       // 1) 瞬发：威力最大的先甩（金光砖>符）
+      //    v316 修：元神类（soulOnly）物理/法伤全免——别把飞针金砖扔给鬼（旧 bug：暗器越多
+      //    对元神阶段浪费越狠，第三阶段活活拖到超时；showdown.bal 败因剖析抓获）
       const quicks = this.player.spells
-        .filter(id => SPELLS[id] && SPELLS[id].quick && this.canAfford(id) && this.castableAt(id, ti))
+        .filter(id => SPELLS[id] && SPELLS[id].quick && this.canAfford(id) && this.castableAt(id, ti)
+          && !(t.soulOnly && SPELLS[id].type !== "soul"))
         .sort((a, b) => effDmg(b) - effDmg(a));
       if (quicks.length && t.hp > 25) this.cast(quicks[0], ti);
       if (this.status !== "ongoing") return;
@@ -2595,8 +2598,9 @@
         this.cast("weidu", ti);
         return;
       }
-      // 2) 血危先举盾
-      if (this.player.hp < this.player.hpMax * 0.35 && (this.player.shield || 0) < 10 && this.canAfford("huti")) {
+      // 2) 血危先举盾（v316 修：元神之敌免此步——夺舍侵神走神魂直击、护体罩不住，
+      //    旧逻辑在鬼面前反复举盾烧灵力，镇魂永远攒不出=拖到超时的假僵局）
+      if (!t.soulOnly && this.player.hp < this.player.hpMax * 0.35 && (this.player.shield || 0) < 10 && this.canAfford("huti")) {
         this.cast("huti", ti);
         return;
       }
@@ -2607,6 +2611,9 @@
         .sort((a, b) => effDmg(b) - effDmg(a))[0];
       let best = pick();
       if (best) { this.cast(best, ti); return; }
+      // v316 修：元神对峙且镇魂灵力不济——先回元再战（旧逻辑在此转举盾死循环，
+      //   永远攒不出镇魂的灵力=拖到回合耗尽的假僵局；showdown.bal 败因剖析抓获）
+      if (t.soulOnly && this.canAfford("ningshen")) { this.cast("ningshen", ti); return; }
       // 4) 够不着：突进再打
       if (this._pActsUsed < this._pActsMax && this.playerCanMove()) {
         const step = this._stepToward(this.player, t, this.player.move - this._pMoved);

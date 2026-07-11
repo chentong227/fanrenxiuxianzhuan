@@ -2278,10 +2278,15 @@ const Engine = {
     return null;
   },
   // 战斗敌人构造时套用情报（L2=做过功课，料敌必中）
+  // polish-qixuan B2：花灵石买的底细不再只改意图透视——料敌于先，敌全程防备打折（真金白银要进战斗）
   _applyDossier(enemy) {
     const s = State.data;
     const id = this._intelIdByEnemyName(enemy.name);
-    if (id && (s.intel || {})[id] >= 2) enemy._dossier = true;
+    if (id && (s.intel || {})[id] >= 2) {
+      enemy._dossier = true;
+      enemy.dodgeBuff = (enemy.dodgeBuff || 0) - 0.1;
+      enemy._dossierEdge = true;   // 供开场战报点名（买过底细=看得见的先手）
+    }
     return enemy;
   },
 
@@ -4405,20 +4410,25 @@ const Engine = {
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax; // 决战前默认满血上场
 
-    const modafu = { name: "墨大夫", hp: 52, sense: 6, speed: 9, agility: 4, move: 1, mp: 46, tactics: "cunning", qiLayer: 4, elem: "mu",
-      attacks: [{ name: "毒掌", dmg: 12, kind: "normal", weight: 12, range: [1, 2], mp: 5 }, { name: "腐骨毒针", dmg: 14, pierce: true, kind: "pierce", weight: 8, mp: 7 }] };
-    const tienu  = { name: "铁奴（张铁尸傀）", hp: 70, nature: "corpse", sense: 3, speed: 6, agility: 4, move: 2, tactics: "feral",
+    // polish-qixuan B1（v316）：三阶段温和抬档（52/70/40 → 62/85/46，伤害微调）——
+    // 配合 maxRounds 16→20 与 autoResolve 两处假僵局修复（对鬼扔暗器/鬼面举盾）。
+    // ⚠ 校准备注：贪婪 AI 在此战的败因几乎全是"追逐超时"而非战死（三阶段+窄场+kite 的采样伪影），
+    // 不适合当难度神谕——决定性难度校准留浏览器真人 playtest（polish-qixuan 验收项）；
+    // showdown.bal 断言只守"三备皆有效、梯度不倒挂、不可零血硬锁"的回归底线。
+    const modafu = { name: "墨大夫", hp: 62, sense: 6, speed: 9, agility: 4, move: 1, mp: 60, tactics: "cunning", qiLayer: 4, elem: "mu",
+      attacks: [{ name: "毒掌", dmg: 14, kind: "normal", weight: 12, range: [1, 2], mp: 5 }, { name: "腐骨毒针", dmg: 17, pierce: true, kind: "pierce", weight: 8, range: [1, 3], mp: 7 }] };
+    const tienu  = { name: "铁奴（张铁尸傀）", hp: 85, nature: "corpse", sense: 3, speed: 6, agility: 4, move: 2, tactics: "feral",
       introNote: "铁奴乃尸傀死物——尸无血脉，百毒不侵！毒计无用，须以剑与暗器正面强攻。",
-      attacks: [{ name: "尸傀挥击", dmg: 14, kind: "normal", weight: 14 }, { name: "崩山重捶", dmg: 19, kind: "charge", weight: 6, aim: "cell" }] };
-    const yuhun  = { name: "余子童元神", hp: 40, nature: "ghost", sense: 18, speed: 14, agility: 8, move: 2, mp: 50, gongli: 22, qiLayer: 6,
+      attacks: [{ name: "尸傀挥击", dmg: 17, kind: "normal", weight: 14 }, { name: "崩山重捶", dmg: 23, kind: "charge", weight: 6, aim: "cell" }] };
+    const yuhun  = { name: "余子童元神", hp: 46, nature: "ghost", sense: 18, speed: 14, agility: 8, move: 2, mp: 50, gongli: 22, qiLayer: 6,
       introNote: "元神无形无质——剑、毒、暗器皆穿身而过！唯「运功镇魂」能伤其分毫，神魂镇压正是鬼魅克星。稳住心神！",
-      attacks: [{ name: "夺舍侵神", dmg: 11, soul: true, kind: "normal", weight: 12, range: [1, 4], mp: 6 }] };   // 失了傀儡与皮囊的虚弱残魂
+      attacks: [{ name: "夺舍侵神", dmg: 14, soul: true, kind: "normal", weight: 12, range: [1, 4], mp: 6 }] };   // 失了傀儡与皮囊的虚弱残魂
 
     this._combat = new CombatAPI.Combat({
       player,
       enemies: [this._applyDossier(modafu)],
       waves: [[tienu], [yuhun]],
-      maxRounds: 16,
+      maxRounds: 20,   // v316 校准：三阶段抬档后 16 回合以"耗尽"为主要败因（假死局）——放宽到 20，胜负回归打出来的
       // 药庐子夜·密室夺舍＝贴身近战：窄场(W9·室内方寸) + 敌起手近距(pos5，距玩家4格)，
       //   一两回合即接战——不是旷野大战场，不该让玩家空点六回合「结束回合」等敌人走过来。
       W: 9, enemyPos: 5,
@@ -4429,6 +4439,19 @@ const Engine = {
     this._combat.startRound();
     const duCount = State.count("duyao_cao"), anCount = State.count("anqi");
     this.log(`夺舍之夜，决战开始！你怀揣 毒草×${duCount}、暗器×${anCount} 作底牌——能否反杀，全看准备。`, "event");
+    // —— polish-qixuan B1（双审同锚）：决战三备全部进装配——每个选择都必须"有一手" ——
+    if (s.flags.showdown_martial_focus) {
+      const p0 = this._combat.player;
+      p0.momentum = Math.min(p0.momentumCap || 5, 3);
+      this._combat._log("【以武为先】日夜磨到极致的眨眼剑法早已蓄势在身——开局剑势+3：近身第一剑，就是雷霆。");
+    }
+    if (s.flags.showdown_prep_swift) {
+      this._combat.enemies.forEach(e => { e.dodgeBuff = (e.dodgeBuff || 0) - 0.12; });
+      this._combat._log("【速战速决】余子童尚未起疑便已动手——他仓促应战、防备大失（更易命中）。");
+    }
+    if (this._combat.enemies[0] && this._combat.enemies[0]._dossierEdge) {
+      this._combat._log("【料敌于先】暗中记下的每一处反常此刻全用上了——他的路数你了然于胸（敌防备-）。");
+    }
     // 扮猪吃虎的兑现时刻：深藏的修为在此一刻尽数亮出（藏得越深，雷霆越烈）
     const hidden = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
     if (hidden >= 1) {
@@ -4475,6 +4498,15 @@ const Engine = {
     // 金钟罩护体：开局即有厚护盾，暗器(破甲)与毒(持续)是破局关键；金钟罩为法宝护体，不随回合消退
     this._combat.enemies[0].shield = 40;
     this._combat.enemies[0]._fixedShield = true;
+    // —— polish-qixuan B2：情报与身份进战斗（花出去的灵石与经营的身份都要看得见）——
+    if (this._combat.enemies[0]._dossierEdge) {
+      this._combat.enemies[0].shield -= 8;
+      this._combat._log("【料敌于先】小算盘卖的那份底细值回价钱——金钟罩的运转间隙你了然于胸（护罩-8·敌防备-）。");
+    }
+    if (s.flags.identity_practice_medicine) {
+      this._combat.enemies[0].shield -= 8;
+      this._combat._log("【医者身份】谁都不防一个看病抓药的老药师——你从容近身布好了杀局，他护体符术起得仓促（护罩-8）。");
+    }
 
     this._combatMeta = { type: "jinguang" };
     s.combat = true;
