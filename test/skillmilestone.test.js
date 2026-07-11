@@ -16,11 +16,15 @@ State.create("韩立",{root:"wu"});
 const s = State.data;
 s.flags = s.flags || {};
 
-// 丹道里程碑：到 20/40/60 解锁
-s.skills.alchemy = 19; Engine._checkSkillMilestones("alchemy");
-assert(!s.flags.dan_ms_bianyao, "药理19未解锁辨药入门");
-s.skills.alchemy = 20; Engine._checkSkillMilestones("alchemy");
-assert(s.flags.dan_ms_bianyao, "药理20解锁辨药入门");
+// 丹道里程碑：到 8/12/40/60 解锁（polish A5/A7：首档 20→12 本章可及·8 级自制伤药）
+s.skills.alchemy = 7; Engine._checkSkillMilestones("alchemy");
+assert(!s.flags.dan_ms_jinchuang, "药理7未解锁自制伤药");
+s.skills.alchemy = 8; Engine._checkSkillMilestones("alchemy");
+assert(s.flags.dan_ms_jinchuang, "药理8解锁自制伤药");
+s.skills.alchemy = 11; Engine._checkSkillMilestones("alchemy");
+assert(!s.flags.dan_ms_bianyao, "药理11未解锁辨药入门");
+s.skills.alchemy = 12; Engine._checkSkillMilestones("alchemy");
+assert(s.flags.dan_ms_bianyao, "药理12解锁辨药入门");
 s.skills.alchemy = 40; Engine._checkSkillMilestones("alchemy");
 assert(s.flags.dan_ms_anshen, "药理40解锁自炼凝神丹");
 s.skills.alchemy = 60; Engine._checkSkillMilestones("alchemy");

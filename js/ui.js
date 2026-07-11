@@ -862,16 +862,20 @@ const UI = {
     if (zone) zone.classList.toggle("story-pending", storyPending);
 
     const labels = {
-      cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
+      cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破",
+      bottle: (State.data.bottle && (State.data.bottle.plots || []).some(p => p.crop && p.growth >= 100)) ? "打理小瓶 ✦熟" : "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
+      xingyi: "坐堂行医",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {
       acts = acts.filter(a => a !== "bottle" || State.data.bottle.unlocked);
+      // polish A2：坐堂行医（药庐蟰伏期专属月行动）——接下墨大夫身份者可重复坐堂
+      if (loc.id === "yaolu" && State.data.flags.identity_practice_medicine && !State.data.flags.arc1_complete) acts.push("xingyi");
       // 剑意圆满：洞府出现「悟剑」（大件链攻坚入口）
       if (loc.home && (State.data.swordIntent || 0) >= 100 && !State.data.swordMastery) acts.unshift("wujian");
       // 血色主药在手：地火之屋炼筑基丹（筑基丹链的"造"环节）
@@ -975,8 +979,14 @@ const UI = {
       if (url && hp.dataset.img !== hid) { hp.innerHTML = `<img src="${url}" alt="${s.name}" />`; hp.dataset.img = hid; }
     }
     // 随身灵圃：小绿瓶解锁后，顶栏「小瓶」常驻
+    // polish A7③：瓶中有成→按钮亮角标（不开瓶也知道熟了）
     const bb = this.el("btn-bottle");
-    if (bb) bb.hidden = !(s.bottle && s.bottle.unlocked);
+    if (bb) {
+      bb.hidden = !(s.bottle && s.bottle.unlocked);
+      const ripe = !!(s.bottle && (s.bottle.plots || []).some(p => p.crop && p.growth >= 100));
+      bb.textContent = ripe ? "小瓶✦" : "小瓶";
+      bb.classList.toggle("bottle-ripe", ripe);
+    }
   },
 
   _seasonOf(month) {
@@ -2660,10 +2670,12 @@ const UI = {
       }
       const crop = DATA.bottle.crops[p.crop];
       const ready = p.growth >= 100;
+      // polish A7④：成品是丹药→「收下即服」一键连招（收获+嗑药少跨一个背包界面）
+      const isPill = ((DATA.items[crop.matureItem] || {}).type === "pill");
       return `<div class="plot">
         <div class="pinfo"><div class="pname">${crop.name}</div><div class="pstat">成熟度 ${Math.round(p.growth)}%${crop.use ? ` · ${crop.use}` : ""}</div></div>
         ${ready
-          ? `<button class="btn btn-mini" onclick="Engine.harvestCrop(${i}); UI.renderBottleModal();">收获</button>`
+          ? `<span style="display:flex;gap:6px">${isPill ? `<button class="btn btn-mini btn-primary" onclick="Engine.harvestCrop(${i},true); UI.renderBottleModal();">收下即服</button>` : ""}<button class="btn btn-mini" onclick="Engine.harvestCrop(${i}); UI.renderBottleModal();">收入囊中</button></span>`
           : `<span class="pstat" style="white-space:nowrap">培育中…</span>`}
       </div>`;
     }).join("");
@@ -3413,14 +3425,17 @@ const UI = {
     }
 
     const labels = {
-      cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破", bottle: "打理小瓶",
+      cultivate: "闭关修炼", rest: "打坐调息", breakthrough: "尝试突破",
+      bottle: (State.data.bottle && (State.data.bottle.plots || []).some(p => p.crop && p.growth >= 100)) ? "打理小瓶 ✦熟" : "打理小瓶",
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
+      xingyi: "坐堂行医",
     };
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {
       acts = acts.filter(a => a !== "bottle" || s.bottle.unlocked);
+      if (loc.id === "yaolu" && s.flags.identity_practice_medicine && !s.flags.arc1_complete) acts.push("xingyi");
       if (loc.home && (s.swordIntent || 0) >= 100 && !s.swordMastery) acts.unshift("wujian");
       if (loc.home && loc.id === "huangfeng_gate" && s.flags.mojiao_resolved
         && State.count("xueshi_zhuyao") >= 4 && !s.flags.zhuji_lian_done) acts.unshift("liandan");
@@ -4450,9 +4465,9 @@ const UI = {
     const s = State.data;
     const blackMarket = s.rippleWindow && s.rippleWindow.id === "cheap_pills";
     const shop = [
-      { id: "lingcao", price: 3 }, { id: "duyao_cao", price: 6 },
+      { id: "lingcao", price: 3 }, { id: "duyao_cao", price: 6 }, { id: "anqi", price: 3 },
       { id: "qingyuan_dan", price: blackMarket ? 3 : 8, sale: blackMarket }, { id: "huixue_dan", price: 6 }, { id: "ningshen_dan", price: 14 },
-      { id: "huoshe_fu", price: 20 }, { id: "hanbing_fu", price: 20 },
+      { id: "huoshe_fu", price: 12 }, { id: "hanbing_fu", price: 12 },
     ];
     const html = shop.map(it => {
       const item = DATA.items[it.id];
@@ -4463,11 +4478,26 @@ const UI = {
         <button class="btn btn-mini" onclick="Engine.buy('${it.id}')"><span class="mprice">${it.price}两</span></button>
       </div>`;
     }).join("");
+    // polish A6：皮货行收购（wanbaoSell 同构·八折）——妖材战利在本章即可变现
+    const sellables = Object.keys(s.inventory || {}).filter(id => {
+      const it = DATA.items[id];
+      return it && it.sell && State.count(id) > 0;
+    });
+    const sellHtml = sellables.length ? `
+      <h3 style="margin:14px 0 6px;font-size:14px;color:var(--ink-dim)">皮货行 · 收购（凡人行市·八折）</h3>
+      ${sellables.map(id => {
+        const it = DATA.items[id];
+        return `<div class="market-item">
+          <span><span class="iname">${it.name}</span><span style="color:var(--ink-dim);font-size:12px">　×${State.count(id)}</span></span>
+          <button class="btn btn-mini" onclick="Engine.marketSell('${id}')"><span class="mprice">售 ${Math.max(1, Math.round(it.sell * 0.8))}两</span></button>
+        </div>`;
+      }).join("")}` : "";
     this.openSheet(`
       <h2>山下集镇 · 采买</h2>
       <p style="color:var(--ink-dim)">纹银：${State.data.silver} 两</p>
       ${blackMarket ? '<p style="color:var(--gold);font-size:12px">巷尾的药贩子朝你挤眼——丹房失窃的那批养元丹，正在黑市贱卖。过了这村没这店。</p>' : ''}
       ${html}
+      ${sellHtml}
       <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeSheet()">离开</button></div>
     `);
   },
