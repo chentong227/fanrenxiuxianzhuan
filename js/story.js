@@ -34,7 +34,13 @@ const STORY = [
     },
     onArrive(s) { State.setFlag("at_village"); },
     choices: [
-      { text: "拜别爹娘，随三叔去七玄门", hint: "踏出青牛镇", next: true },
+      // polish B3：第一选项也要"是一种做"——本分辞行=韩立式的稳（心性入账）
+      { text: "拜别爹娘，随三叔去七玄门", hint: "本本分分辞行——稳，也是一种底色",
+        effect(s) {
+          Engine.recordTemperament("village_plain", "stoic", "拜别爹娘·不多拿一物不多问一句——本分上路，稳字当头");
+          return { text: "你给爹娘磕了头，什么也没多带、什么也没多问，跟着三叔上了路。娘在村口望了很久。", kind: "event" };
+        },
+        next: true },
       { text: "临行前，偷偷揣一包干粮盐巴", hint: "穷家孩子，路上不能空着手",
         effect(s) {
           State.give("lingshi", 1);
@@ -94,7 +100,12 @@ const STORY = [
       Engine.meetNpc("zhangtie", "你与他一见投缘，结伴同行。");
     },
     choices: [
-      { text: "与张铁结伴，同赴选拔", hint: "继续", next: true },
+      { text: "与张铁结伴，同赴选拔", hint: "有伴同行，心里踏实",
+        effect(s) {
+          s.mood = Math.min(s.moodMax || 100, (s.mood || 0) + 3);
+          return { text: "山路虽长，有张铁一路说说笑笑，倒也不觉得累。到山门时，你们已经像认识了半辈子。（心境+3）", kind: "good" };
+        },
+        next: true },
       { text: "路上暗中观察同行少年的身手深浅", hint: "知己知彼",
         effect(s) {
           s.skills = s.skills || {}; s.skills.scouting = (s.skills.scouting || 0) + 1;
@@ -162,7 +173,13 @@ const STORY = [
       return t;
     },
     choices: [
-      { text: "入门记名，正式踏入七玄门", hint: "继续", next: true },
+      { text: "入门记名，正式踏入七玄门", hint: "尘埃落定，心头一块石头落地",
+        effect(s) {
+          s.mood = Math.min(s.moodMax || 100, (s.mood || 0) + 2);
+          s.demon = Math.max(0, (s.demon || 0) - 2);
+          return { text: "名册上添了「韩立」两个字。你盯着那两个字看了半晌——从今往后，顿顿有白面馍了。（心境+2·心魔-2）", kind: "good" };
+        },
+        next: true },
       { text: "补考半年间，苦练筋骨体魄", hint: "资质不够，毅力来凑",
         effect(s) {
           s.hpMax = Math.round(s.hpMax * 1.05);
@@ -205,7 +222,12 @@ const STORY = [
       Engine.toast("你拜入墨大夫门下，习《长春功》");
     },
     choices: [
-      { text: "叩首谢恩，潜心修炼", hint: "开始自由修行", next: true },
+      { text: "叩首谢恩，潜心修炼", hint: "藏起心思，先把功课做稳",
+        effect(s) {
+          Engine.recordTemperament("intro_plain", "stoic", "拜师墨大夫·恭敬叩首不多看不多问——把心思藏进本分里");
+          return { text: "你端端正正磕了三个头，接过功法退到一旁。墨大夫多看了你一眼——一个不多话、不多看、不多问的药童，正合他意。", kind: "event" };
+        },
+        next: true },
       { text: "留心观察药庐中的药材布局", hint: "药童的本分，也是眼力",
         effect(s) {
           s.skills = s.skills || {}; s.skills.alchemy = (s.skills.alchemy || 0) + 1;
@@ -265,7 +287,12 @@ const STORY = [
       Engine.meetNpc("lifeiyu", "爽朗仗义的同门师兄，武学有成。");
     },
     choices: [
-      { text: "与好友同行历练", hint: "继续", next: true },
+      { text: "与好友同行历练", hint: "同门之谊，细水长流",
+        effect(s) {
+          s.mood = Math.min(s.moodMax || 100, (s.mood || 0) + 4);
+          return { text: "不结拜、不请教，就这么处着——一起吃饭、一起挨骂、一起在演武厅外看人过招。日子平常，暖意是真的。（心境+4）", kind: "good" };
+        },
+        next: true },
       { text: "向厉飞雨请教武学招式", hint: "他武学有成，正好偷师",
         effect(s) {
           State.setFlag("learned_from_lify");
@@ -310,6 +337,8 @@ const STORY = [
         t.push("你心头剧跳，强压下狂喜。此物若善加利用……以你这平庸的四灵根，未必没有出头之日。");
       }
       t.push({ shot: "pullOut" });
+      // polish A7①：盘账拍——把嗑药线的账当场算给玩家（这条才是本章的主路，不能藏在弹窗里）
+      t.push({ aside: "你心里飞快盘着账：后山一趟采回几株灵草，入瓶三月便是一枚灵药丹——一丹入腹，抵得上大半年枯坐苦修。采草、入瓶、嗑药……这条路，比闭死关快得多。" });
       // 钩子：早期警觉 → 第一反应是「不能让墨大夫知道」
       if (s.flags.early_suspicion) {
         t.push({ aside: "此物绝不能让墨大夫知晓。他若知道你有这等异宝……你不敢想。" });
@@ -323,7 +352,7 @@ const STORY = [
       Engine.toast("获得「神秘小绿瓶」，可种植催熟灵草！");
     },
     choices: [
-      { text: "暗中培育灵药，瞒过墨大夫", hint: "解锁「打理小瓶」", next: true },
+      { text: "暗中培育灵药，瞒过墨大夫", hint: "采草→入瓶→嗑药：以此瓶为路，快过闭死关", next: true },
     ],
   },
 
@@ -433,6 +462,10 @@ const STORY = [
       // 远雷·结拜之情兑现（铁律3）：当年那炷结拜香，在兄弟惨死这一刻结出最沉的果——点名出处
       if (Engine.settleLedger("friends_sworn", "结拜时焚的那炷香还在鼻尖，张铁却已被炼成了铁奴。异姓兄弟的誓言「有难同当」，此刻成了压在你心头一辈子的债——也成了你带走曲魂、走完这条路的执念")) {
         s.demon = Math.min(100, s.demon + 5);   // 兄弟之死，心魔更重
+      }
+      // polish D3 收口：演武厅喂招的那些下午——并肩过的人才死得重
+      if (Engine.settleLedger("zhangtie_spar", "演武厅里你一下一下陪他喂出来的象甲功，终究没能护住他自己。那句「等我练成了，换我护着你」——他再也兑不了了。你喂他招时握过的那双手，如今是铁灰色的")) {
+        s.demon = Math.min(100, s.demon + 3);
       }
       if (Engine.settleLedger("journey_help_zhangtie", "赴考路上教他那几招防身手法，护得了他选拔场上的胆识，却护不住他在墨大夫手里的命。那句「有你这兄弟我心里踏实」言犹在耳——你教他的本事，终究太轻太浅")) {
         s.demon = Math.min(100, s.demon + 3);
@@ -618,6 +651,8 @@ const STORY = [
       State.setFlag("got_quhun");
       State.setFlag("is_modafu");   // flag 名保留（存档兼容）——语义=接任药庐（"小韩大夫"），非扮成墨大夫本人（canon Q2）
       Engine.assignTask("wolf_raid", 12);
+      // polish A3：门派大比日历锚——蛰伏期正中的锚点（xianhui_due 同构·天命栏倒计时）
+      s.flags.dabi_due = State.absMonth() + 14;
       Engine.toast("你以弟子身份接任药庐（小韩大夫），得曲魂相随。继续修炼以备将来");
     },
     choices: [
@@ -639,6 +674,68 @@ const STORY = [
           return { text: "你这位新晋的「小韩大夫」坐堂问诊，门中弟子来找你看病，你一边把脉一边闲聊——谁跟谁有隙、野狼帮最近有何动静、三位师叔的脾气秉性……不出数月，门中的虚实你已摸得七七八八。", kind: "good" };
         },
         next: true },
+    ],
+  },
+
+  /* ---- C0.5 门派大比（polish A3：蛰伏期正中锚 + 厉飞雨命途首装·fate-design §五）----
+   * 双审同锚：蛰伏期（练气4→6·实际耗时最长段）内容真空 × 厉飞雨命途零实装——一块补丁补两个洞。
+   * world.js bio 的既有设定"后凭服食精元丹在门派大比中崭露头角"在此落地：
+   * 精元丹=玩家的药理+灵草炼给他（代价吃丹道资源池），账本指名兑现窗=筑基后回七玄门（黄枫谷篇回访）。 */
+  {
+    id: "qixuan_dabi",
+    skipIf: (s) => s.flags.dabi_done,
+    cond: (s) => s.flags.is_modafu && s.flags.dabi_due && State.absMonth() >= s.flags.dabi_due && !s.flags.dabi_done,
+    bgm: "fair",
+    title: "七玄门 · 门派大比",
+    objTitle: "大比之期",
+    objHint: "三年一度的门派大比开锣——蛰伏的日子里，这是全门上下最热闹的几天。厉飞雨遣人捎话：他要下场。",
+    text(s) {
+      const t = [
+        { scene: "七玄门 · 演武大场" },
+        { amb: "market" },
+        { shot: "establish" },
+        "演武大场四周旌旗猎猎，各堂弟子里三层外三层。三年一度的门派大比，是凡俗弟子出头的独木桥。",
+        { shot: "focusLeft" },
+        { say: "厉飞雨", emo: "laugh", tone: "隔着人群朝你挥手", text: "「韩立！来得正好——我抽的签不错，一路打上去就是钱堂主那关。看我这次的！」" },
+      ];
+      if (s.flags.sworn_brothers) {
+        t.push({ aside: "结拜那晚他说要「看遍大千世界」。凡俗武人的天花板就在眼前这座擂台上——他离得那么近，又那么远。" });
+      } else {
+        t.push({ aside: "他还是那样，笑起来满场都听得见。凡俗武人的天花板就在眼前这座擂台上——他离得那么近，又那么远。" });
+      }
+      t.push({ wait: 400 });
+      t.push({ aside: "你如今是「小韩大夫」——药理在手、小绿瓶在袖。赛前替他炼一炉精元丹，是你能帮他的、唯一不越界的忙。" });
+      return t;
+    },
+    onArrive(s) { State.setFlag("dabi_done"); },
+    choices: [
+      {
+        text: "为他炼一炉精元丹（灵草×2·耗一月）",
+        hint: "药理越深丹效越足——命途之扶（道岔）",
+        effect(s) {
+          if (State.count("lingcao") < 2) {
+            return { text: "你翻遍药柜——灵草不够两株。只得空手去看他比武。（缺灵草×2：这一炉，终究没炼成）", kind: "bad" };
+          }
+          State.take("lingcao", 2);
+          Engine.passTime(1);
+          const deep = (s.skills && s.skills.alchemy >= 12);
+          State.setFlag("lifeiyu_dabi_helped");
+          Engine.writeLedger("lifeiyu_dabi_dan", "门派大比前为厉飞雨炼下一炉精元丹——他的武道，你搭了一把手。此恩此丹，日后筑基归来、重回七玄门时再算（远雷·黄枫谷篇回访兑现）。" + (deep ? "（药理精深·足色足量）" : "（火候尚浅·聊胜于无）"));
+          Engine.recordTemperament("lifeiyu_dabi", "sentiment", "门派大比·为厉飞雨炼精元丹——仙凡殊途，扶得一把是一把");
+          return { text: `你闭门一月，以墨大夫留下的方子炼出一炉精元丹${deep ? "——药理精深，丹成足色，搁在掌心温温发烫" : "——火候尚浅，成色平平，但心意是足的"}。大比那日，厉飞雨服丹上场、气血如虹，一路打进前三，看台上炸了锅。他冲你坐的方向抱拳一礼，笑得见牙不见眼。`, kind: "good" };
+        },
+        next: true,
+      },
+      {
+        text: "只当看客 · 为他叫好",
+        hint: "不出手——命途归他自己",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 3);
+          Engine.writeLedger("lifeiyu_dabi_watch", "门派大比只当看客——厉飞雨凭自己的拳脚打进前十。他的路他自己走，你在台下用力鼓了掌。这份各自成全，日后筑基归来重逢时再算（远雷·黄枫谷篇回访兑现）。");
+          return { text: "你挤在人群里看完了他每一场。没有丹药，他照样凭一口气打进前十——落败那场输给的是钱堂主的亲传，输得漂亮。他下台时满脸是汗，看见你，咧嘴一笑：「看见没？下次就是前三！」（心境+3）", kind: "event" };
+        },
+        next: true,
+      },
     ],
   },
 
@@ -769,7 +866,23 @@ const STORY = [
       }
       t.push(
         { wait: 400 },
-        "就是现在！催熟的剧毒、淬毒的暗器，趁着金光收敛的一线之隙尽数招呼上去。一击不中，便是粉身碎骨；可一旦得手……",
+        // polish C3：全章最好的伺机时机做成 beat-window（staging-plan 原案）——中=开战先手 buff
+        { beat: {
+            kind: "window",
+            prompt: "他抬手接符——金钟罩的护体金光，敛了。窗口只有一瞬。",
+            action: "催毒·暗器·就是现在！",
+            ms: 2400,
+            onHit: {
+              sfx: "backstab", cam: "shake", px: 10, hitStop: 90,
+              fx: { fx: "burst", at: "center", elem: "jin", n: 16 },
+              flag: "jinguang_window_hit",
+              line: "毒针与暗器自袖中暴射而出——快过他重聚金光的念头！第一蓬毒雾结结实实扑进了敛光的护罩缺口。",
+            },
+            onMiss: {
+              sfx: "whiff", cam: "shake", px: 5,
+              line: "你出手迟了半拍——金钟罩重聚的金光挡下了大半毒雾。他勃然大怒，杀机全开。",
+            },
+        } },
         { sfx: "backstab" },
         { fight: "jinguang_win" },
       );
@@ -780,6 +893,60 @@ const STORY = [
         text: "毒、暗器、时机——一击毙命！",
         hint: "进入战斗。毒草/暗器越足越稳；硬拼必败",
         resolve: "jinguang_win",
+      },
+    ],
+  },
+
+  /* ---- C3.5 临行前夜 · 厉飞雨（polish D4：告别从 arc_end 五拍合一中拆出——全章第二情感重拍值得独立节点+真选择）---- */
+  {
+    id: "lify_farewell",
+    skipIf: (s) => s.flags.lify_farewell_done,
+    cond: (s) => s.flags.jinguang_dead && !s.flags.lify_farewell_done,
+    bgm: "sorrow",
+    title: "药庐 · 临行前夜",
+    objTitle: "话别",
+    objHint: "升仙令在手、寒毒在身，离门只在旦夕。临行前夜，厉飞雨提着酒来了药庐——满门上下，只有他还敢跟你同桌喝酒。",
+    text(s) {
+      const t = [
+        { scene: "药庐 · 深夜" },
+        { amb: "candle" },
+        { shot: "establish" },
+        "临行前夜，厉飞雨提着酒来了药庐。金光上人死后，门中人人躬身唤你「仙师」——只有他，进门就把酒坛子墩在你案上。",
+        { shot: "focusLeft" },
+        { say: "厉飞雨", emo: "laugh", tone: "他仰头灌了口酒，笑得还是那么亮", text: "「仙师？呸。在我这儿你就是韩立。……走吧，走得越远越好。你家里那头，有我看着。」" },
+      ];
+      if (s.flags.lifeiyu_dabi_helped) {
+        t.push({ say: "厉飞雨", tone: "他晃了晃酒碗，声音低了些", text: "「大比那炉丹的账，我记着呢。这辈子怕是还不上了——就用往后年年替你看着韩家来还吧。」" });
+      }
+      t.push(
+        { wait: 500 },
+        { aside: "他早年练抽髓丸伤了根底——透支的亏空压在骨头里，寻常郎中看不出来，你看得出来。案头那卷药方，是你连夜替他写的。" },
+      );
+      return t;
+    },
+    onArrive(s) { State.setFlag("lify_farewell_done"); },
+    choices: [
+      {
+        text: "把药方和丹药推过去 · 还他短刀",
+        hint: "压住抽髓丸的亏空——命途之扶",
+        effect(s) {
+          Engine.writeLedger("lifeiyu_farewell_fang", "临行前夜赠厉飞雨压制抽髓丸亏空的药方与丹药、还他短刀——他的武人之躯能走多远，这卷方子说了算——日后筑基归来再算（远雷·黄枫谷篇回访兑现）。");
+          return { text: "你把药方和几瓶丹药推到他面前，又把那柄借了多年的短刀郑重还到他手里：「按方吃药，别逞强。」他愣了愣，收起笑，把方子仔细揣进怀里最贴身的地方——「好。」", kind: "good" };
+        },
+        next: true,
+      },
+      {
+        text: "方子照给——再多留一夜，陪他喝完这坛酒",
+        hint: "启程晚一月·心境大回（时间换情义）",
+        effect(s) {
+          Engine.passTime(1);
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 6);
+          s.demon = Math.max(0, (s.demon || 0) - 4);
+          Engine.writeLedger("lifeiyu_farewell_fang", "临行前夜赠厉飞雨药方丹药、还短刀，又陪他喝完了整坛酒——从五里沟说到演武厅，把这些年一口气聊完——日后筑基归来再算（远雷·黄枫谷篇回访兑现）。");
+          Engine.recordTemperament("lify_farewell", "sentiment", "临行前夜多留一夜——修行路长，这样的酒喝一坛少一坛");
+          return { text: "那坛酒你们喝到了天亮。从五里沟的红浆果说到演武厅的第一课，从张铁的憨笑说到「看遍大千世界」——他趴在案上睡着时，手里还攥着那卷药方。你替他掩上门，晨光正好。（心境+6·心魔-4·多留一月）", kind: "good" };
+        },
+        next: true,
       },
     ],
   },
@@ -812,15 +979,10 @@ const STORY = [
         t.push("可夜里收功之时，一缕阴寒自丹田窜起，冻得你指尖发麻——夺舍之夜墨大夫那一手阴冷的『魔银手』浮上心头：拼斗中被擦中的那一记，余毒潜伏至今，终于发作了。遗书里写得明白：解药唯有墨家祖传的「暖阳宝玉」。");
         t.push({ aside: "遗书末尾是一行小字：去岚州嘉元城墨府，解你的毒，也……替我安顿好她们。这老鬼，到死还要驱使我。" });
       }
-      // canon-audit Q3 补拍（动漫6集）：离门前与厉飞雨**当面**话别——赠压制抽髓丸的药方与丹药、还短刀；他承诺照看韩家
+      // 告别已拆独立节点 lify_farewell（polish D4）——此处只留启程回望
       t.push(
-        { bgm: "sorrow" },
-        "临行前夜，厉飞雨提着酒来了药庐——满门上下，只有他还敢跟你同桌喝酒。",
-        { say: "厉飞雨", tone: "他仰头灌了口酒，笑得还是那么亮", text: "「仙师？呸。在我这儿你就是韩立。……走吧，走得越远越好。你家里那头，有我看着。」" },
-        "你把一卷药方和几瓶丹药推到他面前——他早年练抽髓丸伤了根底，这方子能压住透支的亏空。又把那柄借了多年的短刀，郑重还到他手里。",
-        { say: "韩立", tone: "low", text: "「按方吃药，别逞强。……飞雨，保重。」" },
-        { wait: 600 },
         { bgm: "journey" },
+        "昨夜的酒气还没散尽。行囊上，压着厉飞雨天不亮时悄悄放来的一包干粮。",
         { shot: "pullOut" },
         "你最后回望了一眼这座困了你数年的七玄门。这里有过暖意，也有过欺骗与杀机。",
       );
@@ -1456,8 +1618,7 @@ const STORY = [
         s.mood = Math.min(s.moodMax, s.mood + 3);
       }
       Engine.writeLedger("zhuji_dan_grudge", "入谷之日，叶师叔借调解之名换走你的筑基丹（陆云风发难在先）");
-      // polish-huangfeng P1-1（Fable）：丹账人账分立——丹账在筑基自炼时结（zhuji_dan_grudge），
-      // 人账在叶师叔身败名裂时结（ye_grudge·ye_finale 处 settle，旧版死结算=从未 write）
+      // polish-huangfeng P1-1（Fable）：丹账人账分立——人账在叶师叔身败名裂时结（旧版 ye_finale 死结算=从未 write）
       Engine.writeLedger("ye_grudge", "叶师叔以势压人、借「谷例」换走你拼来的筑基丹——丹的账是丹的账，人的账是人的账。此人此行，日后必有报应落到他自己头上");
       Engine.addMilestone("夺丹之辱：筑基丹得而复失", "showdown");
       Engine.toast("筑基丹：得而复失（此仇此辱，记在前路）");
@@ -1742,8 +1903,7 @@ const STORY = [
         effect(s) {
           State.setFlag("jindi_prep_done");
           State.setFlag("jindi_prep_cultivate");
-          // polish-huangfeng Bug③（GPT P0-6）：旧版 passTime(3)+cultivate(3) 实耗 6 月（cultivate 内部自过月）——
-          // 与另两路的 3 月不等价。只调 cultivate(3)，月数由它自己走。
+          // polish-huangfeng Bug③（GPT P0-6）：旧版 passTime(3)+cultivate(3) 实耗 6 月——cultivate 内部自过月
           if (typeof Engine.cultivate === "function") Engine.cultivate(3); else Engine.passTime(3);
           s.mood = Math.min(s.moodMax, s.mood + 2);
           Engine.writeLedger("jindi_prep_cultivate", "血色禁地临行三月——尽数闭关苦修、不备底牌不炼丹，押的是临阵境界更稳（互斥窗口·选了修为弃了备战）");
