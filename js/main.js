@@ -465,9 +465,21 @@ const Main = {
     } catch (e) { console.error("debugstory 失败", e); }
 
     // —— 调试入口：?debugmap=1 直接进血色禁地舆图（探索 v3 调试免跑剧情）——
+    //    ?debugmap=yinming 直接进阴冥·暴风山道走格图（绝灵凡人模式·v316）
     try {
       const q = new URLSearchParams(location.search);
-      if (q.get("debugmap")) {
+      if (q.get("debugmap") === "yinming") {
+        State.create("韩立", DATA.fixedRootId);
+        const s = State.data;
+        s.activeChapter = "waihaifengyun";
+        s.realmIndex = 20;   // 结丹后期（幕四进度）——绝灵地里境界只影响皮肤
+        s.hpMax = 400; s.hp = 400;
+        s.flags.whfy_meining_done = true; s.flags.whfy_shanlu_done = true;
+        ["duyao_cao", "anqi", "huixue_dan"].forEach(it => State.give(it, 5));
+        s.storyStage = STORY.length;   // 不让顺序流接管（出图后 checkStory 会派温天仁狭路）
+        this.enterGame();
+        setTimeout(() => Engine.startYinmingMap(), 300);
+      } else if (q.get("debugmap")) {
         State.create("韩立", DATA.fixedRootId);
         const s = State.data;
         s.realmIndex = 10;   // 练气十一层（禁地准入）

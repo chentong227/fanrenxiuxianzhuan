@@ -51,6 +51,14 @@ FakeCtx.prototype.createBufferSource = () => ({ buffer: null, connect() {}, star
 FakeCtx.prototype.createBiquadFilter = () => ({ type: "", frequency: { value: 0 }, Q: { value: 0 }, connect() {} });
 const panners = [];   // §7：记录每次 createStereoPanner 的 pan 值
 FakeCtx.prototype.createStereoPanner = () => { const p = { pan: { value: 0 }, connect() {} }; panners.push(p); return p; };
+// v312 SFX 母链桩件（软饱和→压缩→干湿混响）：缺这些桩会让 tone() 在 panOut→bus() 处抛错，
+// 心跳计数只剩 1（第二记 tone 永远到不了）——§9-5 三项假红的根因
+FakeCtx.prototype.createWaveShaper = () => ({ curve: null, oversample: "", connect() {} });
+FakeCtx.prototype.createDynamicsCompressor = () => ({
+  threshold: { value: 0 }, knee: { value: 0 }, ratio: { value: 0 },
+  attack: { value: 0 }, release: { value: 0 }, connect() {},
+});
+FakeCtx.prototype.createConvolver = () => ({ buffer: null, connect() {} });
 
 const sandbox = {
   console, Math, Date, Promise, Float32Array,

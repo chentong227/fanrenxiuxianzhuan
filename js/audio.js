@@ -164,6 +164,40 @@
       tone(c, { freq: 3300, slideTo: 2600, dur: 0.09, gain: 0.01, delay: 0.14 });
       tone(c, { freq: 2500, slideTo: 3100, dur: 0.06, gain: 0.008, delay: 0.26 });
     },
+    // —— 箱庭走格·脚步声五材质（B3 箱庭演出层）：每记=两步错落（左右脚），
+    //    低频落地 thump + 材质摩擦噪——克制短促，是"脚下有地"不是"打击乐"。
+    //    材质由地图/节点 step 字段派发（草/碎石/石板/泥沼/雪）。
+    stepGrass(c) {   // 草地：软踏 + 草叶窸窣
+      [0, 0.3].forEach(d => {
+        tone(c, { freq: 130, slideTo: 70, dur: 0.07, gain: 0.02, delay: d });
+        noise(c, { dur: 0.09, gain: 0.014, band: 2100, delay: d + 0.01 });
+      });
+    },
+    stepGravel(c) {  // 碎石：颗粒的嘎吱两声
+      [0, 0.29].forEach(d => {
+        tone(c, { freq: 150, slideTo: 85, dur: 0.06, gain: 0.02, delay: d });
+        noise(c, { dur: 0.07, gain: 0.02, band: 950, delay: d });
+        noise(c, { dur: 0.04, gain: 0.011, band: 1900, delay: d + 0.03 });
+      });
+    },
+    stepStone(c) {   // 石板：硬质叩响（短、清）
+      [0, 0.28].forEach(d => {
+        tone(c, { freq: 330, slideTo: 170, dur: 0.045, gain: 0.022, delay: d });
+        noise(c, { dur: 0.035, gain: 0.01, band: 3200, delay: d });
+      });
+    },
+    stepMud(c) {     // 泥沼：湿黏的噗叽（低、拖）
+      [0, 0.34].forEach(d => {
+        tone(c, { freq: 110, slideTo: 55, dur: 0.11, gain: 0.02, delay: d });
+        noise(c, { dur: 0.13, gain: 0.017, low: 520, delay: d + 0.02 });
+      });
+    },
+    stepSnow(c) {    // 雪地：闷实的咯吱（软、糯）
+      [0, 0.31].forEach(d => {
+        tone(c, { freq: 140, slideTo: 78, dur: 0.08, gain: 0.017, delay: d });
+        noise(c, { dur: 0.1, gain: 0.015, low: 780, delay: d + 0.01 });
+      });
+    },
     // 棋子落枰（红尘劫·棋友坐化——一子落定的脆响，木与玉的短击）
     goClick(c) {
       noise(c, { dur: 0.03, gain: 0.05, band: 3400 });

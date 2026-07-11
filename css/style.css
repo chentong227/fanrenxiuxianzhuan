@@ -4937,6 +4937,44 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 }
 .exmap-actions .btn { box-shadow: 0 4px 14px rgba(0, 0, 0, .5); }
 
+/* ===== 箱庭前景雾（B3 天象·DOM 雾层）=====
+ * 三条大雾带（上岚/中霭/贴地霾）双倍宽横向慢漂——柔渐变成片、无发光混合、有厚度。
+ * ⚠ 教训（2026-07-11 用户实锤）：光斑粒子（lighter 辉光 mote）画雾=一屏光球，"太蠢"——
+ * 雾必须是"片"不是"点"。z:4=飘在节点连线之上、按钮字幕(z:5/6)之下；pointer-events 穿透。
+ * 性能：纯 transform 位移动画 + 预柔渐变（不用 filter:blur 大层实滤——手机会卡）。 */
+.exmap-fog { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; opacity: var(--fog-o, .7); }
+.exmap-fog i {
+  position: absolute; left: -55%; width: 210%; display: block;
+  will-change: transform;
+}
+.exmap-fog i:nth-child(1) {
+  top: -6%; height: 46%;
+  background:
+    radial-gradient(58% 88% at 18% 52%, rgba(var(--fog-c), .30), transparent 70%),
+    radial-gradient(46% 74% at 55% 38%, rgba(var(--fog-c), .22), transparent 72%),
+    radial-gradient(52% 90% at 86% 60%, rgba(var(--fog-c), .27), transparent 70%);
+  animation: fogDrift 46s ease-in-out infinite alternate;
+}
+.exmap-fog i:nth-child(2) {
+  top: 30%; height: 42%;
+  background:
+    radial-gradient(50% 80% at 30% 50%, rgba(var(--fog-c), .20), transparent 72%),
+    radial-gradient(60% 92% at 72% 44%, rgba(var(--fog-c), .24), transparent 70%);
+  animation: fogDrift 62s ease-in-out infinite alternate-reverse;
+}
+.exmap-fog i:nth-child(3) {
+  bottom: -4%; height: 44%;
+  background:
+    radial-gradient(64% 92% at 24% 62%, rgba(var(--fog-c), .34), transparent 68%),
+    radial-gradient(50% 78% at 60% 74%, rgba(var(--fog-c), .26), transparent 70%),
+    radial-gradient(58% 90% at 90% 58%, rgba(var(--fog-c), .30), transparent 68%);
+  animation: fogDrift 38s ease-in-out infinite alternate;
+}
+@keyframes fogDrift {
+  from { transform: translateX(-4%); }
+  to   { transform: translateX(4%); }
+}
+
 /* ---------- L3 轴式洞窟：探索格=战斗格（镜头跟随的长轴） ---------- */
 .exmap-scene { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; }
 .exmap-scene[hidden] { display: none; }

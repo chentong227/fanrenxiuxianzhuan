@@ -47,8 +47,8 @@ const check = (name, wr, min, max) => {
   if (!ok) { fails++; console.error(`  ✗ ${name} 胜率 ${wr}% 出带（期望 ${min}~${max}%）`); }
 };
 
-const wr1 = sample("幕一·鹰鸢兽×2", () => Engine.startWhfyYingyuanFight(), 30);
-check("鹰鸢兽", wr1, 55, 100);
+const wr1 = sample("幕一·海妖禽×2", () => Engine.startWhfyYingyuanFight(), 30);
+check("海妖禽", wr1, 55, 100);
 const wr2 = sample("幕一·云天啸立威", () => Engine.startWhfyYuntFight(), 30);
 check("云天啸（碾压战）", wr2, 65, 100);
 const wr3 = sample("幕二·夺翅逃亡（全掺·survive）", () => Engine.startWhfyDuoyiFight(), 30, { flags: ["whfy_duji_full", "whfy_saved_gongsun"] });
@@ -57,8 +57,8 @@ const wr4 = sample("幕三·护法波次（铁桶阵）", () => Engine.startWhfy
 check("护法波次", wr4, 35, 100);
 const wr5 = sample("幕三·温天仁六魔战（story·双向推进）", () => Engine.startWentianrenFight(true), 20);
 console.log("    （六魔战正典 fail-forward：胜负皆被鬼雾打断推进，无胜率下限要求）");
-const wr6 = sample("幕四·阴冥村灰蜮×3（凡人模式）", () => Engine.startWhfyCunzhanFight(), 30, { mortal: true });
-check("灰蜮群（凡人）", wr6, 30, 100);
+const wr6 = sample("幕四·祭品之夜·大长老+村勇（凡人模式）", () => Engine.startWhfyCunzhanFight(), 30, { mortal: true });
+check("祭品之夜（凡人）", wr6, 30, 100);
 const wr7 = sample("幕四·温天仁凡人终结战", () => Engine.startWhfyMortalFight(), 30, { mortal: true });
 check("凡人终结战", wr7, 20, 95);
 

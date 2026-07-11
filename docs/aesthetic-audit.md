@@ -1,4 +1,14 @@
-# 审美审计门禁（Aesthetic Audit Gate）
+# 审美审计
+
+> **v316 增量（2026-07-11·用户提案"箱庭也要据点级演出"）——箱庭天象+脚步声全链落地**：
+> ① **前景雾=DOM 雾层**（`.exmap-fog` 三条大雾带·预柔渐变+纯 transform 慢漂·tint/opacity 每图注入）——
+> ⚠ **教训入账**：首版用 Fx.ambient 光斑粒子画雾=满屏光球，用户实锤"光球太蠢"（与 v308 遁光光球同病：
+> **lighter 辉光 mote 永远是"点光"，雾/烟/岚必须是"片"**——凡"成片的气"一律走 DOM 渐变层，粒子只配雪/雨/尘这类真颗粒）。
+> ② **走格脚步声五材质**（audio.js stepGrass/Gravel/Stone/Mud/Snow·两步错落+低频落地+材质摩擦——
+> 材质=节点 step > 地图 step 声明式派发；血色禁地草/嘉元城石板/后山草/阴冥碎石+磷火沼泥+栈道石/墨蛟洞石）。
+> ③ **声床+间歇远声**：map.ambience 声明 amb（wind/market 床·duck:false）+ loops（farRoar 兽吼/bird 鸟鸣随机间隔）。
+> ④ snow/rain 氛围粒预设入库备用（重返天南雪山/雨戏）；`UI._startExmapAmbience/_stopExmapAmbience` 起收，
+> 入洞（L3）自动收野外天象、closeExmap 绝不漏到主界面。四图已配：血色禁地/嘉元城/后山/阴冥。门禁（Aesthetic Audit Gate）
 
 > 2026-07-09 立项，用户裁决：**"得有一个审美审计，这才是游戏和换皮的区别。"**
 > 定位：与 `audit-gate.md`（设计/数值门禁）平行的**观感门禁**——功能"能用"不算完，过审美审计才算完。

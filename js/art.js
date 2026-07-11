@@ -128,6 +128,8 @@
     bt_xinghai: {},   // 乱星海外海（S5·海战=凌空于怒涛之上：温天仁战/海王兽/外海猎妖/救凌玉灵）
     // 外海风云篇地点场景（S8：loc.id 即 scene id，locUrl 自动命中）
     waihai_dongfu: { p: 1 }, waihai_fangshi: { p: 1 }, liefeng_dao: { p: 1 },
+    // 阴冥之地·灰白荒原（v316·阴冥走格图底图 + 灰蜮母巢战 sceneBg）
+    yinming_plain: { p: 1 },
     // 增量H·魔道争锋第四幕·皇宫决战战场底图（夜·皇城宫门广场；非 bt_ 前缀→中性 biome 无色偏）
     huanggong: {},
     // 前景遮挡条带（v90）：近景失焦草石（透明 PNG），压在全部单位之前——最快视差层。

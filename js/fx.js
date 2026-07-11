@@ -319,6 +319,18 @@
           vx: rnd(0.18, 0.5) * dir, vy: rnd(-0.06, 0.02), wob: rnd(10, 18),
           size: rnd(9, 20), c: pick(["#6b5f78", "#584e66", "#7a7088", "#4e4460"]), life: rnd(3800, 6800),
         });
+      } else if (preset === "snow") {
+        // 落雪（箱庭天气 B3）：细白絮片摇曳飘落——慢、密度低、左右晃
+        this.mote(rnd(-0.05 * W, W * 1.05), rnd(-0.08 * H, H * 0.2), {
+          vx: rnd(-0.14, 0.14), vy: rnd(0.22, 0.5), wob: rnd(10, 22),
+          size: rnd(1.4, 2.8), c: pick(["#eef3f8", "#dfe8f0", "#f7fafc"]), life: rnd(5200, 8600),
+        });
+      } else if (preset === "rain") {
+        // 落雨（箱庭天气 B3）：斜掠雨线全场自上而下——storm 的雨层单拆（无浪沫）
+        this.mote(rnd(-0.1 * W, W), rnd(-0.08 * H, H * 0.5), {
+          vx: rnd(0.9, 1.8), vy: rnd(5.0, 8.0), wob: 0,
+          size: rnd(1.0, 1.6), c: pick(["#b9cddd", "#cfe0ec", "#a8bccd"]), life: rnd(380, 680),
+        });
       } else { // dust（默认）
         this.mote(rnd(0, W), rnd(0, H), {
           vx: rnd(-0.09, 0.09), vy: rnd(-0.03, 0.02), wob: rnd(5, 9),

@@ -6537,14 +6537,73 @@ const UI = {
     if (!s.exmap) return;
     this.el("exmap-overlay").hidden = false;
     // 据点和平·市声鼎沸（town）；险境（血色禁地等）·弦绷紧（tense）
-    const peaceful = ExploreMap.mapOf(ExploreMap.cur(s.exmap)).peaceful;
-    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(peaceful ? "town" : "tense");
+    const map = ExploreMap.mapOf(ExploreMap.cur(s.exmap));
+    if (typeof Sfx !== "undefined" && Sfx.bgm) Sfx.bgm(map.peaceful ? "town" : "tense");
     this._exmapNoteQueue = [];
+    // B3 箱庭演出层（2026-07-11 用户提案）：据点级天象搬进箱庭——雾/尘/雪/雨氛围粒 + 声床 + 间歇远声
+    this._startExmapAmbience(ExploreMap.MAPS[s.exmap.stack[0].mapId]);
     this.renderExmap();
   },
   closeExmap() {
     this.el("exmap-overlay").hidden = true;
     this.el("exmap-notes").innerHTML = "";
+    this._stopExmapAmbience();
+  },
+
+  /* ===== 箱庭天象（B3·2026-07-11 用户提案"箱庭也要据点级演出"）=====
+   * 与战场天象（_startBattleAmbience）同族：前景雾=DOM 雾层（大片重模糊雾团 CSS 慢漂——
+   * 不发光、成片、有厚度；⚠ 光斑粒子画雾=光球，用户实锤"太蠢"，已废）；
+   * 雪/雨/尘=Fx.ambient 小颗粒（够小不糊成球）；声床=Sfx.ambient + 间歇远声 loop。
+   * 配置声明在 ExploreMap.MAPS[id].ambience（fog{tint,opacity} / fx / amb / loops）；
+   * 定时器入 _exmapAmbTimers，closeExmap 一并收（绝不漏到主界面）。 */
+  _exmapAmbTimers: null,
+  _startExmapAmbience(map) {
+    this._stopExmapAmbience();
+    if (!map || !map.ambience) return;
+    const host = this.el("exmap-field");
+    if (!host) return;
+    const A = map.ambience;
+    const reduced = (typeof Fx !== "undefined" && Fx._reduced) ? !!Fx._reduced() : false;
+    // 前景雾（DOM 层，z:4 飘在节点 pin 之前）——关动效时不挂
+    if (A.fog && !reduced) this._exmapFogOn(host, A.fog);
+    // 小颗粒天气（雪/雨/尘——不含雾）走氛围粒画布
+    if (A.fx && typeof Fx !== "undefined" && Fx.ensure(host)) Fx.ambient(A.fx, A.fxOpts || {});
+    if (A.amb && typeof Sfx !== "undefined" && Sfx.ambient) {
+      Sfx.ambient(A.amb, { vol: A.ambVol != null ? A.ambVol : 0.22, duck: false });
+    }
+    const timers = this._exmapAmbTimers = [];
+    (A.loops || []).forEach(L => {
+      const h = { id: 0 };
+      const tick = () => {
+        if (typeof Sfx !== "undefined") Sfx.play(L.sfx);
+        h.id = setTimeout(tick, L.lo + Math.random() * (L.hi - L.lo));
+      };
+      h.id = setTimeout(tick, 2000 + Math.random() * L.lo);
+      timers.push(h);
+    });
+  },
+  _stopExmapAmbience() {
+    (this._exmapAmbTimers || []).forEach(h => clearTimeout(h && h.id != null ? h.id : h));
+    if (this._exmapAmbTimers) {
+      if (typeof Fx !== "undefined") Fx.ambient("off");
+      if (typeof Sfx !== "undefined" && Sfx.ambientStop) Sfx.ambientStop();
+    }
+    this._exmapAmbTimers = null;
+    this._exmapFogOff();
+  },
+  // 前景雾 DOM 层：三条大雾带（上岚/中霭/贴地霾）重模糊慢漂——tint 注入每图雾色
+  _exmapFogOn(host, cfg) {
+    this._exmapFogOff();
+    const el = document.createElement("div");
+    el.className = "exmap-fog";
+    el.style.setProperty("--fog-c", cfg.tint || "172,179,188");
+    if (cfg.opacity != null) el.style.setProperty("--fog-o", cfg.opacity);
+    el.innerHTML = "<i></i><i></i><i></i>";
+    host.appendChild(el);
+    this._exmapFogEl = el;
+  },
+  _exmapFogOff() {
+    if (this._exmapFogEl) { try { this._exmapFogEl.remove(); } catch (e) {} this._exmapFogEl = null; }
   },
 
   // 见闻字幕：底部浮现一行（移动演出/警兆/场景描述）
@@ -6566,6 +6625,9 @@ const UI = {
     const isCave = f.kind === "cave" || f.kind === "scene";
     this.el("exmap-field").style.display = isCave ? "none" : "";
     this.el("exmap-scene").hidden = !isCave;
+    // B3 天象随层起收：入洞收野外天象（洞里没有风雪）；回野外自愈重起
+    if (isCave && this._exmapAmbTimers) this._stopExmapAmbience();
+    if (!isCave && !this._exmapAmbTimers) this._startExmapAmbience(ExploreMap.MAPS[x.stack[0].mapId]);
     if (isCave) { this._renderExmapScene(x, f); return; }
     const map = ExploreMap.mapOf(f);
     if (map && map.peaceful) { this._renderStrongholdField(x, f); return; }  // 据点：和平节点图（不动血色路径）
@@ -6638,13 +6700,15 @@ const UI = {
     const node = map.nodes[f.node];
     const acts = [];
     if (node.kind === "danger" && !f.hunted[f.node]) {
-      const beast = (State.data.beastRumor && WORLD.enemies[State.data.beastRumor]) ? WORLD.enemies[State.data.beastRumor].name : "盘踞的凶兽";
+      // 猎杀对象名：节点自带（阴冥·灰蜮母巢等）优先；后山沿用异闻妖王
+      const beast = node.huntName
+        || ((State.data.beastRumor && WORLD.enemies[State.data.beastRumor]) ? WORLD.enemies[State.data.beastRumor].name : "盘踞的凶兽");
       acts.push(`<button class="btn btn-warn" onclick="Engine.exmapHunt()">猎杀「${beast}」</button>`);
     } else if (node.loot && !f.cleared[f.node]) {
       acts.push(`<button class="btn" onclick="Engine.exmapGather()">${node.kind === "danger" ? "搜刮（1钟）" : "采集（1钟）"}</button>`);
     }
-    if (node.kind === "rest") acts.push(`<button class="btn" onclick="Engine.exmapStay(1)">打坐调息（1钟）</button>`);
-    if (node.kind === "exit") acts.push(`<button class="btn btn-warn" onclick="Engine.finishExmap('leave')">离开后山</button>`);
+    if (node.kind === "rest") acts.push(`<button class="btn" onclick="Engine.exmapStay(1)">${map.jueling ? "生火裹伤·养气（1钟）" : "打坐调息（1钟）"}</button>`);
+    if (node.kind === "exit") acts.push(`<button class="btn btn-warn" onclick="Engine.finishExmap('leave')">${map.exitLabel || "离开后山"}</button>`);
     if (node.kind !== "rest" && node.kind !== "exit") acts.push(`<button class="btn btn-ghost" onclick="Engine.exmapStay(1)">驻足观察（1钟）</button>`);
     this.el("exmap-actions").innerHTML = acts.join("");
   },

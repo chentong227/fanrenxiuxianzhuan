@@ -1335,6 +1335,57 @@ const Engine = {
     if (sf && UI.exmapNote) UI.exmapNote(`${sf.text}（${sf.dir}）`, sf.level >= 3 ? "warn" : "desc");
   },
 
+  /* ===========================================================
+   *  阴冥之地·暴风山道走格图（外海风云篇·幕四·绝灵小篇章）
+   *  返修池点名项落地：阴冥段从"一节点直给"升级为独立 L1 走格（fog 复用后山迷雾管线）。
+   *  绝灵规则：不回灵（jueling）；灰蜮母巢猎杀走 _mortalFighter 凡人战力；
+   *  唯一出口=风口栈道 → finishExmap 接主线 whfy_a4_baofeng（温天仁狭路）。
+   * =========================================================== */
+  startYinmingMap() {
+    const s = State.data;
+    if (s.combat) { this.toast("酣战之中，无暇他顾"); return; }
+    s.exmap = ExploreMap.start("yinming_l1", { flags: s.flags });
+    if (!s.exmap) { this.toast("此地暂不可探"); return; }
+    this.log("你辞别封天极与阴冥村，与紫灵、梅凝踏上灰白荒原——去暴风山的路没有官道，凡人的腿，一步一步量。", "event");
+    if (UI.openExmap) UI.openExmap();
+    this._exmapSenseHint();
+    State.save();
+  },
+
+  // 阴冥·阴兽母巢猎杀（绝灵凡人战力·非灵力遭遇）：端掉吃惯人味的兽群源头，路才干净
+  startYinmingChaoFight() {
+    const s = State.data;
+    this._nextFightType = "yinming_chao";
+    const player = this._mortalFighter();
+    const mkHui = (nm, big) => ({
+      name: nm, art: "huiyu", hp: big ? 88 : 52, sense: 6, speed: big ? 10 : 12, agility: big ? 5 : 7,
+      move: 2, mp: 24, qiLayer: 2, elem: null, nature: "beast", tactics: "feral", canFlee: false,
+      armor: big ? 3 : 1,
+      introNote: big ? "母巢深处爬出的老兽——甲壳厚过村里的门板，爪下埋着几代坠雾者的白骨。端了它，上山的路夜夜太平。" : null,
+      attacks: big ? [
+        { name: "腐爪撕咬", dmg: 12, kind: "normal", weight: 10, range: [1, 1] },
+        { name: "甲壳冲撞", dmg: 16, kind: "charge", weight: 6, range: [1, 2], aim: "cell", lunge: true },
+      ] : [
+        { name: "腐爪撕咬", dmg: 9, kind: "normal", weight: 10, range: [1, 1] },
+        { name: "扑压", dmg: 12, kind: "charge", weight: 5, range: [1, 2], aim: "cell" },
+      ], reward: {}, namedLoot: null,
+    });
+    this._exmapFightReturn = true;
+    if (UI.closeExmap) UI.closeExmap();
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [mkHui("老兽·母巢之主", true), mkHui("阴兽·左"), mkHui("阴兽·右")],
+      maxRounds: 18, W: 11, lanes: 2,
+      playerPos: 2, enemyPos: 6,
+    });
+    this._combatMeta = Object.assign({ type: "encounter", enemyName: "阴兽母巢" },
+      (typeof Art !== "undefined" && Art.has && Art.has("yinming_plain")) ? { sceneBg: "yinming_plain" } : {});
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log("【绝灵】灵力尽失——法术法宝俱不可用。端母巢的仗：一口剑、一把毒、一袋暗器，先斩带甲的老兽。");
+    this.log("你们摸到洼地边缘——磷光密如星子，母巢里的阴兽倾巢而出。凡人之躯的清巢战：毒和暗器招呼老兽的甲壳缝，别省。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 巢穴猎杀：在血食谷主动出击（异闻妖王即此处那一头）。传闻在握＝伏击先机。
   exmapHunt() {
     const s = State.data, x = s.exmap;
@@ -1343,6 +1394,8 @@ const Engine = {
     const map = ExploreMap.mapOf(f);
     const node = map.nodes[f.node];
     if (!node || node.kind !== "danger" || f.hunted[f.node]) { this.toast("此处已无猎可寻", true); return; }
+    // 阴冥绝灵图：巢穴猎杀走凡人战力（非灵力遭遇管线）
+    if (f.mapId === "yinming_l1") { this.startYinmingChaoFight(); return; }
     const beast = (s.beastRumor && WORLD.enemies[s.beastRumor]) ? s.beastRumor : (map.beastEnemy || "wild_wolf");
     const ambush = !!(f.intel && f.intel.lair_route);
     this._exmapFightReturn = true;
@@ -1619,6 +1672,7 @@ const Engine = {
     if (!x) return;
     const r = ExploreMap.travel(x, nodeId);
     if (!r.ok) { this.toast(r.reason, true); return; }
+    this._exmapStepSfx(nodeId, ExploreMap.MAPS[x.stack[0].mapId]);   // B3 城中石板脚步
     for (const ev of (r.events || [])) {
       if (ev.type === "note" && UI.exmapNote) UI.exmapNote(ev.text);
     }
@@ -1712,12 +1766,30 @@ const Engine = {
   exmapTravel(nodeId) {
     const s = State.data;
     if (!s.exmap) return;
+    const _mapT = ExploreMap.MAPS[s.exmap.stack[0].mapId] || {};
     const r = ExploreMap.travel(s.exmap, nodeId);
     if (!r.ok) { this.toast(r.reason, true); return; }
     // B1 走格回灵：跋涉间吐纳，灵力随脚程缓回（气血的回复走月度，见 passTime）
-    const _rTravel = State.realm();
-    if (_rTravel && _rTravel.spMax) s.spirit = clamp(s.spirit + Math.round(_rTravel.spMax * 0.10), 0, _rTravel.spMax);
+    //   绝灵图（jueling·阴冥）例外：灵力提不起来，走再多路丹田也是口枯井
+    if (!_mapT.jueling) {
+      const _rTravel = State.realm();
+      if (_rTravel && _rTravel.spMax) s.spirit = clamp(s.spirit + Math.round(_rTravel.spMax * 0.10), 0, _rTravel.spMax);
+    }
+    this._exmapStepSfx(nodeId, _mapT);   // B3 脚步声：踩在什么地上，就是什么声
     this._exmapEvents(r.events);
+  },
+
+  // B3 箱庭脚步声（2026-07-11 用户提案）：材质=目的地节点 step > 地图 step；
+  //   五材质配方（stepGrass/Gravel/Stone/Mud/Snow）在 audio.js——两步错落，克制短促
+  _exmapStepSfx(nodeId, mapDef) {
+    if (typeof Sfx === "undefined") return;
+    const s = State.data;
+    let node = null;
+    try { node = ExploreMap.mapOf(ExploreMap.cur(s.exmap)).nodes[nodeId]; } catch (e) {}
+    const mat = (node && node.step) || (mapDef && mapDef.step);
+    if (!mat) return;
+    const recipe = "step" + mat.charAt(0).toUpperCase() + mat.slice(1);
+    Sfx.play(recipe);
   },
 
   // 驻守：耗钟等人/恢复。庇护岩穴恢复更厚（遮息阵下打坐）
@@ -1729,11 +1801,12 @@ const Engine = {
     const node = map.nodes[f.node];
     const n = ticks || 1;
     const realm = State.realm();
+    const jueling = !!(ExploreMap.MAPS[s.exmap.stack[0].mapId] || {}).jueling;   // 绝灵图：只养气血不回灵
     if (node && node.kind === "rest") {
       s.hp = clamp(s.hp + Math.round(s.hpMax * 0.12 * n), 1, s.hpMax);
-      s.spirit = clamp(s.spirit + Math.round(realm.spMax * 0.18 * n), 0, realm.spMax);
-      this.toast("遮息阵下打坐调息——气血灵力小复");
-    } else {
+      if (!jueling) s.spirit = clamp(s.spirit + Math.round(realm.spMax * 0.18 * n), 0, realm.spMax);
+      this.toast(jueling ? "生火裹伤、合眼养气——气血小复" : "遮息阵下打坐调息——气血灵力小复");
+    } else if (!jueling) {
       s.spirit = clamp(s.spirit + Math.round(realm.spMax * 0.06 * n), 0, realm.spMax);
     }
     const r = ExploreMap.stay(s.exmap, n);
@@ -1907,6 +1980,12 @@ const Engine = {
     if (!x) return;
     const r = ExploreMap.caveMove(x, pos);
     if (!r.ok) { this.toast(r.reason || "走不得", true); return; }
+    // B3 洞窟脚步：贴壁潜行的石地轻响（map.step 声明）
+    {
+      const cf = ExploreMap.cur(x);
+      const cm = ExploreMap.MAPS[cf.mapId] || {};
+      if (cm.step && typeof Sfx !== "undefined") Sfx.play("step" + cm.step.charAt(0).toUpperCase() + cm.step.slice(1));
+    }
     // B1 走格回灵：洞窟潜行屏息凝神，灵力小幅缓回（幅度小于明路跋涉）
     const _rCave = State.realm();
     if (_rCave && _rCave.spMax) s.spirit = clamp(s.spirit + Math.round(_rCave.spMax * 0.06), 0, _rCave.spMax);
@@ -2129,7 +2208,8 @@ const Engine = {
   finishExmap(reason) {
     const s = State.data, x = s.exmap;
     if (!x) return;
-    const isFog = !!(ExploreMap.MAPS[x.stack[0].mapId] || {}).fog;   // 后山野外迷雾图：无灾厄钟、脚程折耗月
+    const mapId0 = x.stack[0].mapId;
+    const isFog = !!(ExploreMap.MAPS[mapId0] || {}).fog;   // 后山野外迷雾图：无灾厄钟、脚程折耗月
     const gained = [];
     Object.entries(x.bag).forEach(([k, n]) => {
       if (n > 0) { State.give(k, n); gained.push(`${DATA.items[k] ? DATA.items[k].name : k}×${n}`); }
@@ -2137,6 +2217,21 @@ const Engine = {
     const fogClock = x.stack[0].clock || 0;
     s.exmap = null;
     delete s._caveSnap;
+    // —— 阴冥·暴风山道：唯一出口=风口栈道，出图即接主线（温天仁狭路 whfy_a4_baofeng）——
+    if (mapId0 === "yinming_l1") {
+      if (UI.closeExmap) UI.closeExmap();
+      State.setFlag("whfy_yinming_done");
+      const summary = gained.length ? `行囊清点：${gained.join("、")}。` : "";
+      this.passTime(1);
+      this.log(`你们踏上风口栈道，罡风一步紧过一步——暴风山的黑岩在头顶铺开，风眼将开的轰鸣已隐隐可闻。${summary}`, "event");
+      if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
+      s.skills.scouting += 2;
+      this.checkLifespan();
+      this.checkStory();
+      State.save();
+      UI.renderAll();
+      return;
+    }
     if (isFog) {
       if (UI.closeExmap) UI.closeExmap();
       const summary = gained.length ? `清点行囊：${gained.join("、")}。` : "行囊空空。";
@@ -4514,21 +4609,35 @@ const Engine = {
         { name: "退步抽链", dmg: 14, kind: "normal", weight: 6, range: [2, 3], mp: 4, kite: true },
       ],
     });
+    // canon B14（2026-07-11 补·jpbeta/头条 ep41~42）：混战中**韩立亲手击杀冰妖**（刘靖把冰妖交给他）——
+    //   第四战区=韩立本人的对位；水行寒煞、木行的你占不到相克便宜=居中策应之余的本份硬仗
+    const bingyao = {
+      name: "冰妖", elem: "shui", formation: "pack", nature: "beast",
+      hp: 140, hpMax: 140, armor: 3, agility: 12, move: 2, speed: 14, mp: 70, sense: 11, qiLayer: 13,
+      tactics: "cunning",
+      introNote: "血池寒气凝成的冰妖——通体玄冰甲壳、吐息成霜。刘靖把它指名交给了你：「韩师弟，这头冰物路数阴冷，你心细，正合拿它！」水行寒煞，你的木行占不到便宜——靠符宝底牌与走位咬它。",
+      attacks: [
+        { name: "冰棱刺", dmg: 20, kind: "pierce", weight: 12, elem: "shui", range: [1, 2], mp: 5 },
+        { name: "寒雾吐息", dmg: 16, kind: "normal", weight: 7, elem: "shui", aim: "zone", zoneSpan: 1, range: [1, 3], depth: "front", mp: 8 },
+        { name: "冰爪撕扑", dmg: 24, kind: "charge", weight: 6, aim: "cell", lunge: true, track: true, range: [1, 4], mp: 9 },
+      ],
+      reward: { lingshi: 2 }, namedLoot: null,
+    };
     this._combat = new CombatAPI.Combat({
       player,
-      enemies: [xsA, xsB, xsC],
+      enemies: [xsA, xsB, xsC, bingyao],
       maxRounds: 24,
-      // —— 30 格大战场·三战区声明式布局（palace-battle-fixme 问题B / teamfight-camera-design §3·§5）——
-      //   报一张 fronts 表即得整片大战场：引擎据此自动落位 + 锁线（本区血侍杀意锁本区同袍）+
-      //   默认开跨场驰援 + 暴露 _fronts 给镜头导演层。左·刘靖×甲(4) / 中·宋蒙×乙(15) / 右·钟卫娘×丙(26)，
-      //   三战区间各留 ~9 格缓冲空地——韩立居中策应(13)，逐格移动补刀策应；W=30>13 触发宽轴巡游相机
-      //   （队友行动时 turn 拍把镜头自然拖过去，衔接顺滑）。以后复杂团战只换这张 fronts 表即复用同款演出。
-      W: 30, lanes: 2,
-      playerPos: 13,
+      // —— 34 格大战场·四战区声明式布局（palace-battle-fixme 问题B / teamfight-camera-design §3·§5）——
+      //   报一张 fronts 表即得整片大战场：引擎据此自动落位 + 锁线 + 默认跨场驰援 + 暴露 _fronts 给镜头导演层。
+      //   左·刘靖×甲(4) / 中左·韩立×冰妖(12) / 中右·宋蒙×乙(20) / 右·钟卫娘×丙(28)——
+      //   韩立既有本份对位（canon：亲手杀冰妖）又居中策应两翼；W=34 触发宽轴巡游相机。
+      W: 34, lanes: 2,
+      playerPos: 12,
       fronts: [
         { ally: "side:0", enemies: [0], at: 4,  name: "左·刘靖" },
-        { ally: "side:1", enemies: [1], at: 15, name: "中·宋蒙" },
-        { ally: "side:2", enemies: [2], at: 26, name: "右·钟卫娘" },
+        { ally: "player", enemies: [3], at: 12, name: "中·韩立" },
+        { ally: "side:1", enemies: [1], at: 20, name: "中·宋蒙" },
+        { ally: "side:2", enemies: [2], at: 28, name: "右·钟卫娘" },
       ],
       // 三同袍 side 同场（sides[] 复数化）：人格即打法——
       sides: [
@@ -4561,8 +4670,8 @@ const Engine = {
     this._combatMeta = Art.has("huanggong") ? { type: "santuan", sceneBg: "huanggong" } : { type: "santuan" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("刘靖长剑出鞘、剑指皇城深处：「左中右三处分头缠住血侍——韩师弟你居中策应，哪条线吃紧便驰援哪边！注意：斧奴皮糙肉厚须破甲、刺奴鬼魅难中须暴露、链奴隔空抽人须追击——各有所惧，对症下药！」");
-    this.log("巍峨宫门轰然洞开、朱墙金瓦下血煞翻腾——三名血侍各扑一方：左厢刘靖缠住魁梧斧奴、中路宋蒙稳压枯瘦刺奴、右翼钟卫娘斗着精悍链奴，三条战线就此拉开。斧奴铜皮铁骨、刺奴鬼魅难中、链奴隔空放风筝——各有所长，须对症下药。你居中策应：哪条线告急，便提步赶过去补刀。", "event");
+    this._combat._log("刘靖长剑出鞘、剑指皇城深处：「四处分头缠住——斧奴我来、刺奴宋师兄、链奴钟师妹！韩师弟，那头冰妖路数阴冷，指名交给你！各有所惧，对症下药——哪条线吃紧，能腾出手的便去驰援！」");
+    this.log("巍峨宫门轰然洞开、朱墙金瓦下血煞翻腾——三名血侍各扑一方，血池深处又爬出一头通体玄冰的冰妖：左厢刘靖缠住魁梧斧奴、宋蒙稳压枯瘦刺奴、右翼钟卫娘斗着精悍链奴，冰妖则被刘靖指名交到了你手上。斧奴铜皮铁骨、刺奴鬼魅难中、链奴隔空放风筝、冰妖寒煞刺骨——四条战线，各须对症下药。了结当面之敌后，哪条线告急便提步驰援。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -5647,7 +5756,7 @@ const Engine = {
 
   /* —— 温天仁·六极真魔功之战（S4 骨架·docs/action-fx-design.md §四）——
    * 考据（≥2源互证）：温天仁=六道极圣亲传·结丹后期巅峰·"乱星海元婴之下第一人"；
-   * 法宝=仿八门金光镜/天阳鎏金针/四象蟠龙带；六极真魔功=幻化六魔各司其职
+   * 法宝=仿八门金光镜/金针剑/四象蟠龙带；六极真魔功=幻化六魔各司其职
    * （攻/防/阵/疗/袭/幻·动画138话明演）；正典解法=必先诛疗魔+辟邪神雷克魔功。
    * 正典战果=苦斗未分生死、双双被鬼雾卷入阴冥之地——本战归《外海风云篇》，
    * 现阶段仅 ?demo=wentianren 打样（demo 打到胜利=演出收卡；正剧版以鬼雾收场）。
@@ -5672,7 +5781,8 @@ const Engine = {
       counter: 15, counterShieldOnly: true,
       introNote: "六道极圣亲传·结丹后期巅峰——乱星海元婴之下第一人。战术题面：①「六道燃金」蓄势一回合——趁蓄势打断它（定身符/重击）或雷遁拉开射程外；②「蟠龙带·缚地」砸你脚下格——看到『砸』就挪步；③八门金光镜护体期近身=镜光反噬——先破盾再欺身；④血压过六成，六极真魔功祭魔——治疗不除，此战无光。",
       attacks: [
-        { name: "天阳鎏金针", dmg: 28, kind: "pierce", weight: 8, range: [1, 6], elem: "huo", mp: 8 },
+        // canon 复核 #16（2026-07-11）：旧自造名"天阳鎏金针"已勘正——正典法宝=金针剑（聚剑散针）
+        { name: "金针剑·散针", dmg: 28, kind: "pierce", weight: 8, range: [1, 6], elem: "huo", mp: 8 },
         { name: "蟠龙带·缚地", dmg: 32, kind: "normal", weight: 7, aim: "cell", range: [1, 5], elem: "tu", mp: 10 },   // 砸格——看意图挪步可全躲（躲闪三角）
         { name: "六道燃金", dmg: 46, kind: "charge", weight: 6, range: [1, 6], elem: "huo", mp: 14 },                   // 蓄势——打断/拉开的拉扯窗口
       ],
@@ -5801,6 +5911,8 @@ const Engine = {
     s.combat = true;
     this._combat.startRound();
     if (storyMode && s.flags.whfy_saved_ziling) this._combat._log("（你分出一缕神识死死缠住辇中禁环——灵力少了一成半，可辇中人正在一寸寸重获自由。）");
+    // canon 复核 #17（2026-07-11）：正典紫灵战中主动暗助（支开护卫）——这也是妖辇护卫始终未入战团的因由
+    if (storyMode) this._combat._log("妖辇方向忽然一阵骚乱——辇中紫灵打翻了香炉、嚷着火起，两名近侍护卫慌忙回身扑救。她隔着纱帘朝这边飞快看了一眼：护卫，被她支开了。");
     this.log("怒涛之上无立锥之地——你与温天仁各驾遁光、凌空对峙。六道极圣亲传、结丹后期巅峰，乱星海元婴之下第一人：金针、蟠龙带、金光镜轮番祭起；把他的血压过六成，便要见识那门压箱底的六极真魔功了。", "event");
     UI.openCombat(this._combat, this._combatMeta);
     // boss 亮相拍：压暗→推镜→题字压屏（v312 开场张力）
@@ -5809,14 +5921,15 @@ const Engine = {
 
   /* ===================== 外海风云篇 · 幕一战斗编排（S1·docs/waihaifengyun-design.md）===================== */
 
-  // —— 幕一②·孤崖救场·鹰鸢兽×2（beast·会飞的七级妖禽——对空压力首战）——
+  // —— 幕一②·孤崖救场·海妖禽×2（beast·会飞的七级妖禽——对空压力首战）——
+  //   canon 勘正（2026-07-11 #2）：正典兽潮无具体兽名，"鹰鸢兽"系自造——改泛称海妖禽（art 沿用 yingyuan 猛禽图）
   startWhfyYingyuanFight() {
     const s = State.data;
     this._nextFightType = "whfy_yingyuan";
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;
     const mk = (n) => ({
-      name: `鹰鸢兽·${n}`, art: "yingyuan", hp: 125, sense: 15, speed: 17, agility: 9, move: 2, mp: 40, qiLayer: 17,
+      name: `海妖禽·${n}`, art: "yingyuan", hp: 125, sense: 15, speed: 17, agility: 9, move: 2, mp: 40, qiLayer: 17,
       elem: "jin", nature: "beast", tactics: "feral", canFlee: true, canFly: true, airGrade: 1, armor: 3,
       introNote: n === "雌" ? "七级妖禽成对猎杀——雌兽性狡，专挑破绽俯击。" : "七级妖禽·雄兽凶横，利爪带金属寒光（antiAir 凌空扑杀）。",
       antiAir: { name: "凌空扑杀", dmg: 22 },
@@ -5835,7 +5948,7 @@ const Engine = {
     this._combatMeta = { type: "whfy_yingyuan", canQuick: true };
     s.combat = true;
     this._combat.startRound();
-    this.log("两头七级鹰鸢兽被血腥气引得性起，弃了残兵、双双扑向出手的你——结丹后期对七级妖禽，正好活动一下三年没松过的筋骨。", "event");
+    this.log("两头七级海妖禽被血腥气引得性起，弃了残兵、双双扑向出手的你——结丹后期对七级妖禽，正好活动一下三年没松过的筋骨。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -5848,7 +5961,7 @@ const Engine = {
     const foe = {
       name: "云天啸", art: "yuntianxiao", hp: 220, sense: 17, speed: 15, agility: 9, move: 2, mp: 110, qiLayer: 18,
       elem: "huo", nature: "human", tactics: "cunning", canFlee: true, armor: 3, mastery: 1,
-      introNote: "结丹中期魔修——欺世盗名之辈，惯会挑软柿子当众立威。今日他挑错了人：碾过去，一招都别多给。",
+      introNote: "妙音门叛徒长老·结丹中期——勾结元婴老怪谋权不成、亡命外海，惯会挑软柿子当众立威敛财。今日他挑错了人：碾过去，一招都别多给。",
       attacks: [
         { name: "赤煞刀罡", dmg: 22, kind: "normal", weight: 10, range: [1, 3], elem: "huo", mp: 6 },
         { name: "血焰蚀空", dmg: 19, kind: "pierce", weight: 6, range: [1, 4], elem: "huo", mp: 8 },
@@ -5978,31 +6091,52 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
-  // —— 幕四②·阴冥村生死战（绝灵凡人战斗首演·灰蜮群）——
+  // —— 幕四②·阴冥村生死战（绝灵凡人战斗首演·canon 黑暗反转：祭品之夜）——
+  //   正典（141~143）：大长老按兽晶入体变身+死忠村勇围杀；封天极带村民反水助战；
+  //   打法眼=大长老"运晶"蓄力时最痛（charge 前摇=输出窗口，正典"抓兽晶时间间隙"的玩法化）
   startWhfyCunzhanFight() {
     const s = State.data;
     this._nextFightType = "whfy_cunzhan";
     const player = this._mortalFighter();
-    const mkHui = (nm, i) => ({
-      name: nm, art: "huiyu", hp: 52, sense: 6, speed: 12, agility: 7, move: 2, mp: 20, qiLayer: 2,
-      elem: null, nature: "beast", tactics: "feral", canFlee: false, armor: 1, immunePoison: false,
-      introNote: i === 0 ? "阴冥之地的食腐异物——甲壳韧、爪牙利，成群猎食。绝灵之地它们不吃灵力这套，你也一样：拼的是刀口和胆气。" : null,
+    const dalao = {
+      name: "大长老·兽晶邪身", art: "huiyu", boss: true, mastery: 1,
+      hp: 130, sense: 8, speed: 12, agility: 8, move: 2, mp: 30, qiLayer: 3,
+      elem: null, nature: "human", tactics: "cunning", canFlee: false, armor: 3,
+      introNote: "把兽晶按进胸口的枯瘦老人——筋肉虬结、兽性灰光。兽晶之力凶悍却不受凡躯久驭：他「运晶蓄力」的间隙，就是你的刀口（正典解法：抓兽晶运转的时间间隙）。",
       attacks: [
-        { name: "腐爪撕咬", dmg: 9, kind: "normal", weight: 10, range: [1, 1] },
-        { name: "扑压", dmg: 12, kind: "charge", weight: 5, range: [1, 2], aim: "cell" },
+        { name: "兽晶重击", dmg: 15, kind: "normal", weight: 10, range: [1, 1] },
+        { name: "灰光爪撕", dmg: 12, kind: "pierce", weight: 6, range: [1, 2], mp: 4 },
+        { name: "运晶·邪身暴走", dmg: 24, kind: "charge", weight: 7, range: [1, 2], mp: 6 },
+      ], reward: {}, namedLoot: null,
+    };
+    const mkYong = (nm) => ({
+      name: nm, hp: 40, sense: 5, speed: 10, agility: 6, move: 2, mp: 14, qiLayer: 1,
+      elem: null, nature: "human", tactics: "feral", canFlee: true, armor: 0,
+      attacks: [
+        { name: "柴刀乱劈", dmg: 8, kind: "normal", weight: 10, range: [1, 1] },
+        { name: "掷石", dmg: 6, kind: "normal", weight: 5, range: [2, 3] },
       ], reward: {}, namedLoot: null,
     });
     this._combat = new CombatAPI.Combat({
-      player, enemies: [mkHui("灰蜮·壹", 0), mkHui("灰蜮·贰", 1), mkHui("灰蜮·叁", 2)],
-      maxRounds: 16, W: 11, lanes: 2,
+      player, enemies: [dalao, mkYong("死忠村勇·甲"), mkYong("死忠村勇·乙")],
+      maxRounds: 18, W: 11, lanes: 2,
       playerPos: 2, enemyPos: 6,
+      // 封天极反水助战（凡人侧位：柴刀+猎叉——正典反转拍的玩法化）
+      sides: [{
+        id: "fengtianji", name: "封天极", kind: "ally",
+        hp: 70, hpMax: 70, guard: 0.2, elem: null, mp: 20, mpMax: 20,
+        persona: { aggr: 6, prot: 5, kite: 1 },
+        moves: [
+          { name: "柴刀劈砍", dmg: 10, weight: 10, range: [1, 1], line: "疤脸汉子一刀劈开围上来的人影" },
+          { name: "猎叉突刺", dmg: 12, weight: 5, range: [1, 2], line: "「疯了！都疯了！」猎叉狠狠捅出" },
+        ],
+      }],
     });
     this._combatMeta = { type: "whfy_cunzhan" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("【绝灵】灵力尽失——法术法宝俱不可用。你手里只有：一口剑、一把毒、一袋暗器，和七玄门练出来的那身本事。");
-    s.combat = true;
-    this.log("灰蜮群撞上栅栏——凡人之躯的第一战。眨眼剑法贴身抢攻、毒和暗器省着用：气力（灵力条）耗尽就出不了招了。", "event");
+    this._combat._log("【绝灵】灵力尽失——法术法宝俱不可用。你手里只有：一口剑、一把毒、一袋暗器，和七玄门练出来的那身本事。封天极提刀与你背靠背：先撂倒村勇、再抓大长老运晶的间隙下死手！");
+    this.log("祭坑火光冲天——兽晶邪身的大长老当先扑来，死忠村勇提着柴刀围拢。凡人之躯的第一战：眨眼剑法贴身抢攻、毒和暗器招呼邪身，他「运晶蓄力」的那一息，就是你的刀口。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -6545,6 +6679,14 @@ const Engine = {
             this.log("封岳带伤遁走，没敢回头。你在中环又采了两日——主药五株入袋，只是那双靴子与你无缘了。", "event");
           }
         }
+        // —— 阴冥·阴兽母巢（外海风云·暴风山道走格图）：端掉吃惯人味的兽群源头=阴冥村的整觉 ——
+        if (meta.enemyName === "阴兽母巢" && !anyEscaped) {
+          State.setFlag("whfy_chao_hunted");
+          if (this.settleLedger("whfy_shanlu", "封天极那句「顺手端了它」你记住了——阴兽母巢塌在洼地里，吃惯人味的兽群断了根，阴冥村从今往后夜夜整觉。困在绝地的人帮困在绝地的人，不图报")) {
+            s.mood = clamp(s.mood + 3, 0, s.moodMax);
+          }
+          this.addMilestone("阴冥之地：凡人之躯端掉阴兽母巢（阴冥村夜夜安睡）", "deed");
+        }
         if (meta.enemyName === "墨蛟" && !anyEscaped) {
           State.setFlag("mojiao_slain");
           // 远雷·伏岩观战兑现（铁律3）：看清的路数与旧伤破绽，化作斩蛟那一击的落点——点名出处
@@ -6687,11 +6829,12 @@ const Engine = {
             return;
           }
           if (win && isFog) {
-            // 后山猎杀告捷：巢穴的猎物伏诛，血食谷归于沉寂——回图可搜刮、自行离山
+            // 迷雾图猎杀告捷：巢穴的猎物伏诛——回图可搜刮、自行离图（文案 map 可自定，默认后山）
             const f = ExploreMap.cur(s.exmap);
             f.hunted[f.node] = true;
-            this.log("血食谷重归沉寂。那头盘踞后山的凶兽，终成你剑下亡魂——谷中遍地骸骨，正可细细搜刮。", "good");
-            if (UI.exmapNote) UI.exmapNote("血食谷归于死寂——巢穴空了，腥气散了。", "good");
+            const mdef = ExploreMap.MAPS[s.exmap.stack[0].mapId] || {};
+            this.log(mdef.huntWinNote || "血食谷重归沉寂。那头盘踞后山的凶兽，终成你剑下亡魂——谷中遍地骸骨，正可细细搜刮。", "good");
+            if (UI.exmapNote) UI.exmapNote(mdef.huntWinNote ? "巢穴空了，腥气散了。" : "血食谷归于死寂——巢穴空了，腥气散了。", "good");
           }
           if (!win && inCave && s._caveSnap) {
             // 洞中败北：从洞口印记重来（进洞前的一切如旧）
@@ -6710,10 +6853,11 @@ const Engine = {
             f.node = ExploreMap.mapOf(f).entry;
             this.log(`封岳翻走你袋中${robbed > 0 ? `主药${robbed}株` : "所有值钱物什"}，冷笑一声没下杀手：「杂役的命，不值我脏靴子。」——你拖着伤躲回了血幕裂口。`, "bad");
           } else if (!win && !inCave && isFog) {
-            // 后山猎败：负伤退出血食谷，退回林口（猎物仍在，可调息再来）
+            // 迷雾图猎败：负伤退回入口（猎物仍在，可调息再来；文案 map 可自定，默认后山）
             const f = ExploreMap.cur(s.exmap);
             f.node = ExploreMap.mapOf(f).entry;
-            this.log("你负伤退出血食谷，那畜生的吼声仍在身后林子里回荡——这一场，败了。退回林口，且容你喘口气。", "bad");
+            const mdef = ExploreMap.MAPS[s.exmap.stack[0].mapId] || {};
+            this.log(mdef.huntLoseNote || "你负伤退出血食谷，那畜生的吼声仍在身后林子里回荡——这一场，败了。退回林口，且容你喘口气。", "bad");
           }
           State.save();
           if (s.hp > 0 && s.exmap) { UI.openExmap && UI.openExmap(); return; }
@@ -6983,10 +7127,10 @@ const Engine = {
       if (win) {
         State.setFlag("modao_e4_santuan_done");
         this.meetNpc("liujing", "皇宫决战并肩的黄枫谷师兄——除魔卫道之楷模，身负祖传真宝凤凰符。");
-        this.writeLedger("modao_santuan_won", "九筑基夜闯皇城·开幕三组对位群架告捷——韩立与刘靖/宋蒙/钟卫娘三组同袍并肩冲杀，撕开血侍阵线、杀进皇宫深处（sides[] 复数化群架首演）");
-        this.addMilestone("皇宫决战开幕：三组对位群架告捷，杀入皇宫深处", "showdown");
+        this.writeLedger("modao_santuan_won", "九筑基夜闯皇城·开幕四线对位群架告捷——韩立亲手了结冰妖，与刘靖/宋蒙/钟卫娘三组同袍并肩冲杀，撕开血侍阵线、杀进皇宫深处");
+        this.addMilestone("皇宫决战开幕：亲手了结冰妖、四线群架告捷，杀入皇宫深处", "showdown");
         this.addFame(8, "京中传开，九名筑基修士夜闯皇城、当街力破黑煞教血侍阵");
-        this.log("血侍一片片倒下——三组同袍背靠背、攻守交替，竟把黑煞教的血侍阵生生撕开一道口子。刘靖长剑遥指深处：「不要恋战！贼首就在皇宫最底下——杀进去！」众人合身突入，一路向皇宫深处杀去。", "good");
+        this.log("血侍一片片倒下，那头冰妖也在你手里碎成一地玄冰——刘靖回头看了一眼，眼中赞色一闪：「好利落！」三组同袍背靠背、攻守交替，把黑煞教的血侍阵生生撕开一道口子。刘靖长剑遥指深处：「不要恋战！贼首就在皇宫最底下——杀进去！」众人合身突入，一路向皇宫深处杀去。", "good");
         if (typeof Sfx !== "undefined") Sfx.play("success");
         s.storyStage += 1;
         this.checkStory();
@@ -7430,11 +7574,11 @@ const Engine = {
         s.pendingEvent = "xh_a5_haiwang"; this._retryAfterLoss = "xh_a5_haiwang";
       }
     } else if (meta.type === "whfy_yingyuan") {
-      // 外海风云·幕一② 孤崖救场（鹰鸢兽×2·会飞妖禽首战）
+      // 外海风云·幕一② 孤崖救场（海妖禽×2·会飞妖禽首战）
       if (win) {
         State.setFlag("whfy_yingyuan_won");
-        this.writeLedger("whfy_yingyuan_won", "孤崖礁滩·斩双鹰鸢兽救青灵门众——结丹后期出关第一剑，三年蛰伏锋芒未钝。");
-        this.log("两头鹰鸢兽坠落怒涛——三年没出鞘的剑，锋芒未钝。青灵门众人劫后余生，为首的青衫女修快步上前拜谢。", "good");
+        this.writeLedger("whfy_yingyuan_won", "孤崖礁滩·斩双海妖禽救公孙杏等散修——结丹后期出关第一剑，三年蛰伏锋芒未钝。");
+        this.log("两头海妖禽坠落怒涛——三年没出鞘的剑，锋芒未钝。众散修劫后余生，为首的青衫女修快步上前拜谢。", "good");
         s.storyStage += 1;
         this.checkStory();
       } else {
@@ -7448,7 +7592,7 @@ const Engine = {
       // 外海风云·幕一④ 沧澜坊市立威（云天啸·碾压快战·名场面）
       if (win) {
         State.setFlag("whfy_yunt_won");
-        this.writeLedger("whfy_yunt_won", "沧澜坊市·当街一招败魔修云天啸——「威胁言语，道友还是少说些的好。否则厉某心情不好的话，血洗了这里也说不定。」真韩老魔立威，满市噤声。");
+        this.writeLedger("whfy_yunt_won", "沧澜坊市·当街一招重创妙音门叛徒长老云天啸——「威胁言语，道友还是少说些的好。否则厉某心情不好的话，血洗了这里也说不定。」真韩老魔立威，满市噤声。");
         this.addFame(10, "沧澜坊市·真『韩老魔』当街立威，一招败云天啸");
         this.log("云天啸的刀罡碎了满地，人跌出三丈、面如金纸。你收剑负手，环视满街屏息的修士，淡淡撂下一句——「威胁的言语，还是少说些的好。否则我心情不好的话，血洗了这里也说不定。」满市，噤若寒蝉。", "good");
         s.storyStage += 1;
@@ -7505,27 +7649,29 @@ const Engine = {
       s.storyStage += 1;
       this.checkStory();
     } else if (meta.type === "whfy_cunzhan") {
-      // 外海风云·幕四② 阴冥村生死战（绝灵凡人首战）
+      // 外海风云·幕四② 祭品之夜（绝灵凡人首战·canon 黑暗反转：诛大长老）
       if (win) {
         State.setFlag("whfy_cunzhan_won");
-        this.writeLedger("whfy_cunzhan_won", "阴冥村夜袭·凡人之躯率村民杀退灰蜮群——眨眼剑法二十年后重新沾血。村中老小自此把这几位『落难仙师』当自家人。");
-        this.log("最后一只灰蜮被钉死在栅栏上。村民们举着火把围拢过来——在这片灰白的绝地里，你久违地听见了人间的欢呼。", "good");
+        this.meetNpc("feng_tianji", "阴冥村的疤脸猎户——祭品之夜带村民反水相救，与韩立背靠背杀翻兽晶邪身的大长老。吃人规则的终结者之一。");
+        this.writeLedger("whfy_cunzhan_won", "祭品之夜·凡人之躯诛杀兽晶邪身的大长老——他运晶蓄力的间隙，眨眼剑法二十年后重新沾血。封天极带村民反水相助；吃人规则，到此为止。");
+        this.log("大长老运晶的间隙，你的剑快过了兽晶的灰光——邪身轰然扑倒，胸口的兽晶滚落尘埃。火把下的村民面面相觑，有人跪下来嚎啕大哭：吃人换来的『太平』，压了他们祖祖辈辈。封天极一脚碾碎兽晶，哑声道：「往后……村里不吃人了。」", "good");
         s.storyStage += 1;
         this.checkStory();
       } else {
         s.flags.losses_whfy_cunzhan = (s.flags.losses_whfy_cunzhan || 0) + 1;
         const bonus = Math.min(3, s.flags.losses_whfy_cunzhan) * 8;
         s.hp = Math.max(1, Math.round(s.hpMax * 0.5));
-        this.log(`灰蜮的围攻一时凶猛——村民拼死把你拽回栅栏内包扎（再战伤害+${bonus}%）。凡人的仗，凡人的打法：毒和暗器，别省。`, "bad");
+        this.log(`兽晶邪身的蛮力一时压得你喘不过气——封天极拼死把你拖出祭坑、躲进柴房包扎（再战伤害+${bonus}%）。凡人的仗，凡人的打法：毒和暗器招呼邪身、抓他运晶的间隙下死手。`, "bad");
         s.pendingEvent = "whfy_a4_cunzhan"; this._retryAfterLoss = "whfy_a4_cunzhan";
       }
     } else if (meta.type === "whfy_mortal") {
       // 外海风云·幕四④ 暴风山凡人终结战（正典：韩立杀温天仁）⚠ 演出逐拍待用户口述（骨架版）
       if (win) {
         State.setFlag("whfy_mortal_won");
-        this.writeLedger("whfy_mortal_won", "暴风山·凡人终结战——没有法力、没有法宝，眨眼剑法对裂石拳，凡人之躯搏杀至最后一息：韩立杀温天仁。乱星海元婴之下第一人之争，以最『凡人』的方式落幕。六道传人，死于一个凡人少年练了一辈子的剑。");
-        this.addMilestone("外海风云·凡人终结战：杀温天仁（母题闭环）", "medal");
-        this.log("剑锋抽出的刹那，温天仁的倨傲终于从眼里褪尽——他到死都没想明白：剥去所有法力之后，自己会输给一套凡人剑法。风眼的白光在山顶亮起。你收剑，替紫灵割断了麻绳。", "good");
+        // canon #25 补拍：紫灵补刀（她的复仇——温天仁害尽妙音门弟子）
+        this.writeLedger("whfy_mortal_won", "暴风山·凡人终结战——没有法力、没有法宝，眨眼剑法对搏命拳枪，凡人之躯搏杀至最后一息：韩立一剑刺胸，紫灵挣开麻绳抢过短刃补刀刺颈——妙音门满门弟子的血债，她亲手讨还。乱星海元婴之下第一人之争，以最『凡人』的方式落幕。");
+        this.addMilestone("外海风云·凡人终结战：杀温天仁（紫灵补刀·母题闭环）", "medal");
+        this.log("剑锋刺入胸口的刹那，温天仁的倨傲终于从眼里褪尽——他到死都没想明白：剥去所有法力之后，自己会输给一套凡人剑法。他还想开口，说什么海底遗迹的秘密——一道影子先你一步扑了过去。紫灵不知何时挣脱了麻绳，抢过他腰间的短刃，一言不发刺进了他的脖颈。「妙音门上下几百口……这一刀，等了很久了。」山顶的裂缝白光乍亮。你收剑，什么也没问。", "good");
         s.storyStage += 1;
         this.checkStory();
       } else {
@@ -8111,6 +8257,7 @@ const Engine = {
     if (choice.resolve === "whfy_wtr_fight")      { s.pendingEvent = null; this.startWentianrenFight(true); return; }
     if (choice.resolve === "whfy_cunzhan_fight")  { s.pendingEvent = null; this.startWhfyCunzhanFight();  return; }
     if (choice.resolve === "whfy_mortal_fight")   { s.pendingEvent = null; this.startWhfyMortalFight();   return; }
+    if (choice.resolve === "yinming_map")         { s.pendingEvent = null; this.startYinmingMap();        return; }   // 阴冥·暴风山道走格图
 
     // 普通推进
     s.pendingEvent = null;

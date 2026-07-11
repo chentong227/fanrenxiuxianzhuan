@@ -29,6 +29,15 @@
       clockMax: 30,                  // 五日 × 每日六钟
       ticksPerDay: 6,
       entry: "rukou",
+      // 箱庭演出层（B3·2026-07-11 用户提案"箱庭也要据点级演出"）：
+      //   ambience=常驻天象（fx 氛围粒+amb 声床+loops 间歇远声，UI._startExmapAmbience 起/收）；
+      //   step=走格脚步声材质（grass/gravel/stone/mud/snow——节点可覆写）
+      step: "grass",
+      ambience: {
+        fog: { tint: "158,84,94", opacity: 0.75 },   // 赤雾成片慢漂（DOM 雾层，非光斑粒）
+        amb: "wind", ambVol: 0.2,
+        loops: [{ lo: 14000, hi: 30000, sfx: "farRoar" }],   // 血雾深处不知名的兽吼
+      },
       nodes: {
         rukou:   { name: "血幕裂口", kind: "exit", x: 50, y: 80, icon: "◈",
                    desc: "进出禁地的唯一通道。血幕在身后嗡嗡作响，像一张随时会闭拢的嘴。" },
@@ -103,6 +112,12 @@
       subtitle: "岚州第一大城 · 信步城中",
       bg: "jiayuan_city",
       entry: "mofu",
+      // 箱庭演出层（B3）：城中=石板脚步 + 暖尘浮光 + 市声底床
+      step: "stone",
+      ambience: {
+        fx: "dust", fxOpts: { interval: 380, cap: 12 },
+        amb: "market", ambVol: 0.22,
+      },
       nodes: {
         mofu: { name: "墨府", kind: "rest", act: "rest", x: 24, y: 58, icon: "🏯",
           actLabel: "回墨府客房·调息",
@@ -160,6 +175,13 @@
       bg: "houshan",
       clockMax: 0,               // 无灾厄钟（脚程折耗月，不关节点）
       entry: "linkou",
+      // 箱庭演出层（B3）：林间=草地脚步 + 白岚横游 + 风床 + 偶有鸟鸣
+      step: "grass",
+      ambience: {
+        fog: { tint: "196,209,205", opacity: 0.65 },   // 山岚白雾成片（DOM 雾层）
+        amb: "wind", ambVol: 0.18,
+        loops: [{ lo: 9000, hi: 20000, sfx: "bird" }],
+      },
       nodes: {
         linkou:   { name: "林口", kind: "exit", x: 50, y: 82, icon: "◈",
                     desc: "后山入口的林缘。荆棘拨开，雾气便扑面而来——再往里，便没有现成的路了。" },
@@ -219,10 +241,85 @@
       ],
     },
 
+    /* ====== 阴冥之地 · L1 灰白荒原走格图（外海风云篇·幕四·绝灵小篇章） ======
+     * 返修池点名项（waihaifengyun-design §八决议6）：阴冥段从"地点轴暂驻"升级为独立走格图。
+     * fog:true 复用后山战争迷雾（灰白迷障=天然雾）；无灾厄钟（风眼日期是剧情锚不是倒计时）。
+     * jueling:true → 绝灵规则：走格/驻守不回灵（灵力提不起来），只养气血；
+     * 巢穴猎杀走凡人战力（engine.startYinmingChaoFight·_mortalFighter），非灵力遭遇。
+     * 唯一出口=风口栈道（山半腰）——离图即接主线 whfy_a4_baofeng（温天仁狭路）。 */
+    yinming_l1: {
+      id: "yinming_l1", kind: "field", fog: true, jueling: true,
+      name: "阴冥之地 · 暴风山道",
+      subtitle: "灰白无日 · 凡人步量",
+      bg: "yinming_plain",
+      clockMax: 0,               // 无灾厄钟（绝地里的日子按脚程折月，不关节点）
+      entry: "cun",
+      exitLabel: "攀上风口栈道 · 向罗睺裂缝（接主线）",
+      // 箱庭演出层（B3）：绝地=碎石脚步 + 灰白死雾 + 干风床 + 阴兽远啸
+      step: "gravel",
+      ambience: {
+        fog: { tint: "168,175,184", opacity: 0.7 },   // 灰白死雾成片慢漂（DOM 雾层）
+        amb: "wind", ambVol: 0.3,
+        loops: [{ lo: 16000, hi: 34000, sfx: "farRoar" }],
+      },
+      huntWinNote: "母巢塌了。阴兽的磷光一盏盏熄灭——吃惯了人味的兽群断了根，这条上山的路，从今夜起干净了。巢里坠雾者的遗物，正可细细搜刮。",
+      huntLoseNote: "母巢的阴兽前赴后继，你且战且退、裹着伤退回了阴冥村口——凡人的仗急不得。养好气力，再来。",
+      nodes: {
+        cun:     { name: "阴冥村", kind: "rest", x: 50, y: 84, icon: "🏮", step: "stone",
+                   desc: "石屋聚落蜷在荒原边上，村口一盏豆大的油灯。经了祭品之夜，村人待你们如再生父母——歇脚裹伤，都在这儿。" },
+        huiyuan: { name: "灰白荒原", kind: "gather", x: 30, y: 66, icon: "🌿", step: "grass",
+                   desc: "灰白的荒草齐膝，风过时像一片死水起了皱。村民说荒原里的灰喉草能淬毒，碎石棱子磨一磨就是暗器。",
+                   loot: { duyao_cao: 2, anqi: 3 } },
+        linzhao: { name: "磷火沼", kind: "gather", x: 68, y: 64, icon: "✨", step: "mud",
+                   desc: "沼泽上磷火明灭，绿幽幽地飘——村里孩子叫它「鬼灯」。沼边的止血苔是这绝地里最金贵的药材。",
+                   loot: { duyao_cao: 3, huixue_dan: 1 } },
+        shaota:  { name: "戍风哨塔", kind: "lore", x: 48, y: 48, icon: "⛰",
+                   desc: "半塌的石塔，不知是哪一代困居者垒的——登塔可望半座暴风山。",
+                   reveals: ["jiuzhan", "chao", "zhandao"],
+                   lookoutNote: "登塔一望：东面荒原上一片狼藉的旧营地、西面洼地里磷光聚成一团、山腰间一线栈道若隐若现——上山的路，看清了。" },
+        jiuzhan: { name: "古战场", kind: "gather", x: 76, y: 40, icon: "🩸",
+                   desc: "荒原上散着几十具白骨，兵刃锈成了红土——都是历代坠雾进来、没能等到裂缝的人。储物袋在这儿只是皮囊，可皮囊里的凡物还在。",
+                   loot: { huixue_dan: 2, anqi: 4, lingshi: 3 }, rich: true },
+        chao:    { name: "阴兽母巢", kind: "danger", x: 24, y: 36, icon: "🕳",
+                   huntName: "阴兽母巢",
+                   desc: "洼地深处磷光密如星子——大长老拿活人喂了几十年的阴兽群，源头就在这窝里。兽群吃惯了人味：不端了它，上山的路夜夜有伏兵。",
+                   loot: { huixue_dan: 2, duyao_cao: 3, lingshi: 4 }, rich: true },
+        yanwo:   { name: "避风岩窝", kind: "rest", x: 62, y: 26, icon: "⛺",
+                   desc: "山脚一处背风的岩窝，有前人生火的焦痕——攀山前最后一处能合眼的地方。" },
+        zhandao: { name: "风口栈道", kind: "exit", x: 50, y: 10, icon: "◈", step: "stone",
+                   desc: "半腰栈道自此而上，罡风一阵紧过一阵——罗睺之息将至，山顶的灰云里那道裂缝将现，时机稍纵即逝。" },
+      },
+      edges: [
+        ["cun", "huiyuan", 1], ["cun", "linzhao", 1],
+        ["huiyuan", "shaota", 1], ["linzhao", "shaota", 1],
+        ["linzhao", "jiuzhan", 2], ["shaota", "jiuzhan", 1],
+        ["shaota", "chao", 1], ["huiyuan", "chao", 2],
+        ["chao", "yanwo", 2], ["jiuzhan", "yanwo", 1],
+        ["yanwo", "zhandao", 1], ["chao", "zhandao", 2],
+      ],
+      // 远距感知：阴兽母巢的腐腥气（绝灵之地神识出不了三尺——靠的是猎户的鼻子）
+      senseSources: [
+        { node: "chao", kind: "beast", bands: [
+          { within: 4, level: 1, text: "风里有一缕若有若无的腐味，像什么东西在洼地里烂着。" },
+          { within: 2, level: 2, text: "腐腥气渐浓，脚下碎石缝里开始见到阴兽蜕下的甲皮。" },
+          { within: 1, level: 3, text: "磷光密如星子、腥气扑面——母巢就在眼前的洼地里。" },
+        ] },
+      ],
+      notes: [
+        "灰白的天穹低低压着，没有日月，也没有影子。",
+        "风掠过荒草，声音干得像纸。",
+        "远处磷火一明一灭，不知是鬼灯还是阴兽的眼睛。",
+        "你下意识运了口气——丹田里静得像口枯井。凡人，就是凡人。",
+        "紫灵与梅凝一前一后跟着，三个人的脚步声在荒原上格外清楚。",
+        "路边一块石头上刻着道歪歪扭扭的箭头——前人留给后人的路标。",
+      ],
+    },
+
     /* ====== 墨蛟山洞 · L3 轴式洞窟（与对阵轴同构——探索/布阵/战斗同一条轴） ====== */
     mojiao_cave: {
       id: "mojiao_cave", kind: "cave",
       name: "深潭洞窟",
+      step: "stone",   // B3 洞窟脚步：潭岸岩台的石地轻响
       bg: "xueshi_jindi",
       pano: "pano_dongku",   // 长卷全景（21:9）：镜头横移时背景跟着退——洞口到潭心是一幅连续长卷
       parentNode: "shentan",
