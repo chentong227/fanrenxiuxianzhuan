@@ -353,6 +353,8 @@
         if (c.hitStop && root.Fx && root.Fx.hitStop) root.Fx.hitStop(c.hitStop === true ? 80 : c.hitStop);
         if (c.sfx && root.Sfx && root.Sfx.play) root.Sfx.play(c.sfx);
         if (c.cam) this._cam({ cam: c.cam, px: c.px, at: c.at, ms: c.ms, to: c.to, scale: c.scale }, ctx);
+        // polish C3：beat 结算可落 flag（onHit:{flag:"xxx"}）——伺机一击的成败进战斗装配
+        if (c.flag && root.State && root.State.setFlag) root.State.setFlag(c.flag);
       } catch (e) {}
     },
 

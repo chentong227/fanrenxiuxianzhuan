@@ -3662,9 +3662,9 @@ const Engine = {
       return;
     }
     // 小境界：心魔可控则水到渠成，无须心战
-    // 连败保底：每5次连败，心战阈值+15（屡败屡战者终得道心通透）
+    // 连败保底：每3次连败，心战阈值+15（屡败屡战者终得道心通透——polish C4 由 5 收紧到 3）
     const pity = s.btPity || 0;
-    const threshold = Balance.demonTrialThreshold() + Math.floor(pity / 5) * 15;
+    const threshold = Balance.demonTrialThreshold() + Math.floor(pity / 3) * 15;
     const demonHigh = s.demon > threshold;
     if (!demonHigh) {
       this.passTime(1);
@@ -3752,7 +3752,8 @@ const Engine = {
         this.log(`心魔劫中道心崩动，灵力反噬如怒涛！渡劫失败——你修为大损(-${loss})、气血重创(-${dmg})，心魔几乎吞噬神智。大境界之关，岂容轻忽。`, "bad");
         this.toast("渡劫失败！反受重创", true);
       } else {
-        const loss = Math.round(s.cultivation * 0.3);
+        // polish C4（用户拍板）：0.3 在练气修为曲线下≈白修一年，叠心魔+心境=三重罚——减负到 0.2
+        const loss = Math.round(s.cultivation * 0.2);
         s.cultivation = Math.max(0, s.cultivation - loss);
         const dmg = 15 + Math.floor(Math.random() * 15);
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
@@ -3870,6 +3871,8 @@ const Engine = {
       techSpells: (typeof Loadout !== "undefined") ? Loadout.mainScaledSpells(s) : [],
       momentumCap: s.swordMastery ? 7 : 5,   // 眨眼剑法大成：剑势上限+2
       swordMastery: !!s.swordMastery,        // 大成：眨眼剑法本体蜕变（攒势翻倍）
+      // polish B4：厉飞雨教的凡人武学底子——开局剑势+1（情感 flag 挂既有乘区，二周目差异可感）
+      momentum: s.flags.learned_from_lify ? 1 : 0,
       // 回灵效率（v96 伴身件管线）：不破"池制不自动回灵"铁律——只加成主动回灵动作
       // （敛息回元/聚灵阵的每口收益+X；蕴灵珠类伴身件由此生效）
       regenBoost: State.gearBonus("regenBoost"),
@@ -4506,6 +4509,13 @@ const Engine = {
     if (s.flags.identity_practice_medicine) {
       this._combat.enemies[0].shield -= 8;
       this._combat._log("【医者身份】谁都不防一个看病抓药的老药师——你从容近身布好了杀局，他护体符术起得仓促（护罩-8）。");
+    }
+    // polish C3：还符伺机 beat-window 命中=开局先手（毒雾灌进敛光缺口——护罩再挫+首回合破绽）
+    if (s.flags.jinguang_window_hit) {
+      delete s.flags.jinguang_window_hit;   // 一次性（败北重试须重新抓窗口）
+      this._combat.enemies[0].shield = Math.max(0, this._combat.enemies[0].shield - 10);
+      this._combat.enemies[0].exposed = true;
+      this._combat._log("【伺机而动】那一瞬你抓住了——毒雾已灌进护罩缺口，金光上人气机大乱（护罩-10·首回合破绽）！");
     }
 
     this._combatMeta = { type: "jinguang" };
@@ -6231,10 +6241,12 @@ const Engine = {
     if (s.flags.wan_hunt_done) return;
     State.setFlag("wan_hunt_done");
     const player = this.playerFighter();
-    const wolf = Object.assign({}, WORLD.enemies.wild_wolf, { hp: 75 });
+    // polish C2：旧值(75+55)下万小山一人能代打全场（实测 AI 建功 157 伤·玩家挂机可赢）——
+    // 狼群抬到"并肩才打得动"的档（同道教学战教的该是配合，不是挂机）
+    const wolf = Object.assign({}, WORLD.enemies.wild_wolf, { hp: 95 });
     this._combat = new CombatAPI.Combat({
       player,
-      enemies: [wolf, Object.assign({}, WORLD.enemies.wild_wolf)],
+      enemies: [wolf, Object.assign({}, WORLD.enemies.wild_wolf, { hp: 70 })],
       W: 9,
       maxRounds: 14,
       enemyPos: 5,   // 林间遭遇·起手近距，一两回合即接战（playtest：灵狼战勿空转等走近）
@@ -7013,9 +7025,11 @@ const Engine = {
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         // 曲魂幡到手：张铁尸傀自此随你驱使（侧位单位 v0——挚友之尸，为你而战）
         if (!s.sideUnit) {
-          s.sideUnit = { id: "zhangtie_corpse", name: "曲魂", hp: 70, hpMax: 70, atk: 12,
+          // polish B4：结拜之谊挂乘区——义结金兰者，遗蜕的那口执念更沉（hpMax+10）
+          const swornHp = s.flags.sworn_brothers ? 80 : 70;
+          s.sideUnit = { id: "zhangtie_corpse", name: "曲魂", hp: swornHp, hpMax: swornHp, atk: 12,
                          atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
-          this.log("你拾起墨大夫遗落的「曲魂幡」。幡下尸傀缓缓转向你，躬身待命——那身形，依稀还是当年演武厅里和你过招的少年。自此，张铁的遗蜕将随你出战（历练与遭遇战自动随行）。", "event");
+          this.log("你拾起墨大夫遗落的「曲魂幡」。幡下尸傀缓缓转向你，躬身待命——那身形，依稀还是当年演武厅里和你过招的少年。自此，张铁的遗蜕将随你出战（历练与遭遇战自动随行）。" + (s.flags.sworn_brothers ? "（义结金兰的那口执念还在——它站得比寻常尸傀更稳。）" : ""), "event");
           this.addMilestone("曲魂幡御尸：曲魂随行", "bigitem");
           this.toast("侧位随行：曲魂");
         }

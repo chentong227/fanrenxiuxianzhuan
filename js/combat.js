@@ -219,7 +219,7 @@
       this.immunePoison = cfg.immunePoison || cfg.nature === "corpse" || false;
       this.soulOnly = cfg.soulOnly || cfg.nature === "ghost" || false;
       this.dodgeBuff = 0;
-      this.momentum = 0;
+      this.momentum = cfg.momentum || 0;   // polish B4：开局剑势可由装配注入（learned_from_lify 等情感 flag 的乘区兑现）
       this.momentumCap = cfg.momentumCap || 5;
       this.swordMastery = !!cfg.swordMastery;
       this.qiLayer = cfg.qiLayer || 1;

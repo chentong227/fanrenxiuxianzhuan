@@ -1251,6 +1251,16 @@ const UI = {
   /* -------- 剧情卡渲染（视觉小说式：大立绘 + 逐句推进）-------- */
   renderStory(stage, opts) {
     opts = opts || {};
+    // v316 polish C1：text/choices 可为函数——多数调用方已自行解析，但败北重试/直渲路径漏解析
+    // 会在 Cutscene.compile 的 for...of 处抛错（"segs is not iterable"），连带把"短版再战卡"
+    // （_storyShouldSkipIntro→直入抉择）整个炸掉=战败后重播全篇甚至不弹卡。入口统一兜底。
+    if (stage && (typeof stage.text === "function" || typeof stage.choices === "function")) {
+      const sd = (typeof State !== "undefined" && State.data) ? State.data : {};
+      stage = Object.assign({}, stage, {
+        text: typeof stage.text === "function" ? stage.text(sd) : stage.text,
+        choices: typeof stage.choices === "function" ? stage.choices(sd) : stage.choices,
+      });
+    }
     const overlay = this.el("story-overlay");
     // 兜底：若剧情舞台 DOM 缺失，退回把整段剧情写入叙事日志并直接出选项，绝不卡住
     if (!overlay) { this._renderStoryFallback(stage); return; }
@@ -2581,7 +2591,7 @@ const UI = {
     const pct = Math.round(rate * 100);
     const cls = rate >= 0.7 ? "high" : rate >= 0.4 ? "mid" : "low";
     const pity = s.btPity || 0;
-    const threshold = Balance.demonTrialThreshold() + Math.floor(pity / 5) * 15;
+    const threshold = Balance.demonTrialThreshold() + Math.floor(pity / 3) * 15;
     const demonHigh = s.demon > threshold;
 
     // 成功率构成明细：准备的每一项都看得见（准备难=可经营的难）

@@ -34,7 +34,13 @@ const STORY = [
     },
     onArrive(s) { State.setFlag("at_village"); },
     choices: [
-      { text: "拜别爹娘，随三叔去七玄门", hint: "踏出青牛镇", next: true },
+      // polish B3：第一选项也要"是一种做"——本分辞行=韩立式的稳（心性入账）
+      { text: "拜别爹娘，随三叔去七玄门", hint: "本本分分辞行——稳，也是一种底色",
+        effect(s) {
+          Engine.recordTemperament("village_plain", "stoic", "拜别爹娘·不多拿一物不多问一句——本分上路，稳字当头");
+          return { text: "你给爹娘磕了头，什么也没多带、什么也没多问，跟着三叔上了路。娘在村口望了很久。", kind: "event" };
+        },
+        next: true },
       { text: "临行前，偷偷揣一包干粮盐巴", hint: "穷家孩子，路上不能空着手",
         effect(s) {
           State.give("lingshi", 1);
@@ -94,7 +100,12 @@ const STORY = [
       Engine.meetNpc("zhangtie", "你与他一见投缘，结伴同行。");
     },
     choices: [
-      { text: "与张铁结伴，同赴选拔", hint: "继续", next: true },
+      { text: "与张铁结伴，同赴选拔", hint: "有伴同行，心里踏实",
+        effect(s) {
+          s.mood = Math.min(s.moodMax || 100, (s.mood || 0) + 3);
+          return { text: "山路虽长，有张铁一路说说笑笑，倒也不觉得累。到山门时，你们已经像认识了半辈子。（心境+3）", kind: "good" };
+        },
+        next: true },
       { text: "路上暗中观察同行少年的身手深浅", hint: "知己知彼",
         effect(s) {
           s.skills = s.skills || {}; s.skills.scouting = (s.skills.scouting || 0) + 1;
@@ -162,7 +173,13 @@ const STORY = [
       return t;
     },
     choices: [
-      { text: "入门记名，正式踏入七玄门", hint: "继续", next: true },
+      { text: "入门记名，正式踏入七玄门", hint: "尘埃落定，心头一块石头落地",
+        effect(s) {
+          s.mood = Math.min(s.moodMax || 100, (s.mood || 0) + 2);
+          s.demon = Math.max(0, (s.demon || 0) - 2);
+          return { text: "名册上添了「韩立」两个字。你盯着那两个字看了半晌——从今往后，顿顿有白面馍了。（心境+2·心魔-2）", kind: "good" };
+        },
+        next: true },
       { text: "补考半年间，苦练筋骨体魄", hint: "资质不够，毅力来凑",
         effect(s) {
           s.hpMax = Math.round(s.hpMax * 1.05);
@@ -205,7 +222,12 @@ const STORY = [
       Engine.toast("你拜入墨大夫门下，习《长春功》");
     },
     choices: [
-      { text: "叩首谢恩，潜心修炼", hint: "开始自由修行", next: true },
+      { text: "叩首谢恩，潜心修炼", hint: "藏起心思，先把功课做稳",
+        effect(s) {
+          Engine.recordTemperament("intro_plain", "stoic", "拜师墨大夫·恭敬叩首不多看不多问——把心思藏进本分里");
+          return { text: "你端端正正磕了三个头，接过功法退到一旁。墨大夫多看了你一眼——一个不多话、不多看、不多问的药童，正合他意。", kind: "event" };
+        },
+        next: true },
       { text: "留心观察药庐中的药材布局", hint: "药童的本分，也是眼力",
         effect(s) {
           s.skills = s.skills || {}; s.skills.alchemy = (s.skills.alchemy || 0) + 1;
@@ -265,7 +287,12 @@ const STORY = [
       Engine.meetNpc("lifeiyu", "爽朗仗义的同门师兄，武学有成。");
     },
     choices: [
-      { text: "与好友同行历练", hint: "继续", next: true },
+      { text: "与好友同行历练", hint: "同门之谊，细水长流",
+        effect(s) {
+          s.mood = Math.min(s.moodMax || 100, (s.mood || 0) + 4);
+          return { text: "不结拜、不请教，就这么处着——一起吃饭、一起挨骂、一起在演武厅外看人过招。日子平常，暖意是真的。（心境+4）", kind: "good" };
+        },
+        next: true },
       { text: "向厉飞雨请教武学招式", hint: "他武学有成，正好偷师",
         effect(s) {
           State.setFlag("learned_from_lify");
@@ -769,7 +796,23 @@ const STORY = [
       }
       t.push(
         { wait: 400 },
-        "就是现在！催熟的剧毒、淬毒的暗器，趁着金光收敛的一线之隙尽数招呼上去。一击不中，便是粉身碎骨；可一旦得手……",
+        // polish C3：全章最好的伺机时机做成 beat-window（staging-plan 原案）——中=开战先手 buff
+        { beat: {
+            kind: "window",
+            prompt: "他抬手接符——金钟罩的护体金光，敛了。窗口只有一瞬。",
+            action: "催毒·暗器·就是现在！",
+            ms: 2400,
+            onHit: {
+              sfx: "backstab", cam: "shake", px: 10, hitStop: 90,
+              fx: { fx: "burst", at: "center", elem: "jin", n: 16 },
+              flag: "jinguang_window_hit",
+              line: "毒针与暗器自袖中暴射而出——快过他重聚金光的念头！第一蓬毒雾结结实实扑进了敛光的护罩缺口。",
+            },
+            onMiss: {
+              sfx: "whiff", cam: "shake", px: 5,
+              line: "你出手迟了半拍——金钟罩重聚的金光挡下了大半毒雾。他勃然大怒，杀机全开。",
+            },
+        } },
         { sfx: "backstab" },
         { fight: "jinguang_win" },
       );
