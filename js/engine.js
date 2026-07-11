@@ -152,8 +152,8 @@ const Engine = {
     s._lastAmbient = ev.text;
     s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "world", text: ev.text });
     if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
-    // 三成概率浮到叙事日志（避免刷屏）
-    if (Math.random() < 0.3) this.log("【世间】" + ev.text, "sys");
+    // polish E：浮出率 0.3→0.5（实测月均 1.8% 进日志=世界只活在风云录页签里——世界要被看见）
+    if (Math.random() < 0.5) this.log("【世间】" + ev.text, "sys");
   },
 
   /* ===========================================================
@@ -823,8 +823,7 @@ const Engine = {
               sd.silver += 5;
               sd.skills = sd.skills || {}; sd.skills.alchemy = (sd.skills.alchemy || 0) + 1;
               sd.intel = sd.intel || {}; if ((sd.intel.jinguang || 0) < 1) sd.intel.jinguang = 1;
-              State.setFlag("xingyi_wolf_done");
-              Engine.writeLedger("xingyi_wolf_intel", "行医救下野狼帮伤者——从他嘴里套出「金光上人」的名号与来路");
+              State.setFlag("xingyi_wolf_done");   // 情报已直接入 intel（机制兑现即时，不占 ledger）
               return { text: "止血、敷药、灌下安神汤——人救回来了。那汉子迷迷糊糊谢个不停，话也多了：帮里新请了位「上人」，金光铸罩、刀枪不入……你手上不停，把每个字都记进心里。（纹银+5·药理+1·情报：金光上人）", kind: "good" };
             } },
           { text: "闭门不诊——夜半血客，沾不得", effect(sd) {
@@ -861,8 +860,8 @@ const Engine = {
           return { text: "你在门口支了张桌子，来者不拒、分文不取。月底时，门槛都快被踏平了——「墨大夫」的名声，比从前那位真的还好。（心境+4·名望+2）", kind: "good" };
         } },
     ];
-    // 识毒方针者：以毒入药的独门路（二周目手感差异）
-    if (s.flags.identity_study_poison) {
+    // 识毒方针者：以毒入药的独门路（二周目手感差异）——毒方笔记记在 ledger（无同名 flag）
+    if (this.readLedger("identity_study_poison")) {
       choices.push({ text: "以毒入药（毒方精研·独门）", effect(sd) {
           self.passTime(1);
           State.give("duyao_cao", 1);
@@ -2685,6 +2684,22 @@ const Engine = {
     }
     // 平安推进
     s.mood = clamp(s.mood - 2, 0, s.moodMax);
+    // polish E：空月连击≤2（乘法律三）——第二个连续空月强制掉一条微收获，实测档"一路无话"×3 连刷根治
+    j._dryStreak = (j._dryStreak || 0) + 1;
+    if (j._dryStreak >= 2) {
+      j._dryStreak = 0;
+      if (Math.random() < 0.5) {
+        State.give("lingcao", 1);
+        return { text: `路旁崖缝里一星绿意——竟是株没人认得的灵草，顺手收了（灵草+1）。「${j.toName}」又近了些。`, kind: "good" };
+      }
+      const gossip = [
+        "茶棚里两个行脚商人压低了声音，你听了半耳朵——都是些坊市行情、门派恩怨的碎话，记下了。",
+        "同路的挑夫讲了一段某位散修暴富又暴毙的故事，讲得绘声绘色，你笑笑没接话。",
+        "借宿的农家夜里说起附近山头的怪事——真假难辨，但你留了个心眼。",
+      ];
+      s.skills = s.skills || {}; s.skills.scouting = (s.skills.scouting || 0) + 1;
+      return { text: gossip[Math.floor(Math.random() * gossip.length)] + `（探知+1）「${j.toName}」又近了些。`, kind: "event" };
+    }
     const scenes = [
       "晓行夜宿，一路无话。",
       "道上行人渐稀，你独自走了半日，只有山雀相伴。",
@@ -3270,32 +3285,50 @@ const Engine = {
     const chance = clamp(0.25 + months * 0.02, 0, 0.7);
     if (Math.random() > chance) return;
 
+    // polish E：插曲文案池扩容（80 月修炼期必复读——每类 3 条轮换）
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const roll = Math.random();
     if (roll < 0.26) {
       // 顿悟
       const bonus = Math.round(gain * 0.4) + 5;
       s.cultivation += bonus;
       if (Math.random() < 0.4) s.insight += 1;
-      this.log("闭关插曲·顿悟：枯坐之中，你忽有所悟，《长春功》的运转豁然顺畅。修为额外+" + bonus + "，悟性或有精进。", "good",
+      this.log("闭关插曲·顿悟：" + pick([
+        "枯坐之中，你忽有所悟，《长春功》的运转豁然顺畅。",
+        "半梦半醒间一缕灵光掠过识海——某个卡了数月的关窍，就这么通了。你猛地坐直，趁热打铁运转数个周天。",
+        "窗纸透进一线晨光，恰照在你丹田气旋上——一瞬间你「看见」了灵气的纹路。原来如此，原来如此！",
+      ]) + `修为额外+${bonus}，悟性或有精进。`, "good",
         { label: "闭关顿悟", prompt: "描写主角闭关枯坐中忽然顿悟、《长春功》运转豁然顺畅的一瞬（一两句，不提具体数值）。" });
     } else if (roll < 0.50) {
       // 走火入魔
       const dmg = Math.round(s.hpMax * (0.15 + months * 0.01));
       s.hp = clamp(s.hp - dmg, 1, s.hpMax);
       s.demon = clamp(s.demon + 10 + Math.floor(months / 3), 0, 100);
-      this.log(`闭关插曲·走火入魔：苦修过深，灵力一时逆冲经脉！你气血翻涌(气血-${dmg})，心魔大涨。修仙岂能急于求成。`, "bad");
+      this.log("闭关插曲·走火入魔：" + pick([
+        "苦修过深，灵力一时逆冲经脉！你气血翻涌，",
+        "一口真气行岔了半寸，五脏如遭火燎！你咬牙强行归元，冷汗湿透了蒲团，",
+        "求快之心一起，周天便乱——灵气在丹田里横冲直撞，你生生受了这一记反噬，",
+      ]) + `(气血-${dmg})心魔大涨。修仙岂能急于求成。`, "bad");
     } else if (roll < 0.66) {
       // 心魔幻象：故人入梦（按经历演变，孤独苦修的代价）
       this._demonDream(months);
     } else if (roll < 0.84) {
       // 外界变故（被打断）
       s.mood = clamp(s.mood - 8, 0, s.moodMax);
-      this.log("闭关插曲·外扰：静室之外似有动静，你不得不分神戒备，这一程闭关被搅得难以尽兴。", "sys");
+      this.log("闭关插曲·外扰：" + pick([
+        "静室之外似有动静，你不得不分神戒备，这一程闭关被搅得难以尽兴。",
+        "隔壁院里连吵了几日，人声隔墙钻进静室——入定三次被搅三次，你只得提前收功。",
+        "夜里有野物翻墙进了药圃，扑腾了半宿。你竖着耳朵守到天明，功课自然是废了。",
+      ]), "sys");
     } else {
       // 灵感枯滞
       const loss = Math.round(gain * 0.2);
       s.cultivation = Math.max(0, s.cultivation - loss);
-      this.log(`闭关插曲·枯滞：这段时日心绪不宁，进境远不如预期(修为-${loss})。修仙之路，本就时进时滞。`, "bad");
+      this.log("闭关插曲·枯滞：" + pick([
+        `这段时日心绪不宁，进境远不如预期(修为-${loss})。修仙之路，本就时进时滞。`,
+        `连着数月，灵气入体便散、聚而不凝——像隔着一层雾摸不到门。你索性搁下功课歇了几日(修为-${loss})。`,
+        `不知为何，这阵子总在同一处关口打转，进三步退两步(修为-${loss})。道无捷径，且熬着吧。`,
+      ]), "bad");
     }
   },
 
@@ -7965,7 +7998,23 @@ const Engine = {
     track("心魔", b.demon, s.demon); track("修为", b.cul, s.cultivation);
     State.take(itemId, 1);
     const fx = delta.length ? `（${delta.join("　")}）` : "（药力平平，未见起色）";
-    this.log(`你服下「${item.name}」${fx}。`, "good");
+    // polish Q4：嗑药时刻——灵药丹入腹要有"暴涨"的体感（对比闭关月均，点名这条路的甜头）
+    if (itemId === "lingyao_dan" && e.cul) {
+      const root = (DATA.spiritRoots.find(r => r.id === s.rootId) || {});
+      const perMonth = Math.max(1, Math.round((14 + (s.sense || 0) * 0.4) * (root.mod || 0.9)));
+      const months = Math.max(1, Math.round(e.cul / perMonth));
+      this.log(`你服下「${item.name}」——灵气自腑脏轰然炸开，顺着经脉横冲直撞，你急忙盘膝导引！一炷香后收功，遍体通泰${fx}：这一丹，抵得上你枯坐苦修 ${months} 个月。`, "good");
+      if (typeof Fx !== "undefined" && Fx.ensure && UI.el && UI.el("scene-stage")) {
+        try { Fx.ensure(UI.el("scene-stage")); Fx.burst && Fx.burst(Fx._w / 2, Fx._h / 2, { elem: "mu", n: 12 }); } catch (err) {}
+      }
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+      if (!s.flags.first_lingyao_eaten) {
+        State.setFlag("first_lingyao_eaten");
+        this.addMilestone("第一枚灵药丹入腹：小绿瓶的路，走通了", "bigitem");
+      }
+    } else {
+      this.log(`你服下「${item.name}」${fx}。`, "good");
+    }
     this.toast(`${item.name}：${delta.join(" ") || "无变化"}`);
     this.checkStory();
     State.save();
@@ -8171,6 +8220,11 @@ const Engine = {
     if (next.id === "xianhui_open" && s.flags.xianhui_due) {
       const left = s.flags.xianhui_due - State.absMonth();
       if (left > 0) hint = `升仙大会还有 ${left} 月开——在太南谷等到会期（修炼/赶集度月皆可）。`;
+    }
+    // polish A3：门派大比倒计时（蛰伏期正中锚——xianhui_due 同构）
+    if (next.id === "qixuan_dabi" && s.flags.dabi_due) {
+      const left = s.flags.dabi_due - State.absMonth();
+      if (left > 0) hint = `门派大比还有 ${left} 月开锣——蛰伏的日子照常过（行医/修炼/养瓶皆可）。`;
     }
     if (!condOk) {
       return { title: next.objTitle || "静待时机", hint: hint || "继续修炼、历练，时机未到。" };

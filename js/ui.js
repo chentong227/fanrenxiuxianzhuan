@@ -2680,9 +2680,25 @@ const UI = {
       </div>`;
     }).join("");
 
+    // polish Q2：账面可见——把嗑药线的账常驻算在瓶口（灵药丹 cul60 vs 闭关月均，玩家一眼见高下）
+    let ledgerLine = "";
+    {
+      const perMonth = Math.round((14 + (s.sense || 0) * 0.4) * ((DATA.spiritRoots.find(r => r.id === s.rootId) || {}).mod || 0.9));
+      const pending = s.bottle.plots.reduce((acc, p) => {
+        if (!p.crop) return acc;
+        const eff = (DATA.items[(DATA.bottle.crops[p.crop] || {}).matureItem] || {}).effect;
+        return acc + ((eff && eff.cul) || 0) * ((DATA.bottle.crops[p.crop] || {}).yield || 1);
+      }, 0);
+      if (pending > 0) {
+        ledgerLine = `<div class="pstat" style="margin:2px 0 6px;color:var(--gold)">瓶中之物若成：预计修为 +${pending}（顶你闭关 ${Math.max(1, Math.round(pending / Math.max(1, perMonth)))} 个月）——闭关时亦会自动半速滴灌。</div>`;
+      } else if (State.count("lingcao") > 0) {
+        ledgerLine = `<div class="pstat" style="margin:2px 0 6px;color:var(--gold)">囊中灵草 ×${State.count("lingcao")}——种下催熟成灵药丹，一丹抵闭关数月：这条路快过闭死关。</div>`;
+      }
+    }
     this.openModal(`
       <h2>神秘小绿瓶 · 随身灵圃</h2>
       <p style="color:var(--ink-dim)">随身可唤，何处皆可打理。滴入神秘绿液催熟瓶中草木——同一株灵草，循不同谱法可育出灵药、凝神丹乃至千年灵草；境界既高，更有灵石难求之物自现。此乃你逆天改命的本钱，切莫示人。</p>
+      ${ledgerLine}
       <div class="bottle-plots">${plotsHtml}</div>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="Engine.tendBottle(); UI.renderBottleModal();">滴绿液催熟（耗时）</button>
