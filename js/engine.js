@@ -128,13 +128,6 @@ const Engine = {
     { cond: (s) => s.activeChapter === "starsea", text: "外海传回消息：某座灵岛被妖潮淹了，岛上散修十不存一。海凶莫测。" },
     { cond: (s) => s.activeChapter === "starsea", text: "星宫又出了新的悬赏，猎杀外海妖兽的玉牌挂了一长串，价高者得。" },
     { cond: (s) => s.activeChapter === "starsea", text: "坊间传说乱星海深处有上古洞府现世，引得不少结丹修士结伴远航。" },
-    // —— polish D2：远线中途回响（三章后的血池点名要接得住，中间不能全静默）——
-    { cond: (s) => s.ledger && s.ledger.qingwen_grudge && (s.activeChapter === "huangfeng"),
-      text: "坊市有人低声议论：太南小会上那个青纹道人，后来投了越国那边一个来路不明的教门——听着不像正道。" },
-    { cond: (s) => s.ledger && s.ledger.qingwen_grudge && (s.activeChapter === "modao"),
-      text: "前线传闻：黑煞教座下有个使青纹符器的修士，行事狠毒。你莫名想起太南小会上那双阴冷的眼睛。" },
-    { cond: (s) => s.ledger && s.ledger.sanxiu_escaped && (s.activeChapter === "huangfeng" || s.activeChapter === "modao"),
-      text: "有行商说起：彩霞山一带当年有个杀人夺财的散修，后来一路向北投了魔道——不知真假。你握了握拳，又松开。" },
     // —— 通用（任何篇章·点季节/修行感，不带凡俗地域）——
     { cond: (s) => s.bottle && s.bottle.unlocked, text: "坊间又在传某位散修捡了天大机缘、一步登天的故事。你听着，只是笑笑。" },
     { cond: () => true, text: "夜里落了头场霜，门中老人说，今年的冬天会比往年冷。" },
@@ -152,8 +145,8 @@ const Engine = {
     s._lastAmbient = ev.text;
     s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "world", text: ev.text });
     if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
-    // polish E：浮出率 0.3→0.5（实测月均 1.8% 进日志=世界只活在风云录页签里——世界要被看见）
-    if (Math.random() < 0.5) this.log("【世间】" + ev.text, "sys");
+    // 三成概率浮到叙事日志（避免刷屏）
+    if (Math.random() < 0.3) this.log("【世间】" + ev.text, "sys");
   },
 
   /* ===========================================================
@@ -643,14 +636,21 @@ const Engine = {
     else if (action === "lianfu") { UI.openFuluCraft(); return; }
     else if (action === "gather") this.gather();
     else if (action === "spar") this.spar();
-    else if (action === "xingyi") { this.practiceMedicine(); return; }
     else if (action === "market") { UI.openMarket(); return; }
     else if (action === "fair") { UI.openFair(); return; }
     else if (action === "yaoyuan") { this.yaoyuanWork(); return; }
     else if (action === "wanbao") { UI.openWanbao(); return; }
     else if (action === "alchemy") this.alchemy();
     else if (action === "investigate") this.investigate();
-    else if (action === "explore") { this.enterHoushan(); return; }
+    else if (action === "explore") {
+      // polish-huangfeng Bug①（GPT P0-3）：探索入口按当前地点路由——旧版无条件 enterHoushan()，
+      // 乌龙潭/谷外山林/太南野林三个已声明 exploreSite 的点全被错接到七玄门后山（银甲角蟒/山林妖王不可达）
+      const loc0 = WORLD.locations.find(l => l.id === s.location);
+      const site = loc0 && loc0.exploreSite;
+      if (site === "houshan_explore" || !site) this.enterHoushan();
+      else this.enterExplore(site);
+      return;
+    }
     else if (action === "board") { this.cityRead("board"); return; }
     else if (action === "rumor") { this.cityRead("rumor"); return; }
     else if (action === "travel") { UI.openTravel(); return; }  // openTravel 已重定向到世界地图 Z4
@@ -744,134 +744,21 @@ const Engine = {
     this._checkSkillMilestones("alchemy");
   },
 
-  /* -------- 切磋（演武厅）--------
-   * polish A1（用户拍板）：主动切磋不再是零事件纯数字——同档同门应战=真战斗（startSparFight
-   * 管线现成·登门切磋同款），保留「独自练剑」快捷项。每月同门只应一场（interactions 冷却共用）。 */
+  /* -------- 切磋（演武厅，可能引出厉飞雨剧情提示）-------- */
   spar() {
     const s = State.data;
-    const self = this;
-    // 挑一个活着的同档散修应战（±2 层内=有来有回；npcFates=背景修士，剧情人物不入演武）
-    const myLayer = (State.realm() || {}).layer || s.realmIndex + 1 || 1;
-    const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
-    const foes = (s.npcFates || []).filter(f => f.status === "alive"
-      && Math.abs((f.realm || 1) - myLayer) <= 2
-      && !(I && I.onCooldown(s, f.id)));
-    const foe = foes.length ? foes[Math.floor(Math.random() * foes.length)] : null;
-    const solo = () => {
-      self.passTime(WORLD.activities.spar.timeCost);
-      s.body += 1;
-      s.flags.adventured = true;
-      s.mood = clamp(s.mood + 5, 0, s.moodMax);
-      let swordNote = "";
-      if (!s.swordMastery) {
-        s.swordIntent = clamp((s.swordIntent || 0) + 3, 0, 100);
-        swordNote = s.swordIntent >= 100 ? "你隐隐觉得剑上的火候到了（剑意圆满，可回药庐悟剑）。" : `切磋间你的剑越发纯熟（剑意+3）。`;
-        if (s.swordIntent === 100 && !s.flags.sword_intent_full) { State.setFlag("sword_intent_full"); this.toast("剑意圆满！可回药庐悟剑"); }
-      }
-      self.log("你独自在演武厅打熬拆招，身法体魄略有精进。厉飞雨笑你进境神速，直呼天才。" + swordNote, "good");
-    };
-    // polish D3：张铁生前喂招（可重复 2~3 次）——并肩过的人才死得重
-    if (!s.flags.zhangtie_dead && !s.flags.zhangtie_fated && (s.metNpcs || []).includes("zhangtie")
-      && (s.flags.zhangtie_spar || 0) < 3 && Math.random() < 0.4) {
-      const nth = s.flags.zhangtie_spar || 0;
-      const FLAVOR = [
-        "张铁抱着木桩似的胳膊直挠头：「师弟，象甲功这第二式我总使不圆——你帮我喂喂招？」你陪他拆了一下午。他挨了你十几下，咧着嘴一声不吭，末了憨笑：「痛快！再来！」",
-        "又是张铁。这回他学乖了，挨打前先把外袍脱了。你一边喂招一边指他下盘的破绽，他记性差，同一个跟头栽了三回——第四回，他稳稳接住了你的手刀，自己先愣了，随即咧开嘴笑得像个孩子。",
-        "张铁的象甲功有点样子了。喂招收势时他忽然说：「师弟，等我练成了，换我护着你。」你笑他傻——可那一瞬间，心里某个地方被轻轻撞了一下。",
-      ];
-      this.passTime(WORLD.activities.spar.timeCost);
-      s.body += 1;
-      s.mood = clamp(s.mood + 6, 0, s.moodMax);
-      s.flags.zhangtie_spar = nth + 1;
-      if (nth === 0) this.writeLedger("zhangtie_spar", "演武厅里陪张铁喂招拆招——兄弟的功夫，是你一下一下陪出来的");
-      this.log(`【演武厅】${FLAVOR[Math.min(nth, FLAVOR.length - 1)]}（体魄+1·心境+6）`, "good");
-      return;
+    this.passTime(WORLD.activities.spar.timeCost);
+    s.body += 1;
+    s.flags.adventured = true;
+    s.mood = clamp(s.mood + 5, 0, s.moodMax);
+    // 剑意修行链：与人对剑是练剑的正途
+    let swordNote = "";
+    if (!s.swordMastery) {
+      s.swordIntent = clamp((s.swordIntent || 0) + 3, 0, 100);
+      swordNote = s.swordIntent >= 100 ? "你隐隐觉得剑上的火候到了（剑意圆满，可回药庐悟剑）。" : `切磋间你的剑越发纯熟（剑意+3）。`;
+      if (s.swordIntent === 100 && !s.flags.sword_intent_full) { State.setFlag("sword_intent_full"); this.toast("剑意圆满！可回药庐悟剑"); }
     }
-    if (!foe) { solo(); return; }   // 无人应战（都照过面/无同档）：退回独自练剑
-    this._pendingFortune = {
-      title: "演武厅 · 切磋",
-      text: `场院里正热闹。「${foe.name}」提着兵刃朝你一抱拳：「韩师弟，听说你进境神速——过两招？」`,
-      choices: [
-        { text: `应战「${foe.name}」（真战斗·点到即止）`, effect(sd) {
-            self.startSparFight({ npcId: foe.id, npcName: foe.name });
-            return { text: "你把外袍往架上一搭，抱拳还礼：「请。」", kind: "event" };
-          } },
-        { text: "「改日——今日只想自己练练。」（剑意+3·稳）", effect(sd) {
-            solo();
-            return { text: "你朝他抱拳还礼，自寻了个角落打熬拆招。", kind: "event" };
-          } },
-      ],
-    };
-    if (typeof UI !== "undefined" && UI.openFortune) UI.openFortune(this._pendingFortune);
-  },
-
-  /* -------- 坐堂行医（polish A2：药庐蛰伏期专属月行动）--------
-   * identity_practice_medicine 从一次性剧情选项升级为可重复月常（yaoyuanWork 嗑瓜子模板）：
-   * 例钱+药理+门中人情；偶发野狼帮伤员=金光上人情报入 intel；识毒方针者多一路「以毒入药」。 */
-  practiceMedicine() {
-    const s = State.data;
-    if (!s.flags.identity_practice_medicine) { this.toast("你还没有以墨大夫的身份坐堂"); return; }
-    const self = this;
-    // 偶发病例：野狼帮伤员上门（情报的天然入口——谁都不防一个看病抓药的老药师）
-    if (!s.flags.xingyi_wolf_done && Math.random() < 0.22) {
-      this._pendingFortune = {
-        title: "药庐 · 血衣汉子",
-        text: "后半夜有人砸门。两条大汉架着个血葫芦似的同伙闯进来，腰间露出半块狼头腰牌——野狼帮的人。「老先生，救他一命，钱不是问题。」",
-        choices: [
-          { text: "救治，顺手旁敲侧击", effect(sd) {
-              self.passTime(1);
-              sd.silver += 5;
-              sd.skills = sd.skills || {}; sd.skills.alchemy = (sd.skills.alchemy || 0) + 1;
-              sd.intel = sd.intel || {}; if ((sd.intel.jinguang || 0) < 1) sd.intel.jinguang = 1;
-              State.setFlag("xingyi_wolf_done");   // 情报已直接入 intel（机制兑现即时，不占 ledger）
-              return { text: "止血、敷药、灌下安神汤——人救回来了。那汉子迷迷糊糊谢个不停，话也多了：帮里新请了位「上人」，金光铸罩、刀枪不入……你手上不停，把每个字都记进心里。（纹银+5·药理+1·情报：金光上人）", kind: "good" };
-            } },
-          { text: "闭门不诊——夜半血客，沾不得", effect(sd) {
-              self.passTime(1);
-              sd.mood = clamp(sd.mood + 2, 0, sd.moodMax);
-              return { text: "你隔着门板回绝：「老朽治不了刀伤。」门外骂骂咧咧去了。这世道，谨慎不丢人。（心境+2）", kind: "event" };
-            } },
-        ],
-      };
-      if (typeof UI !== "undefined" && UI.openFortune) UI.openFortune(this._pendingFortune);
-      return;
-    }
-    const choices = [
-      { text: "寻常坐堂（例钱+药理）", effect(sd) {
-          self.passTime(1);
-          sd.silver += 3;
-          sd.skills = sd.skills || {}; sd.skills.alchemy = (sd.skills.alchemy || 0) + 1;
-          if (Math.random() < 0.35) State.give("lingcao", 1);
-          self._checkSkillMilestones("alchemy");
-          return { text: "抓药、把脉、听镇上人念叨家长里短——一个月安安稳稳过去。（纹银+3·药理+1）", kind: "good" };
-        } },
-      { text: "接疑难杂症（费神·药理++）", effect(sd) {
-          self.passTime(1);
-          sd.skills = sd.skills || {}; sd.skills.alchemy = (sd.skills.alchemy || 0) + 2;
-          const gotInsight = Math.random() < 0.35;
-          if (gotInsight) sd.insight += 1;
-          self._checkSkillMilestones("alchemy");
-          return { text: `你专挑旁人治不了的怪病接。翻遍墨大夫留下的医案，几次险些砸了招牌，医术却实打实精进。（药理+2${gotInsight ? "·悟性+1" : ""}）`, kind: "good" };
-        } },
-      { text: "义诊一月（分文不取·声望人情）", effect(sd) {
-          self.passTime(1);
-          sd.mood = clamp(sd.mood + 4, 0, sd.moodMax);
-          Engine.addFame(2, "墨大夫义诊，分文不取");
-          return { text: "你在门口支了张桌子，来者不拒、分文不取。月底时，门槛都快被踏平了——「墨大夫」的名声，比从前那位真的还好。（心境+4·名望+2）", kind: "good" };
-        } },
-    ];
-    // 识毒方针者：以毒入药的独门路（二周目手感差异）——毒方笔记记在 ledger（无同名 flag）
-    if (this.readLedger("identity_study_poison")) {
-      choices.push({ text: "以毒入药（毒方精研·独门）", effect(sd) {
-          self.passTime(1);
-          State.give("duyao_cao", 1);
-          sd.skills = sd.skills || {}; sd.skills.alchemy = (sd.skills.alchemy || 0) + 1;
-          self._checkSkillMilestones("alchemy");
-          return { text: "墨大夫的毒方你越用越顺手——以毒攻毒、以毒入药，寻常郎中避之不及的路子，在你手里成了绝活。（毒草+1·药理+1）", kind: "good" };
-        } });
-    }
-    this._pendingFortune = { title: "药庐 · 坐堂行医", text: "晨光里药柜森然。今天这一个月，怎么坐这个堂？", choices };
-    if (typeof UI !== "undefined" && UI.openFortune) UI.openFortune(this._pendingFortune);
+    this.log("你与同门切磋武艺，身法体魄略有精进。厉飞雨笑你进境神速，直呼天才。" + swordNote, "good");
   },
 
   /* -------- 杂学里程碑：丹道(alchemy)/阵法(fulu) 深耕的「独占能力台阶」 --------
@@ -881,9 +768,7 @@ const Engine = {
    * 解锁即置 flag（存档惰性·不改 schema）+ 报喜 + 入年表。读时检查、幂等（flag 防重）。 */
   _SKILL_MILESTONES: {
     alchemy: [
-      // polish A5：首档 20→12（第一章自然采药量≈10~15——首个甜头要够得着）；8 级插「金疮药自炼」
-      { at: 8,  flag: "dan_ms_jinchuang", title: "丹道·自制伤药", log: "【丹道精进】辨得清止血生肌的几味草，你已能自配回血散（炼药时偶得）——药童的手艺，先救自己的命。" },
-      { at: 12, flag: "dan_ms_bianyao", title: "丹道·辨药入门", log: "【丹道精进】药理通了关窍——采药辨药一眼定真假，往后采得更丰（识别量+）。" },
+      { at: 20, flag: "dan_ms_bianyao", title: "丹道·辨药入门", log: "【丹道精进】药理通了关窍——采药辨药一眼定真假，往后采得更丰（识别量+）。" },
       { at: 40, flag: "dan_ms_anshen", title: "丹道·自炼凝神丹", log: "【丹道精进】凝神丹的火候你已了然——自此洞府可亲手炼制凝神丹（安神压魔），不必再仰仗坊市稀货。" },
       { at: 60, flag: "dan_ms_chunqing", title: "丹道·丹火纯青", log: "【丹道精进】丹火纯青，一炉常得双丹——炼药出丹率更稳、偶得三丹。" },
     ],
@@ -986,10 +871,9 @@ const Engine = {
   /* -------- 采买（集镇）-------- */
   buy(itemId) {
     const s = State.data;
-    // 符箓是修仙界稀货：凡人集镇偶有流出（polish A6：20→12——决战物资的银两出口要买得起；
-    // anqi 上架=唯一"想买买不到"的刚需补上）
-    const shop = { lingcao: 3, duyao_cao: 6, anqi: 3, qingyuan_dan: 8, huixue_dan: 6, ningshen_dan: 14,
-                   huoshe_fu: 12, hanbing_fu: 12 };
+    // 符箓是修仙界稀货：凡人集镇偶有流出，价不菲（穷靠本命，富靠符箓）
+    const shop = { lingcao: 3, duyao_cao: 6, qingyuan_dan: 8, huixue_dan: 6, ningshen_dan: 14,
+                   huoshe_fu: 20, hanbing_fu: 20 };
     let price = shop[itemId];
     if (!price) return;
     // 黑市窗口（涟漪链）：赃丹贱卖
@@ -998,19 +882,6 @@ const Engine = {
     s.silver -= price;
     State.give(itemId, 1);
     this.log(`你花了 ${price} 两纹银，购得「${DATA.items[itemId].name}」。`, "event");
-    State.save();
-    UI.renderAll();
-    UI.openMarket();
-  },
-  // polish A6：集镇收购行（wanbaoSell 同构）——妖材战利在本章即可变现（银两回路闭环）
-  marketSell(itemId) {
-    const s = State.data;
-    const item = DATA.items[itemId];
-    if (!item || !item.sell || !State.count(itemId)) return;
-    const price = Math.max(1, Math.round(item.sell * 0.8));   // 凡人集镇给不出坊市价——八折收
-    State.take(itemId, 1);
-    s.silver += price;
-    this.log(`皮货行掌柜验过「${item.name}」，点头付银 ${price} 两。`, "event");
     State.save();
     UI.renderAll();
     UI.openMarket();
@@ -1418,11 +1289,6 @@ const Engine = {
       : dbl
         ? `炉火纯青——这一炉竟得养元丹 ×2！（药理+2，现 ${s.skills.alchemy}）`
         : `你依墨大夫所授丹方，以灵草炼出一枚养元丹。（药理+2，现 ${s.skills.alchemy}）`, "good");
-    // polish A5：自制伤药里程碑——炼药顺手配一份回血散（战备耗材有了本章自产口）
-    if (s.flags && s.flags.dan_ms_jinchuang && Math.random() < 0.5) {
-      State.give("huixue_dan", 1);
-      this.log("炉边余火未熄，你顺手配了一份回血散收进药囊。（回血散+1）", "good");
-    }
     this._checkSkillMilestones("alchemy");
   },
 
@@ -2420,15 +2286,10 @@ const Engine = {
     return null;
   },
   // 战斗敌人构造时套用情报（L2=做过功课，料敌必中）
-  // polish-qixuan B2：花灵石买的底细不再只改意图透视——料敌于先，敌全程防备打折（真金白银要进战斗）
   _applyDossier(enemy) {
     const s = State.data;
     const id = this._intelIdByEnemyName(enemy.name);
-    if (id && (s.intel || {})[id] >= 2) {
-      enemy._dossier = true;
-      enemy.dodgeBuff = (enemy.dodgeBuff || 0) - 0.1;
-      enemy._dossierEdge = true;   // 供开场战报点名（买过底细=看得见的先手）
-    }
+    if (id && (s.intel || {})[id] >= 2) enemy._dossier = true;
     return enemy;
   },
 
@@ -2684,22 +2545,6 @@ const Engine = {
     }
     // 平安推进
     s.mood = clamp(s.mood - 2, 0, s.moodMax);
-    // polish E：空月连击≤2（乘法律三）——第二个连续空月强制掉一条微收获，实测档"一路无话"×3 连刷根治
-    j._dryStreak = (j._dryStreak || 0) + 1;
-    if (j._dryStreak >= 2) {
-      j._dryStreak = 0;
-      if (Math.random() < 0.5) {
-        State.give("lingcao", 1);
-        return { text: `路旁崖缝里一星绿意——竟是株没人认得的灵草，顺手收了（灵草+1）。「${j.toName}」又近了些。`, kind: "good" };
-      }
-      const gossip = [
-        "茶棚里两个行脚商人压低了声音，你听了半耳朵——都是些坊市行情、门派恩怨的碎话，记下了。",
-        "同路的挑夫讲了一段某位散修暴富又暴毙的故事，讲得绘声绘色，你笑笑没接话。",
-        "借宿的农家夜里说起附近山头的怪事——真假难辨，但你留了个心眼。",
-      ];
-      s.skills = s.skills || {}; s.skills.scouting = (s.skills.scouting || 0) + 1;
-      return { text: gossip[Math.floor(Math.random() * gossip.length)] + `（探知+1）「${j.toName}」又近了些。`, kind: "event" };
-    }
     const scenes = [
       "晓行夜宿，一路无话。",
       "道上行人渐稀，你独自走了半日，只有山雀相伴。",
@@ -3163,11 +3008,6 @@ const Engine = {
     s.beastRumorClue++;
     s.beastRumorClueAt = now;
     if (typeof Sfx !== "undefined") Sfx.play("chime");
-    // polish D1：线索攒满=领进门——不再让"3/3"静静躺在见闻里（实测档攒满从未去猎）
-    if (s.beastRumorClue >= r.clues.length) {
-      this.toast(`异闻线索齐了：「${r.title || "妖王"}」巢穴已可循——去后山深处会它`, false);
-      this.log(`【异闻·成】「${r.title || "那头妖王"}」的风声你已凑齐——巢穴方位、出没路数尽在掌握。去后山深处会它（猎得妖王=稀有妖材与丹，杀招法宝链的入口）。`, "good");
-    }
   },
 
   // 材料传闻：听闻→寻踪→探索采得（与异闻妖王同构的"风声→行动"链）
@@ -3285,50 +3125,32 @@ const Engine = {
     const chance = clamp(0.25 + months * 0.02, 0, 0.7);
     if (Math.random() > chance) return;
 
-    // polish E：插曲文案池扩容（80 月修炼期必复读——每类 3 条轮换）
-    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const roll = Math.random();
     if (roll < 0.26) {
       // 顿悟
       const bonus = Math.round(gain * 0.4) + 5;
       s.cultivation += bonus;
       if (Math.random() < 0.4) s.insight += 1;
-      this.log("闭关插曲·顿悟：" + pick([
-        "枯坐之中，你忽有所悟，《长春功》的运转豁然顺畅。",
-        "半梦半醒间一缕灵光掠过识海——某个卡了数月的关窍，就这么通了。你猛地坐直，趁热打铁运转数个周天。",
-        "窗纸透进一线晨光，恰照在你丹田气旋上——一瞬间你「看见」了灵气的纹路。原来如此，原来如此！",
-      ]) + `修为额外+${bonus}，悟性或有精进。`, "good",
+      this.log("闭关插曲·顿悟：枯坐之中，你忽有所悟，《长春功》的运转豁然顺畅。修为额外+" + bonus + "，悟性或有精进。", "good",
         { label: "闭关顿悟", prompt: "描写主角闭关枯坐中忽然顿悟、《长春功》运转豁然顺畅的一瞬（一两句，不提具体数值）。" });
     } else if (roll < 0.50) {
       // 走火入魔
       const dmg = Math.round(s.hpMax * (0.15 + months * 0.01));
       s.hp = clamp(s.hp - dmg, 1, s.hpMax);
       s.demon = clamp(s.demon + 10 + Math.floor(months / 3), 0, 100);
-      this.log("闭关插曲·走火入魔：" + pick([
-        "苦修过深，灵力一时逆冲经脉！你气血翻涌，",
-        "一口真气行岔了半寸，五脏如遭火燎！你咬牙强行归元，冷汗湿透了蒲团，",
-        "求快之心一起，周天便乱——灵气在丹田里横冲直撞，你生生受了这一记反噬，",
-      ]) + `(气血-${dmg})心魔大涨。修仙岂能急于求成。`, "bad");
+      this.log(`闭关插曲·走火入魔：苦修过深，灵力一时逆冲经脉！你气血翻涌(气血-${dmg})，心魔大涨。修仙岂能急于求成。`, "bad");
     } else if (roll < 0.66) {
       // 心魔幻象：故人入梦（按经历演变，孤独苦修的代价）
       this._demonDream(months);
     } else if (roll < 0.84) {
       // 外界变故（被打断）
       s.mood = clamp(s.mood - 8, 0, s.moodMax);
-      this.log("闭关插曲·外扰：" + pick([
-        "静室之外似有动静，你不得不分神戒备，这一程闭关被搅得难以尽兴。",
-        "隔壁院里连吵了几日，人声隔墙钻进静室——入定三次被搅三次，你只得提前收功。",
-        "夜里有野物翻墙进了药圃，扑腾了半宿。你竖着耳朵守到天明，功课自然是废了。",
-      ]), "sys");
+      this.log("闭关插曲·外扰：静室之外似有动静，你不得不分神戒备，这一程闭关被搅得难以尽兴。", "sys");
     } else {
       // 灵感枯滞
       const loss = Math.round(gain * 0.2);
       s.cultivation = Math.max(0, s.cultivation - loss);
-      this.log("闭关插曲·枯滞：" + pick([
-        `这段时日心绪不宁，进境远不如预期(修为-${loss})。修仙之路，本就时进时滞。`,
-        `连着数月，灵气入体便散、聚而不凝——像隔着一层雾摸不到门。你索性搁下功课歇了几日(修为-${loss})。`,
-        `不知为何，这阵子总在同一处关口打转，进三步退两步(修为-${loss})。道无捷径，且熬着吧。`,
-      ]), "bad");
+      this.log(`闭关插曲·枯滞：这段时日心绪不宁，进境远不如预期(修为-${loss})。修仙之路，本就时进时滞。`, "bad");
     }
   },
 
@@ -3471,7 +3293,6 @@ const Engine = {
     let totalGain = 0;
     let cutReason = "";                                // 中断原因（空=修满到期）
     let guard = 0;
-    const rw0 = s.rippleWindow && s.rippleWindow.id;   // polish A4：只对"闭关途中新开"的涟漪窗口发问（入关前已知的不算）
     while (remaining > 0 && guard++ < 300) {
       // 心浮气躁：先停功调息到心境安稳再续（低心境硬修=六折效率+走火风险，不替玩家踩坑）
       let calmed = 0;
@@ -3491,39 +3312,8 @@ const Engine = {
         if (remaining > 0) cutReason = "静室生变";
         break;
       }
-      // polish A4：闭关途中涟漪窗口新开——出关看一眼还是继续闭，由玩家定（不再系统性错过）。
-      // 实测档三条涟漪链错过两条的根因：windowMonths=3 而长闭关一跳就是 6~12 月。
-      if (remaining > 0 && s.rippleWindow && s.rippleWindow.id !== rw0 && !this._rippleAsked) {
-        this._rippleAsked = true;   // 一次闭关只问一次（不反复打断）
-        const rw = s.rippleWindow;
-        cutReason = "山下风声";
-        this._pendingFortune = {
-          title: "静室 · 山下风声",
-          text: `入定之际，门外弟子的议论飘进静室——${rw.note ? "「" + rw.note + "」" : "山下出了桩过时不候的事"}。这等风声向来过时不候：出关看一眼，还是继续闭关？`,
-          choices: [
-            { text: "出关一看（中断闭关）", effect: () => {
-                Engine.log("你收功推门——山下那桩事，赶得上。", "event");
-                return { text: "你按下心绪、收功出关。风声里的机会，还热着。", kind: "good" };
-              } },
-            { text: "心如止水，继续闭关", effect: () => {
-                const rest = remaining;
-                Engine._retreatResume = { months: rest, until: State.absMonth() + 2 };
-                Engine.log("你眼皮都没抬——机会常有，道基只有一副。（可自「续闭」快捷继续）", "sys");
-                return { text: "风声渐远，静室重归寂然。（行动栏留有「续闭」快捷）", kind: "event" };
-              } },
-          ],
-        };
-        break;
-      }
     }
-    this._rippleAsked = false;
     this._cultFocus = null;
-    // polish A7②：闭关自动滴灌（白天入定晚上滴瓶·半速）——出关统一报收成
-    const drip = this._bottleDrip(done + restMonths);
-    if (drip && drip.anyRipe) {
-      this.log("闭关这些时日你夜夜顺手照看小绿瓶——出关一看，瓶中已有成，只等你收取。", "good");
-      this.toast("小绿瓶：瓶中有成，可收取");
-    }
     // 兼修副轴入账（按实修月数 done——停功调息的月份不算兼修）
     let sideNote = "";
     if (focus && done > 0) {
@@ -3875,9 +3665,9 @@ const Engine = {
       return;
     }
     // 小境界：心魔可控则水到渠成，无须心战
-    // 连败保底：每3次连败，心战阈值+15（屡败屡战者终得道心通透——polish C4 由 5 收紧到 3）
+    // 连败保底：每5次连败，心战阈值+15（屡败屡战者终得道心通透）
     const pity = s.btPity || 0;
-    const threshold = Balance.demonTrialThreshold() + Math.floor(pity / 3) * 15;
+    const threshold = Balance.demonTrialThreshold() + Math.floor(pity / 5) * 15;
     const demonHigh = s.demon > threshold;
     if (!demonHigh) {
       this.passTime(1);
@@ -3965,8 +3755,7 @@ const Engine = {
         this.log(`心魔劫中道心崩动，灵力反噬如怒涛！渡劫失败——你修为大损(-${loss})、气血重创(-${dmg})，心魔几乎吞噬神智。大境界之关，岂容轻忽。`, "bad");
         this.toast("渡劫失败！反受重创", true);
       } else {
-        // polish C4（用户拍板）：0.3 在练气修为曲线下≈白修一年，叠心魔+心境=三重罚——减负到 0.2
-        const loss = Math.round(s.cultivation * 0.2);
+        const loss = Math.round(s.cultivation * 0.3);
         s.cultivation = Math.max(0, s.cultivation - loss);
         const dmg = 15 + Math.floor(Math.random() * 15);
         s.hp = clamp(s.hp - dmg, 1, s.hpMax);
@@ -4084,8 +3873,6 @@ const Engine = {
       techSpells: (typeof Loadout !== "undefined") ? Loadout.mainScaledSpells(s) : [],
       momentumCap: s.swordMastery ? 7 : 5,   // 眨眼剑法大成：剑势上限+2
       swordMastery: !!s.swordMastery,        // 大成：眨眼剑法本体蜕变（攒势翻倍）
-      // polish B4：厉飞雨教的凡人武学底子——开局剑势+1（情感 flag 挂既有乘区，二周目差异可感）
-      momentum: s.flags.learned_from_lify ? 1 : 0,
       // 回灵效率（v96 伴身件管线）：不破"池制不自动回灵"铁律——只加成主动回灵动作
       // （敛息回元/聚灵阵的每口收益+X；蕴灵珠类伴身件由此生效）
       regenBoost: State.gearBonus("regenBoost"),
@@ -4626,25 +4413,20 @@ const Engine = {
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax; // 决战前默认满血上场
 
-    // polish-qixuan B1（v316）：三阶段温和抬档（52/70/40 → 62/85/46，伤害微调）——
-    // 配合 maxRounds 16→20 与 autoResolve 两处假僵局修复（对鬼扔暗器/鬼面举盾）。
-    // ⚠ 校准备注：贪婪 AI 在此战的败因几乎全是"追逐超时"而非战死（三阶段+窄场+kite 的采样伪影），
-    // 不适合当难度神谕——决定性难度校准留浏览器真人 playtest（polish-qixuan 验收项）；
-    // showdown.bal 断言只守"三备皆有效、梯度不倒挂、不可零血硬锁"的回归底线。
-    const modafu = { name: "墨大夫", hp: 62, sense: 6, speed: 9, agility: 4, move: 1, mp: 60, tactics: "cunning", qiLayer: 4, elem: "mu",
-      attacks: [{ name: "毒掌", dmg: 14, kind: "normal", weight: 12, range: [1, 2], mp: 5 }, { name: "腐骨毒针", dmg: 17, pierce: true, kind: "pierce", weight: 8, range: [1, 3], mp: 7 }] };
-    const tienu  = { name: "铁奴（张铁尸傀）", hp: 85, nature: "corpse", sense: 3, speed: 6, agility: 4, move: 2, tactics: "feral",
+    const modafu = { name: "墨大夫", hp: 52, sense: 6, speed: 9, agility: 4, move: 1, mp: 46, tactics: "cunning", qiLayer: 4, elem: "mu",
+      attacks: [{ name: "毒掌", dmg: 12, kind: "normal", weight: 12, range: [1, 2], mp: 5 }, { name: "腐骨毒针", dmg: 14, pierce: true, kind: "pierce", weight: 8, mp: 7 }] };
+    const tienu  = { name: "铁奴（张铁尸傀）", hp: 70, nature: "corpse", sense: 3, speed: 6, agility: 4, move: 2, tactics: "feral",
       introNote: "铁奴乃尸傀死物——尸无血脉，百毒不侵！毒计无用，须以剑与暗器正面强攻。",
-      attacks: [{ name: "尸傀挥击", dmg: 17, kind: "normal", weight: 14 }, { name: "崩山重捶", dmg: 23, kind: "charge", weight: 6, aim: "cell" }] };
-    const yuhun  = { name: "余子童元神", hp: 46, nature: "ghost", sense: 18, speed: 14, agility: 8, move: 2, mp: 50, gongli: 22, qiLayer: 6,
+      attacks: [{ name: "尸傀挥击", dmg: 14, kind: "normal", weight: 14 }, { name: "崩山重捶", dmg: 19, kind: "charge", weight: 6, aim: "cell" }] };
+    const yuhun  = { name: "余子童元神", hp: 40, nature: "ghost", sense: 18, speed: 14, agility: 8, move: 2, mp: 50, gongli: 22, qiLayer: 6,
       introNote: "元神无形无质——剑、毒、暗器皆穿身而过！唯「运功镇魂」能伤其分毫，神魂镇压正是鬼魅克星。稳住心神！",
-      attacks: [{ name: "夺舍侵神", dmg: 14, soul: true, kind: "normal", weight: 12, range: [1, 4], mp: 6 }] };   // 失了傀儡与皮囊的虚弱残魂
+      attacks: [{ name: "夺舍侵神", dmg: 11, soul: true, kind: "normal", weight: 12, range: [1, 4], mp: 6 }] };   // 失了傀儡与皮囊的虚弱残魂
 
     this._combat = new CombatAPI.Combat({
       player,
       enemies: [this._applyDossier(modafu)],
       waves: [[tienu], [yuhun]],
-      maxRounds: 20,   // v316 校准：三阶段抬档后 16 回合以"耗尽"为主要败因（假死局）——放宽到 20，胜负回归打出来的
+      maxRounds: 16,
       // 药庐子夜·密室夺舍＝贴身近战：窄场(W9·室内方寸) + 敌起手近距(pos5，距玩家4格)，
       //   一两回合即接战——不是旷野大战场，不该让玩家空点六回合「结束回合」等敌人走过来。
       W: 9, enemyPos: 5,
@@ -4655,19 +4437,6 @@ const Engine = {
     this._combat.startRound();
     const duCount = State.count("duyao_cao"), anCount = State.count("anqi");
     this.log(`夺舍之夜，决战开始！你怀揣 毒草×${duCount}、暗器×${anCount} 作底牌——能否反杀，全看准备。`, "event");
-    // —— polish-qixuan B1（双审同锚）：决战三备全部进装配——每个选择都必须"有一手" ——
-    if (s.flags.showdown_martial_focus) {
-      const p0 = this._combat.player;
-      p0.momentum = Math.min(p0.momentumCap || 5, 3);
-      this._combat._log("【以武为先】日夜磨到极致的眨眼剑法早已蓄势在身——开局剑势+3：近身第一剑，就是雷霆。");
-    }
-    if (s.flags.showdown_prep_swift) {
-      this._combat.enemies.forEach(e => { e.dodgeBuff = (e.dodgeBuff || 0) - 0.12; });
-      this._combat._log("【速战速决】余子童尚未起疑便已动手——他仓促应战、防备大失（更易命中）。");
-    }
-    if (this._combat.enemies[0] && this._combat.enemies[0]._dossierEdge) {
-      this._combat._log("【料敌于先】暗中记下的每一处反常此刻全用上了——他的路数你了然于胸（敌防备-）。");
-    }
     // 扮猪吃虎的兑现时刻：深藏的修为在此一刻尽数亮出（藏得越深，雷霆越烈）
     const hidden = s.realmIndex - (s.revealedRealm != null ? s.revealedRealm : s.realmIndex);
     if (hidden >= 1) {
@@ -4714,22 +4483,6 @@ const Engine = {
     // 金钟罩护体：开局即有厚护盾，暗器(破甲)与毒(持续)是破局关键；金钟罩为法宝护体，不随回合消退
     this._combat.enemies[0].shield = 40;
     this._combat.enemies[0]._fixedShield = true;
-    // —— polish-qixuan B2：情报与身份进战斗（花出去的灵石与经营的身份都要看得见）——
-    if (this._combat.enemies[0]._dossierEdge) {
-      this._combat.enemies[0].shield -= 8;
-      this._combat._log("【料敌于先】小算盘卖的那份底细值回价钱——金钟罩的运转间隙你了然于胸（护罩-8·敌防备-）。");
-    }
-    if (s.flags.identity_practice_medicine) {
-      this._combat.enemies[0].shield -= 8;
-      this._combat._log("【医者身份】谁都不防一个看病抓药的老药师——你从容近身布好了杀局，他护体符术起得仓促（护罩-8）。");
-    }
-    // polish C3：还符伺机 beat-window 命中=开局先手（毒雾灌进敛光缺口——护罩再挫+首回合破绽）
-    if (s.flags.jinguang_window_hit) {
-      delete s.flags.jinguang_window_hit;   // 一次性（败北重试须重新抓窗口）
-      this._combat.enemies[0].shield = Math.max(0, this._combat.enemies[0].shield - 10);
-      this._combat.enemies[0].exposed = true;
-      this._combat._log("【伺机而动】那一瞬你抓住了——毒雾已灌进护罩缺口，金光上人气机大乱（护罩-10·首回合破绽）！");
-    }
 
     this._combatMeta = { type: "jinguang" };
     s.combat = true;
@@ -6454,12 +6207,10 @@ const Engine = {
     if (s.flags.wan_hunt_done) return;
     State.setFlag("wan_hunt_done");
     const player = this.playerFighter();
-    // polish C2：旧值(75+55)下万小山一人能代打全场（实测 AI 建功 157 伤·玩家挂机可赢）——
-    // 狼群抬到"并肩才打得动"的档（同道教学战教的该是配合，不是挂机）
-    const wolf = Object.assign({}, WORLD.enemies.wild_wolf, { hp: 95 });
+    const wolf = Object.assign({}, WORLD.enemies.wild_wolf, { hp: 75 });
     this._combat = new CombatAPI.Combat({
       player,
-      enemies: [wolf, Object.assign({}, WORLD.enemies.wild_wolf, { hp: 70 })],
+      enemies: [wolf, Object.assign({}, WORLD.enemies.wild_wolf)],
       W: 9,
       maxRounds: 14,
       enemyPos: 5,   // 林间遭遇·起手近距，一两回合即接战（playtest：灵狼战勿空转等走近）
@@ -7156,11 +6907,6 @@ const Engine = {
       // 登门切磋收场（点到即止）：胜负皆有所得、皆不结仇——演武是交情，不是仇杀
       const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
       s.body += 1;
-      // polish A1：真剑真枪的对练是练剑正途——剑意胜+6/负+3（独自练剑+3 的上位替代=险中求进）
-      if (!s.swordMastery) {
-        s.swordIntent = clamp((s.swordIntent || 0) + (win ? 6 : 3), 0, 100);
-        if (s.swordIntent >= 100 && !s.flags.sword_intent_full) { State.setFlag("sword_intent_full"); this.toast("剑意圆满！可回药庐悟剑"); }
-      }
       if (win) {
         if (I) { I.markInteract(s, meta.npcId); I.favor(s, meta.npcId, 6); }
         s.mood = clamp(s.mood + 5, 0, s.moodMax);
@@ -7243,11 +6989,9 @@ const Engine = {
         s.mood = clamp(s.mood + 12, 0, s.moodMax);
         // 曲魂幡到手：张铁尸傀自此随你驱使（侧位单位 v0——挚友之尸，为你而战）
         if (!s.sideUnit) {
-          // polish B4：结拜之谊挂乘区——义结金兰者，遗蜕的那口执念更沉（hpMax+10）
-          const swornHp = s.flags.sworn_brothers ? 80 : 70;
-          s.sideUnit = { id: "zhangtie_corpse", name: "曲魂", hp: swornHp, hpMax: swornHp, atk: 12,
+          s.sideUnit = { id: "zhangtie_corpse", name: "曲魂", hp: 70, hpMax: 70, atk: 12,
                          atkName: "尸傀挥击", nature: "corpse", guard: 0.3, status: "ok", carry: true };
-          this.log("你拾起墨大夫遗落的「曲魂幡」。幡下尸傀缓缓转向你，躬身待命——那身形，依稀还是当年演武厅里和你过招的少年。自此，张铁的遗蜕将随你出战（历练与遭遇战自动随行）。" + (s.flags.sworn_brothers ? "（义结金兰的那口执念还在——它站得比寻常尸傀更稳。）" : ""), "event");
+          this.log("你拾起墨大夫遗落的「曲魂幡」。幡下尸傀缓缓转向你，躬身待命——那身形，依稀还是当年演武厅里和你过招的少年。自此，张铁的遗蜕将随你出战（历练与遭遇战自动随行）。", "event");
           this.addMilestone("曲魂幡御尸：曲魂随行", "bigitem");
           this.toast("侧位随行：曲魂");
         }
@@ -7998,23 +7742,7 @@ const Engine = {
     track("心魔", b.demon, s.demon); track("修为", b.cul, s.cultivation);
     State.take(itemId, 1);
     const fx = delta.length ? `（${delta.join("　")}）` : "（药力平平，未见起色）";
-    // polish Q4：嗑药时刻——灵药丹入腹要有"暴涨"的体感（对比闭关月均，点名这条路的甜头）
-    if (itemId === "lingyao_dan" && e.cul) {
-      const root = (DATA.spiritRoots.find(r => r.id === s.rootId) || {});
-      const perMonth = Math.max(1, Math.round((14 + (s.sense || 0) * 0.4) * (root.mod || 0.9)));
-      const months = Math.max(1, Math.round(e.cul / perMonth));
-      this.log(`你服下「${item.name}」——灵气自腑脏轰然炸开，顺着经脉横冲直撞，你急忙盘膝导引！一炷香后收功，遍体通泰${fx}：这一丹，抵得上你枯坐苦修 ${months} 个月。`, "good");
-      if (typeof Fx !== "undefined" && Fx.ensure && UI.el && UI.el("scene-stage")) {
-        try { Fx.ensure(UI.el("scene-stage")); Fx.burst && Fx.burst(Fx._w / 2, Fx._h / 2, { elem: "mu", n: 12 }); } catch (err) {}
-      }
-      if (typeof Sfx !== "undefined") Sfx.play("chime");
-      if (!s.flags.first_lingyao_eaten) {
-        State.setFlag("first_lingyao_eaten");
-        this.addMilestone("第一枚灵药丹入腹：小绿瓶的路，走通了", "bigitem");
-      }
-    } else {
-      this.log(`你服下「${item.name}」${fx}。`, "good");
-    }
+    this.log(`你服下「${item.name}」${fx}。`, "good");
     this.toast(`${item.name}：${delta.join(" ") || "无变化"}`);
     this.checkStory();
     State.save();
@@ -8026,22 +7754,10 @@ const Engine = {
    * =========================================================== */
   unlockBottle() {
     const s = State.data;
-    this._ensurePlots();
+    if (!s.bottle.plots.length) {
+      for (let i = 0; i < DATA.bottle.plotCount; i++) s.bottle.plots.push({ crop: null, growth: 0 });
+    }
     UI.showBottleButton();
-  },
-  // polish A7⑥：药理里程碑 12（辨药入门）解锁第 3 地块——丹道深耕的乘法甜头
-  _ensurePlots() {
-    const s = State.data;
-    if (!s.bottle) return;
-    const want = DATA.bottle.plotCount + ((s.flags && s.flags.dan_ms_bianyao) ? 1 : 0);
-    while (s.bottle.plots.length < want) s.bottle.plots.push({ crop: null, growth: 0 });
-  },
-  // 每株谱有各自的生长周期（crop.growth=所需总量·qiannian 300=真·耗时极长）——
-  // p.growth 恒为百分比，推进速率 = 34 × 100/周期（v316 修：旧版一刀切 34%/月，千年灵草与灵草同速=设计漂移）
-  _cropRate(cropId, mul) {
-    const crop = DATA.bottle.crops[cropId];
-    const target = (crop && crop.growth) || 100;
-    return DATA.bottle.catalyzePerAction * (100 / target) * (mul || 1);
   },
   plantCrop(plotIndex, cropId) {
     const s = State.data;
@@ -8056,54 +7772,24 @@ const Engine = {
     UI.renderBottle();
     UI.renderAll();
   },
-  // polish A7⑤：打理文案随生长阶段写活（发芽/抽穗/凝露/欲滴）——瓶中光阴看得见
-  _BOTTLE_STAGES: [
-    [0.25, "瓶底新芽初绽，嫩得能掐出水来——绿液所过之处，一夜抵得一季。"],
-    [0.5,  "瓶中草木抽穗拔节，叶脉里透出淡淡灵光。你凑近了看，能听见极轻的生长的声音。"],
-    [0.8,  "叶尖凝起露珠似的灵液，滚而不落。药香一日浓过一日，你得拿布把瓶口封严实。"],
-    [1.01, "满瓶灵光欲滴，草叶沉甸甸地垂着——火候到了，就等你腾出手来收。"],
-  ],
   tendBottle() {
     const s = State.data;
     this.passTime(1);
-    this._ensurePlots();
-    let any = false, best = 0;
+    let any = false;
     s.bottle.plots.forEach(p => {
       if (p.crop && p.growth < 100) {
-        p.growth = clamp(p.growth + this._cropRate(p.crop), 0, 100);
+        p.growth = clamp(p.growth + DATA.bottle.catalyzePerAction, 0, 100);
         any = true;
-        best = Math.max(best, p.growth / 100);
       }
     });
-    if (any) {
-      const stage = this._BOTTLE_STAGES.find(([at]) => best <= at) || this._BOTTLE_STAGES[3];
-      this.log(`你趁夜滴下绿液。${stage[1]}`, "good");
-      if (s.bottle.plots.some(p => p.crop && p.growth >= 100)) this.toast("瓶中已有成——记得收取");
-    }
+    if (any) this.log("你滴入小绿瓶中的神秘绿液，瓶内草木以肉眼可见之速抽长。", "good");
     else this.log("小绿瓶内空空如也，无物可催。", "sys");
     this.checkStory();
     State.save();
     UI.renderBottle();
     UI.renderAll();
   },
-  // polish A7②：闭关分段自动滴灌——白天药童晚上滴瓶，闭关与养瓶不再互斥。
-  // 半速生长（专注吐纳、只是顺手照看），出关由 doCultivate 统一报收成。
-  _bottleDrip(months) {
-    const s = State.data;
-    if (!s.bottle || !s.bottle.plots || !s.bottle.plots.length || months <= 0) return null;
-    let grew = false;
-    const ripeBefore = s.bottle.plots.filter(p => p.crop && p.growth >= 100).length;
-    s.bottle.plots.forEach(p => {
-      if (p.crop && p.growth < 100) {
-        p.growth = clamp(p.growth + this._cropRate(p.crop, 0.5) * months, 0, 100);
-        grew = true;
-      }
-    });
-    if (!grew) return null;
-    const ripeNow = s.bottle.plots.filter(p => p.crop && p.growth >= 100).length;
-    return { newRipe: ripeNow - ripeBefore, anyRipe: ripeNow > 0 };
-  },
-  harvestCrop(plotIndex, eat) {
+  harvestCrop(plotIndex) {
     const s = State.data;
     const p = s.bottle.plots[plotIndex];
     if (!p.crop || p.growth < 100) return;
@@ -8111,10 +7797,6 @@ const Engine = {
     State.give(crop.matureItem, crop.yield);
     this.log(`小绿瓶催熟之物已成，你收获「${DATA.items[crop.matureItem].name}」×${crop.yield}。`, "good");
     s.bottle.plots[plotIndex] = { crop: null, growth: 0 };
-    // polish A7④：就地服下——收获与嗑药一键连招（少跨一个背包界面）
-    if (eat && (DATA.items[crop.matureItem] || {}).type === "pill") {
-      this.useItem(crop.matureItem);
-    }
     State.save();
     UI.renderBottle();
     UI.renderAll();
@@ -8151,6 +7833,9 @@ const Engine = {
     if (s.spirit < plan.spirit) { this.toast("灵力不足以运笔成符", true); return; }
     State.take(plan.paper, paperN);
     s.spirit = clamp(s.spirit - plan.spirit, 0, State.realm().spMax);
+    // polish-huangfeng Bug②（GPT P0-4）：制符耗 1 月——旧版零耗时=违"时间唯一货币"的刷条漏洞
+    // （0 个月白拿制符+2×N 直到 30 级永久闭关×1.08）。运笔炼息本就是月功课。
+    this.passTime(1);
     if (!s.skills) s.skills = { alchemy: 0, scouting: 0, fulu: 0 };
     if (s.skills.fulu == null) s.skills.fulu = 0;
     const rate = Math.min(0.97, 0.6 + (s.skills.fulu || 0) * 0.02 + (s.insight || 0) * 0.01);
@@ -8220,11 +7905,6 @@ const Engine = {
     if (next.id === "xianhui_open" && s.flags.xianhui_due) {
       const left = s.flags.xianhui_due - State.absMonth();
       if (left > 0) hint = `升仙大会还有 ${left} 月开——在太南谷等到会期（修炼/赶集度月皆可）。`;
-    }
-    // polish A3：门派大比倒计时（蛰伏期正中锚——xianhui_due 同构）
-    if (next.id === "qixuan_dabi" && s.flags.dabi_due) {
-      const left = s.flags.dabi_due - State.absMonth();
-      if (left > 0) hint = `门派大比还有 ${left} 月开锣——蛰伏的日子照常过（行医/修炼/养瓶皆可）。`;
     }
     if (!condOk) {
       return { title: next.objTitle || "静待时机", hint: hint || "继续修炼、历练，时机未到。" };
