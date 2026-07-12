@@ -5891,6 +5891,8 @@ const Engine = {
     player.hp = s.hpMax; player.hpMax = s.hpMax;
     const leader = Object.assign({}, WORLD.enemies.moxiu_toumu, { formation: "pack", leader: true });
     const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
+    // polish-zaibie B③（Fable P0-5）：贪婪的代价兑现——夺剑时撕开储物袋禁制荡出的那缕神念，把追兵引快了半步
+    const extraChaser = s.flags.zaibie_greedy ? [xs()] : [];
     const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
     // 阵枢灵光·大挪移令蓄力中（钉桩阵心·不可移动）——保护对象：阵枢碎=传送阵断=败
     sides.push({ id: "zhenshu", name: "阵枢灵光", kind: "ally", art: null, move: 0,
@@ -5901,11 +5903,12 @@ const Engine = {
         { name: "灵光涟漪", dmg: 5, weight: 6, elem: "shui", range: [1, 2], line: "一圈灵光涟漪荡开，逼退" },
       ] });
     this._combat = new CombatAPI.Combat({
-      player, enemies: [leader, xs(), xs()],
+      player, enemies: [leader, xs(), xs()].concat(extraChaser),
       objective: { kind: "survive", rounds: 6,
         winLog: "「嗡——！」古传送阵心爆起一道贯天光柱，大挪移令蓄力功成——催动的契机，只在这一瞬。" },
       maxRounds: 6, W: 15, lanes: 2, sides,
     });
+    if (extraChaser.length) this._combat._log("【贪婪的代价】追兵比预想的多出一人——夺剑那日撕开储物袋禁制荡出的神念，终究把人引来了。");
     // 保护型钩子：阵枢灵光被打碎=传送阵断=败
     this._combat._afterEnemyTick = function() {
       const zs = this.sides.find(sd => sd.id === "zhenshu");
@@ -8148,6 +8151,12 @@ const Engine = {
         this.addMilestone("再别天南：夺御灵宗夺舍者之绿煌剑", "zaibie");
         this.addFame(8, "嘉元城外，一名筑基修士越阶夺下御灵宗结丹修士的本命古剑——绿煌剑易主");
         this.log("那缕结丹残念再凝不住，终被打散。绿煌剑通体莹绿，应声落入你掌中——可在【行头】中装备，配剑影分光术，便是你越阶驱使的第三柄主战法宝。奇虫榜玉简亦一并到手。", "good");
+        // polish-zaibie B③（Fable P0-5）：贪婪选择双向兑现——承诺的掠取真入袋（威胁的追兵在矿洞战读）
+        if (s.flags.zaibie_greedy) {
+          State.give("lingshi", 5);
+          State.give("huixue_dan", 1);
+          this.log("【顺手掠取】你翻检那具躯壳的储物袋——中品灵石几枚、疗伤丹一瓶尽数入囊（灵石+5·回血丹+1）。只是撕开储物袋禁制那一瞬，一缕神念远远荡了出去……循着气息来的，怕是更快了。", "event");
+        }
         if (typeof Sfx !== "undefined") Sfx.play("success");
         s.storyStage += 1;
         this.checkStory();
@@ -8164,7 +8173,8 @@ const Engine = {
       // 再别天南·Act2 金鼓原大决战（sides[] 群战）
       if (win) {
         State.setFlag("zaibie_jingu_done");
-        this.writeLedger("zaibie_jingu_won", "再别天南·金鼓原决战——与李化元、南宫婉并肩斩魔，先斩魔修领队、撕开缺口。然黑煞教势大、灵兽山倒戈，正道大局已不可挽。");
+        // polish-zaibie B②（Fable P0-2）：canon-Z6——此战李化元去救红拂、南宫婉 ep58 才寻来；并肩的是宋蒙/钟卫娘
+        this.writeLedger("zaibie_jingu_won", "再别天南·金鼓原决战——与宋蒙、钟卫娘并肩斩魔，先斩魔修领队、撕开缺口。然黑煞教势大、灵兽山倒戈，正道大局已不可挽。");
         this.addMilestone("再别天南：金鼓原力斩魔修领队", "zaibie");
         this.log("魔修领队被你与曲魂合力斩落，余众一时溃乱。可放眼整片金鼓原——倒戈的灵兽山、潮水般的黑煞教众，这一局，终究是回天乏术。", "good");
         if (typeof Sfx !== "undefined") Sfx.play("success");
@@ -8175,17 +8185,19 @@ const Engine = {
         const bonus = Math.min(3, s.flags.losses_zb_jingu) * 8;
         s.hp = s.hpMax;
         s.demon = clamp(s.demon + 6, 0, 100);
-        this.log(`魔潮人多势众，阵脚一时被冲乱——你与李化元、南宫婉浴血暂退、重整阵线（再战伤害+${bonus}%）。擒贼先擒王，护住彼此侧翼，再杀回去！`, "bad");
+        this.log(`魔潮人多势众，阵脚一时被冲乱——你与宋蒙、钟卫娘浴血暂退、重整阵线（再战伤害+${bonus}%）。擒贼先擒王，护住彼此侧翼，再杀回去！`, "bad");
         s.pendingEvent = "zaibie_a2_jingu";
         this._retryAfterLoss = "zaibie_a2_jingu";
       }
     } else if (meta.type === "zb_hushan") {
-      // 再别天南·Act2 护山大阵·守阵（objective:survive→李化元燃命殉道）
+      // 再别天南·Act2 护山大阵·守阵（objective:survive→阵成弟子得退）
+      // polish-zaibie B①（Fable P0-1）：canon-Z3 勘正后 story 已改"催阵非燃命"，此处收尾旧稿曾让李化元
+      // "死两次"（守阵胜利先播殉道、下节点他活着立碎丹赌约再死一次）——殉道只留 a2_lihuayuan 一处
       if (win) {
         State.setFlag("zaibie_hushan_done");
-        this.writeLedger("zaibie_hushan_won", "再别天南·护山大阵——死守阵脚六息，李化元燃尽本命真元布成护山大阵，挡下魔潮、护黄枫谷弟子退走，自己却灯枯油尽。");
-        this.addMilestone("再别天南：护山大阵成，李化元燃命殉道", "zaibie");
-        this.log("齐天光幕轰然立起，魔潮被生生挡在阵外。可阵心那道白须身影，已悄然伏倒——李化元燃尽了最后一缕真元。", "good");
+        this.writeLedger("zaibie_hushan_won", "再别天南·护山大阵——死守阵脚六息，李化元催开黄枫谷世代经营的护山大阵，挡下魔潮、护弟子退走。阵心那道白须身影真元大耗，犹自撑着。");
+        this.addMilestone("再别天南：护山大阵成，弟子得退", "zaibie");
+        this.log("齐天光幕轰然立起，魔潮被生生挡在阵外。阵心那道白须身影晃了一晃——催动这等大阵，纵是结丹大长老也真元大耗。可他还撑着，目光越过光幕，落在魔潮深处那顶妖辇上。", "good");
         if (typeof Sfx !== "undefined") Sfx.play("success");
         s.storyStage += 1;
         this.checkStory();

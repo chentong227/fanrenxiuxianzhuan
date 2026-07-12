@@ -4382,8 +4382,9 @@ const STORY = [
     ],
     onArrive(s) {
       State.setFlag("modao_e4b_finale_done");
-      ["xuening_wuxing_dan", "xuanyin_jue", "xueling_zuan", "jinpa_liusong", "yujian_canpian", "boyu_alms"].forEach(k => State.give(k, 1));
-      Engine.writeLedger("modao_e4b_finale", "皇宫血池大殿·终结——三符宝（韩立平天尺/宋蒙重元珠/陈巧倩赤虹剑）齐轰毁胥王假丹肉身→血凝五行丹借阵复生神魂→颠倒五行阵镇之、刘靖将祖传真凰符托付钟卫娘、师妹祭符灭神魂。黑煞教覆灭。得：血凝五行丹/玄阴诀/血灵钻/锦帕/玉简/钵盂。彩蛋：刘宋渊源");
+      // polish-zaibie B④：黑煞血刃入袋——再别篇"自胥王处所得"的附傀邪宝，缴获点就在这一夜（旧版全库无 give=凭空武装）
+      ["xuening_wuxing_dan", "xuanyin_jue", "xueling_zuan", "jinpa_liusong", "yujian_canpian", "boyu_alms", "heisha_xueren"].forEach(k => State.give(k, 1));
+      Engine.writeLedger("modao_e4b_finale", "皇宫血池大殿·终结——三符宝（韩立平天尺/宋蒙重元珠/陈巧倩赤虹剑）齐轰毁胥王假丹肉身→血凝五行丹借阵复生神魂→颠倒五行阵镇之、刘靖将祖传真凰符托付钟卫娘、师妹祭符灭神魂。黑煞教覆灭。得：血凝五行丹/玄阴诀/血灵钻/锦帕/玉简/钵盂/胥王血刃。彩蛋：刘宋渊源");
       Engine.addMilestone("皇宫决战·终结：真凰符灭胥王神魂，黑煞教覆灭（刘靖生还）", "showdown");
       // 远雷·跨场仇恨兑现（铁律3）：京城血池蜕茧遁走的铁罗，随黑煞教覆灭同灭——断臂化茧的旧账，在皇宫血夜清了
       Engine.settleLedger("tieluo_escaped", "那个在血池里断你一臂、化血茧金蝉脱壳遁走的血侍铁罗——他到底没能再逃过这一劫。黑煞教教主既灭，满殿血侍同遭真凰符焚尽，他亦在其中。当日他咬着你气息撂下的那句「下次是你进血池」，终究只是句没能兑现的狠话");
@@ -4438,8 +4439,9 @@ const STORY = [
     ],
     onArrive(s) {
       State.setFlag("modao_e4b_finale_done");
-      ["xuening_wuxing_dan", "xuanyin_jue", "xueling_zuan", "jinpa_liusong", "yujian_canpian", "boyu_alms"].forEach(k => State.give(k, 1));
-      Engine.writeLedger("modao_e4b_finale", "皇宫血池大殿·终结——三符宝（韩立平天尺/宋蒙重元珠/陈巧倩赤虹剑）齐轰毁胥王假丹肉身→血凝五行丹借阵复生神魂→颠倒五行阵镇之、钟卫娘含泪祭刘靖遗下的祖传真凰符灭神魂（为身陨的刘师兄报仇）。黑煞教覆灭。得：血凝五行丹/玄阴诀/血灵钻/锦帕/玉简/钵盂");
+      // polish-zaibie B④：黑煞血刃入袋（同 live 线）
+      ["xuening_wuxing_dan", "xuanyin_jue", "xueling_zuan", "jinpa_liusong", "yujian_canpian", "boyu_alms", "heisha_xueren"].forEach(k => State.give(k, 1));
+      Engine.writeLedger("modao_e4b_finale", "皇宫血池大殿·终结——三符宝（韩立平天尺/宋蒙重元珠/陈巧倩赤虹剑）齐轰毁胥王假丹肉身→血凝五行丹借阵复生神魂→颠倒五行阵镇之、钟卫娘含泪祭刘靖遗下的祖传真凰符灭神魂（为身陨的刘师兄报仇）。黑煞教覆灭。得：血凝五行丹/玄阴诀/血灵钻/锦帕/玉简/钵盂/胥王血刃");
       Engine.addMilestone("皇宫决战·终结：真凰符灭胥王神魂，黑煞教覆灭（刘靖身陨）", "showdown");
       // 远雷·跨场仇恨兑现（铁律3）：京城血池蜕茧遁走的铁罗，随黑煞教覆灭同灭——断臂化茧的旧账，在皇宫血夜清了
       Engine.settleLedger("tieluo_escaped", "那个在血池里断你一臂、化血茧金蝉脱壳遁走的血侍铁罗——他到底没能再逃过这一劫。黑煞教教主既灭，满殿血侍同遭真凰符焚尽，他亦在其中。当日他咬着你气息撂下的那句「下次是你进血池」，终究只是句没能兑现的狠话");
@@ -4510,6 +4512,9 @@ const STORY = [
     onArrive(s) {
       State.setFlag("modao_e4_done");
       State.setFlag("modao_e4b_done");
+      State.setFlag("arc3_complete");   // polish-zaibie B⑦（GPT P1-6）：chapters.js 声明的 completeFlag 此前全库零写点
+      // polish-zaibie C8（GPT P2-2）：章切清休眠旗——征军离队记号出章即销（避免残留至星海）
+      delete s.flags.modao_awol;
       Chapters.unlock("zaibie");   // 京城血夜了结→解锁再别天南篇
       Engine.writeLedger("modao_e4b_likjing", "皇宫决战收束·离京——黑煞教覆灭，九筑基功成离京、各返天南。埋「再别天南篇」长线钩：回天南旧人旧事/矿洞古传送阵修补/通向乱星海的大挪移令引线（本增量止于此·下一篇章后续窗口实装）");
       Engine.addMilestone("魔道争锋·第四幕·皇宫决战·收官：黑煞教覆灭，韩立离京回天南", "showdown");
@@ -4713,6 +4718,7 @@ const STORY = [
                 { name: "血遁突袭", dmg: 40, weight: 5, elem: "huo", range: [1, 4], line: "曲魂化作一道血虹，贯阵突袭" },
               ],
             };
+            State.take("heisha_xueren", 1);   // polish-zaibie B④：血刃附傀=真消耗（离背包·入曲魂之手）
             State.setFlag("zaibie_quhun_done");
             Engine.writeLedger("zaibie_quhun_huashen", "再别天南·血刃附傀——以玄阴诀御尸法门为曲魂附上黑煞教主血刃、强催其威。乱星海结丹前，这具执刃尸傀的战力始终压韩立一头（SideUnit 友军·全程并肩）。真正的身外化身之术，留待神识大成再祭。");
             Engine.addMilestone("再别天南：血刃附傀（曲魂·黑煞血刃）", "zaibie");
@@ -4736,6 +4742,7 @@ const STORY = [
                 { name: "血遁突袭", dmg: 38, weight: 5, elem: "huo", range: [1, 4], line: "曲魂化作一道血虹，贯阵突袭" },
               ],
             };
+            State.take("heisha_xueren", 1);   // polish-zaibie B④：血刃附傀=真消耗
             State.setFlag("zaibie_quhun_done");
             State.setFlag("quhun_safe_refine");
             Engine.writeLedger("zaibie_quhun_huashen", "再别天南·血刃附傀——以玄阴诀温养之法徐徐为曲魂附上黑煞血刃。稳为先，气血略低而护主心切。真正的身外化身之术，留待神识大成再祭。");
@@ -4879,6 +4886,7 @@ const STORY = [
           ],
         };
         delete s.flags.zaibie_quhun_pending;
+        State.take("heisha_xueren", 1);   // polish-zaibie B④：血刃附傀=真消耗（留府线兑现点）
         Engine.settleLedger("zaibie_quhun_huashen", "血刃附傀之备在夺回曲魂躯壳的这一夜兑了现——张铁的遗蜕执刃归位，往后的路，它仍走在你身前半步");
         Engine.settleLedger("quhun_left_mo", "当年留在墨府檐角的那道影子，被御灵宗鸠占过一回——你追出百里把它夺了回来。留它护人是情义，夺它回来也是");
         Engine.toast("曲魂归位·血刃附傀（侧位随行）");
@@ -5076,15 +5084,19 @@ const STORY = [
       "金鼓原一败，天南正道再难给你容身之处。你循着大挪移令与古传送阵的线索，一路亡命，奔入元武国境内。",
       { aside: "百艺坊深处的地窟里，藏着一座尘封万载的古传送阵。可当年精研此阵的齐云霄，竟已身死道消——不是死于魔劫，是遭本地付家觊觎其阵道秘术、下的毒手。只剩一个清瘦女子，守着残阵，形容枯槁。" },
       { shot: "pushIn" },
+      { actor: "xinruyin", enter: "left", name: "辛如音" },
       { say: "辛如音", tone: "weak", text: "「你便是……韩立？当年百艺坊代工、后来京城重逢，齐前辈都提起过你。他自京城归来，便与我定下修复此阵之约……他临终前说：若有持大挪移令者来，便把这座古阵，交托于他。」" },
       { say: "辛如音", tone: "low", text: "「这阵残损得太重，我一人之力修不全了。这卷修复图纸，你拿着——配上大挪移令，按图补全阵纹，或许真能强启它一次，送你离开天南。」" },
       { wait: 500 },
-      { aside: "你接过那卷《古传送阵·修复图纸》，指尖一沉。付家……你把这两个字记下了。原来通往乱星海的那条线，竟要踏着这许多故人的死生，才牵得起来。" },
+      // polish-zaibie B⑥（Fable P1-3）：玉简与叮嘱在此种下（旧版 cut1 凭空引用"托付的玉简"）
+      { say: "辛如音", tone: "low", text: "「还有这枚玉简——阵启的时机、方位、诀窍，齐前辈与我推演的心血都在里面。切记：阵启只此一次，迟一息便塌。」" },
+      { aside: "你接过那卷《古传送阵·修复图纸》与那枚沉甸甸的玉简。付家……你把这两个字记下了。原来通往乱星海的那条线，竟要踏着这许多故人的死生，才牵得起来。" },
     ],
     onArrive(s) {
       s.location = "yuanwu";
       State.setFlag("zaibie_a3_done");
       if (State.count("guzhen_tuzhi") < 1) State.give("guzhen_tuzhi", 1);
+      if (State.count("xinruyin_letter") < 1) State.give("xinruyin_letter", 1);   // polish-zaibie B⑥：玉简在赠图时入袋
       // 远雷·元武首访伏笔兑现（铁律3）：当年北上代工首访不遇辛如音，今日故地重来终于照面
       Engine.settleLedger("yuanwu_first", "当年北上元武国代工，百艺坊里只见齐云霄、不遇辛如音——你那时怎会想到，再来元武国竟是亡命，齐云霄已遭付家毒手，唯辛如音守着残阵等你这持令之人。一坊之缘，绕成了生死之托");
       Engine.writeLedger("zaibie_a3_yuanwu", "再别天南·亡命元武——故人齐云霄遭付家所害（觊觎其阵道秘术），辛如音守残破古传送阵，赠《古传送阵·修复图纸》。配大挪移令可强启古阵、离开天南。");
@@ -5173,10 +5185,11 @@ const STORY = [
       { shot: "pushIn", ms: 1300, scale: 1.14 },
       { wait: 500 },
       { aside: "你咬牙不曾撒手——撒手，她就死了。待那股吸力终于平息，她的气息稳了下来，你的气海却已十去七八。外人看去，你竟像是跌回了炼气数层的孱弱模样。" },
-      { aside: "（跌境·纯演出——你的境界与战力数值并未真正改变；这只是外人眼中、与你自己心境上的一道阴影。乱星海之初，你自会重新拾回这口气，并一举踏入结丹。）" },
     ],
     onArrive(s) {
       s.location = "yanjiabao";
+      // polish-zaibie B⑤（Fable P1-1）：教学括号移出戏文（modao D4 同款原则）——剧透"一举踏入结丹"删
+      Engine.log("【跌境】外人眼中你已跌回炼气之弱——这只是气海暂虚的表象，你的境界与战力并未真损（详情见天命栏）。", "sys");
       State.setFlag("zaibie_diejing");      // 纯演出标记（引擎不读·不动任何数值）
       State.setFlag("zaibie_diejing_done");
       Engine.writeLedger("zaibie_diejing", "再别天南·跌境（纯演出·不动数值）——搀扶昏迷的南宫婉时其护身功法失控暴走，吸去韩立大半修为，外人看去如跌回炼气数层。他自始至终没有撒手。境界/战力数值实际未变，乱星海之初自会拾回并结丹。");
@@ -5256,7 +5269,7 @@ const STORY = [
         effect(s) {
           Engine.recordTemperament("nangong_lingshi_grateful", "sentiment", "受南宫婉赠灵石·难得多说了一句·喉头微动——冷面人也有软处");
           s.mood = Math.min(s.moodMax, s.mood + 2);
-          return { text: "你握了握那袋灵石，喉头微动，到底多说了一句。南宫婉微微一怔，旋即别过脸去——海风里，似有一声极轻的叹息。", kind: "good" };
+          return { text: "你握了握那袋灵石，喉头微动，到底多说了一句。南宫婉微微一怔，旋即别过脸去——夜风里，似有一声极轻的叹息。", kind: "good" };
         },
         resolve: "advance",
       },
@@ -5327,6 +5340,8 @@ const STORY = [
       { fx: "flash", color: "#dff3ff", ms: 360 },
       { sfx: "thunder" },
       { cam: "shake", px: 14 },
+      // polish-zaibie B⑧：南宫婉那袋灵石的承诺兑现——"助催古阵"的账面在此结（不再默默进钱包）
+      "南宫婉留下的那袋中品灵石，被你尽数嵌入阵眼——阵光过处，灵石一枚枚化作齑粉，把最后一段残纹生生喂亮。",
       "光柱冲霄的刹那，古阵自身也轰然崩裂——身后追兵的咒骂、袖中辛如音那枚托付的玉简、整座天南的山河……都在这一瞬被青光彻底吞没、抛在了脑后。",
       { aside: "追兵最前那道戴着半面银具的身影你认得——鬼灵门王蝉。燕家堡那一夜结下的不死不休，他从天南腹地一路咬到了这阵前，眼睁睁看你踏入光柱。「总有一天我会回来的」——这句话，一半说给天南，一半，说给他听。（宿敌未了·重返天南再算）" },
       { say: "韩立", emo: "cold", tone: "low", text: "「天南……生我、养我、也负我之地。总有一天——我会回来的。」" },
@@ -5335,6 +5350,10 @@ const STORY = [
     onArrive(s) {
       s.location = "yuekuang";
       State.setFlag("zaibie_likai_done");
+      // polish-zaibie B④：大挪移令"应手而碎"=真消耗（旧版碎后仍躺背包）
+      State.take("dayi_ling", 1);
+      // polish-zaibie B⑧：南宫婉赠的 30 灵石=阵能（账面写"助催古阵"）——嵌入阵眼真消耗（本章无处可花，不伤经济）
+      State.take("lingshi", Math.min(30, State.count("lingshi")));
       if (State.count("xinruyin_letter") < 1) State.give("xinruyin_letter", 1);
       Engine.writeLedger("zaibie_likai", "再别天南·演出①离开天南——韩立按辛如音所赠图纸自修古阵，持大挪移令强启跨域大阵、一步踏出天南，古阵随之崩毁、斩断追路。辞天南之誓：『总有一天，我会回来的。』辛如音托付之信随身（她仍守在元武国——重返天南时的故人灯）。");
       Engine.addMilestone("再别天南：大挪移令强启古阵，离开天南", "zaibie");
