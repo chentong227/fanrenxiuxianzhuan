@@ -268,7 +268,8 @@
 
   const Art = {
     // 仓库图更新后 bump，强制浏览器重新拉取（避免旧缓存）。
-    ASSET_VER: 28,
+    // v29=全库调色板压缩（563→151MB·compressart.js）——sw.js 资产持久仓靠这个 ?v= 隔离版本
+    ASSET_VER: 29,
 
     _v(p) { return p + "?v=" + this.ASSET_VER; },
 

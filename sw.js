@@ -11,6 +11,10 @@
  */
 var VER = new URL(self.location.href).searchParams.get("v") || "0";
 var CACHE = "frxxz-v" + VER;
+/* 资产持久仓（v321·治「每次发版 500MB 图缓存全清」）：assets/ 的 URL 自带 ?v=ASSET_VER
+ * （art.js 管理·图真变了才 bump），版本隔离已由 URL 承担——缓存仓不必随代码版本陪葬。
+ * 自此发版只重拉几 MB 代码，图全命中本地缓存。 */
+var ASSET_CACHE = "frxxz-assets";
 var APP_SHELL = [
   ".",
   "index.html",
@@ -36,7 +40,8 @@ self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k !== CACHE && k.indexOf("frxxz-") === 0) return caches.delete(k);
+        // 资产持久仓跨版本保留（URL 带 ?v=ASSET_VER 自隔离）；只清旧代码缓存
+        if (k !== CACHE && k !== ASSET_CACHE && k.indexOf("frxxz-") === 0) return caches.delete(k);
       }));
     }).then(function () {
       return self.clients.claim();
@@ -76,13 +81,16 @@ self.addEventListener("fetch", function (e) {
     return;
   }
 
-  // 其它同源 GET：缓存优先（带 ?v= 版本不可变），缺则网络并写缓存
+  // 其它同源 GET：缓存优先（带 ?v= 版本不可变），缺则网络并写缓存。
+  // assets/ 走持久仓（跨版本不清·URL ?v=ASSET_VER 自隔离）；代码走版本仓。
+  var isAsset = url.pathname.indexOf("/assets/") >= 0;
+  var bucket = isAsset ? ASSET_CACHE : CACHE;
   e.respondWith(
     caches.match(req).then(function (hit) {
       if (hit) return hit;
       return fetch(req).then(function (fresh) {
         if (fresh && fresh.status === 200 && fresh.type === "basic") {
-          caches.open(CACHE).then(function (c) { c.put(req, fresh.clone()); }).catch(function () {});
+          caches.open(bucket).then(function (c) { c.put(req, fresh.clone()); }).catch(function () {});
         }
         return fresh;
       }).catch(function () {
