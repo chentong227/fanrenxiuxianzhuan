@@ -180,7 +180,13 @@
 - **发版**：`node scripts/bump.js <版本号>`（同步 index.html ?v=/build 号与 ver.txt——
   客户端自动更新；Node 写文件编码安全，**勿用 PowerShell 改版本**）。
 - **落 main 上线**：仓库走 GitHub Pages 从 `main` 部署。本地 commit 后直接 `git push origin main` 即可。
-  推送后 GitHub Pages 自动部署，验 `curl https://chentong227.github.io/fanrenxiuxianzhuan/ver.txt` = 新版本号（部署有几十秒延迟，带 `?cb=` 绕缓存）。
+ 推送后 GitHub Pages 自动部署，验 `curl https://chentong227.github.io/fanrenxiuxianzhuan/ver.txt` = 新版本号（部署有几十秒延迟，带 `?cb=` 绕缓存）。
+ **⚠ push 偶发 "cannot lock ref" 假拒（锁竞争·实际已推上）**：git fetch 核对 origin/main 即可；另 Pages 钩子偶尔不触发——
+ `gh api -X POST repos/chentong227/fanrenxiuxianzhuan/pages/builds` 手动补一次构建。
+- **国内镜像（2026-07-12 立·用户网络到 github.io 间歇 TLS 重置）**：`node scripts/mirror.js` 推 Cloudflare Pages——
+ **https://fanren-ban.pages.dev/**（增量上传·已传文件按哈希跳过）。发版惯例=bump → git push → mirror.js 三连。
+ 凭据=wrangler OAuth（失效重跑 `npx wrangler login` 请用户点授权）。选型记录：Netlify 免费额装不下 566MB 资产、
+ jsDelivr 不渲染 HTML、vercel.app 域被墙——pages.dev 本机实测可达。
 - **测试**：`node test/run.js`（存档迁移）、`node test/journey.test.js`（E2E 主线）、
   `node test/combat.test.js`、平衡蒙特卡洛 `node test/encounter.bal.js`、`node test/elem.bal.js`、
   `node test/tier.bal.js`（标度公式）、`node test/scale.bal.js`（A2 标度校准·几何 realmBand+驱动门槛）、
