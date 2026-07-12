@@ -88,6 +88,9 @@ console.log("\n=== 4. 风云榜·夺名比斗：胜则扬名+藏拙代价 / 败�
   f.realm = 2;                       // 弱手——玩家练气四层稳赢
   s.hp = s.hpMax; s.spirit = 300;
   s.fame = 0;
+  // 去抖：碾压局偶发「全身而退」勋章首解 +4 名望污染扬名断言（约 4% 抖动）——
+  // 预置勋章计数至 3/5/10 里程碑之外，名望增量只剩比斗本身
+  s.medals = { unscathed: 6, poison_master: 6, giant_slayer: 6 };
   s.revealedRealm = 0;               // 深藏：示人练气一层
   delete s.flags[`duel_won_${f.id}`];
   if (s.npcCd) delete s.npcCd[f.id];

@@ -159,14 +159,17 @@ const UI = {
     if (sx && sx.flags && sx.flags.xueshi_due && !sx.flags.xueshi_opened) {
       const left = sx.flags.xueshi_due - State.absMonth();
       const ready = sx.realmIndex >= 10;
-      const season = left > 0 ? `大比时节约余 ${left} 月` : "大比时节已至";
+      // polish E：修为为凭不必等足月——练气十一层一到，名额会随时开（日历只是风声，不是门槛）
+      const season = ready ? "修为为凭·不必等足月" : left > 0 ? `大比时节约余 ${left} 月` : "大比时节已至";
       fate += `<div class="obj-task" style="border-left-color:var(--cinnabar)">
         <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">血禁</span>
         <b>血色禁地 · 大比时节</b>
         <span class="obj-left">${season}</span>
         <span class="obj-hint">${ready
-          ? "修为已够（练气十一层）——去万宝楼坊市备货走一趟（顺道听廊下向之礼一席话），名额之会便在山门大殿见分晓。"
-          : "入选两事：① 修为到练气十一层（修炼／长春功后篇是正路）　② 去万宝楼坊市备货，顺道听向之礼指点门道。修为到了即可参选，不必赶时间。"}</span>
+          ? (left > 0
+            ? "修为已够（练气十一层）——只等大比时节开锣。趁这几月去万宝楼坊市备货走一趟（顺道听廊下向之礼一席话）。"
+            : "修为已够（练气十一层）、大比时节已至——先去万宝楼坊市备货走一趟（顺道听向之礼一席话），名额之会便在山门大殿见分晓。")
+          : "入选两事：① 修为到练气十一层（修炼／长春功后篇是正路）　② 等大比时节开锣（见倒计时）。两事齐备大会才开——备货、听向之礼指点门道，都不白走。"}</span>
       </div>`;
     }
     // 七玄门·夺舍决战备战：张铁之死→决战前三选一（互斥，与 jindi_prep 同范式）
@@ -311,7 +314,7 @@ const UI = {
     if (sd && sd.rippleWindow) {
       const rw = sd.rippleWindow;
       const left = Math.max(0, rw.dueAbs - State.absMonth());
-      const whereTxt = rw.id === "herb_garden" ? "后山" : rw.id === "wolf_bounty" ? "集镇" : rw.id === "cheap_pills" ? "集镇采买" : rw.id === "lingcao_boom" ? "坊市" : "";
+      const whereTxt = rw.id === "herb_garden" ? "后山" : rw.id === "wolf_bounty" ? "集镇" : rw.id === "cheap_pills" ? "集镇采买" : rw.id === "lingcao_boom" ? "坊市" : rw.id === "wanbao_sale" ? "坊市·万宝楼" : rw.id === "jindi_gossip" ? "坊市茶棚" : "";
       luck += `<div class="obj-task ${left <= 1 ? 'urgent' : ''}">
         <span class="obj-key" style="background:var(--cinnabar);color:#f3e4d8">风声</span>
         <b>${rw.note || "限时机会"}</b>
@@ -867,7 +870,7 @@ const UI = {
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
-      xingyi: "坐堂行医",
+      xingyi: "坐堂行医", daigong: "百艺坊 · 补炼缺件 🔨", qingtuo: "坊市告示 · 请托 📜",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
@@ -879,8 +882,11 @@ const UI = {
       // 剑意圆满：洞府出现「悟剑」（大件链攻坚入口）
       if (loc.home && (State.data.swordIntent || 0) >= 100 && !State.data.swordMastery) acts.unshift("wujian");
       // 血色主药在手：地火之屋炼筑基丹（筑基丹链的"造"环节）
-      if (loc.home && loc.id === "huangfeng_gate" && State.data.flags.mojiao_resolved
+      // polish-huangfeng B1④：解绑 mojiao_resolved——主药凑足四株即可开炉（散点采药线同样能活）
+      if (loc.home && loc.id === "huangfeng_gate"
         && State.count("xueshi_zhuyao") >= 4 && !State.data.flags.zhuji_lian_done) acts.unshift("liandan");
+      // polish-huangfeng C6：代工缺料未结案——再访百艺坊可补炼缺件
+      if (loc.id === "yuanwu" && State.data.flags.daigong_partial && !State.data.flags.daigong_done) acts.unshift("daigong");
     }
 
     // 有热点时不再渲染常规行动按钮（热点替代了它们），但保留限时窗口按钮
@@ -914,6 +920,10 @@ const UI = {
         windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('${rw.id}')">${lbl} <span class="win-left">余${left}月</span></button>`;
       } else if (rw.id === "lingcao_boom" && loc.id === "fangshi") {
         windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('lingcao_boom')">趁涨价出手灵草 <span class="win-left">余${left}月</span></button>`;
+      } else if (rw.id === "wanbao_sale" && loc.id === "fangshi") {
+        windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('wanbao_sale')">二层法器·八折捡漏 <span class="win-left">余${left}月</span></button>`;
+      } else if (rw.id === "jindi_gossip" && loc.id === "fangshi") {
+        windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('jindi_gossip')">钻研禁地旧闻（1月） <span class="win-left">余${left}月</span></button>`;
       }
     }
 
@@ -2476,7 +2486,10 @@ const UI = {
     const base = 14 + Math.floor(s.sense * 0.4);
     const moodFactor = 0.6 + (s.mood / s.moodMax) * 0.6;
     const demonPenalty = 1 - (s.demon / 200);
-    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty));
+    // 与 Engine.cultivate 同构的主干估算（洞府/阵法等乘区从简——预估值允许略保守）
+    const estRealmMul = Balance.culGainMul(s.realmIndex) * (s.activeChapter === "qixuan" ? 1 : 1.5)
+      * (s.flags.dongfu_type === "lingquan" ? 1.15 : 1);
+    const perMonth = Math.max(1, Math.round(base * root.cul * moodFactor * demonPenalty * estRealmMul));
     const toFull = Math.max(0, realm.culMax - s.cultivation);
 
     // M6·兼修方向（Build 三路时间互斥的闭关切口）：纯粹吐纳 / 兼修剑意 / 兼修药理 / 兼修制符——
@@ -2579,13 +2592,24 @@ const UI = {
     if (isBig) {
       const rite = Engine._bigRealmRite() || {};
       const riteChk = Engine.checkRite();
+      // polish-huangfeng B1②：余丹加持可见（准备的每一项都看得见）
+      let extraNote = "";
+      if (rite.extra) {
+        const have = State.count(rite.extra.id);
+        const nm = (DATA.items[rite.extra.id] || {}).name || rite.extra.id;
+        const use = Math.min(rite.extra.max || 3, Math.max(0, have - 1));
+        extraNote = have > 1
+          ? `<div class="prep-row"><span>余丹加持（每关叠服至多 ${rite.extra.max || 3} 颗）</span><span class="ok">「${nm}」余 ${have - 1}，此关将叠服 ${use}——瓶颈更薄、道心更厚、成色更足</span></div>`
+          : `<div class="prep-row"><span>余丹加持</span><span style="color:var(--ink-dim)">仅此一颗——若有余丹叠服，此关可更稳（地火之屋的那一炉，颗颗都算数）</span></div>`;
+      }
       this.openModal(`
         <h2>大境界 · ${rite.name || nextRealm.name}</h2>
         <p style="color:var(--ink-dim)">${rite.intro || "大境界之关，须十足准备，并历一场凶险心魔劫。"}</p>
         <div class="prep-list">
           ${riteChk.items.map(p => `<div class="prep-row"><span>${p.label}</span><span class="${p.ok ? 'ok' : 'no'}">${p.ok ? '✓ 就绪' : '✗ 不足'}</span></div>`).join("")}
+          ${extraNote}
         </div>
-        <p style="color:var(--red);font-size:12px;margin-top:8px">⚠ 渡劫凶险：心魔劫远胜寻常心战，败则跌境、重创、心魔暴涨。</p>
+        <p style="color:var(--red);font-size:12px;margin-top:8px">⚠ 渡劫凶险：心魔劫远胜寻常心战，败则重创、心魔暴涨——但根基与大半修为可保（屡败弥坚，余丹留得住再冲之资）。</p>
         <div class="modal-actions">
           <div class="modal-row">
             <button class="btn btn-secondary" onclick="UI.closeModal()">再候时机</button>
@@ -3446,15 +3470,17 @@ const UI = {
       adventure: "外出历练", gather: "采药", spar: "切磋武艺", market: "采买", alchemy: "炼药", investigate: "暗中探查",
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
-      xingyi: "坐堂行医",
+      xingyi: "坐堂行医", daigong: "百艺坊 · 补炼缺件 🔨", qingtuo: "坊市告示 · 请托 📜",
     };
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {
       acts = acts.filter(a => a !== "bottle" || s.bottle.unlocked);
       if (loc.id === "yaolu" && s.flags.identity_practice_medicine && !s.flags.arc1_complete) acts.push("xingyi");
       if (loc.home && (s.swordIntent || 0) >= 100 && !s.swordMastery) acts.unshift("wujian");
-      if (loc.home && loc.id === "huangfeng_gate" && s.flags.mojiao_resolved
+      if (loc.home && loc.id === "huangfeng_gate"
         && State.count("xueshi_zhuyao") >= 4 && !s.flags.zhuji_lian_done) acts.unshift("liandan");
+      // polish-huangfeng C6：代工缺料未结案——再访百艺坊可补炼缺件
+      if (loc.id === "yuanwu" && s.flags.daigong_partial && !s.flags.daigong_done) acts.unshift("daigong");
     }
     // 注：地图主界面化后，行动 sheet 始终列出据点行动（即使该地点也有场景热点）——
     // sheet 是主入口，场景热点退为可选的氛围交互（不再清空 dock 行动）。
@@ -3479,6 +3505,10 @@ const UI = {
         windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('${rw.id}')">${lbl} <span class="win-left">余${left}月</span></button>`;
       } else if (rw.id === "lingcao_boom" && loc.id === "fangshi") {
         windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('lingcao_boom')">趁涨价出手灵草 <span class="win-left">余${left}月</span></button>`;
+      } else if (rw.id === "wanbao_sale" && loc.id === "fangshi") {
+        windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('wanbao_sale')">二层法器·八折捡漏 <span class="win-left">余${left}月</span></button>`;
+      } else if (rw.id === "jindi_gossip" && loc.id === "fangshi") {
+        windowBtn = `<button class="btn btn-action btn-window" onclick="Engine.doRippleWindow('jindi_gossip')">钻研禁地旧闻（1月） <span class="win-left">余${left}月</span></button>`;
       }
     }
     const focus = this._pendingFocus; this._pendingFocus = null;
@@ -4566,15 +4596,20 @@ const UI = {
   /* -------- 万宝楼（黄枫谷坊市）：一层消耗品，二层筑基法器 -------- */
   openWanbao() {
     const s = State.data;
+    // polish A4·涟漪②：让利窗内二层法器标八折价（与 Engine.wanbaoBuy 计价同源）
+    const onSale = !!(s.rippleWindow && s.rippleWindow.id === "wanbao_sale");
     const row = (g) => {
       const item = DATA.items[g.id];
       const owned = g.once && State.count(g.id) > 0;
+      const sale = onSale && g.floor2;
+      const price = sale ? Math.max(1, Math.round(g.price * 0.8)) : g.price;
       return `<div class="market-item">
         <span><span class="iname ${item.rarity === 'rare' ? 'rare' : item.rarity === 'epic' ? 'epic' : ''}">${item.name}</span>${g.n > 1 ? `×${g.n}` : ""}
           ${g.note ? `<span style="color:var(--gold);font-size:11px">　${g.note}</span>` : ""}
+          ${sale ? `<span style="color:var(--cinnabar);font-size:11px">　让利八折·限时</span>` : ""}
           <span style="color:var(--ink-dim);font-size:12px">　${item.desc}</span></span>
         ${owned ? `<span style="color:var(--ink-faint);font-size:12px">已购得</span>`
-                : `<button class="btn btn-mini" onclick="Engine.wanbaoBuy('${g.id}')"><span class="mprice">灵石${g.price}</span></button>`}
+                : `<button class="btn btn-mini" onclick="Engine.wanbaoBuy('${g.id}')"><span class="mprice">${sale ? `<s style="opacity:.6">灵石${g.price}</s> ` : ""}灵石${price}</span></button>`}
       </div>`;
     };
     const floor1 = Engine.WANBAO_GOODS.filter(g => !g.floor2).map(row).join("");
@@ -6882,7 +6917,7 @@ const UI = {
       else if (!f.closed[id] && pat && id === pat.next && f.intel.patrol_route) riskMark = `<span class="exrisk shadow">影</span>`;
       else if (opt && opt.risk === "killer") riskMark = `<span class="exrisk killer">杀</span>`;
       else if (opt && opt.risk === "shadow") riskMark = `<span class="exrisk shadow">影</span>`;
-      else if (!f.closed[id] && n.kind === "danger") riskMark = `<span class="exrisk lair">凶</span>`;
+      else if (!f.closed[id] && n.kind === "danger" && !(f.hunted && f.hunted[id])) riskMark = `<span class="exrisk lair">凶</span>`;
       else if (!f.closed[id] && n.kind === "enter" && n.boss) riskMark = `<span class="exrisk boss">渊</span>`;
       const cost = opt && !here ? `<span class="excost">${opt.cost}钟</span>` : "";
       const click = (opt && !f.closed[id] && !here) ? `onclick="Engine.exmapTravel('${id}')"` : "";
@@ -6904,7 +6939,11 @@ const UI = {
     // 行动条：按当前节点类型给动作（到达即所得）
     const node = map.nodes[f.node];
     const acts = [];
-    if (node.loot && !f.cleared[f.node]) acts.push(`<button class="btn" onclick="Engine.exmapGather()">${node.kind === "danger" ? "搜刮（1钟）" : "采集（1钟）"}</button>`);
+    // D2 巡场猎杀（节点级 huntEnemy·血煞兽）：先猎杀方可搜刮——不猎也能原路走开（可绕开）
+    const huntPending = node.kind === "danger" && node.huntEnemy && !(f.hunted && f.hunted[f.node]);
+    if (huntPending) {
+      acts.push(`<button class="btn btn-warn" onclick="Engine.exmapHunt()">猎杀「${node.huntName || "凶兽"}」</button>`);
+    } else if (node.loot && !f.cleared[f.node]) acts.push(`<button class="btn" onclick="Engine.exmapGather()">${node.kind === "danger" ? "搜刮（1钟）" : "采集（1钟）"}</button>`);
     if (node.kind === "lore" && !f.guzhenUsed) acts.push(`<button class="btn" onclick="Engine.exmapReadLore()">以神识读阵</button>`);
     if (node.kind === "enter") acts.push(`<button class="btn btn-warn" onclick="Engine.exmapEnterSub()">潜入洞窟</button>`);
     if (node.kind === "exit") acts.push(`<button class="btn btn-warn" onclick="Engine.finishExmap('leave')">离开禁地</button>`);

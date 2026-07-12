@@ -36,15 +36,19 @@ DATA.realms = [
   { tier: "qi", layer: 4,  name: "练气四层",  culMax: 340,  spMax: 250,  lifespan: 0 },
   { tier: "qi", layer: 5,  name: "练气五层",  culMax: 470,  spMax: 320,  lifespan: 5 },
   { tier: "qi", layer: 6,  name: "练气六层",  culMax: 640,  spMax: 400,  lifespan: 0 },
-  { tier: "qi", layer: 7,  name: "练气七层",  culMax: 860,  spMax: 500,  lifespan: 10 },
+  // —— polish-huangfeng A1③：练气七层起的修为墙一把尺子重锚（×0.75·比例 1.31 不变）——
+  //    七层墙（860→645）只在黄枫谷消耗（七玄门 cap=练气七层，冲七层用的是六层墙 640），
+  //    故不属七玄门已校准曲线；配合 Balance.culGainMul 几何增速尺，7→11 层压进 30~48 游戏月
+  //    （旧值≈15 年——校准回路 test/huangfeng-time.audit.js）。
+  { tier: "qi", layer: 7,  name: "练气七层",  culMax: 645,  spMax: 500,  lifespan: 10 },
   // —— 练气八层以上：须习得《长春功·后篇》方可冲击（考据：长春功十三层对应练气十三层，
   //    韩立修至十一层服筑基丹）。黄枫谷篇主场，七玄门篇锁定。 ——
-  { tier: "qi", layer: 8,  name: "练气八层",  culMax: 1140, spMax: 620,  lifespan: 0 },
-  { tier: "qi", layer: 9,  name: "练气九层",  culMax: 1500, spMax: 760,  lifespan: 5 },
-  { tier: "qi", layer: 10, name: "练气十层",  culMax: 1950, spMax: 920,  lifespan: 0 },
-  { tier: "qi", layer: 11, name: "练气十一层", culMax: 2500, spMax: 1100, lifespan: 5 },
-  { tier: "qi", layer: 12, name: "练气十二层", culMax: 3200, spMax: 1300, lifespan: 0 },
-  { tier: "qi", layer: 13, name: "练气十三层", culMax: 4000, spMax: 1550, lifespan: 10 },
+  { tier: "qi", layer: 8,  name: "练气八层",  culMax: 855,  spMax: 620,  lifespan: 0 },
+  { tier: "qi", layer: 9,  name: "练气九层",  culMax: 1125, spMax: 760,  lifespan: 5 },
+  { tier: "qi", layer: 10, name: "练气十层",  culMax: 1465, spMax: 920,  lifespan: 0 },
+  { tier: "qi", layer: 11, name: "练气十一层", culMax: 1875, spMax: 1100, lifespan: 5 },
+  { tier: "qi", layer: 12, name: "练气十二层", culMax: 2400, spMax: 1300, lifespan: 0 },
+  { tier: "qi", layer: 13, name: "练气十三层", culMax: 3000, spMax: 1550, lifespan: 10 },
   // —— 筑基期（大境界：服筑基丹+秘仪冲关，见 DATA.bigRealmRites.foundation）——
   { tier: "foundation", layer: 1, name: "筑基初期",   culMax: 6000,  spMax: 2400, lifespan: 80, big: true },
   { tier: "foundation", layer: 2, name: "筑基中期",   culMax: 8200,  spMax: 3100, lifespan: 0 },
@@ -72,8 +76,10 @@ DATA.items = {
   ningshen_dan: { name: "凝神丹",   rarity: "rare", type: "pill",
     desc: "安神定志，平复心境、压制心魔。", effect: { mood: 40, demon: -20 } },
   // 小绿瓶催熟灵药服食 —— 韩立逆袭的核心
+  // polish-huangfeng A1③：cul 60→80（黄枫谷修为墙校准——"小绿瓶嗑药"一路的斤两要配得上三管齐下；
+  // 服用时另按境界几何折算 Balance.culGainMul，练气 1~6 期 mul=1.0 曲线不动）
   lingyao_dan:  { name: "灵乳灵药", rarity: "rare", type: "pill",
-    desc: "小绿瓶催熟的珍稀灵药，灵气浓郁。服之大补修为，是韩立瞒着墨大夫精进的本钱。", effect: { cul: 60, sp: 40 } },
+    desc: "小绿瓶催熟的珍稀灵药，灵气浓郁。服之大补修为，是韩立瞒着墨大夫精进的本钱。", effect: { cul: 80, sp: 40 } },
   zhuji_dan:    { name: "筑基丹",   rarity: "epic", type: "pill",
     desc: "突破练气、凝聚灵根成基的无价之宝。入谷那日你曾握过一枚——它离开掌心的模样，你记到今天。（练气十一层后，于洞府行「尝试突破」冲击筑基）", effect: {} },
   lingcao:      { name: "灵草",     rarity: "common", type: "material",
@@ -525,6 +531,9 @@ DATA.bigRealmRites = {
       { kind: "stat", key: "demonMax", min: 30, label: "心魔已伏（≤30）" },
     ],
     consume: [{ id: "zhuji_dan", n: 1 }],
+    // polish-huangfeng B1②：余丹加持——必耗 1 颗外每次最多再叠服 3 颗（连服过量伤本），
+    // 每颗=瓶颈更薄+道心更厚+成功品质更高。满匣二十丹从叙事变机制（余丹留给再冲，败不倾家）。
+    extra: { id: "zhuji_dan", max: 3 },
     trialHp: 90, trialRounds: 10, failRealmLoss: true,
   },
   core: {

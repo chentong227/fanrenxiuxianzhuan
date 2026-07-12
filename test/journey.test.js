@@ -301,8 +301,11 @@ console.log("\n=== 5. 离门远行 · 嘉元城主线全链路 ===");
   assert(s.pendingEvent === "chen_after", `林中事了一幕触发（${s.pendingEvent}）`);
   Engine.chooseStory(sandbox.STORY[s.storyStage], 1);
   assert(s.ledger.chen_remember && !s.ledger.chen_wangchen, "不喂忘尘丹：她记得你（命途道岔写账）");
-  // 门槛软化·双路触发：反杀陆云风即练气十一层——名额大会随 chen_after 自动开启（无须空等大比日历）。
-  assert(s.pendingEvent === "jindi_meeting", `名额大会即触发（练气十一层即开，${s.pendingEvent}）`);
+  // polish-huangfeng A1①：名额大会=日历锚+修为双门槛（xianhui_due 同构）——修为先到者等大比时节开锣。
+  assert(s.pendingEvent !== "jindi_meeting", "时节未至：名额大会不随到随开（日历锚是真门槛）");
+  while (State.absMonth() < s.flags.xueshi_due) Engine.passTime(1);
+  Engine.checkStory();
+  assert(s.pendingEvent === "jindi_meeting", `大比时节已至+练气十一层：名额大会触发（${s.pendingEvent}）`);
   assert(s.flags.xueshi_opened, "名额 onArrive 已置 xueshi_opened");
   assert(s.metNpcs.includes("nangongwan") && s.metNpcs.includes("lihuayuan"), "南宫婉/李化元入图鉴");
   s.pendingEvent = null;   // 名额已开；下面先验法器装备系统，稍后再“踏入血幕”
@@ -341,8 +344,8 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
 {
   const s = State.data;
   s.realmIndex = 10;
-  // 名额大会已在 chen_after 后自动开启（门槛软化，见上）——名额到手后先过「临行三月备战」互斥窗口，再踏入血幕。
-  assert(s.flags.xueshi_opened, "名额已开（练气十一层即触发，无大比日历空等）");
+  // 名额大会已在大比时节+练气十一层双门槛齐备后开启（A1① 日历锚）——名额到手后先过「临行三月备战」互斥窗口，再踏入血幕。
+  assert(s.flags.xueshi_opened, "名额已开（日历锚+修为双门槛齐备）");
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "jindi_meeting"), 0);
   // —— 时间窗口互斥·首例：血色禁地临行三月三选一（修为/底牌/丹药）——
   assert(s.pendingEvent === "jindi_prep", "名额到手→临行三月备战互斥窗口（jindi_prep）");
@@ -535,9 +538,20 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(s.flags.huangfeng_complete, "黄枫谷篇 · 完（huangfeng_complete）");
   assert(s.ledger.dayan_clue, "大衍诀残卷线索入账（魔道争锋篇的钩子）");
 
-  // —— 5.6 魔道争锋篇·前置：燕家堡之战（增量D·李化元强制进场→重逢→战王蝉大BOSS→逃出强征入伍）——
-  // 同一个韩立续战：篇末调令链式自动演出（无 where，靠 flag 门禁顺序触发）
+  // —— 5.5b 篇终帆段 + 厉飞雨回访（polish-huangfeng B2/C1·v318）——
+  // 调令延后 3 月（安家修行帆段）；帆段内赴彩霞山演武厅=回访兑现窗（三笔远雷账在此 settle）
   if (!s.pendingEvent) Engine.checkStory();
+  assert(!s.pendingEvent, `帆段起点：调令未至（延后 3 月·当前 pending=${s.pendingEvent}）`);
+  s.location = "wuting";
+  Engine.checkStory();
+  assert(s.pendingEvent === "lify_revisit", `彩霞山回访触发（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "lify_revisit"), 1);   // 选叙旧路（战斗路另有引擎冒烟）
+  assert(s.flags.lify_revisit_done, "回访节点收口（lify_revisit_done）");
+  assert(s.flags.lify_ledgers_settled, "厉飞雨三账结算标记（lify_ledgers_settled）");
+  // —— 5.6 魔道争锋篇·前置：燕家堡之战（增量D·李化元强制进场→重逢→战王蝉大BOSS→逃出强征入伍）——
+  // 同一个韩立续战：篇末调令延时 3 月后自动演出（无 where，靠 flag+时间门禁顺序触发）
+  Engine.passTime(3);
+  Engine.checkStory();
   assert(s.pendingEvent === "yanjia_summon", `燕家堡调令链式触发（${s.pendingEvent}）`);
   assert(s.activeChapter === "modao", "魔道争锋篇章容器已开（activeChapter=modao）");
   assert(sandbox.Chapters.realmTier() === 1, `realmCap 抬进筑基（realmTier=${sandbox.Chapters.realmTier()}）`);

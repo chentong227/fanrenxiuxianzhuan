@@ -81,7 +81,7 @@ const Chapters = {
       order: 6,
       locked: true,             // 由初入星海篇章末「金丹大成」(arc5_complete)解锁
       realmTier: 2,             // 结丹期（全章主体结丹·战斗标度结丹档）
-      realmCapIndex: 22,        // 结丹中期上限（设计稿§〇待定 22~24，取 22 起步；深层随切片推进再校）
+      realmCapIndex: 18,        // 结丹中期（v317 拆雷：旧值 22 越界无害但 DATA.realms 一旦扩到元婴即突变"结丹章可破元婴中期"——重返天南 S0 前置项提前落地；18=结丹中期与原注释意图一致）
       startLocation: "tianxing_city",
       completeFlag: "arc6_complete",
       nextChapter: "waihaifengyun", // 章末四大势力追杀→外海风云篇（钩子·后续实装）
@@ -116,7 +116,20 @@ const Chapters = {
 
   // 本章境界上限 / 大境界序（引擎统一从这里读）
   realmCap() { return this.active().realmCapIndex; },
-  realmTier() { return this.active().realmTier; },
+  // polish-huangfeng B2（双审 P0·重返天南 S0 同刀）：tier 动态档——
+  // 取 max(章配置, 玩家实际大境界序)。根治"章内跨大境界后战力档不涨"：
+  // 黄枫谷筑基后仍按练气档（法力池/驱动档/青元剑诀层 3~5 全锁死）即此病。
+  // 章配置仍是下限（保剧情前期不越档），玩家真实突破后即时升档。
+  realmTier() {
+    const cfg = this.active().realmTier || 0;
+    const s = (typeof State !== "undefined" && State.data) ? State.data : null;
+    if (!s || typeof DATA === "undefined" || !DATA.realms) return cfg;
+    const realm = DATA.realms[s.realmIndex];
+    if (!realm) return cfg;
+    const TIER = { qi: 0, foundation: 1, core: 2, nascent: 3 };
+    const actual = TIER[realm.tier] != null ? TIER[realm.tier] : cfg;
+    return Math.max(cfg, actual);
+  },
 
   // 篇章是否已解锁（存档记录）
   isUnlocked(id) {

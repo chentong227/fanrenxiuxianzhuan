@@ -278,7 +278,8 @@ WORLD.locations = [
     home: true,
     // 外门居所·潜修洞天：2.5D 前景＝室内框（梁柱收口·暖黑），远雾偏淡
     env: { depth: { fg: "interior", far: 0.34 } },
-    actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
+    // polish-huangfeng A3：+spar——谷中演武场同门切磋（本章剑意轴主动源，管线复用 startSparFight）
+    actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy", "spar"],
     encounters: [],
     landmarks: [
       { id: "qingshan", icon: "👘", x: 20, y: 40, label: "青衫",
@@ -331,7 +332,8 @@ WORLD.locations = [
     unlock: (s) => s.flags.yaoyuan_started,
     // 谷中坊市·万宝楼飞檐：2.5D 前景＝坊市框（飞檐幌影+暖灯晕），远雾中等
     env: { depth: { fg: "market", far: 0.42 } },
-    actions: ["wanbao", "rest"],
+    // polish-huangfeng D3：qingtuo=坊市告示请托（按月轮换的急单悬赏板，Engine.fangshiBoard）
+    actions: ["wanbao", "qingtuo", "rest"],
     encounters: [],
   },
   /* —— 自由探索地点（异闻录·恒在原则的承载：妖材客观盘踞，听闻只叠预知）—— */
@@ -1027,7 +1029,9 @@ WORLD.enemies = {
     reward: { lingshi: 6 }, namedLoot: { tayun_xue: 1, anqi: 3, jinse_shuye: 1 },
   },
   mojiao: {
-    name: "墨蛟", hp: 270, sense: 9, speed: 13, agility: 9, move: 2, mp: 85, elem: "shui", nature: "beast",
+    // polish-huangfeng D1（2026-07-12）：南宫婉改控场（月华绫·缚）后她的直接输出约 -40/场——
+    // 墨蛟 hp 270→220 等量回吐，胜率拉回原带（改前基线 68.5%/玩家占比 42%）
+    name: "墨蛟", hp: 220, sense: 9, speed: 13, agility: 9, move: 2, mp: 85, elem: "shui", nature: "beast",
     tactics: "feral", stubborn: true, canFlee: false, boss: true,
     regen: 5,
     introNote: "禁地深潭之主——通体墨鳞的蛟龙幼体，黑雾护体、利齿如戟！它的「泥流潜袭」会循着你的气息追击，一步躲不开：要么两步开外，要么趁它蓄势打断。鳞厚甲坚、水气回涌——破甲与符宝方是正解，须以高输出压住它的回涌。",
@@ -1236,8 +1240,9 @@ WORLD.enemies = {
     reward: { lingshi: 2 }, namedLoot: { yaodan_1: 1 },
   },
   guwai_yaowang: {
-    name: "山林妖王", hp: 205, sense: 8, speed: 14, agility: 11, move: 2, mp: 60, tactics: "feral", elem: "mu", nature: "beast", stubborn: true,
-    introNote: "谷外山林深处的无名妖王（考据未定其名，暂以栖地记之）——身形矫健、来去如风。它的扑杀会追着你的身形折转，看准蓄力回合压制，莫与之缠斗。",
+    // polish E：占位名给诨名「林祖宗」——记名弟子私下叫开的浑号（非考据正名·图鉴/异闻同步明示）
+    name: "林祖宗", hp: 205, sense: 8, speed: 14, agility: 11, move: 2, mp: 60, tactics: "feral", elem: "mu", nature: "beast", stubborn: true,
+    introNote: "谷外山林深处的妖王——正名无人知晓，记名弟子私下都叫它「林祖宗」：进它的林子，得跟拜祖宗似的轻手轻脚。身形矫健、来去如风，扑杀会追着你的身形折转，看准蓄力回合压制，莫与之缠斗。",
     attacks: [
       { name: "利爪", dmg: 24, kind: "normal", weight: 12, range: [1, 1] },
       { name: "贯林扑杀", dmg: 30, kind: "charge", weight: 8, aim: "cell", lunge: true, track: true, range: [1, 4] },
@@ -1468,8 +1473,8 @@ WORLD.beastRumors = [
       "乌龙潭的水位莫名退了三尺，潭心淤泥里翻出条条拖痕——那畜生在潭底挪过窝。",
       "阴雨夜里潭面腾起白雾，雾中一对幽光浮沉。老人说：银甲怕雷，更怕硬碰硬的钝劲。",
     ] },
-  { id: "guwai_yaowang", area: "huangfeng", title: "谷外山林·无名妖王",
-    rumor: "谷外历练的记名弟子之间悄悄传着：山林深处有头说不清来历的妖物，凡撞见的，回来都讳莫如深。",
+  { id: "guwai_yaowang", area: "huangfeng", title: "谷外山林·「林祖宗」",
+    rumor: "谷外历练的记名弟子之间悄悄传着：山林深处有头说不清来历的妖物，撞见的回来都讳莫如深——不知谁起的头，都管它叫「林祖宗」（正名无人考得出来）。",
     clues: [
       "谷外巡山的弟子又少回来一个，带队的师兄只叮嘱：莫往林子最深处去。",
       "你在谷外林间见到大片被踏平的灌木，断口齐整，似有巨物反复经行。",
@@ -1602,13 +1607,35 @@ WORLD.bigitems = [
         : s.flags.mojiao_slain
           ? ({ state: "track", note: "墨蛟已伏诛 · 蛟角已入炼器" })
           : ({ state: "unheard", note: "妖王之材，未见其踪" }) },
-  // —— 前路：后续篇章的大件剪影（明牌惦记，尚不可得）——
-  { id: "qingyuanjian", cat: "gongfa", name: "《青元剑诀》", far: true,
+  // —— 黄枫谷篇·本章头牌三件（polish C3：谎报"未闻"改动态分段——账面进度照 wulongduo 范本）——
+  { id: "qingyuanjian", cat: "gongfa", name: "《青元剑诀》",
     blurb: "黄枫谷剑修主轴——筑基之后真正的飞剑根基。",
-    guide: "黄枫谷篇——筑基大成后，李化元大长老亲授。", stat: () => ({ state: "unheard" }) },
-  { id: "zhujidan", cat: "dan", name: "筑基丹链", far: true,
+    guide: "黄枫谷篇——筑基大成后，李化元大长老亲授。",
+    stat: (s) => {
+      if (s.flags.qingyuan_given) return { state: "got", note: "李化元亲授九层剑诀 · 三层剑芒＋巨剑术已随身" + (s.flags.qingyuan_pages_merged ? "（金银书页合璧·全本端倪已现）" : "") };
+      if (State.realm().tier !== "qi") return { state: "track", note: "筑基已成——首席大长老的召见，就在这几日" };
+      if (s.flags.mojiao_resolved || s.flags.jindi_left) return { state: "track", note: "血色一战入了李化元的眼——筑基之日，便是传诀之时" };
+      return { state: "unheard", note: "谷中相传：首席大长老手里有一部九层剑诀，弟子多止步三层" };
+    } },
+  { id: "zhujidan", cat: "dan", name: "筑基丹链",
     blurb: "三段式突破的超大件——从让丹的屈辱起点，到自炼成丹的扬眉一刻。",
-    guide: "黄枫谷篇——让丹屈辱→血色禁地取药→地火之屋自炼，三段缺一不可。", stat: () => ({ state: "unheard" }) },
+    guide: "黄枫谷篇——让丹屈辱→血色禁地取药→地火之屋自炼，三段缺一不可。",
+    stat: (s) => {
+      // 六段账面（retention「筑基筹备 X/6」式）：辱→修为→名额→主药→自炼→破境
+      const steps = [
+        !!s.flags.zhuji_dan_stolen,                                        // ① 让丹之辱（起点）
+        (s.realmIndex || 0) >= 10,                                         // ② 修为练气十一层
+        !!s.flags.xueshi_opened,                                           // ③ 禁地名额到手
+        !!s.flags.zhuji_lian_done || State.count("xueshi_zhuyao") >= 4,    // ④ 血色主药够一炉
+        !!s.flags.zhuji_lian_done,                                         // ⑤ 地火自炼成丹
+        State.realm().tier !== "qi",                                       // ⑥ 筑基大成
+      ];
+      const cur = steps.filter(Boolean).length;
+      if (cur >= 6) return { state: "got", prog: { cur: 6, max: 6 }, note: "筑基已成——让出去的那枚丹，用二十颗与一个境界讨了回来" };
+      if (cur <= 0) return { state: "unheard", note: "升仙令上许诺的那枚丹，还躺在执事殿的玉匣里" };
+      const nextStep = ["", "修为至练气十一层是正路", "大比时节争血色禁地名额", "禁地深处采足四株血色主药", "回百药园旧丹房·地火开炉", "筑基丹在手——洞府『尝试突破』"][cur] || "";
+      return { state: "track", prog: { cur, max: 6 }, note: `筑基筹备 ${cur}/6——${nextStep}` };
+    } },
   { id: "yuzhizhu", cat: "kuilei", name: "灵宠之缘", far: true,
     blurb: "可养成的灵宠（玉蜘蛛之属），开灵宠成长轴。",
     guide: "黄枫谷篇——灵宠之缘（名称·获取以动漫版为准）。", stat: () => ({ state: "unheard" }) },
@@ -1618,9 +1645,16 @@ WORLD.bigitems = [
   { id: "pixieshenlei", cat: "fabao", name: "辟邪神雷", far: true,
     blurb: "特攻区大件·克魔功——与蜂云剑双底牌，以下克上的杀手锏。",
     guide: "乱星海篇——机缘所得，克魔利器。", stat: () => ({ state: "unheard" }) },
-  { id: "shenfengzhou", cat: "fabao", name: "神风舟", far: true,
+  { id: "shenfengzhou", cat: "fabao", name: "神风舟",
     blurb: "墨蛟皮·鳞炼成的飞行法器，乘风破浪、与空层战斗咬合——乌龙夺的姊妹件，同出墨蛟一身。",
-    guide: "黄枫谷篇·斩墨蛟得皮·鳞→托元武国齐云霄炼制（炼制落地待后续篇章）。", stat: () => ({ state: "unheard" }) },
+    guide: "黄枫谷篇·斩墨蛟得皮·鳞→洞府落定后北上元武国，托巧匠齐云霄炼制。",
+    stat: (s) => {
+      if (s.flightId === "shen_feng_zhou" || (s.flags.daigong_done && State.count("mojiao_pi") < 1))
+        return { state: "got", note: "齐云霄亲炉炼成 · 御风疾驰" + (s.flags.daigong_fine_zhou ? "（精工帆骨·风纹暗刻）" : "") };
+      if (State.count("mojiao_pi") > 0) return { state: "track", note: "墨蛟之皮在手——北上元武国百艺坊，托齐云霄裁皮为帆" };
+      if (s.flags.mojiao_slain) return { state: "track", note: "墨蛟已伏诛——皮鳞之材另有去向" };
+      return { state: "unheard", note: "妖王之材，未见其踪" };
+    } },
   { id: "fengleichi", cat: "fabao", name: "风雷翅", far: true,
     blurb: "速度均势区至宝——遁速翻倍的飞行至宝。",
     guide: "乱星海篇——金雷竹炼制（协助紫灵九死一生的任务线）。", stat: () => ({ state: "unheard" }) },
@@ -1677,12 +1711,12 @@ WORLD.yiwen = [
     exist: "黄枫谷外乌龙潭底盘踞——蜕甲后银鳞坚逾精铁，刀剑难透。",
     guide: "谷外乌龙潭探索可遇；听闻则知「银甲怕雷，更怕破甲的钝劲」，备破甲手段再战。",
     effects: ["指路", "识弱", "借物"], link: { kind: "beastRumor", id: "yinjia_jiaomang" } },
-  { id: "guwai_yaowang", type: "beast", title: "谷外山林 · 无名妖王", node: "huangfeng", arc: "huangfeng",
-    exist: "黄枫谷护山大阵之外的山林深处，盘踞一头来历不明的妖王（其名待考据·暂以栖地记之）。",
+  { id: "guwai_yaowang", type: "beast", title: "谷外山林 · 「林祖宗」", node: "huangfeng", arc: "huangfeng",
+    exist: "黄枫谷护山大阵之外的山林深处，盘踞一头来历不明的妖王——「林祖宗」是记名弟子叫开的浑号（正名待考据·非动漫定名）。",
     guide: "谷外山林探索可遇；记名弟子间偶有风声，听闻则知其凶名与大致方位。",
     effects: ["指路", "识弱", "悬赏"], link: { kind: "beastRumor", id: "guwai_yaowang" } },
   { id: "mojiao", type: "beast", title: "墨蛟 · 血色深潭之主", node: "huangfeng", arc: "huangfeng",
-    exist: "血色禁地深潭之主，剧情固定大妖——角→乌龙夺、皮鳞→神风舟，妖材即大件链入口。",
+    exist: "血色禁地深潭之主，剧情固定大妖——角→乌龙夺、皮鳞→神风舟，妖材即大件链入口。斩蛟那夜她留给你的那枚「内丹」，来路蹊跷——这笔账要到再别天南（掩月宗验丹）才点名兑现（远线）。",
     guide: "黄枫谷篇·血色禁地名额大会取得入禁资格→深入禁地洞窟，与南宫婉同道共讨。",
     effects: ["识弱", "召援", "借物"], link: { kind: "story", id: "mojiao_slain" } },
 
@@ -1858,7 +1892,7 @@ WORLD.npcs = [
     id: "qiyunxiao", name: "齐云霄", role: "元武国 · 百艺坊巧匠",
     bio: "元武国百艺坊的炼器巧匠，一炉好风火。韩立持血色禁地的墨蛟皮鳞角北上代工——他一炉炼成神风舟、乌龙夺，又以自家千年灵草为引奉上颠倒五行阵图（基础版）。坊中那位掌账的女子首访不遇，是后话。",
     lines: ["墨蛟的料，到了我手里才不算糟蹋。", "要快、要狠，还是要稳？百艺坊都给你办了。", "（他三角眼一眯，算盘打得噼啪响）"],
-    where: ["yuanwu"], cond: (s) => s.flags.daigong_done,
+    where: ["yuanwu"], cond: (s) => s.flags.daigong_done || s.flags.daigong_partial,
   },
   { id: "langzhong", name: "走方郎中", role: "凡俗医者", bio: "走街串巷的凡俗大夫，医术平平却见多识广。", lines: ["客官面色不佳，可要抓副药？"], where: ["town"] },
   { id: "biaoshi", name: "镖局趟子手", role: "押镖汉子", bio: "替商队押镖的江湖汉子，刀口舔血讨生活。", lines: ["这年头跑镖，最怕撞上野狼帮的人。"], where: ["town"] },

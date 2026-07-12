@@ -39,7 +39,7 @@ function montecarlo(save, setup, N, addTrumps) {
   const baseFlags = JSON.stringify(State.data.flags);
   const baseInv = JSON.stringify(State.data.inventory || {});
   const baseSpells = JSON.stringify(State.data.spells || []);
-  let wins = 0, hpSum = 0, rounds = 0, lose = 0;
+  let wins = 0, hpSum = 0, rounds = 0, lose = 0, shareSum = 0, shareN = 0;
   for (let i = 0; i < N; i++) {
     State.data.flags = JSON.parse(baseFlags);
     State.data.inventory = JSON.parse(baseInv);
@@ -58,8 +58,12 @@ function montecarlo(save, setup, N, addTrumps) {
     if (st === "win") { wins++; hpSum += Math.max(0, c.player.hp / c.player.hpMax); }
     else lose++;
     rounds += c.round;
+    // 玩家伤害占比（polish-huangfeng D1 门禁）：combat.dealtBy 分账——玩家亲手 vs 侧位同道
+    const db = c.dealtBy || { player: 0, side: 0 };
+    if (db.player + db.side > 0) { shareSum += db.player / (db.player + db.side); shareN++; }
   }
-  return { win: wins / N, endHp: wins ? hpSum / wins : 0, rounds: rounds / N, lose: lose / N };
+  return { win: wins / N, endHp: wins ? hpSum / wins : 0, rounds: rounds / N, lose: lose / N,
+           playerShare: shareN ? shareSum / shareN : 1 };
 }
 
 console.log("\n=== 高潮越阶战·一致感锚点（真引擎·真存档·真战斗装配·含同道佐助） ===\n");
@@ -71,8 +75,11 @@ const mj = montecarlo("save-huangfeng-jindi.json", () => {
   Engine._sideOverride = Engine._nangongwanAlly ? Engine._nangongwanAlly() : null;
   Engine.startEncounterFight("mojiao");
 });
-console.log(`  · 墨蛟（练气11·南宫婉并肩）：胜率 ${pct(mj.win)} / 末血 ${pct(mj.endHp)} / ${mj.rounds.toFixed(1)}回合`);
+console.log(`  · 墨蛟（练气11·南宫婉并肩）：胜率 ${pct(mj.win)} / 末血 ${pct(mj.endHp)} / ${mj.rounds.toFixed(1)}回合 / 玩家伤害占比 ${pct(mj.playerShare)}`);
 assert(mj.win >= 0.30 && mj.win <= 0.85, `墨蛟胜率落在越阶恶战带 30~85%（${pct(mj.win)}）——赢不轻松、也非死局（一致感·防 boss 滑向无牙或死局）`);
+// polish-huangfeng D1（GPT P1-5）：同道代打门禁——南宫婉改控场（月华绫·缚）后，这场高潮战
+// 必须是玩家亲手打赢的：玩家（法术/法宝/毒）伤害占比 ≥35%，防止未来数值漂移让同道重新喧宾夺主。
+assert(mj.playerShare >= 0.35, `墨蛟·玩家伤害占比 ≥35%（${pct(mj.playerShare)}）——同道牵制递局、玩家收口，仗得自己打（防同道代打回潮）`);
 
 // —— 黄枫谷·封岳（狙杀者·越阶·底牌路径）：本体难胜，备底牌则可期（爽文契约·输在准备）——
 const fyBare = montecarlo("save-huangfeng-jindi.json", () => {

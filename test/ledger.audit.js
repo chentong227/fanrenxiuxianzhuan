@@ -69,7 +69,7 @@ for (const file of files) {
       "sanzhuan_yizhuan", "starsea_jieguan", "zaibie_a1_after",
     ]);
     const isHook = HOOK_WHITELIST.has(id) ||
-      /日后|长线|跨场|待续|再算|显影|伏笔|埋下|引线|钥匙|随后|后续篇章|不死不休|断线|归账/.test(label);
+      /日后|长线|远线|跨场|待续|再算|显影|伏笔|埋下|引线|钥匙|随后|后续篇章|不死不休|断线|归账/.test(label);
     const cls = isHook ? "H" : ((hasMilestone || DEED_WHITELIST.has(id)) ? "B" : "A");
     if (!writes.has(id)) writes.set(id, []);
     writes.get(id).push({ file: rel, line: lineOf(m.index), label, cls });

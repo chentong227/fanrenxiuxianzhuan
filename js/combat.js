@@ -290,6 +290,8 @@
       this.round = 0;
       this.stats = {};
       this._stat = (key, n) => { if (n > 0) this.stats[key] = (this.stats[key] || 0) + n; };
+      // 伤害来源分账（polish-huangfeng D1）：玩家亲手 vs 侧位同道——高潮战「同道代打」门禁读这本账
+      this.dealtBy = { player: 0, side: 0 };
       this._startHp = this.player.hp;
       this.status = "ongoing";       // ongoing | win | lose | fled
       this.log = [];
@@ -1487,7 +1489,7 @@
             this._emitFx(tref, crit ? "crit" : (sp.pierce ? "pierce" : "dmg"), (crit ? "暴击 " : sp.pierce ? "破甲 " : "") + r.dealt);
             if (target.hp <= 0) break;
           }
-          if (caster === this.player) this._stat(sp.name, totalDealt);
+          if (caster === this.player) { this._stat(sp.name, totalDealt); this.dealtBy.player += totalDealt; }
           // 仇恨入账：打谁谁记仇（敌方下回合的杀意流向）
           if (target.team === "enemy") this.addAggro(target, caster === this.player ? "player" : this.sideKey(caster), totalDealt);
           // —— 背袭结算：硬直（打掉它的章法）+ 死角绝杀的永久损伤 ——
@@ -1551,7 +1553,7 @@
         const sMul = (sp.slays && target.nature && sp.slays[target.nature]) || 1;
         if (sMul > 1) { dmg = Math.round(dmg * sMul); this._emitFx(tref, "crit", "克星！"); }
         const r = target.takeDamage(dmg, { soul: true });
-        if (caster === this.player) this._stat(sp.name, r.dealt);
+        if (caster === this.player) { this._stat(sp.name, r.dealt); this.dealtBy.player += r.dealt; }
         if (target.team === "enemy") this.addAggro(target, caster === this.player ? "player" : this.sideKey(caster), r.dealt);
         this._log(`${caster.name} 运功镇魂，以功力冲击 ${target.name} 的神魂，造成 ${r.dealt} 伤害（${Math.max(0, Math.round(target.hp))}/${target.hpMax}）`);
         this._emitFx(tref, "soul", "镇魂 " + r.dealt);
@@ -1744,7 +1746,10 @@
         const dmg = f.status.poison.dmg;
         f.hp = clampNum(f.hp - dmg, 0, f.hpMax);
         f.status.poison.turns--;
-        if (f !== this.player) this._stat("淬毒", dmg);
+        if (f !== this.player) {
+          this._stat("淬毒", dmg);
+          if (f.team === "enemy") this.dealtBy.player += dmg;   // 毒是玩家喂的（weidu/淬毒法宝）——记玩家账
+        }
         else if (f.hp <= 0) this.deathCause = { by: "淬毒", move: "毒发攻心" };
         this._log(`${f.name} 毒发，气血-${dmg}（${Math.max(0, Math.round(f.hp))}/${f.hpMax}）`);
         this._emitFx(this._refOf(f), "poison", "毒 " + dmg);
@@ -1759,6 +1764,9 @@
      * 协同三式落地：集火（打你打的）/接力（抓你定住的那一拍）/挡线（血危时挪身代刀）。 */
     /* T4 多侧位：全部侧位依序行动（同道/灵宠/傀儡各打各的——多组对位的我方端） */
     _sideAct() {
+      // 控场破绽消退（mv.expose·D1）：侧位上一拍缚住的气机，经敌方一拍+玩家一拍后在此消退——
+      // 窗口恰好一个玩家回合（正在蓄势的敌人破绽不消，那是它自己的破绽）
+      this.enemies.forEach(e => { if (e._sideExposed) { e._sideExposed = false; if (!e._charging) e.exposed = false; } });
       for (let i = 0; i < this.sides.length; i++) {
         if (this.status !== "ongoing") return;
         const s = this.sides[i];
@@ -1997,15 +2005,24 @@
       if (target.soulOnly && !s.soulTouch) { this._log(`${s.name} 攻向 ${target.name}，却如击虚空——元神无形，此路不通。`); return; }
       const r = target.takeDamage(dmg, { soul: !!s.soulTouch, pierce: mv && mv.pierce });
       this._stat(s.name, r.dealt);
+      this.dealtBy.side += r.dealt;
       // 侧位也记仇恨（T0 同规则）：她打的，敌人也记她的账
       this.addAggro(target, this.sideKey(s), r.dealt);
+      // 控场型侧位招式（mv.expose·D1 南宫婉「月华绫·缚」）：命中即缚敌气机——破绽毕露一整拍，
+      // 玩家下一手受击+30%（她递局、你下刀——同道从代打转牵制的机制落点）
+      let exposedNow = false;
+      if (mv && mv.expose && target.alive && r.dealt > 0 && !target.exposed) {
+        target.exposed = true;
+        target._sideExposed = true;
+        exposedNow = true;
+      }
       const moveName = mv ? mv.name : (s.atkName || "扑击");
       // 侧位出手特效：月华绫=白绫光带（波形），其余按行属弹道/贴身爪弧
       this._emitFx(`enemy:${ti}`, "fxcast", null, {
         elem, from: this._refOf(s), melee: d <= 1 && isMelee, wave: /月华|绫|素女/.test(moveName) ? 1 : 0,
       });
       if (s.kind === "ally") {
-        const act = `${mv && mv.line ? mv.line : `祭出「${moveName}」`} ${target.name}，造成 ${r.dealt} 伤害！` + (eMul > 1 ? "（克制）" : "");
+        const act = `${mv && mv.line ? mv.line : `祭出「${moveName}」`} ${target.name}，造成 ${r.dealt} 伤害！` + (eMul > 1 ? "（克制）" : "") + (exposedNow ? "绫光缠身、气机被缚——它破绽毕露（受击+30%）！" : "");
         if (exploit) {
           const w = (target.status && target.status.dingshen > 0) ? "你定住它的那一拍" : "它旧力已尽的破绽";
           this._log(`${s.name} 看准${w}——${act}`);
@@ -2013,7 +2030,7 @@
           this._log(`${s.name} ${act}`);
         }
       } else {
-        this._log(`${s.name} 使「${moveName}」${exploit ? "（趁虚）" : ""}，对 ${target.name} 造成 ${r.dealt} 伤害` + (eMul > 1 ? "（克制）" : ""));
+        this._log(`${s.name} 使「${moveName}」${exploit ? "（趁虚）" : ""}，对 ${target.name} 造成 ${r.dealt} 伤害` + (eMul > 1 ? "（克制）" : "") + (exposedNow ? "（气机被缚·破绽毕露）" : ""));
       }
       this._emitFx(`enemy:${ti}`, "dmg", r.dealt);
       // 憋大招放完→归位随行（一次性简令）

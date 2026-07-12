@@ -1807,6 +1807,9 @@ const STORY = [
         hint: "最稳的路——她不记得你，也就不会被你牵连",
         effect(s) {
           Engine.writeLedger("chen_wangchen", "救陈巧倩之后，喂她服下忘尘丹");
+          // polish-huangfeng C4（Fable P1-5）：封存一夜的一拍——冷色一闪 + 万籁俱寂（记忆被抹去的留白）
+          if (typeof Fx !== "undefined" && Fx.flash) Fx.flash("#8fa4bd", 760, 0.4);
+          if (typeof Sfx !== "undefined" && Sfx.ambientStop) Sfx.ambientStop();
           return { text: "她盯着你掌心的丹丸看了很久，忽然笑了一下，仰头服下。\n\n「原来恩公要的是……干净。」她阖眼前最后说了这一句。\n\n你把她安置在陈家坊铺外，转身离开。明日她醒来，只会记得自己遇了袭、被无名氏所救——而你，是个无名氏。\n\n（账本：忘尘丹。她的情路，被你亲手封存在了今夜。）", kind: "sys" };
         },
       },
@@ -1815,6 +1818,9 @@ const STORY = [
         hint: "改命的起点：她会记得你（命途参数自此不同）",
         effect(s) {
           Engine.writeLedger("chen_remember", "救陈巧倩之后，没有喂忘尘丹——她记得你");
+          // polish-huangfeng C4（Fable P1-5）：被记住的一拍——一声清磬 + 暖光微漾（有些事没有被封存）
+          if (typeof Sfx !== "undefined" && Sfx.play) Sfx.play("chime");
+          if (typeof Fx !== "undefined" && Fx.flash) Fx.flash("#ffe9c8", 620, 0.22);
           return { text: "你把忘尘丹收了回去。她怔住，随即极轻地、极认真地点了点头。\n\n「韩师弟。」她记下了你的名字，一字一顿，像刻进什么地方，「大恩不言谢。往后你在谷中，凡有陈家在的地方——必有你一席。」\n\n暮色四合，她朝你深深一礼，转身没入林间。\n\n（账本：她记得。这一夜没有被封存——它会长成什么，谁也不知道。）", kind: "good" };
         },
       },
@@ -1829,9 +1835,13 @@ const STORY = [
   {
     id: "jindi_meeting",
     cg: "huangfeng_dadian",
-    // 门槛软化·双路触发：练气十一层是踏入血幕的硬门槛（杂役入禁地的命线）——一旦达成即可参选，
-    // 不必空等大比日历到点（旧 absMonth>=xueshi_due 那路会卡出天命栏「约余0月」的死等）。
-    cond: (s) => !s.flags.xueshi_opened && !!s.flags.xueshi_due && s.realmIndex >= 10,
+    // polish-huangfeng A1①（GPT P0-1）：xueshi_due 成真门槛——大比时节是日历锚（xianhui_due/
+    // dabi_due 同构），名额大会「时节到 且 修为到（练气十一层=踏入血幕的命线）」双门槛齐备才开。
+    // 旧「门槛软化」只查修为＝日历锚形同虚设（倒计时挂在天命栏，大会却随到随开——时间预算失真之根）。
+    // 修为曲线已校准至 30~48 月可达十一层（A1③），与 due=+30 月天然对齐：快者等时节（备货窗口），
+    // 慢者时节已过、修为一到即开——两头都不死等。
+    cond: (s) => !s.flags.xueshi_opened && !!s.flags.xueshi_due && s.realmIndex >= 10
+                 && State.absMonth() >= s.flags.xueshi_due,
     bgm: "tense",
     objTitle: "大比时节",
     objHint: "血色禁地开启在即——名额之争，今日在大殿见分晓。",
@@ -2096,9 +2106,9 @@ const STORY = [
       },
       {
         text: "「弟子韩立，拜见师尊。」只拱手，不跪。",
-        hint: "藏拙——保持分寸",
+        hint: "藏拙分寸——铸入心性",
         effect(s) {
-          State.setFlag("hanli_formal_bow");
+          Engine.recordTemperament("hanli_formal_bow", "stoic", "拜师李化元·只拱手不跪——恩要认，分寸要留，这是你在权势里活下来的姿势");
           return { text: "你拱手为礼，不卑不亢——李化元看在眼里，倒也没说什么，只捋须一笑。", kind: "event" };
         },
         resolve: "advance",
@@ -2147,9 +2157,9 @@ const STORY = [
     choices: [
       {
         text: "接过乌龙夺，四爪在掌心一收。「多谢齐前辈。」",
-        hint: "即刻试手——感受法宝脾性",
+        hint: "即刻试手——铸入心性",
         effect(s) {
-          State.setFlag("wulong_test");
+          Engine.recordTemperament("wulong_test", "sentiment", "乌龙夺到手当场试爪——拼死换来的东西，藏不住那点少年心气");
           return { text: "你催动灵力，四道墨绿爪影在掌心一收一放——蛟毒隐隐流转，果然凶毒。", kind: "event" };
         },
         resolve: "advance",
@@ -2174,6 +2184,16 @@ const STORY = [
     cg: "huangfeng_dadian",
     skipIf: (s) => s.flags.qingyuan_given,
     cond: (s) => State.realm().tier === "foundation" && !s.flags.qingyuan_given,
+    // polish-huangfeng B3（Fable P1-6）：收官段天命栏不再"静待时机"——出禁地→炼丹→嗑丹→渡劫全程指路
+    objTitle: "筑基之路",
+    objHint(s) {
+      if (!s.flags.zhuji_lian_done) {
+        return State.count("xueshi_zhuyao") >= 4
+          ? "血色主药在手——回洞府（黄枫谷山门）借地火之屋「地火炼丹」，炼出你的筑基丹"
+          : "血色主药不足四株——凑足四株，方能借地火之屋开炉炼丹";
+      }
+      return `筑基丹×${State.count("zhuji_dan")} 满匣——回洞府「尝试突破」，以丹开路冲击筑基`;
+    },
     title: "筑基 · 青元剑诀",
     text(s) {
       const t = [
@@ -2224,10 +2244,10 @@ const STORY = [
       },
       {
         text: "「先去洞府安顿，再参也不迟。」",
-        hint: "先安身——磨刀不误砍柴工",
+        hint: "先安身——铸入心性",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 3);
-          State.setFlag("qingyuan_settle_first");
+          Engine.recordTemperament("qingyuan_settle_first", "stoic", "得青元剑诀不急参剑·先安顿洞府——磨刀不误砍柴工，你惯于把根基打稳再动手");
           return { text: "你没有急着闭关——先去洞府安顿好日常，再静心参剑。磨刀不误砍柴工。", kind: "event" };
         },
         resolve: "advance",
@@ -2259,7 +2279,7 @@ const STORY = [
     choices: [
       {
         text: "灵泉眼：泉眼吐灵，修炼事半功倍——但先得击退占洞的妖物。",
-        hint: "修炼效率最高（动漫之选）",
+        hint: "闭关修为 +15%（动漫之选·得先斗一场灵猿）",
         effect(s) {
           State.setFlag("dongfu_done"); s.flags.dongfu_type = "lingquan";
           Engine.addMilestone("洞府落成：灵泉眼", "bigitem");
@@ -2269,12 +2289,12 @@ const STORY = [
       },
       {
         text: "僻静谷：藏风聚气，最不打眼。",
-        hint: "藏拙者之选：洞府不显，扬名涟漪-（低调度+）",
+        hint: "藏拙者之选：闭关走火入魔概率 -15%（藏得深，睡得着）",
         effect(s) {
           State.setFlag("dongfu_done"); s.flags.dongfu_type = "pijing";
           Engine.addMilestone("洞府落成：僻静谷", "bigitem");
           Engine.writeLedger("dongfu_pijing", "择僻静幽谷开洞府——藏拙者的本能");
-          return { text: "你选了最不打眼的那道幽谷。同门都说杂役出身就是小家子气——你笑笑不答。\n\n谷口布下迷踪阵旗，云雾一锁，神仙难寻。藏得深，才睡得着。（洞府隐蔽：是非更难寻上门。）", kind: "good" };
+          return { text: "你选了最不打眼的那道幽谷。同门都说杂役出身就是小家子气——你笑笑不答。\n\n谷口布下迷踪阵旗，云雾一锁，神仙难寻。藏得深，才睡得着。（洞府清静：闭关走火入魔概率 -15%。）", kind: "good" };
         },
       },
     ],
@@ -2332,10 +2352,12 @@ const STORY = [
       },
       {
         text: "先炼神风舟——路在脚下，赶路的家伙不能将就。",
-        hint: "互斥·精工神风舟：旅途遁速+2（行程更省月）",
+        hint: "互斥·精工神风舟：帆稳风顺——远行途中时有一月并作两月的路程",
         effect(s) {
           State.setFlag("daigong_fine_zhou");
-          return Engine.daigongForge(s, "齐云霄亲手裁皮为帆、削角为骨，帆骨间暗刻风纹：「船是脚，脚快一步，命长一寸。」——此后神风舟御风更疾（遁速+2，行程更省月）。");
+          // polish-huangfeng C6：旧承诺「遁速+2」撞 travelTimeFactor 下限=实际无感——改写实：
+          // 真读点在 Engine._journeyActionTravel（御精工舟赶路，平安月有几成并作两月路程）
+          return Engine.daigongForge(s, "齐云霄亲手裁皮为帆、削角为骨，帆骨间暗刻风纹：「船是脚，脚快一步，命长一寸。」——此后你御神风舟远行赶路，帆骨引风，时常一月赶出两月的路程。");
         },
       },
       {
@@ -2405,6 +2427,9 @@ const STORY = [
     },
     onArrive(s) {
       State.setFlag("huangfeng_complete");
+      // polish-huangfeng B2（GPT P0-5）：记下篇终时刻——燕家堡调令延后 3 月（安家修行帆段），
+      // 厉飞雨回访窗（C1）也以此计时
+      s.flags.hf_complete_at = State.absMonth();
       State.setFlag("dayan_canjuan_got");
       State.give("dayan_canjuan", 1);
       Engine.settleLedger("ye_grudge", "夺丹的叶师叔身败名裂、死于雷万鹤剑下——这笔账，世界替你收了");
@@ -2438,6 +2463,79 @@ const STORY = [
   },
 
   /* ============================================================
+   * 彩霞山回访：厉飞雨（polish-huangfeng C1·Fable P0-1）
+   *   上一站种的三笔账（dabi_dan/dabi_watch/farewell_fang）全部指名"筑基归来再算"——兑现窗在此。
+   *   窗口=篇终后 6 月内亲赴演武厅；错过则燕家堡调令兜底结算（捎酒·账不赖）。
+   *   与 B2 篇终帆段同一段时间：调令延后 3 月，这 3~6 月正是回乡的空档。
+   * ============================================================ */
+  {
+    id: "lify_revisit",
+    where: "wuting",
+    skipIf: (s) => s.flags.lify_revisit_done
+      || (State.absMonth() - (s.flags.hf_complete_at || 0) >= 6),
+    cond: (s) => !!s.flags.huangfeng_complete,
+    bgm: "daily",
+    objTitle: "故人之约",
+    objHint(s) {
+      const left = 6 - (State.absMonth() - (s.flags.hf_complete_at || 0));
+      return `筑基已成，谷务未催——彩霞山的方向有人等你回去看一眼（演武厅的老位置）。这趟若不走，往后未必有空档${left > 0 ? `（约还等得起 ${left} 月）` : ""}。`;
+    },
+    title: "彩霞山 · 演武厅的老位置",
+    // bgm：daily（药庐古琴——回乡的调子）
+    text(s) {
+      const t = [
+        { scene: "七玄门 · 演武厅" },
+        { amb: "market" },
+        { shot: "establish" },
+        "重回彩霞山那日，山门的石阶还是老样子，只是巡山弟子的面孔全换了新的。演武厅里刀风霍霍——场院中央那个正在给弟子喂招的背影，你隔着半座山也认得。",
+        { shot: "focusRight" },
+        "厉飞雨。腰牌换成了执法堂首座的鎏金牌，鬓角有了风霜，可收刀转身看见你的那一瞬，咧开的嘴还是当年那个五里沟少年。",
+        { say: "厉飞雨", emo: "laugh", text: "「韩立！」他把刀往架上一插，大步流星走过来，一拳捶在你肩上，「好小子，一走这些年——听说你在仙门里出息了？」" },
+      ];
+      if (Engine.readLedger("lifeiyu_farewell_fang")) {
+        t.push("他从怀里摸出一卷边角磨毛的旧纸——正是你临行那夜留下的药方。「一顿没落。」他扬了扬下巴，中气十足，「你听听这嗓门，亏空压住了。」");
+      }
+      if (Engine.readLedger("lifeiyu_dabi_dan")) {
+        t.push({ aside: "大比前那炉精元丹、临别那坛酒——这些年你在谷里拼死拼活的时候，这里的账，他一笔一笔都记着。" });
+      } else if (Engine.readLedger("lifeiyu_dabi_watch")) {
+        t.push({ aside: "当年大比你在台下给他鼓的掌，他记到了今日。" });
+      }
+      t.push(
+        { wait: 500 },
+        { say: "厉飞雨", emo: "laugh", tone: "loud", text: "「少废话——」他反手又把刀抄了起来，刀尖点地，眼里烧起当年大比的那股火，「韩立！陪我过两招！用拳脚，别拿你那些仙家把戏糊弄我！」" },
+      );
+      return t;
+    },
+    onArrive(s) {
+      State.setFlag("lify_revisit_done");
+      if (typeof Sfx !== "undefined") Sfx.play("confirm");
+    },
+    choices: [
+      {
+        text: "「请。」收起法力，用七玄门的老本行陪他打",
+        hint: "真切磋——凡人相搏，点到即止（他如今是执法堂首座，半分不会让你）",
+        effect(s) {
+          Engine.startLifyRevisitFight();
+          return { text: "你把外袍搭上兵器架，法力压回丹田——演武厅的老位置，还是当年那两个人。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "「这身骨头生疏了——坐下喝酒，把这些年补给我听。」",
+        hint: "只叙旧——账一样结，只是他会念叨很久「没打成」",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 6);
+          s.demon = Math.max(0, (s.demon || 0) - 4);
+          Engine._settleLifyLedgers("talk");
+          Engine.addMilestone("彩霞山回访：与厉飞雨把这些年一口气聊完", "sentiment");
+          return { text: "他撇撇嘴收了刀：「没劲。」酒却搬得飞快。从执法堂的新差事说到五里沟的旧红浆果，一坛见底，他忽然压低声音：「在外头……好好活着。」（心境+6·心魔-4）", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  /* ============================================================
    * 魔道争锋篇·前置：燕家堡之战（特别篇）——增量D
    *   官方序：风起天南 → 燕家堡之战（特别篇）→ 魔道争锋（22~46话）。
    *   考据 ≥2 源：modao-design §前置·燕家堡之战 + 裁决6（李化元强制进场 / 王蝉=大BOSS·结不死不休之仇·
@@ -2449,10 +2547,21 @@ const STORY = [
   {
     id: "yanjia_summon",
     skipIf: (s) => s.flags.yanjia_summoned,
-    cond: (s) => s.flags.huangfeng_complete && !s.flags.yanjia_summoned,
+    // polish-huangfeng B2（GPT P0-5）：调令延后 3 月——篇终留一段"安家修行"帆段
+    // （回彩霞山赴约/闭关/采买皆可；旧版 ye_finale 一落幕调令即至，篇终零喘息）
+    cond: (s) => s.flags.huangfeng_complete && !s.flags.yanjia_summoned
+      && (State.absMonth() - (s.flags.hf_complete_at || 0) >= 3),
     bgm: "tense",
-    objTitle: "燕家堡调令",
-    objHint: "李化元一纸调令已下——魔道入侵在即，燕家堡夺宝大会暗流涌动，七派各遣弟子赴会探底，伪灵根筑基的你也在名单之列。",
+    objTitle(s) {
+      const waiting = State.absMonth() - (s.flags.hf_complete_at || 0) < 3;
+      return waiting ? "山雨欲来" : "燕家堡调令";
+    },
+    objHint(s) {
+      const waiting = State.absMonth() - (s.flags.hf_complete_at || 0) < 3;
+      return waiting
+        ? "叶师叔之乱方平，谷中气氛一日紧过一日——传闻魔道于北面集结，谷务的调令怕是不远了。趁这几个月安顿修行、了却私事。"
+        : "李化元一纸调令已下——魔道入侵在即，燕家堡夺宝大会暗流涌动，七派各遣弟子赴会探底，伪灵根筑基的你也在名单之列。";
+    },
     title: "魔道争锋篇·前置 · 燕家堡调令",
     text(s) {
       const t = [
@@ -2503,6 +2612,12 @@ const STORY = [
         Engine.writeLedger("yinse_shuye_got", "李化元藏书阁自选功法·无意得一页银色薄篇（青元剑诀同源·似为成对书页之下半）——上半页不知在何人之手（远线钩）。");
       }
       Engine.writeLedger("yanjia_summon", "李化元强制调令——遣伪灵根筑基的你赴燕家堡夺宝大会，替黄枫谷探底");
+      // C1 兜底：回访窗错过（6 月内未赴彩霞山）——账不赖，形式换成他捎来的那坛酒
+      if (!s.flags.lify_revisit_done && !s.flags.lify_ledgers_settled
+        && (Engine.readLedger("lifeiyu_dabi_dan") || Engine.readLedger("lifeiyu_dabi_watch") || Engine.readLedger("lifeiyu_farewell_fang"))) {
+        Engine._settleLifyLedgers("missed");
+        Engine.log("收拾行装时，门房送来一坛用麻绳捆得结结实实的老酒——彩霞山来的。附的字条只有一行刀刻般的字：「等你回来补上这两招。——厉」", "event");
+      }
       Engine.addMilestone("魔道争锋篇·前置：燕家堡之战 启（李化元强制进场）", "story");
       if (typeof Sfx !== "undefined") Sfx.play("danger");
     },
@@ -2517,10 +2632,10 @@ const STORY = [
       },
       {
         text: "「三日内动身……」先多打探一番燕家堡的虚实。",
-        hint: "谨慎——多打听一日再走",
+        hint: "谨慎打探——铸入心性",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 2);
-          State.setFlag("yanjia_recon");
+          Engine.recordTemperament("yanjia_recon", "stoic", "赴燕家堡前先打探地形与魔道风声——谋定而后动，你从不打没数的仗");
           return { text: "你没有急着动身——先向谷中同门打听了燕家堡的地形与魔道的风声，多一分了解，少一分凶险。", kind: "event" };
         },
         resolve: "advance",

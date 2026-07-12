@@ -60,6 +60,12 @@
         liechang:{ name: "封岳猎场", kind: "danger", x: 80, y: 33, icon: "🗡",
                    desc: "岩壁上几道干涸的暗红刮痕，地上散着断刃与空了的储物袋——猎人的食槽。",
                    loot: { xueshi_zhuyao: 2, lingshi: 3 }, rich: true },
+        // polish-huangfeng D2（GPT P1-5）：禁地普通层暖身战——血煞兽（jindi_beast·130HP）终于有处可遇。
+        // 可绕开：岩穴与花圃间的岔场（直连边仍在，不猎照走）；猎杀走既有 exmapHunt 管线（huntEnemy 节点级指定）。
+        xunchang:{ name: "血煞兽巡场", kind: "danger", x: 32, y: 40, icon: "🩸",
+                   huntEnemy: "jindi_beast", huntName: "血煞兽",
+                   desc: "洼地里蹄爪印纵横、腥气刺鼻——血雾里游荡的血煞兽把这片草甸当了食场。绕开便是，但兽巢边的主药没人敢采。",
+                   loot: { xueshi_zhuyao: 1, lingshi: 2 }, rich: false },
         yanxue:  { name: "庇护岩穴", kind: "rest", x: 38, y: 53, icon: "⛺",
                    desc: "一处背风的岩洞，洞口有前人布过的简陋遮息阵——禁地里难得能喘气的地方。" },
         guzhen:  { name: "古阵残纹", kind: "lore", x: 66, y: 17, icon: "✦",
@@ -74,6 +80,8 @@
         ["waipu_x", "jishi", 1], ["waipu_x", "yanxue", 1],
         ["jishi", "huapu", 1],
         ["yanxue", "zhongtan", 1], ["yanxue", "huapu", 2],
+        // 血煞兽巡场：岩穴↔花圃的岔线（1+1 钟=与直线 2 钟等价——它在"路边"而非"路上"，可绕开）
+        ["yanxue", "xunchang", 1], ["xunchang", "huapu", 1],
         ["huapu", "shentan", 2],
         ["zhongtan", "liechang", 1], ["zhongtan", "guzhen", 2],
         ["liechang", "guzhen", 1],
@@ -90,6 +98,9 @@
         { at: 18, nodes: ["waipu_d", "waipu_x"], note: "第四日。血幕向内卷了一里——外环的药圃没在赤红里，再也进不去了。" },
         { at: 24, nodes: ["jishi", "huapu"], note: "第五日。血幕再次收拢，灯火与花圃尽数吞没。禁地只剩下最深的一圈。" },
       ],
+      // 巡场猎杀文案（D2 暖身战·胜负两报）
+      huntWinNote: "血煞兽轰然扑倒，血雾里的腥气散了大半——巡场归于死寂，兽巢边那几株没人敢采的主药，如今是你的了。",
+      huntLoseNote: "血煞兽的爪风撕开你的衣襟，你且战且退才甩脱了它——这头畜生守着食场，急不得。养好气血再来，或者干脆绕开。",
       // 路途见闻（移动演出的一行字——纯氛围，永不强制战斗）
       notes: [
         "血雾贴着地皮流，三丈外人影难辨。",

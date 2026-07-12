@@ -96,7 +96,8 @@ console.log("\n=== 5. 大件链拆分（乌龙夺即取 / 神风舟后续）==="
   const wl = WORLD.bigitems.find(b => b.id === "wulongduo");
   assert(wl && !wl.far && wl.cat === "fabao", "乌龙夺为非 far 法宝大件（血色禁地即可炼）");
   const sf = WORLD.bigitems.find(b => b.id === "shenfengzhou");
-  assert(sf && sf.far === true && sf.name === "神风舟", "神风舟为 far 后续件（同出墨蛟一身）");
+  // polish-huangfeng C3（v318）：神风舟改动态分段图鉴（皮在手/代工中/已炼成）——齐云霄代工在本章兑现，不再是 far 远件
+  assert(sf && !sf.far && sf.name === "神风舟" && typeof sf.stat === "function", "神风舟为本章动态大件（皮·鳞→代工→炼成，同出墨蛟一身）");
 }
 
 console.log("\n=== 6. 炼器剧情节点 wulong_forge：非阻塞铁律（skipIf ≡ !cond）===");
