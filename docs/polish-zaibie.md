@@ -48,19 +48,26 @@
 
 | # | 项 | 改法 | 出处 | 工程 |
 |---|------|------|------|------|
-| C1 | **承诺已兑现账不销×2**：quhun_huashen 带走线（starsea 小寰岛实际炼成只写新账不销旧）/diejing（小寰岛拾回修为拍不 settle+两章归因口径漂移） | 小寰岛闭关节点补两 settle；"落海暂虚"改双因并提（她吸走的+落海再虚的） | Fable P1-2 | 小 |
-| C2 | **cut1 离开天南缺拍**：题眼台词"总有一天我会回来的"无静默留白；宿敌王蝉只活在 aside（bt_zhanwangchan 在库不用）；誓言后无 pullOut | 追兵拍加 actor 王蝉+一句被光柱吞没的"韩立！——"；誓言前 amb:null+wait、后 pullOut | Fable P1-5 | 小 |
-| C3 | **cut2 乱星海缺拍**：首见海全程无声床；定格 zoom 推近人——设计钦定大远景空镜收向海平线 | 落水后 amb:"wind"（duck:false）；末拍改 pullOut 收海平线+wait 拉长+guide 前静默一拍 | Fable P1-6 | 小 |
-| C4 | **章末告别清单缺位**：此去几十年，对凡人牵挂零回望（fate-design §三写给这个位置） | cut1"最后回望"选项结果文案按 flag 具名（墨彩环/厉飞雨/陈巧倩各一句剪影回想——选项本来就在，只是望见的全是山不是人） | Fable P1-7 | 小 |
-| C5 | **四敌字牌裸奔**：金背妖螂/夺舍者/童老/鬼老无战斗立绘无映射 | 短期：夺舍者/童老/鬼老映射 bt_sanxiu/bt_moxiu 通用底；金背妖螂+夺舍者真身写入生图批 DEFS（红拂/云露半身像同批立案） | Fable P1-8 + P2-4 | 映射极小 |
-| C6 | **大件到手不诚实**：绿煌剑无整备窗（到手即被三场白给淹没）；图纸/令牌矿洞 cond 不检查持有 | 夺舍战报后一拍法宝阁整备提示；kuangdong cond 补 require 图纸+令牌 | GPT P1-5 | 小 |
+| C1 ✅v320 | **承诺已兑现账不销×2**：quhun_huashen 带走线（starsea 小寰岛实际炼成只写新账不销旧）/diejing（小寰岛拾回修为拍不 settle+两章归因口径漂移） | 小寰岛闭关节点补两 settle；"落海暂虚"改双因并提（她吸走的+落海再虚的） | Fable P1-2 | 小 |
+| C2 ✅v320 | **cut1 离开天南缺拍**：题眼台词"总有一天我会回来的"无静默留白；宿敌王蝉只活在 aside（bt_zhanwangchan 在库不用）；誓言后无 pullOut | 追兵拍加 actor 王蝉+一句被光柱吞没的嘶吼（⚠实装喊「厉飞雨！——」非"韩立"——认脸不认名勘注锁死，见 D 项）；誓言前 amb:null+wait、后 pullOut | Fable P1-5 | 小 |
+| C3 ✅v320 | **cut2 乱星海缺拍**：首见海全程无声床；定格 zoom 推近人——设计钦定大远景空镜收向海平线 | 落水后 amb:"wind"（duck:false）；末拍改 pullOut 收海平线+wait 拉长+guide 前静默一拍 | Fable P1-6 | 小 |
+| C4 ✅v320 | **章末告别清单缺位**：此去几十年，对凡人牵挂零回望（fate-design §三写给这个位置） | cut1"最后回望"选项结果文案按 flag 具名（墨彩环/厉飞雨/陈巧倩各一句剪影回想——选项本来就在，只是望见的全是山不是人） | Fable P1-7 | 小 |
+| C5 ✅v320 | **四敌字牌裸奔**：金背妖螂/夺舍者/童老/鬼老无战斗立绘无映射 | 短期：夺舍者→bt_sanxiu、童老/鬼老→bt_moxiu、金背妖螂→bt_wugong 占位映射已落；真身 DEFS+红拂/云露半身像已立案（见下生图批栏）；殉道场 meetNpc hongfu/yunlu+图鉴条目已落 | Fable P1-8 + P2-4 | 映射极小 |
+| C6 ✅v320 | **大件到手不诚实**：绿煌剑无整备窗（到手即被三场白给淹没）；图纸/令牌矿洞 cond 不检查持有 | 夺舍战报后一拍法宝阁整备提示；kuangdong 走**叙事诚实**（text 开头 aside 点名双钥缺一不可）——硬 cond 持有检查实测会把 backbone 无头驱动（不经 modao e1 机缘房）误判成死链、且异常档缺物=永久软锁，故弃 | GPT P1-5 | 小 |
 | C7 | 假选择清理：星夜/调息×2（世界侧承诺零读点）/hold_realm/accept_drop/calm 死旗 | 按 modao C7 惯例：心性色彩改 recordTemperament、纯文案收敛（只说气血）、calm 删；rest 线给下一战敌 +小 buff（诚实化） | GPT 6.2 + Fable P2-1/2 | 小 |
 | C8 | worldNews 补 Act2 崩盘质感：浮云子陨落/婉拒掩月宗/拜别吕蒙卫娘各一条；modao_awol 章切清旗；旧档 quhun done 无 side 自愈 invariant | 三条传闻+一行清旗+章首自愈 | Fable P2-6 + GPT P2-2/§7.2 | 小 |
 
 ## D · 跨站立案（本站不实装）
 
-- **王蝉认脸不认名勘注**（ep53"知真名"与厉飞雨背锅长线锁死）——zaibie-tiannan-design 头部记"有意取舍"，重返天南对质拍读。〔Fable P2-5〕
-- **guzhen_tuzhi 阵法线下游**（"阵法大家之路起点"承诺星海两章零引用）——重返天南/阵法 build 线读一次。〔Fable P2-7〕
+- **王蝉认脸不认名勘注** ✅v320 已落——zaibie-tiannan-design.md 头部勘注段已加（ep53"知真名"不实装=有意取舍·cut1 嘶吼拍按「厉飞雨」口径实装）；重返天南对质拍读（chongfantiannan-design §幕Ⅲ·15 背锅独白拍已挂）。〔Fable P2-5〕
+- **guzhen_tuzhi 阵法线下游** ✅v320 已立案——chongfantiannan-design §幕Ⅲ·12（cf_a3_yicang 辛如音阵法传承）记"须读图纸一次做台词点名"；本站不实装。〔Fable P2-7〕
+
+### 生图批立案（scripts/genart.js Z1_DEFS 已写好·待跑）
+
+- `bt_jinbei`（金背妖螂战姿·鎏金硬甲巨螂）/ `bt_duoshezhe`（御灵宗夺舍者·青灰袍阴鸷修士持绿煌剑）/
+  `hongfu`（红拂半身像·白衣风云幡结丹女修）/ `yunlu`（云露老魔半身像·慵懒绛紫华袍元婴魔修）。
+  跑：`node scripts/genart.js bt_jinbei bt_duoshezhe hongfu yunlu` → trimfeet + 目检朝向注册 art.js →
+  ui.js `_battlerByName` 把占位映射（妖螂→bt_wugong / 夺舍者→bt_sanxiu）替换为专属 id。〔C5 后续〕
 - **经济联审**（v319 后入章身家 91+ 灵石且本章零消费）——初入星海站联审物价。〔GPT P1-9〕
 - **Build 三路本章乘法点**（六战不读剑/丹/阵任何熟练）——若 B1 帆窗落地后仍无经营感，星海站回看。〔GPT P1-2〕
 

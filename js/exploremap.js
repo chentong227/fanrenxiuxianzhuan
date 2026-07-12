@@ -184,6 +184,7 @@
       name: "七玄门后山",
       subtitle: "雾锁千山 · 猎王之道",
       bg: "houshan",
+      bgm: "journey",            // playtest 2026-07-12：采药探山听行旅笛弦——悬疑弦（tense）留给血色禁地这等真险境
       clockMax: 0,               // 无灾厄钟（脚程折耗月，不关节点）
       entry: "linkou",
       // 箱庭演出层（B3）：林间=草地脚步 + 白岚横游 + 风床 + 偶有鸟鸣

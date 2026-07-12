@@ -704,7 +704,7 @@ const Engine = {
     const s = State.data;
 
     // L3: 行动过程叠层动画
-    const _overlayMap = { cultivate: "meditate", rest: "meditate", gather: "gather", explore: "explore", adventure: "explore", alchemy: "meditate", investigate: "explore", spar: "explore" };
+    const _overlayMap = { cultivate: "meditate", rest: "meditate", gather: "gather", explore: "explore", adventure: "explore", alchemy: "meditate", investigate: "explore", spar: "explore", xiuzhen: "gather" };
     if (_overlayMap[action] && UI._playActionOverlay) UI._playActionOverlay(_overlayMap[action]);
 
     if (action === "cultivate") { UI.openSeclusion(); return; }
@@ -740,6 +740,7 @@ const Engine = {
     else if (action === "liandan") { this.lianZhujiDan(); return; }
     else if (action === "hunt") { this.startWaihaiHunt(); return; }
     else if (action === "xunluo") { this.startXunluoPatrol(); return; }   // polish-modao A1②：前线巡逻月行动
+    else if (action === "xiuzhen") this.repairZhenwen();   // polish-zaibie B1：越国矿洞·修补阵纹（不 return——落月后走公共尾部 checkStory 接 kuangdong 收口）
 
     this.checkLifespan();
     this.checkStory();
@@ -2653,6 +2654,41 @@ const Engine = {
     }
   },
 
+  /* -------- 循原路下山（playtest 2026-07-12 用户反馈）--------
+   * 旧版唯一出口=入口节点：深处猎杀完还要一格格点回去（归途零内容纯重复点击）。
+   * 现在任意节点可"收队下山"：BFS 算回入口的最短脚程、一次性折进钟数（归程时间照付，不白送），
+   * 然后走 finishExmap 正常结算。去程有迷雾探索感，归途一键结算——重复劳动没了，时间账还是诚实的。 */
+  exmapReturnHome() {
+    const s = State.data, x = s.exmap;
+    if (!x) return;
+    const f = x.stack[0];
+    const map = ExploreMap.MAPS[f.mapId];
+    if (!map || !map.fog) return;
+    if (x.stack.length > 1) { this.toast("先离开洞窟，再言下山"); return; }
+    // BFS 最短钟数回入口（edges: [a, b, clock]）
+    const adj = {};
+    (map.edges || []).forEach(e => {
+      (adj[e[0]] = adj[e[0]] || []).push([e[1], e[2] || 1]);
+      (adj[e[1]] = adj[e[1]] || []).push([e[0], e[2] || 1]);
+    });
+    const dist = { [f.node]: 0 };
+    const queue = [f.node];
+    while (queue.length) {
+      queue.sort((a, b) => dist[a] - dist[b]);   // 小图（<10 节点）——简易 Dijkstra 足够
+      const cur = queue.shift();
+      (adj[cur] || []).forEach(([nb, w]) => {
+        const d = dist[cur] + w;
+        if (dist[nb] == null || d < dist[nb]) { dist[nb] = d; queue.push(nb); }
+      });
+    }
+    const hops = dist[map.entry] || 0;
+    if (hops > 0) {
+      f.clock = (f.clock || 0) + hops;
+      this.log(`你辨了辨来路的刻痕，循原路下山——归程 ${hops} 钟脚程，不赶，但一步没少走。`, "event");
+    }
+    this.finishExmap("leave");
+  },
+
   // 离开禁地 / 五日强制传出：结算出图
   finishExmap(reason) {
     const s = State.data, x = s.exmap;
@@ -4116,6 +4152,22 @@ const Engine = {
   },
 
   /* -------- 打坐调息：恢复 -------- */
+  /* polish-zaibie B1（Fable P0-4 + GPT P0-2）：越国矿洞专属月行动「修补阵纹」——
+   *   kuangdong 帆窗的 objHint 承诺"这一个月里你按图纸补全阵纹"，此行动让它成真（帆窗有门·承诺兑现）。
+   *   passTime(1) 真耗月；flags.zhenwen_repaired 计数（文案池按次轮换）；无数值收益（修阵本身即目的）。 */
+  repairZhenwen() {
+    const s = State.data;
+    this.passTime(1);
+    const n = (s.flags.zhenwen_repaired || 0) + 1;
+    s.flags.zhenwen_repaired = n;
+    const lines = [
+      "你按辛如音的图纸，把西北角的阵纹补全了三尺——残缺万载的刻痕里，重新透出一缕幽光。",
+      "你以指代笔、灵力为墨，沿着万载前的旧刻一寸寸描补——图纸上的天书，渐渐在石面上活了过来。",
+      "你剔去阵沟里的积尘碎石，将断裂的纹路重新接续——古阵深处，传来一声几不可闻的嗡鸣，像沉睡的东西翻了个身。",
+    ];
+    this.log(`【修补阵纹】${lines[(n - 1) % lines.length]}`, "event");
+  },
+
   rest(silent = false) {
     const s = State.data;
     const realm = State.realm();
@@ -5673,6 +5725,19 @@ const Engine = {
   // 曲魂随战（canon C3：本章=尸傀·血刃附傀；身外化身祭炼在小寰岛闭关。留府线夺回前 sideUnit 为空=返 null）
   _quhunSide() { return this.sideUnitFor("zaibie"); },
 
+  // polish-zaibie A1/A3（GPT P0-1/P1-3）：曲魂"只此一战"的副本数值缩放——
+  // sideUnitFor 返回的拷贝里 moves 数组仍是 s.sideUnit.moves 的同一引用，直接改会污染本体
+  // （它还要给 starsea 用），故逐招深拷贝再乘系数。mul<1=群战收着打（玩家占比拉回 ≥35%）。
+  _quhunSideScaled(mul) {
+    const qu = this._quhunSide();
+    if (!qu) return null;
+    if (mul !== 1) {
+      if (qu.atk != null) qu.atk = Math.max(1, Math.round(qu.atk * mul));
+      qu.moves = (qu.moves || []).map(m => Object.assign({}, m, { dmg: Math.max(1, Math.round((m.dmg || 0) * mul)) }));
+    }
+    return qu;
+  },
+
   // —— C1 金背妖螂·险战（fieldCycle 复用：韩立祭出随身「颠倒五行阵图」逐回合反制金背大妖）——
   startJinbeiFight() {
     const s = State.data;
@@ -5705,25 +5770,83 @@ const Engine = {
   },
 
   // —— C2 御灵宗夺舍者·夺剑（waves 二阶段：夺舍体 → 结丹残念；胜得绿煌剑+奇虫榜玉简）——
+  //     polish-zaibie A1（GPT P0-1·98.5pt 断崖根治）：
+  //     · 留府线（zaibie_quhun_pending）＝夺舍者强占的正是曲魂躯壳——新夺未祭炼、契合不全（一阶段
+  //       hp 打折）；一阶段碎茧的瞬间，躯壳挣脱认主回身，二阶段以侧位临时入场（战中 sides.push——
+  //       噬金虫 sp.summon 同款 _makeSideFighter 管线）。此刻血刃未附（附傀在 zaibie_a1_after 兑现），
+  //       故用空手尸傀招式、威势略逊执刃一线。
+  //     · 带走线＝曲魂血刃 side 全程在场，此战独削 ×0.85（_quhunSideScaled 副本缩放·不动 s.sideUnit）。
+  //     · 温养/强催真实差异（曲魂在场那一拍结算）：温养(quhun_safe_refine)=护主一拍替你挡一击（护体+16）；
+  //       强催=此战攻势更猛（招式 ×1.12——侧位伤害走 mv.dmg 直算，moves 已是本场拷贝、就地缩放安全）。
   startDuosheFight() {
     const s = State.data;
     this._nextFightType = "zb_duoshe";
     const player = this.playerFighter();
+    const stayLine = !!s.flags.zaibie_quhun_pending;   // 留府线：曲魂躯壳正在敌手
     const p1 = Object.assign({}, WORLD.enemies.yuling_duoshe);
     const p2 = Object.assign({}, WORLD.enemies.yuling_zhenshen);
-    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    if (stayLine) {
+      // 躯壳是昨夜才抢到手的——未经祭炼、神魂与傀身契合不全，催不出这具躯壳的全力
+      p1.hp = Math.round(p1.hp * 0.72);
+      p1.introNote = "御灵宗一名结丹修士夺舍败露——他强占的正是曲魂的躯壳！昨夜才抢到手、未经祭炼，神魂与傀身契合不全，催不出全力（气血大减）。碎开这层强占的「茧」，张铁的遗蜕自会挣脱认主。他执一柄通体莹绿的古剑「绿煌剑」，剑势仍是结丹手笔——莫要轻敌。";
+    }
+    const sides = []; const qu = this._quhunSideScaled(0.85); if (qu) sides.push(qu);
     this._combat = new CombatAPI.Combat({
       // v267：越阶恶战(1v1+waves)缩开局间距（玩家 pos3·敌 pos7·gap4）——夺剑硬撼即刻接战，不空走。
       player, enemies: [p1], waves: [[p2]], maxRounds: 18, W: 11, lanes: 2, sides,
       playerPos: 3, enemyPos: 7,
     });
+    const c = this._combat;
+    // 曲魂在场那一拍的温养/强催结算（带走线=开局；留府线=碎茧回身时，见下方注入钩）
+    const quTemper = (cc, unit) => {
+      if (s.flags.quhun_safe_refine) {
+        cc.player.shield = (cc.player.shield || 0) + 16;
+        cc._log("【温养之契】曲魂抢前半步、傀身横挡——替你生生卸下一记剑势（护体+16）。温养的深契，在这一拍还了回来。");
+      } else if (unit) {
+        if (unit.atk != null) unit.atk = Math.round(unit.atk * 1.12);
+        (unit.moves || []).forEach(m => { m.dmg = Math.round((m.dmg || 0) * 1.12); });
+        cc._log("【强催之威】血煞在傀身经脉里奔涌——强催的曲魂攻势更猛（此战伤害+12%）！");
+      }
+    };
+    if (qu) quTemper(c, c.sides.find(sd => sd.id === "quhun_xieren"));
+    if (stayLine) {
+      // 碎茧认主回身：一阶段（被强占的曲魂躯壳）碎的瞬间＝夺舍者被逐出傀身——波次切换拍把躯壳
+      // 以侧位临时注入反戈（战中 sides.push=引擎原生支持，噬金虫召唤同款管线）
+      const baseSpawn = c._maybeSpawnWave.bind(c);
+      c._maybeSpawnWave = function () {
+        const hadWave = this._pendingEnemyWaves && this._pendingEnemyWaves.length;
+        baseSpawn();
+        if (hadWave && (!this._pendingEnemyWaves || !this._pendingEnemyWaves.length) && !this._quhunReturned) {
+          this._quhunReturned = true;
+          const f = this._makeSideFighter({
+            id: "quhun_xieren", name: "曲魂", kind: "corpse",
+            hp: 190, hpMax: 190, mp: 60, mpMax: 60,
+            elem: "huo", nature: "corpse", guard: 0.32, move: 1, mastery: 1,
+            persona: { aggr: 8, prot: 5, kite: 2 },
+            // 血刃尚在你袖中未附（附傀在夺回后 zaibie_a1_after 兑现）——空手尸傀招式
+            moves: [
+              { name: "尸躯崩拳", dmg: 26, weight: 12, range: [1, 1], line: "曲魂一拳崩出，尸煞如潮砸向" },
+              { name: "腐煞抓击", dmg: 22, weight: 7, elem: "huo", range: [1, 2], line: "曲魂五指如钩，腐煞抓向" },
+              { name: "尸虹扑袭", dmg: 32, weight: 5, range: [1, 3], line: "曲魂化作一道灰虹，贯阵扑向" },
+            ],
+          });
+          f.pos = Math.max(0, Math.min(this.W - 1, this.player.pos + 1));
+          f.lane = 0;
+          this.sides.push(f);
+          this._log("「茧」碎的一瞬，那具躯壳竟自己动了——夺舍者的神魂被逐出傀身，张铁的遗蜕踉跄半步、缓缓转身，空洞的眼眶直直对上那缕结丹残念。曲魂，认主回身！");
+          quTemper(this, f);
+        }
+      };
+    }
     this._combatMeta = { type: "zb_duoshe" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log(qu
       ? "绿煌剑光大盛，那夺舍者厉声冷笑：「区区筑基，也敢觊觎本座的本命之器？」曲魂血刃横在你身前，正面硬撼那柄结丹古剑。"
-      : "绿煌剑光大盛，那夺舍者厉声冷笑：「区区筑基，也敢觊觎本座的本命之器？」你按住乌龙夺——碎他的躯壳，夺回张铁的身子。");
-    this.log("御灵宗夺舍者执绿煌剑迎面而来。他神魂虽是结丹，强占的躯壳却催不全本命之力——这是一场势均的越阶恶战。打碎躯壳，他那缕结丹残念仍会负隅顽抗（二阶段）。胜，则绿煌剑归你。", "event");
+      : "绿煌剑光大盛，那夺舍者厉声冷笑：「区区筑基，也敢觊觎本座的本命之器？」你按住乌龙夺——他抢的就是张铁的身子，碎开那层强占的「茧」，曲魂自会回到你这边。");
+    this.log(stayLine
+      ? "御灵宗夺舍者执绿煌剑迎面而来——他强占的正是曲魂的躯壳，昨夜才到手、催不出全力。碎开躯壳这层「茧」，张铁的遗蜕便会认主回身与你并肩；他那缕结丹残念仍会负隅顽抗（二阶段）。胜，则绿煌剑归你。"
+      : "御灵宗夺舍者执绿煌剑迎面而来。他神魂虽是结丹，强占的躯壳却催不全本命之力——这是一场势均的越阶恶战。打碎躯壳，他那缕结丹残念仍会负隅顽抗（二阶段）。胜，则绿煌剑归你。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -8898,7 +9021,7 @@ const Engine = {
       if (pend) {
         const hint = typeof pend.objHint === "function" ? pend.objHint(s) : pend.objHint;
         const pTitle = typeof pend.objTitle === "function" ? pend.objTitle(s) : pend.objTitle;
-        return { title: pTitle || pend.title || "眼前际遇", hint: hint || "做出抉择，推进剧情。" };
+        return { title: pTitle || pend.title || "眼前际遇", hint: hint || "做出抉择，推进剧情。", loc: pend.where || null };
       }
       return null;
     }
@@ -8928,15 +9051,25 @@ const Engine = {
         hint = "大比时节已至——只欠修为（练气十一层）。修满之日，名额之会即开。";
       }
     }
+    // polish-zaibie B1④：再别天南两段帆窗倒计时（xianhui_due 同构）——残营喘息 / 矿洞补阵纹
+    if (next.id === "zaibie_a3_yuanwu" && s.flags.zaibie_a3_due) {
+      const left = s.flags.zaibie_a3_due - State.absMonth();
+      if (left > 0) hint = `残营喘息，约 ${left} 月后动身元武——调息养伤、把该结的账结一结（残营调息/云游度月皆可）。`;
+    }
+    if (next.id === "zaibie_a4_kuangdong" && s.flags.zaibie_kuangdong_due) {
+      const left = s.flags.zaibie_kuangdong_due - State.absMonth();
+      if (left > 0) hint = `矿洞补阵纹，约 ${left} 月后阵纹蓄满——按辛如音的图纸把残纹一笔笔补全（修补阵纹/调息皆可度月）。`;
+    }
     const nTitle = typeof next.objTitle === "function" ? next.objTitle(s) : next.objTitle;
     if (!condOk) {
-      return { title: nTitle || "静待时机", hint: hint || "继续修炼、历练，时机未到。" };
+      return { title: nTitle || "静待时机", hint: hint || "继续修炼、历练，时机未到。", loc: next.where || null };
     }
     if (next.where && next.where !== s.location) {
       // 有 objHint 的节点保留自述、缀上去处；没写的沿用"前往「XX」"
-      return { title: nTitle || "前往", hint: hint ? `${hint}（去处：${locName}）` : `时机已至——前往「${locName}」即有际遇。` };
+      // loc：天命去处（playtest 2026-07-12——舆图上把"该去哪"画出来，不再让玩家猜）
+      return { title: nTitle || "前往", hint: hint ? `${hint}（去处：${locName}）` : `时机已至——前往「${locName}」即有际遇。`, loc: next.where };
     }
-    return { title: nTitle || "际遇将至", hint: hint || "条件已足，留意眼前之事。" };
+    return { title: nTitle || "际遇将至", hint: hint || "条件已足，留意眼前之事。", loc: next.where || null };
   },
   playStage(stage) {
     const s = State.data;

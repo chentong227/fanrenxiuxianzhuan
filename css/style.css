@@ -344,6 +344,18 @@ body.motion-off .title-seal, body.motion-off .create-title-block .subtitle { ani
 }
 .wm-pin-meta.here { color: #1c6a4a; }
 .wm-pin-meta.lock { color: #7c6c54; }
+/* 天命指引（playtest 2026-07-12）：主线去处的 pin——金圈呼吸+「★ 天命所指」标，舆图一眼知去处 */
+.wm-pin.fate .wm-pin-dot {
+  background: #d8a53c; border-color: #b8862a;
+  width: 14px; height: 14px;
+  animation: fatePulse 1.8s ease-in-out infinite;
+}
+.wm-pin.fate .wm-pin-label { color: #7a5410; font-weight: 700; }
+.wm-pin-meta.fate { color: #a06f14; font-weight: 700; top: 40px; }
+@keyframes fatePulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(216,165,60,.55), 0 0 0 0 rgba(216,165,60,.45); }
+  50% { box-shadow: 0 0 14px rgba(216,165,60,.85), 0 0 0 9px rgba(216,165,60,0); }
+}
 .wm-danger { font-style: normal; margin-right: 4px; padding: 0 4px; border-radius: 4px; }
 .wm-danger.d-lo { color: #256e44; }
 .wm-danger.d-mid { color: #96660e; }

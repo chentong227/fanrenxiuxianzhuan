@@ -4865,6 +4865,8 @@ const STORY = [
         { aside: "可还未及细看，城中已是一片哗然——金鼓原方向，黑煞教残部竟与天南各路魔修合流、倾巢来犯，灵兽山一脉临阵倒戈反水，正道大军节节败退……" },
         { say: "韩立", emo: "cold", tone: "low", text: "「金鼓原……黄枫谷的人，怕是都在那里。」" },
         { shot: "pullOut" },
+        // polish-zaibie C6（GPT P1-5）：大件到手要有整备窗——纯提示拍不强制（免得被三场恶战淹没）
+        { aside: "（今夜无论赶路还是调息，记得把绿煌剑请入法宝阁细细祭炼——【行头】里装备它，剑影分光才有真锋。）" },
       );
       return t;
     },
@@ -5034,6 +5036,9 @@ const STORY = [
     onArrive(s) {
       s.location = "jinguyuan";
       State.setFlag("zaibie_lhy_done");
+      // polish-zaibie C5（Fable P2-4）：殉道场的怀抱者与对手入风云录（半身像生图批立案·图鉴先行）
+      Engine.meetNpc("hongfu", "黄枫谷第一结丹女修、李化元的师姐——他以碎丹一诺赢回的人，抱着他走完了最后一程。");
+      Engine.meetNpc("yunlu", "合欢宗元婴中期老魔——擒红拂压境，被李化元碎丹一击逼得认真出手，认赌收兵。");
       Engine.writeLedger("zaibie_lihuayuan", "再别天南·金鼓原收束——云露老魔（元婴中期）擒红拂压境，李化元立赌约、自碎金丹拼出巅峰一击逼其出手，赢回红拂与满山弟子生路，力竭殉道于师姐怀中。韩立受其临终托付。");
       Engine.addMilestone("再别天南：李化元碎丹一诺，殉道金鼓原", "zaibie");
       if (typeof Sfx !== "undefined") Sfx.play("fail");
@@ -5282,6 +5287,9 @@ const STORY = [
   {
     id: "zaibie_a4_kuangdong",
     skipIf: (s) => s.flags.zaibie_kuangdong_done,
+    // polish-zaibie C6（GPT P1-5）：阵启双钥（图纸=a3 必赠、大挪移令=modao 机缘房必得）走「叙事诚实」
+    //   ——text 开头 aside 点名两物。⚠ 不作硬 cond 持有检查：backbone.audit 无头驱动自魔道四幕起跑、
+    //   拿不到 e1 机缘房的大挪移令会误判死链；且异常档缺物时硬 cond=永久软锁，比叙事引用更伤。
     cond: (s) => s.flags.zaibie_lingshi_done && !s.flags.zaibie_kuangdong_done
                  && State.absMonth() >= (s.flags.zaibie_kuangdong_due || 0),
     cg: "chuansong_zhen",
@@ -5292,6 +5300,8 @@ const STORY = [
     text: [
       { scene: "越国矿洞 · 古传送阵 · 阵心" },
       { amb: "candle" },
+      // polish-zaibie C6（GPT P1-5·叙事诚实）：开头点名阵启双钥——图纸与大挪移令缺一不可
+      { aside: "袖中两物，是这一阵的全部指望：辛如音所赠的《古传送阵·修复图纸》，与那枚自魔道矿洞得来的大挪移令——缺了哪一样，这座残阵都启不起来。" },
       "矿洞最深处，那座尘封万载的古传送阵幽光明灭。这一个月，你按图纸将残破阵纹一笔一笔补全——今日，大挪移令嵌入阵枢，灵光开始蓄涨。",
       { aside: "阵枢蓄力须六息。六息之后，光柱起、大阵开——天南之外的万里之遥，一步即至。" },
       { amb: null },
@@ -5342,10 +5352,19 @@ const STORY = [
       { cam: "shake", px: 14 },
       // polish-zaibie B⑧：南宫婉那袋灵石的承诺兑现——"助催古阵"的账面在此结（不再默默进钱包）
       "南宫婉留下的那袋中品灵石，被你尽数嵌入阵眼——阵光过处，灵石一枚枚化作齑粉，把最后一段残纹生生喂亮。",
+      // polish-zaibie C2（Fable P1-5）：宿敌要有脸——王蝉当面现身一拍（bt/半身像 zhanwangchan 在库）。
+      //   ⚠ 他喊的是「厉飞雨」不是「韩立」——王蝉认脸不认名（燕家堡背锅·D 项勘注·重返天南对质拍读）。
+      { actor: "zhanwangchan", enter: "left", name: "王蝉" },
+      { say: "王蝉", tone: "嘶声", text: "「厉飞雨！——」" },
+      { aside: "追兵最前那道戴着半面银具的身影在青光外扭曲——鬼灵门王蝉。燕家堡那一夜结下的不死不休，他从天南腹地一路咬到了这阵前，眼睁睁看你踏入光柱。那声嘶吼被光柱的轰鸣吞没：他至死记着的，仍是那个替你背了锅的名字。（宿敌未了·重返天南再算）" },
+      { actor: "zhanwangchan", exit: true },
       "光柱冲霄的刹那，古阵自身也轰然崩裂——身后追兵的咒骂、袖中辛如音那枚托付的玉简、整座天南的山河……都在这一瞬被青光彻底吞没、抛在了脑后。",
-      { aside: "追兵最前那道戴着半面银具的身影你认得——鬼灵门王蝉。燕家堡那一夜结下的不死不休，他从天南腹地一路咬到了这阵前，眼睁睁看你踏入光柱。「总有一天我会回来的」——这句话，一半说给天南，一半，说给他听。（宿敌未了·重返天南再算）" },
+      // polish-zaibie C2：题眼台词前静默留白、后 pullOut 收束（红尘劫棋友坐化五件套标准）
+      { amb: null },
+      { wait: 600 },
       { say: "韩立", emo: "cold", tone: "low", text: "「天南……生我、养我、也负我之地。总有一天——我会回来的。」" },
-      { aside: "大挪移令碎了，古阵塌了，身后所有的追路，就此斩断。再别天南——这一别，是天南之外、茫茫数万里的未知。" },
+      { shot: "pullOut", ms: 1600 },
+      { aside: "这句话，一半说给天南，一半，说给光柱外那道银面具。大挪移令碎了，古阵塌了，身后所有的追路，就此斩断。再别天南——这一别，是天南之外、茫茫数万里的未知。" },
     ],
     onArrive(s) {
       s.location = "yuekuang";
@@ -5364,7 +5383,16 @@ const STORY = [
         hint: "回望故土——铸入心性",
         effect(s) {
           Engine.recordTemperament("zaibie_lookback", "sentiment", "离天南赴星海·最后一瞬回望故土山河——故土的牵绊，你带着走");
-          return { text: "你在青光吞没的最后一瞬回头望去——天南的山河在光柱之外渐渐模糊、远去，终至不见。", kind: "event" };
+          // polish-zaibie C4（Fable P1-7·fate-design §三 告别清单）：此去几十年，望见的不该全是山——
+          //   按持有 flag 具名剪影回想（墨彩环/厉飞雨/陈巧倩），谁的沙漏等不到你回来。
+          const looks = [];
+          if ((s.metNpcs || []).includes("mocaihuan") || s.flags.mocaihuan_reunion) looks.push("嘉元城朱门里，那盏曾为你留过的灯");
+          if (s.flags.lify_revisit_done || s.flags.lify_ledgers_settled) looks.push("彩霞山演武厅里，那声「陪我过两招」的爽朗笑骂");
+          if (s.flags.chen_front_reunion || Engine.readLedger("baiju_appt")) looks.push("白菊山花间，那句「结丹归来，再会」的约定");
+          const txt = looks.length
+            ? "你在青光吞没的最后一瞬回头望去——" + looks.join("；") + "……都在光柱之外，渐渐远去。天南的山河随之模糊，终至不见。"
+            : "你在青光吞没的最后一瞬回头望去——天南的山河在光柱之外渐渐模糊、远去，终至不见。";
+          return { text: txt, kind: "event" };
         },
         resolve: "advance",
       },
@@ -5398,13 +5426,19 @@ const STORY = [
       "青光骤散。脚下一空——你竟自半空跌落，重重砸进一片冰凉的咸涩海水里！",
       { fx: "burst", at: "center", elem: "shui" },
       { sfx: "splash" },
+      // polish-zaibie C3（Fable P1-6）：首见海要有声床——落水即起风声（此前全程无 amb）
+      { amb: "wind" },
       "古阵崩毁的空间乱流，把你抛到了一个全然陌生的所在。你拼力浮出水面，环顾四周——",
       { cam: "pan", to: { x: 0, y: -6 }, ms: 1600 },
       { wait: 600 },
       "海天一色，无边无际。远处星罗棋布般散着大大小小的岛屿，天际线上妖氛弥漫、隐有庞然之物翻涌的气息。这片汪洋，比你见过的任何天地都更辽阔、也更凶险。",
       { say: "韩立", emo: "cold", tone: "low", text: "「这里……便是传说中的乱星海么。内星海人修、外星海妖修……我落在了哪一边？」" },
-      { cam: "zoom", scale: 1.15, ms: 2000 },
+      // polish-zaibie C3（Fable P1-6）：章末定格收向海平线（大远景空镜留白）——旧 zoom 推近人是反的
+      { shot: "pullOut", ms: 2000 },
+      { wait: 800 },
       { aside: "孤身一人，落在这片陌生的浩瀚妖海。身后是再回不去的天南，身前是吉凶未卜的星海万里。一段全新的命途，自这片海平线上，缓缓拉开。" },
+      { amb: null },
+      { wait: 600 },
       {
         guide: {
           tag: "再别天南篇 · 终",
@@ -5467,11 +5501,11 @@ const STORY = [
     bgm: "tense",
     title: "初入星海 · 落海",
     objTitle: "落海 · 海中遇袭",
-    objHint: "你与曲魂随古阵乱流跌入乱星海。咸涩海水里，一头低阶妖兽循着气血味扑来——神识虽在、落海修为却虚，先稳住阵脚活下来。",
+    objHint: "你与曲魂随古阵乱流跌入乱星海。咸涩海水里，一头低阶妖兽循着气血味扑来——神识虽在、修为却虚（护她那夜被吸走的还没缓过来，落海又添了一层），先稳住阵脚活下来。",
     text: [
       { scene: "乱星海 · 近岛海域" },
       { cam: "zoom", scale: 1.05, ms: 300 },
-      "咸涩的海水呛入口鼻。你在浪头里浮沉，灵力被这冰凉海水搅得滞涩——落海这一摔，到底虚了几分修为。好在曲魂·身外化身随你一同被抛了出来，黑煞血刃在水里划开一道暗芒，护在你身侧。",
+      "咸涩的海水呛入口鼻。你在浪头里浮沉，灵力被这冰凉海水搅得滞涩——护她那一夜被吸走的修为本就没缓过来，落海这一摔，又虚了几分。好在曲魂·身外化身随你一同被抛了出来，黑煞血刃在水里划开一道暗芒，护在你身侧。",
       "你定下神，神识如网铺开——海面之下，一道幽影正循着你逸散的气血味，悄无声息地逼近。",
       { fx: "lightning", at: "left", elem: "shui", ms: 280 },
       { sfx: "splash" },
@@ -5483,7 +5517,7 @@ const STORY = [
       s.location = "luanxinghai";
       if (!s.flags.starsea_entered) {
         State.setFlag("starsea_entered");
-        Engine.writeLedger("starsea_entered", "初入星海·落海——古阵乱流将韩立与曲魂抛入乱星海近岛海域，落海修为暂虚、神识犹在；一头低阶妖兽循血味来袭。孤岛立身，自此一战开篇。");
+        Engine.writeLedger("starsea_entered", "初入星海·落海——古阵乱流将韩立与曲魂抛入乱星海近岛海域；护南宫婉那夜被吸走的修为未复、落海又虚一层，神识犹在；一头低阶妖兽循血味来袭。孤岛立身，自此一战开篇。");
         Engine.addMilestone("初入星海·落海：携曲魂坠入乱星海", "starsea");
         // 远雷·跨篇收果（铁律3/篇章质量）：魔道矿洞捧出的大挪移令，是把韩立送到这片万里妖海的唯一钥匙——落海这一刻兑现
         Engine.settleLedger("dayi_ling_got", "当年魔道矿洞古阵心里捧出的那枚大挪移令，你说不清它通向何处，只觉牵着个极遥远的去处——今日终于知道了：正是它配上辛如音修复的古阵，把你一步掷过数万里，掷到了这片陌生的乱星海。那条悄然牵起的极长的线，今日落到了脚下");
@@ -5694,6 +5728,13 @@ const STORY = [
             }
             Engine.addMilestone("初入星海·一幕：小寰岛闭关二十载，拾回筑基后期巅峰（三转一转·曲魂化身祭成）", "starsea");
             Engine.writeLedger("starsea_biguan", "初入星海·孤岛立身——小寰岛闭关苦修二十载（分两段各择一向），行三转重元功一转，散功重修而真元愈纯（乘性印记 zhuanImprint），拾回落海暂失之修为，重回筑基后期巅峰。");
+            // polish-zaibie C1（Fable P1-2）：承诺已兑现·账要销——化身之诺与跌境之账在收关统一处结清。
+            //   带走线的「留待神识大成再祭」在此兑现；留府线（quhun_stay_jiayuan）已在 zaibie_a1_after
+            //   结过「附刃之备」一笔，勿重复 settle（settleLedger 不防二次结算）。
+            if (st.sideUnit && !st.flags.quhun_lost && !st.flags.quhun_stay_jiayuan) {
+              Engine.settleLedger("zaibie_quhun_huashen", "再别天南那夜以血刃强催的权宜之计，在小寰岛的玄阴诀真火里终成正果——身外化身祭成，当年的『留待神识大成再祭』，兑现了");
+            }
+            Engine.settleLedger("zaibie_diejing", "护她那一夜被吸走的修为、落海又虚的那一口气——二十年闭关，一寸寸全拾了回来。跌境的阴影，自此翻篇");
             delete st._biguanSeg;   // 节点内瞬态计数，收关即清（不留进存档长期字段）
             return { text: "二十载寒暑，在小寰岛的潮声里悄然流过。你一寸寸拾回落海暂失的修为，重回筑基后期巅峰——重修过的真元比当年更听使唤，曲魂亦已祭成身外化身。", kind: "good" };
           },
