@@ -4623,25 +4623,30 @@ const STORY = [
         s.worldNews.push({ t, kind: "rumor", text: "京城传来消息：皇宫血夜里重伤的黄枫谷刘靖已伤愈归谷，闭门谢客月余，出关头一件事便是往演武场立了柄新剑——「除魔的剑，不能歇」。" });
       }
       if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+      // polish-zaibie C8（GPT §7.2 存档兼容自愈）：旧档曲魂轴已结却无侧位、又无待附旗——
+      // 补 pending 旗，让 a1_after 兑现点重新附刃归位（防曲魂常驻侧位在本章永久缺失）
+      if (s.flags.zaibie_quhun_done && !s.sideUnit && !s.flags.zaibie_quhun_pending) {
+        State.setFlag("zaibie_quhun_pending");
+      }
     },
+    // polish-zaibie C7（GPT §6.2）：假选择诚实化——旧版"御灵宗更近了"的世界侧威胁全库零读点
+    //（调息严格占优）。文案收敛只说气血代价；zaibie_rush/zaibie_rest 死旗删（全库零读）。
     choices: [
       {
         text: "「先成底牌，再会来敌。」星夜兼程，直奔嘉元城。",
-        hint: "抢先祭曲魂——但连日奔波，气血略亏",
+        hint: "抢先赶路——但连日奔波，气血略亏",
         effect(s) {
           s.hp = Math.max(1, Math.floor(s.hp * 0.92));
-          State.setFlag("zaibie_rush");
-          return { text: "连日奔波，气血略亏——但御灵宗的人，终究慢了一步。", kind: "event" };
+          return { text: "连日奔波，气血略亏——嘉元城的灯火，总算赶在天明前望见了。", kind: "event" };
         },
         resolve: "advance",
       },
       {
         text: "「磨刀不误砍柴工。」先调息半日，再动身。",
-        hint: "状态满——但御灵宗的鼻子更近了",
+        hint: "气血调满再上路",
         effect(s) {
           s.hp = s.hpMax;
-          State.setFlag("zaibie_rest");
-          return { text: "调息既毕，气血充盈——只是御灵宗的人，又近了几分。", kind: "event" };
+          return { text: "调息既毕，气血充盈——你不疾不徐地上了路。", kind: "event" };
         },
         resolve: "advance",
       },
@@ -4900,31 +4905,96 @@ const STORY = [
       s.worldNews.push({ t, kind: "rumor", text: "灵兽山倒戈：素来中立的灵兽山竟在金鼓原反水投魔，天南正道一时人心惶惶，皆道大厦将倾。" });
       if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
     },
+    // polish-zaibie C7（GPT §6.2）：假选择诚实化——"战局恶化/又多熬一夜"的世界侧威胁全库零读点。
+    // 文案收敛只说气血代价；zaibie_rush_jingu/zaibie_rest_jingu 死旗删（全库零读）。
     choices: [
       {
         text: "「黄枫谷有难——连夜赶赴金鼓原！」",
         hint: "抢先赶到战场，但气血未复",
         effect(s) {
           s.hp = Math.max(1, Math.floor(s.hp * 0.9));
-          State.setFlag("zaibie_rush_jingu");
           return { text: "你按住伤势，星夜奔赴金鼓原——黄枫谷的安危，等不得。", kind: "event" };
         },
         resolve: "advance",
       },
       {
         text: "「磨刀不误砍柴工。」先调息一夜，明日再赴。",
-        hint: "气血充盈上阵——但金鼓原又多熬了一夜",
+        hint: "气血充盈上阵",
         effect(s) {
           s.hp = s.hpMax;
-          State.setFlag("zaibie_rest_jingu");
-          return { text: "调息一夜，气血充盈——可金鼓原的战报，一夜比一夜凶险。", kind: "event" };
+          return { text: "调息一夜，气血充盈——明日金鼓原，用得上这副满血的身子。", kind: "event" };
         },
         resolve: "advance",
       },
     ],
   },
 
-  // ——【Act2·金鼓原崩盘·其一】群战（sides[]：李化元/南宫婉并肩 vs 黑煞教残众）——
+  // ——【Act2·序·白菊山之约】陈巧倩道别（polish-zaibie B2·双审 P0 同锚·跨站钦点兑现）——
+  //     考据：ep51 白菊山赏菊之约（陈师姐主题《落英》）——动漫把这场道别放在金鼓原开打前夜。
+  //     双线真差异：remember 线（modao likjing 宋蒙捎话·writeLedger baiju_appt / 旧档 chen_front_reunion）
+  //     才有此节点；forgot 线无账、skipIf 自然越过＝她不记得你，这半日清净就不存在。
+  //     取舍（档案记）：ep50 百药园萧翠儿/马师兄一拍并入陈巧倩捎话一句（本作萧翠儿线已在京城收束，
+  //     百药园温情由马师伯口讯承载）；场景底复用 tainan_lin（白菊山专属 CG 可入日后生图批）。
+  {
+    id: "zaibie_baiju",
+    cg: "tainan_lin",
+    skipIf: (s) => s.flags.zaibie_baiju_done
+      || !((typeof Engine !== "undefined" && Engine.readLedger && Engine.readLedger("baiju_appt")) || s.flags.chen_front_reunion),
+    cond: (s) => s.flags.zaibie_a1_after_done && !s.flags.zaibie_baiju_done
+      && !!((typeof Engine !== "undefined" && Engine.readLedger && Engine.readLedger("baiju_appt")) || s.flags.chen_front_reunion),
+    bgm: "daily",
+    title: "再别天南 · 白菊山",
+    objTitle: "白菊山·赴一场旧约",
+    objHint: "赶赴金鼓原的路要借越京地界过——宋蒙捎的那半句话还在耳边：「白菊山春时花开，师弟若路过越京……」花开得正好，她等的人来不来，就看这一程了。",
+    text: [
+      { scene: "越京郊外 · 白菊山" },
+      { amb: "wind" },
+      { shot: "establish" },
+      "赶赴金鼓原的官道要借越京地界过。行至城郊，你勒住遁光——宋蒙捎的那半句话，忽然在耳边响了起来：「白菊山春时花开，师弟若路过越京……」",
+      "白菊山就在道旁。满山白菊开得正盛，风一过，如雪浪翻涌。花间小径的尽头，一个熟悉的身影正低声哼着一支旧曲——是《落英》。当年黄枫谷坊市归途，她哼过的那支。",
+      { actor: "chenqiaoqian", enter: "left", name: "陈巧倩" },
+      { shot: "pushIn", ms: 1400, scale: 1.12 },
+      { say: "陈巧倩", tone: "soft", text: "「我就知道……你会来。」她回过身，眼里没有惊讶，只有一点点亮起来的光。「金鼓原要打了，谁都知道。你要去，我也知道——我不拦你。」" },
+      { wait: 600 },
+      "她没有问京城的事，没有问伤，也没有问往后。两个人就在花间坐了半日——她以山泉煮茶，说起百药园的马师伯还念叨你，说你当年那排青元参苗，如今成了新弟子的活教材。战云压顶的天南，竟还剩这么一段干净日子。",
+      { say: "陈巧倩", tone: "low", text: "「打完这一仗……不，不说这一仗。」她把一朵开得最好的白菊搁在你手边，「结丹归来，再来白菊山看花。花开得最好的时候——我等你。」" },
+      { amb: null },
+      { wait: 700 },
+      { sfx: "danger" },
+      { shot: "shock", scale: 1.1, px: 7 },
+      "话音未落，北面天际骤然腾起一线血色狼烟——金鼓原方向，告急的传讯符已烧红了半边天。这半日清净，到底被战报生生截断了。",
+      { say: "韩立", emo: "cold", tone: "low", text: "「……我该走了。」" },
+      { aside: "她朝你点了点头，退开半步——像很多年前坊市归途那样，目送你御光而起。白菊山的花海在身后缩成一小片白，很快被战云吞没。" },
+    ],
+    onArrive(s) {
+      State.setFlag("zaibie_baiju_done");
+      Engine.settleLedger("baiju_appt", "白菊山之约——宋蒙捎的那半句话，你践了约。她真的在花间等你。金鼓原开打前夜的半日清净，是这场崩盘之前，世界欠你们的温柔");
+      Engine.writeLedger("baiju_rehui", "白菊山道别——她说：结丹归来，再来白菊山看花。此约随你渡海（远线·日后重返天南时再赴）");
+      Engine.addMilestone("再别天南：白菊山赴约，金鼓原前夜的半日清净", "zaibie");
+    },
+    choices: [
+      {
+        text: "摘一朵白菊，别在剑穗上。",
+        hint: "带上她的花——铸入心性",
+        effect(s) {
+          Engine.recordTemperament("baiju_pick_flower", "sentiment", "白菊山道别·摘一朵白菊别上剑穗——把她的花带去金鼓原，也带过茫茫星海");
+          return { text: "你俯身摘下那朵她搁在手边的白菊，仔细别在剑穗上。她看着，弯了弯眼睛，什么也没说。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "把《落英》的调子，默默记进心里。",
+        hint: "不折花、不多言——铸入心性",
+        effect(s) {
+          Engine.recordTemperament("baiju_remember_tune", "stoic", "白菊山道别·不折花不多言，只把《落英》的调子记牢——你的牵挂，从不示人");
+          return { text: "你没有碰那朵花。只是把她哼过的那支《落英》，一个转音一个转音地记进心里——往后很多年的海上孤夜，你都会想起这半日。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // ——【Act2·金鼓原崩盘·其一】群战（sides[]：宋蒙/钟卫娘并肩 vs 黑煞教残众·canon-Z6）——
   {
     id: "zaibie_a2_jingu",
     skipIf: (s) => s.flags.zaibie_jingu_done,
@@ -4948,6 +5018,11 @@ const STORY = [
     ],
     onArrive(s) {
       s.location = "jinguyuan";
+      // polish-zaibie C8（Fable P2-6）：Act2 崩盘质感——浮云子陨落（ep52：红粉/骷髅联袂"恭送"浮云道长）
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "world", text: "金鼓原噩耗：清虚门浮云道长（结丹中期）阵前陨落——合欢宗红粉与鬼灵门骷髅联袂『恭送』，正道折了一根梁柱，士气愈颓。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
     },
     choices: [
       { text: "与宋蒙、钟卫娘并肩——先斩领队！", hint: "sides[] 群战·曲魂并肩", resolve: "jingu_fight" },
@@ -5042,6 +5117,11 @@ const STORY = [
       Engine.writeLedger("zaibie_lihuayuan", "再别天南·金鼓原收束——云露老魔（元婴中期）擒红拂压境，李化元立赌约、自碎金丹拼出巅峰一击逼其出手，赢回红拂与满山弟子生路，力竭殉道于师姐怀中。韩立受其临终托付。");
       Engine.addMilestone("再别天南：李化元碎丹一诺，殉道金鼓原", "zaibie");
       if (typeof Sfx !== "undefined") Sfx.play("fail");
+      // polish-zaibie C8（Fable P2-6）：拜别宋蒙/钟卫娘（ep58 拜别吕蒙卫娘·本作对应此二人）——残军南撤各奔存亡
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "rumor", text: "残军散信：黄枫谷宋蒙、钟卫娘随残部护送弟子南撤——临行与那位并肩过皇宫血夜的韩姓师弟拱手拜别，此去关山万里，各奔存亡。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
       // 帆段：李化元殉道后给2月喘息——护阵退走、调息养伤、再亡命元武
       s.flags.zaibie_a3_due = State.absMonth() + 2;
     },
@@ -5201,12 +5281,14 @@ const STORY = [
       Engine.addMilestone("再别天南：护她失控吸修为，『跌境』（纯演出）", "zaibie");
       if (typeof Sfx !== "undefined") Sfx.play("fail");
     },
+    // polish-zaibie C7（GPT §6.2 + Fable P2-2）：hold_realm/accept_drop 死旗改 recordTemperament
+    //（心性双拍·写读一体闭环）——保留既有 mood/hp 真实差异不动
     choices: [
       {
         text: "「……不过是一时的。这口气，我迟早拿回来。」咬牙硬撑。",
-        hint: "强压伤势维持境界——心境受挫但志不倒",
+        hint: "强压翻涌气海，心境受挫但志不倒——铸入心性",
         effect(s) {
-          State.setFlag("zaibie_hold_realm");
+          Engine.recordTemperament("zaibie_hold_realm", "stoic", "跌境不弯腰·咬牙硬压翻涌的气海——这笔账没记在她头上：救人救到底，怨不得谁");
           s.mood = Math.max(0, s.mood - 5);
           return { text: "你咬碎牙关，硬生生将翻涌的气海压住——外人看去虽狼狈，内里一口气始终未散。这笔账，你没记在她头上：救人救到底，怨不得谁。", kind: "event" };
         },
@@ -5214,9 +5296,9 @@ const STORY = [
       },
       {
         text: "「留得青山在。」顺势力卸跌境，先保命再说。",
-        hint: "卸力保命——气血充盈，但外人看你更弱",
+        hint: "卸力保命，气血反稳——铸入心性",
         effect(s) {
-          State.setFlag("zaibie_accept_drop");
+          Engine.recordTemperament("zaibie_accept_drop", "sentiment", "跌境顺势卸力·她醒来时欲言又止的眼神你只当没看见——命要紧，心里却没怪过她一分");
           s.hp = s.hpMax;
           return { text: "你顺势卸去翻涌的真元，气海虽空，气血反倒稳住了——只是外人看去，你更像个废人了。她醒来时欲言又止的那个眼神，你只当没看见。", kind: "event" };
         },
@@ -5256,6 +5338,11 @@ const STORY = [
       State.give("lingshi", 30);
       Engine.writeLedger("zaibie_lingshi", "再别天南·赠别——越国矿洞外，南宫婉赠中品灵石一袋，助跌境后的韩立疗复、催动古阵。");
       Engine.addMilestone("再别天南：南宫婉赠灵石，矿洞前赠别", "zaibie");
+      // polish-zaibie C8（Fable P2-6）：婉拒掩月宗招揽（ep58 冯师妹）——崩盘中的世界还在向你伸手
+      s.worldNews = s.worldNews || [];
+      const t = `第${s.year}年${s.month}月`;
+      s.worldNews.push({ t, kind: "rumor", text: "道途异闻：掩月宗一位冯姓女修奉命寻访金鼓原上崭露头角的黄枫谷散修，欲延揽入宗共御魔潮——据说被那人婉言谢绝，只留一句『道不同，独行惯了』。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
       // 帆段：矿洞前给1月最后休整——调息、备牌、与天南做最后的告别
       s.flags.zaibie_kuangdong_due = State.absMonth() + 1;
     },
@@ -5286,6 +5373,9 @@ const STORY = [
   //     辛如音不在矿洞、更不殒身——她的戏止于元武国赠图。守护对象改为「阵枢灵光」。——
   {
     id: "zaibie_a4_kuangdong",
+    // polish-zaibie B1③（Fable P0-4）：补 where 门禁——旧版无 where，帆窗期间云游到嘉元城长街
+    //   也会当场弹"矿洞最深处……"再把人瞬移回来；有 where 后天命栏自动缀"去处"，人到矿洞才开打
+    where: "yuekuang",
     skipIf: (s) => s.flags.zaibie_kuangdong_done,
     // polish-zaibie C6（GPT P1-5）：阵启双钥（图纸=a3 必赠、大挪移令=modao 机缘房必得）走「叙事诚实」
     //   ——text 开头 aside 点名两物。⚠ 不作硬 cond 持有检查：backbone.audit 无头驱动自魔道四幕起跑、
@@ -5462,11 +5552,14 @@ const STORY = [
       if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
       if (typeof Sfx !== "undefined") Sfx.play("success");
     },
+    // polish-zaibie C7（GPT §6.2）：zaibie_calm 死旗删（全库零读·豪气曾严格占优）——
+    // 双路改 recordTemperament（写读一体闭环），保留既有 mood 差异
     choices: [
       {
         text: "「乱星海……我来了。」",
-        hint: "豪气顿生——心境微升",
+        hint: "豪气顿生，心境微升——铸入心性",
         effect(s) {
+          Engine.recordTemperament("zaibie_sea_bold", "sentiment", "落海乱星海·迎着咸涩海风放声一句『我来了』——天涯尽头，心气未折");
           s.mood = Math.min(s.moodMax, s.mood + 5);
           return { text: "你深吸一口咸涩的海风，胸中豪气顿生——天南留不住的人，这片海未必也留不住。", kind: "good" };
         },
@@ -5474,10 +5567,10 @@ const STORY = [
       },
       {
         text: "环顾四方，默然不语。",
-        hint: "沉静以对——心境微降但更冷静",
+        hint: "沉静以对，心境微降但更冷静——铸入心性",
         effect(s) {
+          Engine.recordTemperament("zaibie_sea_calm", "stoic", "落海乱星海·默然环顾、先算活路——冷静，是你在陌生天地里的第一张底牌");
           s.mood = Math.max(0, s.mood - 5);
-          State.setFlag("zaibie_calm");
           return { text: "你没有说话，只是默默打量着这片陌生的汪洋——冷静，才是活下来的本钱。", kind: "event" };
         },
         resolve: "advance",

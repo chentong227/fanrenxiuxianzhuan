@@ -5728,12 +5728,18 @@ const Engine = {
   // polish-zaibie A1/A3（GPT P0-1/P1-3）：曲魂"只此一战"的副本数值缩放——
   // sideUnitFor 返回的拷贝里 moves 数组仍是 s.sideUnit.moves 的同一引用，直接改会污染本体
   // （它还要给 starsea 用），故逐招深拷贝再乘系数。mul<1=群战收着打（玩家占比拉回 ≥35%）。
-  _quhunSideScaled(mul) {
+  _quhunSideScaled(mul, hpMul) {
     const qu = this._quhunSide();
     if (!qu) return null;
     if (mul !== 1) {
       if (qu.atk != null) qu.atk = Math.max(1, Math.round(qu.atk * mul));
       qu.moves = (qu.moves || []).map(m => Object.assign({}, m, { dmg: Math.max(1, Math.round((m.dmg || 0) * mul)) }));
+    }
+    // hpMul：只削"入场血量上限"的战内拷贝（承伤海绵变薄=敌方压力真正落到玩家头上）；
+    // 战后 _syncSideBack 只回写 hp 并按本体 hpMax clamp——本体上限不受污染
+    if (hpMul != null && hpMul !== 1) {
+      qu.hpMax = Math.max(1, Math.round(qu.hpMax * hpMul));
+      qu.hp = Math.min(qu.hp, qu.hpMax);
     }
     return qu;
   },
@@ -5775,7 +5781,7 @@ const Engine = {
   //       hp 打折）；一阶段碎茧的瞬间，躯壳挣脱认主回身，二阶段以侧位临时入场（战中 sides.push——
   //       噬金虫 sp.summon 同款 _makeSideFighter 管线）。此刻血刃未附（附傀在 zaibie_a1_after 兑现），
   //       故用空手尸傀招式、威势略逊执刃一线。
-  //     · 带走线＝曲魂血刃 side 全程在场，此战独削 ×0.85（_quhunSideScaled 副本缩放·不动 s.sideUnit）。
+  //     · 带走线＝曲魂血刃 side 全程在场，此战独削 ×0.65/承伤×0.6 + 敌带夺傀偏置与"傀碎=判负"真实赌注。
   //     · 温养/强催真实差异（曲魂在场那一拍结算）：温养(quhun_safe_refine)=护主一拍替你挡一击（护体+16）；
   //       强催=此战攻势更猛（招式 ×1.12——侧位伤害走 mv.dmg 直算，moves 已是本场拷贝、就地缩放安全）。
   startDuosheFight() {
@@ -5783,14 +5789,26 @@ const Engine = {
     this._nextFightType = "zb_duoshe";
     const player = this.playerFighter();
     const stayLine = !!s.flags.zaibie_quhun_pending;   // 留府线：曲魂躯壳正在敌手
-    const p1 = Object.assign({}, WORLD.enemies.yuling_duoshe);
-    const p2 = Object.assign({}, WORLD.enemies.yuling_zhenshen);
+    // 御灵宗=驭尸夺舍的行家（A1②）：驭尸秘术专拆傀身经络（slays corpse ×1.6）——曲魂在他手上
+    // 扛不满全场（火行尸煞本克金剑、被秘术找补回来），敌方压力真正落到玩家头上
+    const p1 = Object.assign({}, WORLD.enemies.yuling_duoshe, { slays: { corpse: 1.6 } });
+    const p2 = Object.assign({}, WORLD.enemies.yuling_zhenshen, { slays: { corpse: 1.6 } });
     if (stayLine) {
       // 躯壳是昨夜才抢到手的——未经祭炼、神魂与傀身契合不全，催不出这具躯壳的全力
-      p1.hp = Math.round(p1.hp * 0.72);
+      p1.hp = Math.round(p1.hp * 0.9);
       p1.introNote = "御灵宗一名结丹修士夺舍败露——他强占的正是曲魂的躯壳！昨夜才抢到手、未经祭炼，神魂与傀身契合不全，催不出全力（气血大减）。碎开这层强占的「茧」，张铁的遗蜕自会挣脱认主。他执一柄通体莹绿的古剑「绿煌剑」，剑势仍是结丹手笔——莫要轻敌。";
     }
-    const sides = []; const qu = this._quhunSideScaled(0.85); if (qu) sides.push(qu);
+    // 防死锁护栏（带走线）：曲魂若在金背一战破损，临战以血刃煞气强行续傀——否则此战退化成
+    // 无侧位的 1.5% 单人墙（本章无修缮窗·GPT §五-5 的最恶化点在这里堵住）
+    if (!stayLine && s.sideUnit && s.sideUnit.id === "quhun_xieren" && s.sideUnit.status === "broken") {
+      s.sideUnit.status = "ok";
+      s.sideUnit.hp = Math.round(s.sideUnit.hpMax * 0.6);
+      s.sideUnit.carry = true;
+      this.log("傀身裂痕纵横、本已难驱使——你咬牙割掌，以血引动黑煞血刃的煞气倒灌傀身，强行把曲魂续了起来（临战修傀·气血六成）。", "event");
+    }
+    // 带走线微削（A1②）：此战曲魂招式 ×0.65 + 傀身承伤上限 ×0.6（御灵宗驭尸秘术当面压制傀身经络——
+    // 火行尸煞对上他反而施展不开）；只此一战的副本缩放，不动 s.sideUnit（它还要给 starsea 用）
+    const sides = []; const qu = this._quhunSideScaled(0.6, 0.6); if (qu) sides.push(qu);
     this._combat = new CombatAPI.Combat({
       // v267：越阶恶战(1v1+waves)缩开局间距（玩家 pos3·敌 pos7·gap4）——夺剑硬撼即刻接战，不空走。
       player, enemies: [p1], waves: [[p2]], maxRounds: 18, W: 11, lanes: 2, sides,
@@ -5837,6 +5855,50 @@ const Engine = {
           quTemper(this, f);
         }
       };
+    } else if (qu) {
+      // 带走线·夺傀偏置（A1②带走线微削的另一翼·与留府线同一因果的镜像）：御灵宗本就是驭尸夺舍的
+      // 行家——他两世都盯着这具躯壳。带走线里他当面见着执刃尸傀，杀意先落在"废掉傀身、再取而代之"上：
+      // 敌方优先集火曲魂（≤4 格毁傀偏置）。曲魂扛不满全场，后半场的压力真正落到玩家头上（白给根治）。
+      c._enemyTargetBias = function (e) {
+        const quf = this.sides.find(sd => sd.id === "quhun_xieren");
+        if (!quf || quf.hp <= 0) return null;
+        return this.dist(e, quf) <= 4 ? quf : null;
+      };
+      c._log("那夺舍者的目光死死钉在曲魂身上，喉间滚出一声嘶笑：「好一具现成的傀身……先废了它，再连你的一并收走！」——他的杀招会先冲曲魂去。");
+      // 残念扑傀：二阶段残念脱壳的刹那扑向傀身——曲魂僵立三息不能行动，你须独力顶住这一段
+      const baseSpawn2 = c._maybeSpawnWave.bind(c);
+      c._maybeSpawnWave = function () {
+        const hadWave = this._pendingEnemyWaves && this._pendingEnemyWaves.length;
+        baseSpawn2();
+        if (hadWave && (!this._pendingEnemyWaves || !this._pendingEnemyWaves.length) && !this._quhunSeizeTried) {
+          this._quhunSeizeTried = true;
+          const quf = this.sides.find(sd => sd.id === "quhun_xieren");
+          if (quf && quf.hp > 0) {
+            quf.noAct = true;
+            quf._guardSave = quf.guard; quf.guard = 0;   // 僵立=也挡不了刀
+            this._quhunSeized = 3;
+            this._log("那缕结丹残念脱壳的刹那，竟直直扑向曲魂——肉身已碎，眼前这具执刃傀身正是上好的夺舍之器！血刃煞气与残念绞作一团，曲魂僵立原地、寸步难行——这三息，你只能靠自己。");
+          }
+        }
+      };
+      c._afterEnemyTick = function () {
+        const quf = this.sides.find(sd => sd.id === "quhun_xieren");
+        // 真实赌注（带走线独有·白给根治的钥匙）：敌尚在场时傀身被打碎＝夺舍者得手、挟躯而遁＝败
+        // ——他两世要的都是这具身子；曲魂在这一战不是海绵，是要你护住的东西（fail-forward 兜底非死局）
+        if (quf && quf.hp <= 0 && this.status === "ongoing" && this.enemies.some(e => e.alive)) {
+          this._log("傀身轰然碎裂——那道结丹神魂狂笑着涌入残躯、裹着曲魂破空而遁：「这具身子，本座收下了！」你救迟了一步。");
+          this.deathCause = { by: "御灵宗夺舍者", move: "夺傀而遁" };
+          this.status = "lose";
+          return;
+        }
+        if (this._quhunSeized > 0) {
+          this._quhunSeized--;
+          if (this._quhunSeized === 0) {
+            if (quf && quf.hp > 0) { quf.noAct = false; if (quf._guardSave != null) { quf.guard = quf._guardSave; quf._guardSave = null; } }
+            this._log("血刃长鸣、煞气暴涨——曲魂生生绞碎了缠傀的残念侵蚀，重新提刃归阵！");
+          }
+        }
+      };
     }
     this._combatMeta = { type: "zb_duoshe" };
     s.combat = true;
@@ -5858,22 +5920,26 @@ const Engine = {
     const leader = Object.assign({}, WORLD.enemies.moxiu_toumu, { formation: "pack", leader: true });
     const zu = () => Object.assign({}, WORLD.enemies.moxiu_zu, { formation: "pack" });
     const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
-    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    // polish-zaibie A3（GPT P1-3）：曲魂群战收着打 ×0.55+同袍招式下调——改前玩家伤害占比 17%
+    //（宋蒙钟卫娘曲魂三人代打·玩家近乎观战），拉回 ≥35%（climax 口径·仗得自己打）。
+    // 叙事：满原血煞冲天，血刃煞气与之同源相冲、催不出全力；同袍各自分头护着撤离弟子——
+    // 中路撕口子的活，落在你身上。
+    const sides = []; const qu = this._quhunSideScaled(0.45); if (qu) sides.push(qu);
     // canon-audit Z6（2026-07-10 修正）：正典金鼓原此战李化元不与韩立并肩（他去救红拂）、南宫婉不在场（ep58 才寻来）——
     // 同伴改黄枫谷同门宋蒙/钟卫娘（皇宫决战同款侧位模板·师兄弟撤离小组）
     sides.push({ id: "songmeng", name: "宋蒙", kind: "ally", art: "songmeng",
       hp: 150, hpMax: 150, guard: 0.38, elem: "tu",
       persona: { aggr: 4, prot: 8, kite: 2 },
       moves: [
-        { name: "重元珠击", dmg: 20, weight: 12, elem: "tu", range: [1, 3], line: "宋蒙一枚温润圆珠破空砸下：「韩师弟，杀领队——痛快！」" },
-        { name: "厚土镇压", dmg: 16, weight: 6, elem: "tu", range: [1, 2], line: "宋蒙沉喝一声，土行真元如壁压向魔修" },
+        { name: "重元珠击", dmg: 10, weight: 12, elem: "tu", range: [1, 3], line: "宋蒙一枚温润圆珠破空砸下：「韩师弟，杀领队——痛快！」" },
+        { name: "厚土镇压", dmg: 8, weight: 6, elem: "tu", range: [1, 2], line: "宋蒙沉喝一声，土行真元如壁压向魔修" },
       ] });
     sides.push({ id: "zhongweiniang", name: "钟卫娘", kind: "ally", art: "zhongweiniang",
       hp: 108, hpMax: 108, guard: 0.18, elem: "huo",
-      persona: { aggr: 8, prot: 2, kite: 3 },
+      persona: { aggr: 5, prot: 3, kite: 4 },   // A3：分神照应撤离的弟子——求战权重下调
       moves: [
-        { name: "烈焰掌", dmg: 18, weight: 12, elem: "huo", range: [1, 2], line: "「都是些役尸的玩意儿！」钟卫娘一掌烈焰拍出" },
-        { name: "火羽刺", dmg: 22, weight: 6, elem: "huo", range: [1, 3], line: "钟卫娘抖手一蓬火羽攒射" },
+        { name: "烈焰掌", dmg: 10, weight: 12, elem: "huo", range: [1, 2], line: "「都是些役尸的玩意儿！」钟卫娘一掌烈焰拍出" },
+        { name: "火羽刺", dmg: 12, weight: 6, elem: "huo", range: [1, 3], line: "钟卫娘抖手一蓬火羽攒射" },
       ] });
     this._combat = new CombatAPI.Combat({
       player, enemies: [leader, zu(), xs(), xs()], maxRounds: 24, W: 15, lanes: 2, sides,
@@ -5893,9 +5959,10 @@ const Engine = {
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;   // 守阵满血上场（避免残血死螺）
     const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
-    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    const sides = []; const qu = this._quhunSideScaled(0.5); if (qu) sides.push(qu);   // A3：群战曲魂收着打（玩家占比≥35%）
     // canon Z3 前置：护山大阵=黄枫谷既有设施——李化元坐镇「催阵」（非燃命布阵；燃命一笔在下节点赌约碎丹）
-    sides.push({ id: "lihuayuan", name: "李化元", kind: "ally", art: "lihuayuan",
+    // polish-zaibie A2（GPT P0-3）：保护目标真实化——move:0 钉桩阵眼（催阵之人挪不得步）
+    sides.push({ id: "lihuayuan", name: "李化元", kind: "ally", art: "lihuayuan", move: 0,
       hp: 130, hpMax: 130, guard: 0.45, elem: "tu",
       persona: { aggr: 3, prot: 9, kite: 0 },
       moves: [
@@ -5908,12 +5975,21 @@ const Engine = {
         winLog: "「开了——护山大阵！」阵枢全开，整座山口腾起一道齐天光幕，魔潮被生生挡在阵外。" },
       maxRounds: 6, W: 15, lanes: 2, sides,
     });
-    // 守点型钩子：李化元钉桩阵眼（pos=14），每回合若有敌人贴身则他额外受创——
-    // 玩家须主动拦截、挡线，不能放任敌人涌到阵眼
-    const lihuayuan = sides.find(sd => sd.id === "lihuayuan");
+    // 守点型钩子（A2 保护目标真实化三件套）：
+    //   ① 李化元 hp≤0 → 立即判负（不论死于贴身承压还是普通受击——旧版对他死亡直接 return=假保护）；
+    //   ② 敌带毁阵偏置 _enemyTargetBias（zb_hudao/kuangdong 同款保护型管线）——血侍是冲阵眼来的；
+    //   ③ 贴身承压照旧：敌至阵眼身旁，催阵之人分神受创。
     this._combat._afterEnemyTick = function() {
       const li = this.sides.find(sd => sd.id === "lihuayuan");
-      if (!li || li.hp <= 0) return;
+      if (!li) return;
+      if (li.hp <= 0) {
+        if (this.status === "ongoing") {
+          this._log("李化元真元断绝、轰然倒地——护山大阵应声黯灭，阵眼失守！");
+          this.deathCause = { by: "血侍", move: "围杀阵眼" };
+          this.status = "lose";
+        }
+        return;
+      }
       const adjacent = this.enemies.filter(e => e.alive && this.dist(e, li) <= 1);
       if (adjacent.length > 0) {
         const dmg = adjacent.length * 8;
@@ -5921,15 +5997,22 @@ const Engine = {
         this._log(`魔修突至阵眼，李化元分神抵挡、本命真元剧颤（-${dmg}）——挡住他们，别让任何人近阵心！`);
         if (li.hp <= 0) {
           this._log("李化元真元断绝、轰然倒地——阵眼失守！");
+          this.deathCause = { by: "血侍", move: "突至阵眼" };
           this.status = "lose";
         }
       }
+    };
+    // 敌人优先扑阵眼（保护型核心：魔潮的目标是破阵，不是跟你缠斗）——≤4 格即锁向催阵的李化元
+    this._combat._enemyTargetBias = function(e) {
+      const li = this.sides.find(sd => sd.id === "lihuayuan");
+      if (!li || li.hp <= 0) return null;
+      return this.dist(e, li) <= 4 ? li : null;
     };
     this._combatMeta = { type: "zb_hushan" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("李化元盘膝阵心、十指翻飞催动阵枢：「韩立、曲魂——给我守住阵脚六息！阵枢一开，弟子们就有活路了！」");
-    this._combat._log("【守点】李化元钉桩阵眼不可移动——若有魔修突至他身旁，催阵将剧震受损。挡住每一波，别让敌人近阵心！");
+    this._combat._log("【守点】李化元钉桩阵眼不可移动，血侍会直扑他——他若倒下，阵眼即失守（败）。挡住每一波，别让敌人近阵心！");
     this.log("溃局已不可挽。李化元坐镇阵心催动黄枫谷世代经营的「护山大阵」——你与曲魂死守阵脚。这一战不必胜，只须撑住：拖到阵启，黄枫谷的弟子便能退走。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
@@ -6012,11 +6095,18 @@ const Engine = {
     this._nextFightType = "zb_kuangdong";
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;
-    const leader = Object.assign({}, WORLD.enemies.moxiu_toumu, { formation: "pack", leader: true });
-    const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack" });
+    // polish-zaibie A3（GPT P1-3 + Fable P1-4）：追兵换皮鬼灵门——黑煞教已在皇宫血夜覆灭，
+    // 循踪追到矿洞的是王蝉的人（燕家堡背锅旧账·毁阵断路）。数值/elem 全沿用旧模板不动平衡
+    //（zb_hudao 童老鬼老同款换皮做法）。
+    const leader = Object.assign({}, WORLD.enemies.moxiu_toumu, { formation: "pack", leader: true,
+      name: "鬼灵门执事",
+      introNote: "鬼灵门的老牌执事——王蝉的人，循着燕家堡那笔旧账一路追到矿洞。他不与你缠斗，驱着门下修士直扑阵枢：毁阵、断路，把你留在天南。他在，围杀成网；先撼此人，追兵自乱。" });
+    const xs = () => Object.assign({}, WORLD.enemies.xueshi_zu, { formation: "pack",
+      name: "鬼灵门修士",
+      introNote: "鬼灵门门下修士——阴煞路数，奉命毁阵断路。仗着执事的阵势才敢扑向阵心，群龙无首便是散兵。" });
     // polish-zaibie B③（Fable P0-5）：贪婪的代价兑现——夺剑时撕开储物袋禁制荡出的那缕神念，把追兵引快了半步
     const extraChaser = s.flags.zaibie_greedy ? [xs()] : [];
-    const sides = []; const qu = this._quhunSide(); if (qu) sides.push(qu);
+    const sides = []; const qu = this._quhunSideScaled(0.65); if (qu) sides.push(qu);   // A3：群战曲魂收着打
     // 阵枢灵光·大挪移令蓄力中（钉桩阵心·不可移动）——保护对象：阵枢碎=传送阵断=败
     sides.push({ id: "zhenshu", name: "阵枢灵光", kind: "ally", art: null, move: 0,
       hp: 88, hpMax: 88, guard: 0.4, elem: "shui",
@@ -6041,19 +6131,20 @@ const Engine = {
         this.status = "lose";
       }
     };
-    // 敌人优先扑阵枢（保护型核心：追兵是来毁阵断你后路的）
+    // 敌人优先扑阵枢（保护型核心：追兵是来毁阵断你后路的）——
+    // A3：毁阵偏置 3→5 格加强（阵枢承压抬高——改前阵枢末血 77%/玩家占比 26% 双太安全）
     this._combat._enemyTargetBias = function(e) {
       const zs = this.sides.find(sd => sd.id === "zhenshu");
       if (!zs || zs.hp <= 0) return null;
-      if (this.dist(e, zs) <= 3) return zs;   // 近距离时优先毁阵
+      if (this.dist(e, zs) <= 5) return zs;   // 追兵眼里只有阵枢——玩家须主动挡线
       return null;
     };
     this._combatMeta = { type: "zb_kuangdong" };
     s.combat = true;
     this._combat.startRound();
-    this._combat._log("大挪移令嵌入阵枢，灵光一寸寸蓄涨——还差六息。追兵已破洞而入，直扑那团阵枢灵光：他们是来毁阵断路的！");
-    this._combat._log("【保护】阵枢灵光被打碎=传送阵断、万劫不复。魔修正扑向阵心——挡在他们面前，护住阵枢六息！");
-    this.log("越国矿洞最深处，你按辛如音所赠图纸补全的古传送阵幽光明灭。大挪移令蓄力须六息——你与曲魂死守阵心，拖住破洞而入的追兵。", "event");
+    this._combat._log("大挪移令嵌入阵枢，灵光一寸寸蓄涨——还差六息。鬼灵门的追兵已破洞而入，直扑那团阵枢灵光：王蝉的人，是来毁阵断路的！");
+    this._combat._log("【保护】阵枢灵光被打碎=传送阵断、万劫不复。鬼灵门修士正扑向阵心——挡在他们面前，护住阵枢六息！");
+    this.log("越国矿洞最深处，你按辛如音所赠图纸补全的古传送阵幽光明灭。大挪移令蓄力须六息——你与曲魂死守阵心，拖住破洞而入的鬼灵门追兵（燕家堡那笔旧账，王蝉记到了今天）。", "event");
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -8329,7 +8420,11 @@ const Engine = {
         const bonus = Math.min(3, s.flags.losses_zb_hushan) * 8;
         s.hp = s.hpMax;
         s.demon = clamp(s.demon + 6, 0, 100);
-        this.log(`阵脚险些被冲破——你与曲魂咬牙退守、重整防线（再战伤害+${bonus}%）。这一战不必胜，只须撑住：拖到护山大阵布成，再来！`, "bad");
+        // A2 败因分流：阵眼失守（李化元被打倒）另有其辞——保护目标的死重演为"险死还生"（fail-forward 不写死档）
+        const liFell = c && c.deathCause && /阵眼/.test(c.deathCause.move || "");
+        this.log(liFell
+          ? `血侍扑到了阵心，李师叔被生生打断催阵、喷血倒地——千钧一发，曲魂拼死把他拖了回来。他还有气，可阵得重布（再战伤害+${bonus}%）。挡住每一个近阵眼的敌人，再来！`
+          : `阵脚险些被冲破——你与曲魂咬牙退守、重整防线（再战伤害+${bonus}%）。这一战不必胜，只须撑住：拖到护山大阵布成，再来！`, "bad");
         s.pendingEvent = "zaibie_a2_hushan";
         this._retryAfterLoss = "zaibie_a2_hushan";
       }

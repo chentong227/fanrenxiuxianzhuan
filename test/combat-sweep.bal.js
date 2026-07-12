@@ -18,6 +18,9 @@
  *   State.create 裸建号无行头/无存档底牌+fieldManual 六相 autoResolve 从不激活（合计 ≈28~41% hpMax
  *   压制全没吃到）+双豁免（阵法+fail-forward）非死局；真实存档口径见 climax.bal 胥王双分支带
  *   （殁线 ≈35%/存线 ≈85%）。魔道段"体验数值"一律以 climax.bal 真存档口径为准。
+ *   ⚠ polish-zaibie A4③（v320）：再别段曲魂双线各半采样（zb_jinbei/zb_duoshe 分桶 @stay/@take）——
+ *   `zb_duoshe@stay` 在本 harness 裸号弱行头下 0% 属预期贪婪地板（fail-forward 在·非死局）；
+ *   真实存档口径见 test/zaibie.bal.js（留府 ≈60% / 带走 ≈88%，双线断崖 98.5pt→≈28pt）。
  * ============================================================ */
 const fs = require("fs");
 const path = require("path");
@@ -61,10 +64,14 @@ function rec(key, meta) {
   return samples[key];
 }
 
-function runOnce() {
+// polish-zaibie A4③（GPT §4.3）：sweep 默认无 quhun_stay_jiayuan → 血刃附傀直接建 side＝永走 easy 线，
+//   正典留府线（夺舍战前两战无曲魂）成测试盲区。stayLine 参数让一半轮次起手带留府旗，
+//   zb_jinbei/zb_duoshe 按线分桶（@stay/@take）——两线都进普查视野。
+function runOnce(stayLine) {
   State.create({ name: "韩立", rootId: "si_ling" });
   const s = State.data;
   s.activeChapter = "modao"; s.unlockedChapters = ["qixuan", "huangfeng", "modao"];
+  if (stayLine) s.flags.quhun_stay_jiayuan = true;
   // polish-modao E池·sweep 口径（GPT P2-7）：起手 realmIndex 12→13——旧值 12（练气13层）配
   //   realmTier=1 时 manaPool 读 realm.layer=13 → 法力池 351 vs 真实筑基初期 178（虚高近一倍），
   //   modao/zaibie 段全部战斗被假性抬胜率。13=筑基初期=e4 决战真实玩家面板。
@@ -81,7 +88,9 @@ function runOnce() {
     if (s.combat && Engine._combat) {
       const c = Engine._combat;
       const meta = Engine._combatMeta || {};
-      const key = meta.type || Engine._nextFightType || ("combat@" + s.storyStage);
+      let key = meta.type || Engine._nextFightType || ("combat@" + s.storyStage);
+      // 曲魂双线分桶（A4③）：夺舍战前两战按留府/带走分开统计——防"永走 easy 线"盲区
+      if (key === "zb_jinbei" || key === "zb_duoshe") key += stayLine ? "@stay" : "@take";
       const objSurvive = !!(c.objective && /survive|hold|拖/.test(JSON.stringify(c.objective).slice(0, 80)));
       const r = rec(key, { enemies: (c.enemies || []).map(e => e.name).join("/"), boss: (c.enemies || []).some(e => e.boss), survive: objSurvive, field: !!c.fieldCycle, ecount: (c.enemies || []).length });
       // ⚠ 篇章境界校准（关键·防 harness 假象）：realmTier 读 activeChapter，而非 realmIndex。
@@ -147,8 +156,8 @@ function runOnce() {
 }
 
 const ROUNDS = 10;
-console.log(`\n========== 尾段战斗体验普查（魔道四幕→星海飞驰·真引擎 autoResolve ×${ROUNDS} 轮） ==========\n`);
-for (let i = 0; i < ROUNDS; i++) runOnce();
+console.log(`\n========== 尾段战斗体验普查（魔道四幕→星海飞驰·真引擎 autoResolve ×${ROUNDS} 轮·曲魂双线各半） ==========\n`);
+for (let i = 0; i < ROUNDS; i++) runOnce(i % 2 === 1);
 
 const pct = x => (x * 100).toFixed(0) + "%";
 const keys = Object.keys(samples);
@@ -162,7 +171,8 @@ for (const k of keys) {
   const tag = [r.boss ? "BOSS" : "", r.survive ? "survive" : "", r.field ? "阵法" : ""].filter(Boolean).join("·") || "常规";
   console.log(k.padEnd(22) + ` ${pct(win).padStart(4)}  ${pct(endHp).padStart(4)}  ${rounds.toFixed(1).padStart(4)}  ${String(r.ecount).padStart(2)}  ${tag}  [${r.enemies}]`);
   if (win === 0 && !r.survive && !r.field) {
-    if (_failForward.has(k)) warns.push(`· 高难·fail-forward：${k}（autoResolve冷开0%·但败有所得可满血重试+累加伤害·非死局·真人靠集火/底牌取胜）`);
+    // 双线分桶键（zb_duoshe@stay 等）回落到 finishCombat 的 meta.type 查 fail-forward
+    if (_failForward.has(k.split("@")[0])) warns.push(`· 高难·fail-forward：${k}（autoResolve冷开0%·但败有所得可满血重试+累加伤害·非死局·真人靠集火/底牌取胜）`);
     else { warns.push(`✗ 死局疑似：${k}（胜率0%·非survive非阵法·无fail-forward）`); deadlocks++; }
   }
   else if (win < 0.35 && !r.survive && !r.field) warns.push(`· 偏险：${k}（胜率${pct(win)}·autoResolve地板·真人更高·留意`);

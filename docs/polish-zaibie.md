@@ -32,17 +32,17 @@
 
 | # | 项 | 改法 | 出处 | 工程 |
 |---|------|------|------|------|
-| A1 | **夺舍战双线断崖 98.5pt**：正典留府线 1.5%（前两战无 side）vs 带走线 100%；连败刷条（3 败后仍仅 40%）——情感分支决定 boss 是近死局还是白给 | 留府线一阶段"碎躯壳夺回曲魂"→二阶段曲魂临时入场（叙事=夺舍者抢的就是这具躯壳，碎茧那一刻它认主回身——正典自洽）；带走线微削（目标：留府冷开 35~65%、带走 ≤85%）；温养/强催在本战给真实差异 | GPT P0-1 | 中 |
-| A2 | **护山"守李化元"目标是假的**：side 未钉桩（move 自由）、敌无毁阵偏置、他 hp=0 不判败——保护战名不副实 | 李化元 move:0 钉桩+敌 targetBias 毁阵/扑最弱+hp≤0 立即 lose（复用 hudao 已有保护管线） | GPT P0-3 | 小 |
-| A3 | **三战白给**：金鼓原/护山/矿洞 100% 胜率、末血≈满、玩家伤害占比 17%/24%/26%（曲魂+同袍代打）——survive 首演零张力三连发 | 降曲魂固定输出（金鼓原起 atk 微调）+目标压力（护山接 A2/矿洞阵枢承压抬高）+玩家占比拉 ≥35%（climax 口径）；矿洞追兵换皮鬼灵门（黑煞教已覆灭·introNote 重写——hudao 童老鬼老已示范） | GPT P1-3 + Fable P1-4 | 中 |
-| A4 | **新门禁**：sweep 永走 easy 线/backbone 清零 due——本站问题全在工具盲区 | 新增 test/zaibie.bal.js（曲魂双线带断言+六战胜率/占比/保护目标）+ zaibie-time.audit.js（due 窗必须有可耗月行动）；sweep 的 zaibie 段补 quhun_stay 口径采样 | GPT P1-8 | 中 |
+| A1 ✅v320 | **夺舍战双线断崖 98.5pt**：正典留府线 1.5%（前两战无 side）vs 带走线 100%；连败刷条（3 败后仍仅 40%）——情感分支决定 boss 是近死局还是白给 | 已落（engine.js startDuosheFight·数据=真存档 N=200 贪婪地板）：**留府线 1.5%→≈57~60% / 带走线 100%→≈86~88%，断崖 98.5pt→≈28pt**。①留府线=夺舍者强占的正是曲魂躯壳（p1 hp×0.9"契合不全"）——碎茧拍战中注入曲魂侧位反戈（`_maybeSpawnWave` 包裹+`_makeSideFighter`+sides.push=噬金虫召唤同款管线·**引擎原生支持战中入 side**·血刃未附故用空手尸傀招式 hp190）；②带走线微削=此战曲魂副本 ×0.65/承伤×0.6（`_quhunSideScaled` 深拷贝 moves·不动 s.sideUnit）+敌 slays corpse ×1.6（驭尸行家专拆傀身）+夺傀偏置（敌集火曲魂）+**真实赌注**：敌在场时傀身碎=夺傀而遁=判负（lose 分支曲魂就地修复+专属败词=fail-forward 不留 broken 死螺旋；另加"金背战破损→临战修傀"防 1.5% 单人墙回潮）；③温养/强催真差异：温养=曲魂在场拍护主替挡（护体+16）、强催=此战招式×1.12；④连败补偿 +8%×3 保留 | GPT P0-1 | 中 |
+| A2 ✅v320 | **护山"守李化元"目标是假的**：side 未钉桩（move 自由）、敌无毁阵偏置、他 hp=0 不判败——保护战名不副实 | 已落：李化元 move:0 钉桩+`_enemyTargetBias`（≤4 格锁向他·hudao/kuangdong 同款保护管线）+hp≤0 **无论死因立即 lose**（旧 hook 对他死亡直接 return）+deathCause 点名+败局分流文案（阵眼失守="曲魂拼死拖回·他还有气"）。改后：胜率 100%→≈98%（守住结丹长老仍是常态）、**他的胜局末血 99.6%→≈55~58%（真的会被打）**，hp≤0→lose 确定性断言入门禁 | GPT P0-3 | 小 |
+| A3 ✅v320 | **三战白给**：金鼓原/护山/矿洞 100% 胜率、末血≈满、玩家伤害占比 17%/24%/26%（曲魂+同袍代打）——survive 首演零张力三连发 | 已落：曲魂群战副本缩放（金鼓原×0.5/护山×0.65/矿洞×0.6·`_quhunSideScaled` 只动本场拷贝）+宋蒙钟卫娘招式下调（20/16/18/22→10/8/10/12·钟卫娘 aggr 8→5"分神照应弟子"）+矿洞毁阵偏置 3→5 格（阵枢承压：末血 77%→≈65%）。**玩家占比 17%/24%/26%→≈38%/35%/38%**（胜率 100/98/97%——survive 保护战守住是常态·张力在保护对象身上）。矿洞追兵换皮**鬼灵门执事/鬼灵门修士**（王蝉的人·燕家堡背锅旧账·introNote/开战播报重写·主控 extraChaser 同步换皮·数值 elem 全沿用不动平衡·ui.js 补 /鬼灵门/→bt_moxiu 映射）。**判断记档：金背妖螂入场战 100%/末血 86%（留府独力）偏软可接受**——险在留府线末血打到 86% 且是章首定调战，不再加压 | GPT P1-3 + Fable P1-4 | 中 |
+| A4 ✅v320 | **新门禁**：sweep 永走 easy 线/backbone 清零 due——本站问题全在工具盲区 | 已落三件：①`test/zaibie.bal.js`（真引擎+save-modao-e3·六战蒙特卡洛：夺舍双线带 25~70%/≤90%·三战占比 ≥30%·护山李化元 hp≤0→lose 确定性断言+末血 35~92% 带·矿洞换皮断言·六战 fail-forward 全查）；②`test/zaibie-time.audit.js`（两帆窗地点 actions 非空含耗月行动+非 scene+kuangdong where 锚+两 due 时锚存在+repairZhenwen/rest 真耗月——依赖帆窗组 B1 已落地·全绿）；③combat-sweep 曲魂双线各半采样（`runOnce(stayLine)`+zb_jinbei/zb_duoshe 分桶 @stay/@take·fail-forward 查表剥后缀·头注记 zb_duoshe@stay 裸号 0%=预期地板非死局） | GPT P1-8 | 中 |
 
 ## B · 帆窗与白菊山（结构修）
 
 | # | 项 | 改法 | 出处 | 工程 |
 |---|------|------|------|------|
-| B1 | **两段帆窗=没有门的房间**：jinguyuan（+2月）/yuekuang（+1月）均 scene:true+actions:[]——无调息无闭关无倒计时，唯一耗月手段是出门云游；kuangdong 窗自相矛盾（objHint 说"你在矿洞补阵纹"，人却必须离开矿洞；节点无 where 会在任何地方弹卡瞬移） | ①jinguyuan 去 scene 化加 rest（残营调息）；yuekuang 加专属月行动「修补阵纹」（passTime(1)+见闻=承诺兑现）+rest；②两窗补动态 objHint 倒计时（modao B⑥ 同构）；③a4_kuangdong 补 where:"yuekuang"；④currentObjective 补 zaibie due 倒计时分支 | Fable P0-4 + GPT P0-2 | 小~中 |
-| B2 | **白菊山之约（跨站钦点·本站主菜）**：baiju_appt 零读零 settle、本章零陈巧倩、remember/forgot 双线差异=零；Act2"战报→群战→守阵→殉道"一路下坠无温情谷——动漫把这场道别放在金鼓原开打前夜，戏就该在这儿 | a1_after 与 a2_jingu 之间插 `zaibie_baiju` 节点（cond=baiju_appt||chen_front_reunion·skipIf 无账自然越过=双线真差异）：越京郊白菊山半日、《落英》赏菊、settle baiju_appt、写新远账"结丹归来再会"（重返天南读）；节点尾金鼓原急报拽人走=Act2 跳板；萧翠儿/马师兄百药园问候并入捎话一句（档案记取舍） | 双审 P0 同锚 | 中 |
+| B1 ✅v320 | **两段帆窗=没有门的房间**：jinguyuan（+2月）/yuekuang（+1月）均 scene:true+actions:[]——无调息无闭关无倒计时，唯一耗月手段是出门云游；kuangdong 窗自相矛盾（objHint 说"你在矿洞补阵纹"，人却必须离开矿洞；节点无 where 会在任何地方弹卡瞬移） | 已落全档：①两地点去 scene 化（场景底走 LOC_CG 兜底 jingu_yuan/chuansong_zhen 不依赖 scene 标记）——jinguyuan 加 rest（actionLabels「残营调息」·desc 补"残军暂驻"）；yuekuang 加 rest+专属月行动 `xiuzhen`「修补阵纹 ⚙」（Engine.repairZhenwen：passTime(1)+三条文案池轮换见闻+flags.zhenwen_repaired 计数=objHint"这一个月补全阵纹"的承诺兑现；yuekuang desc 顺删"追兵已踏碎洞口"——帆窗月追兵未至）；②currentObjective 补两 due 倒计时分支（残营喘息 N 月/矿洞补阵纹 N 月·xianhui_due 同构）；③a4_kuangdong 补 where:"yuekuang"（天命栏自动缀去处）；④ui.js labels×2 已挂 | Fable P0-4 + GPT P0-2 | 小~中 |
+| B2 ✅v320 | **白菊山之约（跨站钦点·本站主菜）**：baiju_appt 零读零 settle、本章零陈巧倩、remember/forgot 双线差异=零；Act2"战报→群战→守阵→殉道"一路下坠无温情谷——动漫把这场道别放在金鼓原开打前夜，戏就该在这儿 | 已落：a1_after 与 a2_jingu 之间插 `zaibie_baiju`（cond=readLedger(baiju_appt)‖chen_front_reunion 旧档兜底·skipIf 无账自然越过=forgot 线零痕迹）：越京郊白菊山半日、《落英》旧曲、她知战至而不拦、"结丹归来再来看花"、settle baiju_appt+写远账 `baiju_rehui`（H 类·重返天南读）、心性双拍（摘菊别剑穗 sentiment/记调子入心 stoic）、节点尾金鼓原血色狼烟拽人走=Act2 跳板；**取舍（档案记）**：①ep50 百药园温情并入她口讯一句（马师伯念叨参苗——本作萧翠儿线已在京城 likjing 收束，不再另拍）②where 不设（南返路过顺序流自弹）③场景底复用 tainan_lin（白菊山专属 CG 可入生图批）。remember 线全链已无头驱动验证（节点弹出/两账落地/章末可达） | 双审 P0 同锚 | 中 |
 
 ## C · 账本与演出
 
@@ -54,8 +54,8 @@
 | C4 ✅v320 | **章末告别清单缺位**：此去几十年，对凡人牵挂零回望（fate-design §三写给这个位置） | cut1"最后回望"选项结果文案按 flag 具名（墨彩环/厉飞雨/陈巧倩各一句剪影回想——选项本来就在，只是望见的全是山不是人） | Fable P1-7 | 小 |
 | C5 ✅v320 | **四敌字牌裸奔**：金背妖螂/夺舍者/童老/鬼老无战斗立绘无映射 | 短期：夺舍者→bt_sanxiu、童老/鬼老→bt_moxiu、金背妖螂→bt_wugong 占位映射已落；真身 DEFS+红拂/云露半身像已立案（见下生图批栏）；殉道场 meetNpc hongfu/yunlu+图鉴条目已落 | Fable P1-8 + P2-4 | 映射极小 |
 | C6 ✅v320 | **大件到手不诚实**：绿煌剑无整备窗（到手即被三场白给淹没）；图纸/令牌矿洞 cond 不检查持有 | 夺舍战报后一拍法宝阁整备提示；kuangdong 走**叙事诚实**（text 开头 aside 点名双钥缺一不可）——硬 cond 持有检查实测会把 backbone 无头驱动（不经 modao e1 机缘房）误判成死链、且异常档缺物=永久软锁，故弃 | GPT P1-5 | 小 |
-| C7 | 假选择清理：星夜/调息×2（世界侧承诺零读点）/hold_realm/accept_drop/calm 死旗 | 按 modao C7 惯例：心性色彩改 recordTemperament、纯文案收敛（只说气血）、calm 删；rest 线给下一战敌 +小 buff（诚实化） | GPT 6.2 + Fable P2-1/2 | 小 |
-| C8 | worldNews 补 Act2 崩盘质感：浮云子陨落/婉拒掩月宗/拜别吕蒙卫娘各一条；modao_awol 章切清旗；旧档 quhun done 无 side 自愈 invariant | 三条传闻+一行清旗+章首自愈 | Fable P2-6 + GPT P2-2/§7.2 | 小 |
+| C7 ✅v320 | 假选择清理：星夜/调息×2（世界侧承诺零读点）/hold_realm/accept_drop/calm 死旗 | 已落（选文案收敛档·省事诚实）：①open/a1_after 两组"星夜 vs 调息"——hint+结果文案删"御灵宗更近/战局恶化"空头威胁只留气血代价，zaibie_rush/rest/rush_jingu/rest_jingu 四死旗删；②diejing hold_realm/accept_drop 死旗改 recordTemperament（stoic/sentiment·hint 缀「铸入心性」·mood-5/hp 满的真实差异保留）；③cut2 豪气/冷静——zaibie_calm 死旗删、双路 recordTemperament（sentiment/stoic·mood±5 保留）；④quhun_safe_refine **保留不删**——曲魂战斗组 A1 已接读点（engine.js 温养=护主替挡一拍护体+16），prot+3 机制本真 | GPT 6.2 + Fable P2-1/2 | 小 |
+| C8 ✅v320 | worldNews 补 Act2 崩盘质感：浮云子陨落/婉拒掩月宗/拜别吕蒙卫娘各一条；modao_awol 章切清旗；旧档 quhun done 无 side 自愈 invariant | 已落：①浮云子陨落挂 a2_jingu（ep52 红粉/骷髅"恭送"·world 条）；②婉拒掩月宗招揽挂 a4_lingshi（ep58 冯师妹·rumor 条）；③拜别宋蒙/钟卫娘挂 a2_lihuayuan（ep58"拜别吕蒙卫娘"·本作对应此二人·rumor 条）；④章首自愈：zaibie_open onArrive 补"quhun_done 且无 sideUnit 且无 pending→补 zaibie_quhun_pending"（a1_after 兑现点重新附刃归位）；modao_awol 清旗主控已落（B 批） | Fable P2-6 + GPT P2-2/§7.2 | 小 |
 
 ## D · 跨站立案（本站不实装）
 

@@ -104,7 +104,9 @@ assert(dsStay.win >= 0.25 && dsStay.win <= 0.70,
 const dsTake = montecarlo(s => { delete s.flags.quhun_stay_jiayuan; s.sideUnit = quhunUnit(); },
   () => Engine.startDuosheFight(), 200);
 console.log(`  · 夺舍战 带走线（曲魂全程并肩）：胜率 ${pct(dsTake.win)} / 末血 ${pct(dsTake.endHp)} / 占比 ${pct(dsTake.playerShare)}`);
-assert(dsTake.win <= 0.90, `夺舍战·带走线不再白给（≤90%·${pct(dsTake.win)}）——双线断崖收敛`);
+// 带沿 90→92：N=200 均值 ≈87% 但采样标准差 ≈2.4pt——90 的带沿约 20% 假红（v320 收口实测 4/20），
+// 92 仍守住"不白给"（改前是 100%），统计学上安全
+assert(dsTake.win <= 0.92, `夺舍战·带走线不再白给（≤92%·${pct(dsTake.win)}）——双线断崖收敛`);
 assert(dsTake.win >= dsStay.win, `夺舍战·带走线仍优于留府线（${pct(dsTake.win)} ≥ ${pct(dsStay.win)}）——早年选择保有分量`);
 
 /* —— ③ 金鼓原群战（A3：玩家占比 ≥30%·改前 17%=宋蒙钟卫娘曲魂代打）—— */
