@@ -871,6 +871,7 @@ const UI = {
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
       xingyi: "坐堂行医", daigong: "百艺坊 · 补炼缺件 🔨", qingtuo: "坊市告示 · 请托 📜",
+      lianfu: "闭关制符 ✎",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
@@ -887,6 +888,10 @@ const UI = {
         && State.count("xueshi_zhuyao") >= 4 && !State.data.flags.zhuji_lian_done) acts.unshift("liandan");
       // polish-huangfeng C6：代工缺料未结案——再访百艺坊可补炼缺件
       if (loc.id === "yuanwu" && State.data.flags.daigong_partial && !State.data.flags.daigong_done) acts.unshift("daigong");
+      // polish-modao B①（GPT P0-3·跨章 bug）：制符台入口——持制符笔+已参符谱者洞府可开炉
+      // （lianfu 管线俱全但全库无一处注入=阵法 Build 生产回路断裂·build.bal 在测空气）
+      if (loc.home && Engine.hasFuluTable && Engine.hasFuluTable()
+        && (State.data.fuluPlans || []).length) acts.push("lianfu");
     }
 
     // 有热点时不再渲染常规行动按钮（热点替代了它们），但保留限时窗口按钮
@@ -3471,6 +3476,7 @@ const UI = {
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
       xingyi: "坐堂行医", daigong: "百艺坊 · 补炼缺件 🔨", qingtuo: "坊市告示 · 请托 📜",
+      lianfu: "闭关制符 ✎",
     };
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {
@@ -3481,6 +3487,9 @@ const UI = {
         && State.count("xueshi_zhuyao") >= 4 && !s.flags.zhuji_lian_done) acts.unshift("liandan");
       // polish-huangfeng C6：代工缺料未结案——再访百艺坊可补炼缺件
       if (loc.id === "yuanwu" && s.flags.daigong_partial && !s.flags.daigong_done) acts.unshift("daigong");
+      // polish-modao B①（GPT P0-3·跨章 bug）：制符台入口——双路径都要注入（v83 媒体查询同型教训）
+      if (loc.home && Engine.hasFuluTable && Engine.hasFuluTable()
+        && (s.fuluPlans || []).length) acts.push("lianfu");
     }
     // 注：地图主界面化后，行动 sheet 始终列出据点行动（即使该地点也有场景热点）——
     // sheet 是主入口，场景热点退为可选的氛围交互（不再清空 dock 行动）。

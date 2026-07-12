@@ -4133,7 +4133,13 @@ const Engine = {
   canBreakthrough() {
     const s = State.data;
     const realm = State.realm();
-    if (this.atRealmCap()) return { ok: false, reason: "本篇封顶练气期。筑基乃后话，需「筑基丹」与机缘，黄枫谷篇再续。" };
+    // polish-modao B⑦：cap 文案按章动态——旧版硬编码"本篇封顶练气期"，筑基/结丹玩家撞 cap 看见是双重出戏
+    if (this.atRealmCap()) {
+      const capRealm = DATA.realms[Chapters.realmCap()];
+      const chapName = (Chapters.active() || {}).name || "本篇";
+      if (State.data.realmIndex <= 6) return { ok: false, reason: "本篇封顶练气期。筑基乃后话，需「筑基丹」与机缘，黄枫谷篇再续。" };
+      return { ok: false, reason: `${chapName}的机缘止于「${capRealm ? capRealm.name : "此境"}」——更高的境界，须待后续篇章的天时与地利。眼下修为满盈不散，正是打磨神通、经营根基的时候。` };
+    }
     // 长春功前篇止于七层：冲八层须《长春功·后篇》（太南小会丹药换购——大件 gating）
     if (s.realmIndex >= 6 && DATA.realms[s.realmIndex + 1] && DATA.realms[s.realmIndex + 1].tier === "qi"
         && !(typeof Loadout !== "undefined" && Loadout.isLearned(s, "changchun_full"))) {
@@ -4858,7 +4864,8 @@ const Engine = {
       }
       if (s.ledger && s.ledger.yanjia_scout_dong) {
         this._combat.player.dmgBonus = (this._combat.player.dmgBonus || 1) * 1.08;
-        this._combat._log("【情报·弱点】董萱儿所述在目：振翅冲撞之后，翼根旧伤露半息破绽——认准了打（伤害+8%）。");
+        // polish-modao B②（v302 勘误漏网）：王蝉=鬼灵门少主·人修——旧"振翅/翼根"虫妖文案勘正为血遁口径（与 story 种账一致）
+        this._combat._log("【情报·弱点】董萱儿所述在目：血遁突袭之后气门微滞、露半息破绽——认准了打（伤害+8%）。");
       }
     }
     // 羁绊·战斗支援兑现：护体/疗伤已在 _maybeCombatAid 安排，此处落地到战场单位 + 见闻/风云录留痕

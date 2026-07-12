@@ -2677,7 +2677,9 @@ const STORY = [
       Engine.writeLedger("yanjia_reunion", "燕家堡重逢墨彩环、结识董萱儿——魔道入侵下的故人与名门");
       // 因果联动：坊市归途杀陆云风（luyunfeng_dead）→ 陈家暗中相助
       if (s.flags.luyunfeng_dead || (s.ledger && s.ledger.chen_remember)) {
-        Engine.log("陈家的人也在堡中——为陆云风一事，陈巧倩那一脉暗中给你递来一囊疗伤丹药，未发一言。这份人情，你记下了。", "event");
+        // polish-modao B④：文案说递来丹药就真入袋（谎报掉落修）
+        State.give("huixue_dan", 1);
+        Engine.log("陈家的人也在堡中——为陆云风一事，陈巧倩那一脉暗中给你递来一囊疗伤丹药，未发一言。这份人情，你记下了。（回血丹+1）", "event");
       }
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
@@ -2752,7 +2754,7 @@ const STORY = [
         });
         mk("meds", "搜罗堡中药房——伤药备足才敢言战", "互斥·得回血丹（战中续命）", () => {
           State.give("huixue_dan", 2);
-          return { text: "药房掌柜自顾收拾细软，你按市价留下银钱，取走两枚回血丹。（回血丹+2）", kind: "good" };
+          return { text: "药房里早没了人影——掌柜收拾细软跑了。你从架上取走两枚回血丹，乱局之中，谁也顾不上谁的银钱。（回血丹+2）", kind: "good" };
         });
         mk("tower", "登堡墙望塔——看熟地形走势", "互斥·决战开局占地形先机（开局护体）", () => {
           Engine.writeLedger("yanjia_scout_tower", "临会登望塔看熟堡墙走势——大阵若起，何处可守、何处可逃、落脚位在哪，尽在胸中");
@@ -3092,8 +3094,10 @@ const STORY = [
         hint: "贪多——多搜一刻或有意外",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 2);
-          State.setFlag("modao_e1_extra_search");
-          return { text: "你又多翻了几处角落——果然在石室偏壁找到一小摄灵矿碎屑，虽不多，聊胜于无。", kind: "good" };
+          // polish-modao B④：谎报掉落修——文案说找到灵矿碎屑就真给（黄枫谷 E① 并案现行犯）
+          State.give("lingshi", 2);
+          Engine.recordTemperament("modao_e1_extra_search", "stoic", "机缘房里多搜一刻——稳里再抠一分的性子");
+          return { text: "你又多翻了几处角落——果然在石室偏壁找到一小摄灵矿碎屑，虽不多，聊胜于无。（灵石+2）", kind: "good" };
         },
         resolve: "advance",
       },
@@ -3234,6 +3238,16 @@ const STORY = [
                  && State.absMonth() >= (s.flags.modao_act2_due || 0),
     cg: "kuangchang",
     bgm: "tense",
+    // polish-modao B⑥：四段时锚里唯一的天命栏黑洞——补双态 objTitle/objHint（倒计时管线同 e1/e3/e4）
+    objTitle(s) {
+      return State.absMonth() < (s.flags.modao_act2_due || 0) ? "换防休整" : "金鼓原调令";
+    },
+    objHint(s) {
+      const left = (s.flags.modao_act2_due || 0) - State.absMonth();
+      return left > 0
+        ? `黑风岭矿洞守备换防，这一队征卒暂得喘息——约 ${left} 月后拔往金鼓原前线。趁这几个月安顿修行。`
+        : "调令已下——金鼓原前哨集结，七派征军与黑煞教隔原相持，真正的仗要来了。";
+    },
     title: "金鼓原 · 前哨集结",
     text: [
       { scene: "魔道前线 · 金鼓原" },
@@ -4056,7 +4070,6 @@ const STORY = [
       "假丹之威一压，满殿同袍如坠冰窟。宋蒙的重元珠被震得嗡嗡作响，钟卫娘一口气血上涌，连你也只觉那身木行道基被压得几乎喘不过气。",
       { say: "宋蒙", emo: "shout", tone: "他护住众人，厉声", text: "不是对手——退！韩师弟，你脑子活，想法子拖住他，我们另寻生路！" },
       { aside: "几人且战且退、节节败北。你一边周旋、一边飞快盘算：硬拼必死，可若能拖到师兄妹与那几头傀儡蜥蜴布成阵势……一个疯狂的念头，在你脑中渐渐成形。" },
-      { aside: "（皇宫决战·下篇·待续：拖时布阵战 → 真·颠倒五行阵 → 三符宝＋真凰符终结胥王 → 收官·离京钩。增量H下篇实装中。）" },
     ],
     onArrive(s) {
       State.setFlag("modao_e4_xuwang_done");
