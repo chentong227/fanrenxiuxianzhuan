@@ -31,11 +31,14 @@
     // 底牌（消耗性手段）：独立体系，不占技能槽。
     // 符箓/符宝/丹药/阵旗也是底牌（combat-arsenal-design.md 轴3）：有实物即可用，无需研习。
     TRUMPS: ["weidu", "feizhen", "huoshe_fu", "hanbing_fu", "jinguang_zhuan",
-             "jinchuang_yao", "huiyuan_dan", "dingshen_fu", "zhenqi_kunzu", "zhenqi_juling"],
+             "jinchuang_yao", "huiyuan_dan", "dingshen_fu", "zhenqi_kunzu", "zhenqi_juling",
+             "pingtian_chi_zhen"],
     // 实物类底牌：背包里有货即自动入战（买来就能用——符与丹是修仙界的通货）
     TALISMANS: { huoshe_fu: "huoshe_fu", hanbing_fu: "hanbing_fu", jinguang_zhuan: "jinguang_zhuan_charge",
                  jinchuang_yao: "huixue_dan", huiyuan_dan: "huiyuan_dan", dingshen_fu: "dingshen_fu",
-                 zhenqi_kunzu: "zhenqi_kunzu", zhenqi_juling: "zhenqi_juling" },
+                 zhenqi_kunzu: "zhenqi_kunzu", zhenqi_juling: "zhenqi_juling",
+                 // polish-modao D5：平天尺·镇——充能仅 startXuwangFight 发放、战后清除（皇宫决战限定）
+                 pingtian_chi_zhen: "pingtian_chi_charge" },
 
     isTrump(skillId) { return this.TRUMPS.includes(skillId); },
 

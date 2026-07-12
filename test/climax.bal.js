@@ -124,5 +124,55 @@ const tl = montecarlo("save-modao-e3.json", () => {
 console.log(`  · 化茧铁罗（筑基初·二阶段搏命）：胜率 ${pct(tl.win)} / 末血 ${pct(tl.endHp)} / ${tl.rounds.toFixed(1)}回合`);
 assert(tl.endHp <= 0.82, `化茧铁罗·搏命见血：末血≤82%（${pct(tl.endHp)}）——化茧二阶段·不是无伤通过`);
 
+// —— 魔道·五色门主（报仇高潮·polish-modao D3）：改前 100%/6回合无伤感→抬进恶战带 ——
+const ws = montecarlo("save-modao-e3.json", () => {
+  Engine._nextFightType = "wuse_menzhu"; Engine.startEncounterFight("wuse_menzhu");
+});
+console.log(`  · 五色门主（筑基初·报仇高潮）：胜率 ${pct(ws.win)} / 末血 ${pct(ws.endHp)} / ${ws.rounds.toFixed(1)}回合`);
+assert(ws.win >= 0.60 && ws.win <= 0.92, `五色门主·报仇高潮落恶战带 60~92%（${pct(ws.win)}）——校准锚 ~85%·带宽容采样抖动±5pt（fail-forward 在，非死局）`);
+assert(ws.endHp <= 0.85, `五色门主·报仇见血：末血≤85%（${pct(ws.endHp)}）——高潮不是无伤通过`);
+
+// —— 魔道·胥王决战双分支（polish-modao D1·GPT P1-2）——
+// 口径：save-modao-e3（筑基初期 ri13·真存档）+ autoResolve 悲观地板。fieldManual 六相 autoResolve
+// 从不激活（真人手操另有合计 ≈28~41% hpMax 的阵法压制），故此处胜率均为深度悲观下限；
+// 两线皆带 fail-forward（losses_xuwang +8%×3），永非死局。改前断崖：殁线 1.5% vs 存线 86.5%（85pt）。
+// 改后：殁线宋蒙哀兵补位+平天尺底牌 → 地板 ≈35%；存线刘靖 aggr 8→6+减伤 → ≈82%/玩家占比 ≈67%。
+const xwDie = montecarlo("save-modao-e3.json", () => {
+  delete State.data.flags.liujing_survived;
+  Engine.startXuwangFight();
+});
+console.log(`  · 胥王决战·殁线（宋蒙哀兵）：胜率 ${pct(xwDie.win)} / 末血 ${pct(xwDie.endHp)} / ${xwDie.rounds.toFixed(1)}回合 / 玩家占比 ${pct(xwDie.playerShare)}`);
+assert(xwDie.win >= 0.25, `胥王·殁线地板 ≥25%（${pct(xwDie.win)}）——多数玩家线不再是 1.5% 断崖（哀兵补位+平天尺·真人手操六相更高）`);
+assert(xwDie.win <= 0.60, `胥王·殁线仍是全章最陡 ≤60%（${pct(xwDie.win)}）——刘师兄的代价不能被补偿抹平`);
+const xwLive = montecarlo("save-modao-e3.json", () => {
+  State.data.flags.liujing_survived = true;
+  Engine.startXuwangFight();
+});
+console.log(`  · 胥王决战·存线（刘靖并肩）：胜率 ${pct(xwLive.win)} / 末血 ${pct(xwLive.endHp)} / ${xwLive.rounds.toFixed(1)}回合 / 玩家占比 ${pct(xwLive.playerShare)}`);
+assert(xwLive.win <= 0.92, `胥王·存线不躺赢 ≤92%（${pct(xwLive.win)}）——改命是奖励，不是免战牌`);
+assert(xwLive.win >= xwDie.win + 0.15, `胥王·存线显著优于殁线（+${Math.round((xwLive.win - xwDie.win) * 100)}pt ≥15pt）——情报救人的因果仍有分量`);
+assert(xwLive.playerShare >= 0.35, `胥王·存线玩家伤害占比 ≥35%（${pct(xwLive.playerShare)}）——刘靖 aggr 8→6 后仗得自己打（防同道代打回潮）`);
+// —— polish-modao D7 配置断言：阵图升级线（六相是 fieldManual 真人手操·autoResolve 测不出差异，
+//    故断言配置本身）：无 wuxing_zhen_full → 万象星河被裁（fieldCycle 6→5 相）；有 → 全量六相。
+{
+  loadSave("save-modao-e3.json");
+  State.data.pendingEvent = null; State.data.combat = false; State.data.hp = State.data.hpMax;
+  delete State.data.flags.wuxing_zhen_full;
+  Engine.startXuwangFight();
+  const fcBase = Engine._combat.fieldCycle || [];
+  State.data.pendingEvent = null; State.data.combat = false; State.data.hp = State.data.hpMax;
+  State.data.flags.wuxing_zhen_full = true;
+  Engine.startXuwangFight();
+  const fcFull = Engine._combat.fieldCycle || [];
+  assert(fcBase.length === 5 && !fcBase.some(ph => /万象星河/.test(ph.name)),
+    `胥王·无完整版阵图=六相缺万象星河（${fcBase.length}相）——齐云霄拍卖会的"准备苦"被看见`);
+  assert(fcFull.length === 6 && /万象星河/.test(fcFull[5].name) && fcFull[5].suppress >= 0.13,
+    `胥王·完整版阵图=全量六相含万象星河 climax（${fcFull.length}相·suppress ${fcFull[5] ? fcFull[5].suppress : "?"}）`);
+}
+
+// —— 魔道·皇宫四线群架（polish-modao D3·GPT P2-2）：占比观察行（演出性质群架·不设门禁只打印）——
+const st3 = montecarlo("save-modao-e3.json", () => { Engine.startSantuanFight(); });
+console.log(`  · 皇宫四线群架（观察行·不设门禁）：胜率 ${pct(st3.win)} / 玩家占比 ${pct(st3.playerShare)}（冰妖 hp170+同袍-10% 后锚 ~36%·35% 代打线上）`);
+
 console.log(`\n========== 高潮战一致感锚点：${failures === 0 ? "全部通过 \u2713" : failures + " 项失败 \u2717"} ==========\n`);
 process.exit(failures === 0 ? 0 : 1);

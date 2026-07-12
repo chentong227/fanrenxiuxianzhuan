@@ -2695,9 +2695,9 @@ const STORY = [
       },
       {
         text: "「彩环，你跟紧我。」先护住她，再看战局。",
-        hint: "先保人——护住墨彩环再论其他",
+        hint: "先保人——铸入心性",
         effect(s) {
-          State.setFlag("yanjia_protect_mocaihuan");
+          Engine.recordTemperament("yanjia_protect_mocaihuan", "sentiment", "燕家堡血夜·先护墨彩环退到安全处再回身迎敌——刀口之下，你先想着别人");
           return { text: "你没有急着列入战阵——先护住墨彩环退到安全处，再转身面对魔道。", kind: "event" };
         },
         resolve: "advance",
@@ -2878,7 +2878,6 @@ const STORY = [
         hint: "牵挂——多看故人一眼",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 2);
-          State.setFlag("yanjia_lookback");
           return { text: "你在人群中回头多看了一眼——墨彩环站在火光里，也在望着你。", kind: "event" };
         },
         resolve: "advance",
@@ -2945,10 +2944,10 @@ const STORY = [
       },
       {
         text: "「吕队官，这矿道里……到底藏着什么？」先向他打听虚实。",
-        hint: "谨慎——多问一句再入矿",
+        hint: "谨慎——铸入心性",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 2);
-          State.setFlag("modao_e1_ask_lvtianmeng");
+          Engine.recordTemperament("modao_e1_ask_lvtianmeng", "stoic", "入矿道前先向队官多问一句虚实——不打没数的仗，是你保命的老规矩");
           return { text: "你多问了一句——吕天蒙看了你一眼，低声道：“矿道里不只有魔物。有些东西，比魔物更险。”", kind: "event" };
         },
         resolve: "advance",
@@ -3147,10 +3146,10 @@ const STORY = [
       },
       {
         text: "「……保重。」低声说了一句，她听不见。",
-        hint: "低语——她已不记得，你却还没忘",
+        hint: "低语——铸入心性",
         effect(s) {
           s.mood = Math.max(0, s.mood - 3);
-          State.setFlag("chen_forgot_murmur");
+          Engine.recordTemperament("chen_forgot_murmur", "sentiment", "前线再遇不识你的陈巧倩·对着她的背影低声道了句保重——她忘了，你没忘");
           return { text: "你低声说了两个字——她已走远，自然听不见。可你心里清楚，有些事忘了比记着好。", kind: "event" };
         },
         resolve: "advance",
@@ -3213,9 +3212,9 @@ const STORY = [
       },
       {
         text: "「师姐，前线凶险，你也保重。」退一步，保持距离。",
-        hint: "克制——领情但不越界",
+        hint: "克制——铸入心性",
         effect(s) {
-          State.setFlag("chen_remember_restrain");
+          Engine.recordTemperament("chen_remember_restrain", "stoic", "陈巧倩仍记挂你·你退一步收下玉瓶——情可以领，界不能越，藏拙守距是你给彼此的护身符");
           return { text: "你退了一步，将玉瓶收好——这份情你领了，可你给不起更多。藏拙守距，是为你好，也是为我好。", kind: "event" };
         },
         resolve: "advance",
@@ -3236,6 +3235,9 @@ const STORY = [
     skipIf: (s) => s.flags.modao_e2_muster_done,
     cond: (s) => s.flags.modao_act1_done && !s.flags.modao_e2_muster_done
                  && State.absMonth() >= (s.flags.modao_act2_due || 0),
+    // polish-modao A1①-4：时锚等待期的自由段收口节点补 where——换防期云游在外者，
+    // 金鼓原集结不再在百药园里弹出（天命栏自动缀「去处：魔道前线」，A3 军法申斥同向引导归营）
+    where: "modao_front",
     cg: "kuangchang",
     bgm: "tense",
     // polish-modao B⑥：四段时锚里唯一的天命栏黑洞——补双态 objTitle/objHint（倒计时管线同 e1/e3/e4）
@@ -3276,6 +3278,10 @@ const STORY = [
       Engine.meetNpc("wuxuan", "黄枫谷李化元门下行六的师弟，年轻气盛——因董萱儿之故，对你这位记名师兄没什么好脸色。");
       Engine.writeLedger("modao_muster", "金鼓原前哨集结：与李化元门下同门刘靖/宋蒙/钟卫娘/武炫结识，结下并肩同袍之谊（武炫因董萱儿之故对你存着别扭）");
       Engine.addMilestone("魔道争锋·第二幕·启：金鼓原前哨集结，同袍并肩", "story");
+      // polish-modao A1④·涟漪①上（Fable P1-7）：厉飞雨背锅风声链——燕家堡报名之债开始发酵（重返天南对质拍的糖·本站只种风声）
+      s.worldNews = s.worldNews || [];
+      s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "rumor", text: "营中风闻：鬼灵门重金悬赏一个叫『厉飞雨』的黄枫谷弟子——可七玄门那位执法堂首座也叫这名，怕是要莫名其妙背一口大锅。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
@@ -3290,9 +3296,9 @@ const STORY = [
       },
       {
         text: "「在下韩某。灵根低微，只盼不拖诸位后腿。」",
-        hint: "谦抑——低调自居",
+        hint: "谦抑——铸入心性",
         effect(s) {
-          State.setFlag("modao_e2_humble");
+          Engine.recordTemperament("modao_e2_humble", "stoic", "金鼓原集结·同袍面前仍自称『韩某』压低身段——底牌不亮给任何人，是你刻进骨头的习惯");
           return { text: "你报了个「韩某」，将身段压到最低——同袍是好意，可你习惯了不把底牌亮给人看。", kind: "event" };
         },
         resolve: "advance",
@@ -3358,10 +3364,10 @@ const STORY = [
       },
       {
         text: "「……董萱儿。」攥紧拳头，暗暗咬牙。",
-        hint: "愤懑——怒而无力",
+        hint: "愤懑——铸入心性",
         effect(s) {
           s.mood = Math.max(0, s.mood - 2);
-          State.setFlag("modao_e2_dongxuaner_rage");
+          Engine.recordTemperament("modao_e2_dongxuaner_rage", "sentiment", "闻董萱儿被掳·攥拳咬牙怒而无力——并肩杀出血路的人被掳走，你咽不下这口气");
           return { text: "你攥紧拳头——燕家堡那一夜并肩杀出血路的人，就这么被掳走了。可你眼下，连自保都勉强。", kind: "event" };
         },
         resolve: "advance",
@@ -3421,10 +3427,10 @@ const STORY = [
       },
       {
         text: "「道友也保重。西线凶险。」",
-        hint: "回关——叮嘱她也保重",
+        hint: "回关——铸入心性",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 3);
-          State.setFlag("nangongwan_reciprocal");
+          Engine.recordTemperament("nangongwan_reciprocal", "sentiment", "金鼓原一别·罕见地回了南宫婉一句『道友也保重』——木讷如你，这一句已是掏心");
           return { text: "你罕见地多了一句——她脚步微微一顿，没有回头，却微微点了点头。", kind: "event" };
         },
         resolve: "advance",
@@ -3435,7 +3441,7 @@ const STORY = [
     id: "modao_e2_jingcheng",
     skipIf: (s) => s.flags.modao_e2_jingcheng_done,
     cond: (s) => s.flags.modao_e2_nangongwan_done && !s.flags.modao_e2_jingcheng_done,
-    cg: "departure",
+    cg: "kuangchang",   // polish-modao E池：原复用七玄门离乡 CG（departure=少年离家）画面错位——换前线拔营（矿场地表）
     bgm: "journey",
     title: "金鼓原 · 赴京",
     text: [
@@ -3468,11 +3474,68 @@ const STORY = [
       },
       {
         text: "「京城……水深。」摸了摸怀中的炒栗子，暗暗提防。",
-        hint: "警醒——京城水深，提前留心",
+        hint: "警醒——铸入心性",
         effect(s) {
           s.mood = Math.max(0, s.mood - 1);
-          State.setFlag("modao_e2_jingcheng_alert");
+          Engine.recordTemperament("modao_e2_jingcheng_alert", "stoic", "拔营赴京·别人看繁华你先看水深——「别死在京城」这句叮嘱，你揣着上路");
           return { text: "你没有因为拔营而松懈——南宫婉那句「别死在京城」，你记着。", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  /* —— polish-modao D7（GPT P1-3 + Fable P2-1）：二/三幕间·京城拍卖会重逢齐云霄 ——
+   * 补设计稿承诺（modao-design §第二幕幕间"拍卖会救齐云霄→阵图加强完整版"）：
+   * ①wuxing_zhen 基础版全章零读点→此节点升级完整版（wuxing_zhen_full），startXuwangFight 读 flag
+   *   裁剪六相（无完整版=万象星河凝不出·准备的差距被看见）；②灭付家暗线起点（元婴远线）——
+   *   ⚠ ledger id 用 fujia_grudge_start：fujia_grudge 已被再别天南「齐云霄之死=付家所害」占用
+   *   （story 齐云霄死讯节点），两账同链不同拍——拍卖会结怨=因，之死=果，重返天南篇总清算。
+   * 演出从简（无 CG·场景字幕+对话）；抵京当日、入京安顿（modao_e3_rujing）之前。 */
+  {
+    id: "modao_qiyunxiao",
+    skipIf: (s) => s.flags.modao_qiyunxiao_done,
+    cond: (s) => s.flags.modao_act2_done && !s.flags.modao_qiyunxiao_done && !s.flags.modao_e3_rujing_done
+      && State.absMonth() >= (s.flags.modao_act3_due || 0),
+    bgm: "town",
+    title: "京城 · 万宝拍卖会",
+    text: [
+      { scene: "胥国京城 · 万宝拍卖行外" },
+      { amb: "market" },
+      { shot: "establish" },
+      "大军抵京、各营分驻安顿的当口，你信步经过京城万宝拍卖行——战争潮里天下奇珍都往这座金粉之城汇聚，拍卖行门前车马塞街。人群里，一个熟悉的赭褐色身影正被三名锦服修士堵在廊柱下。",
+      { shot: "pushIn" },
+      "是齐云霄。元武国百艺坊那位一炉好风火的巧匠——他携看家的炉艺图卷来京城大拍会寻好料，却被元武国付家的强人盯上了：三人围着他，皮笑肉不笑，话里话外要他「奉图入府、专为付家开炉」，那卷图卷已被为首者捏在手里掂来掂去。",
+      { say: "齐云霄", tone: "梗着脖子，指节发白", text: "百艺坊的炉子，只认料、不认主！这图是我吃饭的家伙——付家好大的脸面，强买强卖买到京城来了！" },
+      { aside: "为首那名付家供奉修为不过练气大圆满，仗的是付家在元武国只手遮天的势。齐云霄一介凡体匠人，眼看要吃大亏——这一炉好风火，替你炼过乌龙夺、裁过神风舟的帆。" },
+    ],
+    onArrive(s) {
+      State.setFlag("modao_qiyunxiao_done");
+      State.setFlag("wuxing_zhen_full");
+      if (State.count("wuxing_zhen") < 1) State.give("wuxing_zhen", 1);   // 稳妥：基础版阵图缺则补（代工线漏网档）
+      Engine.meetNpc("qiyunxiao", "元武国百艺坊的巧匠——京城拍卖会上被付家强人所迫，得你解围，以完整版颠倒五行阵图相谢。");
+      Engine.writeLedger("fujia_grudge_start", "京城拍卖会解围齐云霄——元武国付家强人强买其炉艺图卷，被你搅了局。付家的跋扈你记下了（远线·此怨自此结下：他日重返天南，连本带利一并清算）");
+      Engine.addMilestone("京城拍卖会：重逢齐云霄，得完整版颠倒五行阵图", "story");
+      if (typeof Sfx !== "undefined") Sfx.play("chime");
+    },
+    choices: [
+      {
+        text: "跨步而出，筑基威压当头压下——「放手。」",
+        hint: "出手震慑——以力断事，付家的脸面不值一文（——铸入心性）",
+        effect(s) {
+          Engine.recordTemperament("modao_qiyunxiao_stoic", "stoic", "京城拍卖会——筑基威压慑退付家强人，一个字都懒得多说");
+          return { text: "你一步跨出，筑基修士的威压毫不遮掩地罩下——三名付家强人脸色霎时惨白，图卷脱手落地，讪讪抱拳退走。为首者临去回头看了你一眼，把你的脸记下了。齐云霄拾起图卷拍拍灰，咧嘴一笑：「痛快！韩道友，这份情百艺坊记下了——」他从怀里取出一卷以朱砂密绘的图轴塞进你手里：「颠倒五行阵的完整版补全图。燕家堡给你的那卷基础版只得其形，配上这卷，六行归一的『万象星河』才凝得出来。拿去，别客气——你我这是第二桩买卖了。」", kind: "good" };
+        },
+        resolve: "advance",
+      },
+      {
+        text: "挤进人群打圆场，暗中递灵石平了这桩事。",
+        hint: "花灵石平事——和气收场，给故人留个体面（灵石-5·——铸入心性）",
+        effect(s) {
+          const cost = Math.min(5, State.count("lingshi"));
+          if (cost > 0) State.take("lingshi", cost);
+          Engine.recordTemperament("modao_qiyunxiao_sentiment", "sentiment", "京城拍卖会——破财替故人平事，给齐云霄留足体面");
+          return { text: `你挤进人群拱手打个圆场，袖底不动声色递过${cost > 0 ? `一小袋灵石（-${cost}）` : "几件不起眼的战利小物"}——「几位道友，行个方便，这位匠师与在下有旧。」付家强人掂了掂分量，冷哼一声抱拳走了。齐云霄面色涨红：「让韩道友破费……不成，这情得还！」他执意把一卷朱砂密绘的图轴塞进你手里：「颠倒五行阵的完整版补全图。燕家堡那卷基础版只得其形，配上这卷，六行归一的『万象星河』才凝得出来——这才对得起你那袋灵石！」`, kind: "good" };
         },
         resolve: "advance",
       },
@@ -3492,6 +3555,8 @@ const STORY = [
     id: "modao_e3_rujing",
     skipIf: (s) => s.flags.modao_e3_rujing_done,
     cond: (s) => s.flags.modao_act2_done && !s.flags.modao_e3_rujing_done && State.absMonth() >= (s.flags.modao_act3_due || 0),
+    // polish-modao A1①-4：赴京从前线大营开拔（随征军入京）——等待期云游在外者，天命栏缀「去处：魔道前线」
+    where: "modao_front",
     cg: "jingcheng",
     bgm: "town",
     title: "京城 · 天子脚下",
@@ -3519,9 +3584,16 @@ const STORY = [
     ],
     onArrive(s) {
       State.setFlag("modao_e3_rujing_done");
+      // polish-modao A1①（Fable P0-1）：京城真地点——人到京城，地也到京城（主界面/底图/行动随之切京城客居；
+      // 离京无需手动迁出：zaibie_open 的 Chapters.enter("zaibie") 落 jiayuan_city）
+      s.location = "jingcheng_ke";
       Engine.meetNpc("xiaocui", "京城市井卖花的小姑娘，聪慧伶俐——她问了你那个墨彩环问过的问题：凡人，是不是没福气修仙。");
       Engine.writeLedger("modao_rujing", "受李化元亲托入京护持秦家（秦家先祖=其师兄·累世照拂）、持荐书入秦府做客卿——市井偶遇萧翠儿爷孙，秦府老门房『笑着笑着就哭了』：头一回从凡人眼里看清『修仙者』落在尘世的分量");
       Engine.addMilestone("魔道争锋·第三幕·京城暗流：入京（萧翠儿·秦府门房哭戏）", "story");
+      // polish-modao A1④·涟漪①下（Fable P1-7）：厉飞雨背锅风声链·笑点收拍——重返天南对质拍的糖（跨站立案见 polish-modao C 组）
+      s.worldNews = s.worldNews || [];
+      s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "rumor", text: "天南来的行脚修士笑谈：彩霞山那位厉首座近来托人四处带话——「哪个王八蛋用老子的名字在外面结仇？！」听说鬼灵门的悬赏客都摸到七玄门山门口了。" });
+      if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
       if (typeof Sfx !== "undefined") Sfx.play("chime");
     },
     choices: [
@@ -3536,16 +3608,22 @@ const STORY = [
       },
       {
         text: "「老人家，你好好保重。」多宽慰他一句。",
-        hint: "温言——宽慰凡人",
+        hint: "温言——铸入心性",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 2);
-          State.setFlag("modao_e3_comfort_doorkeeper");
+          Engine.recordTemperament("modao_e3_comfort_doorkeeper", "sentiment", "秦府朱门下·多停一步宽慰哭了的老门房——仙凡有别，善意没有别");
           return { text: "你多停了一步，宽慰了那老门房两句——他抹了抹眼角，笑了，说“公子心善”。", kind: "event" };
         },
         resolve: "advance",
       },
     ],
   },
+  /* ---- polish-modao B1+B2（双审 P0 同锚·2026-07-12）：京城查案重做——
+   *  一次性三选一 → choice.stay 多轮侦察（模板照抄 yanjia_scout）。三条线可反复投入攒 jingcheng_intel（上限3）：
+   *  ①蒙山五友门路（灵石8/次·不耗月）②茶楼蹲点（耗1月·免费·40%额外风味见闻）③翠儿追踪（耗1月·免费·首次触发翠儿小拍）。
+   *  收网随时可走（intel≥1 才亮·hint 写明档位效果）；intel=0 只能硬闯（决战开局吃亏）。
+   *  读点兑现（engine 侧）：≥1=santuan 开局我方全体护体 / ≥2=刘靖示警改命线（原读点不动）/
+   *  =3=胥王决战开局敌破绽一拍 / =0=santuan 敌先手一拍（开局气血-8%）——「情报量决定皇宫决战难度」自此成真。 ---- */
   {
     id: "modao_e3_shizong",
     skipIf: (s) => s.flags.modao_e3_shizong_done,
@@ -3554,48 +3632,137 @@ const STORY = [
     bgm: "tense",
     title: "京城 · 连环失踪案",
     objTitle: "查案",
-    objHint: "京城散修接连失踪——查清底细，情报越足，皇宫决战越有把握。情报买得越全，越能从风声里挖出黑煞教藏起来的杀招（譬如那尊从不露面的『教主真身』）；皇宫决战时，同袍的一条命，可能就系在这条线报上。",
-    text: [
-      { scene: "京城 · 茶楼" },
-      { shot: "establish" },
-      "京城近来不太平：散修接二连三地失踪，活不见人、死不见尸。手法干净利落、专挑落单的修士下手——不像魔道一贯的张扬作风，倒像是有人在悄没声地『收割』。",
-      "茶楼雅座里，五个散修凑作一桌低声议事。为首的拱手招呼你——蒙山五友，自炼气十层到圆满不等，结义抱团、消息灵通，是这京城里最肯透底的一拨地头蛇。",
-      { shot: "pushIn" },
-      { say: "蒙山五友", tone: "压低声音", text: "这位道友面生啊。京城的水深，想打听失踪案……多少得先递个投名状。情报不是白给的——可你要真想除了那害人的东西，我们五个，到时候算你一份。" },
-      "话音未落，巷口传来一阵急促的脚步——是萧翠儿，小脸煞白，眼泪糊了满脸。",
-      { sfx: "danger" },
-      { shot: "pushIn" },
-      { say: "萧翠儿", emo: "cry", text: "韩公子！我爷爷……我爷爷昨夜被『怪物』抓走了！邻里都说，是那专吃人的妖邪……公子你神通广大，求求你救救爷爷！" },
-      { aside: "翠儿的爷爷，也卷进了这桩连环失踪案。线索千头万绪：蒙山五友手里有加密的消息、茶楼是消息的集散、翠儿的聪慧又能顺藤摸瓜。怎么查，是你的事——查得越透，等真捣了贼窝，胜算越大。" },
-    ],
+    objHint: "京城散修接连失踪——三条线可反复投入：蒙山五友的门路（花灵石·快）、茶楼蹲点（耗月）、顺翠儿的线追踪（耗月）。情报越足，皇宫决战越有把握；何时收网，你说了算。",
+    text(s) {
+      if (!s.flags.modao_e3_shizong_seen) {
+        return [
+          { scene: "京城 · 茶楼" },
+          { shot: "establish" },
+          "京城近来不太平：散修接二连三地失踪，活不见人、死不见尸。手法干净利落、专挑落单的修士下手——不像魔道一贯的张扬作风，倒像是有人在悄没声地『收割』。",
+          "茶楼雅座里，五个散修凑作一桌低声议事。为首的拱手招呼你——蒙山五友，自炼气十层到圆满不等，结义抱团、消息灵通，是这京城里最肯透底的一拨地头蛇。",
+          { shot: "pushIn" },
+          { say: "蒙山五友", tone: "压低声音", text: "这位道友面生啊。京城的水深，想打听失踪案……多少得先递个投名状。情报不是白给的——可你要真想除了那害人的东西，我们五个，到时候算你一份。" },
+          "话音未落，巷口传来一阵急促的脚步——是萧翠儿，小脸煞白，眼泪糊了满脸。",
+          { sfx: "danger" },
+          { shot: "pushIn" },
+          { say: "萧翠儿", emo: "cry", text: "韩公子！我爷爷……我爷爷昨夜被『怪物』抓走了！邻里都说，是那专吃人的妖邪……公子你神通广大，求求你救救爷爷！" },
+          { aside: "翠儿的爷爷，也卷进了这桩连环失踪案。线索千头万绪：蒙山五友手里的门路要花灵石、茶楼蹲点与翠儿追踪要花工夫。怎么查、查到几分再动手，是你的事——查得越透，等真捣了贼窝，胜算越大。" },
+        ];
+      }
+      const intel = s.flags.jingcheng_intel || 0;
+      const tier = [
+        "贼窝的虚实，眼下还是一团迷雾。",
+        "你摸到了贼窝的大致方位——可暗处还有看不真切的东西。",
+        "各坊失踪者的时辰路径、煞气流向已尽在胸中——只差最后一层窗户纸。",
+        "虚实尽在掌握——连那尊从不露面的『教主真身』，都被你蹲了出来。",
+      ][Math.min(3, intel)];
+      return [`查案还在继续。${tier}（情报 ${intel}/3）`];
+    },
     onArrive(s) {
-      State.setFlag("modao_e3_shizong_done");
+      if (s.flags.modao_e3_shizong_seen) return;
+      State.setFlag("modao_e3_shizong_seen");
       Engine.meetNpc("mengshan_wuyou", "京城讨生活的五个散修，结义抱团、消息灵通——连环失踪案里最肯透底的线人。");
       Engine.writeLedger("modao_shizong", "京城连环失踪案浮出：散修接连被『怪物』掳走，手法不像魔道作风；结识蒙山五友、萧翠儿爷爷亦遭掳——查案情报量将决定皇宫决战难度");
       Engine.addMilestone("魔道争锋·第三幕：连环失踪案（蒙山五友登场·翠儿求救）", "story");
       if (typeof Sfx !== "undefined") Sfx.play("danger");
     },
-    // —— 情报面纱·京城版（复用 story 选项的乘法设计，不另起 exploremap 箱庭）：
-    //    三档查案投入 → s.flags.jingcheng_intel(0/1/2) 持久存档，第四幕皇宫决战据此调难度（情报足=看穿伏兵/先手）。
-    choices: [
-      { text: "花重金买齐蒙山五友的消息，再亲自蹲茶楼、以神识窃听（情报最全·可挖出黑煞教藏起来的杀招）",
-        hint: "情报拉满才能摸到贼首藏的后手——这条线报，皇宫决战时或能救同袍一命。",
-        effect: (s) => {
-          s.flags.jingcheng_intel = 2;
-          s.flags.jingcheng_xueshi_intel = true;   // 第四幕刘靖之命「示警」改命口：唯情报拉满者才挖到「教主真身伪装凡人」线报（canon 追认②：删自造的"第五血侍"）
-          s.worldNews = s.worldNews || [];
-          s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "rumor", text: "【线报·重金购得】黑煞教真正的杀招藏在暗处：台面上行走的那尊『黑煞教主』竟非本体，不过是一具身外化身——真教主从不露面，惯伪作无害凡人、混在人前伺机暴起。皇宫决战，须防这一手阴的（风云录可复看）。" });
-          if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
-          return { text: "你舍得下本钱：蒙山五友的加密茶话、各坊失踪者的时辰路径、煞气流向的蛛丝马迹——尽数摸清。更紧要的是，你从一条加密茶话里抠出一桩隐秘：台面上那尊『黑煞教主』只是一具化身，真教主从不露面、惯伪作凡人潜伏。贼窝的虚实，已了然于胸（情报·full；这条『教主真身』线报已记入风云录）。", kind: "good" };
-        },
-        resolve: "advance" },
-      { text: "顺着翠儿的聪慧追踪，配蒙山五友递来的零星线索（折中）",
-        effect: (s) => { s.flags.jingcheng_intel = 1; return { text: "翠儿带你认了爷爷失踪前走过的巷子，蒙山五友又递来几条线头。脉络渐明，却仍有暗处看不真切（情报·half）。", kind: "event" }; },
-        resolve: "advance" },
-      { text: "不耐烦细查，循着煞气直捣黄龙（急进·情报最少）",
-        effect: (s) => { s.flags.jingcheng_intel = 0; return { text: "你按捺不住，循着隐约的血煞之气径直追下去——快是快，可贼窝里藏了多少爪牙、布了什么后手，你一概不知（情报·none）。", kind: "bad" }; },
-        resolve: "advance" },
-    ],
+    choices(s) {
+      const intel = s.flags.jingcheng_intel || 0;
+      const out = [];
+      if (intel < 3) {
+        if (State.count("lingshi") >= 8) {
+          out.push({
+            text: "花灵石买蒙山五友的门路（灵石8）",
+            hint: "地头蛇的消息不便宜，胜在快——不耗月（情报+1）",
+            stay: true,
+            effect(st) {
+              State.take("lingshi", 8);
+              st.flags.jingcheng_intel = (st.flags.jingcheng_intel || 0) + 1;
+              return { text: "你把八枚灵石推过桌面。蒙山五友对视一眼，为首的把声音压得更低——加密的茶话、各坊失踪者的名册、煞气流向的蛛丝马迹，一样样摆到你面前。地头蛇的门路，果然值这个价（情报+1）。", kind: "good" };
+            },
+          });
+        } else {
+          out.push({
+            text: "花灵石买蒙山五友的门路（灵石不足）",
+            hint: "囊中羞涩——先去前线巡逻挣军功、或回黄枫谷变现，再来买这份门路",
+            stay: true,
+            effect() {
+              return { text: "你摸了摸储物袋——凑不齐八枚灵石。蒙山五友倒不催：「道友什么时候凑齐了，什么时候来。消息又跑不了。」", kind: "event" };
+            },
+          });
+        }
+        out.push({
+          text: "亲自蹲茶楼——守着消息的集散（耗1月）",
+          hint: "不花钱，花工夫——以神识窃听加密茶话（情报+1）",
+          stay: true,
+          effect(st) {
+            Engine.passTime(1);
+            st.flags.jingcheng_intel = (st.flags.jingcheng_intel || 0) + 1;
+            let extra = "";
+            if (Math.random() < 0.4) {
+              const bits = [
+                "【茶楼风闻】馨王府又进了一批西域舞姬，王爷近来夜夜笙歌——仗打到金鼓原，权贵的日子照旧。",
+                "【茶楼风闻】北城米价一月里翻了三成，茶客骂声不绝——战事一起，最先挨饿的从来是凡人。",
+                "【茶楼风闻】有茶客赌咒发誓半夜见过屋脊上立着个『纸人』，一眨眼就没了——满座笑他失心疯，你却默默多记了一笔。",
+              ];
+              st.worldNews = st.worldNews || [];
+              st.worldNews.push({ t: `第${st.year}年${st.month}月`, kind: "rumor", text: bits[Math.floor(Math.random() * bits.length)] });
+              if (st.worldNews.length > 40) st.worldNews.splice(0, st.worldNews.length - 40);
+              extra = "顺带还听来一耳朵市井闲谈，记进了风云录。";
+            }
+            return { text: "你在茶楼雅座泡了一个月，以神识细细过滤南来北往的闲话——几条对得上失踪案的线头，被你从满楼喧嚣里一根根拣了出来（情报+1）。" + extra, kind: "good" };
+          },
+        });
+        out.push({
+          text: "顺着翠儿的线追踪（耗1月）",
+          hint: "小姑娘眼睛亮、巷子熟——顺藤摸瓜（情报+1）",
+          stay: true,
+          effect(st) {
+            Engine.passTime(1);
+            st.flags.jingcheng_intel = (st.flags.jingcheng_intel || 0) + 1;
+            if (!st.flags.jingcheng_cuier_track) {
+              State.setFlag("jingcheng_cuier_track");
+              return { text: "翠儿带你把爷爷失踪前走过的巷子一条条认过去。走到巷尾药铺她忽然停住：「爷爷的咳疾一入冬就重，他自己不肯花钱抓药，说要把钱给我留着买花种……」她仰起头，眼睛红红的，「公子，爷爷要是回不来，这些巷子我认得再熟，又有什么用呀。」你一时无话——凡人的一辈子，就系在这几条巷子里（情报+1）。", kind: "good" };
+            }
+            return { text: "翠儿又领着你钻了一个月的巷子——失踪者最后现身的地点被你们一处处串起来，煞气的来路渐渐收拢（情报+1）。", kind: "good" };
+          },
+        });
+      }
+      if (intel >= 1) {
+        const eff = ["", "我方开局有备（全体护体）", "开局有备＋『教主真身』线报（决战或能救同袍一命）", "开局有备＋线报＋贼首开局破绽（虚实尽知）"][Math.min(3, intel)];
+        out.push({
+          text: "收网——动身端了贼窝。",
+          hint: `以当前情报动身（${intel}/3 档）：${eff}`,
+          effect(st) {
+            State.setFlag("modao_e3_shizong_done");
+            if (intel >= 2) {
+              st.worldNews = st.worldNews || [];
+              st.worldNews.push({ t: `第${st.year}年${st.month}月`, kind: "rumor", text: "【线报】黑煞教真正的杀招藏在暗处：台面上行走的那尊『黑煞教主』竟非本体，不过是一具身外化身——真教主从不露面，惯伪作无害凡人、混在人前伺机暴起。皇宫决战，须防这一手阴的（风云录可复看）。" });
+              if (st.worldNews.length > 40) st.worldNews.splice(0, st.worldNews.length - 40);
+            }
+            const txt = [
+              "",
+              "线索只摸到个大致方位，你却已按捺不住——贼窝的门朝哪边开，知道了。剩下的，进去再说（情报 1/3）。",
+              "各坊失踪者的时辰路径、煞气流向尽数摸清。更紧要的是，你从一条加密茶话里抠出一桩隐秘：台面上那尊『黑煞教主』只是一具化身，真教主从不露面、惯伪作凡人潜伏（情报 2/3；『教主真身』线报已记入风云录）。",
+              "加密茶话、名册路径、煞气流向，连贼首藏起来的后手都被你蹲了出来——虚实尽在胸中。此去不是闯贼窝，是猎人进了自家猎场（情报 3/3；『教主真身』线报已记入风云录）。",
+            ][Math.min(3, intel)];
+            return { text: txt, kind: "good" };
+          },
+          resolve: "advance",
+        });
+      } else {
+        out.push({
+          text: "不查了——循着煞气直捣黄龙（硬闯）",
+          hint: "快是快——贼窝里藏了多少爪牙、布了什么后手，你一概不知（决战开局吃亏）",
+          effect(st) {
+            State.setFlag("modao_e3_shizong_done");
+            return { text: "你按捺不住，循着隐约的血煞之气径直追下去——快是快，可贼窝里藏了多少爪牙、布了什么后手，你一概不知（情报 0/3）。", kind: "bad" };
+          },
+          resolve: "advance",
+        });
+      }
+      return out;
+    },
   },
   {
     id: "modao_e3_yanhui",
@@ -3640,10 +3807,10 @@ const STORY = [
       },
       {
         text: "「彩环，先摸清五色门的底细，再动手。」",
-        hint: "稳进——先查再动手",
+        hint: "稳进——铸入心性",
         effect(s) {
-          State.setFlag("modao_e3_cautious_revenge");
-          return { text: "你按住她的急切——仇要收，但不能葬撞。先摸清五色门的虚实，再动手不迟。", kind: "event" };
+          Engine.recordTemperament("modao_e3_cautious_revenge", "stoic", "劝墨彩环缓一步·先摸清五色门虚实再收血债——仇要收，命更要留着收仇");
+          return { text: "你按住她的急切——仇要收，但不能莽撞。先摸清五色门的虚实，再动手不迟。", kind: "event" };
         },
         resolve: "advance",
       },
@@ -3793,7 +3960,6 @@ const STORY = [
         hint: "珍重——多说一句再走",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 5);
-          State.setFlag("mocaihuan_extra_farewell");
           return { text: "你停了一步，回头多说了一句——她愣了愣，随即笑了，眉眼弯起来：“去吧。”", kind: "event" };
         },
         resolve: "advance",
@@ -3813,25 +3979,38 @@ const STORY = [
     id: "modao_e4_shenxun",
     skipIf: (s) => s.flags.modao_e4_shenxun_done,
     cond: (s) => s.flags.modao_act3_done && !s.flags.modao_e4_shenxun_done && State.absMonth() >= (s.flags.modao_act4_due || 0),
+    // polish-modao A1①-4：第四幕自由段收口——皇宫夜袭从京城客居出发（等待期离京者，天命栏缀「去处：越京·秦府客居」）
+    where: "jingcheng_ke",
     cg: "jingcheng",
     bgm: "tense",
     title: "皇宫决战 · 审讯与集结",
     objTitle: "夜闯皇城",
     objHint: "黑煞教老巢现形于皇宫地底——传讯黄枫谷，九筑基夜闯皇城。",
-    text: [
-      { scene: "京城 · 暗夜" },
-      { shot: "establish" },
-      "墨彩环走后不过一月，京城连环失踪案的最后一根线，被你攥到了手里。你以幻色眼的迷幻术撬开了越国小王爷的嘴——血池、煞气、失踪的散修，桩桩件件背后那只手，竟一路指向了京城最不该指向的地方：皇宫。",
-      { aside: "黑煞教的老巢，就在越国皇城最底下。贼首豢养血侍、掳人炼煞，把一国之都经营成了吞人的血窟。这等魔窟，凭你一人闯不得——你修书一封，急传黄枫谷。" },
-      "三日后，黄枫谷的师兄弟星夜赶到：刘靖、宋蒙、钟卫娘……连同闻讯赶来的几派同道，凑足了九名筑基修士。月黑风高，众人立在皇城根下，刀剑入鞘、灵光内敛。",
-      // canon M4：武炫命途收口（前哨）——未随剿黑煞教：他在京郊失了踪，掳人手法与连环失踪案如出一辙
-      { say: "钟卫娘", tone: "她压着嗓子，眉头拧紧", text: "……武炫师弟没到。他前日在京郊访友，人就没了——手法跟城里那些失踪案一模一样。宋师兄，他不会是……" },
-      { aside: "武炫。那个横竖看你不顺眼、斗法却嗷嗷卖力的师弟。你心头一沉：黑煞教掳修士炼煞——但愿今夜掀了这魔窟，还来得及。" },
-      { say: "刘靖", tone: "他一身正气，遥望那座吞了无数性命的皇城", text: "黑煞教以一国之都为炉、炼人煞为丹，天理难容。今夜，我辈便替这京城、替那些活不见人的散修，把这魔窟，掀了！" },
-      { say: "钟卫娘", emo: "angry", text: "早憋着这口气了！宋师兄你别拦我——今夜我非把那帮役尸的玩意儿挨个收拾了不可！" },
-      { say: "宋蒙", tone: "他掂着掌心温润的重元珠，眼里战意灼灼", text: "掀魔窟这等痛快买卖，怎能少了宋某！——都护住彼此侧翼，进去放开了打。韩师弟，你心细，替大伙盯着点暗处。" },
-      { aside: "九道身影没入夜色，直扑皇城。一场决定京城气运的大战，自皇宫大门轰然洞开的那一刻，开始了。" },
-    ],
+    text(s) {
+      const t = [
+        { scene: "京城 · 暗夜" },
+        { shot: "establish" },
+        "墨彩环走后不过一月，京城连环失踪案的最后一根线，被你攥到了手里。你以幻色眼的迷幻术撬开了越国小王爷的嘴——血池、煞气、失踪的散修，桩桩件件背后那只手，竟一路指向了京城最不该指向的地方：皇宫。",
+        { aside: "黑煞教的老巢，就在越国皇城最底下。贼首豢养血侍、掳人炼煞，把一国之都经营成了吞人的血窟。这等魔窟，凭你一人闯不得——你修书一封，急传黄枫谷。" },
+        "三日后，黄枫谷的师兄弟星夜赶到：刘靖、宋蒙、钟卫娘……连同闻讯赶来的几派同道，凑足了九名筑基修士。月黑风高，众人立在皇城根下，刀剑入鞘、灵光内敛。",
+      ];
+      // polish-modao C1（Fable P1-1）：陈巧倩集结点名——她不再凭空出现在终结拍（读 chen_wangchen 分 forgot/remember 双版）
+      if (s.ledger && s.ledger.chen_wangchen) {
+        t.push({ aside: "赶来的同道里，押丹药的那位陈姓女修也在——她不认得你，却认得魔道的血债。清点符宝时，她那柄赤虹剑，正横在你身侧不远。" });
+      } else {
+        t.push({ aside: "赶来的同道里，还有一张你认得的脸——陈巧倩。她隔着人群看了你一眼，欲言又止，终究只是握紧了怀中那柄赤虹剑，站进了战阵。" });
+      }
+      t.push(
+        // canon M4：武炫命途收口（前哨）——未随剿黑煞教：他在京郊失了踪，掳人手法与连环失踪案如出一辙
+        { say: "钟卫娘", tone: "她压着嗓子，眉头拧紧", text: "……武炫师弟没到。他前日在京郊访友，人就没了——手法跟城里那些失踪案一模一样。宋师兄，他不会是……" },
+        { aside: "武炫。那个横竖看你不顺眼、斗法却嗷嗷卖力的师弟。你心头一沉：黑煞教掳修士炼煞——但愿今夜掀了这魔窟，还来得及。" },
+        { say: "刘靖", tone: "他一身正气，遥望那座吞了无数性命的皇城", text: "黑煞教以一国之都为炉、炼人煞为丹，天理难容。今夜，我辈便替这京城、替那些活不见人的散修，把这魔窟，掀了！" },
+        { say: "钟卫娘", emo: "angry", text: "早憋着这口气了！宋师兄你别拦我——今夜我非把那帮役尸的玩意儿挨个收拾了不可！" },
+        { say: "宋蒙", tone: "他掂着掌心温润的重元珠，眼里战意灼灼", text: "掀魔窟这等痛快买卖，怎能少了宋某！——都护住彼此侧翼，进去放开了打。韩师弟，你心细，替大伙盯着点暗处。" },
+        { aside: "九道身影没入夜色，直扑皇城。一场决定京城气运的大战，自皇宫大门轰然洞开的那一刻，开始了。" },
+      );
+      return t;
+    },
     onArrive(s) {
       State.setFlag("modao_e4_shenxun_done");
       Engine.meetNpc("liujing", "皇宫决战并肩的黄枫谷师兄——除魔卫道之楷模，身负祖传真宝凤凰符。");
@@ -3843,24 +4022,25 @@ const STORY = [
       if (typeof Sfx !== "undefined") Sfx.play("danger");
     },
     choices: [
+      // polish-modao D8（Fable P1-10）：两选项各有真代价——一鼓作气=扣血换开局剑势；稳进=回满血但暗哨传警（敌开局小增益）
       {
         text: "「一鼓作气——直扑皇城！」",
-        hint: "气势如虹——但连日奔波，气血略亏",
+        hint: "气势如虹——气血略亏，但挟势破门（决战开局剑势+1）",
         effect(s) {
           s.hp = Math.max(1, Math.floor(s.hp * 0.92));
           s.mood = Math.min(s.moodMax, s.mood + 3);
           State.setFlag("modao_e4_rush");
-          return { text: "九道灵光如利剑破夜，直扑皇城——气势如虹，纵然气血略亏，士气正盛。", kind: "event" };
+          return { text: "九道灵光如利剑破夜，直扑皇城——气势如虹，纵然气血略亏，这股势头，进宫门那一刻用得上。", kind: "event" };
         },
         resolve: "advance",
       },
       {
         text: "「稳进——先探虚实，再动手。」",
-        hint: "稳扎稳打——气血充盈，但夜长梦多",
+        hint: "稳扎稳打——气血充盈，可多耗的时辰会让暗哨递出警讯（敌方开局有备）",
         effect(s) {
           s.hp = s.hpMax;
           State.setFlag("modao_e4_steady");
-          return { text: "你压住众人的锐气，先行探路——皇城根下的暗哨被一一拔除，气血充盈，只怕夜长梦多。", kind: "event" };
+          return { text: "你压住众人的锐气，先行探路——皇城根下的暗哨被一一拔除，气血充盈。可到底慢了半步：有一缕血煞讯号，先一步递进了宫里。", kind: "event" };
         },
         resolve: "advance",
       },
@@ -3966,7 +4146,7 @@ const STORY = [
       { say: "韩立", emo: "shout", tone: "你想都没想，厉喝出声", text: "刘师兄当心后心——那越皇才是教主真身！" },
       { aside: "刘靖久经沙场，闻声不及回头，本能地侧身一拧——那道本要贯穿心脉的血煞阴手，堪堪偏开寸许、自他左肩透出！刘靖闷哼一声、单膝跪地，凤凰符的火光骤然黯了下去，可那条命，到底是保住了。" },
       { say: "刘靖", tone: "他捂着血涌的左肩，咬牙回望那道阴手的来处，眼里是劫后的凝重", text: "好险……好阴毒的暗手！韩师弟，若非你这一声……刘某这条命，今日便要交代在这儿了。这份情，记下了。" },
-      { aside: "（你前期在京城挣到的那条『教主真身』线报，喝破了这记必杀的阴手——命途本是身陨，是你替刘靖挣回了一线生机。重伤的刘靖被宋蒙一把扶到身后。）" },
+      { aside: "重伤的刘靖被宋蒙一把扶到身后。那条你在京城一步步蹲出来的线报，方才那一瞬，值回了它的每一分本钱。" },
     ],
     onArrive(s) {
       State.setFlag("modao_e4_liujing_done");
@@ -3986,10 +4166,10 @@ const STORY = [
       },
       {
         text: "「贼子敢尔！」拔剑直扑伪装的胥王。",
-        hint: "趁势追击——但孤身犯险",
+        hint: "趁势追击——铸入心性",
         effect(s) {
           s.mood = Math.min(s.moodMax, s.mood + 2);
-          State.setFlag("modao_e4_chase");
+          Engine.recordTemperament("modao_e4_chase", "sentiment", "喝破阴手后拔剑直扑胥王——同袍血未凉，你这口血性压不住");
           return { text: "你怒喝一声，剑光直取那正在剥落伪装的胥王——可那假丹之威，岂是你一人能挡的？", kind: "event" };
         },
         resolve: "advance",
@@ -4006,22 +4186,30 @@ const STORY = [
     title: "皇宫决战 · 阴手·身陨",
     objTitle: "猝不及防",
     objHint: "那位『越国之主』，袖中探出了一缕谁也没料到的血煞……",
+    // polish-modao D4（Fable P1-9）：本章情感最重锤补齐名场面五件套——amb 骤停+白闪+danger 骤响；
+    //   教学句移出戏文（onArrive 战后 sys 条目），哀恸拍不再被攻略提示打断。
     text: [
       { scene: "皇宫 · 血池大殿" },
+      { amb: null },
+      { fx: "flash", color: "#fff", alpha: 0.5, ms: 200 },
+      { sfx: "danger" },
       "就在凤凰符的赤金火光最盛、所有人的目光都被它吸住的刹那——那位『温煦无害』的越国之主，袖中骤然探出一缕血煞阴手，悄无声息地，贯入了刘靖的后心！",
       { shot: "pushIn" },
       { wait: 700 },
       { aside: "无人料到这一手。无人来得及喝破。等众人惊觉，那道血煞已自刘靖前胸透出——他低头怔怔看着胸口的血窟，凤凰符的火光，一寸寸地黯了下去。" },
       { say: "刘靖", tone: "他踉跄回身，难以置信地看着那个『一国之君』，嘴角溢出血来", text: "是你……黑煞教主……竟藏在……一国之君的皮囊底下……" },
-      { aside: "正道楷模刘靖，一生除魔卫道、行事方正，终究没能防住这藏在『凡人』皮下的最毒一手。他重重倒下，凤凰符失了主人、化作一道赤金流光没入虚空——那是后话了。" },
+      { aside: "正道楷模刘靖，一生除魔卫道、行事方正，终究没能防住这藏在『凡人』皮下的最毒一手。他重重倒下，凤凰符失了主人、化作一道赤金流光没入虚空，追之不及。" },
       { say: "钟卫娘", emo: "cry", tone: "她嘶声尖叫，几乎是扑过去的", text: "刘师兄——！！" },
-      { aside: "（恭送除魔卫道的正道楷模，刘师兄。——若你前期在京城挖到过『教主真身伪装凡人』的线报，本可喝破这记阴手、为他挣回一线生机；命途如此，转机要趁早挣。）" },
+      { wait: 600 },
+      { aside: "恭送除魔卫道的正道楷模，刘师兄。" },
     ],
     onArrive(s) {
       State.setFlag("modao_e4_liujing_done");
       s.flags.liujing_dead = true;
       Engine.writeLedger("modao_liujing_die", "皇宫血池大殿——黑煞教主胥王伪装成越国之主、以阴手偷袭，正道楷模刘靖后心中招身陨（命途＝原著默认；玩家前期情报未拉满、未能喝破伏兵）。凤凰符失主、化光遁去");
       Engine.addMilestone("皇宫决战·阴手身陨：恭送正道楷模刘靖", "showdown");
+      // D4：教学句出戏文、入见闻（sys）——哀恸归哀恸，攻略归攻略
+      Engine.log("（若前期在京城挖到『教主真身伪装凡人』的线报，本可喝破这记阴手、为刘靖挣回一线生机——命途如此，转机要趁早挣。）", "sys");
       if (typeof Sfx !== "undefined") Sfx.play("danger");
     },
     choices: [
@@ -4036,10 +4224,10 @@ const STORY = [
       },
       {
         text: "「……不能乱。」强压悲愤，护住众人退守。",
-        hint: "强忍悲痛——气血略亏但阵脚不乱",
+        hint: "强忍悲痛——铸入心性",
         effect(s) {
           s.hp = Math.max(1, Math.floor(s.hp * 0.95));
-          State.setFlag("modao_e4_hold");
+          Engine.recordTemperament("modao_e4_hold", "stoic", "刘靖倒下的那一刻强压悲愤稳住阵脚——哀恸留给活下来以后，此刻你只许自己清醒");
           return { text: "你咬碎牙关，将悲愤压进心底——此刻不是哀恸的时候，活着的人还得活下去。", kind: "event" };
         },
         resolve: "advance",
@@ -4083,20 +4271,20 @@ const STORY = [
     choices: [
       {
         text: "「拖住他——给师兄妹布阵争时间！」",
-        hint: "缠斗拖敌——赌一个疯狂的念头",
+        hint: "缠斗拖敌——铸入心性",
         effect(s) {
-          State.setFlag("modao_e4_tangle");
+          Engine.recordTemperament("modao_e4_tangle", "sentiment", "假丹威压下主动缠住胥王为同袍争布阵工夫——最险的位置，你留给了自己");
           return { text: "你咬牙缠住胥王——每多拖一息，师兄妹就多一分布阵的工夫。", kind: "event" };
         },
         resolve: "advance",
       },
       {
         text: "「全力防御——先退再图反制。」",
-        hint: "退守保命——气血充盈但气势被压",
+        hint: "退守保命——铸入心性",
         effect(s) {
           s.hp = s.hpMax;
           s.mood = Math.max(0, s.mood - 3);
-          State.setFlag("modao_e4_defensive");
+          Engine.recordTemperament("modao_e4_defensive", "stoic", "假丹威压下先退守保命再图反制——留得青山，是你在绝境里的第一反应");
           return { text: "你护住众人全力退守——气血虽满，可胥王的假丹之威如影随形，压得人喘不过气。", kind: "event" };
         },
         resolve: "advance",
@@ -4121,12 +4309,17 @@ const STORY = [
       "假丹之威如山压顶，黑血刀所过之处血煞横飞。你一边周旋一边厉声招呼众人：莫要硬碰，只管退、只管缠！",
       { say: "韩立", emo: "shout", tone: "你飞快盘算着，把那个疯狂的念头喊了出来", text: "宋师兄、钟师姐——带傀儡蜥蜴叼旗布阵！『真·颠倒五行阵』！我们几个，给你们拖时间！" },
       { aside: "宋蒙眼睛一亮，重元珠当即护身：「好胆识——就这么办！」他与钟卫娘急急退向四角，驱使着那几头筑基傀儡蜥蜴叼起阵旗，往血池广场的方位上死死镇去。" },
+      // polish-modao C4（Fable P1-4）：傀儡残件的回响——金鼓原缴获在此点名兑现（settle 在 onArrive）
+      { aside: "退开的一瞬，你把金鼓原缴获的那捧傀儡残件连同半幅阴纹图纸塞进宋蒙手里：「魔道驱傀的阴纹路数，参照着使——蜥蜴叼旗，稳一分是一分！」宋蒙抓过图纸扫了一眼，眼中精光一闪。" },
       { shot: "focusRight" },
       { sfx: "castTu" },
-      { aside: "（拖时布阵战：你这一战不必胜，只须撑住——拖满回合，师兄妹的颠倒五行阵便成，便是翻盘之时。败有所得，浴血退守也能再上。）" },
       // D1-a 终止拍：落幕直接坠入拖时布阵战
       { fight: "tuoshi_fight", guard: { hint: "撑满回合即胜，败有所得" } },
     ],
+    onArrive(s) {
+      // polish-modao C4：kuilei_canjian 哑账结清——「等着回响」的回响，就是皇宫拖时战的傀儡叼旗
+      Engine.settleLedger("modao_patrol_won", "金鼓原缴获的傀儡残件与那半幅阴纹图纸，在皇宫血夜里等到了回响——你把它们交给宋蒙参照御傀，傀儡蜥蜴叼旗镇位、替众人挡下黑血刀。那场练兵的缴获，没有白拿");
+    },
     choices: [
       { text: "「都听我的——结阵死守，拖住胥王！」", hint: "拖时布阵战：撑满回合即胜（败有所得·浴血再战）", resolve: "tuoshi_fight" },
     ],
@@ -4150,7 +4343,6 @@ const STORY = [
       { cam: "shake", px: 9 },
       { say: "宋蒙", emo: "shout", tone: "他与钟卫娘联手稳住阵眼，厉声", text: "阵成——压！韩师弟，机会只此一次，五行倒转镇着他的工夫，你的底牌，全给我招呼上去！" },
       { aside: "竹海缠足、九天真火倒灌、镜影分身、渊薮心魔、黄沙陷脚……五行之力逐息反噬，那不可一世的假丹之威，竟被一寸寸地压了下去。胥王第一次露出了惊怒之色。" },
-      { aside: "（阵成决战：颠倒五行阵逐回合反噬胥王、佐助于你；金光砖等符宝底牌已在手——此刻不留底牌，更待何时！注意：他有二阶段，毁其肉身后仍会借丹复生。）" },
       { cam: "zoom", scale: 1.16, ms: 240 },
       // D1-a 终止拍：落幕直接坠入阵成决战（二阶段假丹 boss）
       { fight: "xuwang_final_fight", guard: { hint: "底牌尽出，毕其功于一役" } },
@@ -4173,7 +4365,7 @@ const STORY = [
     objHint: "三符宝毁其肉身、复生神魂被阵法死死镇住——只待那一击。",
     text: [
       { scene: "皇宫 · 血池大殿" },
-      "平天尺、重元珠、赤虹剑——你与宋蒙、陈巧倩三件符宝齐轰而下，胥王那具假丹肉身轰然崩碎。可血凝五行丹借阵中五行之力，犹自凝起一缕复生神魂，被颠倒五行阵死死镇在原地、寸步难逃。",
+      "平天尺、重元珠、赤虹剑——你与宋蒙，还有那位自集结夜便按剑随行的陈巧倩，三件符宝齐轰而下，胥王那具假丹肉身轰然崩碎。可血凝五行丹借阵中五行之力，犹自凝起一缕复生神魂，被颠倒五行阵死死镇在原地、寸步难逃。",
       { say: "刘靖", tone: "他按着左肩的伤、剑还握不稳，却把一枚古拙符箓郑重递向钟卫娘", text: "卫娘——刘家祖传的真凰符，一生只可一击。我这身子催不动它了……了结这魔头，托付你了。" },
       { say: "钟卫娘", emo: "shout", tone: "她双手捧符、赤金凰焰冲天而起", text: "真凰符——焚！" },
       { shot: "shock" },
@@ -4231,7 +4423,7 @@ const STORY = [
     objHint: "三符宝毁其肉身、复生神魂被阵法死死镇住——只待那一击。",
     text: [
       { scene: "皇宫 · 血池大殿" },
-      "平天尺、重元珠、赤虹剑——你与宋蒙、陈巧倩三件符宝齐轰而下，胥王那具假丹肉身轰然崩碎。可血凝五行丹借阵中五行之力，犹自凝起一缕复生神魂，被颠倒五行阵死死镇在原地、寸步难逃。",
+      "平天尺、重元珠、赤虹剑——你与宋蒙，还有那位自集结夜便按剑随行的陈巧倩，三件符宝齐轰而下，胥王那具假丹肉身轰然崩碎。可血凝五行丹借阵中五行之力，犹自凝起一缕复生神魂，被颠倒五行阵死死镇在原地、寸步难逃。",
       { say: "钟卫娘", emo: "cry", tone: "她攥着刘师兄留下的那枚祖传真凰符，泪流满面，双手却稳得出奇", text: "刘师兄……你护道一生，这最后一击，师妹替你了结他——真凰符，焚！" },
       { shot: "shock" },
       { fx: "flash", color: "#ffd27a", alpha: 0.5 },
@@ -4287,24 +4479,47 @@ const STORY = [
     title: "皇宫决战 · 离京",
     objTitle: "尘埃落定·离京",
     objHint: "京城的事了了——是时候回天南了。江湖传闻里，已有再起波澜的引线。",
-    text: [
-      { scene: "皇宫 · 血池大殿" },
-      { amb: null },
-      { shot: "pullOut" },
-      { wait: 600 },
-      "血池熄了，赤水褪尽。这一夜，九名筑基修士夜闯皇城、力诛假丹境的黑煞教主胥王——蟠踞越国多年、以血祭邪法残害散修的黑煞教，自此覆灭。",
-      { sfx: "yearBell" },
-      { aside: "天光将明，众人各自收拾伤势与心绪。宋蒙拍了拍你的肩：「韩师弟，京城这趟，多亏有你。各派的烂账，七派自会去理——你我，是该回天南了。」" },
-      { aside: "你握着囊中那枚自矿洞古传送阵心捧出的大挪移令，心头掠过一个念头：残缺的古传送阵、远在天南之外的乱星海……这条极长的线，今日还握不住，却已悄然牵起。" },
-      { aside: "（魔道争锋·京城篇·收束。下一程「再别天南」：天南旧人旧事、古传送阵的修补、以及那条通向乱星海的引线——皆是后话。注意听各地江湖传闻，便知风从何起。）" },
-      { guide: { tag: "魔道争锋 · 京城篇 · 收束", hint: "黑煞教覆灭——再别天南篇已解锁，回天南。", focus: "map", cta: "回天南" } },
-    ],
+    // polish-modao C1/C2/C3/C8/E池（2026-07-12）：离京拍收账——秦家谢仪（modao_rujing 结）、翠儿谢恩（凡俗吐纳法）、
+    //   蒙山五友下文（护院·静候灵兽山收编）、刘靖生还线养伤道别、陈巧倩托宋蒙捎话（remember 线·baiju_appt 远线立账）。
+    text(s) {
+      const t = [
+        { scene: "皇宫 · 血池大殿" },
+        { amb: null },
+        { shot: "pullOut" },
+        { wait: 600 },
+        "血池熄了，赤水褪尽。这一夜，九名筑基修士夜闯皇城、力诛假丹境的黑煞教主胥王——蟠踞越国多年、以血祭邪法残害散修的黑煞教，自此覆灭。",
+        { sfx: "yearBell" },
+        { aside: "天光将明，众人各自收拾伤势与心绪。宋蒙拍了拍你的肩：「韩师弟，京城这趟，多亏有你。各派的烂账，七派自会去理——你我，是该回天南了。」" },
+        { aside: "动身那日，秦府老管家领着仆役候在城门，奉上秦家备下的谢仪——五枚灵石、几色京中土仪，不厚，却是全府上下的心意。那位爱哭的老门房也来了，隔着人群朝你深深一揖。李化元那句『替老夫还上这一程』，你还上了：京城之难随黑煞教覆灭而解，秦府上下，全须全尾（灵石+5）。" },
+        { say: "萧翠儿", emo: "smile", tone: "她挎着花篮追出城门，篮里的栀子开得正盛", text: "韩公子！爷爷让我一定送送你——他身子好起来啦，就是老念叨，说仙长救的命，凡人没什么还得起的……" },
+        { aside: "你想起她问过的那句『凡人是不是没福气』。这一回你没有答不上来——你从袖中取出一册连夜手抄的凡俗吐纳法，放进她的花篮：不是仙家功法，只是套强身祛病、延年少灾的把式。「回去教给爷爷，每日清晨练上一遍。」她愣愣接过，忽然咧开嘴笑了，眼泪却先掉了下来。凡人有凡人的福气——你给不了长生，却给得起一份念想。" },
+        { aside: "蒙山五友也来了，五个人挤挤挨挨作了个团揖。为首的搓着手，半是讨账半是道别：「道友，『灵兽山收编』那茬……哥五个可还等着信儿呢。」你面不改色：「黑煞教既覆，京城正缺看家护院的好手——先把名声挣起来，灵兽山来人时，也好看。」五人对视一眼，咧嘴应了：改行护院，静候收编，两不耽误。" },
+      ];
+      if (s.flags.liujing_survived) {
+        t.push({ aside: "刘靖裹着厚厚的伤，被钟卫娘半扶半押着来送行。他左肩还吊着，拱手只能拱半个：「韩师弟，这条命是你喝回来的。我先回谷养伤——养好了，来日再并肩。」" });
+      }
+      if (s.flags.chen_front_reunion) {
+        t.push({ aside: "临上路，宋蒙忽然一拍脑门，凑过来压低声音：「差点忘了——陈家那位女修托我捎句话。她说：『白菊山春时花开，师弟若路过越京——』」他挠挠头，「就说到这儿，后半句没说。」你把这半句话，连同那半个没说尽的约，一并收进了心里。" });
+      }
+      t.push(
+        { aside: "你握着囊中那枚自矿洞古传送阵心捧出的大挪移令，心头掠过一个念头：残缺的古传送阵、远在天南之外的乱星海……这条极长的线，今日还握不住，却已悄然牵起。" },
+        { guide: { tag: "魔道争锋 · 京城篇 · 收束", hint: "黑煞教覆灭——再别天南篇已解锁，回天南。", focus: "map", cta: "回天南" } },
+      );
+      return t;
+    },
     onArrive(s) {
       State.setFlag("modao_e4_done");
       State.setFlag("modao_e4b_done");
       Chapters.unlock("zaibie");   // 京城血夜了结→解锁再别天南篇
       Engine.writeLedger("modao_e4b_likjing", "皇宫决战收束·离京——黑煞教覆灭，九筑基功成离京、各返天南。埋「再别天南篇」长线钩：回天南旧人旧事/矿洞古传送阵修补/通向乱星海的大挪移令引线（本增量止于此·下一篇章后续窗口实装）");
       Engine.addMilestone("魔道争锋·第四幕·皇宫决战·收官：黑煞教覆灭，韩立离京回天南", "showdown");
+      // polish-modao C2：秦家护持结案——李化元亲托的私债，离京拍点名收清（谢仪入袋）
+      State.give("lingshi", 5);
+      Engine.settleLedger("modao_rujing", "师兄的人情，你替师父还上了——京城之难随黑煞教覆灭而解，秦府上下全须全尾。城门谢仪不厚，情分收足");
+      // polish-modao C1：remember 线捎话立账——白菊山之约落地成账（真兑现节点立案重返天南站）
+      if (s.flags.chen_front_reunion) {
+        Engine.writeLedger("baiju_appt", "白菊山春时花开，师弟若路过越京——陈巧倩托宋蒙捎来的半句话。这半个没说尽的约，日后重返天南时再赴（远线）");
+      }
       s.worldNews = s.worldNews || [];
       const t = `第${s.year}年${s.month}月`;
       s.worldNews.push({ t, kind: "world", text: "京城血夜：九名筑基修士夜闯皇城，力诛伪作越皇的黑煞教主胥王——蟠踞越国多年的黑煞教，一夜覆灭。" });
@@ -4398,6 +4613,10 @@ const STORY = [
       s.worldNews = s.worldNews || [];
       const t = `第${s.year}年${s.month}月`;
       s.worldNews.push({ t, kind: "rumor", text: "嘉元城传闻：御灵宗放出重赏，悬缉一缕『曲魂』残识——据说与早年一桩夺舍秘辛有关，引得不少散修暗中打探。" });
+      // polish-modao E池：刘靖生还线余韵——「挣来的转机」在下一章有回甘
+      if (s.flags.liujing_survived) {
+        s.worldNews.push({ t, kind: "rumor", text: "京城传来消息：皇宫血夜里重伤的黄枫谷刘靖已伤愈归谷，闭门谢客月余，出关头一件事便是往演武场立了柄新剑——「除魔的剑，不能歇」。" });
+      }
       if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
     },
     choices: [

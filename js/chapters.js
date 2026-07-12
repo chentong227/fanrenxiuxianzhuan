@@ -40,7 +40,7 @@ const Chapters = {
       order: 3,
       locked: true,             // 由黄枫谷篇尾·燕家堡调令（李化元强制进场）解锁
       realmTier: 1,             // 筑基（韩立已伪灵根筑基入魔道争锋）
-      realmCapIndex: 13,        // 暂沿筑基初期；深层筑基随增量E/F续填（不预造中后期）
+      realmCapIndex: 15,        // 筑基后期（polish-modao A2：旧值13=入章即顶格·帆段闭关颗粒无收；设计稿明写"篇末筑基中期→后期"——中期真突破+后期篇末冲刺，小境界无秘仪零新系统）
       startLocation: "yanjiabao",
       completeFlag: "arc3_complete",
       nextChapter: "zaibie",    // 京城血夜了结→回天南（modao_e4b_likjing 接 再别天南篇）
@@ -53,7 +53,7 @@ const Chapters = {
       order: 4,
       locked: true,             // 由魔道争锋篇尾·京城血夜了结（modao_e4b_likjing）解锁
       realmTier: 1,             // 筑基（章末跌境为纯演出·不动数值；乱星海篇初方结丹）
-      realmCapIndex: 13,        // 沿筑基（跌境只演出·境界不真掉）
+      realmCapIndex: 15,        // 跟随魔道章抬到筑基后期（polish-modao A2 附带：cap 倒挂会让上一章合法修到的境界在本章"被封顶"出戏；筑基大圆满仍留给初入星海途中进阶）
       startLocation: "jiayuan_city",
       completeFlag: "arc4_complete",
       nextChapter: "starsea",   // 章末落海·首见乱星海定格→初入星海篇（钩子·随后续篇章实装）

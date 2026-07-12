@@ -113,6 +113,8 @@
     jinguyuan: "jingu_yuan",
     yuekuang: "chuansong_zhen",
     luanxinghai: "luanxinghai",
+    // polish-modao A1①：越京·秦府客居——复用京城朱雀长街 CG（横+竖在库）作地点底；专属场景图待生图批（可选打磨）
+    jingcheng_ke: "jingcheng",
     // （乌龙潭/谷外山林/太南野林已有专属场景入 SCENES——v301 生图批兑现，CG 兜底退役）
   };
 

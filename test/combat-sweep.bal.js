@@ -13,6 +13,11 @@
  *     ② fail-forward：解析 engine.finishCombat 各分支，败设 _retryAfterLoss 者＝非死局。
  *   口径同 climax.bal：autoResolve 对"集火/特攻/底牌"型战斗是悲观地板（贪婪 AI 不会省底牌、不会集火），
  *   故 0% 未必死局。本脚本是体验报告兼死局门禁（仅"真死局"判 FAIL，其余打印观察）。
+ *   ⚠ polish-modao E池 口径修正后（v319·realmIndex 13 起手+星海物品挪切档发放——旧口径法力池虚高
+ *   近一倍+越章兵器谱，e4 三战被假性抬到 100%）：xuwang_final 在本 harness 显示 0% 属预期地板——
+ *   State.create 裸建号无行头/无存档底牌+fieldManual 六相 autoResolve 从不激活（合计 ≈28~41% hpMax
+ *   压制全没吃到）+双豁免（阵法+fail-forward）非死局；真实存档口径见 climax.bal 胥王双分支带
+ *   （殁线 ≈35%/存线 ≈85%）。魔道段"体验数值"一律以 climax.bal 真存档口径为准。
  * ============================================================ */
 const fs = require("fs");
 const path = require("path");
@@ -60,13 +65,14 @@ function runOnce() {
   State.create({ name: "韩立", rootId: "si_ling" });
   const s = State.data;
   s.activeChapter = "modao"; s.unlockedChapters = ["qixuan", "huangfeng", "modao"];
-  s.realmIndex = 12; s.hp = s.hpMax = 200; s.technique = "qingyuan_sword";
+  // polish-modao E池·sweep 口径（GPT P2-7）：起手 realmIndex 12→13——旧值 12（练气13层）配
+  //   realmTier=1 时 manaPool 读 realm.layer=13 → 法力池 351 vs 真实筑基初期 178（虚高近一倍），
+  //   modao/zaibie 段全部战斗被假性抬胜率。13=筑基初期=e4 决战真实玩家面板。
+  s.realmIndex = 13; s.hp = s.hpMax = 200; s.technique = "qingyuan_sword";
   s.flags.modao_act3_done = true; s.flags.modao_act4_due = 0; s.flags.jingcheng_intel = 2;
-  // 星海飞驰篇真实玩家口径：到此处应已持青竹蜂云剑（→飞剑+辟邪神雷）、噬金虫（→四用法·破甲群杀）、皇鳞甲（保命）。
-  //   这些是 §尾段战斗（铁火蚁/海王兽）显式围绕的结丹兵器谱——缺则 autoResolve 假象性 0%，非真死局。
-  ["qingming_zhen", "jinguang_zhuan_charge", "jinguang_zhuan", "huixue_dan", "dingshen_fu", "huoshe_fu",
-   "tianlei_zhu", "xutian_tucan", "jinleizhu", "qingzhu_fengyun_jian", "shijinchong", "boluo_zhu",
-   "huanglin_jia", "butian_dan", "yanghun_mu"].forEach(it => { try { State.give(it, 3); } catch (e) {} });
+  // 魔道段起手只发本章兵器谱（金光砖/符箓/丹药=真实 e4 玩家口径）。
+  ["jinguang_zhuan_charge", "jinguang_zhuan", "huixue_dan", "dingshen_fu", "huoshe_fu",
+   "butian_dan"].forEach(it => { try { State.give(it, 3); } catch (e) {} });
   s.storyStage = STORY.findIndex(n => n.id === "modao_e4_shenxun");
   if (STORY[s.storyStage] && STORY[s.storyStage].where) s.location = STORY[s.storyStage].where;
 
@@ -84,14 +90,25 @@ function runOnce() {
       //   按战斗归属篇章重建玩家战力档：xh_*=星海飞驰(结丹中期)，ss_*=初入星海(结丹初期)，余=魔道(筑基)。
       // v315：补 whfy=外海风云（结丹大圆满 realmIndex 20）——v311 整章落地后 sweep 漏校准，
       //   曾把结丹大圆满内容按魔道筑基档打=假性 0%（温天仁战被误报死局）
-      const chapMap = { xh: ["xinghaifeichi", 20], ss: ["starsea", 16], whfy: ["waihaifengyun", 20] };
+      // polish-modao E池（GPT P2-7）：星海物品从全局起手发放挪到切档时发——魔道/再别段不再
+      //   越章持星海兵器谱（青竹蜂云剑/噬金虫/皇鳞甲……）＝去掉 harness 光环；ss 段发噬金虫
+      //   （外星海致富·§尾段战斗围绕件），xh/whfy 段发结丹兵器谱全套（铁火蚁/海王兽显式围绕）。
+      const XH_KIT = ["qingming_zhen", "tianlei_zhu", "xutian_tucan", "jinleizhu", "qingzhu_fengyun_jian",
+                      "shijinchong", "boluo_zhu", "huanglin_jia", "yanghun_mu"];
+      const chapMap = {
+        xh: ["xinghaifeichi", 20, XH_KIT],
+        ss: ["starsea", 16, ["shijinchong"]],
+        whfy: ["waihaifengyun", 20, XH_KIT],
+      };
       const cm = chapMap[key.split("_")[0]];
       if (cm && s.activeChapter !== cm[0]) {
         s.activeChapter = cm[0];
         if (!s.unlockedChapters.includes(cm[0])) s.unlockedChapters.push(cm[0]);
         if (s.realmIndex < cm[1]) s.realmIndex = cm[1];
-        // 重建 player fighter 使新境界档生效（manaPool/realmBand 按结丹重算）
-        try { const np = Engine.playerFighter(); Object.assign(c.player, { hpMax: np.hpMax, mpMax: np.mpMax, gongli: np.gongli, realmTier: np.realmTier, realmLayer: np.realmLayer }); } catch (e) {}
+        (cm[2] || []).forEach(it => { try { if (State.count(it) < 3) State.give(it, 3 - State.count(it)); } catch (e) {} });
+        // 重建 player fighter 使新境界档生效（manaPool/realmBand 按结丹重算）；
+        // 切档拍发的兵器谱要进"本场"——spells/charges/pouch 一并换新（否则首战缺剑=假性偏险）
+        try { const np = Engine.playerFighter(); Object.assign(c.player, { hpMax: np.hpMax, mpMax: np.mpMax, gongli: np.gongli, realmTier: np.realmTier, realmLayer: np.realmLayer, spells: np.spells, charges: np.charges, pouch: np.pouch, gearMpMul: np.gearMpMul }); } catch (e) {}
       }
       // 备战态校准：满血满灵上场（代表"调息后再战"的真实玩家口径，排除 harness MP 饥饿假象）
       if (c.player) { c.player.hp = c.player.hpMax; c.player.mp = c.player.mpMax || c.player.mp; }

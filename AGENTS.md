@@ -233,6 +233,25 @@
  （时长/自由度/选择重量/Build 可玩性/战斗张力/探索意外/惦记感/重玩价值）——**目标：有东西玩、好玩、
  不许十分钟打完一章**。推剧情不着急；重返天南篇设计稿 v2（chongfantiannan-design.md）待拍板 M3/M4/M11~M14 后实装。
 
+- **v319 · 魔道争锋站打磨全量落地（2026-07-12·用户"按你推荐"拍板全做·docs/polish-modao.md 全行 ✅/⏳ 必读）**：
+ 双审（_review-modao-fable/gpt.md）诊断"6 个月跑穿的纯轨道"三大结构病全修：
+ ①**帆段重建**：京城真地点 `jingcheng_ke`（秦府客居·home+朱雀长街 market+万宝楼分号+蒙山五友请托=fangshiBoard 复用·
+ e3_rujing 迁入）+前线巡逻月行动 `startXunluoPatrol`（军功灵石+傀儡残件·败 fail-forward·入京下架）+
+ 厉飞雨背锅双风声+战线风声池 `_tickWarNews`+continent 新节点 qianxian（**hidden(s) 战时限定 pin 新机制**）+
+ 离队军法申斥（modao_awol）；cap 13→15（筑基中期真突破+后期冲刺·zaibie 跟随 15）。
+ ②**京城查案重做**（本章最重抉择假选择根治）：shizong 改 choice.stay 多轮侦察（蒙山五友灵石8/次+茶楼/翠儿线各真耗月）·
+ intel 0~3 四档全有读点（≥1 santuan 护体/≥2 刘靖改命/=3 胥王 exposed/=0 硬闯扣血——"情报量决定难度"承诺兑现）。
+ ③**战斗**：胥王殁线 1.5%→39%（宋蒙哀兵 side）·存线占比 57%→66%；拖时战递增血煞压力（站桩末血 96%→61%·拾旗=真止损）；
+ 五色门主抬 70~85 带；平天尺·镇一次性瞬发底牌（sp.dingshen 新通用钩）；**齐云霄拍卖会节点 modao_qiyunxiao**
+ （阵图完整版 wuxing_zhen_full→决战六相读 flag 裁相·fujia_grudge_start 灭付家因账·⚠与 zaibie 的 fujia_grudge 同链不同拍）；
+ **D6 剑心反哺**（黄枫谷遗留账）：swordMastery=mu 系 art 攻击 ×1.10（combat.js·青元剑芒/剑影分光/巨剑术受益）。
+ ④**账本**：陈巧倩集结点名双版+白菊山之约 baiju_appt 落账（真节点立案再别天南）；秦家谢仪 settle；萧翠儿谢恩拍；
+ 傀儡残件点名；死 flag×16→recordTemperament；刘靖之死演出补拍（amb 骤停+白闪+教学句出戏文）。
+ ⑤sweep 口径修正（modao 段 realmIndex 13+星海物品切档发放——法力池虚高根治）；journey/climax 门禁随改。
+ 50 套 test+audit+bal 全绿。**⚠ 并行工程教训：三组同改 story.js 曾两度整体覆写冲掉他组已落盘改动**（均已核对重放）——
+ 后续多 agent 并行改同一大文件须分段错峰或串行化。**跨站立案**：白菊山道别（再别天南）/灵宠孵化拍+金银书页稳守线收窗（星海）/
+ 厉飞雨背锅对质拍（重返天南）。余项：jingcheng_ke 专属场景图待生图（现复用 cg_jingcheng）。**下一站：再别天南篇双审。**
+
 - **v318 · 黄枫谷站打磨全量落地（2026-07-12·用户"修"字拍板全做·docs/polish-huangfeng.md 全行 ✅ 必读）**：
  五拍板+默认批一次清账（主控+三并行组）：
  ①**B1 筑基闭环四刀**：心魔劫三阶段敌血脱钩道心（改吃 rite.trialHp 固定基数·准备只减不增）+

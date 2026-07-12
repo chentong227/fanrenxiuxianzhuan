@@ -216,9 +216,10 @@ console.log("\n=== 10. 元武国·齐云霄代工（增量C：一炉三件大件
 
 console.log("\n=== 11. 燕家堡之战·王蝉（增量D·2026-07-09 考据勘误：鬼灵门少主·血灵大法）===");
 {
-  // 11a. 魔道争锋篇章容器：realmCap 抬进筑基（realmTier 1 / realmCapIndex 13）
+  // 11a. 魔道争锋篇章容器：realmCap 抬进筑基（realmTier 1 / realmCapIndex 15——polish-modao A2：
+  //   旧值 13=入章即顶格·帆段闭关颗粒无收；设计稿"篇末筑基中期→后期"）
   const modao = Chapters.list.find(c => c.id === "modao");
-  assert(!!modao && modao.realmTier === 1 && modao.realmCapIndex === 13, "chapters.js 存在 modao 篇章（realmTier1·realmCap=筑基初期）");
+  assert(!!modao && modao.realmTier === 1 && modao.realmCapIndex === 15, "chapters.js 存在 modao 篇章（realmTier1·realmCap=筑基后期·A2）");
   assert(modao.startLocation === "yanjiabao", "modao 起始地=燕家堡（强制进场）");
   const hf = Chapters.list.find(c => c.id === "huangfeng");
   assert(hf && hf.nextChapter === "modao", "黄枫谷篇 nextChapter 接 modao");

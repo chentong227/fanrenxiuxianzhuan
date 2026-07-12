@@ -156,6 +156,34 @@ const Engine = {
     if (Math.random() < 0.5) this.log("【世间】" + ev.text, "sys");
   },
 
+  /* polish-modao A1④·涟漪②（Fable P1-13 最小战争潮）：战线风声——
+   * 魔道章四段时锚的等待期里（modao_act*_due 未到），前线的仗每月都在打：
+   * ~25%/月推一条战线 worldNews（魔道推进/某派失利/物价上浮），半数浮出见闻。零系统纯氛围。 */
+  _WAR_NEWS: [
+    "战线急报：黑煞教连破建州两处矿寨，正道防线又向南缩了三十里——溃卒说，魔修驱着尸傀打头阵，刀砍不透。",
+    "有掩月宗弟子从东线换防回来，只说了一句：「东翼守不住了。」随后闭口不言，连夜闭关去了。",
+    "各处坊市的符纸、疗伤丹价钱一日三涨——战时行情，囤货的修士捂着不卖，前线的人只能咬牙认宰。",
+    "灵兽山叛军又袭了一队正道辎重，护送的三名筑基修士只逃回来一个。粮道不稳，营里的口粮都跟着紧了。",
+    "会盟传檄各州：凡练气圆满以上散修，报效前线者记军功、授丹药——告示贴了满墙，应者却寥寥。",
+  ],
+  _tickWarNews(months) {
+    const s = State.data;
+    if (s.activeChapter !== "modao") return;
+    const abs = State.absMonth();
+    const waiting = [s.flags.modao_call_due, s.flags.modao_act2_due, s.flags.modao_act3_due, s.flags.modao_act4_due]
+      .some(d => d && abs < d);
+    if (!waiting) return;
+    if (Math.random() > Math.min(0.6, 0.25 * months)) return;
+    const pool = this._WAR_NEWS;
+    const text = pool[Math.floor(Math.random() * pool.length)];
+    if (s._lastWarNews === text) return;   // 同文不连发
+    s._lastWarNews = text;
+    s.worldNews = s.worldNews || [];
+    s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "world", text });
+    if (s.worldNews.length > 40) s.worldNews.splice(0, s.worldNews.length - 40);
+    if (Math.random() < 0.5) this.log("【战线】" + text, "sys");
+  },
+
   /* ===========================================================
    *  暗流涟漪链：大事不通报，分阶段渗透（流言→确证→可抓的窗口）
    * =========================================================== */
@@ -329,6 +357,7 @@ const Engine = {
     if (typeof NPCSIM === "undefined") return;
     if (!s.worldNews) s.worldNews = [];
     this._tickAmbient(months);
+    this._tickWarNews(months);
     this._tickRipples(months);
     const news = NPCSIM.tick(s, months, Math.random);
     if (!news.length) return;
@@ -710,6 +739,7 @@ const Engine = {
     else if (action === "wujian") { this.doWujian(); return; }
     else if (action === "liandan") { this.lianZhujiDan(); return; }
     else if (action === "hunt") { this.startWaihaiHunt(); return; }
+    else if (action === "xunluo") { this.startXunluoPatrol(); return; }   // polish-modao A1②：前线巡逻月行动
 
     this.checkLifespan();
     this.checkStory();
@@ -731,11 +761,21 @@ const Engine = {
     this.passTime(cost);
     s.location = locId;
     this.log(`你动身前往「${loc.name}」，行程耗时 ${cost} 月。${loc.desc}`, "event");
+    this._modaoAwolCheck();   // polish-modao A3②：擅离前线者归营销假（军法申斥）
     this._resolveLeadsAt(locId);
     this.checkLifespan();
     this.checkStory();
     State.save();
     UI.renderAll();
+  },
+
+  // polish-modao A3②（GPT P1-5）：征调期离队轻后果——不禁止离开，回营时军法申斥+心境-3（世界有反应）
+  _modaoAwolCheck() {
+    const s = State.data;
+    if (!s.flags.modao_awol || s.location !== "modao_front") return;
+    s.flags.modao_awol = false;
+    s.mood = Math.max(0, s.mood - 3);
+    this.log("【军法】归营点卯，执旗使把名册往案上一摔：「征令在身、擅离防地——念是初犯，申斥记档，罚月例充军资！」你躬身领了训。同袍看你的眼神里，多了几分玩味。（心境-3）", "bad");
   },
 
   /* -------- 城味·复访变迁：细读告示 / 城南探风声 -------- */
@@ -1063,7 +1103,7 @@ const Engine = {
       s.knownSkills = s.knownSkills.filter(id => id !== "zhayan_lian");
       if (s.spells.includes("zhayan_lian")) s.spells = s.spells.map(id => id === "zhayan_lian" ? "lianhuan" : id);
       else if (!s.spells.includes("lianhuan") && typeof Loadout !== "undefined") Loadout.equipSkill(s, "lianhuan");
-      this.log("【剑法大成】三月闭关，你将千百次出剑的体悟尽数咀嚼——某夜剑光一闪，你忽然懂了：剑快不在手，在心。眨眼剑法至此大成，解锁绝技「连环眨眼」——剑势所至，一剑化数剑！剑势上限+2。", "good");
+      this.log("【剑法大成】三月闭关，你将千百次出剑的体悟尽数咀嚼——某夜剑光一闪，你忽然懂了：剑快不在手，在心。眨眼剑法至此大成，解锁绝技「连环眨眼」——剑势所至，一剑化数剑！剑势上限+2；这颗凡人剑里悟出的剑心自此反哺御剑——剑系功法威能 +10%（青元剑芒/剑影分光/巨剑术皆受益）。", "good");
       this.addMilestone("《眨眼剑法》臻于大成，得连环眨眼", "bigitem");
       if (typeof Sfx !== "undefined") Sfx.play("bell");
     } else {
@@ -1475,8 +1515,10 @@ const Engine = {
     }
     choices.push({ text: "看看就走", effect() { return { text: "你扫过告示板，把行情记在心里，转身汇入人流。", kind: "sys" }; } });
     this._pendingFortune = {
-      title: "坊市告示 · 请托",
-      text: `万宝楼侧墙的告示板前围着几个弟子。本月最显眼的一张急单榜文——\n\n「${order.post}」\n\n落款的酬金：灵石×${order.pay}（高出收购行两成的急单价）。`,
+      title: bTitle,
+      text: jc
+        ? `城南武馆里茶烟未散，蒙山五友的耳目遍布九坊十二街。老三把一张单子推到你面前——\n\n「${order.post}」\n\n「主顾出的是急价：灵石×${order.pay}。战时的京城，就吃这碗消息饭。」`
+        : `万宝楼侧墙的告示板前围着几个弟子。本月最显眼的一张急单榜文——\n\n「${order.post}」\n\n落款的酬金：灵石×${order.pay}（高出收购行两成的急单价）。`,
       choices,
     };
     if (typeof UI !== "undefined" && UI.openFortune) UI.openFortune(this._pendingFortune);
@@ -2837,6 +2879,12 @@ const Engine = {
     if (gateMsg) { this.toast(`道途未通：${gateMsg}`, true); return; }
     const months = Math.max(1, node.months || 2);
     const curNode = C.nodes.find(n => (n.locs || []).includes(s.location));
+    // polish-modao A3②：征调期离队（军令在身擅离前线）——不禁止，记一笔，回营时军法申斥
+    if (s.activeChapter === "modao" && s.flags.modao_conscripted && !s.flags.modao_e3_rujing_done
+        && s.location === "modao_front" && nodeId !== "qianxian" && !s.flags.modao_awol) {
+      State.setFlag("modao_awol");
+      this.log("军令在身，你却背着大营悄悄离了前线。营门的执旗使远远看了你一眼，什么也没说——这笔账，回营再算。", "bad");
+    }
     s.journey = { to: nodeId, toName: node.name, leg: 0, total: months, from: curNode ? curNode.id : null };
     this.log(`你收拾行囊，踏上去「${node.name}」的路——约${months}月行程。江湖路远，晓行夜宿。`, "event");
     this.toast(`启程：${node.name}`);
@@ -3097,9 +3145,15 @@ const Engine = {
     if (typeof Sfx !== "undefined") Sfx.play("chime");
     // 旅途抵达：从地图切到场景（P3）
     if (typeof UI !== "undefined" && UI._journeyArriveTransition) UI._journeyArriveTransition();
-    // 有地区层的节点：落脚其首地点
-    if (node && node.locs && node.locs.length) {
-      s.location = node.locs[0];
+    // 有地区层的节点：落脚其首个「已解锁」地点（polish-modao A1①：越京节点挂 jingcheng_ke·
+    // unlock 限魔道第三幕后——章外云游越京无解锁地点=只到不驻，行为同旧版）
+    const openLocs = (node && node.locs ? node.locs : []).filter(id => {
+      const L = WORLD.locations.find(l => l.id === id);
+      return L && (!L.unlock || L.unlock(s));
+    });
+    if (node && openLocs.length) {
+      s.location = openLocs[0];
+      this._modaoAwolCheck();   // polish-modao A3②：擅离前线者归营销假（军法申斥）
       // 黄枫谷：入谷即开新篇（驻地章——百药园三年的主场）
       if (node.id === "huangfeng" && !s.flags.huangfeng_entered) {
         State.setFlag("huangfeng_entered");
@@ -4437,7 +4491,8 @@ const Engine = {
         const bag = (s.explore && !s.explore.finished) ? (s.explore.bag || {}) : {};
         const p = {};
         ["duyao_cao", "anqi", "huoshe_fu", "hanbing_fu", "jinguang_zhuan_charge",
-         "huixue_dan", "huiyuan_dan", "dingshen_fu", "zhenqi_kunzu", "zhenqi_juling"].forEach(id => {
+         "huixue_dan", "huiyuan_dan", "dingshen_fu", "zhenqi_kunzu", "zhenqi_juling",
+         "pingtian_chi_charge"].forEach(id => {
           p[id] = State.count(id) + (bag[id] || 0);
         });
         return p;
@@ -4805,7 +4860,8 @@ const Engine = {
     const p = c.player.pouch || {};
     const bag = (s.explore && !s.explore.finished) ? (s.explore.bag || {}) : null;
     ["duyao_cao", "anqi", "huoshe_fu", "hanbing_fu", "jinguang_zhuan_charge",
-     "huixue_dan", "huiyuan_dan", "dingshen_fu", "zhenqi_kunzu", "zhenqi_juling"].forEach(id => {
+     "huixue_dan", "huiyuan_dan", "dingshen_fu", "zhenqi_kunzu", "zhenqi_juling",
+     "pingtian_chi_charge"].forEach(id => {
       const left = p[id] || 0;
       const had = State.count(id) + (bag ? (bag[id] || 0) : 0);
       let used = had - left;
@@ -5240,6 +5296,66 @@ const Engine = {
     UI.openCombat(this._combat, this._combatMeta);
   },
 
+  /* 前线巡逻·月行动（polish-modao A1②·GPT P0-4①）——设计稿「练兵场」字面落地：
+   * 复用主线巡逻战敌池（moxiu_toumu/moxiu_zu 拷贝·血量±15% 波动），每月一次（passTime 1）。
+   * 胜=军功现结小额灵石+偶发缴获（傀儡残件/符纸）；败=负伤回营 fail-forward（不设死局不重开）。
+   * 同袍搭档轮值（武炫/钟卫娘低配 side·简令位）——第四幕群架「简令支援」决策的日常预演（Fable #9 节拍前移）。
+   * 门禁：征军在籍（modao_conscripted）且未入京（e3_rujing 后大军移驻京畿，营防巡逻自止——UI 双路径同 flag 过滤）。 */
+  startXunluoPatrol() {
+    const s = State.data;
+    if (s.pendingEvent || s.combat) { this.toast("先处理眼前之事"); return; }
+    if (!(s.flags.modao_conscripted && !s.flags.modao_e3_rujing_done)) { this.toast("征调已过，营防巡逻不在你名下", true); return; }
+    this.passTime(1);
+    const wave = () => 0.85 + Math.random() * 0.3;   // 血量 ±15% 波动
+    const mkZu = () => {
+      const z = Object.assign({}, WORLD.enemies.moxiu_zu, { formation: "pack" });
+      z.hp = Math.round(z.hp * wave()); z.hpMax = z.hp;
+      return z;
+    };
+    // 三成月撞上带头目的游猎小队（硬仗·缴获也厚），余为双喽啰斥候（快仗）
+    const hard = Math.random() < 0.34;
+    let enemies;
+    if (hard) {
+      const leader = Object.assign({}, WORLD.enemies.moxiu_toumu, { formation: "pack", leader: true });
+      leader.hp = Math.round(leader.hp * wave()); leader.hpMax = leader.hp;
+      enemies = [leader, mkZu(), mkZu()];
+    } else {
+      enemies = [mkZu(), mkZu()];
+    }
+    // 同袍搭档轮值（低配 side·两招·受简令——数值对齐主线巡逻战武炫位）
+    const mate = Math.random() < 0.5
+      ? { id: "zhongweiniang", name: "钟卫娘", kind: "ally", art: "zhongweiniang",
+          hp: 88, hpMax: 88, guard: 0.2, elem: "huo",
+          persona: { aggr: 6, prot: 3, kite: 2 },
+          moves: [
+            { name: "赤焰鞭", dmg: 13, weight: 12, elem: "huo", range: [1, 2], line: "火鞭卷着骂声抽过去" },
+            { name: "流火掷", dmg: 16, weight: 6, elem: "huo", range: [2, 3], line: "扬手一蓬流火砸向后排" },
+          ] }
+      : { id: "wuxuan", name: "武炫", kind: "ally", art: "wuxuan",
+          hp: 92, hpMax: 92, guard: 0.2, elem: "jin",
+          persona: { aggr: 7, prot: 3, kite: 1 },
+          moves: [
+            { name: "横练拳", dmg: 14, weight: 12, range: [1, 1], line: "闷头就是一套横练拳" },
+            { name: "金刃斩", dmg: 18, weight: 6, elem: "jin", range: [1, 2], line: "抖手一道金刃斩出" },
+          ] };
+    this._nextFightType = "xunluo";
+    const player = this.playerFighter();
+    this._combat = new CombatAPI.Combat({
+      player, enemies, maxRounds: 18, W: 11, enemyPos: hard ? 7 : 6,
+      side: mate,
+    });
+    this._combatMeta = { type: "xunluo", hard, mateName: mate.name };
+    s.combat = true;
+    this._combat.startRound();
+    this._combat._log(hard
+      ? `${mate.name}低喝一声：「带头目的游猎队——老规矩，擒贼先擒王！」`
+      : `${mate.name}与你分进合击：「两个斥候，速战速决，别惊动后头的大队！」`);
+    this.log(hard
+      ? "随队巡逻撞上一支带头目的魔修游猎小队——硬仗，但军功与缴获也厚。"
+      : "随队巡逻撞上两名魔修斥候——练兵场的日常，正好磨一磨手上功夫。", "event");
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 皇宫决战开幕·三组对位群架（增量H·魔道争锋第四幕）——sides[] 复数化的首个内容关卡：
   // 韩立＋黄枫谷三同袍（刘靖/宋蒙/钟卫娘）同场，对阵黑煞教血侍×3。三个 side 各有打法
   // （刘靖前压斩魔、宋蒙重元珠护中、钟卫娘急性子游火），玩家可凭简令交叉支援。这是"人多势众
@@ -5285,7 +5401,9 @@ const Engine = {
     //   第四战区=韩立本人的对位；水行寒煞、木行的你占不到相克便宜=居中策应之余的本份硬仗
     const bingyao = {
       name: "冰妖", elem: "shui", formation: "pack", nature: "beast",
-      hp: 140, hpMax: 140, armor: 3, agility: 12, move: 2, speed: 14, mp: 70, sense: 11, qiLayer: 13,
+      // polish-modao D3（GPT P2-2）：hp 140→170——"韩立亲手杀冰妖"的 canon 重量落在数值上，
+      // 四线群架玩家伤害占比从 34.7% 抬过 35% 代打线（climax.bal 占比观察行）
+      hp: 170, hpMax: 170, armor: 3, agility: 12, move: 2, speed: 14, mp: 70, sense: 11, qiLayer: 13,
       tactics: "cunning",
       introNote: "血池寒气凝成的冰妖——通体玄冰甲壳、吐息成霜。刘靖把它指名交给了你：「韩师弟，这头冰物路数阴冷，你心细，正合拿它！」水行寒煞，你的木行占不到便宜——靠符宝底牌与走位咬它。",
       attacks: [
@@ -5311,39 +5429,62 @@ const Engine = {
         { ally: "side:1", enemies: [1], at: 20, name: "中·宋蒙" },
         { ally: "side:2", enemies: [2], at: 28, name: "右·钟卫娘" },
       ],
-      // 三同袍 side 同场（sides[] 复数化）：人格即打法——
-      sides: [
-        // 刘靖·除魔卫道之楷模：前压抢攻、剑光凌厉（凤凰符是后话，此战只显其正道剑修本色）
-        { id: "liujing", name: "刘靖", kind: "ally", art: "liujing",
-          hp: 138, hpMax: 138, guard: 0.28, elem: "jin",
-          persona: { aggr: 8, prot: 4, kite: 1 },
-          moves: [
-            { name: "除魔剑光", dmg: 22, weight: 12, elem: "jin", range: [1, 2], line: "一道凌厉剑光当头斩落血侍" },
-            { name: "浩然斩", dmg: 28, weight: 6, elem: "jin", range: [1, 1], line: "「魔道役尸，人人得而诛之！」长剑过处煞气崩散" },
-          ] },
-        // 宋蒙·持重元珠的稳重师兄：护中后压、远程砸珠，prot 高（替同袍挡刀）
-        { id: "songmeng", name: "宋蒙", kind: "ally", art: "songmeng",
-          hp: 150, hpMax: 150, guard: 0.38, elem: "tu",
-          persona: { aggr: 4, prot: 8, kite: 2 },
-          moves: [
-            { name: "重元珠击", dmg: 20, weight: 12, elem: "tu", range: [1, 3], line: "一枚温润圆珠破空砸下，沉得砸碎血煞" },
-            { name: "厚土镇压", dmg: 16, weight: 6, elem: "tu", range: [1, 2], line: "沉声一喝，土行真元如壁压向血侍" },
-          ] },
-        // 钟卫娘·心直口快的女修：急性子游火、抢攻收割，护短认死理
-        { id: "zhongweiniang", name: "钟卫娘", kind: "ally", art: "zhongweiniang",
-          hp: 108, hpMax: 108, guard: 0.18, elem: "huo",
-          persona: { aggr: 8, prot: 2, kite: 3 },
-          moves: [
-            { name: "烈焰掌", dmg: 18, weight: 12, elem: "huo", range: [1, 2], line: "「都是些役尸的玩意儿！」一掌烈焰拍出" },
-            { name: "火羽刺", dmg: 22, weight: 6, elem: "huo", range: [1, 3], line: "抖手一蓬火羽攒射" },
-          ] },
-      ],
+    // 三同袍 side 同场（sides[] 复数化）：人格即打法——
+    // polish-modao D3（GPT P2-2）：三同袍 moves dmg 一律 -10%——冰妖 hp 140→170 后同袍清完本线
+    // 会跨线驰援帮打冰妖（share 反被摊薄），双刀齐下把玩家伤害占比抬回 35% 线上（climax.bal 观察行）
+    sides: [
+      // 刘靖·除魔卫道之楷模：前压抢攻、剑光凌厉（凤凰符是后话，此战只显其正道剑修本色）
+      { id: "liujing", name: "刘靖", kind: "ally", art: "liujing",
+        hp: 138, hpMax: 138, guard: 0.28, elem: "jin",
+        persona: { aggr: 8, prot: 4, kite: 1 },
+        moves: [
+          { name: "除魔剑光", dmg: 20, weight: 12, elem: "jin", range: [1, 2], line: "一道凌厉剑光当头斩落血侍" },
+          { name: "浩然斩", dmg: 25, weight: 6, elem: "jin", range: [1, 1], line: "「魔道役尸，人人得而诛之！」长剑过处煞气崩散" },
+        ] },
+      // 宋蒙·持重元珠的稳重师兄：护中后压、远程砸珠，prot 高（替同袍挡刀）
+      { id: "songmeng", name: "宋蒙", kind: "ally", art: "songmeng",
+        hp: 150, hpMax: 150, guard: 0.38, elem: "tu",
+        persona: { aggr: 4, prot: 8, kite: 2 },
+        moves: [
+          { name: "重元珠击", dmg: 18, weight: 12, elem: "tu", range: [1, 3], line: "一枚温润圆珠破空砸下，沉得砸碎血煞" },
+          { name: "厚土镇压", dmg: 14, weight: 6, elem: "tu", range: [1, 2], line: "沉声一喝，土行真元如壁压向血侍" },
+        ] },
+      // 钟卫娘·心直口快的女修：急性子游火、抢攻收割，护短认死理
+      { id: "zhongweiniang", name: "钟卫娘", kind: "ally", art: "zhongweiniang",
+        hp: 108, hpMax: 108, guard: 0.18, elem: "huo",
+        persona: { aggr: 8, prot: 2, kite: 3 },
+        moves: [
+          { name: "烈焰掌", dmg: 16, weight: 12, elem: "huo", range: [1, 2], line: "「都是些役尸的玩意儿！」一掌烈焰拍出" },
+          { name: "火羽刺", dmg: 20, weight: 6, elem: "huo", range: [1, 3], line: "抖手一蓬火羽攒射" },
+        ] },
+    ],
     });
     this._combatMeta = Art.has("huanggong") ? { type: "santuan", sceneBg: "huanggong" } : { type: "santuan" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("刘靖长剑出鞘、剑指皇城深处：「四处分头缠住——斧奴我来、刺奴宋师兄、链奴钟师妹！韩师弟，那头冰妖路数阴冷，指名交给你！各有所惧，对症下药——哪条线吃紧，能腾出手的便去驰援！」");
     this.log("巍峨宫门轰然洞开、朱墙金瓦下血煞翻腾——三名血侍各扑一方，血池深处又爬出一头通体玄冰的冰妖：左厢刘靖缠住魁梧斧奴、宋蒙稳压枯瘦刺奴、右翼钟卫娘斗着精悍链奴，冰妖则被刘靖指名交到了你手上。斧奴铜皮铁骨、刺奴鬼魅难中、链奴隔空放风筝、冰妖寒煞刺骨——四条战线，各须对症下药。了结当面之敌后，哪条线告急便提步驰援。", "event");
+    // —— polish-modao B1/D8 开局读点（只动开局一拍·不碰战线机制）：京城查案与夜闯抉择在此兑现 ——
+    const intel = s.flags.jingcheng_intel || 0;
+    if (intel >= 1) {
+      this._combat.player.shield = (this._combat.player.shield || 0) + 6;
+      (this._combat.sides || []).forEach(sd => { sd.shield = (sd.shield || 0) + 6; });
+      this._combat._log("【查案·有备】京城蹲出的底细此刻全用上了：血侍的伏位、换防的间隙尽在胸中——众人抢先占定身位（我方全体护体+6）。");
+      this.settleLedger("modao_shizong", "京城连环失踪案查到的每一分底细，都在皇宫开局兑了现——血侍伏位与换防间隙尽在胸中，九筑基抢得先手身位。情报量决定决战难度，这句话没骗你");
+    } else {
+      this._combat.player.hp = Math.max(1, Math.floor(this._combat.player.hp * 0.92));
+      this._combat._log("【硬闯·无备】没人蹲过这座皇宫的底——第一波血煞冷箭自暗处攒射而至，你等趟着先手硬闯了进去（开局气血-8%）。");
+      this.settleLedger("modao_shizong", "连环失踪案你没肯多查——皇宫开局这波趟着先手硬吃的暗箭，就是没交的功课。情报量决定决战难度，这句话没骗你");
+    }
+    if (s.flags.modao_e4_steady) {
+      this._combat.enemies.forEach(e => { e.shield = (e.shield || 0) + 8; });
+      this._combat._log("【暗哨传警】拔哨终究慢了半步——一缕血煞讯号先递进了宫里，血侍们早凝好了护身煞气（敌方开局护体+8）。");
+    }
+    if (s.flags.modao_e4_rush) {
+      const p0 = this._combat.player;
+      p0.momentum = Math.min(p0.momentumCap || 5, (p0.momentum || 0) + 1);
+      this._combat._log("【一鼓作气】九道灵光挟势破门——你气机正盛，剑势先蓄一分（开局剑势+1）。");
+    }
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -5409,6 +5550,22 @@ const Engine = {
         this._log("「三旗齐——阵成！」你将最后一面阵旗猛然插定，五行光华暴涨——不必再拖了！");
       }
     };
+    // polish-modao D2（GPT P1-1）：胥王递增全场血煞压力——第 N 回合对我方全体 4+2N 穿甲
+    // （直扣气血·护体/护甲皆不挡）。拖越久越疼：站桩打满六息末血掉进 50~70% 带（改前 96%），
+    // 拾旗速胜=真止损（提前收场少吃后几拍最重的压力）。傀儡/刘靖同吃（同规则铁律）。
+    this._combat._afterEnemyTick = function() {
+      if (this.status !== "ongoing") return;
+      const boss = this.enemies[0];
+      if (!boss || !boss.alive) return;
+      const dmg = 4 + 2 * this.round;
+      this.player.hp = Math.max(0, this.player.hp - dmg);
+      this.sides.forEach(sd => { if (sd.hp > 0) sd.hp = Math.max(0, sd.hp - dmg); });
+      this._log(`血煞越压越沉——胥王假丹之威逐息攀升，血煞洪流漫过全场、直透护体（我方全体 -${dmg}）！拖一息疼一分：拾旗提前布阵，才是止损之道。`);
+      if (this.player.hp <= 0) {
+        this.status = "lose";
+        this._log("血煞洪流终于漫过了你的头顶——眼前一黑，你被同袍拖出了战团……");
+      }
+    };
     this._combatMeta = Art.has("huanggong") ? { type: "tuoshi", sceneBg: "huanggong" } : { type: "tuoshi" };
     s.combat = true;
     this._combat.startRound();
@@ -5426,6 +5583,9 @@ const Engine = {
     this._nextFightType = "xuwang_final";
     // 确保金光砖符宝底牌在手（体验"底牌天花板"）——阵成决战发一枚应急符宝充能
     if (State.count("jinguang_zhuan_charge") < 1) State.give("jinguang_zhuan_charge", 1);
+    // polish-modao D5：三符宝齐轰打进玩家手里——平天尺·蓄势×1（皇宫决战限定一次性瞬发底牌，
+    // 战后 finishCombat 清除余量；败北重试再入场时若未用掉则沿用这一枚，不重复发放）
+    if (State.count("pingtian_chi_charge") < 1) State.give("pingtian_chi_charge", 1);
     const player = this.playerFighter();
     player.hp = s.hpMax; player.hpMax = s.hpMax;   // 决战满血上场
 
@@ -5440,18 +5600,35 @@ const Engine = {
       { name: "土·沙葬陷脚", log: "黄沙陷脚、厚土镇压，胥王步法尽废。", suppress: 0.06, expose: true, player: { shield: 12 } },
       { name: "万象星河·倒悬", log: "六行归一、万象星河倒悬——这是颠倒五行阵的极致一击！", suppress: 0.13, expose: true },
     ];
+    // polish-modao D7（GPT P1-3）：阵图升级线读点——齐云霄拍卖会（modao_qiyunxiao）赠的完整版阵图
+    // 才撑得起「万象星河」收官一击；只有黄枫谷代工的基础版则六相缺其极致相（准备的差距被看见）。
+    const zhenFull = !!s.flags.wuxing_zhen_full;
+    if (!zhenFull) fieldCycle.pop();   // 去掉万象星河相（fieldCycle 6→5）
 
     const p1 = Object.assign({}, WORLD.enemies.xuwang_danshen);   // 假丹肉身（phase1）
     const p2 = Object.assign({}, WORLD.enemies.xuwang_shenhun);   // 血凝五行丹·复生神魂（phase2·脆）
 
     const sides = [];
     if (s.flags.liujing_survived) {
+      // polish-modao D1（GPT P1-2）存线：刘靖 aggr 8→6——改命线不再"同道抬着赢"，
+      // 决战玩家伤害占比从 ~57% 抬回 65%+（climax.bal 门禁 ≥35% 之上再留余量）
       sides.push({ id: "liujing", name: "刘靖", kind: "ally", art: "liujing",
         hp: 110, hpMax: 110, guard: 0.30, elem: "jin",
-        persona: { aggr: 8, prot: 3, kite: 1 },
+        persona: { aggr: 6, prot: 3, kite: 1 },
         moves: [
-          { name: "除魔剑光", dmg: 22, weight: 12, elem: "jin", range: [1, 2], line: "刘靖剑光如练，趁阵法压制狠斩胥王" },
-          { name: "浩然斩", dmg: 28, weight: 6, elem: "jin", range: [1, 1], line: "「魔道巨擘，今日伏诛！」刘靖一剑递出，浩然无前" },
+          { name: "除魔剑光", dmg: 17, weight: 12, elem: "jin", range: [1, 2], line: "刘靖剑光如练，趁阵法压制狠斩胥王" },
+          { name: "浩然斩", dmg: 22, weight: 6, elem: "jin", range: [1, 1], line: "「魔道巨擘，今日伏诛！」刘靖一剑递出，浩然无前" },
+        ] });
+    } else {
+      // polish-modao D1（GPT P1-2）殁线哀兵补偿：宋蒙把阵枢交与钟卫娘独力维系、提珠杀入——
+      // "替刘师兄补上这一剑"。低配入场（hp/moves 参考刘靖 side 打七折·带着维阵的分神）：
+      // 多数玩家（情报<2）拿到的最陡一战，地板从 ~1.5% 拉回恶战带（climax.bal 断言 ≥25%）
+      sides.push({ id: "songmeng_aibing", name: "宋蒙", kind: "ally", art: "songmeng",
+        hp: 70, hpMax: 70, guard: 0.30, elem: "tu",
+        persona: { aggr: 5, prot: 3, kite: 2 },
+        moves: [
+          { name: "重元珠击", dmg: 10, weight: 12, elem: "tu", range: [1, 3], line: "宋蒙一珠砸落，声音发哑：「刘师弟的这一剑，我替他补上！」" },
+          { name: "厚土镇压", dmg: 13, weight: 6, elem: "tu", range: [1, 2], line: "宋蒙分着维阵的神、仍沉喝出手——土行真元如壁压向胥王" },
         ] });
     }
 
@@ -5470,6 +5647,21 @@ const Engine = {
     this._combat.startRound();
     this._combat._log("「阵成——压！」师兄妹齐声厉喝，颠倒五行阵轰然运转，五行之力如山倒灌向胥王。机会只此一次：底牌齐发，趁阵法镇住他的工夫，将这魔道巨擘连肉身带神魂一并轰碎！");
     this.log("真·颠倒五行阵布成，五行倒转死死镇住胥王——轮到你了！金光砖、平天尺、重元珠、赤虹剑……此刻不留底牌，更待何时？阵法逐回合反噬，底牌齐发，毕其功于一役！", "event");
+    // D5：平天尺入手牌播报（旁白不再代打——三符宝齐轰的"韩立那一件"真在瞬发栏里）
+    this._combat._log("【符宝】平天尺·蓄势已灌注入手（瞬发底牌·只此一击）——吕天蒙那句「替我带出去」，就轰在这一尺上。");
+    // D1 殁线：哀兵入场播报
+    if (!s.flags.liujing_survived) {
+      this._combat._log("宋蒙把阵枢塞给钟卫娘、独身提珠杀入战团，眼眶通红：「阵你一人撑住——刘师弟的这一剑，我替他补上！」");
+    }
+    // D7：阵图残缺播报（modao_qiyunxiao 未得完整版——准备的差距在此被看见）
+    if (!zhenFull) {
+      this._combat._log("【阵图残缺】师兄妹布下的只是黄枫谷代工的基础版阵图——五行倒悬的极致一击「万象星河」凝不出来，威能折半。若得巧匠补全的完整版，此阵还有一记收官重锤。");
+    }
+    // —— polish-modao B1：查案满档读点（intel=3·开局一拍·不碰六相机制）——贼首底牌尽知，决战开门见破绽
+    if ((s.flags.jingcheng_intel || 0) >= 3) {
+      this._combat.enemies[0].exposed = true;
+      this._combat._log("【查案·满档】连贼首藏的后手都被你蹲了出来——化身归窍那一瞬的气机滞涩瞒不过你的眼睛：胥王开局破绽毕露（首回合受击加重）！");
+    }
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -7838,6 +8030,28 @@ const Engine = {
         s.pendingEvent = "modao_e2_patrol";
         this._retryAfterLoss = "modao_e2_patrol";
       }
+    } else if (meta.type === "xunluo") {
+      // 前线巡逻月行动（polish-modao A1②）：胜=军功现结小额灵石+偶发缴获；败=负伤回营（fail-forward·不重开）
+      if (win) {
+        const gain = (meta.hard ? 3 : 2) + (Math.random() < 0.3 ? 1 : 0);
+        State.give("lingshi", gain);
+        let lootNote = "";
+        if (meta.hard && Math.random() < 0.4) {
+          State.give("kuilei_canjian", 1);
+          lootNote = "，另从头目尸身上拆得一捧傀儡残件";
+        } else if (Math.random() < 0.25) {
+          State.give("fu_zhi", 1);
+          lootNote = "，顺手缴了一沓阴纹未干的符纸";
+        }
+        s.flags.xunluo_won = (s.flags.xunluo_won || 0) + 1;
+        this.log(`巡逻队归营清点战果——军功现结，灵石+${gain}${lootNote}。${meta.mateName || "同袍"}捶了捶你的肩：「明日还这个时辰。」`, "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+      } else {
+        // fail-forward：负伤退回营中——丢的是这一月的军功，不丢命（不设死局、不重开卡）
+        s.hp = Math.max(s.hp, Math.round(s.hpMax * 0.4));
+        s.mood = Math.max(0, s.mood - 2);
+        this.log(`这一队魔修比往日凶悍，你与${meta.mateName || "同袍"}且战且退、负伤撤回营中——伤兵处替你粗粗裹了伤。前线的仗，没有场场都赢的（心境-2）。`, "bad");
+      }
     } else if (meta.type === "santuan") {
       // 皇宫决战开幕·三组对位群架（增量H·第四幕）：三同袍并肩撕开缺口→杀进皇宫深处（接 modao_e4_zhanluo 之死）
       if (win) {
@@ -7884,6 +8098,10 @@ const Engine = {
     } else if (meta.type === "xuwang_final") {
       // 阵成决战（增量H下）：颠倒五行阵逐回合压制+底牌齐发→三符宝毁假丹肉身→血凝五行丹复生神魂（waves）→战胜后真凰符剧情杀
       if (win) {
+        // D5 收口：平天尺·蓄势=皇宫决战限定（师兄妹阵力所灌·阵撤即散）——战后清除余量
+        // （_syncPouchBack 已在上方跑完，此处扣的是真库存；败北重试线不清、留给再入场）
+        const ptLeft = State.count("pingtian_chi_charge");
+        if (ptLeft > 0) State.take("pingtian_chi_charge", ptLeft);
         State.setFlag("modao_e4b_xuwang_done");
         this.writeLedger("modao_xuwang_slain", "皇宫决战·阵成压制——颠倒五行阵逐回合反噬胥王，三符宝齐轰毁其假丹肉身，血凝五行丹借阵复生之神魂亦被打散，终由钟卫娘祭真凰符灭其神魂。黑煞教覆灭。");
         this.addMilestone("皇宫决战：胥王伏诛，黑煞教覆灭", "showdown");

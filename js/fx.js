@@ -1086,6 +1086,8 @@
         }, 210);
       },
       jinguang_zhuan_charge(F, from, to) { F.RECIPES.jinguang_zhuan(F, from, to); },
+      // 平天尺·镇（polish-modao D5）：复用金光砖凌空镇落骨架——青铜短尺一化千钧，砸落+震圈
+      pingtian_chi_zhen(F, from, to) { F.RECIPES.jinguang_zhuan(F, from, to); },
       /* 定身符：金箓飞贴→锁环定身（控制感：环收紧而非爆开） */
       dingshen_fu(F, from, to) {
         if (!to) return;

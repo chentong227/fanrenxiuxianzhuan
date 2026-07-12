@@ -555,7 +555,8 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(s.pendingEvent === "yanjia_summon", `燕家堡调令链式触发（${s.pendingEvent}）`);
   assert(s.activeChapter === "modao", "魔道争锋篇章容器已开（activeChapter=modao）");
   assert(sandbox.Chapters.realmTier() === 1, `realmCap 抬进筑基（realmTier=${sandbox.Chapters.realmTier()}）`);
-  assert(sandbox.Chapters.realmCap() === 13, `本篇境界上限=筑基初期（realmCap=${sandbox.Chapters.realmCap()}）`);
+  // polish-modao A2：cap 13→15（筑基后期）——入章即顶格的帆段闭关颗粒无收已修（设计稿"篇末筑基中期→后期"）
+  assert(sandbox.Chapters.realmCap() === 15, `本篇境界上限=筑基后期（realmCap=${sandbox.Chapters.realmCap()}）`);
   assert(s.location === "yanjiabao", `强制进场燕家堡（location=${s.location}）`);
   assert(s.unlockedChapters && s.unlockedChapters.includes("modao"), "modao 篇章已解锁入档");
   // 调令 → 重逢
@@ -708,6 +709,12 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   // 强制第三幕时锚到期（赴京途中度月的等效），主线链式自动演出
   s.flags.modao_act3_due = 0;
   Engine.checkStory();
+  // polish-modao D7：抵京当日先过拍卖会（重逢齐云霄·解围付家强人·得完整版阵图）——阵图升级线+灭付家远线起点
+  assert(s.pendingEvent === "modao_qiyunxiao", `京城拍卖会·重逢齐云霄（${s.pendingEvent}）`);
+  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_qiyunxiao"), 0);   // 出手震慑（idx0）
+  assert(s.flags.modao_qiyunxiao_done && s.flags.wuxing_zhen_full, "拍卖会解围·得完整版颠倒五行阵图（wuxing_zhen_full）");
+  assert(s.ledger.fujia_grudge_start, "付家跋扈入账本（fujia_grudge_start·灭付家远线起点——与再别天南 fujia_grudge 同链不同拍）");
+  assert(s.ledger.modao_qiyunxiao_stoic && s.temperament && s.temperament.stoic >= 1, "出手震慑铸入心性（stoic·recordTemperament 闭环）");
   assert(s.pendingEvent === "modao_e3_rujing", `入京·天子脚下（${s.pendingEvent}）`);
   assert(s.metNpcs.includes("xiaocui"), "市井偶遇萧翠儿（入图鉴）");
   assert(s.ledger.modao_rujing, "入京·秦府门房哭戏入账本");
@@ -716,9 +723,23 @@ console.log("\n=== 5.5 血色试炼 → 筑基 → 青元剑诀 → 黄枫谷篇
   assert(s.pendingEvent === "modao_e3_shizong", `连环失踪案（${s.pendingEvent}）`);
   assert(s.metNpcs.includes("mengshan_wuyou"), "结识蒙山五友（散修线人入图鉴）");
   assert(s.ledger.modao_shizong, "京城连环失踪案入账本");
-  // 情报面纱·京城版：选「情报最全」档 → jingcheng_intel=2（复用 story 选项的乘法设计，第四幕据此调难度）
-  Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e3_shizong"), 0);
-  assert(s.flags.jingcheng_intel === 2, `情报面纱·查得最全（jingcheng_intel=${s.flags.jingcheng_intel}）`);
+  // 情报面纱·京城版（polish-modao B1+B2）：choice.stay 多轮侦察——三线反复投入攒 intel（上限3），收网随时可走
+  const shizongNode = sandbox.STORY.find(x => x.id === "modao_e3_shizong");
+  sandbox.State.give("lingshi", 30);   // 查案本钱：蒙山五友的门路要真金白银（灵石8/次）
+  const stonesBefore = sandbox.State.count("lingshi");
+  assert(shizongNode.choices(s).length === 4, `三线+硬闯共4项（${shizongNode.choices(s).length}）`);
+  Engine.chooseStory(shizongNode, 0);   // ①蒙山五友门路（灵石8·不耗月）
+  assert(s.pendingEvent === "modao_e3_shizong" && s.flags.jingcheng_intel === 1, "门路已买（驻留·情报1）");
+  assert(sandbox.State.count("lingshi") === stonesBefore - 8, `买门路真扣灵石（${stonesBefore}→${sandbox.State.count("lingshi")}）`);
+  const monthBefore = sandbox.State.absMonth();
+  Engine.chooseStory(shizongNode, 1);   // ②茶楼蹲点（耗1月）
+  assert(s.flags.jingcheng_intel === 2 && sandbox.State.absMonth() === monthBefore + 1, "茶楼蹲点真耗月（情报2）");
+  Engine.chooseStory(shizongNode, 2);   // ③翠儿追踪（耗1月·首次触发翠儿小拍）
+  assert(s.flags.jingcheng_intel === 3 && s.flags.jingcheng_cuier_track, "翠儿追踪（情报3·满档）");
+  assert(shizongNode.choices(s).length === 1, "情报满档——只剩收网一途");
+  Engine.chooseStory(shizongNode, 0);   // 收网动身
+  assert(s.flags.modao_e3_shizong_done, "查案收口（modao_e3_shizong_done）");
+  assert(s.flags.jingcheng_intel === 3, `情报满档存档（jingcheng_intel=${s.flags.jingcheng_intel}）`);
   // 失踪案 → 馨王府夜宴·墨彩环重逢（修#2·情感落点占位待亲笔）
   assert(s.pendingEvent === "modao_e3_yanhui", `馨王府夜宴·墨彩环重逢（${s.pendingEvent}）`);
   Engine.chooseStory(sandbox.STORY.find(x => x.id === "modao_e3_yanhui"), 0);

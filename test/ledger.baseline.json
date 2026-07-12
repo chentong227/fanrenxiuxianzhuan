@@ -117,24 +117,9 @@
       "label": "金鼓原前哨集结：结识黄枫谷刘靖/宋蒙/钟卫娘与七派武炫，结下并肩同袍之谊",
       "status": "TODO-补兑现或降级flavor"
     },
-    "modao_patrol_won": {
-      "where": "js/engine.js:5574",
-      "label": "金鼓原巡逻遭遇战告捷——先斩魔修领队、群势立溃，缴获傀儡残件，初窥傀儡之术的引子",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "modao_rujing": {
-      "where": "js/story.js:2954",
-      "label": "随征军入京、入秦府做客卿——市井偶遇萧翠儿爷孙，秦府老门房『笑着笑着就哭了』：头一回从凡人眼里看清『修仙者』落在尘世的分量",
-      "status": "TODO-补兑现或降级flavor"
-    },
     "modao_santuan_won": {
       "where": "js/engine.js:5597",
       "label": "九筑基夜闯皇城·开幕三组对位群架告捷——韩立与刘靖/宋蒙/钟卫娘三组同袍并肩冲杀，撕开血侍阵线、杀进皇宫深处（sides[] 复数化群架首演）",
-      "status": "TODO-补兑现或降级flavor"
-    },
-    "modao_shizong": {
-      "where": "js/story.js:3005",
-      "label": "京城连环失踪案浮出：散修接连被『怪物』掳走，手法不像魔道作风；结识蒙山五友、萧翠儿爷爷亦遭掳——查案情报量将决定皇宫决战难度",
       "status": "TODO-补兑现或降级flavor"
     },
     "modao_to_jingcheng": {

@@ -67,6 +67,12 @@
     jinguang_zhuan: { name: "金光砖", mp: 6, range: [1, 4], type: "atk", dmg: 18, pierce: true, source: "art", tier: 1, elem: "jin",
                 consume: "jinguang_zhuan_charge", cd: 2, quick: true,
                 desc: "金光上人的符宝遗赠：金光化砖凌空砸落，势大力沉、无视护体（瞬发）。每次催动耗一道充能（灵石可回充），催动后须回气两回合。" },
+    // 符宝·平天尺（polish-modao D5：三符宝齐轰打进玩家手里——皇宫决战限定一次性底牌）
+    // 吕天蒙遗物·矿洞托付的那截青铜短尺，决战前夜以师兄妹阵力灌注一式蓄势。数值=金光砖 ×1.22
+    // 附一拍镇身（dingshen 1·atk 命中即镇——combat 通用管线）；充能仅 startXuwangFight 发放、战后清除。
+    pingtian_chi_zhen: { name: "平天尺·镇", mp: 6, range: [1, 4], type: "atk", dmg: 22, pierce: true, dingshen: 1,
+                source: "art", tier: 1, elem: "tu", consume: "pingtian_chi_charge", quick: true,
+                desc: "吕天蒙拼死塞来的那截青铜短尺——师兄妹以阵力替你灌注了一式蓄势。符箓化小尺、一化千钧凌空镇落：势大力沉、无视护体，被镇者身形一僵、动弹不得（瞬发）。只此一击——替他，带出去。" },
 
     /* —— 战内丹药（瞬发：灵力恢复链的实战落点——灵力池整场不复，丹药是续命的那口气）—— */
     jinchuang_yao: { name: "服金疮药", mp: 0, range: [0, 0], type: "heal", heal: 40, quick: true, consume: "huixue_dan", source: "item", tier: 0,
@@ -1416,6 +1422,12 @@
           const dr = sp.tier != null ? sp.tier : (sp.driveRealm || 0);
           baseDmg = Math.round(baseDmg * Balance.driveMul(caster.realmTier, dr, sp.natal, !!sp.chargeCost, caster.realmLayer));
         }
+        // polish-modao D6（候选A·黄枫谷遗留账）：剑心反哺——眨眼剑法大成者，剑系功法攻势 ×1.10。
+        // 凡人剑里悟出的剑心喂回御剑：swordMastery 自此有直接战力线（乘性合规 A2；只吃 mu 系 art 攻击=青元剑诀线，
+        // 吐纳/护体等非攻不吃、法宝御物另有 momentum 通道不叠）。
+        if (caster.swordMastery && sp.source === "art" && sp.school === "mu") {
+          baseDmg = Math.round(baseDmg * 1.10);
+        }
         baseDmg = Math.max(1, Math.round(baseDmg * auxMul * (caster.dmgBonus || 1)));
         // 贴身惩罚：御物/法术类远程攻击在距离1施展不开（-30%）——武学的主场
         let closeSqueeze = false;
@@ -1539,6 +1551,18 @@
             : `${caster.name} 施「${sp.name}」，对 ${target.name} 造成 ${totalDealt} 伤害` + (target.shield > 0 ? `（余护体${target.shield}）` : ""));
           // 攻击带毒：命中且破防后毒入伤口（任何带 poison 的攻击技通用——乌龙夺四爪淬毒）
           if (sp.poison && totalDealt > 0 && target.alive) this._applyPoison(caster, target, tref, sp.poison);
+          // 攻击带镇（polish-modao D5 平天尺·镇首例）：命中即镇身一拍——通用管线同 status.dingshen（击落同源）
+          if (sp.dingshen && totalDealt > 0 && target.alive) {
+            target.status.dingshen = (target.status.dingshen || 0) + sp.dingshen;
+            if (target._charging) {
+              this._log(`（千钧镇落！${target.name} 被这一记生生镇在原地——蓄到一半的「${target._charging.name}」也散了！）`);
+              target._charging = null;
+              if (target.intent && target.intent.kind === "release") target.intent = { name: "心神不稳", dmg: Math.round((target.atk || 8) * 0.6), kind: "normal", mp: 0 };
+            } else {
+              this._log(`（千钧镇落！${target.name} 身形一僵，被镇在原地动弹不得！）`);
+            }
+            this._emitFx(tref, "miss", "镇身");
+          }
         }
         if (sp.dodgeSelf) caster.dodgeBuff = (caster.dodgeBuff || 0) + sp.dodgeSelf;
         if (sp.buildMomentum) {

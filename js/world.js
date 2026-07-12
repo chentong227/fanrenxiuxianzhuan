@@ -402,17 +402,44 @@ WORLD.locations = [
     env: { depth: { fg: "hall", far: 0.4 } },
     travelCost: 1, actions: [], encounters: [],
   },
-  /* 魔道前线·待命营：燕家堡血战后随正道残部退守的前线据点。非过场（home:true 出闭关/调息），
-   * 但暂无 map（不入云游列表）——「被七派强征入伍·等候征调」的留白，矿道箱庭随增量E开。 */
+  /* 魔道前线·待命营：燕家堡血战后随正道残部退守的前线据点。非过场（home:true 出闭关/调息）。
+   * polish-modao A3（GPT P1-5）：挂 continent「qianxian」前线 pin（journey.from 不再悬空）；
+   * polish-modao A1②（GPT P0-4①）：xunluo 随队巡逻月行动（征军期专属——渲染层按 flag 过滤）。 */
   {
     id: "modao_front", arc: "modao",
     name: "魔道前线 · 待命营",
     desc: "燕家堡一夜血战后，你随溃退的正道残部退守前线营地。七派强征入伍的旗令已下——且闭关调息、等候征调，下一道军令不知落在天南哪一处的矿道。",
     travelCost: 1,
+    map: { x: 40, y: 6 },
     home: true,
     // 前线待命营·闭关调息：2.5D 前景＝营帐内框（梁柱收口·沉黑），远雾偏浓（前线肃杀）
     env: { depth: { fg: "interior", far: 0.42 } },
-    actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy"],
+    actions: ["xunluo", "cultivate", "breakthrough", "rest", "bottle", "alchemy"],
+    actionLabels: { xunluo: "随队巡逻 · 军功 ⚔" },
+    encounters: [],
+  },
+  /* 越京·秦府客居（polish-modao A1①·Fable P0-1）：第三/四幕京城真地点——人在京城，地也在京城。
+   * story modao_e3_rujing.onArrive 迁入；离京无需手动迁出（zaibie_open 的 Chapters.enter("zaibie")
+   * 落 jiayuan_city）。挂 continent「yuejing」节点 locs（京城段 journey.from 不悬空）；
+   * unlock 限魔道章第三幕后——早章/后章云游越京不落客居（_journeyArrive 按 unlock 择落点）。 */
+  {
+    id: "jingcheng_ke", arc: "modao",
+    name: "越京 · 秦府客居",
+    desc: "胥国京城，金粉楼台。你持李化元的荐书在秦府做客卿，得一进僻静跨院——朱门之内好安身；朱门之外，散修连环失踪的暗流，正在长街灯影里悄悄涌动。",
+    travelCost: 1,
+    map: { x: 34, y: 47 },
+    home: true,
+    unlock: (s) => s.activeChapter === "modao" && !!s.flags.modao_e3_rujing_done,
+    // 京城朱雀长街·市声灯影：2.5D 前景＝坊市框（幌子檐影+暖灯晕），远雾中等（帝都烟尘）
+    env: { depth: { fg: "market", far: 0.42 } },
+    actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy", "market", "wanbao", "qingtuo"],
+    actionLabels: {
+      market: "朱雀长街 · 采买 🏮",
+      wanbao: "万宝楼京城分号 💎",
+      qingtuo: "蒙山五友 · 请托 📜",
+      rest: "回秦府跨院 · 调息",
+      cultivate: "跨院打坐 · 潜修",
+    },
     encounters: [],
   },
 
@@ -588,9 +615,18 @@ WORLD._landContinent = {
       factionByEpoch: { 1: "modao" },
       desc: "胥国之北、太岳山脉那头的邻国，比胥国更尚武。黄枫谷北面群山之外便是元武国——巧匠齐云霄的「百艺坊」在此，墨蛟皮、千年灵草这等好料，寻他代工最相宜。", months: 2, danger: "中",
       gate: (s) => s.flags.dongfu_done ? null : "太岳山脉以北的邻国——黄枫谷洞府落定、有了北行的由头，方可前往" },
-    { id: "yuejing",  name: "越京",    pos: { x: 34, y: 50 }, locs: [],
+    // locs 挂 jingcheng_ke（polish-modao A1①/A3）：魔道章第三幕后 unlock 才生效——
+    // 早章云游越京不落客居（_journeyArrive 按 loc.unlock 择落点，无解锁地点=只到不驻·行为同旧版）
+    { id: "yuejing",  name: "越京",    pos: { x: 34, y: 50 }, locs: ["jingcheng_ke"],
       desc: "胥国京城，凡俗繁华之极。郊外白菊山是赏景名胜。", months: 2, danger: "低",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
+    // 魔道前线（polish-modao A3·GPT P1-5）：征军期战时据点——金鼓原一线（越国北境·建州北缘空位）。
+    // hidden：仅魔道章征军在籍时上图（章前不剧透、章后大营裁撤）；journey.from 自此不再悬空。
+    { id: "qianxian", name: "魔道前线", pos: { x: 40, y: 6 }, locs: ["modao_front"],
+      desc: "七派征军与黑煞教相持的北境前线——金鼓原焦土千里，旌旗与新坟一样多。军令在身者，营门当归。",
+      months: 2, danger: "高",
+      hidden: (s) => !(s.activeChapter === "modao" && s.flags && s.flags.modao_conscripted),
+      gate: (s) => (s.activeChapter === "modao" && s.flags.modao_conscripted) ? null : "战时军营，无军令者不得擅入" },
     { id: "jiayuan",  name: "嘉元城",  pos: { x: 44, y: 60 }, locs: ["jiayuan_city"], localMap: "jiayuan_city",
       desc: "岚州第一大城。岚州居胥国之南，沃野产粮，富庶仅次京畿——城中鱼龙混杂，传闻有修仙者出没。", months: 3, danger: "中",
       gate: (s) => s.flags.arc1_complete ? null : "七玄门之事未了" },
@@ -629,6 +665,9 @@ WORLD._landContinent = {
     { from: "jiayuan", to: "tainangu", terrain: "丘陵" },
     { from: "caixia", to: "yuejing", terrain: "官道" },
     { from: "huangfeng", to: "yuanwu", terrain: "山道" },
+    // 魔道前线（polish-modao A3）：北境战线两条路——渲染层随节点 hidden 同隐
+    { from: "qianxian", to: "huangfeng", terrain: "山道" },
+    { from: "qianxian", to: "yuejing", terrain: "官道" },
   ],
   /* —— L3 州（v147 §10.4「拆越国→镜/建/岚州」；v148 去格子：州块多边形不再渲染，州仅作分组）：凡俗政区。
    *   区分度：L3＝州名题字（点州名看一州城·宗），L4＝点状城/宗（点钉启程/下钻 L5）。
@@ -1185,14 +1224,17 @@ WORLD.enemies = {
    * 行土厚甲（armor5），主修木系的韩立占木克土之利——这是一场"凭相克+底牌啃下、为墨彩环了结因果"
    * 的报仇硬 boss（败则浴血整顿·再战+伤，fail-forward）。canFlee:false——这一回，他跑不了。 */
   wuse_menzhu: {
-    name: "王管事", hp: 285, sense: 12, speed: 14, agility: 10, move: 2, mp: 100, qiLayer: 13, elem: "tu", nature: "beast",
-    tactics: "feral", stubborn: true, canFlee: false, boss: true, armor: 5,
-    introNote: "墨府之祸的真凶——京城五色门的王管事，受黑煞教煞气供养。临阵煞气骤升、半人半妖，「妖爪裂砍」势大力沉，「噬魂扑」循着你的气息猛扑，「五色煞罩」罩住战位前排。妖化厚甲刀剑难透，可他行土，你那身木行道基正克他——凭相克与底牌，能为墨彩环把这笔血债，了了。",
+    // polish-modao D3（GPT P2-1）：hp 285→345 / armor 5→6——"报仇高潮"改前 100% 胜率 6 回合无伤感，
+    // 抬进 70~85% 恶战带（climax.bal 校准）。宣乐/蛛/铁罗一阶段偏软属前期热身刻意为之，不动。
+    name: "王管事", hp: 430, sense: 12, speed: 14, agility: 10, move: 2, mp: 100, qiLayer: 13, elem: "tu", nature: "beast",
+    tactics: "feral", stubborn: true, canFlee: false, boss: true, armor: 6,
+    enrage: { turn: 3, atkMul: 1.35 },
+    introNote: "墨府之祸的真凶——京城五色门的王管事，受黑煞教煞气供养。临阵煞气骤升、半人半妖，「妖爪裂砍」势大力沉，「噬魂扑」循着你的气息猛扑，「五色煞罩」罩住战位前排。妖化厚甲刀剑难透、久战煞气愈涨，可他行土，你那身木行道基正克他——凭相克与底牌，能为墨彩环把这笔血债，了了。",
     attacks: [
-      { name: "妖爪裂砍", dmg: 28, kind: "normal", weight: 12, range: [1, 1], mp: 6 },
-      { name: "破甲尾刺", dmg: 24, kind: "pierce", weight: 7, range: [1, 2], mp: 8 },
-      { name: "噬魂扑", dmg: 36, kind: "charge", weight: 8, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12 },
-      { name: "五色煞罩", dmg: 18, kind: "normal", weight: 6, elem: "tu", aim: "zone", zoneSpan: 1, range: [1, 4], depth: "front", mp: 8 },
+      { name: "妖爪裂砍", dmg: 37, kind: "normal", weight: 12, range: [1, 1], mp: 6 },
+      { name: "破甲尾刺", dmg: 33, kind: "pierce", weight: 7, range: [1, 2], mp: 8 },
+      { name: "噬魂扑", dmg: 46, kind: "charge", weight: 8, aim: "cell", lunge: true, track: true, range: [1, 5], mp: 12 },
+      { name: "五色煞罩", dmg: 24, kind: "normal", weight: 6, elem: "tu", aim: "zone", zoneSpan: 1, range: [1, 4], depth: "front", mp: 8 },
     ],
     reward: { lingshi: 6 }, namedLoot: null,
   },

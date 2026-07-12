@@ -871,13 +871,15 @@ const UI = {
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
       xingyi: "坐堂行医", daigong: "百艺坊 · 补炼缺件 🔨", qingtuo: "坊市告示 · 请托 📜",
-      lianfu: "闭关制符 ✎",
+      lianfu: "闭关制符 ✎", xunluo: "随队巡逻 · 军功 ⚔",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {
       acts = acts.filter(a => a !== "bottle" || State.data.bottle.unlocked);
+      // polish-modao A1②：前线巡逻只在征军期挂牌（入京大军移驻京畿，营防巡逻自止）
+      acts = acts.filter(a => a !== "xunluo" || (State.data.flags.modao_conscripted && !State.data.flags.modao_e3_rujing_done));
       // polish A2：坐堂行医（药庐蟰伏期专属月行动）——接下墨大夫身份者可重复坐堂
       if (loc.id === "yaolu" && State.data.flags.identity_practice_medicine && !State.data.flags.arc1_complete) acts.push("xingyi");
       // 剑意圆满：洞府出现「悟剑」（大件链攻坚入口）
@@ -3476,11 +3478,13 @@ const UI = {
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
       xingyi: "坐堂行医", daigong: "百艺坊 · 补炼缺件 🔨", qingtuo: "坊市告示 · 请托 📜",
-      lianfu: "闭关制符 ✎",
+      lianfu: "闭关制符 ✎", xunluo: "随队巡逻 · 军功 ⚔",
     };
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {
       acts = acts.filter(a => a !== "bottle" || s.bottle.unlocked);
+      // polish-modao A1②：前线巡逻只在征军期挂牌（双路径都要过滤——v83 教训）
+      acts = acts.filter(a => a !== "xunluo" || (s.flags.modao_conscripted && !s.flags.modao_e3_rujing_done));
       if (loc.id === "yaolu" && s.flags.identity_practice_medicine && !s.flags.arc1_complete) acts.push("xingyi");
       if (loc.home && (s.swordIntent || 0) >= 100 && !s.swordMastery) acts.unshift("wujian");
       if (loc.home && loc.id === "huangfeng_gate"
@@ -3685,15 +3689,18 @@ const UI = {
       const epoch = WORLD.atlas.factionEpoch(s);
 
       // 路线（vector-effect 非缩放描边——放大时线不变粗）
+      // polish-modao A3：n.hidden(s)=战时限定节点（魔道前线）——章外不上图，连线同隐
+      const _wmHid = (n) => !!(n && n.hidden && n.hidden(s));
       svgContent = C.routes.map(r => {
         const a = C.nodes.find(n => n.id === r.from), b = C.nodes.find(n => n.id === r.to);
-        if (!a || !b) return "";
+        if (!a || !b || _wmHid(a) || _wmHid(b)) return "";
         const trod = visited.includes(a.id) && visited.includes(b.id);
         return `<line class="wm-route${trod ? ' trod' : ''}" x1="${a.pos.x}" y1="${a.pos.y}" x2="${b.pos.x}" y2="${b.pos.y}" vector-effect="non-scaling-stroke"/>`;
       }).join("");
 
       // 据点 pins
       pinsHtml = C.nodes.map(n => {
+        if (_wmHid(n)) return "";
         const here = n.id === curNode.id;
         const gateMsg = n.gate ? n.gate(s) : null;
         const cls = n.silhouette ? "silhouette" : gateMsg ? "gated" : "";
@@ -4102,9 +4109,11 @@ const UI = {
     const curNode = C.nodes.find(n => (n.locs || []).includes(s.location)) || C.nodes[0];
     const visited = s.visitedNodes || ["caixia"];
     // 路线：两端皆到过=墨痕实线（走过的路，地图记得）；否则虚线
+    // polish-modao A3：n.hidden(s)=战时限定节点（魔道前线）——章外不上图，连线同隐
+    const _ctHid = (n) => !!(n && n.hidden && n.hidden(s));
     const lines = C.routes.map(r => {
       const a = C.nodes.find(n => n.id === r.from), b = C.nodes.find(n => n.id === r.to);
-      if (!a || !b) return "";
+      if (!a || !b || _ctHid(a) || _ctHid(b)) return "";
       const trod = visited.includes(a.id) && visited.includes(b.id);
       return `<line x1="${a.pos.x}" y1="${a.pos.y}" x2="${b.pos.x}" y2="${b.pos.y}" class="map-line${trod ? ' trod' : ''}"/>`;
     }).join("");
@@ -4116,6 +4125,7 @@ const UI = {
     const sel = prefList.find(p => p.id === selPref) || null;
     const inPref = new Set(sel ? (sel.nodes || []) : []);
     const pins = C.nodes.map(n => {
+      if (_ctHid(n)) return "";
       const here = n.id === curNode.id;
       const gateMsg = n.gate ? n.gate(s) : null;
       const cls = n.silhouette ? "silhouette" : gateMsg ? "gated" : "";
