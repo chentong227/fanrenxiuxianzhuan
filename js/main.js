@@ -538,17 +538,53 @@ const Main = {
     }, 110);
   },
 
+  /* -------- 进场引路（v321·用户反馈"加载太慢，至少把第一张要用的素材加载好再进去"）--------
+   * 踏入此界/读取存档 → 先并发拉完关键资产清单（Art.criticalUrls：序章首图/地点底图/立绘/舆图，
+   * 3~5 张·进度条可见），再真正 enterGame。全部命中缓存=一闪而过；弱网 12s 兜底强行进（不锁门）。 */
+  _bootPreload(done) {
+    const urls = (typeof Art !== "undefined" && Art.criticalUrls) ? Art.criticalUrls() : [];
+    const box = UI.el("boot-progress");
+    if (!urls.length || !box) { done(); return; }
+    const bar = box.querySelector("i"), txt = box.querySelector(".boot-txt");
+    const btnS = UI.el("btn-start"), btnL = UI.el("btn-load");
+    if (btnS) btnS.disabled = true;
+    if (btnL) btnL.disabled = true;
+    box.hidden = false;
+    let fin = false;
+    const finish = () => {
+      if (fin) return;
+      fin = true;
+      clearTimeout(guard);
+      box.hidden = true;
+      if (btnL) btnL.disabled = false;
+      done();
+    };
+    const guard = setTimeout(finish, 12000);   // 弱网兜底：引路 12 秒还没齐就先进门，余下后台续拉
+    if (txt) txt.textContent = `初入此界 · 引路 0/${urls.length}`;
+    Art.preloadUrls(urls, (n, total) => {
+      if (bar) bar.style.width = Math.round(n / total * 100) + "%";
+      if (txt) txt.textContent = `初入此界 · 引路 ${n}/${total}`;
+    }).then(finish);
+  },
+
   startGame() {
     if (!this.testedRoot) { UI.toast("请先测灵根", true); return; }
     const name = (UI.el("input-name").value || "韩立").trim();
     State.create(name, this.testedRoot);
-    this.enterGame();
-    // 开场剧情
-    Engine.checkStory();
+    this._bootPreload(() => {
+      this.enterGame();
+      // 开场剧情
+      Engine.checkStory();
+    });
   },
 
   loadGame() {
-    if (State.load()) {
+    if (!State.load()) { UI.toast("没有可用的存档", true); return; }
+    this._bootPreload(() => this._afterLoadEnter());
+  },
+
+  _afterLoadEnter() {
+    {
       this.enterGame();
       // 若存档停在某个待处理剧情，重新渲染该剧情卡
       const s = State.data;
@@ -570,8 +606,6 @@ const Main = {
       // 存档停在血色禁地（v3 舆图）：重开舆图
       if (s.exmap && UI.openExmap) setTimeout(() => UI.openExmap(), 300);
       UI.toast("读取存档成功");
-    } else {
-      UI.toast("没有可用的存档", true);
     }
   },
 

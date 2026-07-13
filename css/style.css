@@ -189,6 +189,23 @@ body.motion-off .title-seal, body.motion-off .create-title-block .subtitle { ani
   margin: 0; z-index: 3; opacity: .5; font-size: 10px;
 }
 
+/* 进场引路进度条（v321）：踏入此界前先拉齐第一眼资产——鎏金细条+小字，不喧宾 */
+#boot-progress { margin-top: 14px; text-align: center; }
+#boot-progress .boot-bar {
+  height: 4px; border-radius: 2px; overflow: hidden;
+  background: rgba(216, 165, 60, .16);
+  border: 1px solid rgba(216, 165, 60, .25);
+}
+#boot-progress .boot-bar i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, #b8862a, #e8c168);
+  transition: width .3s ease;
+}
+#boot-progress .boot-txt {
+  display: inline-block; margin-top: 6px;
+  font-size: 11px; letter-spacing: 2px; color: rgba(232, 214, 174, .75);
+}
+
 .field { text-align: left; margin-bottom: 22px; }
 .field label { display: block; color: var(--gold); margin-bottom: 8px; letter-spacing: 2px; font-size: 14px; }
 .field input {

@@ -355,6 +355,46 @@
       return this._v(`assets/cg/cg_${id}.png`);
     },
 
+    // —— 进场关键资产清单（v321·用户反馈"至少把第一张要用的素材加载好再进去"）——
+    // 踏入此界/读取存档 → 先把「第一眼要看的图」拉完（进度条可见），再真正进游戏。
+    // 清单刻意小（3~5 张·压缩后共约 2~4MB）：门槛秒级；全部命中缓存时进度条一闪而过。
+    criticalUrls() {
+      const s = root.State && root.State.data;
+      const urls = [];
+      const push = (u) => { if (u && urls.indexOf(u) < 0) urls.push(u); };
+      if (!s || (s.storyStage || 0) === 0) {
+        // 新开局：序章首图（青牛镇）+ 主角立绘 + 选拔场（第二拍）
+        push(this.sceneUrl("qingniu"));
+        push(this.url("hanli"));
+        push(this.sceneUrl("shanmen"));
+      } else {
+        // 读档：当前地点底图 + 当前皮肤立绘 + 大陆舆图（开地图第一眼）+ 待决剧情的 CG
+        try { push(this.locUrl(root.State.location && root.State.location())); } catch (e) {}
+        push(this.url(this.heroId ? this.heroId() : "hanli"));
+        const cmap = (root.WORLD && root.WORLD.continent && root.WORLD.continent.map) || "tiannan_map";
+        push(this._v(`assets/maps/${cmap}.png`));
+        if (s.pendingEvent && typeof STORY !== "undefined") {
+          const st = STORY.find(x => x.id === s.pendingEvent);
+          if (st && st.cg) push(this.cgUrl(st.cg));
+        }
+      }
+      return urls;
+    },
+    // 带进度回调的并发预载：全部完成（或单张失败也计完成）后 resolve——调用方自备总超时兜底
+    preloadUrls(urls, onProg) {
+      if (!urls || !urls.length || typeof Image === "undefined") return Promise.resolve();
+      let n = 0;
+      const total = urls.length;
+      return Promise.all(urls.map(u => new Promise(res => {
+        const img = new Image();
+        img.decoding = "async";
+        let hit = false;
+        const ok = () => { if (hit) return; hit = true; n++; if (onProg) onProg(n, total); res(); };
+        img.onload = ok; img.onerror = ok;
+        try { img.src = u; } catch (e) { ok(); }
+      })));
+    },
+
     // —— 预加载（v149）：消除「新人物/新地图刚出现时慢慢浮现、像手机卡了」的观感 ——
     // 根因＝立绘/场景/舆图都是按需 fetch+decode，首次显示要等网络+解码；淡入动画又把这段
     // 延迟显形成「慢慢出现」。解法：进游戏后趁空闲把全部静态资产逐张预取并 decode 进缓存，
