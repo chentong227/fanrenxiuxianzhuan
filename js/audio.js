@@ -715,6 +715,14 @@
     },
     // 当前轨名（null=未起乐）；切轨校验/调试用
     curBgm() { return curTrack; },
+    // v321：乐音档位切换即时生效——正在播的文件轨淡到新目标音量（Settings.setBgmVol 调）
+    bgmVolRefresh() {
+      if (!bgmEl) return;
+      const volMul = (root.Settings && root.Settings.bgmVolMul) ? root.Settings.bgmVolMul() : 1;
+      const base = Math.min(1, BGM_VOL * volMul);
+      bgmEl._vol = base;
+      if (!muted && !bgmDucked) fadeVol(bgmEl, base, 260);
+    },
     // 合法轨名白名单（副本，外部勿改）；切轨点可据此校验
     tracks() { return KNOWN_TRACKS.slice(); },
     isTrack(name) { return KNOWN_TRACKS.includes(name); },
@@ -732,7 +740,9 @@
         const url = `assets/audio/bgm_${track}.mp3`;
         try {
           BGM.stop();   // 合成轨让位（合成轨无淡出，直接停）
-          const target = opts.vol != null ? opts.vol : BGM_VOL;
+          // v321：乐音三档（体验设置）——乘在默认音量上；演出显式 opts.vol 也吃档（用户嫌吵能真管住）
+          const volMul = (root.Settings && root.Settings.bgmVolMul) ? root.Settings.bgmVolMul() : 1;
+          const target = Math.min(1, (opts.vol != null ? opts.vol : BGM_VOL) * volMul);
           const lxf = opts.loopFade != null ? opts.loopFade : 1100;   // 循环交叉时长（ms）
           const prev = bgmEl;   // 旧文件轨：淡出
           if (prev) { prev._handoff = true; clearLoop(prev); }        // 旧轨停循环监视，免淡出途中误重启

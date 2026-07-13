@@ -1276,6 +1276,23 @@ const UI = {
   },
 
   /* -------- 剧情卡渲染（视觉小说式：大立绘 + 逐句推进）-------- */
+  // 演出前瞻预取：扫本节 stage 的 cg / 段内 cg / 登场 actor（含表情变体）+ 当前地点底图，并发暖缓存。
+  // 非阻塞（fire-and-forget）——图先到先显，没到照旧走原管线（不改任何时序）。
+  _prefetchStageArt(stage) {
+    if (!stage || typeof Art === "undefined" || !Art.preloadUrls) return;
+    const urls = [];
+    const push = (u) => { if (u && urls.indexOf(u) < 0) urls.push(u); };
+    if (stage.cg) push(Art.cgUrl(stage.cg));
+    const segs = Array.isArray(stage.text) ? stage.text : [];
+    segs.forEach(sg => {
+      if (!sg || typeof sg !== "object") return;
+      if (sg.cg) push(Art.cgUrl(sg.cg));
+      if (sg.actor && Art.has && Art.has(sg.actor)) push(Art.url(sg.actor, sg.emote || sg.emo));
+    });
+    try { push(Art.locUrl(State.location && State.location())); } catch (e) {}
+    if (urls.length) Art.preloadUrls(urls);
+  },
+
   renderStory(stage, opts) {
     opts = opts || {};
     // v316 polish C1：text/choices 可为函数——多数调用方已自行解析，但败北重试/直渲路径漏解析
@@ -1288,6 +1305,9 @@ const UI = {
         choices: typeof stage.choices === "function" ? stage.choices(sd) : stage.choices,
       });
     }
+    // v321 演出前瞻预取（用户实测"考试段特别卡"）：本节要用的图（CG/场景/登场立绘）开播即并发拉起——
+    // 旧版是"演到那一拍才去取图"，弱网下逐拍等待；现在演前几拍的时间正好拉后几拍的图
+    try { this._prefetchStageArt(stage); } catch (e) {}
     const overlay = this.el("story-overlay");
     // 兜底：若剧情舞台 DOM 缺失，退回把整段剧情写入叙事日志并直接出选项，绝不卡住
     if (!overlay) { this._renderStoryFallback(stage); return; }
@@ -7753,6 +7773,12 @@ const UI = {
             ${seg("满", "full", mot, "Settings.setMotion('full'); UI.openExpSettings()")}
             ${seg("简", "lite", mot, "Settings.setMotion('lite'); UI.openExpSettings()")}
             ${seg("关", "off", mot, "Settings.setMotion('off'); UI.openExpSettings()")}
+          </div>
+        </div>
+        <div class="set-row">
+          <div class="set-label">乐音音量<span class="set-hint">背景乐的响度——音效与提示不受影响</span></div>
+          <div class="set-opts">
+            ${["low", "mid", "high"].map(v => seg(Settings.bgmVolLabel(v), v, Settings.bgmVol(), `Settings.setBgmVol('${v}'); UI.openExpSettings()`)).join("")}
           </div>
         </div>
         <div class="set-row">

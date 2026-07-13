@@ -66,6 +66,26 @@
     /* 是否"简动效"：留可读过渡、砍重特效（顿帧/常驻氛围粒减半）；关动效已含简 */
     liteMotion() { return this.motion() === "lite"; },
 
+    /* —— 乐音音量（v321·用户反馈"BGM 太大，字幕的声音都被遮住"）——
+     * 三档乘子作用在 audio.js 的 BGM_VOL 上；音效(SFX)不受影响=对白/字幕声相对更清。 */
+    _bgmVol: null,
+    bgmVol() {
+      if (this._bgmVol === null) {
+        const v = this._ls("set_bgm_vol");
+        this._bgmVol = (["low", "mid", "high"].indexOf(v) >= 0) ? v : "mid";
+      }
+      return this._bgmVol;
+    },
+    setBgmVol(v) {
+      this._bgmVol = (["low", "mid", "high"].indexOf(v) >= 0) ? v : "mid";
+      this._set("set_bgm_vol", this._bgmVol);
+      // 即时生效：正在播的轨淡到新音量
+      if (typeof root.Sfx !== "undefined" && root.Sfx.bgmVolRefresh) root.Sfx.bgmVolRefresh();
+      return this._bgmVol;
+    },
+    bgmVolMul() { return { low: 0.45, mid: 1, high: 1.7 }[this.bgmVol()] || 1; },
+    bgmVolLabel(v) { return { low: "轻", mid: "适中", high: "响" }[v || this.bgmVol()]; },
+
     /* —— 震动（委托 Fx，单一真相源 fx_haptics）—— */
     haptics() {
       return (typeof root.Fx !== "undefined" && root.Fx.hapticsOn) ? root.Fx.hapticsOn() : true;
