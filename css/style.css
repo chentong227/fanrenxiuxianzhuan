@@ -4300,14 +4300,12 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 /* kenBurns 收敛到 1.04→1.0：保留推镜电影感，终态回到原始分辨率（不糊） */
 .story-bg.on { opacity: 1; animation: kenBurns 14s ease-out forwards; }
 @keyframes kenBurns { from { transform: scale(1.04); } to { transform: scale(1.0); } }
-/* 手机/竖屏·CG 信箱式呈现：完整图 contain 不裁，story-far（同图·模糊压暗版）填满边带。
+/* v323（用户实测"背景没铺满"）：竖屏也全出血 cover 铺满——横图裁两侧保沉浸；
+   story-far 模糊底仍在（万一 cover 失效的兜底）。旧 contain 信箱式退役。 */
+/* 手机/竖屏·CG 信箱式呈现（已退役·规则保留注释备查）：完整图 contain 不裁，story-far（同图·模糊压暗版）填满边带。
    根因：批量 _p「竖版」多为方图 1024²，超窄竖屏（如 430×932）用 cover 居中会裁掉近半宽度、主体常被切；
    contain＋自身模糊填充＝全貌保留、无黑条、留白氛围。仅竖屏生效，桌面横屏 cover 不变（far 被全盖＝零回归）。 */
-@media (orientation: portrait) {
-  .story-bg { background-size: contain; }
-}
-/* 近 9:16 的竖版 CG 仍走 cover 全出血（JS 测图比后挂 .cg-fill）——裁切极小、沉浸感更强；
-   方图/横图无此类＝保持 contain 信箱式不裁主体。桌面横屏 .story-bg 本就 cover，此类无害。 */
+/* .cg-fill 标记保留（JS 竖图测比仍在挂）——现与缺省 cover 同效，无害 */
 .story-bg.cg-fill { background-size: cover; }
 .story-scrim {
   position: absolute; inset: 0; pointer-events: none;
@@ -4400,6 +4398,7 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   box-shadow: 0 -8px 40px rgba(0,0,0,.55); backdrop-filter: blur(4px);
 }
 .story-speaker { min-height: 22px; margin-bottom: 6px; }
+.story-speaker.right { text-align: right; }   /* v323：名字随说话人站位（主角右侧说话→名字靠右） */
 .story-speaker .sp-name {
   color: var(--gold-bright); font-size: 18px; letter-spacing: 2px; font-weight: 600;
 }
@@ -4489,14 +4488,17 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   }
   /* 手机：只显示当前说话者一人，立绘立于对话框之后（VN 式：下半身没入文本框，头胸完整露出）；
      旁白时无立绘，对话干净 */
-  .story-portrait { display: none; }
-  .story-portrait.on:not(.dim) {
-    display: block; height: 42vh; max-height: 400px;
-    left: 50%; right: auto; transform: translateX(-50%);
-    bottom: 268px;   /* 立绘下缘没入对话框后方一截，头胸完整露出（心声框不再遮脸）*/
-    z-index: 3;
+  /* v323 对话演出重排（用户实测"人物居中悬空/每句翻转刷新/不贴对话框"）——
+   * 视觉小说标准布局：双立绘常驻一左一右、站在对话框后面（bottom:0，下半身被对话框自然遮住=贴框，
+   * 名字正好显示在说话人脚前的对话框上沿），说话人亮且压前、对方压暗退后。
+   * 不再 display:none 切换→入场动画只在真正首次登场时播一次，此后换人说话只切明暗，绝不重播滑入/翻转。 */
+  .story-portrait {
+    display: block; height: 46vh; max-height: 430px;
+    bottom: 0; z-index: 2;
   }
-  .story-portrait.left.on:not(.dim) { transform: translateX(-50%) scaleX(-1); }
+  .story-portrait.left  { left: -16%; }
+  .story-portrait.right { right: -16%; }
+  .story-portrait.on:not(.dim) { z-index: 3; }   /* 说话人压前——双立绘中缝重叠时说话者在上 */
   .story-text { font-size: 16px; line-height: 1.85; min-height: 36px; }
   .story-dialog {
     padding: 14px 16px 16px; max-height: 42vh; overflow-y: auto; cursor: pointer;

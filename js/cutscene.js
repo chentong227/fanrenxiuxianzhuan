@@ -247,11 +247,22 @@
       }
       const url = (root.Art && root.Art.url) ? root.Art.url(id, beat.emote) : null;
       if (url) {
-        box.innerHTML = `<div class="pb"><img src="${url}" alt="${beat.name || id}" /></div>`;  // .pb＝idle 呼吸层（§9-2）
-        box.dataset.set = id + (beat.emote || "");
+        const key = id + (beat.emote || "");
+        if (box.dataset.set === key && box.querySelector("img")) { box.classList.add("on"); box.classList.remove("dim"); return; }
+        // v323：换图不重建 DOM——入场动画只在"首次登场"播一次，已在场只换 src（每拍滑入/翻转的病根）
+        let img = box.querySelector("img");
+        const firstShow = !img;
+        if (firstShow) {
+          box.innerHTML = `<div class="pb"><img alt="" /></div>`;   // .pb＝idle 呼吸层（§9-2）
+          img = box.querySelector("img");
+          box.classList.remove("portrait-in"); void box.offsetWidth; box.classList.add("portrait-in");
+          this._after(500, () => box.classList.remove("portrait-in"));
+        }
+        if (img.getAttribute("src") !== url) img.src = url;
+        img.alt = beat.name || id;
+        box.dataset.set = key;
         box.classList.add("on");
         box.classList.remove("dim");
-        box.classList.remove("portrait-in"); void box.offsetWidth; box.classList.add("portrait-in");
       } else if (beat.emote) {
         box.classList.remove("emo-pop"); void box.offsetWidth; box.classList.add("emo-pop");
       }

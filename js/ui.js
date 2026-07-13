@@ -1283,11 +1283,20 @@ const UI = {
     const urls = [];
     const push = (u) => { if (u && urls.indexOf(u) < 0) urls.push(u); };
     if (stage.cg) push(Art.cgUrl(stage.cg));
+    // v323：主角立绘必预取（右侧常驻）——"人物没提前加载"的另一半病根
+    try { push(Art.url((stage.heroSkin) || (Art.heroId ? Art.heroId() : "hanli"))); } catch (e) {}
     const segs = Array.isArray(stage.text) ? stage.text : [];
     segs.forEach(sg => {
       if (!sg || typeof sg !== "object") return;
       if (sg.cg) push(Art.cgUrl(sg.cg));
       if (sg.actor && Art.has && Art.has(sg.actor)) push(Art.url(sg.actor, sg.emote || sg.emo));
+      // say 拍的说话人立绘（含表情变体）——对话立绘走 _npcIdByName 映射，同样要赶在戏前
+      if (sg.say) {
+        try {
+          const id = this._npcIdByName(sg.say);
+          if (id && Art.has && Art.has(id)) push(Art.url(id, sg.emo));
+        } catch (e) {}
+      }
     });
     try { push(Art.locUrl(State.location && State.location())); } catch (e) {}
     if (urls.length) Art.preloadUrls(urls);
@@ -1913,6 +1922,8 @@ const UI = {
       const isEcho = (b.kind === "echo");
       speakerEl.innerHTML = (isNarr || isEcho) ? "" :
         `<span class="sp-name${isAside ? ' aside' : ''}">${who}${isAside ? "（心声）" : ""}</span>`;
+      // v323：名字随说话人站位（主角在右→名字靠右）——名字与立绘同侧="TA 在说话"读得出来
+      speakerEl.classList.toggle("right", !!selfSpeak);
       if (isEcho) {
         this._typeText(textEl, `<span class="story-line story-echo">${b.text}</span>`, true);
         if (typeof Sfx !== "undefined") Sfx.play("chime");
@@ -1974,6 +1985,23 @@ const UI = {
 
   // 双人相对立绘：韩立固定在右，对话 NPC 在左；说话者高亮，另一人暗淡。
   // emo=表情变体（有图换图，无图回退基础版）；tone 驱动震动（怒/喝/厉/吼=重击感）
+  // 换图不重建 DOM（v323·用户实测"每句话立绘刷新翻转一下"根治）：
+  // 只换 img.src——入场动画只在"从无到有"首次登场时播一次，此后换人/换表情零动画。
+  _portraitImg(box, url, alt) {
+    let img = box.querySelector("img");
+    const firstShow = !img;
+    if (firstShow) {
+      box.innerHTML = `<div class="pb"><img alt="" /></div>`;
+      img = box.querySelector("img");
+      // 首次登场：显式播一次入场（此后 .portrait-in 移除，src 更换不再触发任何动画）
+      box.classList.remove("portrait-in"); void box.offsetWidth; box.classList.add("portrait-in");
+      setTimeout(() => box.classList.remove("portrait-in"), 500);
+    }
+    if (img.getAttribute("src") !== url) img.src = url;
+    img.alt = alt || "";
+    return firstShow;
+  },
+
   _storySetPortrait(who, emo, tone) {
     const st = this._story;
     const lbox = this.el("story-portrait-left");
@@ -1991,9 +2019,9 @@ const UI = {
     if (rbox.dataset.set !== hKey) {
       const hurl = (typeof Art !== "undefined") ? Art.url(heroId, hanliEmo) : null;
       if (hurl) {
-        rbox.innerHTML = `<div class="pb"><img src="${hurl}" alt="韩立" /></div>`;
+        const first = this._portraitImg(rbox, hurl, "韩立");
         rbox.dataset.set = hKey;
-        if (hanliEmo) this._portraitPop(rbox);   // 换表情：小弹跳（看见变化）
+        if (hanliEmo && !first) this._portraitPop(rbox);   // 换表情：小弹跳（看见变化）
       }
     }
 
@@ -2004,9 +2032,9 @@ const UI = {
       const url = id && typeof Art !== "undefined" ? Art.url(id, emo) : null;
       const lKey = (who || "") + (emo || "");
       if (url && st && st.leftKey !== lKey) {
-        lbox.innerHTML = `<div class="pb"><img src="${url}" alt="${who}" /></div>`;
+        const first = this._portraitImg(lbox, url, who);
         if (st) { st.leftNpc = who; st.leftKey = lKey; }
-        if (emo) this._portraitPop(lbox);
+        if (emo && !first) this._portraitPop(lbox);
       }
     }
 
@@ -2015,21 +2043,19 @@ const UI = {
     rbox.classList.toggle("on", hasRight);
     lbox.classList.toggle("on", hasLeft);
 
-    // 高亮谁：旁白时两边都暗；主角说话右亮左暗；NPC 说话左亮右暗
+    // 高亮谁：旁白时两边都暗；主角说话右亮左暗；NPC 说话左亮右暗——
+    // "在说话"的表达=明暗对比（说话人亮、对方压暗），不靠每句弹跳（v323 撤 speak-bump）
     const speakRight = self;
     const speakLeft = who && !self;
     rbox.classList.toggle("dim", hasRight && !speakRight);
     lbox.classList.toggle("dim", hasLeft && !speakLeft);
 
-    // 语气演出：怒喝类 → 说话者立绘震动 + 重音效（形象会动，话才有分量）
+    // 语气演出：怒喝类 → 说话者立绘震动 + 重音效（保留——这是重点拍，不是每句都有）
     const angry = tone && /怒|喝|厉|吼|狠|杀/.test(tone);
     const speaker = speakRight ? rbox : speakLeft ? lbox : null;
     if (speaker && angry) {
       speaker.classList.remove("quake"); void speaker.offsetWidth; speaker.classList.add("quake");
       if (typeof Sfx !== "undefined") Sfx.play("danger");
-    } else if (speaker && who) {
-      // 普通发言：极轻的呼吸顶起（说话者在"动"）
-      speaker.classList.remove("speak-bump"); void speaker.offsetWidth; speaker.classList.add("speak-bump");
     }
   },
 
