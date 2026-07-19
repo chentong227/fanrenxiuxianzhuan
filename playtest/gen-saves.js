@@ -71,12 +71,14 @@ function playStage(id, choice) {
 
 // ========== 七玄门篇 (已有 save-qixuan.json) ==========
 console.log("\n--- 七玄门篇 起点 ---");
-State.create({ name: "韩立", rootId: "si_ling" });
+// ⚠ State.create 签名是 (name, rootId) 两个位置参数——旧写法传对象会把整个对象存进 s.name，
+//   战斗单位名牌渲染成 [object Object]（2026-07-19 QA 实锤·save-huangfeng 等五份夹具中招）
+State.create("韩立", "si_ling");
 // save-qixuan.json 已存在，跳过（直接用已有的）
 
 // ========== 离门远行篇 ==========
 console.log("\n--- 离门远行篇 ---");
-State.create({ name: "韩立", rootId: "si_ling" });
+State.create("韩立", "si_ling");
 const s = State.data;
 s.location = "yaolu"; s.pendingEvent = null;
 s.storyStage = STORY.findIndex(st => st.id === "mo_arrive");

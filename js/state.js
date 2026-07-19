@@ -137,6 +137,9 @@ const State = {
   // 老存档兜底：新增字段补默认值（保证篇章扩展后旧档不崩）
   _migrate() {
     const d = this.data;
+    // 道号防呆（v328·QA 实锤）：name 若被误存成对象（旧 gen-saves 传对象的夹具/异常写入），
+    // 战斗名牌/对话说话人会渲染成 [object Object]——读档一律归一成字符串
+    if (typeof d.name !== "string") d.name = (d.name && typeof d.name.name === "string") ? d.name.name : "韩立";
     if (!d.benchTreasures) d.benchTreasures = [];
     if (!d.activeChapter) d.activeChapter = "qixuan";
     if (!d.unlockedChapters) d.unlockedChapters = ["qixuan"];

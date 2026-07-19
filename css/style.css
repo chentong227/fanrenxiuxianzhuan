@@ -2537,6 +2537,7 @@ body.story-on .toast {
   font-size: 12px; line-height: 1.6; color: var(--gold-bright);
   background: rgba(14,11,8,.85); border: 1px solid rgba(201,169,106,.4); border-radius: var(--radius);
   backdrop-filter: blur(3px);
+  pointer-events: none;   /* 纯信息条（料敌/上膛指引）：极窄视口下与手牌相叠时不得拦点击 */
 }
 
 /* 真颠倒五行阵·手动相位选择条 */
