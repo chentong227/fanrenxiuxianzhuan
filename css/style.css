@@ -842,6 +842,11 @@ body.dock-active .layout .mid-col {
   opacity: 1; border-color: rgba(201,169,106,.7);
   box-shadow: 0 0 12px rgba(201,169,106,.4);
 }
+/* 首见引导（v326）：第一次遇到可交互场景时，地标短暂满亮脉冲——"这里能点"看得见 */
+.scene-hotspot.guide-glow {
+  opacity: 1; border-color: rgba(201,169,106,.85);
+  animation: hotspotPulse 1.6s ease-in-out infinite;
+}
 .scene-hotspot.scene-look .sh-icon { font-size: 15px; filter: saturate(.7); }
 .scene-hotspot.scene-look .sh-label { color: var(--gold); }
 
@@ -1115,6 +1120,7 @@ body.dock-active .layout .mid-col {
   padding: 12px 24px; border-radius: 8px; z-index: 260; box-shadow: 0 10px 30px var(--shadow);
   letter-spacing: 1px; animation: toastin 0.3s ease;
   max-width: 90vw; text-align: center; line-height: 1.5;
+  pointer-events: none;   /* 纯通知不可交互：长教学提示（6~7s）不得挡住底部按钮的点击 */
 }
 .toast.bad { border-color: var(--red); color: var(--red); }
 

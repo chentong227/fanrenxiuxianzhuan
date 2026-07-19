@@ -474,14 +474,23 @@ const UI = {
           <span class="sh-icon">${h.icon}</span><span class="sh-label">${h.label}</span>
         </button>`).join("");
     }
+    // 首见引导（v326·教学缺口）：地标默认半透明低调，新玩家不知道"场景里的东西能点"——
+    // 第一次遇到可交互场景时点亮一次（类名随 HTML 一起写入，免被同帧二次渲染冲掉），
+    // 满亮脉冲 + 一条指引 toast，flag 落存档后永不再扰。
+    const lookGuide = !s.flags.hint_scene_look;
     // L2 场景可交互化：氛围地标（点场景里的物件——药柜/告示/梁燕/寒烟草…有反应，不耗月）
     if (loc.landmarks) {
       html += loc.landmarks.filter(h => !h.cond || h.cond(s)).map(h =>
-        `<button class="scene-hotspot scene-look" style="left:${h.x}%;top:${h.y}%" onclick="Engine.lookLandmark('${h.id}')" title="${h.label}">
+        `<button class="scene-hotspot scene-look${lookGuide ? " guide-glow" : ""}" style="left:${h.x}%;top:${h.y}%" onclick="Engine.lookLandmark('${h.id}')" title="${h.label}">
           <span class="sh-icon">${h.icon}</span><span class="sh-label">${h.label}</span>
         </button>`).join("");
     }
     layer.innerHTML = html;
+    if (html && lookGuide) {
+      State.setFlag("hint_scene_look");
+      setTimeout(() => layer.querySelectorAll(".guide-glow").forEach(el => el.classList.remove("guide-glow")), 6000);
+      this.toast("场景里泛光的物件皆可轻点——看一眼不耗光阴，或有所得", false, 6000);
+    }
   },
 
   // 兼容旧调用（已由 renderSceneStage 取代）
@@ -4887,6 +4896,9 @@ const UI = {
     if (!s.flags.combat_briefed) {
       State.setFlag("combat_briefed");
       combat._log("【战法】术法够不着时，先点脚下格子「走」贴近，再点法术出牌；牌上标「射程外」= 还差几步。点「结束回合」让敌方行动。");
+      // 教学可见性（v326·playtest：briefing 只进默认折叠的战录=新手根本看不到）：
+      // 首战核心操作法浮出成 toast，长驻 7 秒——错过还有 combatEndRound 的 _idleRounds 兜底提示
+      this.toast("【首战】牌标「射程外」= 够不着：先点脚下格子走近，再点法术出牌；点「结束回合」轮到敌方", false, 7000);
     }
     if (mp != null && pct < 55) {
       combat._log(`【战前】灵力充盈 ${pct}% → 本战法力约 ${mp}。灵力偏低，术法连用要省着点。`);
@@ -7925,13 +7937,13 @@ const UI = {
     ov.hidden = true;
   },
 
-  toast(msg, bad = false) {
+  toast(msg, bad = false, ms = 2200) {
     const t = this.el("toast");
     t.textContent = msg;
     t.className = "toast" + (bad ? " bad" : "");
     t.hidden = false;
     clearTimeout(this._toastTimer);
-    this._toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
+    this._toastTimer = setTimeout(() => { t.hidden = true; }, ms);
   },
 };
 
