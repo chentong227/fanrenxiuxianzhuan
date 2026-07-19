@@ -13,6 +13,12 @@
 (async () => {
   const out = document.getElementById("out");
   const q = new URLSearchParams(location.search);
+  if (q.get("clear")) {   // ?clear=1：清空存档（回到全新玩家状态）
+    localStorage.removeItem("frxxz_save_v1");
+    out.textContent = "CLEAR_OK 存档已清空\n即将进入游戏……";
+    if (!q.get("stay")) setTimeout(() => { location.href = "/"; }, 600);
+    return;
+  }
   const name = q.get("name");
   if (!name) { out.textContent = "缺参数 ?name=save-xxx（不带 .json）"; return; }
   try {

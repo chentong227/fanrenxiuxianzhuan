@@ -4276,6 +4276,10 @@ const Engine = {
    */
   attemptBreakthrough() {
     const s = State.data;
+    // 入口防呆（v338·fuzz 实锤）：越过 UI 直呼（旧存档残留按钮/脚本调用）而当前不可冲关时，
+    // 顶层境界会 realmIndex+1 越出境界表读 undefined.spMax 直接崩——统一走 canBreakthrough 拦截
+    const chk = this.canBreakthrough();
+    if (!chk.ok) { this.toast(chk.reason || "尚不能冲关"); return; }
     const isBig = this.isBigRealmBreakthrough();
     if (isBig) {
       // 消耗破关之物（如筑基丹）
@@ -5511,7 +5515,7 @@ const Engine = {
         ] },
     ],
     });
-    this._combatMeta = Art.has("huanggong") ? { type: "santuan", sceneBg: "huanggong" } : { type: "santuan" };
+    this._combatMeta = (typeof Art !== "undefined" && Art.has && Art.has("huanggong")) ? { type: "santuan", sceneBg: "huanggong" } : { type: "santuan" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("刘靖长剑出鞘、剑指皇城深处：「四处分头缠住——斧奴我来、刺奴宋师兄、链奴钟师妹！韩师弟，那头冰妖路数阴冷，指名交给你！各有所惧，对症下药——哪条线吃紧，能腾出手的便去驰援！」");
@@ -5618,7 +5622,7 @@ const Engine = {
         this._log("血煞洪流终于漫过了你的头顶——眼前一黑，你被同袍拖出了战团……");
       }
     };
-    this._combatMeta = Art.has("huanggong") ? { type: "tuoshi", sceneBg: "huanggong" } : { type: "tuoshi" };
+    this._combatMeta = (typeof Art !== "undefined" && Art.has && Art.has("huanggong")) ? { type: "tuoshi", sceneBg: "huanggong" } : { type: "tuoshi" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("宋蒙、钟卫娘急退布阵：「拖住他！阵旗散落在场上——你跑过去拾起来，三旗齐至阵法即成！不拾也行，撑满六息工夫我们自己也布得完——但快一步是一步！」");
@@ -5694,7 +5698,7 @@ const Engine = {
       W: 15, lanes: 2,
       sides,
     });
-    this._combatMeta = Art.has("huanggong") ? { type: "xuwang_final", sceneBg: "huanggong" } : { type: "xuwang_final" };
+    this._combatMeta = (typeof Art !== "undefined" && Art.has && Art.has("huanggong")) ? { type: "xuwang_final", sceneBg: "huanggong" } : { type: "xuwang_final" };
     s.combat = true;
     this._combat.startRound();
     this._combat._log("「阵成——压！」师兄妹齐声厉喝，颠倒五行阵轰然运转，五行之力如山倒灌向胥王。机会只此一次：底牌齐发，趁阵法镇住他的工夫，将这魔道巨擘连肉身带神魂一并轰碎！");
