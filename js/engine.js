@@ -1135,14 +1135,16 @@ const Engine = {
     UI.openMarket();
   },
   // polish A6：集镇收购行（wanbaoSell 同构）——妖材战利在本章即可变现（银两回路闭环）
-  marketSell(itemId) {
+  marketSell(itemId, n) {
     const s = State.data;
     const item = DATA.items[itemId];
     if (!item || !item.sell || !State.count(itemId)) return;
     const price = Math.max(1, Math.round(item.sell * 0.8));   // 凡人集镇给不出坊市价——八折收
-    State.take(itemId, 1);
-    s.silver += price;
-    this.log(`皮货行掌柜验过「${item.name}」，点头付银 ${price} 两。`, "event");
+    // v344 批量：n>1=一次清仓（卖 30 株草不用点 30 下）
+    const qty = Math.min(Math.max(1, n | 0 || 1), State.count(itemId));
+    State.take(itemId, qty);
+    s.silver += price * qty;
+    this.log(`皮货行掌柜验过「${item.name}」${qty > 1 ? `×${qty}` : ""}，点头付银 ${price * qty} 两。`, "event");
     State.save();
     UI.renderAll();
     UI.openMarket();
@@ -1441,22 +1443,25 @@ const Engine = {
   },
 
   /* -------- 万宝楼收购：千年灵草/灵药 + 妖材（妖材经济 v1——皮骨牙丹皆是钱）-------- */
-  wanbaoSell(itemId) {
+  wanbaoSell(itemId, n) {
     const s = State.data;
     const PRICES = { qiannian_lingcao: 22, lingyao_dan: 2 };
     const item = DATA.items[itemId];
     const p = PRICES[itemId] != null ? PRICES[itemId] : (item && item.sell) || 0;
-    if (!p || !State.take(itemId, 1)) { this.toast("无此货可售", true); return; }
-    State.give("lingshi", p);
+    // v344 批量：n>1=一次清仓
+    const qty = Math.min(Math.max(1, n | 0 || 1), State.count(itemId));
+    if (!p || qty < 1 || !State.take(itemId, qty)) { this.toast("无此货可售", true); return; }
+    const got = p * qty;
+    State.give("lingshi", got);
     if (itemId === "qiannian_lingcao") {
-      this.log(`【万宝楼】掌柜捧着那棵「千年灵草」手都在抖，二话不说点出 ${p} 枚灵石：「小友若还有，老朽照单全收！」`, "good");
+      this.log(`【万宝楼】掌柜捧着那${qty > 1 ? `${qty}棵` : "棵"}「千年灵草」手都在抖，二话不说点出 ${got} 枚灵石：「小友若还有，老朽照单全收！」`, "good");
       this.addMilestone("千年灵草换灵石：小绿瓶的奇迹第一次变现", "bigitem");
     } else if (itemId === "yaodan_1") {
-      this.log(`【万宝楼】掌柜捏着那枚「一阶妖丹」对光一照，眼睛眯成了缝：「好丹！丹房炼器房都抢着要。」灵石+${p}。`, "good");
+      this.log(`【万宝楼】掌柜捏着${qty > 1 ? `那${qty}枚` : "那枚"}「一阶妖丹」对光一照，眼睛眯成了缝：「好丹！丹房炼器房都抢着要。」灵石+${got}。`, "good");
     } else {
-      this.log(`【万宝楼】售出「${item.name}」，灵石+${p}。`, "event");
+      this.log(`【万宝楼】售出「${item.name}」${qty > 1 ? `×${qty}` : ""}，灵石+${got}。`, "event");
     }
-    this.toast(`灵石+${p}`);
+    this.toast(`灵石+${got}`);
     State.save();
     UI.renderAll();
     UI.openWanbao();
@@ -4954,6 +4959,7 @@ const Engine = {
     if (t.veil) {
       const pierce = (s.sense || 0) >= (t.veilSense || 16);
       if (!pierce) return { label: "观气：气机内敛 · 深浅莫测", tone: "veil" };
+      if (s.flags) s.flags.ach_pierced_veil = true;   // v344 成就：窥破敛息
       const base = this._assessLabel(r);
       return { label: base.label + "（神识窥破其敛息）", tone: base.tone };
     }
@@ -9597,7 +9603,24 @@ const Engine = {
     if (s.age >= s.lifespan) {
       this.gameOver("寿元耗尽，你终究没能跳出这凡俗的生死。一缕道心，散于天地之间。");
     } else if (s.hp <= 0) {
-      this.gameOver("你气血耗尽，身死道消。");
+      // 濒死救济（v344·体验打磨）：剧情战全有 fail-forward、遭遇战败北也钳在血线 1——
+      // 真正把人送走的是毒发/奇遇/探索这类非战斗扣血，一次失手=终章太苛。
+      // 头一回倒下按濒死处理（好心人救起：三成血+心魔+破财），两年内再倒才是真死——
+      // 保留分量，去掉一击暴毙的挫败。寿尽不适用（命数到了，回档也只是回光返照）。
+      const nowM = (s.year || 1) * 12 + (s.month || 1);
+      const lastRescue = (s.flags && s.flags.last_deathrescue) || -999;
+      if (nowM - lastRescue >= 24) {
+        s.flags.last_deathrescue = nowM;
+        s.hp = Math.max(1, Math.round(s.hpMax * 0.3));
+        s.demon = clamp((s.demon || 0) + 12, 0, 100);
+        const lost = Math.ceil((s.silver || 0) * 0.2);
+        s.silver = Math.max(0, (s.silver || 0) - lost);
+        this.log(`【濒死】眼前一黑，天旋地转……再睁眼时，你躺在道旁，伤口被人草草敷过药——救你的人没有留名。行囊轻了些${lost ? `（纹银-${lost}）` : ""}，心口那道鬼门关的阴影却重了（心魔+12）。两年内若再倒下，便没有这等运气了。`, "bad");
+        if (typeof UI !== "undefined" && UI.toast) UI.toast("鬼门关前走了一遭——两年内再倒下，神仙难救", true, 5200);
+        State.save();
+        return;
+      }
+      this.gameOver("你气血耗尽，身死道消——两年内第二次倒下，这一次，没有人再路过。");
     }
   },
   gameOver(reason) {
@@ -9645,6 +9668,7 @@ const Engine = {
       ${worldTxt ? `<p style="color:var(--ink-faint);font-size:12px;margin-top:10px">${worldTxt}</p>` : ""}
       <div class="modal-actions">
         ${State.hasAnySave() ? `<button class="btn btn-primary" onclick="UI.openSaveSlots('load')">回档再来 · 重续此生</button>` : ""}
+        <button class="btn btn-secondary" onclick="UI.exportLifeCard(${JSON.stringify(reason).replace(/"/g, "&quot;")})">保存「此生年表」图卡</button>
         <button class="btn btn-secondary" onclick="Main.toCreate()">重入轮回（重开新档）</button>
       </div>
       ${State.hasAnySave() ? `<p style="color:var(--ink-faint);font-size:12px;margin-top:8px">身死那一刻并未落档——自动档仍停在殒身之前的最后一个活月。</p>` : ""}

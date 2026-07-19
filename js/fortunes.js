@@ -395,6 +395,7 @@ const FORTUNES = [
       {
         text: "细看真伪再说",
         hint: "悟性越高越有把握",
+        odds: (s) => 0.35 + s.insight * 0.05,   // v344 检定可视化：与 effect 掷骰同式
         effect(s) {
           if (Math.random() < 0.35 + s.insight * 0.05) {
             return { text: "你一眼认出参须是染过色的山萝卜根，转身便走。摊主在背后讪讪收摊。药庐的日子没白过。", kind: "good" };
@@ -417,6 +418,7 @@ const FORTUNES = [
       {
         text: "跟它走",
         hint: "或是机缘，或是迷途",
+        odds: () => 0.55,   // v344 检定可视化：五五开的赌，也让玩家赌得明白
         effect(s) {
           if (Math.random() < 0.55) {
             State.give("lingcao", 2);
@@ -520,6 +522,7 @@ const FORTUNES = [
       {
         text: "提气追上去",
         hint: "遁速越高越容易追回",
+        odds: (s) => 0.35 + (s.speed || 0) * 0.03,   // v344 检定可视化
         effect(s) {
           if (Math.random() < 0.35 + (s.speed || 0) * 0.03) {
             return { text: "你几个起落便堵住巷口。乞儿吓得面无人色，奉还钱袋。你看他枯瘦，到底没有为难，丢下两个铜板走了。", kind: "good" };

@@ -37,9 +37,13 @@
     }
     return buf;
   }
+  // v344 音效分轨：设置里的音效档位乘在母线入口增益上（BGM/环境床不经此链，互不影响）
+  function sfxMul() {
+    return (root.Settings && root.Settings.sfxVolMul) ? root.Settings.sfxVolMul() : 1;
+  }
   function bus(c) {
-    if (_bus && _bus.c === c) return _bus.input;
-    const input = c.createGain(); input.gain.value = 1;
+    if (_bus && _bus.c === c) { _bus.input.gain.value = sfxMul(); return _bus.input; }
+    const input = c.createGain(); input.gain.value = sfxMul();
     const shaper = c.createWaveShaper();
     const N = 256, curve = new Float32Array(N);
     for (let i = 0; i < N; i++) { const x = (i / (N - 1)) * 2 - 1; curve[i] = Math.tanh(1.7 * x); }
@@ -698,6 +702,7 @@
     },
     play(name, opts) {
       if (muted || !RECIPES[name]) return;
+      if (sfxMul() <= 0) return;   // v344：音效档位设「关」——合成器直接不起振
       const now = Date.now();
       if (lastPlay[name] && now - lastPlay[name] < 70) return;   // 同音去抖
       lastPlay[name] = now;

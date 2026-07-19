@@ -104,6 +104,93 @@ body.desk-shell .shell-hint {
 .hunt-gaze.g-dire { color: var(--red); }
 .hunt-gaze.g-veil { color: var(--purple); }
 
+/* ===== 字号档（v344）：--font-scale 由设置写入 html——只放大阅读面（台词/日志/选项/弹窗正文），
+ * 不缩放布局骨架与战斗几何（跳字/锚点坐标不受影响） ===== */
+body.font-scaled .story-text { font-size: calc(17px * var(--font-scale, 1)); }
+body.font-scaled .choice { font-size: calc(15px * var(--font-scale, 1)); }
+body.font-scaled .modal p, body.font-scaled .modal li { font-size: calc(14.5px * var(--font-scale, 1)); }
+body.font-scaled #recent-log { font-size: calc(13px * var(--font-scale, 1)); }
+body.font-scaled #narrative-log { font-size: calc(14px * var(--font-scale, 1)); }
+body.font-scaled #combat-log { font-size: calc(13px * var(--font-scale, 1)); }
+@media (max-width: 760px) {
+  body.font-scaled .story-text { font-size: calc(16px * var(--font-scale, 1)); }
+}
+
+/* ===== 成就图鉴（v344） ===== */
+.ach-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-height: 56vh; overflow-y: auto; }
+.ach-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-panel-2); opacity: .5;
+}
+.ach-row.ok { opacity: 1; border-color: rgba(212, 176, 106, .4); }
+.ach-row .ach-icon { font-size: 20px; flex: 0 0 28px; text-align: center; }
+.ach-row .ach-body { flex: 1; min-width: 0; }
+.ach-row .ach-body b { display: block; color: var(--gold); font-size: 14px; }
+.ach-row.ok .ach-body b { text-shadow: 0 0 8px rgba(212, 176, 106, .25); }
+.ach-row .ach-body i { display: block; color: var(--ink-dim); font-size: 12px; font-style: normal; line-height: 1.5; }
+.ach-row .ach-t { color: var(--ink-faint); font-size: 11px; flex: 0 0 auto; }
+
+/* ===== 丹药预览 / 装备对比 / 批量售卖（v344） ===== */
+.pill-prev {
+  background: rgba(0, 0, 0, .2); border-radius: 8px;
+  padding: 8px 10px; margin: 8px 0; font-size: 13px;
+}
+.pill-prev-row { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; }
+.pill-prev-row span { color: var(--ink-dim); min-width: 3.5em; }
+.pill-prev-row b { color: var(--jade-bright); font-weight: 600; }
+.pill-prev-row i { color: var(--ink-faint); font-style: normal; font-size: 11px; }
+.pill-prev-row em { color: var(--warn, #d99a4e); font-style: normal; font-size: 11px; }
+.sell-btns { display: flex; gap: 6px; flex: 0 0 auto; }
+.choice .c-odds { float: right; font-size: 12px; letter-spacing: 1px; margin-left: 8px; }
+
+/* ===== 前情提要卡（v344） ===== */
+.recap-obj {
+  background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; margin: 10px 0; line-height: 1.7;
+}
+.recap-block { margin-top: 10px; }
+.recap-cap { color: var(--ink-faint); font-size: 12px; letter-spacing: 2px; margin-bottom: 4px; }
+.recap-ms { font-size: 13px; color: var(--ink); padding: 3px 0; }
+.recap-ms span { color: var(--ink-faint); font-size: 11px; margin-right: 8px; }
+
+/* ===== 打击感三件（v344）：伤害跳字 / 受击闪白 / 战报高光 ===== */
+.dmg-pop {
+  position: absolute; top: 6%;
+  transform: translateX(-50%);
+  font-family: var(--font-title, serif); font-weight: bold; font-size: 15px;
+  color: #ffd76a; text-shadow: 0 1px 4px rgba(0, 0, 0, .9), 0 0 8px rgba(0, 0, 0, .5);
+  pointer-events: none; z-index: 7; white-space: nowrap;
+  animation: dmgFloat .95s ease-out forwards;
+}
+.dmg-pop.big  { font-size: 22px; color: #ff9c4a; }
+.dmg-pop.mine { color: #ff6a5a; }   /* 我方（玩家/同道）挨的打：红字——一眼分清谁在流血 */
+.dmg-pop.soul { color: #c9a6ff; }   /* 神魂伤：紫字 */
+@keyframes dmgFloat {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(8px)  scale(.6); }
+  16%  { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1.18); }
+  32%  { transform: translateX(-50%) translateY(-4px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-38px) scale(.92); }
+}
+.axis-unit.hit-flash .au-fig { animation: hitFlash .24s ease-out; }
+@keyframes hitFlash {
+  0%   { filter: brightness(2.6) saturate(.15); }
+  100% { filter: none; }
+}
+.log-float.lf-key {
+  color: var(--gold); font-weight: bold;
+  border-color: rgba(212, 176, 106, .55);
+  box-shadow: 0 0 12px rgba(212, 176, 106, .18);
+}
+.log-float.lf-key::before { content: "✦ "; }
+#combat-log .cl-key { color: var(--gold); }
+#combat-log .cl-key::before { content: "✦ "; }
+@media (prefers-reduced-motion: reduce) {
+  .dmg-pop { animation: dmgFade 0.9s ease-out forwards; }
+  @keyframes dmgFade { 0% { opacity: 1; } 100% { opacity: 0; } }
+  .axis-unit.hit-flash .au-fig { animation: none; }
+}
+
 /* ===== 手机横屏遮罩（v342）：竖屏布局横过来挤成一团——触屏+横向+矮视口时浮出提示 ===== */
 .rotate-hint {
   position: fixed; inset: 0; z-index: 9999; display: none;
@@ -4532,6 +4619,29 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   font-family: inherit;   /* 改真 <button> 后抹平 UA 默认字体 */
 }
 .story-skip[hidden] { display: none; }   /* button 的 display:inline-flex 会盖掉 hidden，显式压回 */
+
+/* v344 台词回看：入口钮挂在跳过键左侧；面板=半透明覆卷 */
+.story-backlog-btn { right: auto; left: 18px; }
+.story-backlog {
+  position: absolute; inset: 0; z-index: 12;
+  background: rgba(8, 6, 5, .72); backdrop-filter: blur(2px);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.story-backlog[hidden] { display: none; }
+.story-backlog .sb-panel {
+  width: min(680px, 94%); max-height: 62%; margin-bottom: 4%;
+  background: var(--bg-panel, #1a1512); border: 1px solid var(--border);
+  border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
+}
+.story-backlog .sb-title {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; color: var(--gold); letter-spacing: 3px; font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.story-backlog .sb-list { overflow-y: auto; padding: 10px 16px 14px; }
+.story-backlog .sb-line { padding: 5px 0; font-size: 14px; line-height: 1.75; color: var(--ink); }
+.story-backlog .sb-line b { color: var(--gold); margin-right: 8px; font-weight: 600; }
+.story-backlog .sb-line.narr { color: var(--ink-dim); }
 .story-overlay { cursor: pointer; }
 .story-skip:hover { color: var(--gold); border-color: rgba(212,176,106,.6); }
 /* 交互 beat：把"操作"嵌进演出（伺机出手 / 限信息抉择）*/

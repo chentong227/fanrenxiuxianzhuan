@@ -281,6 +281,12 @@
         remaining -= absorbed;
       }
       this.hp = clampNum(this.hp - remaining, 0, this.hpMax);
+      // v344 打击感：伤害事件入队——UI 渲染帧浮出跳字+受击闪白（无头/测试环境队列静躺，无副作用）
+      try {
+        const q = (CombatAPI._dmgQ = CombatAPI._dmgQ || []);
+        q.push({ f: this, n: remaining, soul: !!opts.soul });
+        if (q.length > 48) q.shift();
+      } catch (e) {}
       return { blocked: false, dealt: remaining, exposed: this.exposed };
     }
   }

@@ -128,6 +128,8 @@ const State = {
     // 不落死档（v343·用户裁决「死亡不能就此结束」）：身死/寿尽那一拍的状态不写盘——
     // 自动档永远停在殒身前的最后一个活月，终章屏「回档再来」读回去就是生路。
     if (this.data && (this.data.hp <= 0 || this.data.age >= this.data.lifespan)) return true;
+    // v344 成就惰性检查：每次落档前扫一遍（O(1) 字段比对 ×20，开销可忽略；新达成即报喜）
+    try { if (typeof ACH !== "undefined" && this.data) ACH.check(this.data); } catch (e) {}
     try {
       this.data.savedAt = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
@@ -198,6 +200,8 @@ const State = {
     // 死档吊命（v343）：v343 之前死亡瞬间的状态可能已写进档——读回来一动就再死=死循环。
     // 一口真气吊回 1 点气血，给玩家嗑药/调息的活路（寿尽档无解，终章屏自会再见）。
     if (typeof d.hp === "number" && d.hp <= 0) d.hp = 1;
+    // v344 成就：读档即补判一轮——老档的既有成绩（境界/伏诛/家财）立刻点亮，不用等下一次行动
+    try { if (typeof ACH !== "undefined") ACH.check(d); } catch (e) {}
     if (!d.benchTreasures) d.benchTreasures = [];
     if (!d.activeChapter) d.activeChapter = "qixuan";
     if (!d.unlockedChapters) d.unlockedChapters = ["qixuan"];

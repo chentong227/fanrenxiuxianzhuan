@@ -705,7 +705,10 @@ const UI = {
     const cfg = this._NPC_GAZE[npcId];
     if (cfg) {
       if (cfg.veil) {
-        if ((s.sense || 0) >= cfg.sense) return `<span style="color:var(--purple)">你神识过人，窥破其敛息之术——${cfg.truth}</span>`;
+        if ((s.sense || 0) >= cfg.sense) {
+          if (s.flags) s.flags.ach_pierced_veil = true;   // v344 成就：窥破敛息
+          return `<span style="color:var(--purple)">你神识过人，窥破其敛息之术——${cfg.truth}</span>`;
+        }
         return "其气机内敛如渊，任你如何打量都探不出深浅——此人藏得极深，表象作不得数。";
       }
       return cfg.qi;
@@ -923,7 +926,21 @@ const UI = {
   },
   _actBtnHtml(a, loc, focus, labels) {
     const custom = loc.actionLabels && loc.actionLabels[a];
-    const hint = !custom && this.ACT_HINTS[a] ? `<span class="act-sub">${this.ACT_HINTS[a]}</span>` : "";
+    let hintTxt = !custom && this.ACT_HINTS[a] ? this.ACT_HINTS[a] : "";
+    // v344 事前预览：突破按钮直接亮当前成功率——点开面板前就能算计"要不要再备一手"
+    if (a === "breakthrough" && !custom) {
+      try {
+        const chk = Engine.canBreakthrough();
+        if (chk.ok && !Engine.isBigRealmBreakthrough()) {
+          const pct = Math.round(Engine.breakthroughRate() * 100);
+          const col = pct >= 70 ? "var(--jade-bright)" : pct >= 40 ? "var(--gold)" : "var(--red)";
+          hintTxt = `当前成率约 <b style="color:${col}">${pct}%</b> · 面板有明细`;
+        } else if (chk.ok) {
+          hintTxt = "大境界破关 · 必历心魔劫";
+        }
+      } catch (e) {}
+    }
+    const hint = hintTxt ? `<span class="act-sub">${hintTxt}</span>` : "";
     return `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${custom || labels[a] || a}${hint}</button>`;
   },
 
@@ -1303,12 +1320,55 @@ const UI = {
       <p>${item.desc}</p>
       ${gearHtml}
       ${techHtml}
-      ${item.effect && Object.keys(item.effect).length ? `<p style="color:var(--jade-bright)">服用：${effectText(item.effect)}</p>` : ""}
+      ${item.effect && Object.keys(item.effect).length ? `<p style="color:var(--jade-bright)">服用：${effectText(item.effect)}</p>${this._pillPreview(item.effect)}` : ""}
+      ${this._gearCompare(gdef)}
       <div class="modal-actions">
         ${actions}
         <button class="btn btn-ghost" onclick="UI.closeModal()">收起</button>
       </div>
     `);
+  },
+
+  /* 丹药服用预览（v344·任务7）：把"气血+40"翻译成"气血 62 → 100/130"——
+   * 嗑之前就知道嗑完是什么样，溢出（还差 10 就满）也一眼可见。 */
+  _pillPreview(e) {
+    const s = State.data;
+    if (!s || !e) return "";
+    const realm = State.realm() || {};
+    const rows = [];
+    const prev = (label, cur, add, max) => {
+      if (!add) return;
+      const after = Math.max(0, Math.min(max != null ? max : Infinity, cur + add));
+      const wasted = (cur + add) - after;
+      rows.push(`<div class="pill-prev-row"><span>${label}</span><b>${Math.round(cur)} → ${Math.round(after)}</b>${max != null ? `<i>/${Math.round(max)}</i>` : ""}${wasted > 0 ? `<em>溢出${Math.round(wasted)}</em>` : ""}</div>`);
+    };
+    prev("气血", s.hp, e.hp, s.hpMax);
+    prev("灵力", s.spirit, e.sp, realm.spMax);
+    prev("心境", s.mood, e.mood, s.moodMax);
+    prev("心魔", s.demon, e.demon, 100);
+    if (e.cul) {
+      const gain = Math.round(e.cul * ((typeof Balance !== "undefined" && Balance.culGainMul) ? Balance.culGainMul(s.realmIndex) : 1));
+      prev("修为", s.cultivation, gain, realm.culMax != null ? realm.culMax * 1.5 : null);
+    }
+    return rows.length ? `<div class="pill-prev">${rows.join("")}</div>` : "";
+  },
+
+  /* 装备对比（v344·任务7）：同槽已有装备时，逐项列出换装的净变化。 */
+  _gearCompare(gdef) {
+    if (!gdef || !State.data) return "";
+    const curId = State.data.gear && State.data.gear[gdef.slot];
+    if (!curId || !DATA.gear[curId] || DATA.gear[curId] === gdef) return "";
+    const cur = DATA.gear[curId];
+    if (cur === gdef) return "";
+    const names = { hpMax: "气血上限", moodMax: "心境上限", sense: "神识", body: "体魄", speed: "遁速" };
+    const keys = new Set([...Object.keys(gdef.bonus || {}), ...Object.keys(cur.bonus || {})]);
+    const rows = [...keys].map(k => {
+      const nv = (gdef.bonus || {})[k] || 0, ov = (cur.bonus || {})[k] || 0, d = nv - ov;
+      if (!d) return "";
+      return `<div class="pill-prev-row"><span>${names[k] || k}</span><b style="color:${d > 0 ? 'var(--jade-bright)' : 'var(--red)'}">${d > 0 ? "+" : ""}${d}</b></div>`;
+    }).filter(Boolean);
+    if (!rows.length) return "";
+    return `<div class="pill-prev"><div class="recap-cap">换下「${(DATA.items[curId] || {}).name || curId}」的净变化</div>${rows.join("")}</div>`;
   },
 
   renderActionAvailability() { /* 已由 renderActions 取代 */ },
@@ -1639,6 +1699,7 @@ const UI = {
     if (!this._story || this._story.done || this._story.titling) return;
     const t = e.target;
     if (t.closest(".story-choices") || t.closest("#story-skip") || t.closest(".story-titlecard")) return;
+    if (t.closest("#story-backlog") || t.closest("#story-backlog-btn")) return;   // v344 回看面板不推进剧情
     if (t.closest("#story-dialog")) return;
     this.storyAdvance();
   },
@@ -1994,6 +2055,13 @@ const UI = {
     if (stageName) stageName.textContent = st.stage.title || "";
     if (typeof Sfx !== "undefined") Sfx.play("page");
 
+    // v344 台词回看：每句演出入册（会话级，不入档）——手一快点过关键台词，「回看」随时找回
+    if (b.text) {
+      this._storyBacklog = this._storyBacklog || [];
+      this._storyBacklog.push({ who: b.kind === "say" ? b.who : (b.kind === "aside" ? `${b.who}（心声）` : null), text: b.text, kind: b.kind });
+      if (this._storyBacklog.length > 120) this._storyBacklog.shift();
+    }
+
     // §7 声相：双人相对立绘——韩立(右)+0.45 / 对话 NPC(左)−0.45 / 旁白·心声·场景=居中
     const selfSpeak = b.who && (b.who === (State.data && State.data.name) || b.who === "韩立");
     this._sayPan = (b.kind === "say") ? (selfSpeak ? 0.45 : -0.45) : 0;
@@ -2054,6 +2122,23 @@ const UI = {
     return this.el("story-bg");       // center/缺省=场景中心
   },
   _storyCue(text) { const cue = this.el("story-cue"); if (cue) cue.textContent = text; },
+
+  /* v344 台词回看：半透明面板列出本次会话演过的台词（新在下，开卷自动滚到底） */
+  openStoryBacklog() {
+    const box = this.el("story-backlog");
+    const list = this.el("story-backlog-list");
+    if (!box || !list) return;
+    const logs = this._storyBacklog || [];
+    list.innerHTML = logs.length
+      ? logs.map(l => `<div class="sb-line${l.kind === "narr" || l.kind === "scene" ? " narr" : ""}">${l.who ? `<b>${l.who}</b>` : ""}${l.text}</div>`).join("")
+      : `<div class="sb-line narr">还没有演过的台词。</div>`;
+    box.hidden = false;
+    list.scrollTop = list.scrollHeight;
+  },
+  closeStoryBacklog() {
+    const box = this.el("story-backlog");
+    if (box) box.hidden = true;
+  },
 
   // 随时可跳：清演出计时/镜头，直达本幕抉择
   storySkip() {
@@ -2919,8 +3004,17 @@ const UI = {
     const s = State.data;
     const choices = f.choices.map((c, i) => {
       const disabled = c.cond && !c.cond(s);
+      // v344 检定可视化：带 odds(s) 的选项直接亮成算——属性怎么影响结局，摆到台面上
+      let oddsHtml = "";
+      if (typeof c.odds === "function") {
+        try {
+          const pct = Math.round(Math.max(0.05, Math.min(0.95, c.odds(s))) * 100);
+          const col = pct >= 70 ? "var(--jade-bright)" : pct >= 45 ? "var(--gold)" : "var(--red)";
+          oddsHtml = `<span class="c-odds" style="color:${col}">成算约${pct}%</span>`;
+        } catch (e) {}
+      }
       return `<button class="choice" ${disabled ? 'disabled' : `onclick="Engine.chooseFortune(${i})"`}>
-        ${c.text}
+        ${c.text}${oddsHtml}
         ${c.hint ? `<span class="c-hint">${c.hint}${disabled ? '（条件不足）' : ''}</span>` : ""}
       </button>`;
     }).join("");
@@ -4702,9 +4796,10 @@ const UI = {
       <h3 style="margin:14px 0 6px;font-size:14px;color:var(--ink-dim)">皮货行 · 收购（凡人行市·八折）</h3>
       ${sellables.map(id => {
         const it = DATA.items[id];
+        const cnt = State.count(id);
         return `<div class="market-item">
-          <span><span class="iname">${it.name}</span><span style="color:var(--ink-dim);font-size:12px">　×${State.count(id)}</span></span>
-          <button class="btn btn-mini" onclick="Engine.marketSell('${id}')"><span class="mprice">售 ${Math.max(1, Math.round(it.sell * 0.8))}两</span></button>
+          <span><span class="iname">${it.name}</span><span style="color:var(--ink-dim);font-size:12px">　×${cnt}</span></span>
+          <span class="sell-btns"><button class="btn btn-mini" onclick="Engine.marketSell('${id}')"><span class="mprice">售 ${Math.max(1, Math.round(it.sell * 0.8))}两</span></button>${cnt > 1 ? `<button class="btn btn-mini" onclick="Engine.marketSell('${id}', 999)">全售</button>` : ""}</span>
         </div>`;
       }).join("")}` : "";
     // 标题随所在地（v333·playtest 实锤）：旧版写死「山下集镇」，在嘉元城长街买东西也顶着集镇名
@@ -4799,9 +4894,10 @@ const UI = {
       const it = DATA.items[x.id];
       const has = State.count(x.id) >= 1;
       if (!has && !["qiannian_lingcao", "lingyao_dan"].includes(x.id)) return "";   // 妖材：无货不占行
+      const cnt = State.count(x.id);
       return `<div class="market-item">
-      <span style="color:${x.hot ? 'var(--gold)' : 'var(--ink-dim)'};font-size:13px">${it.name} ×1 → 灵石×${x.price}${has ? `（存${State.count(x.id)}）` : ""}${x.hot ? "　掌柜见之眼开" : ""}</span>
-      ${has ? `<button class="btn btn-mini" onclick="Engine.wanbaoSell('${x.id}')">售出</button>`
+      <span style="color:${x.hot ? 'var(--gold)' : 'var(--ink-dim)'};font-size:13px">${it.name} ×1 → 灵石×${x.price}${has ? `（存${cnt}）` : ""}${x.hot ? "　掌柜见之眼开" : ""}</span>
+      ${has ? `<span class="sell-btns"><button class="btn btn-mini" onclick="Engine.wanbaoSell('${x.id}')">售出</button>${cnt > 1 ? `<button class="btn btn-mini" onclick="Engine.wanbaoSell('${x.id}', 999)">全售</button>` : ""}</span>`
               : `<span style="color:var(--ink-faint);font-size:12px">无货</span>`}
     </div>`;
     }).join("");
@@ -4931,6 +5027,8 @@ const UI = {
     const lg0 = this.el("combat-log"); if (lg0) lg0.hidden = true;
     this._combatTarget = this._nearestEnemyIdx(combat);   // 默认锁最近活敌（宽场不默认打远处那个）
     this._combatLogLen = combat.log.length;
+    // v344 打击感：清上一仗残留的伤害跳字队列（开战摆场那几拍的入场伤不浮字）
+    if (typeof CombatAPI !== "undefined" && CombatAPI._dmgQ) CombatAPI._dmgQ.length = 0;
     if (typeof Sfx !== "undefined") {
       Sfx.play("danger");
       // BGM 换轨：危险/紧张度分级 × 场景调色（详见 _combatBgm）——
@@ -6269,21 +6367,27 @@ const UI = {
     const fresh = c.log.slice(this._combatLogLen);
     this._combatLogLen = c.log.length;
     const last = fresh.filter(l => !/^【第\d+回合】/.test(l)).pop();   // 只取最新一条有效战报
+    // v344 战报层级：克制/破甲/破绽/斩杀这类高光行金字加徽——一眼扫出本回合的大事
+    const KEY_RE = /正克|克制|破甲|穿甲|趁虚|破绽|伏诛|尽灭|击退|暴击|会心/;
     if (last) {
       box.innerHTML = "";                                            // 新顶旧：永不堆叠
       const el = document.createElement("div");
-      el.className = "log-float" + (/造成|毒发|胜|趁虚|落空|砸了个空/.test(last) ? " lf-hit" : /受到|败|砸在|耗尽/.test(last) ? " lf-hurt" : "");
+      const key = KEY_RE.test(last);
+      el.className = "log-float"
+        + (key ? " lf-key" : "")
+        + (/造成|毒发|胜|趁虚|落空|砸了个空/.test(last) ? " lf-hit" : /受到|败|砸在|耗尽/.test(last) ? " lf-hurt" : "");
       el.textContent = last;
       box.appendChild(el);
       clearTimeout(this._floatTimer);
-      this._floatTimer = setTimeout(() => el.remove(), 3200);
+      this._floatTimer = setTimeout(() => el.remove(), key ? 3800 : 3200);
     }
     // 完整战录框同步（展开时可见）
     const lg = this.el("combat-log");
     if (lg) {
       const logs = c.log.slice(-40);
       lg.innerHTML = logs.map(l => {
-        const cls = /造成|毒发|中的|尽灭|胜|趁虚|落空/.test(l) ? "cl-hit" : /受到|气血耗尽|败|砸在/.test(l) ? "cl-hurt" : "";
+        let cls = /造成|毒发|中的|尽灭|胜|趁虚|落空/.test(l) ? "cl-hit" : /受到|气血耗尽|败|砸在/.test(l) ? "cl-hurt" : "";
+        if (KEY_RE.test(l)) cls += " cl-key";
         return `<div class="${cls}">${l}</div>`;
       }).join("");
       if (!lg.hidden) lg.scrollTop = lg.scrollHeight;
@@ -6800,6 +6904,46 @@ const UI = {
 
     // —— 战报：弹幕飘过 + 战录框同步 ——
     this._floatLogs(c);
+
+    // —— v344 打击感：伤害跳字+受击闪白（takeDamage 入队 → 渲染帧统一浮出） ——
+    this._drainDmgPops(c);
+  },
+
+  /* 伤害跳字（v344）：combat.js takeDamage 把每笔实伤入队（CombatAPI._dmgQ），
+   * 渲染帧在此排空——按单位锚点浮出数字（大伤更大更橙、神魂伤紫），同拍给受击者闪白。
+   * 多笔连发错拍 110ms，读得清每一笔；reduced-motion 用户由 CSS 静态化。 */
+  _drainDmgPops(c) {
+    const q = (typeof CombatAPI !== "undefined" && CombatAPI._dmgQ) || null;
+    if (!q || !q.length) return;
+    const box = this.el("axis-units");
+    const evs = q.splice(0);
+    if (!box) return;
+    const uidOf = (f) => {
+      if (f === c.player) return "player";
+      const si = (c.sides || []).indexOf(f);
+      if (si >= 0) return si > 0 ? "side:" + si : "side";
+      const ei = c.enemies.indexOf(f);
+      return ei >= 0 ? "enemy:" + ei : null;
+    };
+    evs.forEach((ev, k) => {
+      const uid = uidOf(ev.f);
+      if (!uid || !ev.n) return;
+      setTimeout(() => {
+        const el = box.querySelector(`[data-uid="${CSS.escape(uid)}"]`);
+        if (!el) return;
+        el.classList.remove("hit-flash"); void el.offsetWidth; el.classList.add("hit-flash");
+        const pop = document.createElement("div");
+        const big = ev.n >= Math.max(20, (ev.f.hpMax || 100) * 0.2);
+        pop.className = "dmg-pop"
+          + (big ? " big" : "")
+          + (ev.soul ? " soul" : "")
+          + (ev.f.team === "player" || ev.f === c.player ? " mine" : "");
+        pop.textContent = "−" + ev.n;
+        pop.style.left = (28 + Math.random() * 44) + "%";
+        el.appendChild(pop);
+        setTimeout(() => pop.remove(), 980);
+      }, k * 110);
+    });
   },
 
   /* ===========================================================
@@ -7869,6 +8013,7 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openCodex()">人物图鉴</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openBigitems()">大件图鉴</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openRumors()">传闻图鉴</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openAchievements()">成就图鉴${typeof ACH !== "undefined" && State.data ? `（${ACH.unlockedCount(State.data)}/${ACH.LIST.length}）` : ""}</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openChronicle()">风云录</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTechniques()">功法 · 配装</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTreasury()">法宝 · 装备位</button>
@@ -7880,6 +8025,152 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI.importSave()">导入存档（读取备份）</button>
         <button class="btn btn-ghost" onclick="UI.closeModal(); Main.toCreate()">回主菜单</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">返回</button>
+      </div>
+    `);
+  },
+
+  /* -------- 此生年表图卡（v344）：终章一键出图——竖版水墨总结，可保存分享 --------
+   * 纯 canvas 手绘（无外源图，导出不涉跨域污染）：墨底金题，年表按 kind 权重取前 10。 */
+  exportLifeCard(reason) {
+    const s = State.data;
+    if (!s) return;
+    try {
+      const W = 720, H = 1280;
+      const cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      const g = cv.getContext("2d");
+      const serif = '"Noto Serif SC", "Songti SC", "SimSun", serif';
+      // 墨纸底：深底+四角晕染+细边框
+      g.fillStyle = "#14100c"; g.fillRect(0, 0, W, H);
+      const grad = g.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 900);
+      grad.addColorStop(0, "rgba(46,36,26,.35)"); grad.addColorStop(1, "rgba(0,0,0,.55)");
+      g.fillStyle = grad; g.fillRect(0, 0, W, H);
+      g.strokeStyle = "rgba(212,176,106,.55)"; g.lineWidth = 2;
+      g.strokeRect(26, 26, W - 52, H - 52);
+      g.strokeStyle = "rgba(212,176,106,.22)"; g.lineWidth = 1;
+      g.strokeRect(34, 34, W - 68, H - 68);
+      // 题
+      g.textAlign = "center";
+      g.fillStyle = "#d4b06a";
+      g.font = `bold 52px ${serif}`;
+      g.fillText("我的修仙人生", W / 2, 128);
+      g.font = `22px ${serif}`;
+      g.fillStyle = "rgba(212,176,106,.6)";
+      g.fillText("—— 凡人修仙传 · 人界篇 ——", W / 2, 170);
+      // 主档
+      const realm = (State.realm() || {}).name || "凡夫";
+      const root0 = (State.root && State.root()) || {};
+      g.fillStyle = "#e8dcc8";
+      g.font = `bold 40px ${serif}`;
+      g.fillText(s.name || "韩立", W / 2, 250);
+      g.font = `24px ${serif}`;
+      g.fillStyle = "#9c8f7a";
+      g.fillText(`${root0.name || ""}　止步 ${realm}　享年 ${s.age || "?"} 岁 · 修行 ${s.year || 1} 载`, W / 2, 294);
+      if (reason) {
+        g.font = `20px ${serif}`;
+        g.fillStyle = "rgba(190,120,100,.85)";
+        const rs = String(reason).slice(0, 26);
+        g.fillText(rs, W / 2, 332);
+      }
+      // 分隔
+      g.strokeStyle = "rgba(212,176,106,.3)";
+      g.beginPath(); g.moveTo(90, 366); g.lineTo(W - 90, 366); g.stroke();
+      // 年表（权重取前 10）
+      const KIND_RANK = { breakthrough: 5, bigitem: 4, showdown: 4, medal: 3, story: 2, deed: 1, minor: 0 };
+      const KIND_ICON = { breakthrough: "▲", bigitem: "◆", showdown: "⚔", medal: "★", story: "◇", deed: "·", minor: "·" };
+      const ms = (s.milestones || []).map((m, i) => ({ m, i }))
+        .sort((a, b) => ((KIND_RANK[b.m.kind] || 0) - (KIND_RANK[a.m.kind] || 0)) || (b.i - a.i))
+        .slice(0, 10)
+        .sort((a, b) => a.i - b.i)
+        .map(x => x.m);
+      g.textAlign = "left";
+      g.font = `bold 24px ${serif}`;
+      g.fillStyle = "#d4b06a";
+      g.fillText("此生几桩 · 你挣来的", 90, 416);
+      let y = 462;
+      g.font = `20px ${serif}`;
+      ms.forEach(m => {
+        if (y > 1050) return;
+        g.fillStyle = "rgba(156,143,122,.9)";
+        g.fillText(m.t || "", 90, y);
+        g.fillStyle = "#e8dcc8";
+        const title = `${KIND_ICON[m.kind] || "·"} ${m.title}`;
+        g.fillText(title.length > 24 ? title.slice(0, 24) + "…" : title, 90, y + 28);
+        y += 66;
+      });
+      if (!ms.length) {
+        g.fillStyle = "rgba(156,143,122,.8)";
+        g.fillText("道途尚浅，来不及在世间留下痕迹。", 90, y);
+        y += 66;
+      }
+      // 脚注：名望+成就+伏诛
+      const achN = (typeof ACH !== "undefined") ? ACH.unlockedCount(s) : 0;
+      const slain = (s.slainBeasts || []).length;
+      g.textAlign = "center";
+      g.strokeStyle = "rgba(212,176,106,.3)";
+      g.beginPath(); g.moveTo(90, H - 160); g.lineTo(W - 90, H - 160); g.stroke();
+      g.font = `20px ${serif}`;
+      g.fillStyle = "#9c8f7a";
+      g.fillText(`名望 ${s.fame || 0}　成就 ${achN}${typeof ACH !== "undefined" ? "/" + ACH.LIST.length : ""}${slain ? `　伏诛妖王 ${slain} 头` : ""}`, W / 2, H - 118);
+      g.font = `18px ${serif}`;
+      g.fillStyle = "rgba(156,143,122,.55)";
+      g.fillText("以凡人之躯，逆天改命", W / 2, H - 76);
+      // 下载
+      const a = document.createElement("a");
+      a.href = cv.toDataURL("image/png");
+      a.download = `此生年表-${s.name || "韩立"}-${realm}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      this.toast("年表图卡已保存——这一世，值得留念");
+    } catch (e) {
+      this.toast("出图失败：" + e.message, true);
+    }
+  },
+
+  /* -------- 成就图鉴（v344）：达成的亮字带日期，未达成的灰字留悬念 -------- */
+  openAchievements() {
+    if (typeof ACH === "undefined" || !State.data) { this.openSystemMenu(); return; }
+    const s = State.data;
+    const logMap = {};
+    (s.achLog || []).forEach(l => { logMap[l.id] = l.t; });
+    const rows = ACH.LIST.map(a => {
+      const ok = !!s.flags["ach_ok_" + a.id];
+      return `<div class="ach-row${ok ? " ok" : ""}">
+        <span class="ach-icon">${ok ? a.icon : "🔒"}</span>
+        <span class="ach-body"><b>${a.name}</b><i>${a.desc}</i></span>
+        ${ok && logMap[a.id] ? `<span class="ach-t">${logMap[a.id]}</span>` : ""}
+      </div>`;
+    }).join("");
+    this.openModal(`
+      <h2>成就图鉴 <span style="font-size:14px;color:var(--ink-dim)">${ACH.unlockedCount(s)} / ${ACH.LIST.length}</span></h2>
+      <div class="ach-list">${rows}</div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal(); UI.openSystemMenu()">返回</button></div>
+    `);
+  },
+
+  /* -------- 前情提要（v344）：隔日回坑先看一张「上回说到」——十秒找回状态 --------
+   * 全用现成数据拼装：境界年月/所在地/天命目标/最近两条里程碑/待决剧情，零新增存档字段。 */
+  showRecapCard() {
+    const s = State.data;
+    if (!s) return;
+    const chap = (typeof Chapters !== "undefined" && Chapters.active && Chapters.active()) || {};
+    const realm = (State.realm() || {}).name || "凡夫";
+    const loc = State.location() || {};
+    const obj = Engine.currentObjective ? Engine.currentObjective() : null;
+    const recent = (s.milestones || []).slice(-2).reverse();
+    const msHtml = recent.length
+      ? recent.map(m => `<div class="recap-ms"><span>${m.t}</span>${m.title}</div>`).join("")
+      : "";
+    const days = Math.floor((Date.now() - (s.savedAt || Date.now())) / 86400000);
+    const away = days >= 2 ? `别来${days}日，` : "";
+    this.openModal(`
+      <h2>上回说到</h2>
+      <p style="color:var(--ink-dim);line-height:1.9">${away}<b style="color:var(--jade-bright)">${s.name}</b>（${realm}）正在
+      <b>${chap.name || "修行路上"}</b>——第${s.year}年${s.month}月，身在「${loc.name || "无名之地"}」。</p>
+      ${obj ? `<div class="recap-obj"><span class="obj-key">天命</span><b>${obj.title}</b><br><span style="color:var(--ink-dim);font-size:13px">${obj.hint || ""}</span></div>` : ""}
+      ${msHtml ? `<div class="recap-block"><div class="recap-cap">近来大事</div>${msHtml}</div>` : ""}
+      ${s.pendingEvent ? `<p style="color:var(--gold);font-size:13px">有一段剧情正待你抉择——关掉此卡便见。</p>` : ""}
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="UI.closeModal()">想起来了，继续修行</button>
       </div>
     `);
   },
@@ -8029,6 +8320,18 @@ const UI = {
           <div class="set-label">乐音音量<span class="set-hint">背景乐的响度——音效与提示不受影响</span></div>
           <div class="set-opts">
             ${["low", "mid", "high"].map(v => seg(Settings.bgmVolLabel(v), v, Settings.bgmVol(), `Settings.setBgmVol('${v}'); UI.openExpSettings()`)).join("")}
+          </div>
+        </div>
+        <div class="set-row">
+          <div class="set-label">音效音量<span class="set-hint">法术 / 点击 / 提示音的响度——乐音不受影响</span></div>
+          <div class="set-opts">
+            ${["off", "low", "mid", "high"].map(v => seg(Settings.sfxVolLabel(v), v, Settings.sfxVol(), `Settings.setSfxVol('${v}'); if(typeof Sfx!=='undefined'&&Sfx.play)Sfx.play('click'); UI.openExpSettings()`)).join("")}
+          </div>
+        </div>
+        <div class="set-row">
+          <div class="set-label">字号<span class="set-hint">台词 / 日志 / 选项的文字大小</span></div>
+          <div class="set-opts">
+            ${["std", "big", "huge"].map(v => seg(Settings.fontScaleLabel(v), v, Settings.fontScale(), `Settings.setFontScale('${v}'); UI.openExpSettings()`)).join("")}
           </div>
         </div>
         <div class="set-row">

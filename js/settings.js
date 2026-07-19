@@ -86,6 +86,46 @@
     bgmVolMul() { return { low: 0.45, mid: 1, high: 1.7 }[this.bgmVol()] || 1; },
     bgmVolLabel(v) { return { low: "轻", mid: "适中", high: "响" }[v || this.bgmVol()]; },
 
+    /* —— 音效音量（v344·分轨三件）：乘子作用在 Sfx.play 的合成器增益上，BGM 不受影响 —— */
+    _sfxVol: null,
+    sfxVol() {
+      if (this._sfxVol === null) {
+        const v = this._ls("set_sfx_vol");
+        this._sfxVol = (["off", "low", "mid", "high"].indexOf(v) >= 0) ? v : "mid";
+      }
+      return this._sfxVol;
+    },
+    setSfxVol(v) {
+      this._sfxVol = (["off", "low", "mid", "high"].indexOf(v) >= 0) ? v : "mid";
+      this._set("set_sfx_vol", this._sfxVol);
+      return this._sfxVol;
+    },
+    sfxVolMul() { return { off: 0, low: 0.45, mid: 1, high: 1.6 }[this.sfxVol()] || 1; },
+    sfxVolLabel(v) { return { off: "关", low: "轻", mid: "适中", high: "响" }[v || this.sfxVol()]; },
+
+    /* —— 字号（v344·中年道友之友）：三档缩放挂在 html 根字号上，全 UI 等比放大 —— */
+    _fontScale: null,
+    fontScale() {
+      if (this._fontScale === null) {
+        const v = this._ls("set_font_scale");
+        this._fontScale = (["std", "big", "huge"].indexOf(v) >= 0) ? v : "std";
+      }
+      return this._fontScale;
+    },
+    setFontScale(v) {
+      this._fontScale = (["std", "big", "huge"].indexOf(v) >= 0) ? v : "std";
+      this._set("set_font_scale", this._fontScale);
+      this.applyFontScale();
+      return this._fontScale;
+    },
+    fontScaleLabel(v) { return { std: "标准", big: "大", huge: "特大" }[v || this.fontScale()]; },
+    applyFontScale() {
+      if (typeof document === "undefined" || !document.documentElement) return;
+      const mul = { std: 1, big: 1.12, huge: 1.24 }[this.fontScale()] || 1;
+      document.documentElement.style.setProperty("--font-scale", String(mul));
+      document.body && document.body.classList.toggle("font-scaled", mul !== 1);
+    },
+
     /* —— 震动（委托 Fx，单一真相源 fx_haptics）—— */
     haptics() {
       return (typeof root.Fx !== "undefined" && root.Fx.hapticsOn) ? root.Fx.hapticsOn() : true;
