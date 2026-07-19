@@ -1001,7 +1001,8 @@ WORLD.enemies = {
   },
   rogue_cultivator: {
     // lane:1=法修天性缩在阵后放术（编队成立时生效；落单时引擎自动压上战位排——无敌龟壳不存在）
-    name: "散修", hp: 130, sense: 9, speed: 11, agility: 8, move: 1, mp: 52, tactics: "cunning", qiLayer: 3, elem: "tu", armor: 2, lane: 1, 
+    name: "散修", hp: 130, sense: 9, speed: 11, agility: 8, move: 1, mp: 52, tactics: "cunning", qiLayer: 3, elem: "tu", armor: 2, lane: 1,
+    veil: true, veilSense: 22,   // v343 观气：野路子散修惯会敛息装弱——神识不济只见「深浅莫测」
     introNote: "散修行土遁、缩在阵后放术——石击伤不轻、聚灵蓄势更重。他机动差但灵力有限，耗光他的灵力便只剩挨打的份。木克土，长春功系法术正中其门。", 
     reward: { lingshi: 1 },
     attacks: [
@@ -1119,6 +1120,7 @@ WORLD.enemies = {
   xuanle: {
     name: "宣乐", hp: 245, sense: 14, speed: 16, agility: 14, move: 2, mp: 95, qiLayer: 13, elem: "jin", armor: 3,
     tactics: "cunning", stubborn: true, canFlee: false,
+    veil: true, veilSense: 35,   // v343 观气：潜伏阴手，气机敛得比谁都深
     introNote: "阴手敌型首演——掩月宗潜伏在征军里的阴人。惯于敛息匿形、趁乱下杀手，专挑落单与背身者。淬毒匕首又快又阴，「附骨索命」循着你的气息折转追击，一步躲不开。识破他的偷袭，破甲与毒方能反制这条毒蛇。",
     attacks: [
       { name: "淬毒匕首", dmg: 22, kind: "normal", weight: 12, elem: "jin", range: [1, 1], mp: 6 },
@@ -1356,6 +1358,7 @@ WORLD.enemies = {
   yuling_duoshe: {
     name: "御灵宗夺舍者", hp: 340, sense: 16, speed: 16, agility: 12, move: 2, mp: 90, qiLayer: 13,
     elem: "jin", armor: 5, boss: true, stubborn: true, canFlee: false, tactics: "cunning",
+    veil: true, veilSense: 55,   // v343 观气：夺舍藏魂，皮相之下另有乾坤
     introNote: "御灵宗一名结丹修士夺舍败露——神魂强占了一具筑基躯壳，结丹本命催发不全，战力被生生压在筑基一档。他执一柄通体莹绿的古剑「绿煌剑」，剑势大力沉、剑影分光多段攒袭；「越阶剑罡」循气追击、专破护体。甲坚剑利，这是一场势均的越阶恶战——胜则那柄结丹本命之器，归你。",
     attacks: [
       { name: "绿煌剑斩", dmg: 30, kind: "normal", weight: 12, elem: "jin", range: [1, 2], mp: 6 },

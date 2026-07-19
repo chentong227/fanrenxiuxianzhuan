@@ -187,7 +187,7 @@ const Main = {
     } catch (e) {}
 
     // 有存档则提示
-    if (!State.hasSave()) UI.el("btn-load").style.display = "none";
+    if (!State.hasAnySave()) UI.el("btn-load").style.display = "none";
 
     // —— 分享链接带活世界 key：?llmkey=sk-...&llmmodel=...（发给朋友即开即玩）——
     //    落地即存（localStorage）+ 地址栏即抹（replaceState 防 key 留在历史/再次分享泄漏）
@@ -598,7 +598,7 @@ const Main = {
     if (!this.testedRoot) { UI.toast("请先测灵根", true); return; }
     // 覆档二次确认（v340·精品化）：旧版有档也直接开新局，首个剧情落档就把老档冲掉——
     // 误触「踏入此界」=几十小时进度无声蒸发。有档必问，问过才开。
-    if (State.hasSave() && !this._newGameConfirmed) {
+    if (State.hasAnySave() && !this._newGameConfirmed) {
       UI.openModal(`
         <h2>重启此生？</h2>
         <p style="color:var(--ink-dim);line-height:1.8">此界已有一段仙缘在录（可点「读取存档」续修）。<br>
@@ -621,6 +621,9 @@ const Main = {
   },
 
   loadGame() {
+    // v343 多档位：有手动槽时开选档面板；只有自动档则照旧一键续玩（少一步点击）
+    const hasManual = [0, 1, 2].some(n => State.slotInfo(n));
+    if (hasManual) { UI.openSaveSlots("load"); return; }
     if (!State.load()) { UI.toast("没有可用的存档", true); return; }
     this._bootPreload(() => this._afterLoadEnter());
   },
@@ -735,7 +738,7 @@ const Main = {
     UI.el("btn-test-root").textContent = "测 灵 根";
     UI.el("btn-test-root").disabled = false;
     UI.el("btn-start").disabled = true;
-    if (State.hasSave()) UI.el("btn-load").style.display = "";
+    if (State.hasAnySave()) UI.el("btn-load").style.display = "";
   },
 };
 

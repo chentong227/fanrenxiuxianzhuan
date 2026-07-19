@@ -656,7 +656,10 @@ const UI = {
     }
     if (kind === "probe") {
       if (I) { I.markInteract(s, npcId); I.favor(s, npcId, -1); }
-      Engine.log(`你暗中打量「${nm}」，揣摩其底细。${n?n.bio:''}`, "sys");
+      // v343 观气·尔虞我诈：探查附带一眼气机——多数人深浅可辨，敛息高人只见「深浅莫测」，
+      // 神识够深方能窥破（窥破线各人不同）。窥破辞条只出一次实感，之后照常。
+      const gaze = this._npcGaze(npcId);
+      Engine.log(`你暗中打量「${nm}」，揣摩其底细。${n ? n.bio : ''}${gaze ? `<br>【观气】${gaze}` : ""}`, "sys");
       this.closeSheet(); State.save(); this.renderAll();
       return;
     }
@@ -677,6 +680,43 @@ const UI = {
       this.closeSheet(); State.save(); this.renderAll();
       return;
     }
+  },
+
+  /* -------- 观气（v343·尔虞我诈）：探查时附带的一眼修为判读 --------
+   * 敛息者（veil）神识不到窥破线只见「深浅莫测」；到线则窥破真容——
+   * 阈值按玩家 sense 成长曲线定（初始5，小突破+3，大突破+8：练气七层≈23，筑基≈49）。 */
+  _NPC_GAZE: {
+    modafu:      { veil: true, sense: 20, truth: "他刻意压着的气机深处透出一缕阴冷——这位「大夫」修为远在门中执事之上，且那股子味道……不像正道功法。" },
+    xiangzhili:  { veil: true, sense: 45, truth: "那双浑浊老眼深处神光如渊——此老的修为只怕在结丹之上，坊市里卧着这等人物。" },
+    dongxuaner:  { veil: true, sense: 30, truth: "娇憨笑靥之下气机绵长精纯，真实修为比同辈高出一大截——红拂座下，果无庸手。" },
+    xuanle:      { veil: true, sense: 35, truth: "谦和皮相底下气机森冷凝滞——此人修为深藏，且带着一股蓄势待发的杀意。" },
+    zhanwangchan:{ veil: true, sense: 40, truth: "他体内气机诡异地分作数股明灭不定——鬼灵门的路数，深不见底。" },
+    yuan_yao:    { veil: true, sense: 55, truth: "面纱之下气机被一层柔光裹得严严实实——结丹修士的手笔，她不想让人看清自己。" },
+    xuangu:      { veil: true, sense: 70, truth: "皮囊之下竟是另一股苍老至极的神魂气息——夺舍！此老真实修为曾臻元婴！" },
+    wuchou:      { veil: true, sense: 60, truth: "黑袍下的气机阴寒彻骨，隐有极阴一脉的祖传路数——修为深不可测。" },
+    fengxi:      { veil: true, sense: 70, truth: "笑容可掬的皮相下奔涌着狂暴如风暴的妖力——这位「大善人」根本不是人。" },
+    zhangtie:    { qi: "并无灵力波动——凡武之躯，靠一身横练撑着。" },
+    lifeiyu:     { qi: "无灵根而气血如炉，凡武一道已臻宗师之姿。" },
+    wanxiaoshan: { qi: "气机浮而不沉，约在练气三层上下——家学是好的，火候还浅。" },
+    sanxiu:      { qi: "气机游散驳杂，练气中段的散修——一身本事全靠野路子攒出来。" },
+  },
+  _npcGaze(npcId) {
+    const s = State.data;
+    const cfg = this._NPC_GAZE[npcId];
+    if (cfg) {
+      if (cfg.veil) {
+        if ((s.sense || 0) >= cfg.sense) return `<span style="color:var(--purple)">你神识过人，窥破其敛息之术——${cfg.truth}</span>`;
+        return "其气机内敛如渊，任你如何打量都探不出深浅——此人藏得极深，表象作不得数。";
+      }
+      return cfg.qi;
+    }
+    // 未建档者按 role 里的境界字样兜底；再兜「凡俗」与「看不真切」
+    const npc = (typeof WORLD !== "undefined" && WORLD.npcById) ? WORLD.npcById(npcId) : null;
+    const role = (npc && (npc.role || "")) + (npc && (npc.bio || ""));
+    const m = role.match(/(练气[一二三四五六七八九十]+层|筑基[初中后]期|结丹[初中后]?期?|元婴[初中后]?期?)/);
+    if (m) return `其气机沉稳不加掩饰，修为当在${m[1]}上下。`;
+    if (/凡|武|山民|汉子|郎中|姑娘|镖|农/.test(role)) return "并无灵力波动，不过凡俗之躯。";
+    return "气机寻常，一时看不出深浅。";
   },
 
   // 赠礼：从背包挑一件相赠，换交情
@@ -6935,9 +6975,14 @@ const UI = {
     const acts = [];
     if (node.kind === "danger" && !f.hunted[f.node]) {
       // 猎杀对象名：节点自带（阴冥·灰蜮母巢等）优先；后山沿用异闻妖王
+      // 与 Engine.exmapHunt 的对象解析保持同一口径（否则观的气和打的敌对不上）
+      const beastId = node.huntEnemy
+        || ((State.data.beastRumor && WORLD.enemies[State.data.beastRumor]) ? State.data.beastRumor : (map.beastEnemy || "wild_wolf"));
       const beast = node.huntName
         || ((State.data.beastRumor && WORLD.enemies[State.data.beastRumor]) ? WORLD.enemies[State.data.beastRumor].name : "盘踞的凶兽");
-      acts.push(`<button class="btn btn-warn" onclick="Engine.exmapHunt()">猎杀「${beast}」</button>`);
+      // v343 观气：动手前给一行直觉——练气一层贸然去啃 240 血的妖王，至少先看见「敌势远胜」
+      const gz = (beastId && Engine.assessFoe) ? Engine.assessFoe(beastId) : null;
+      acts.push(`<button class="btn btn-warn" onclick="Engine.exmapHunt()">猎杀「${beast}」${gz ? `<span class="hunt-gaze g-${gz.tone}">${gz.label}</span>` : ""}</button>`);
     } else if (node.loot && !f.cleared[f.node]) {
       acts.push(`<button class="btn" onclick="Engine.exmapGather()">${node.kind === "danger" ? "搜刮（1钟）" : "采集（1钟）"}</button>`);
     }
@@ -7087,7 +7132,8 @@ const UI = {
     // D2 巡场猎杀（节点级 huntEnemy·血煞兽）：先猎杀方可搜刮——不猎也能原路走开（可绕开）
     const huntPending = node.kind === "danger" && node.huntEnemy && !(f.hunted && f.hunted[f.node]);
     if (huntPending) {
-      acts.push(`<button class="btn btn-warn" onclick="Engine.exmapHunt()">猎杀「${node.huntName || "凶兽"}」</button>`);
+      const gz2 = Engine.assessFoe ? Engine.assessFoe(node.huntEnemy) : null;   // v343 观气
+      acts.push(`<button class="btn btn-warn" onclick="Engine.exmapHunt()">猎杀「${node.huntName || "凶兽"}」${gz2 ? `<span class="hunt-gaze g-${gz2.tone}">${gz2.label}</span>` : ""}</button>`);
     } else if (node.loot && !f.cleared[f.node]) acts.push(`<button class="btn" onclick="Engine.exmapGather()">${node.kind === "danger" ? "搜刮（1钟）" : "采集（1钟）"}</button>`);
     if (node.kind === "lore" && !f.guzhenUsed) acts.push(`<button class="btn" onclick="Engine.exmapReadLore()">以神识读阵</button>`);
     if (node.kind === "enter") acts.push(`<button class="btn btn-warn" onclick="Engine.exmapEnterSub()">潜入洞窟</button>`);
@@ -7829,13 +7875,86 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openLLMSettings()">活世界（实时对谈）</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openExpSettings()">体验设置（演出·动效·震动）</button>
         <button class="btn btn-secondary" onclick="if(typeof Sfx!=='undefined'){Sfx.toggle();} UI.openSystemMenu();">音效：${soundOn ? "开" : "关"}（点击切换）</button>
-        <button class="btn btn-secondary" onclick="UI.closeModal(); State.save() ? UI.toast('已存档') : UI.toast('存档失败', true)">存档</button>
-        <button class="btn btn-secondary" onclick="UI.exportSave()">导出存档（下载备份）</button>
+        <button class="btn btn-secondary" onclick="UI.openSaveSlots('save')">存档（多档位）</button>
+        <button class="btn btn-secondary" onclick="UI.openSaveSlots('load')">读档</button>
         <button class="btn btn-secondary" onclick="UI.importSave()">导入存档（读取备份）</button>
         <button class="btn btn-ghost" onclick="UI.closeModal(); Main.toCreate()">回主菜单</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">返回</button>
       </div>
     `);
+  },
+
+  /* -------- 多档位存读面板（v343·用户裁决）：3 手动槽 + 1 自动档 --------
+   * mode="save"：系统菜单进——各槽「存入」，占用槽二次确认覆盖；自动档只读展示。
+   * mode="load"：主菜单/终章屏进——有档的槽「读取」。 */
+  openSaveSlots(mode) {
+    const CH_NAME = { qixuan: "七玄门", huangfeng: "黄枫谷", modao: "魔道争锋", zaibie: "再别天南", starsea: "乱星海", xinghaifeichi: "星海飞驰", waihaifengyun: "外海风云" };
+    const fmtT = (t) => {
+      if (!t) return "";
+      const d = new Date(t);
+      return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    };
+    const row = (n, label) => {
+      const info = State.slotInfo(n);
+      const meta = info && !info.corrupt
+        ? `<b>${info.name}</b> · ${info.realm} · 第${info.year}年${info.month}月 · ${CH_NAME[info.chapter] || info.chapter}<span class="slot-time">${fmtT(info.savedAt)}</span>`
+        : (info && info.corrupt ? `<span style="color:var(--red)">档案损毁</span>` : `<span style="color:var(--ink-faint)">空</span>`);
+      let act = "";
+      if (mode === "save") {
+        act = n < 0
+          ? `<span class="slot-auto-tag">每月自动记录</span>`
+          : (info
+            ? `<button class="btn btn-mini" onclick="UI._confirmSlotSave(${n})">覆盖</button>`
+            : `<button class="btn btn-mini btn-primary" onclick="UI._doSlotSave(${n})">存入</button>`);
+      } else {
+        act = (info && !info.corrupt)
+          ? `<button class="btn btn-mini btn-primary" onclick="UI._doSlotLoad(${n})">读取</button>`
+          : "";
+      }
+      return `<div class="save-slot"><div class="slot-name">${label}</div><div class="slot-meta">${meta}</div><div class="slot-act">${act}</div></div>`;
+    };
+    this.openModal(`
+      <h2>${mode === "save" ? "存档 · 择位而录" : "读档 · 重续仙缘"}</h2>
+      <div class="save-slots">
+        ${row(-1, "自动档")}
+        ${row(0, "档位一")}
+        ${row(1, "档位二")}
+        ${row(2, "档位三")}
+      </div>
+      <p style="color:var(--ink-faint);font-size:12px;margin-top:8px">自动档每月行动后自动记录；身死那一刻不落档——终章处可回档再来。</p>
+      <div class="modal-actions">
+        ${mode === "save" ? `<button class="btn btn-secondary" onclick="UI.exportSave()">导出备份（下载文件）</button>` : ""}
+        <button class="btn btn-ghost" onclick="UI.closeModal()${mode === "save" ? "; UI.openSystemMenu()" : ""}">返回</button>
+      </div>
+    `);
+  },
+  _confirmSlotSave(n) {
+    this.openModal(`
+      <h2>覆盖档位${["一", "二", "三"][n]}？</h2>
+      <p style="color:var(--ink-dim)">此槽已有一段仙缘在录，覆盖后不可追回。</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="UI._doSlotSave(${n})">覆盖存入</button>
+        <button class="btn btn-ghost" onclick="UI.openSaveSlots('save')">再想想</button>
+      </div>
+    `);
+  },
+  _doSlotSave(n) {
+    if (State.saveSlot(n)) { this.toast(`已存入档位${["一", "二", "三"][n]}`); this.openSaveSlots("save"); }
+    else this.toast("存档失败（调试局不落档/储存空间不足）", true);
+  },
+  _doSlotLoad(n) {
+    if (!State.loadSlot(n)) { this.toast("读档失败", true); return; }
+    this.closeModal();
+    // 终章屏/战败现场读档：战斗残景一并收干净（引擎战斗对象不可序列化，读档即弃局）
+    try { this.closeCombat(); } catch (e) {}
+    try { if (typeof Engine !== "undefined") Engine._combat = null; } catch (e) {}
+    try { const so = this.el("story-overlay"); if (so) so.hidden = true; document.body.classList.remove("story-on"); } catch (e) {}
+    this.toast(n < 0 ? "已读取自动档" : `已读取档位${["一", "二", "三"][n]}`);
+    // 从主菜单进来须先走资源预热（首屏立绘/场景），游戏内读档则直接续场
+    if (typeof Main !== "undefined" && Main._afterLoadEnter) {
+      if (Main._bootPreload) Main._bootPreload(() => Main._afterLoadEnter());
+      else Main._afterLoadEnter();
+    }
   },
 
   /* -------- 存档备份（v340·精品化）：纯前端游戏的存档只活在 localStorage——

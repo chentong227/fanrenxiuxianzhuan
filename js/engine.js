@@ -4933,6 +4933,39 @@ const Engine = {
   },
 
   // 普通遭遇战
+  /* -------- 观气·战前战力预估（v343·用户裁决）--------
+   * 猎杀按钮/遭遇入口的一行直觉：拿敌方 气血+均伤+练气层数 对比我方 气血+最强攻击+境界，
+   * 粗算胜率档（观气本就是直觉，不给百分数）。修士若「敛息」（veil），神识不够只见深浅莫测——
+   * 修仙界的尔虞我诈：表象作不得数。 */
+  assessFoe(idOrTmpl) {
+    const t = typeof idOrTmpl === "string" ? WORLD.enemies[idOrTmpl] : idOrTmpl;
+    if (!t) return null;
+    const s = State.data;
+    const atks = t.attacks || [];
+    const eDmg = atks.length ? atks.reduce((a, x) => a + (x.dmg || 0), 0) / atks.length : 12;
+    const eScore = (t.hp || 80) / 28 + eDmg / 6 + (t.qiLayer || 0) * 1.2;
+    let pBest = 10;
+    try {
+      const SP = (typeof CombatAPI !== "undefined" && CombatAPI.SPELLS) || {};
+      (s.spells || []).forEach(id => { const sp = SP[id]; if (sp && sp.dmg && sp.dmg > pBest) pBest = sp.dmg; });
+    } catch (e) {}
+    const pScore = (s.hpMax || 100) / 28 + pBest / 6 + (s.realmIndex + 1) * 1.2;
+    const r = pScore / Math.max(0.1, eScore);
+    if (t.veil) {
+      const pierce = (s.sense || 0) >= (t.veilSense || 16);
+      if (!pierce) return { label: "观气：气机内敛 · 深浅莫测", tone: "veil" };
+      const base = this._assessLabel(r);
+      return { label: base.label + "（神识窥破其敛息）", tone: base.tone };
+    }
+    return this._assessLabel(r);
+  },
+  _assessLabel(r) {
+    if (r >= 1.5) return { label: "观气：胜算在握", tone: "good" };
+    if (r >= 1.02) return { label: "观气：势均力敌", tone: "even" };
+    if (r >= 0.72) return { label: "观气：凶多吉少", tone: "bad" };
+    return { label: "观气：敌势远胜——莫要送死", tone: "dire" };
+  },
+
   startEncounterFight(enemyId) {
     const s = State.data;
     const tmpl = WORLD.enemies[enemyId];
@@ -5005,6 +5038,9 @@ const Engine = {
     this._combat.startRound();
     this.log(`你在${State.location().name}遭遇「${tmpl.name}」，斗法一触即发！`, "bad");
     if (enemy.introNote) this._combat._log(`【敌情】${enemy.introNote}`);
+    // v343 观气：开打第一拍先给一眼胜负直觉——敛息的修士只见「深浅莫测」（神识够深方可窥破）
+    const gz = this.assessFoe(tmpl);
+    if (gz) this._combat._log(`【${gz.label.replace("观气：", "观气】")}${gz.tone === "veil" ? "——此獠藏得极深，小心为上" : ""}`);
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -9608,8 +9644,10 @@ const Engine = {
       <div class="chronicle">${msHtml}</div>
       ${worldTxt ? `<p style="color:var(--ink-faint);font-size:12px;margin-top:10px">${worldTxt}</p>` : ""}
       <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="Main.toCreate()">重入轮回</button>
+        ${State.hasAnySave() ? `<button class="btn btn-primary" onclick="UI.openSaveSlots('load')">回档再来 · 重续此生</button>` : ""}
+        <button class="btn btn-secondary" onclick="Main.toCreate()">重入轮回（重开新档）</button>
       </div>
+      ${State.hasAnySave() ? `<p style="color:var(--ink-faint);font-size:12px;margin-top:8px">身死那一刻并未落档——自动档仍停在殒身之前的最后一个活月。</p>` : ""}
     `);
   },
 };

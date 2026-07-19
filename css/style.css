@@ -82,6 +82,28 @@ body.desk-shell .shell-hint {
   color: rgba(214, 196, 160, .38); pointer-events: none;
 }
 
+/* ===== 多档位存读面板（v343） ===== */
+.save-slots { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.save-slot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-panel-2);
+}
+.save-slot .slot-name { flex: 0 0 52px; color: var(--gold); font-size: 13px; letter-spacing: 2px; }
+.save-slot .slot-meta { flex: 1; min-width: 0; font-size: 13px; color: var(--ink); line-height: 1.5; }
+.save-slot .slot-meta b { color: var(--jade-bright); }
+.save-slot .slot-time { display: block; color: var(--ink-faint); font-size: 11px; }
+.save-slot .slot-act { flex: 0 0 auto; }
+.save-slot .slot-auto-tag { color: var(--ink-faint); font-size: 11px; letter-spacing: 1px; }
+
+/* ===== 观气·战力预估（v343）：猎杀按钮下的直觉一行 ===== */
+.hunt-gaze { display: block; font-size: 11px; letter-spacing: 1px; margin-top: 3px; font-weight: 400; }
+.hunt-gaze.g-good { color: var(--jade-bright); }
+.hunt-gaze.g-even { color: var(--gold); }
+.hunt-gaze.g-bad  { color: #d99a4e; }
+.hunt-gaze.g-dire { color: var(--red); }
+.hunt-gaze.g-veil { color: var(--purple); }
+
 /* ===== 手机横屏遮罩（v342）：竖屏布局横过来挤成一团——触屏+横向+矮视口时浮出提示 ===== */
 .rotate-hint {
   position: fixed; inset: 0; z-index: 9999; display: none;

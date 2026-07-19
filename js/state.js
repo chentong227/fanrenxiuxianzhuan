@@ -2,7 +2,8 @@
  * state.js — 游戏状态：创建、存档、读档
  * ============================================================ */
 
-const SAVE_KEY = "frxxz_save_v1";
+const SAVE_KEY = "frxxz_save_v1";                     // 自动档（每月行动自动写入·兼容旧单档存档）
+const SLOT_KEYS = ["frxxz_slot_1", "frxxz_slot_2", "frxxz_slot_3"];   // 手动档位 ×3（v343）
 
 const State = {
   data: null,
@@ -124,7 +125,11 @@ const State = {
     // 会 State.create 覆盖内存态，行动一结算 save() 就把玩家真档冲掉——点过一次演武链接=进度清零。
     // main.init 检出调试参数即挂 _ephemeral 旗，本局只玩不存。
     if (this._ephemeral) return true;
+    // 不落死档（v343·用户裁决「死亡不能就此结束」）：身死/寿尽那一拍的状态不写盘——
+    // 自动档永远停在殒身前的最后一个活月，终章屏「回档再来」读回去就是生路。
+    if (this.data && (this.data.hp <= 0 || this.data.age >= this.data.lifespan)) return true;
     try {
+      this.data.savedAt = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
       return true;
     } catch (e) { return false; }
@@ -138,6 +143,47 @@ const State = {
       return true;
     } catch (e) { return false; }
   },
+
+  // ---- 手动档位（v343）：3 槽手动 + 1 槽自动，存/读/看均走这里 ----
+  // n=0..2 手动槽；n=-1 自动档。读手动档时顺手把自动档对齐——刷新后续读的仍是同一段进度。
+  saveSlot(n) {
+    if (this._ephemeral || !this.data || !SLOT_KEYS[n]) return false;
+    try {
+      this.data.savedAt = Date.now();
+      localStorage.setItem(SLOT_KEYS[n], JSON.stringify(this.data));
+      return true;
+    } catch (e) { return false; }
+  },
+  loadSlot(n) {
+    const key = n < 0 ? SAVE_KEY : SLOT_KEYS[n];
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return false;
+      this.data = JSON.parse(raw);
+      this._migrate();
+      if (n >= 0) { try { localStorage.setItem(SAVE_KEY, raw); } catch (e) {} }
+      return true;
+    } catch (e) { return false; }
+  },
+  slotInfo(n) {
+    const key = n < 0 ? SAVE_KEY : SLOT_KEYS[n];
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      return {
+        name: d.name || "韩立",
+        realm: (DATA.realms[d.realmIndex] || {}).name || "凡夫",
+        year: d.year || 1, month: d.month || 1,
+        chapter: d.activeChapter || "qixuan",
+        savedAt: d.savedAt || 0,
+      };
+    } catch (e) { return { corrupt: true }; }
+  },
+  hasAnySave() {
+    try { return !!(localStorage.getItem(SAVE_KEY) || SLOT_KEYS.some(k => localStorage.getItem(k))); }
+    catch (e) { return false; }
+  },
   // 老存档兜底：新增字段补默认值（保证篇章扩展后旧档不崩）
   _migrate() {
     const d = this.data;
@@ -149,6 +195,9 @@ const State = {
     // 拦成「酣战之中，无暇他顾」、手机端连行动 sheet 都不弹＝死档。战斗本就不可序列化续打，
     // 读档一律清旗；待决的战斗剧情仍在 pendingEvent 里，重开演出可再战，一分不丢。
     d.combat = false;
+    // 死档吊命（v343）：v343 之前死亡瞬间的状态可能已写进档——读回来一动就再死=死循环。
+    // 一口真气吊回 1 点气血，给玩家嗑药/调息的活路（寿尽档无解，终章屏自会再见）。
+    if (typeof d.hp === "number" && d.hp <= 0) d.hp = 1;
     if (!d.benchTreasures) d.benchTreasures = [];
     if (!d.activeChapter) d.activeChapter = "qixuan";
     if (!d.unlockedChapters) d.unlockedChapters = ["qixuan"];
