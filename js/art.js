@@ -44,7 +44,9 @@
     gongsun_xing: 1, wen_siyue: 1, mei_ning: 1, yinyue: 1,
     tieluo: 1, wuse_menzhu: 1, zhanwangchan: 1, xuwang: 1,
     zhao_zheng: 1, sun_menzhu: 1, jiyin_zushi: 1, jin_qing: 1,
-    xuangu: 1, yuan_yao: 1, man_huzi: 1, qingyi_jushi: 1,
+    // yuan_yao（元瑶）从注册表摘除（v329·资产审计）：assets/portraits/yuan_yao.png 从未入库，
+    // 挂着注册=对话/图鉴渲染 404 空框。生图补上后再登记回来。
+    xuangu: 1, man_huzi: 1, qingyi_jushi: 1,
     wan_tianming: 1, wen_tianren: 1, ling_yuling: 1,
   };
 

@@ -1354,6 +1354,22 @@ const UI = {
     const overlay = this.el("story-overlay");
     // 兜底：若剧情舞台 DOM 缺失，退回把整段剧情写入叙事日志并直接出选项，绝不卡住
     if (!overlay) { this._renderStoryFallback(stage); return; }
+    // v329 立绘落座（用户实锤"立绘应缩小放在对话框上方"）：实时量对话框+选项区高度写成
+    // CSS 变量 --story-dlg-h——手机端立绘 bottom 锚到这条线上，台词变长/选项弹出立绘都跟着抬，
+    // 永远站在框沿之上、不被框吞下半张脸。ResizeObserver 一次性挂载，缺 API 则退 CSS 默认值。
+    if (!this._dlgRO && typeof ResizeObserver !== "undefined") {
+      const upd = () => {
+        const ov = this.el("story-overlay"); if (!ov) return;
+        const d = this.el("story-dialog"), ch = this.el("story-choices");
+        const h = (d && !d.hidden ? d.offsetHeight : 0) + (ch ? ch.offsetHeight : 0);
+        ov.style.setProperty("--story-dlg-h", h + "px");
+      };
+      this._dlgRO = new ResizeObserver(upd);
+      const dEl = this.el("story-dialog"), cEl = this.el("story-choices");
+      if (dEl) this._dlgRO.observe(dEl);
+      if (cEl) this._dlgRO.observe(cEl);
+      upd();
+    }
     // 将 stage.text 的混合段落解析成统一的"演出节拍"序列
     const beats = this._buildStoryBeats(stage);
     this._story = { stage, beats, idx: -1, replay: !!opts.replay };

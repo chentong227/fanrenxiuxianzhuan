@@ -4326,10 +4326,11 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   background: linear-gradient(180deg, rgba(12,10,8,.55) 0%, rgba(12,10,8,.1) 35%, rgba(12,10,8,.4) 70%, rgba(12,10,8,.92) 100%);
 }
 
-/* 阶段标题：左上角小字 */
+/* 阶段标题：左上角小字。right 锚定给「跳过」让位（v329·QA：360px 级小屏上
+ * 「初入星海 · 登临魁星岛」这类长题会撞进跳过键——限宽后自然折行，不相叠） */
 .story-stage-name {
-  position: absolute; top: 22px; left: 26px; z-index: 3;
-  color: var(--gold); font-size: 15px; letter-spacing: 3px;
+  position: absolute; top: 22px; left: 26px; right: 104px; z-index: 3;
+  color: var(--gold); font-size: 15px; letter-spacing: 3px; line-height: 1.5;
   text-shadow: 0 2px 8px rgba(0,0,0,.8);
   border-left: 3px solid var(--gold); padding-left: 10px;
 }
@@ -4502,18 +4503,17 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
     justify-content: flex-end; overflow-y: auto;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  /* 手机：只显示当前说话者一人，立绘立于对话框之后（VN 式：下半身没入文本框，头胸完整露出）；
-     旁白时无立绘，对话干净 */
-  /* v323 对话演出重排（用户实测"人物居中悬空/每句翻转刷新/不贴对话框"）——
-   * 视觉小说标准布局：双立绘常驻一左一右、站在对话框后面（bottom:0，下半身被对话框自然遮住=贴框，
-   * 名字正好显示在说话人脚前的对话框上沿），说话人亮且压前、对方压暗退后。
-   * 不再 display:none 切换→入场动画只在真正首次登场时播一次，此后换人说话只切明暗，绝不重播滑入/翻转。 */
+  /* v329 立绘重排（用户实测 v323 版"46vh 大特写下巴压进对话框"——立绘素材是 1024² 面部特写，
+   * 不是半身像，bottom:0 被框遮=巨脸坐在框上）：缩小到 30vh、底边锚在对话框上沿——
+   * --story-dlg-h 由 UI 的 ResizeObserver 实时写入（对话框/选项区高度变化立绘跟着落座），
+   * 双立绘仍一左一右常驻、说话人亮压前、换人只切明暗不重播入场。 */
   .story-portrait {
-    display: block; height: 46vh; max-height: 430px;
-    bottom: 0; z-index: 2;
+    display: block; height: 30vh; max-height: 300px;
+    bottom: var(--story-dlg-h, 26vh); z-index: 2;
+    transition: opacity .3s ease, filter .3s ease, transform .3s ease, bottom .22s ease;
   }
-  .story-portrait.left  { left: -16%; }
-  .story-portrait.right { right: -16%; }
+  .story-portrait.left  { left: -10%; }
+  .story-portrait.right { right: -10%; }
   .story-portrait.on:not(.dim) { z-index: 3; }   /* 说话人压前——双立绘中缝重叠时说话者在上 */
   .story-text { font-size: 16px; line-height: 1.85; min-height: 36px; }
   .story-dialog {
