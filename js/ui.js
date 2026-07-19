@@ -3534,9 +3534,12 @@ const UI = {
     const dock = this.el("action-dock");
     if (!dock) return;
     if (show) {
- clearTimeout(this._dockHideTimer);   // 取消上一次"隐藏"待执行计时——否则地图↔据点快速切换会把刚弹出的 sheet 又隐藏（show 类在但 hidden 属性回 true）
- dock.hidden = false;
- requestAnimationFrame(() => dock.classList.add("show"));
+      clearTimeout(this._dockHideTimer);   // 取消上一次"隐藏"待执行计时——否则地图↔据点快速切换会把刚弹出的 sheet 又隐藏（show 类在但 hidden 属性回 true）
+      dock.hidden = false;
+      // v333：rAF 改同步强制回流——后台标签页/不可见窗口里 rAF 永不触发，dock 会卡在
+      // translateY(100%) 藏于底栏后（行动全点不到）；回流写法可见性无关，且过渡照常起播
+      void dock.offsetHeight;
+      dock.classList.add("show");
  document.body.classList.add("dock-active");
  this._renderDockActions();
     } else {
@@ -4664,8 +4667,10 @@ const UI = {
           <button class="btn btn-mini" onclick="Engine.marketSell('${id}')"><span class="mprice">售 ${Math.max(1, Math.round(it.sell * 0.8))}两</span></button>
         </div>`;
       }).join("")}` : "";
+    // 标题随所在地（v333·playtest 实锤）：旧版写死「山下集镇」，在嘉元城长街买东西也顶着集镇名
+    const mloc = WORLD.locations.find(l => l.id === s.location);
     this.openSheet(`
-      <h2>山下集镇 · 采买</h2>
+      <h2>${(mloc && mloc.name) || "集镇"} · 采买</h2>
       <p style="color:var(--ink-dim)">纹银：${State.data.silver} 两</p>
       ${blackMarket ? '<p style="color:var(--gold);font-size:12px">巷尾的药贩子朝你挤眼——丹房失窃的那批养元丹，正在黑市贱卖。过了这村没这店。</p>' : ''}
       ${html}
