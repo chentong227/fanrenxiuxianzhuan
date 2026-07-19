@@ -248,6 +248,11 @@ body.motion-off .title-seal, body.motion-off .create-title-block .subtitle { ani
 }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn:disabled:hover { border-color: var(--border); color: var(--ink); }
+/* 键盘寻航焦点圈（v340 精品化）：桌面玩家 Tab 走键盘时给金边描焦；鼠标点按不显（:focus-visible） */
+.btn:focus-visible, .choice:focus-visible, .spell-btn:focus-visible,
+.scene-hotspot:focus-visible, .story-skip:focus-visible, .inv-cat:focus-visible {
+  outline: 2px solid rgba(212, 176, 106, .75); outline-offset: 2px;
+}
 
 .btn-primary {
   width: 100%; margin-top: 6px; background: linear-gradient(180deg, #2c5d4a, #1d4336);
@@ -1026,13 +1031,20 @@ body.dock-active .layout .mid-col {
 .choices .choice:nth-child(3) { animation-delay: 0.12s; }
 .choices .choice:nth-child(4) { animation-delay: 0.18s; }
 @keyframes choiceIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.choices .choice {
-  text-align: left; padding: 12px 16px; background: var(--bg-panel-2);
+/* v340 精品化：.choice 升为一等组件——旧版样式挂在 `.choices .choice` 下，
+ * 剧情演出的选项容器是 .story-choices（不含 .choices 类），全剧情的抉择按钮
+ * 其实从未吃到主题样式=浏览器默认白底按钮（用户实拍里的"大白块"），与
+ * 「夜读残卷」墨纸金烛的美术方向完全打架。基类统一，容器只管排布与动画。 */
+.choice {
+  text-align: left; padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(255, 250, 240, 0.03), rgba(0, 0, 0, .14)), var(--bg-panel-2);
   border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
   color: var(--ink); transition: all 0.15s; font-family: inherit; font-size: 15px;
+  letter-spacing: .5px; line-height: 1.6;
 }
-.choices .choice:hover { border-color: var(--jade); background: rgba(95, 184, 154, 0.08); }
-.choices .choice .c-hint { display: block; color: var(--ink-dim); font-size: 12px; margin-top: 4px; }
+.choice:hover { border-color: var(--jade); background: rgba(95, 184, 154, 0.08); }
+.choice:disabled { opacity: .4; cursor: not-allowed; }   /* 奇遇/交互中 cond 不满足的选项——原规则只盖 .modal 下 */
+.choice .c-hint { display: block; color: var(--ink-dim); font-size: 12px; margin-top: 4px; }
 
 /* ===== 行动面板 ===== */
 .mid-col.story-pending .action-buttons,

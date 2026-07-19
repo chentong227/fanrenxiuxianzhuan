@@ -7830,10 +7830,53 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openExpSettings()">体验设置（演出·动效·震动）</button>
         <button class="btn btn-secondary" onclick="if(typeof Sfx!=='undefined'){Sfx.toggle();} UI.openSystemMenu();">音效：${soundOn ? "开" : "关"}（点击切换）</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); State.save() ? UI.toast('已存档') : UI.toast('存档失败', true)">存档</button>
+        <button class="btn btn-secondary" onclick="UI.exportSave()">导出存档（下载备份）</button>
+        <button class="btn btn-secondary" onclick="UI.importSave()">导入存档（读取备份）</button>
         <button class="btn btn-ghost" onclick="UI.closeModal(); Main.toCreate()">回主菜单</button>
         <button class="btn btn-ghost" onclick="UI.closeModal()">返回</button>
       </div>
     `);
+  },
+
+  /* -------- 存档备份（v340·精品化）：纯前端游戏的存档只活在 localStorage——
+   * 清浏览器数据/换设备/隐私模式=修为尽毁。导出下载 JSON、导入选文件回灌，跨设备一条龙。 */
+  exportSave() {
+    try {
+      State.save();   // 先把内存态落一笔，导出的永远是最新进度
+      const raw = localStorage.getItem("frxxz_save_v1");
+      if (!raw) { this.toast("尚无存档可导出", true); return; }
+      const d = State.data || {};
+      const stamp = `${d.year || 1}年${d.month || 1}月-${(DATA.realms[d.realmIndex] || {}).name || ""}`;
+      const blob = new Blob([raw], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `凡人修仙传-存档-${stamp}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      this.toast("存档已导出——收好这份仙缘");
+    } catch (e) { this.toast("导出失败：" + e.message, true); }
+  },
+  importSave() {
+    const input = document.createElement("input");
+    input.type = "file"; input.accept = ".json,application/json";
+    input.onchange = () => {
+      const f = input.files && input.files[0];
+      if (!f) return;
+      const rd = new FileReader();
+      rd.onload = () => {
+        try {
+          const s = JSON.parse(rd.result);
+          if (!s || typeof s.realmIndex !== "number" || !s.flags) throw new Error("不是本游戏的存档文件");
+          localStorage.setItem("frxxz_save_v1", rd.result);
+          if (!State.load()) throw new Error("存档解析失败");
+          this.closeModal();
+          this.toast("存档已导入——重续仙缘");
+          if (typeof Main !== "undefined" && Main._afterLoadEnter) Main._afterLoadEnter();
+        } catch (e) { this.toast("导入失败：" + e.message, true); }
+      };
+      rd.readAsText(f);
+    };
+    input.click();
   },
 
   /* -------- §9 体验设置（演出速度 / 动效强度 / 震动）-------- */

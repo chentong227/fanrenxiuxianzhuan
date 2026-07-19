@@ -56,6 +56,16 @@ const Main = {
     // §9 体验设置：把"动效强度"档落到 body class（CSS 据此静态化 idle 动画）
     if (typeof Settings !== "undefined" && Settings.applyMotionClass) Settings.applyMotionClass();
 
+    // 演武场/调试入口本局不落档（v340）：这些入口 State.create 覆盖内存态后每步行动都会 save()，
+    // 玩家点一次演武链接=真档被冲掉。检出任一调试参数即挂旗，State.save 全程放空枪。
+    try {
+      const q0 = new URLSearchParams(location.search);
+      if (["demo", "debugfight", "citydemo", "debugstory", "fxdemo"].some(k => q0.get(k))) {
+        State._ephemeral = true;
+        console.log("[frxxz] 调试/演武入口：本局不写存档");
+      }
+    } catch (e) {}
+
     // —— 角色创建：测灵根 ——
     UI.el("btn-test-root").addEventListener("click", () => this.testRoot());
     UI.el("btn-start").addEventListener("click", () => this.startGame());
@@ -569,6 +579,21 @@ const Main = {
 
   startGame() {
     if (!this.testedRoot) { UI.toast("请先测灵根", true); return; }
+    // 覆档二次确认（v340·精品化）：旧版有档也直接开新局，首个剧情落档就把老档冲掉——
+    // 误触「踏入此界」=几十小时进度无声蒸发。有档必问，问过才开。
+    if (State.hasSave() && !this._newGameConfirmed) {
+      UI.openModal(`
+        <h2>重启此生？</h2>
+        <p style="color:var(--ink-dim);line-height:1.8">此界已有一段仙缘在录（可点「读取存档」续修）。<br>
+        执意重开，旧档将被<b style="color:var(--red)">覆盖抹去</b>，不可追回。</p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="UI.closeModal(); Main._newGameConfirmed = true; Main.startGame();">覆旧开新，重活一世</button>
+          <button class="btn btn-ghost" onclick="UI.closeModal()">再想想</button>
+        </div>
+      `);
+      return;
+    }
+    this._newGameConfirmed = false;
     const name = (UI.el("input-name").value || "韩立").trim();
     State.create(name, this.testedRoot);
     this._bootPreload(() => {

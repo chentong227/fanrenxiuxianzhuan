@@ -120,6 +120,10 @@ const State = {
 
   // ---- 存读档 ----
   save() {
+    // 演武场/调试入口不落档（v340·遗留数据丢失陷阱）：?demo/?debugfight/?citydemo 等
+    // 会 State.create 覆盖内存态，行动一结算 save() 就把玩家真档冲掉——点过一次演武链接=进度清零。
+    // main.init 检出调试参数即挂 _ephemeral 旗，本局只玩不存。
+    if (this._ephemeral) return true;
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
       return true;
