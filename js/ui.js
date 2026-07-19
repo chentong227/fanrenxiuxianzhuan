@@ -853,6 +853,31 @@ const UI = {
     this.renderAll();
   },
 
+  /* 行动后果速览（教学缺口·2026-07-19 playtest：「按钮不讲耗时/风险/收益」）——
+   * 每个核心月行动一行小字：耗时 + 主要产出/风险。只写确定成立的事实（时长取自
+   * WORLD.activities/DATA.actions），不写数值细节（数值随境界/技能浮动）。
+   * 地点自定义 actionLabels 的行动不套（label 语境已特化）；两条渲染路径共用本表。 */
+  ACT_HINTS: {
+    cultivate: "择月数闭关 · 主涨修为",
+    rest: "1月 · 回灵力气血 · 平心境",
+    breakthrough: "修为圆满时冲下一层",
+    gather: "1月 · 得草药 · 长药理",
+    spar: "1月 · 磨武艺 · 积剑意",
+    alchemy: "1月 · 灵草炼丹 · 长药理",
+    investigate: "1月 · 探查隐秘 · 添心魔",
+    adventure: "1月 · 机缘与凶险并存",
+    explore: "入山走格 · 采宝亦可能遇兽",
+    market: "购置丹药材料",
+    fair: "赶集看货 · 以物易物",
+    board: "读告示 · 不耗光阴",
+    rumor: "听风声 · 不耗光阴",
+  },
+  _actBtnHtml(a, loc, focus, labels) {
+    const custom = loc.actionLabels && loc.actionLabels[a];
+    const hint = !custom && this.ACT_HINTS[a] ? `<span class="act-sub">${this.ACT_HINTS[a]}</span>` : "";
+    return `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${custom || labels[a] || a}${hint}</button>`;
+  },
+
   // 根据当前地点动态生成可用行动按钮
   renderActions() {
     const loc = State.location();
@@ -937,7 +962,7 @@ const UI = {
     // 演出即引导：落幕时指定的行动按钮脉冲高亮一次（指明"该点哪个"），消费即清
     const focus = this._pendingFocus; this._pendingFocus = null;
     box.innerHTML = (acts.length || windowBtn || resumeBtn)
-      ? resumeBtn + windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
+      ? resumeBtn + windowBtn + acts.map(a => this._actBtnHtml(a, loc, focus, labels)).join("")
       : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>`
       : (hasHotspots ? `<div class="act-hint">— 点场景中发光标记行事 —</div>` : ""));
     box.querySelectorAll("[data-action]").forEach(btn => {
@@ -3572,7 +3597,7 @@ const UI = {
     }
     const focus = this._pendingFocus; this._pendingFocus = null;
     dockBox.innerHTML = (acts.length || windowBtn || resumeBtn)
-      ? resumeBtn + windowBtn + acts.map(a => `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${(loc.actionLabels && loc.actionLabels[a]) || labels[a] || a}</button>`).join("")
+      ? resumeBtn + windowBtn + acts.map(a => this._actBtnHtml(a, loc, focus, labels)).join("")
       : (loc.scene ? `<div class="act-hint">— 此地仅供过场，循剧情前行 —</div>`
       : (loc.hotspots ? `<div class="act-hint">— 点场景中发光标记行事 —</div>` : ""));
     dockBox.querySelectorAll("[data-action]").forEach(btn => {

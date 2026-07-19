@@ -104,9 +104,14 @@ body.desk-shell .shell-hint {
 #screen-create.active { display: flex; flex-direction: row; }
 .create-bg {
   position: absolute; inset: -2%;
-  background: url("../assets/scenes/shanmen.png?v=9") center 30% / cover no-repeat;
+  /* ?v= 与 art.js ASSET_VER(29) 对齐：同一 URL 命中 sw 资产持久仓/预载缓存，不再另拉一份旧版本副本 */
+  background: url("../assets/scenes/shanmen.png?v=29") center 30% / cover no-repeat;
   filter: brightness(.5) saturate(.82);
   animation: sceneDrift 50s ease-in-out infinite alternate;
+}
+/* 竖屏/窄屏用竖版山门图（与 Art.isPortraitScreen 同判据 ≤520px）：cover 不再横裁近半、开屏第一眼构图完整 */
+@media (max-width: 520px) {
+  .create-bg { background-image: url("../assets/scenes/shanmen_p.png?v=29"); }
 }
 .create-veil {
   position: absolute; inset: 0; pointer-events: none;
@@ -1031,6 +1036,8 @@ body.dock-active .layout .mid-col {
 .act-hint { color: var(--ink-dim); font-size: 13px; text-align: center; padding: 10px; font-style: italic; }
 .action-buttons { display: flex; flex-direction: column; gap: 8px; }
 .btn-action { width: 100%; text-align: center; }
+/* 行动后果速览（教学）：按钮下一行小字——耗时/主要产出，与剧情选项 .c-hint 同调 */
+.btn-action .act-sub { display: block; color: var(--ink-dim); font-size: 11px; letter-spacing: .5px; margin-top: 3px; font-weight: 400; }
 .btn-action[data-action="breakthrough"] { color: var(--gold); border-color: rgba(212,176,106,0.5); }
 .btn-action[data-action="breakthrough"]:hover { background: rgba(212,176,106,0.12); color: var(--gold-bright); }
 
@@ -4455,7 +4462,9 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
   display: inline-flex; align-items: center; justify-content: center;
   padding: 8px 14px; border: 1px solid rgba(212,176,106,.32); border-radius: 14px;
   background: rgba(14,11,9,.7); cursor: pointer; user-select: none;
+  font-family: inherit;   /* 改真 <button> 后抹平 UA 默认字体 */
 }
+.story-skip[hidden] { display: none; }   /* button 的 display:inline-flex 会盖掉 hidden，显式压回 */
 .story-overlay { cursor: pointer; }
 .story-skip:hover { color: var(--gold); border-color: rgba(212,176,106,.6); }
 /* 交互 beat：把"操作"嵌进演出（伺机出手 / 限信息抉择）*/

@@ -179,6 +179,26 @@ console.log("== 7. §9-5 危局氛围：心跳低鼓控制器（起/收/幂等/�
   FakeCtx.prototype.createOscillator = origOsc;
 }
 
+console.log("== 9(v324). 让位期间换轨：新轨淡入目标吃 duck 系数，不弹回全音量 ==");
+{
+  // 起环境床（duck）→ 换轨 → 新轨应淡入到 BGM_V×0.16，而非全音量 BGM_V
+  Sfx.ambient("night");
+  tick(240);
+  const n0 = created.length;
+  Sfx.bgm("town");
+  const nw = created[n0];
+  assert(nw && /bgm_town\.mp3$/.test(nw.src), "让位中 bgm('town') 创建新轨");
+  tick(600);
+  assert(near(nw.volume, BGM_V * 0.16, 0.012),
+    `新轨淡入到让位音量 ×0.16≈${(BGM_V * 0.16).toFixed(3)}（实际 ${nw.volume.toFixed(3)}）——不再冲到全音量与旧轨叠响`);
+  // 收床 → 恢复全音量（unduck 按 _vol 恢复）
+  Sfx.ambient(null);
+  tick(320);
+  assert(near(nw.volume, BGM_V), `收床→恢复 ${BGM_V}（实际 ${nw.volume.toFixed(3)}）`);
+  // 还原：回 combat 轨（后续段落假设）
+  Sfx.bgm("combat"); tick(600);
+}
+
 console.log("== 8. §7 空间音/声相：play(name,{pan}) 经 StereoPanner 偏左右 ==");
 {
   // 确保未静音（前面 peril 段已还原，这里防御性确认）

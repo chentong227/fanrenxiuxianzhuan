@@ -550,23 +550,16 @@
   const KNOWN_TRACKS = BGM_FILES;   // C3 切轨校验：合法轨名白名单
   let curTrack = null;
 
-  // 渐变某 <audio> 的音量到目标值（切轨 crossfade 用）：定步进，结束回调收尾
-  function fadeVol(el, to, ms, onDone) {
-    if (!el) { if (onDone) onDone(); return; }
-    try { if (el._fadeTimer) { clearInterval(el._fadeTimer); el._fadeTimer = null; } } catch (e) {}
-    const from = typeof el.volume === "number" ? el.volume : 0;
-    const steps = Math.max(1, Math.round(ms / 40));
-    let i = 0;
-    el._fadeTimer = setInterval(() => {
-      i++;
-      const v = from + (to - from) * (i / steps);
-      try { el.volume = Math.max(0, Math.min(1, v)); } catch (e) {}
-      if (i >= steps) { clearInterval(el._fadeTimer); el._fadeTimer = null; if (onDone) onDone(); }
-    }, 40);
-  }
+  // （fadeVol 唯一实现见下文「环境床状态」段——此处旧副本已删：同名函数声明后者覆盖前者，
+  //   留两份只会埋"改了不生效"的坑。）
 
   // 文件 BGM 默认音量（源已 -20 LUFS 归一，故不必高；克制基调，降「吵闹」）
   const BGM_VOL = 0.26;
+
+  // 元素当前应有的播放音量：真实目标 _vol × 让位系数（bgmDucked 时 −16dB）。
+  // 循环换实例/硬重启/解锁重播等一切"重新起播"的路径都必须经此取值，
+  // 否则会在夜景/演出里把被压低的 BGM 弹回全音量（v324 根治"BGM 重叠/忽然变响"）。
+  function effVol(target) { return bgmDucked ? target * DUCK_K : target; }
 
   // 循环交叉淡化：循环轨结尾 ~lxf 与开头交叉，消除 <audio>.loop 硬跳回开头的接缝突兀。
   // 自管循环（loop=false）：临近结尾时启同轨新实例淡入、旧实例淡出，无缝衔接。
@@ -588,7 +581,8 @@
           bgmEl = nb;                                   // 新实例接管为当前轨
           setupLoopEl(nb, track, target, lxf);          // 链上下一轮（含兜底）
           nb.volume = 0; nb.play().catch(() => {});
-          fadeVol(nb, target, lxf);                     // 新实例淡入
+          // v324：淡入目标吃让位系数——夜景/演出里 BGM 被压低时，循环换实例不得弹回全音量
+          fadeVol(nb, effVol(target), lxf);             // 新实例淡入
           fadeVol(el, 0, lxf, () => { try { el.pause(); } catch (e) {} });   // 旧实例淡出收声
           clearLoop(el);
         }
@@ -601,7 +595,7 @@
     el._handoff = false;
     el.onended = () => {
       if (bgmEl !== el || el._handoff) return;
-      try { el.currentTime = 0; el.volume = muted ? 0 : target; if (!muted) el.play().catch(() => {}); } catch (e) {}
+      try { el.currentTime = 0; el.volume = muted ? 0 : effVol(target); if (!muted) el.play().catch(() => {}); } catch (e) {}
       startLoopXfade(el, track, target, lxf);
     };
     startLoopXfade(el, track, target, lxf);
@@ -762,12 +756,14 @@
             setupLoopEl(el, track, target, lxf);   // 循环交叉淡化（消接缝突兀）
           }
           if (muted) {   // 静音：记轨不出声，音量预置好，解除静音由 toggle 起播
-            el.volume = target;
+            el.volume = effVol(target);
             if (prev && prev !== el) { try { prev.pause(); } catch (e) {} }
             return;
           }
           el.play().catch(() => {});
-          fadeVol(el, target, xf);                                         // 新轨淡入
+          // v324：淡入目标吃让位系数——环境床领奏（夜景/演出）期间换轨，新轨仍保持退位音量，
+          // 否则新轨直冲全音量、旧轨还在淡出＝「两首 BGM 叠着响、夜里音乐忽然变大」的病根之一
+          fadeVol(el, effVol(target), xf);                                 // 新轨淡入
           if (prev && prev !== el) fadeVol(prev, 0, xf, () => { try { prev.pause(); } catch (e) {} });  // 旧轨淡出
           return;
         } catch (e) {}
