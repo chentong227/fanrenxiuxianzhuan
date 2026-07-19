@@ -1519,9 +1519,13 @@ const UI = {
     // §9 演出速度：逐字间隔按设置缩放（默认 26ms；慢×1.5 / 快×0.6 / 极快×0.35）
     const sc = (typeof Settings !== "undefined" && Settings.speedScale) ? Settings.speedScale() : 1;
     const tick = Math.max(6, Math.round(26 * sc));
+    // 长句自动滚底：手机端对话框 max-height 42vh 出滚动条后，打字到框外玩家看不见新字
+    // （playtest 实锤"多句台词底部被切半"）——每拍把滚动钉在底部，写到哪看到哪。
+    const dlg = el.closest ? el.closest(".story-dialog") : null;
     this._typeTimer = setInterval(() => {
       i += 1;
       span.textContent = full.slice(0, i);
+      if (dlg && dlg.scrollHeight > dlg.clientHeight) dlg.scrollTop = dlg.scrollHeight;
       // 打字机轻嗒：每3字一声，标点不响（气口）；§7 按说话人立绘左右偏声相
       if (typeof Sfx !== "undefined" && i % 3 === 0 && !/[，。！？…—、；：]/.test(full[i - 1] || "")) Sfx.play("type", { pan: this._sayPan || 0 });
       if (i >= full.length) {
