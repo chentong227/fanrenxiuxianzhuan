@@ -82,6 +82,19 @@ body.desk-shell .shell-hint {
   color: rgba(214, 196, 160, .38); pointer-events: none;
 }
 
+/* ===== 手机横屏遮罩（v342）：竖屏布局横过来挤成一团——触屏+横向+矮视口时浮出提示 ===== */
+.rotate-hint {
+  position: fixed; inset: 0; z-index: 9999; display: none;
+  align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+  background: rgba(10, 8, 6, .96); color: var(--gold);
+  font-family: var(--font-title, serif); letter-spacing: 4px; font-size: 17px;
+}
+.rotate-hint .rh-icon { font-size: 44px; animation: rhSpin 2.6s ease-in-out infinite; }
+@keyframes rhSpin { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 520px) {
+  .rotate-hint { display: flex; }
+}
+
 /* 全局纸纹颗粒（极淡，盖在一切之上但不挡操作） */
 #app::after {
   content: ""; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
@@ -329,6 +342,14 @@ body.motion-off .title-seal, body.motion-off .create-title-block .subtitle { ani
   /* 锚点=圆点中心（与 avatar-pin 同心）：圆点绝对居中于地理坐标，名字浮在下方不挤占锚点。
    * pin 在缩放层外，文字图标按原生分辨率渲染——放大永不糊。 */
   width: 0; height: 0;
+}
+/* 隐形热区（v342 精品化）：容器 0×0、可点的只有 10px 圆点和细字——手机上极难点中（亲测屡屡点空）。
+ * 伪元素撑出 44px 圆形命中区（Apple HIG 最小触控尺寸），视觉锚点分毫不动；
+ * Z4 地点簇间距 ≥80px，热区不串台。顺带让 0×0 容器进无障碍树（有了可命中盒）。 */
+.wm-pin::before {
+  content: ""; position: absolute; left: 0; top: 0;
+  transform: translate(-50%, -50%);
+  width: 44px; height: 44px; border-radius: 50%;
 }
 .wm-pin-dot {
   position: absolute; top: 0; left: 0; transform: translate(-50%, -50%);

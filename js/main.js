@@ -16,6 +16,10 @@ const Main = {
       const q = new URLSearchParams(location.search);
       if (q.has("noframe") || q.has("framed")) return false;           // 逃生口 / 框内标记
       if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return false;   // PWA 安装态=真机
+      // 手机横屏（v342）：宽 >760 但其实是真机转横——套 430×932 舞台框会被缩成邮票大小不可玩。
+      // 触屏+实体短边 ≤520 判定为手机：不建框，由 CSS 横屏遮罩提示「转竖屏」。
+      if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches
+          && Math.min(screen.width || 9999, screen.height || 9999) <= 520) return false;
       return window.innerWidth > 760;                                  // 宽屏样式的临界线（≤760 本就是手机布局）
     } catch (e) { return false; }
   },
@@ -65,6 +69,19 @@ const Main = {
         console.log("[frxxz] 调试/演武入口：本局不写存档");
       }
     } catch (e) {}
+
+    // 未捕获异常兜底（v342·精品化）：真机上一旦炸了，玩家只看到"点了没反应"的死寂。
+    // 给一句人话提示+安抚（进度按月自动落档），30s 限流防错误风暴刷屏；错误本体照常进 console。
+    window.addEventListener("error", (ev) => {
+      try {
+        const now = Date.now();
+        if (this._lastErrToast && now - this._lastErrToast < 30000) return;
+        this._lastErrToast = now;
+        if (typeof UI !== "undefined" && UI.toast && State.data) {
+          UI.toast("出了点小差错——进度每月自动留档，若卡住请刷新页面", true, 5200);
+        }
+      } catch (e) {}
+    });
 
     // —— 角色创建：测灵根 ——
     UI.el("btn-test-root").addEventListener("click", () => this.testRoot());
