@@ -433,16 +433,34 @@
       });
       // 5) 战斗立绘（最重，放最后——战斗另有自己的临战预热，这里只是兜底暖缓存）
       Object.keys(BATTLERS).forEach(id => urls.push(this._v(`assets/battlers/${id}.png`)));
+      // 6) 音频（v331 弱网：BGM 文件 ~740KB，首次切轨要等下载=起乐延迟数秒）——
+      //    经 <img> 探取即可让 sw 资产仓缓存字节（decode 失败无妨，缓存已热）；
+      //    URL 必须与 audio.js 实际播放地址一字不差（无 ?v=）才能命中缓存。
+      ["daily", "town", "journey", "fair", "combat", "combat_wild", "combat_secret", "boss", "tense", "sorrow", "triumph"]
+        .forEach(t => urls.push(`assets/audio/bgm_${t}.mp3`));
+      ["night", "firefly", "candle", "wind", "rain", "market"]
+        .forEach(t => urls.push(`assets/audio/amb_${t}.mp3`));
       this._warm(urls);
     },
     // 串行暖缓存：逐张 new Image()+decode，每张完成后让位空闲再取下一张（不阻塞交互）。
+    // v331 弱网让路：剧情演出中（body.story-on）暂停后台预热——2Mbps 级网络上 150MB 的
+    // 全库暖缓存会与演出正在拉的 CG/立绘抢带宽（"演出图慢慢浮现"的隐性推手），
+    // 演出期间每 2s 探一次、落幕即续跑；战斗中（State.data.combat）同理让路。
     _warm(urls) {
       const idle = window.requestIdleCallback
         ? (cb) => window.requestIdleCallback(cb, { timeout: 1500 })
         : (cb) => setTimeout(cb, 180);
       let i = 0;
+      const busy = () => {
+        try {
+          if (document.body && document.body.classList.contains("story-on")) return true;
+          if (root.State && root.State.data && root.State.data.combat) return true;
+        } catch (e) {}
+        return false;
+      };
       const step = () => {
         if (i >= urls.length) return;
+        if (busy()) { setTimeout(() => idle(step), 2000); return; }
         const url = urls[i++];
         const img = new Image();
         img.decoding = "async";
