@@ -140,6 +140,11 @@ const State = {
     // 道号防呆（v328·QA 实锤）：name 若被误存成对象（旧 gen-saves 传对象的夹具/异常写入），
     // 战斗名牌/对话说话人会渲染成 [object Object]——读档一律归一成字符串
     if (typeof d.name !== "string") d.name = (d.name && typeof d.name.name === "string") ? d.name.name : "韩立";
+    // 战中残旗防软锁（v332·全篇章级）：开战即有一次 State.save()（战况铭牌落档），此时 combat=true
+    // 已写进存档——玩家战斗中刷新/杀进程后读档，战斗对象早已不在内存，这面旗却把所有行动
+    // 拦成「酣战之中，无暇他顾」、手机端连行动 sheet 都不弹＝死档。战斗本就不可序列化续打，
+    // 读档一律清旗；待决的战斗剧情仍在 pendingEvent 里，重开演出可再战，一分不丢。
+    d.combat = false;
     if (!d.benchTreasures) d.benchTreasures = [];
     if (!d.activeChapter) d.activeChapter = "qixuan";
     if (!d.unlockedChapters) d.unlockedChapters = ["qixuan"];

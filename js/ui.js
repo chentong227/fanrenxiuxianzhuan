@@ -3860,7 +3860,7 @@ const UI = {
           const factor = Balance.travelTimeFactor(State.effectiveSpeed());
           const cost = Math.max(1, Math.round((l.travelCost || 2) * factor));
           const isFateLoc = !!(fateLocId && fateLocId === l.id && !here);
-          return `<div class="wm-pin loc ${here ? 'here' : ''} ${isFateLoc ? 'fate' : ''}" data-mx="${p.x}" data-my="${p.y}" onclick="UI._wmPickLoc('${l.id}')" title="${l.desc}">
+          return `<div class="wm-pin loc ${here ? 'here' : ''} ${isFateLoc ? 'fate' : ''}" role="button" aria-label="${l.name}" data-mx="${p.x}" data-my="${p.y}" onclick="UI._wmPickLoc('${l.id}')" title="${l.desc}">
             <span class="wm-pin-dot"></span>
             <span class="wm-pin-label">${isFateLoc ? '★ ' : ''}${l.name}${here ? ' ·在此' : ` ${cost}月`}</span>
           </div>`;

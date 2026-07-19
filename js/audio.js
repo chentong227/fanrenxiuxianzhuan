@@ -845,9 +845,9 @@
       try {
         if (ctx && ctx.state === "suspended") ctx.resume();
         if (!muted) {
-          if (bgmEl && bgmEl.paused) bgmEl.play().catch(() => {});
+          if (bgmEl && bgmEl.paused && !bgmEl._hiddenPause) bgmEl.play().catch(() => {});
           else if (!bgmEl && curTrack) { const t = curTrack; curTrack = null; Sfx.bgm(t); }
-          if (ambEl && ambEl.paused) ambEl.play().catch(() => {});
+          if (ambEl && ambEl.paused && !ambEl._hiddenPause) ambEl.play().catch(() => {});
         }
       } catch (e) {}
       root.document.removeEventListener("pointerdown", kick, true);
@@ -855,6 +855,28 @@
     };
     root.document.addEventListener("pointerdown", kick, true);
     root.document.addEventListener("keydown", kick, true);
+
+    // v332 切后台静声：桌面浏览器切标签页/最小化后 <audio> 与 WebAudio 照常出声——
+    // 玩家去干别的事音乐还在响（真实游玩体验槽点）。隐藏即暂停文件轨+合成母线归零，
+    // 回来自动恢复（尊重静音与环境床让位状态）；手机浏览器本就自动暂停，此处幂等无害。
+    root.document.addEventListener("visibilitychange", () => {
+      try {
+        const hidden = root.document.visibilityState === "hidden";
+        if (hidden) {
+          if (bgmEl && !bgmEl.paused) { bgmEl._hiddenPause = true; bgmEl.pause(); }
+          if (ambEl && !ambEl.paused) { ambEl._hiddenPause = true; ambEl.pause(); }
+          if (BGM._master) BGM._master.gain.value = 0;
+          if (AMB._master) AMB._master.gain.value = 0;
+        } else {
+          if (!muted) {
+            if (bgmEl && bgmEl._hiddenPause) { bgmEl._hiddenPause = false; bgmEl.play().catch(() => {}); }
+            if (ambEl && ambEl._hiddenPause) { ambEl._hiddenPause = false; ambEl.play().catch(() => {}); }
+          }
+          if (BGM._master) BGM._master.gain.value = bgmDucked ? DUCK_K : 1;
+          if (AMB._master) AMB._master.gain.value = 1;
+        }
+      } catch (e) {}
+    });
   }
 
   // 通用点击音：按钮/选项等（委托监听，轻量）

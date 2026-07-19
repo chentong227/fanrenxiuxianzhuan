@@ -678,6 +678,9 @@ const Main = {
   },
 
   toCreate() {
+    // 回主菜单先落一笔存档（v332·防误触丢进度）：主菜单键就在顶栏，误点一下不该吞掉
+    // 上次手动存档之后的进度。战斗态不存（战斗对象不可序列化，读档由 _migrate 清旗重来）。
+    try { if (State.data && !State.data.combat) State.save(); } catch (e) {}
     UI.closeModal();
     UI.el("screen-game").classList.remove("active");
     UI.el("screen-create").classList.add("active");

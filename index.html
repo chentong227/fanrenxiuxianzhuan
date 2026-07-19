@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="build" content="331" />
+  <meta name="build" content="332" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -56,15 +56,15 @@
        preload 提前到 HTML 解析期并行下载——弱网开屏不再"黑底等山门" -->
   <link rel="preload" as="image" href="assets/scenes/shanmen_p.png?v=29" media="(max-width: 520px)" />
   <link rel="preload" as="image" href="assets/scenes/shanmen.png?v=29" media="(min-width: 521px)" />
-  <link rel="stylesheet" href="css/style.css?v=331" />
+  <link rel="stylesheet" href="css/style.css?v=332" />
   <!-- PWA：可装主屏 / 离线可玩 / 全屏（v105 起） -->
-  <link rel="manifest" href="manifest.webmanifest?v=331" />
+  <link rel="manifest" href="manifest.webmanifest?v=332" />
   <meta name="theme-color" content="#14110b" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="凡人修仙传" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=331" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=332" />
 </head>
 <body>
   <div id="app">
@@ -104,7 +104,7 @@
         </div>
       </div>
       <!-- build 号退到屏角（审美审计 jank#2：工程信息不进玩家视线主路径） -->
-      <div class="build-tag corner">build v331</div>
+      <div class="build-tag corner">build v332</div>
     </section>
 
     <!-- 主游戏界面：场景大图铺满全屏做底，HUD 浮于其上 -->
@@ -429,38 +429,38 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/data.js?v=331"></script>
-  <script src="js/state.js?v=331"></script>
-  <script src="js/settings.js?v=331"></script>
-  <script src="js/chapters.js?v=331"></script>
-  <script src="js/balance.js?v=331"></script>
-  <script src="js/world.js?v=331"></script>
-  <script src="js/env.js?v=331"></script>
-  <script src="js/npcsim.js?v=331"></script>
-  <script src="js/interactions.js?v=331"></script>
-  <script src="js/warlines.js?v=331"></script>
-  <script src="js/combat.js?v=331"></script>
-  <script src="js/explore.js?v=331"></script>
-  <script src="js/exploremap.js?v=331"></script>
-  <script src="js/loadout.js?v=331"></script>
-  <script src="js/dialogue.js?v=331"></script>
-  <script src="js/llm.js?v=331"></script>
-  <script src="js/audio.js?v=331"></script>
-  <script src="js/fx.js?v=331"></script>
-  <script src="js/art.js?v=331"></script>
-  <script src="js/cutscene.js?v=331"></script>
-  <script src="js/stage.js?v=331"></script>
-  <script src="js/fortunes.js?v=331"></script>
-  <script src="js/quests.js?v=331"></script>
-  <script src="js/story.js?v=331"></script>
-  <script src="js/engine.js?v=331"></script>
-  <script src="js/ui.js?v=331"></script>
-  <script src="js/main.js?v=331"></script>
+  <script src="js/data.js?v=332"></script>
+  <script src="js/state.js?v=332"></script>
+  <script src="js/settings.js?v=332"></script>
+  <script src="js/chapters.js?v=332"></script>
+  <script src="js/balance.js?v=332"></script>
+  <script src="js/world.js?v=332"></script>
+  <script src="js/env.js?v=332"></script>
+  <script src="js/npcsim.js?v=332"></script>
+  <script src="js/interactions.js?v=332"></script>
+  <script src="js/warlines.js?v=332"></script>
+  <script src="js/combat.js?v=332"></script>
+  <script src="js/explore.js?v=332"></script>
+  <script src="js/exploremap.js?v=332"></script>
+  <script src="js/loadout.js?v=332"></script>
+  <script src="js/dialogue.js?v=332"></script>
+  <script src="js/llm.js?v=332"></script>
+  <script src="js/audio.js?v=332"></script>
+  <script src="js/fx.js?v=332"></script>
+  <script src="js/art.js?v=332"></script>
+  <script src="js/cutscene.js?v=332"></script>
+  <script src="js/stage.js?v=332"></script>
+  <script src="js/fortunes.js?v=332"></script>
+  <script src="js/quests.js?v=332"></script>
+  <script src="js/story.js?v=332"></script>
+  <script src="js/engine.js?v=332"></script>
+  <script src="js/ui.js?v=332"></script>
+  <script src="js/main.js?v=332"></script>
   <script>
   /* 注册 Service Worker（离线/装主屏）。注册 URL 带 ?v=，每次发版自动更新 SW。 */
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js?v=331", { scope: "./" }).catch(function () {});
+      navigator.serviceWorker.register("sw.js?v=332", { scope: "./" }).catch(function () {});
     });
   }
   </script>
