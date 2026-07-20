@@ -164,6 +164,15 @@ body.font-scaled #combat-log { font-size: calc(13px * var(--font-scale, 1)); }
   body.font-scaled .story-text { font-size: calc(16px * var(--font-scale, 1)); }
 }
 
+/* ===== v349 舆图节点注释：立足处的一句话状态 ===== */
+.exm-note {
+  padding: 6px 12px; margin-bottom: 6px;
+  font-size: 12px; line-height: 1.6; color: var(--ink-dim);
+  background: rgba(0, 0, 0, .32); border-left: 2px solid rgba(212, 176, 106, .4);
+  border-radius: 4px;
+}
+.exm-note b { color: var(--gold); margin-right: 2px; }
+
 /* ===== v348 行动按钮情绪化：突破就绪呼吸 / 淬煞暗红 ===== */
 .btn-action.bt-ready {
   border-color: rgba(212, 176, 106, .75);

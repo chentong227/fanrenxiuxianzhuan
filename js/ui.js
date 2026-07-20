@@ -7311,7 +7311,7 @@ const UI = {
     if (node.kind !== "rest" && node.kind !== "exit") acts.push(`<button class="btn btn-ghost" onclick="Engine.exmapStay(1)">驻足观察（1钟）</button>`);
     // playtest 2026-07-12：深处不必一格格点回去——任意节点一键归程（BFS 脚程照付·阴冥"唯一出口=栈道"例外）
     if (node.kind !== "exit" && map.fog && !map.jueling) acts.push(`<button class="btn btn-ghost" onclick="Engine.exmapReturnHome()">循原路${map.id === "houshan_l1" ? "下山" : "退出"}（归程脚程照算）</button>`);
-    this.el("exmap-actions").innerHTML = acts.join("");
+    this.el("exmap-actions").innerHTML = this._exmapNodeNote(node, f) + acts.join("");   // v349 节点注释
   },
 
   /* ---------- 据点节点图渲染（和平：地标全亮·无钟无巡逻·复访变迁） ----------
@@ -7459,7 +7459,32 @@ const UI = {
     if (node.kind === "enter") acts.push(`<button class="btn btn-warn" onclick="Engine.exmapEnterSub()">潜入洞窟</button>`);
     if (node.kind === "exit") acts.push(`<button class="btn btn-warn" onclick="Engine.finishExmap('leave')">离开禁地</button>`);
     acts.push(`<button class="btn btn-ghost" onclick="Engine.exmapStay(1)">${node.kind === "rest" ? "打坐调息（1钟）" : "驻守一钟"}</button>`);
-    this.el("exmap-actions").innerHTML = acts.join("");
+    // v349 节点状态注释：站在哪、这里还有什么可做——一行小字答疑（实玩实锤：到了花圃只见「驻守」不知所措）
+    this.el("exmap-actions").innerHTML = this._exmapNodeNote(node, f) + acts.join("");
+  },
+
+  /* v349 舆图节点注释：当前立足处的一句话状态（名字+能做什么/为什么没得做） */
+  _exmapNodeNote(node, f) {
+    if (!node) return "";
+    let txt = "";
+    if (node.kind === "danger") {
+      txt = (f.hunted && f.hunted[f.node])
+        ? (node.loot && !(f.cleared && f.cleared[f.node]) ? "凶物已伏诛——遍地遗存，正可搜刮。" : "凶物已伏诛，此地再无威胁。")
+        : "凶兽盘踞之地——猎杀后方可搜刮，绕道而行也未尝不可。";
+    } else if (node.loot) {
+      txt = (f.cleared && f.cleared[f.node]) ? "此处已被你采掠一空。" : "灵物盈野，可以采集。";
+    } else if (node.kind === "lore") {
+      txt = f.guzhenUsed ? "阵纹里的东西，你已尽数读走。" : "古阵残纹隐现——以神识细读，或有所得。";
+    } else if (node.kind === "enter") {
+      txt = "洞口幽深，寒气扑面——要走进去么？";
+    } else if (node.kind === "exit") {
+      txt = "出口在望——离开与否，只在一念。";
+    } else if (node.kind === "rest") {
+      txt = "背风避雨的好地方，宜打坐调息。";
+    } else {
+      txt = "此地雾影幢幢，一时看不真切——驻足观察，或有所见。";
+    }
+    return `<div class="exm-note"><b>${node.name || "无名之地"}</b>　${txt}</div>`;
   },
 
   /* ---------- L3 轴式洞窟渲染：探索格=战斗格（同一条轴，镜头跟随） ---------- */
