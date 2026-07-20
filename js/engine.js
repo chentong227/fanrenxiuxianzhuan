@@ -838,11 +838,15 @@ const Engine = {
     if (!s.skills) s.skills = { alchemy: 0, scouting: 0 };
     const div = s.flags && s.flags.dan_ms_bianyao ? 6 : 8;   // 丹道·辨药入门里程碑：识别量更丰（每6级多识一株）
     const bonus = Math.floor((s.skills.alchemy || 0) / div);
-    const n = 1 + Math.floor(Math.random() * 3) + bonus;
+    // v346 乘法·时令×采药：月历上的四季真正落进锄头——春苗正发+1株；秋果实熟，毒草概率大增
+    const season = s.month <= 3 ? "spring" : s.month <= 6 ? "summer" : s.month <= 9 ? "autumn" : "winter";
+    const n = 1 + Math.floor(Math.random() * 3) + bonus + (season === "spring" ? 1 : 0);
     State.give("lingcao", n);
-    if (Math.random() < 0.4 + (s.skills.alchemy || 0) * 0.01) State.give("duyao_cao", 1);
+    const duyaoChance = 0.4 + (s.skills.alchemy || 0) * 0.01 + (season === "autumn" ? 0.3 : 0);
+    if (Math.random() < duyaoChance) State.give("duyao_cao", 1);
     s.skills.alchemy += 1;
-    this.log(`你在灵草丛中采得灵草 ×${n}` + (s.inventory.duyao_cao ? "，还顺手挖到一株毒草" : "") + `。（药理+1，现 ${s.skills.alchemy}）`, "good");
+    const seasonNote = season === "spring" ? "春时药苗正发，收成格外好。" : season === "autumn" ? "秋深草籽熟透，正是识毒的时节。" : "";
+    this.log(`你在灵草丛中采得灵草 ×${n}` + (s.inventory.duyao_cao ? "，还顺手挖到一株毒草" : "") + `。${seasonNote}（药理+1，现 ${s.skills.alchemy}）`, "good");
     this._checkSkillMilestones("alchemy");
   },
 
@@ -1134,6 +1138,9 @@ const Engine = {
     if (!price) return;
     // 黑市窗口（涟漪链）：赃丹贱卖
     if (itemId === "qingyuan_dan" && s.rippleWindow && s.rippleWindow.id === "cheap_pills") price = 3;
+    // v346 乘法·名望×行市：威名赫赫（名望≥30）者集镇买价九折——人人卖你面子。
+    // 向下取整：3 两的灵草 round(2.7)=3 等于没给折——宁可掌柜多抹个零头，甜头要摸得着
+    else if ((s.fame || 0) >= 30) price = Math.max(1, Math.floor(price * 0.9));
     // v345 批量买：n>1=按囊中银两封顶一次买齐（买 5 张符不用点 5 下）
     const want = Math.max(1, n | 0 || 1);
     const qty = Math.min(want, Math.floor(s.silver / price));
@@ -1150,12 +1157,17 @@ const Engine = {
     const s = State.data;
     const item = DATA.items[itemId];
     if (!item || !item.sell || !State.count(itemId)) return;
-    const price = Math.max(1, Math.round(item.sell * 0.8));   // 凡人集镇给不出坊市价——八折收
+    let price = Math.max(1, Math.round(item.sell * 0.8));   // 凡人集镇给不出坊市价——八折收
+    // v346 乘法·求购窗：妖王伏诛的风声让妖材价钱翻倍（限时）
+    const buyerOn = s.rippleWindow && s.rippleWindow.id === "beast_buyer";
+    if (buyerOn) price *= 2;
+    // v346 乘法·名望×行市：威名赫赫者，掌柜给面子——卖价上浮一成
+    else if ((s.fame || 0) >= 30) price = Math.max(1, Math.round(price * 1.1));
     // v344 批量：n>1=一次清仓（卖 30 株草不用点 30 下）
     const qty = Math.min(Math.max(1, n | 0 || 1), State.count(itemId));
     State.take(itemId, qty);
     s.silver += price * qty;
-    this.log(`皮货行掌柜验过「${item.name}」${qty > 1 ? `×${qty}` : ""}，点头付银 ${price * qty} 两。`, "event");
+    this.log(`皮货行掌柜验过「${item.name}」${qty > 1 ? `×${qty}` : ""}，${buyerOn ? "咬牙照翻倍的行情" : "点头"}付银 ${price * qty} 两。`, "event");
     State.save();
     UI.renderAll();
     UI.openMarket();
@@ -1458,7 +1470,9 @@ const Engine = {
     const s = State.data;
     const PRICES = { qiannian_lingcao: 22, lingyao_dan: 2 };
     const item = DATA.items[itemId];
-    const p = PRICES[itemId] != null ? PRICES[itemId] : (item && item.sell) || 0;
+    let p = PRICES[itemId] != null ? PRICES[itemId] : (item && item.sell) || 0;
+    // v346 乘法·求购窗：妖材（item.sell 的战利·非丹草定价品）在窗口期翻倍
+    if (s.rippleWindow && s.rippleWindow.id === "beast_buyer" && PRICES[itemId] == null && item && item.sell) p *= 2;
     // v344 批量：n>1=一次清仓
     const qty = Math.min(Math.max(1, n | 0 || 1), State.count(itemId));
     if (!p || qty < 1 || !State.take(itemId, qty)) { this.toast("无此货可售", true); return; }
@@ -3157,6 +3171,27 @@ const Engine = {
     const rumorChance = terrain === "官道" ? 0.65 : terrain === "平原" ? 0.55 : 0.40;
     const npcChance = terrain === "官道" ? 0.20 : 0.10;
 
+    // v346 乘法·旅途×全局异闻：路上的耳报最灵——打听有实打实的几率牵出正经线索，
+    // 而不只是一句风味闲话。① 无异闻在身：25% 从异闻池开一桩（老猎户的腥风）；
+    // ② 22% 摸到某位人物的底细传闻（intel 升 L1——行脚商嘴碎，江湖人物的斤两都在路上传）。
+    if (!s.beastRumor && Math.random() < 0.25) {
+      this._maybeBeastRumor(1.0);
+      if (s.beastRumor) {
+        return { text: "同行的老猎户压低嗓子，说起近来一桩兽患——腥风血雨的去处，也是扬名发财的去处。（异闻已记入际遇栏）", kind: "event" };
+      }
+    }
+    if (typeof WORLD !== "undefined" && WORLD.intel && Math.random() < 0.22) {
+      const cand = Object.keys(WORLD.intel).filter(id => ((s.intel || {})[id] || 0) < 1);
+      if (cand.length) {
+        const id = cand[Math.floor(Math.random() * cand.length)];
+        s.intel = s.intel || {};
+        s.intel[id] = 1;
+        const n = WORLD.npcById ? WORLD.npcById(id) : null;
+        const info = WORLD.intel[id];
+        return { text: `歇脚的茶棚里，几个行脚商正说起「${n ? n.name : id}」的名头——${(info && info.l0) || "江湖上关于此人的传闻不少"}。你把听来的斤两记在了心里。（情报入册·图鉴可查）`, kind: "event" };
+      }
+    }
+
     if (roll < npcChance) {
       // 遇到 NPC
       const npc = WORLD.randomNpc ? WORLD.randomNpc(null, s) : null;
@@ -4206,11 +4241,13 @@ const Engine = {
     this.passTime(DATA.actions.rest.timeCost);
     s.spirit = clamp(s.spirit + Math.round(realm.spMax * 0.5), 0, realm.spMax);
     s.hp = clamp(s.hp + 25, 0, s.hpMax);
-    s.mood = clamp(s.mood + 12, 0, s.moodMax);
+    // v346 乘法·时令×调息：冬夜万籁俱寂，心尤易定——心境额外+6
+    const winter = s.month >= 10;
+    s.mood = clamp(s.mood + 12 + (winter ? 6 : 0), 0, s.moodMax);
     // 心魔递进消解：心魔越重，调息越要紧（阈值以上额外消减，防止死循环）
     const demonDrop = 8 + Math.max(0, Math.floor((s.demon - 30) / 10));
     s.demon = clamp(s.demon - demonDrop, 0, 100);
-    if (!silent) this.log("你盘膝打坐，调息养神。灵力、气血与心境皆有恢复。", "event");
+    if (!silent) this.log(winter ? "你盘膝打坐，调息养神。冬夜万籁俱寂，心湖静得能照见自己——心境格外安定。" : "你盘膝打坐，调息养神。灵力、气血与心境皆有恢复。", "event");
   },
 
   /* -------- 突破成功率计算（小境界·水到渠成时的直接成功率）-------- */
@@ -4983,14 +5020,25 @@ const Engine = {
     } catch (e) {}
     const pScore = (s.hpMax || 100) / 28 + pBest / 6 + (s.realmIndex + 1) * 1.2;
     const r = pScore / Math.max(0.1, eScore);
+    // v346 乘法·情报×观气：交手过（招式已入册）的对手，直觉升级为具体账——
+    // 气血与均伤直接报数；威胁逼出的底细（intel L2）连敛息也罩不住。
+    const fought = !!(s.intelMoves && s.intelMoves[t.name] && s.intelMoves[t.name].length);
+    const detail = fought ? `（气血约${t.hp || "?"}·出手均伤约${Math.round(eDmg)}）` : "";
     if (t.veil) {
-      const pierce = (s.sense || 0) >= (t.veilSense || 16);
+      let pierce = (s.sense || 0) >= (t.veilSense || 16);
+      let via = "神识窥破其敛息";
+      if (!pierce) {
+        const iid = this._intelIdByEnemyName ? this._intelIdByEnemyName(t.name) : null;
+        if (iid && s.intel && (s.intel[iid] || 0) >= 2) { pierce = true; via = "底细在握·敛息无用"; }
+        else if (fought) { pierce = true; via = "交过手的人，藏不住斤两"; }
+      }
       if (!pierce) return { label: "观气：气机内敛 · 深浅莫测", tone: "veil" };
       if (s.flags) s.flags.ach_pierced_veil = true;   // v344 成就：窥破敛息
       const base = this._assessLabel(r);
-      return { label: base.label + "（神识窥破其敛息）", tone: base.tone };
+      return { label: base.label + `（${via}）` + detail, tone: base.tone };
     }
-    return this._assessLabel(r);
+    const base = this._assessLabel(r);
+    return detail ? { label: base.label + detail, tone: base.tone } : base;
   },
   _assessLabel(r) {
     if (r >= 1.5) return { label: "观气：胜算在握", tone: "good" };
@@ -7810,6 +7858,13 @@ const Engine = {
             s.slainBeasts = s.slainBeasts || [];
             if (!s.slainBeasts.includes(meta.namedBeast)) s.slainBeasts.push(meta.namedBeast);
             if (s.beastRumor === meta.namedBeast) s.beastRumor = null;
+            // v346 乘法·伏诛×涟漪×坊市：妖王毙命的消息传开，商人闻讯求购——
+            // 三个月内妖材（带 sell 的战利）收购价翻倍。不占已有窗口（先到先得）。
+            if (!s.rippleWindow) {
+              s.rippleWindow = { id: "beast_buyer", dueAbs: State.absMonth() + 3, note: `「${meta.enemyName}」妖材求购（收购价翻倍·限时）` };
+              this.log(`【涟漪】「${meta.enemyName}」伏诛的消息不胫而走——皮货行与坊市掌柜争相放话：其妖材有多少收多少，价钱翻倍！（三月为限）`, "event");
+              this.toast("商人求购妖材——三月内卖价翻倍");
+            }
             s.worldNews = s.worldNews || [];
             s.worldNews.push({ t: `第${s.year}年${s.month}月`, kind: "fortune", text: `传言后山那头「${meta.enemyName}」已被门中一位弟子毙杀，山民拍手称快——据说是药庐那位韩师傅。` });
             if (typeof Sfx !== "undefined") Sfx.play("success");
@@ -8070,7 +8125,12 @@ const Engine = {
     } else if (meta.type === "spar") {
       // 登门切磋收场（点到即止）：胜负皆有所得、皆不结仇——演武是交情，不是仇杀
       const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
-      s.body += 1;
+      // v346 乘法·时令×切磋：夏练三伏——盛夏对练体魄多长一分
+      const summer = s.month >= 4 && s.month <= 6;
+      s.body += summer ? 2 : 1;
+      if (summer) this.log("三伏天的演武场蒸得人汗透重衣——最熬人的时节，也最长筋骨（体魄额外+1）。", "sys");
+      // v346 乘法·切磋×观气：拳脚见真章——交过手的人，斤两你亲手掂过（探查观气直接窥破）
+      if (meta.npcId) s.flags["sparred_" + meta.npcId] = true;
       // polish A1：真剑真枪的对练是练剑正途——剑意胜+6/负+3（独自练剑+3 的上位替代=险中求进）
       if (!s.swordMastery) {
         s.swordIntent = clamp((s.swordIntent || 0) + (win ? 6 : 3), 0, 100);
@@ -9667,8 +9727,27 @@ const Engine = {
         s.demon = clamp((s.demon || 0) + 12, 0, 100);
         const lost = Math.ceil((s.silver || 0) * 0.2);
         s.silver = Math.max(0, (s.silver || 0) - lost);
-        this.log(`【濒死】眼前一黑，天旋地转……再睁眼时，你躺在道旁，伤口被人草草敷过药——救你的人没有留名。行囊轻了些${lost ? `（纹银-${lost}）` : ""}，心口那道鬼门关的阴影却重了（心魔+12）。两年内若再倒下，便没有这等运气了。`, "bad");
-        if (typeof UI !== "undefined" && UI.toast) UI.toast("鬼门关前走了一遭——两年内再倒下，神仙难救", true, 5200);
+        // v346 乘法·濒死×羁绊：交情深的故人恰在本地——救你的就不再是无名氏。
+        // 人情账落到实处：交情再进一步、入账本；他日图鉴里这笔救命之恩看得见。
+        let savior = null;
+        try {
+          const I = (typeof INTERACTIONS !== "undefined") ? INTERACTIONS : null;
+          if (I && WORLD.localsAt) {
+            savior = WORLD.localsAt(s.location, s)
+              .map(n => ({ n, rel: I.relationOf(s, n.id) }))
+              .filter(x => x.rel >= 16)
+              .sort((a, b) => b.rel - a.rel)[0] || null;
+          }
+        } catch (e) { savior = null; }
+        if (savior) {
+          const nm = savior.n.name;
+          try { INTERACTIONS.favor(s, savior.n.id, 4); } catch (e) {}
+          this.writeLedger("deathrescue_" + savior.n.id, `濒死之际被「${nm}」救回——这条命有他一份`);
+          this.log(`【濒死】眼前一黑，天旋地转……再睁眼时，榻边坐着的是「${nm}」——是他把你从道旁背回来的，药钱也是他垫的${lost ? `（纹银-${lost}）` : ""}。他没多说什么，只留下一句："命是自己的，仔细些。"这份情你记下了（交情+4）。心口那道鬼门关的阴影却重了（心魔+12）。两年内若再倒下，便没有这等运气了。`, "bad");
+        } else {
+          this.log(`【濒死】眼前一黑，天旋地转……再睁眼时，你躺在道旁，伤口被人草草敷过药——救你的人没有留名。行囊轻了些${lost ? `（纹银-${lost}）` : ""}，心口那道鬼门关的阴影却重了（心魔+12）。两年内若再倒下，便没有这等运气了。`, "bad");
+        }
+        if (typeof UI !== "undefined" && UI.toast) UI.toast(savior ? `「${savior.n.name}」把你从鬼门关背了回来` : "鬼门关前走了一遭——两年内再倒下，神仙难救", true, 5200);
         State.save();
         return;
       }

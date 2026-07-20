@@ -405,6 +405,24 @@ const FORTUNES = [
         },
       },
       { text: "不淌这浑水", effect() { return { text: "集市水深，你看了一眼便走。", kind: "sys" }; } },
+      {
+        // v346 乘法·心魔×奇遇：魔念选项——心魔养到 50 以上，寻常事里也会冒出邪路
+        text: "魔念 · 管它真假，夺了便走",
+        hint: "心魔作祟——收益狠，代价深",
+        cond: (s) => (s.demon || 0) >= 50,
+        odds: (s) => 0.35 + (s.speed || 0) * 0.03,
+        effect(s) {
+          s.demon = clamp(s.demon + 5, 0, 100);
+          if (Math.random() < 0.35 + (s.speed || 0) * 0.03) {
+            State.give("lingcao", 2);
+            return { text: "一个念头压过所有盘算——你袖子一拂卷了摊上的货就走，身法快得没人看清。回过神来，掌心的灵草硌得慌：这不像你，或者说……这越来越像你了（心魔+5）。", kind: "bad" };
+          }
+          const loss = Math.min(s.silver || 0, 5);
+          s.silver -= loss;
+          s.mood = Math.max(0, s.mood - 5);
+          return { text: `你伸手的一瞬被摊主死死攥住手腕——闹到最后赔了 ${loss} 两银子才脱身。围观人群的指点像针一样扎背（心魔+5·心境-5）。`, kind: "bad" };
+        },
+      },
     ],
   },
 
@@ -430,6 +448,23 @@ const FORTUNES = [
         },
       },
       { text: "心存戒备，不去招惹", effect() { return { text: "深山之中，越是通灵之物越不可轻信。你目送它离去。", kind: "sys" }; } },
+      {
+        // v346 乘法·心魔×奇遇：灵物当前，魔念看到的只有"材料"
+        text: "魔念 · 灵鹿通灵，血肉必是好药",
+        hint: "心魔作祟——猎灵物损心境",
+        cond: (s) => (s.demon || 0) >= 50,
+        odds: (s) => 0.3 + (s.sense || 0) * 0.02,
+        effect(s) {
+          s.demon = clamp(s.demon + 8, 0, 100);
+          s.mood = Math.max(0, s.mood - 6);
+          if (Math.random() < 0.3 + (s.sense || 0) * 0.02) {
+            State.give("lingcao", 3);
+            State.give("duyao_cao", 1);
+            return { text: "你出手比念头还快。白鹿倒下时眼里没有惊惧，只有一种近乎悲悯的平静——它衔来引路的洼地里，你采走了所有灵草。夜里你梦见那双眼睛（心魔+8·心境-6）。", kind: "bad" };
+          }
+          return { text: "剑光落空——白鹿一跃没入深林，快得不似凡物。你立在原地，惊觉自己方才那一剑竟是杀招。心口那点阴翳，又厚了一层（心魔+8·心境-6）。", kind: "bad" };
+        },
+      },
     ],
   },
 

@@ -649,6 +649,7 @@ const UI = {
         extra = "，剑意亦有所进";
       }
       Engine.passTime(1);
+      s.flags["sparred_" + npcId] = true;   // v346 乘法·切磋×观气：交过手=知根知底（观气直窥）
       Engine.log(`你与「${nm}」切磋了一场，点到即止，体魄+1，交情见长${extra}。`, "good");
       Engine.flushNpcGifts();
       this.closeSheet(); Engine.checkLifespan(); State.save(); this.renderAll();
@@ -709,7 +710,12 @@ const UI = {
           if (s.flags) s.flags.ach_pierced_veil = true;   // v344 成就：窥破敛息
           return `<span style="color:var(--purple)">你神识过人，窥破其敛息之术——${cfg.truth}</span>`;
         }
-        return "其气机内敛如渊，任你如何打量都探不出深浅——此人藏得极深，表象作不得数。";
+        // v346 乘法·切磋×观气：交过手的人藏不住斤两——神识不逮，拳脚补上
+        if (s.flags && s.flags["sparred_" + npcId]) {
+          if (s.flags) s.flags.ach_pierced_veil = true;
+          return `<span style="color:var(--purple)">他气机敛得再深，也瞒不过跟他拆过招的人——${cfg.truth}</span>`;
+        }
+        return "其气机内敛如渊，任你如何打量都探不出深浅——此人藏得极深，表象作不得数。（若能与之切磋一场，斤两自见）";
       }
       return cfg.qi;
     }
@@ -1105,6 +1111,17 @@ const UI = {
       });
     }
     this._prevMoney = curMoney;
+    // v346 乘法·心魔×氛围：心魔≥60 界面边缘泛暗红脉动（危局视觉的经营面版本）——
+    // 数值的压迫感落到眼睛里；跨过阈值时一声提醒（每局一次，降回 50 以下重置）。
+    const hazeOn = (s.demon || 0) >= 60;
+    document.body.classList.toggle("demon-haze", hazeOn);
+    if (hazeOn && !this._demonHazeWarned) {
+      this._demonHazeWarned = true;
+      this.toast("心魔渐盛，道心蒙尘——寻个静处调息，或了却心头之事", true, 4600);
+      if (typeof Sfx !== "undefined") Sfx.play("danger");
+    } else if (!hazeOn && (s.demon || 0) < 50) {
+      this._demonHazeWarned = false;
+    }
   },
 
   _seasonOf(month) {
@@ -3476,9 +3493,24 @@ const UI = {
       const ksHtml = ks.length
         ? `<div class="codex-keepsake">信物：${ks.map(k => (DATA.items[k.id] ? DATA.items[k.id].name : k.id)).join("、")}<span class="ks-from">（${n.name}所赠）</span></div>`
         : "";
+      // v346 乘法·观气×图鉴：建了观气档的人物，图鉴按你当前神识实时判读——
+      // 神识未逮只见「深浅莫测」，神识够深（或切磋交过手）方见真容。神识长了，回头翻图鉴会有新发现。
+      let gazeHtml = "";
+      const gz = this._NPC_GAZE && this._NPC_GAZE[n.id];
+      if (gz) {
+        if (gz.veil) {
+          const pierced = (s.sense || 0) >= gz.sense || s.flags["sparred_" + n.id];
+          gazeHtml = pierced
+            ? `<div class="codex-gaze pierced">【观气】${s.flags["sparred_" + n.id] && (s.sense || 0) < gz.sense ? "交过手的人藏不住斤两——" : "你神识过人，窥破其敛息——"}${gz.truth}</div>`
+            : `<div class="codex-gaze">【观气】气机内敛如渊，深浅莫测——此人藏得极深（神识愈深，愈能窥破）。</div>`;
+        } else if (gz.qi) {
+          gazeHtml = `<div class="codex-gaze">【观气】${gz.qi}</div>`;
+        }
+      }
       return `<div class="codex-card tappable">
         <div class="codex-head"><b>${n.name}</b><span class="codex-role">${n.role}</span></div>
         <div class="codex-bio">${n.bio}</div>
+        ${gazeHtml}
         ${intelHtml}
         ${ksHtml}
         <div class="codex-rel ${relCls}">关系：${relTxt}</div>
@@ -4864,9 +4896,14 @@ const UI = {
       }).join("")}` : "";
     // 标题随所在地（v333·playtest 实锤）：旧版写死「山下集镇」，在嘉元城长街买东西也顶着集镇名
     const mloc = WORLD.locations.find(l => l.id === s.location);
+    // v346 乘法：名望折扣 / 妖材求购窗的行情提示
+    const famous = (s.fame || 0) >= 30;
+    const beastBuyer = s.rippleWindow && s.rippleWindow.id === "beast_buyer";
     this.openSheet(`
       <h2>${(mloc && mloc.name) || "集镇"} · 采买</h2>
       <p style="color:var(--ink-dim)">纹银：${State.data.silver} 两</p>
+      ${famous ? '<p style="color:var(--jade-bright);font-size:12px">掌柜认得你的名号，客气三分——买价九折、收货上浮一成。</p>' : ''}
+      ${beastBuyer ? '<p style="color:var(--gold);font-size:12px">妖王伏诛的消息传开了——皮货行放话：其妖材有多少收多少，价钱翻倍！（限时）</p>' : ''}
       ${blackMarket ? '<p style="color:var(--gold);font-size:12px">巷尾的药贩子朝你挤眼——丹房失窃的那批养元丹，正在黑市贱卖。过了这村没这店。</p>' : ''}
       ${html}
       ${sellHtml}
@@ -4972,9 +5009,11 @@ const UI = {
           <span>${xiangFace}<span class="iname">廊下晒太阳的向老头</span><span style="color:var(--ink-dim);font-size:12px">　他朝你招了招手，似乎有话要说。</span></span>
           <button class="btn btn-mini" onclick="Engine.xiangIntel()">上前听他闲谈</button>
         </div>`;
+    const beastBuyerW = s.rippleWindow && s.rippleWindow.id === "beast_buyer";
     this.openSheet(`
       <h2>万宝楼 · 采买</h2>
       <p style="color:var(--ink-dim)">灵石：${State.count("lingshi")} 枚　纹银：${s.silver} 两（坊市只认灵石）</p>
+      ${beastBuyerW ? '<p style="color:var(--gold);font-size:12px">妖王伏诛的风声也传进了坊市——掌柜正翻倍收购妖材（限时）。</p>' : ''}
       ${floor1}
       <h3 class="panel-title" style="margin-top:10px">二层 · 法器阁（练气十一层方可驱使）</h3>
       ${floor2}
