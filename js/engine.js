@@ -5448,6 +5448,32 @@ const Engine = {
     return { name: null, taunt: null };
   },
 
+  /* -------- 苍坤遗迹·王蝉战（v354·动漫175）：元婴对元婴的百年清算 --------
+   * win=断腿遁走（黑气蚀骨不可续肢——canon）；lose=fail-forward 浴血重整再战。 */
+  startCangkunFight() {
+    const s = State.data;
+    const tmpl = WORLD.enemies.wangchan_cangkun;
+    if (!tmpl) return;
+    this._nextFightType = "cangkun";
+    const player = this.playerFighter();
+    player.hp = s.hpMax; player.hpMax = s.hpMax;   // 决战满血上场
+    const losses = s.flags.losses_cangkun || 0;
+    const nerf = losses >= 2 ? 0.72 : 1;
+    const foe = Object.assign({}, tmpl, {
+      hp: Math.round(tmpl.hp * nerf), hpMax: Math.round(tmpl.hp * nerf),
+      attacks: tmpl.attacks.map(a => Object.assign({}, a, { dmg: Math.round(a.dmg * nerf) })),
+    });
+    this._combat = new CombatAPI.Combat({
+      player, enemies: [foe], maxRounds: 26, W: 13, enemyPos: 6,
+    });
+    this._combatMeta = { type: "cangkun", enemyName: "王蝉", canQuick: false };
+    s.combat = true;
+    this._combat.startRound();
+    this.log("血雾漫殿，王蝉的身影在雾中忽东忽西——鬼灵门少主的元婴之战，和当年燕家堡已不可同日而语！", "bad");
+    this._combat._log(`【敌情】${tmpl.introNote}`);
+    UI.openCombat(this._combat, this._combatMeta);
+  },
+
   // 复仇战（升仙大会后）：杀害万小山的散修——同阶之争，你无敌（爽文公理：
   // 韩立的"险"永远来自高阶场合；回到同阶视角，他就是碾压）
   startRevengeFight() {
@@ -8461,6 +8487,25 @@ const Engine = {
         this.log(`陆云风的剑光老辣，你负伤暂退、隐入林间（气血-${dmg}）。他还押着陈巧倩没走——调息再上，你看破了他几分剑路（再战伤害+${bonus}%）。`, "bad");
         s.pendingEvent = "chen_rescue";
         this._retryAfterLoss = "chen_rescue";
+      }
+    } else if (meta.type === "cangkun") {
+      // v354 苍坤·王蝉战：win=断腿遁走（黑气蚀骨·canon 175）；lose=fail-forward 重整再战
+      if (win) {
+        State.setFlag("cangkun_fight_won");
+        this.meetNpc("zhanwangchan", "鬼灵门少主——苍坤遗迹再会时已是元婴之身，被你当殿斩断双腿、断口黑气蚀骨无法续肢，血遁狼狈遁走。百年死仇，又添一笔。");
+        this.writeLedger("cangkun_wangchan", "苍坤遗迹重创王蝉——元婴对元婴的百年清算：斩断其双腿（黑气蚀骨·续骨之法不能施），鬼灵门自此视你为头号大敌");
+        this.addMilestone("苍坤遗迹：当殿重创王蝉（断腿遁走）", "showdown");
+        this.log("你一剑斩落，王蝉双腿齐膝而断——断口黑气翻涌，他的人手骇然发现连续骨之法都施不得！鬼灵门少主发出一声不似人声的嘶吼，化作血遁破殿而出。这一场百年旧账，你连本带利讨了回来。", "good");
+        if (typeof Sfx !== "undefined") Sfx.play("success");
+        this.checkStory();
+      } else {
+        s.flags.losses_cangkun = (s.flags.losses_cangkun || 0) + 1;
+        const bonus = Math.min(3, s.flags.losses_cangkun) * 8;
+        s.hp = s.hpMax;
+        s.demon = clamp(s.demon + 6, 0, 100);
+        this.log(`王蝉的血灵大法比燕家堡那夜狠辣十倍，你浴血退到殿柱后重整气息（再战伤害+${bonus}%）。他的血遁起手有一瞬滞空——盯住那个破绽，再上！`, "bad");
+        s.pendingEvent = "cangkun_2";
+        this._retryAfterLoss = "cangkun_2";
       }
     } else if (meta.type === "revenge") {
       if (win) {

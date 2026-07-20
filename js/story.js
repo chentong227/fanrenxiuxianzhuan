@@ -9659,6 +9659,139 @@ const STORY = [
       },
     ],
   },
+
+  /* ============================================================
+   * 苍坤上人遗迹（v354·动漫 174~176）——结盟探宝/云修背叛/重创王蝉/四大宝盒/伪装突围
+   * ============================================================ */
+
+  // —— 苍坤①·结盟入遗迹 ——
+  {
+    id: "cangkun_1",
+    skipIf: (s) => s.flags.cangkun_1_done,
+    cond: (s) => s.flags.cft_jieying_after_done && !s.flags.cangkun_1_done,
+    bgm: "journey",
+    title: "苍坤上人遗迹 · 结盟",
+    objTitle: "苍坤遗迹",
+    objHint: "上古苍坤上人的洞府现世——南陇侯亲自登门相邀。元婴修士的探宝局，水深，货也真。",
+    text(s) {
+      return [
+        { scene: "落云宗 · 药园洞府" },
+        { shot: "establish" },
+        "凝婴的风声还没散，一位不速之客已到了药园——南陇侯，天南有数的元婴老修，笑眯眯地站在你的药田边上。",
+        { say: "南陇侯", tone: "开门见山", text: "「韩道友，苍坤上人的洞府现世了。老夫组了个局——都是元婴同道，就缺一位精通阵禁的。听闻道友当年在虚天殿的手笔……如何？」" },
+        { aside: "苍坤上人，万年前的传奇人物。他的洞府里是什么成色，不用南陇侯多说。同去的还有几位生面孔——其中一个云姓修士，眼神飘忽，你多看了两眼。" },
+        { scene: "苍坤遗迹 · 外围" },
+        { shot: "pushIn", ms: 1300 },
+        "遗迹外围的禁制在众人合力下层层剥开——直到一面流光如水的屏障拦住去路。太妙神禁。几位元婴老修轮番上前，都铩羽而归。",
+        { say: "南陇侯", tone: "朝你一摊手", text: "「该韩道友了。」" },
+        "你在禁前盘膝坐了三个时辰，指尖在虚空里勾画——大衍诀推演阵枢，虚天殿里练出的眼力循隙而入。第三个时辰末，那面万年不破的神禁，无声地裂开一道门。",
+        { aside: "身后一片寂静。你听见有人倒吸凉气——也听见那个云姓修士的呼吸，快了半拍。" },
+      ];
+    },
+    onArrive(s) {
+      State.setFlag("cangkun_1_done");
+      Engine.writeLedger("cangkun_join", "应南陇侯之邀入苍坤上人遗迹——三个时辰破开太妙神禁，满座元婴皆惊（云姓修士的眼神，你记下了）");
+      Engine.addMilestone("苍坤遗迹：破太妙神禁", "story");
+    },
+    choices: [
+      {
+        text: "当先而入——破禁者先行，规矩",
+        hint: "银月已敛息潜入你的袖中",
+        effect(s) {
+          return { text: "你袖袍一振当先跨入门中。袖中一缕微不可察的银光贴得更紧了些——银月的声音只在你识海里响起：「主人，里面好东西的味道……很多。」", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 苍坤②·背叛与王蝉 ——
+  {
+    id: "cangkun_2",
+    skipIf: (s) => s.flags.cangkun_fight_won,
+    cond: (s) => s.flags.cangkun_1_done && !s.flags.cangkun_fight_won,
+    bgm: "boss",
+    title: "苍坤上人遗迹 · 故人",
+    objTitle: "遗迹惊变",
+    objHint: "云姓修士反水引狼入室——来的是你一百多年前就结下死仇的老熟人。",
+    text(s) {
+      return [
+        { scene: "苍坤遗迹 · 主殿" },
+        { amb: "night" },
+        { shot: "establish" },
+        "主殿深处，六只玉盒静静悬在法阵中央——苍坤上人的遗泽。就在众人破阵到最后一层的当口，那个云姓修士突然暴起，一道血光冲天而起！",
+        { say: "云姓修士", tone: "厉声长笑", text: "「少主！人齐了——就是这个破禁的！」" },
+        { shot: "pushIn", ms: 1200 },
+        "血雾自殿门翻涌而入，凝成一道你一百多年没见、却一眼就认出的身影。",
+        { say: "王蝉", emo: "cold", tone: "血雾中缓缓落地，目光钉在你脸上", text: "「燕家堡。厉飞雨。……不，」他忽然笑了，笑得阴冷，「这个气息——是你。原来那夜搅了本座血祭大阵的，从头到尾都是你。」" },
+        { aside: "鬼灵门少主，如今也是元婴之身。殿外还有他的人手，南陇侯等人已被缠住——这一场，躲不掉，你也不想躲。燕家堡的账、张铁的账、一百多年的账，今日一并清算。" },
+        { say: "韩立", emo: "serious", tone: "缓缓抬手，青光自指间流转", text: "「认出来就好。省得你死得不明不白。」" },
+      ];
+    },
+    onArrive(s) {
+      State.setFlag("cangkun_2_seen");
+      if (typeof Sfx !== "undefined") Sfx.play("danger");
+    },
+    choices: [
+      {
+        text: "迎战王蝉——旧账新账一起算",
+        hint: "元婴对元婴·他的血遁起手有一瞬滞空",
+        effect(s) {
+          Engine.startCangkunFight();
+          return { text: "你一步踏出，青芒如潮——百年恩怨，就在这座万年洞府里做个了断！", kind: "event" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— 苍坤③·分宝突围 ——
+  {
+    id: "cangkun_3",
+    skipIf: (s) => s.flags.cangkun_done,
+    cond: (s) => s.flags.cangkun_fight_won && !s.flags.cangkun_done,
+    bgm: "triumph",
+    title: "苍坤上人遗迹 · 满载",
+    objTitle: "分宝突围",
+    objHint: "王蝉断腿遁走、鬼灵门作鸟兽散——现在，该清点收成了。",
+    text(s) {
+      return [
+        { scene: "苍坤遗迹 · 主殿" },
+        { shot: "establish" },
+        "王蝉的血遁消失在殿外夜色里，断口的黑气让他的人手连续骨之法都施展不得。鬼灵门作鸟兽散——主殿里，只剩下六只玉盒与一群心思各异的元婴修士。",
+        "南陇侯清点玉盒，眉头越皱越紧：六只玉盒，只剩两只有货。他扫了一圈满殿修士，最后把目光落在你身上——顿了顿，忽然笑了。",
+        { say: "南陇侯", tone: "拱手，意味深长", text: "「今日若非韩道友破禁退敌，老夫等人怕是要交代在这儿。这一盒，道友收下——莫要推辞。」" },
+        { aside: "他看破了什么，又或者什么都没看破——元婴修士的默契就是不说破。你袖中，银月早已把先行取走的三只玉盒捂得严严实实：两仪环之阴环、十绝鸠毒、紫铖兜。加上南陇侯这盒苍坤玉简——六取其四，此行最大的赢家，是那个「只分到一盒」的人。" },
+        { scene: "官道 · 商队" },
+        "三日后，一支再寻常不过的凡人商队慢悠悠驶出山道。车帘里，银月把玩着那顶紫铖兜，声音里带着笑：",
+        { say: "银月", emo: "smile", tone: "压低声音", text: "「主人当着满殿元婴的面让我动手……就不怕被瞧出来？」" },
+        { say: "韩立", emo: "calm", tone: "闭目养神，嘴角微动", text: "「那又如何。大不了血影遁，逃之夭夭就是了。」" },
+      ];
+    },
+    onArrive(s) {
+      State.setFlag("cangkun_done");
+      State.give("liangyi_yinhuan", 1);
+      State.give("shijue_jiudu", 1);
+      State.give("zicheng_dou", 1);
+      State.give("cangkun_yujian", 1);
+      Engine.writeLedger("cangkun_loot", "苍坤遗迹六取其四——两仪环阴环（北极元光克星·坠魔谷的保命符）、十绝鸠毒、紫铖兜（银月的护身重器）、苍坤遗泽玉简。伪装凡人商队从容突围");
+      Engine.addMilestone("苍坤遗迹：四大宝盒到手·重创王蝉", "bigitem");
+      Engine.addFame(12, "苍坤遗迹一战重创鬼灵门少主，破万年太妙神禁——「韩长老」之名震动天南");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+      Engine.toast("四大宝盒入袋——此行最大赢家");
+    },
+    choices: [
+      {
+        text: "闭目养神——下一站，边界",
+        hint: "边界大战/坠魔谷（后续增量）",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 8);
+          return { text: "车轮吱呀，商队慢慢汇入官道人流。没人多看这支商队一眼——正如没人知道，天南往后百年的风云，有一半就坐在这辆车里（心境+8）。\n\n（苍坤遗迹·完——边界大战与坠魔谷引煞破关，随后续增量实装）", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
 ];
 
 window.STORY = STORY;

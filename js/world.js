@@ -1032,6 +1032,21 @@ WORLD.enemies = {
       { name: "狠命抡刀", dmg: 20, kind: "charge", weight: 6, aim: "cell", range: [1, 1] },
     ],
   },
+  // v354 苍坤遗迹·王蝉（元婴初期·动漫174~176）：鬼灵门少主的再会——血灵大法+血遁突袭，
+  // 燕家堡结下的不死不休，在苍坤上人的洞府里续账（win=断腿遁走·黑气蚀骨无法续肢）
+  wangchan_cangkun: {
+    name: "王蝉", hp: 880, sense: 22, speed: 20, agility: 15, move: 2, mp: 320,
+    qiLayer: 18, elem: "shui", armor: 6, boss: true, stubborn: true, canFlee: false, tactics: "cunning",
+    veil: true, veilSense: 90,
+    introNote: "鬼灵门少主，如今也是元婴之身——燕家堡那笔不死不休的账，他记了一百多年。血灵大法吞煞蚀骨、血遁突袭鬼魅难防：他的血遁起手有一瞬滞空，那是唯一的破绽。旧仇新恨，今日一并清算！",
+    attacks: [
+      { name: "血灵噬煞", dmg: 42, kind: "normal", weight: 12, elem: "shui", mp: 14, range: [1, 3] },
+      { name: "血遁突袭", dmg: 55, kind: "charge", weight: 7, aim: "cell", lunge: true, track: true, mp: 22, range: [1, 5] },
+      { name: "鬼爪蚀骨", dmg: 36, kind: "pierce", weight: 8, mp: 16, range: [1, 1] },
+      { name: "血幕横江", dmg: 28, kind: "normal", weight: 5, aim: "zone", zoneSpan: 1, mp: 20, range: [1, 4] },
+    ],
+    reward: { lingshi: 6 },
+  },
   // v350 新妖王·青睛枭王：夜行妖禽——身法快（move 3）、点名俯击（cell 蓄力）、贴身弱
   // （打法：他快你稳——蓄力点名时挪开半步，落地硬直窗口全力反打；远程手段优先）
   beast_xiaowang: {
