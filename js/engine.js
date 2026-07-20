@@ -703,7 +703,7 @@ const Engine = {
     if (State.data.combat) { this.toast("酣战之中，无暇他顾"); return; }
     // v345 防连点：结算类行动（耗月的）350ms 内只认第一下——手抖双击不再双结算两个月。
     // 开面板类（cultivate/market 等）不上锁：面板自身幂等，重开无害。
-    const SETTLE = { adventure: 1, rest: 1, gather: 1, spar: 1, alchemy: 1, investigate: 1, xingyi: 1, yaoyuan: 1, xunluo: 1, xiuzhen: 1, board: 1, rumor: 1, hunt: 1 };
+    const SETTLE = { adventure: 1, rest: 1, gather: 1, spar: 1, alchemy: 1, investigate: 1, xingyi: 1, yaoyuan: 1, xunluo: 1, xiuzhen: 1, board: 1, rumor: 1, hunt: 1, cuisha: 1 };
     if (SETTLE[action]) {
       const now = Date.now();
       if (this._actLockAt && now - this._actLockAt < 350) return;
@@ -718,6 +718,7 @@ const Engine = {
     if (action === "cultivate") { UI.openSeclusion(); return; }
     else if (action === "adventure") this.adventure();
     else if (action === "rest") this.rest();
+    else if (action === "cuisha") this.cuisha();
     else if (action === "breakthrough") { UI.openBreakthrough(); return; }
     else if (action === "bottle") { UI.openBottle(); return; }
     else if (action === "lianfu") { UI.openFuluCraft(); return; }
@@ -4235,6 +4236,28 @@ const Engine = {
     this.log(`【修补阵纹】${lines[(n - 1) % lines.length]}`, "event");
   },
 
+  /* v347 以煞淬体（明王诀前身·野路子）：把积压的煞气强行往皮肉筋骨里搬——
+   * 煞气-10、体魄+1，代价是经脉如受火燎（气血-两成）。相士线听过"大晋佛宗转煞"者，
+   * 文案点破这是野法子、正途在北地——大晋篇的钩子在日常行动里反复露头。 */
+  cuisha() {
+    const s = State.data;
+    if ((s.demon || 0) < 40) { this.toast("煞气未积到可淬之量（需40）"); return; }
+    this.passTime(1);
+    const dmg = Math.round(s.hpMax * 0.2);
+    s.hp = Math.max(1, s.hp - dmg);
+    s.demon = clamp(s.demon - 10, 0, 100);
+    s.body += 1;
+    const n = (s.flags.sha_cuisha_n || 0) + 1;
+    s.flags.sha_cuisha_n = n;
+    const hint = s.flags.sha_dajin_hint
+      ? "青袍客说的没错——这是野路子，煞气只是被打散进血肉，没真正炼化。北地大晋的佛门正法，迟早要走一遭。"
+      : "这法子是你自己琢磨的，粗糙、疼，但管用。要是有一门正经的转煞功法就好了。";
+    this.log(`【以煞淬体】你盘坐运功，把丹田里那股阴戾之气一缕缕逼进皮肉筋骨——每一寸经脉都像被文火燎过，痛得指节发白。一月下来，煞气消了一截，筋骨却实打实硬了一层（煞气-10·体魄+1·气血-${dmg}）。${hint}`, "event");
+    this.checkLifespan();
+    State.save();
+    UI.renderAll();
+  },
+
   rest(silent = false) {
     const s = State.data;
     const realm = State.realm();
@@ -4399,7 +4422,7 @@ const Engine = {
       { label: `修为火候（${Math.round(culRatio * 100)}%）`, v: culRatio * 0.55 },
       { label: `灵根资质（${root.name}）`, v: root.breakBonus || 0 },
       { label: `心境（${s.mood}/${s.moodMax}）`, v: (s.mood / s.moodMax) * 0.15 },
-      { label: `心魔拖累（${Math.round(s.demon)}）`, v: -(s.demon / 100) * 0.25 },
+      { label: `煞气拖累（${Math.round(s.demon)}）`, v: -(s.demon / 100) * 0.25 },
       { label: s.spirit < realm.spMax * 0.5 ? "灵力不济（<50%）" : "灵力充盈", v: s.spirit < realm.spMax * 0.5 ? -0.1 : 0 },
       ...((s.btPity || 0) > 0 ? [{ label: `屡败弥坚（连败${s.btPity}次）`, v: (s.btPity * 0.02) }] : []),
     ];
@@ -7815,6 +7838,22 @@ const Engine = {
 
     if (meta.type === "encounter") {
       if (win) {
+        // v347 煞气×杀戮（原著同源）：煞气由杀伐积攒——人形修士最重、妖兽轻些；
+        // 走脱者不算（没杀成不积煞）。这是煞气系统的主源：杀得越果断，攒得越快。
+        {
+          let shaGain = 0;
+          c.enemies.forEach(e => {
+            if (e.hp > 0 || e.escaped) return;
+            const isHuman = !e.nature || e.nature === "human";
+            shaGain += isHuman ? 3 : 1;
+          });
+          if (shaGain > 0) {
+            s.demon = clamp((s.demon || 0) + shaGain, 0, 100);
+            if (s.demon >= 40 && Math.random() < 0.3) {
+              this.log(`收势的一瞬，你闻到自己身上有股散不去的血腥气——洗得掉衣上的血，洗不掉骨子里的煞。（煞气+${shaGain}）`, "sys");
+            }
+          }
+        }
         if (meta.reward) {
           Object.entries(meta.reward).forEach(([k, v]) => {
             if (k === "silver") { s.silver += v; this.log(`战胜「${meta.enemyName}」，得纹银 ${v} 两。`, "good"); }
@@ -8212,6 +8251,12 @@ const Engine = {
         State.setFlag("modafu_dead");
         this.log("墨大夫毒发倒地，铁奴被你击碎，余子童的元神也被你以功力生生镇灭！你赢了——靠的是准备、算计与一刻不敢松懈的苦修。", "good");
         this.addMilestone("夺舍之夜：反杀墨大夫（余子童）", "showdown");
+        // v347 煞气伏笔·首杀（原著同源：煞气之说结丹期方有人点破，但杀戮从第一夜就开始记账）
+        if (!s.flags.sha_first_kill) {
+          s.flags.sha_first_kill = true;
+          s.demon = clamp(s.demon + 4, 0, 100);
+          this.log("夜风吹散血腥气，你却觉得指缝里有什么东西洗不掉——不是血。掌心以下、经脉深处，仿佛渗进了一缕说不清的阴戾。你摇摇头，只当是错觉。（煞气+4）", "sys");
+        }
         // 远雷·决战前准备兑现（铁律3）：以武/以毒为先，皆在此役开花结果——点名出处
         if (this.settleLedger("showdown_prep_martial", "苦练到极致的眨眼剑法，在夺舍之夜近身那一瞬递了出去——快到墨大夫的元神来不及反扑。当初日夜磨剑的执拗，今夜全数兑成了那道致命的快")) {
           s.mood = clamp(s.mood + 3, 0, s.moodMax);
@@ -9709,9 +9754,42 @@ const Engine = {
     `);
   },
 
+  /* -------- 煞气反噬（v347·原著天澜草原式）--------
+   * 煞气触顶即爆：阴戾之气冲破压制反噬自身——修为溃散一截、气血大损、卧床调养。
+   * 压下去的煞气不除根（降到55），警示先行（≥85 预警一次）。原著韩立元婴中期那一场
+   * 反噬逼他假死冰封漂入大晋——游戏里按尺度缩放，但"煞气满盈=真出事"的分量一致。 */
+  _checkShaBurst() {
+    const s = State.data;
+    if (!s || s.combat || s.pendingEvent) return false;
+    if ((s.demon || 0) >= 85 && (s.demon || 0) < 100 && !s.flags.sha_warn85) {
+      s.flags.sha_warn85 = true;
+      this.log("【煞气将盈】丹田深处那股阴戾之气近来躁动得厉害，行功时隐隐作痛——再造杀孽，恐遭反噬。调息、善行，或寻个由头把心头的事了了。", "bad");
+      if (typeof UI !== "undefined" && UI.toast) UI.toast("煞气将盈——再积恐遭反噬", true, 5200);
+      return false;
+    }
+    if ((s.demon || 0) < 100) { if ((s.demon || 0) < 70) s.flags.sha_warn85 = false; return false; }
+    // 触顶：反噬
+    s.flags.sha_bursts = (s.flags.sha_bursts || 0) + 1;
+    const culLoss = Math.round((s.cultivation || 0) * 0.5);
+    s.cultivation = Math.max(0, (s.cultivation || 0) - culLoss);
+    s.demon = 55;
+    s.flags.sha_warn85 = false;
+    this.passTime(2);   // 卧床两月（先过月再压血：passTime 的月回血不该把重伤养满）
+    s.hp = Math.max(1, Math.round(s.hpMax * 0.35));
+    s.mood = clamp((s.mood || 0) - 15, 0, s.moodMax);
+    this.log(`【煞气反噬】行功至半，丹田里积压经年的煞气骤然炸开——阴戾之气沿经脉倒卷，所过之处如火燎冰割！你喷出一口黑血，昏死过去。\n\n再醒来时已过了两月。经脉里那股东西被你强行压回丹田深处，可你比谁都清楚：它没散，只是蛰伏（修为-${culLoss}·气血大损·心境-15·煞气压至55）。${s.flags.sha_dajin_hint ? "青袍客那句话又浮上心头——北地大晋，佛宗，转煞之法。" : "这东西，得找个正经法子解决。"}`, "bad");
+    this.addMilestone("煞气反噬：积压的杀孽第一次反咬了你", "deed");
+    if (typeof UI !== "undefined" && UI.toast) UI.toast("煞气反噬！卧床两月方醒", true, 6000);
+    if (typeof Sfx !== "undefined") Sfx.play("danger");
+    State.save();
+    if (typeof UI !== "undefined" && UI.renderAll) UI.renderAll();
+    return true;
+  },
+
   /* -------- 寿元 / 死亡检查 -------- */
   checkLifespan() {
     const s = State.data;
+    if (typeof this._checkShaBurst === "function") this._checkShaBurst();
     if (s.age >= s.lifespan) {
       this.gameOver("寿元耗尽，你终究没能跳出这凡俗的生死。一缕道心，散于天地之间。");
     } else if (s.hp <= 0) {
@@ -9775,6 +9853,12 @@ const Engine = {
     const slain = (s.slainBeasts || []).length;
     const fame = s.fame || 0;
     const fameTxt = fame >= 30 ? "威名赫赫，一方人物" : fame >= 12 ? "薄有名声，渐为人知" : fame > 0 ? "略有耳闻，籍籍之间" : "默默无名，无人记得";
+    // v347 煞气一笔：一生与杀伐之气如何相处（峰值/反噬/淬体）
+    const shaPeak = (s.flags && s.flags.sha_peak) || 0;
+    const shaTxt = shaPeak >= 100 ? `煞气曾满盈反噬${(s.flags.sha_bursts || 0) > 1 ? ` ${s.flags.sha_bursts} 次` : ""}——杀伐一途，你走得比谁都深`
+      : shaPeak >= 60 ? "煞气一度缠身，阴戾入骨——所幸未至反噬"
+      : shaPeak >= 30 ? "手上沾过血，煞气微存——尚在可控之间"
+      : "双手干净，煞气未侵——修行路上少有的清白";
     const te = (this.temperamentEcho && this.temperamentEcho()) || null;
     // 世间众生：你走后，故人各自的命数（活着的/已殁的）——"你离开，世界不会停"
     const fates = (s.npcFates || []);
@@ -9791,6 +9875,7 @@ const Engine = {
         <div class="ending-line"><span>止步</span><b style="color:var(--gold)">${realm}</b></div>
         <div class="ending-line"><span>享年</span><b>${s.age || 13} 岁 · 修行 ${yrs} 载</b></div>
         <div class="ending-line"><span>名望</span><b>${fameTxt}</b></div>
+        <div class="ending-line"><span>煞气</span><b>${shaTxt}</b></div>
         ${slain ? `<div class="ending-line"><span>伏诛</span><b>异闻妖王 ${slain} 头</b></div>` : ""}
       </div>
       ${te ? `<h3 class="panel-title" style="margin-top:12px">心性 · 你是谁</h3><div class="temperament-echo temperament-${te.tone}">${te.text}</div>` : ""}

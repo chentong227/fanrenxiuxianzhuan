@@ -660,7 +660,11 @@ const UI = {
       // v343 观气·尔虞我诈：探查附带一眼气机——多数人深浅可辨，敛息高人只见「深浅莫测」，
       // 神识够深方能窥破（窥破线各人不同）。窥破辞条只出一次实感，之后照常。
       const gaze = this._npcGaze(npcId);
-      Engine.log(`你暗中打量「${nm}」，揣摩其底细。${n ? n.bio : ''}${gaze ? `<br>【观气】${gaze}` : ""}`, "sys");
+      // v347 煞气×反向观气：你在打量别人，别人也在打量你——煞气重者藏不住
+      const myShaNote = (s.demon || 0) >= 60
+        ? `<br><span style="color:var(--red)">对方的目光在你身上停了一瞬，眉头几不可察地一皱——你周身的煞气，明眼人都瞒不过。</span>`
+        : "";
+      Engine.log(`你暗中打量「${nm}」，揣摩其底细。${n ? n.bio : ''}${gaze ? `<br>【观气】${gaze}` : ""}${myShaNote}`, "sys");
       this.closeSheet(); State.save(); this.renderAll();
       return;
     }
@@ -922,7 +926,8 @@ const UI = {
     gather: "1月 · 得草药 · 长药理",
     spar: "1月 · 磨武艺 · 积剑意",
     alchemy: "1月 · 灵草炼丹 · 长药理",
-    investigate: "1月 · 探查隐秘 · 添心魔",
+    investigate: "1月 · 探查隐秘 · 添煞气",
+    cuisha: "1月 · 煞气-10 → 体魄+1 · 掉血",
     adventure: "1月 · 机缘与凶险并存",
     explore: "入山走格 · 采宝亦可能遇兽",
     market: "购置丹药材料",
@@ -968,7 +973,7 @@ const UI = {
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
       xingyi: "坐堂行医", daigong: "百艺坊 · 补炼缺件 🔨", qingtuo: "坊市告示 · 请托 📜",
-      lianfu: "闭关制符 ✎", xunluo: "随队巡逻 · 军功 ⚔", xiuzhen: "修补阵纹 ⚙",
+      lianfu: "闭关制符 ✎", xunluo: "随队巡逻 · 军功 ⚔", xiuzhen: "修补阵纹 ⚙", cuisha: "以煞淬体 🩸",
     };
     // 剧情过场地点（scene）：无日常行动，只随剧情推进
     // 各地行动由 world 数据决定，不再到处自动塞「打坐/突破」——突破/调息只在洞府(home)出现
@@ -991,6 +996,8 @@ const UI = {
       // （lianfu 管线俱全但全库无一处注入=阵法 Build 生产回路断裂·build.bal 在测空气）
       if (loc.home && Engine.hasFuluTable && Engine.hasFuluTable()
         && (State.data.fuluPlans || []).length) acts.push("lianfu");
+      // v347 以煞淬体：煞气≥40 且此地可打坐——把杀孽炼进筋骨（原著明王诀的野路子前身）
+      if (acts.includes("rest") && (State.data.demon || 0) >= 40) acts.push("cuisha");
     }
 
     // 有热点时不再渲染常规行动按钮（热点替代了它们），但保留限时窗口按钮
@@ -1111,13 +1118,13 @@ const UI = {
       });
     }
     this._prevMoney = curMoney;
-    // v346 乘法·心魔×氛围：心魔≥60 界面边缘泛暗红脉动（危局视觉的经营面版本）——
+    // v347 煞气×氛围：煞气≥60 界面边缘泛暗红脉动（危局视觉的经营面版本）——
     // 数值的压迫感落到眼睛里；跨过阈值时一声提醒（每局一次，降回 50 以下重置）。
     const hazeOn = (s.demon || 0) >= 60;
     document.body.classList.toggle("demon-haze", hazeOn);
     if (hazeOn && !this._demonHazeWarned) {
       this._demonHazeWarned = true;
-      this.toast("心魔渐盛，道心蒙尘——寻个静处调息，或了却心头之事", true, 4600);
+      this.toast("周身煞气渐盛，隐有阴戾之意扰神——寻个静处调息，或以善行消解", true, 4600);
       if (typeof Sfx !== "undefined") Sfx.play("danger");
     } else if (!hazeOn && (s.demon || 0) < 50) {
       this._demonHazeWarned = false;
@@ -1198,7 +1205,7 @@ const UI = {
     this._prevBars[key] = cur;
   },
   _floatGain(key, delta) {
-    const labels = { cul: "修为", sp: "灵力", hp: "气血", mood: "心境", demon: "心魔", silver: "纹银", lingshi: "灵石" };
+    const labels = { cul: "修为", sp: "灵力", hp: "气血", mood: "心境", demon: "煞气", silver: "纹银", lingshi: "灵石" };
     // 心魔上涨是坏事——用警示色；其余增益用上扬绿。多条同刻增益纵向错开，避免叠成一团读不清。
     const bad = key === "demon";
     const el = document.createElement("div");
@@ -1376,7 +1383,7 @@ const UI = {
     prev("气血", s.hp, e.hp, s.hpMax);
     prev("灵力", s.spirit, e.sp, realm.spMax);
     prev("心境", s.mood, e.mood, s.moodMax);
-    prev("心魔", s.demon, e.demon, 100);
+    prev("煞气", s.demon, e.demon, 100);
     if (e.cul) {
       const gain = Math.round(e.cul * ((typeof Balance !== "undefined" && Balance.culGainMul) ? Balance.culGainMul(s.realmIndex) : 1));
       prev("修为", s.cultivation, gain, realm.culMax != null ? realm.culMax * 1.5 : null);
@@ -2779,7 +2786,7 @@ const UI = {
       <span>灵力 <b>${s.spirit}/${realm.spMax}</b></span>
       <span>气血 <b>${s.hp}/${s.hpMax}</b></span>
       <span>心境 <b>${s.mood}</b></span>
-      <span>心魔 <b class="${s.demon >= 35 ? 'warn' : ''}">${s.demon}</b></span>
+      <span title="杀伐阴戾积于周身，攻心则为魔——冲关时化作心魔劫">煞气 <b class="${s.demon >= 35 ? 'warn' : ''}">${s.demon}</b></span>
     </div>`;
   },
 
@@ -2950,8 +2957,8 @@ const UI = {
       return `<button class="btn btn-mini" onclick="Engine.useItem('${id}'); UI.openBreakthrough();">服「${it.name}」×${State.count(id)}　<span style="color:var(--ink-dim);font-size:11px">${effectText(it.effect || {})}</span></button>`;
     }).join("");
     const trialNote = demonHigh
-      ? `<p style="color:var(--gold);font-size:12px;margin-top:6px">⚠ 心魔过盛（${Math.round(s.demon)}）：冲关须先闯一场「心战」降伏心魔，否则功亏一篑。</p>`
-      : `<p style="color:var(--jade-bright);font-size:12px;margin-top:6px">心魔已伏，可顺势冲关，水到渠成。</p>`;
+      ? `<p style="color:var(--gold);font-size:12px;margin-top:6px">⚠ 煞气过盛（${Math.round(s.demon)}）：杀伐之气攻心成魔——冲关须先闯一场「心战」降伏心魔，否则功亏一篑。</p>`
+      : `<p style="color:var(--jade-bright);font-size:12px;margin-top:6px">煞气已平，心魔无隙可乘——可顺势冲关，水到渠成。</p>`;
 
     this.openModal(`
       <h2>突破 · ${nextRealm.name}</h2>
@@ -3805,7 +3812,7 @@ const UI = {
       explore: "深入探索", wujian: "闭关悟剑 ⚔", fair: "赶集（小会）", yaoyuan: "药园差事",
       liandan: "地火炼丹 🔥", board: "细读告示", rumor: "探听风声", hunt: "外海猎妖 🌊",
       xingyi: "坐堂行医", daigong: "百艺坊 · 补炼缺件 🔨", qingtuo: "坊市告示 · 请托 📜",
-      lianfu: "闭关制符 ✎", xunluo: "随队巡逻 · 军功 ⚔", xiuzhen: "修补阵纹 ⚙",
+      lianfu: "闭关制符 ✎", xunluo: "随队巡逻 · 军功 ⚔", xiuzhen: "修补阵纹 ⚙", cuisha: "以煞淬体 🩸",
     };
     let acts = (loc.scene ? [] : loc.actions.slice());
     if (!loc.scene) {
@@ -8123,7 +8130,7 @@ const UI = {
     const rows = [
       `· 修为 -${r.loss}`,
       `· 气血 -${r.dmg}`,
-      `· 心魔 +${r.demonGain}（滋长）`,
+      `· 煞气 +${r.demonGain}（郁积）`,
       ...(r.pity ? [`· 屡败弥坚：连败 ${r.pity} 次，下次冲关成功率 +${r.pity * 2}%`] : []),
     ];
     ov.innerHTML = `
@@ -8137,7 +8144,7 @@ const UI = {
         <div class="cer-actions">
           <button class="btn btn-secondary" onclick="UI._setbackEnd()">拂袖起身，从头再来</button>
         </div>
-        <div class="cer-note">失败在攒成功：修满火候、调息压心魔、灵力充盈时再冲，把成功率经营上去。</div>
+        <div class="cer-note">失败在攒成功：修满火候、调息压煞、灵力充盈时再冲，把成功率经营上去。</div>
       </div>`;
     ov.classList.add("show");
   },
@@ -8684,7 +8691,7 @@ function effectText(e) {
   if (e.sp) parts.push(`灵力+${e.sp}`);
   if (e.hp) parts.push(`气血+${e.hp}`);
   if (e.mood) parts.push(`心境+${e.mood}`);
-  if (e.demon) parts.push(`心魔${e.demon > 0 ? '+' : ''}${e.demon}`);
+  if (e.demon) parts.push(`煞气${e.demon > 0 ? '+' : ''}${e.demon}`);
   return parts.join("　");
 }
 

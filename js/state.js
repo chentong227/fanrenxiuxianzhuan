@@ -130,6 +130,11 @@ const State = {
     if (this.data && (this.data.hp <= 0 || this.data.age >= this.data.lifespan)) return true;
     // v344 成就惰性检查：每次落档前扫一遍（O(1) 字段比对 ×20，开销可忽略；新达成即报喜）
     try { if (typeof ACH !== "undefined" && this.data) ACH.check(this.data); } catch (e) {}
+    // v347 煞气峰值记账（终章总结用）：一生煞气最重到过几分
+    try {
+      const d0 = this.data;
+      if (d0 && d0.flags && (d0.demon || 0) > (d0.flags.sha_peak || 0)) d0.flags.sha_peak = d0.demon;
+    } catch (e) {}
     try {
       this.data.savedAt = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));

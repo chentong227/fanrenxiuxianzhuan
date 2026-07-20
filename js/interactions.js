@@ -290,6 +290,9 @@ const INTERACTIONS = {
   // 关系值（好感/仇怨）记录在存档
   favor(s, npcId, delta) {
     if (!s.relations) s.relations = {};
+    // v347 煞气×社交（原著同源）：煞气≥60 周身阴戾之意外露，寻常人不自觉地避着你——
+    // 正向交情增速减半（向上取整保底1），负向照旧。杀伐果断的代价落在人情账上。
+    if (delta > 1 && (s.demon || 0) >= 60) delta = Math.ceil(delta / 2);
     const before = s.relations[npcId] || 0;
     s.relations[npcId] = before + delta;
     // 好感升段 → 具名故人按身份回赠（升段一次性、每段只给一次；背景修士 npcFates 不触发）

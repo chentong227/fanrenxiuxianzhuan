@@ -43,6 +43,12 @@
       cond: (s) => !!s.flags.ach_pierced_veil },
     { id: "ghost_gate",  icon: "🌫", name: "鬼门关前",   desc: "濒死之际被无名好心人救起——命是捡回来的。",
       cond: (s) => !!(s.flags.last_deathrescue && s.flags.last_deathrescue > 0) },
+    { id: "sha_named",   icon: "🩸", name: "煞气入体",   desc: "看相老儿点破了你眉宇间的东西——它叫煞气，积少成多，藏在骨头缝里。",
+      cond: (s) => !!s.flags.sha_named },
+    { id: "sha_burst",   icon: "💥", name: "反噬之痛",   desc: "积压经年的煞气第一次反咬了你——卧床两月，方知这东西压不是长久之计。",
+      cond: (s) => (s.flags.sha_bursts || 0) >= 1 },
+    { id: "sha_forge",   icon: "🔨", name: "以煞淬体",   desc: "以野路子把杀孽炼进筋骨十次——由魔入佛的正法，在北地大晋等你。",
+      cond: (s) => (s.flags.sha_cuisha_n || 0) >= 10 },
 
     // —— 百艺经营 ——
     { id: "bottle",      icon: "🍶", name: "掌中天地",   desc: "解开神秘小瓶的秘密——凡人最大的底牌。",
