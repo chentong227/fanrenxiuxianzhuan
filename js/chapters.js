@@ -103,6 +103,21 @@ const Chapters = {
       // 设计全文见 docs/waihaifengyun-design.md（四幕：恶名出关/智夺风雷翅/还阳术·温天仁六魔战/阴冥之地凡人终结战）。
       // 用户已拍板8项决议（设计稿§八）；凡人终结战演出逐拍待用户口述（钩子）。
     },
+    {
+      id: "chongfantiannan",
+      name: "重返天南篇",
+      order: 8,
+      locked: true,             // 由外海风云篇章末「故土暗流」(arc7_complete)解锁
+      realmTier: 2,             // 入章结丹大圆满（凝婴后 realmTier() 动态档自动升 3——B2 机制现成）
+      realmCapIndex: 21,        // 元婴初期（DATA.realms 索引21）——凝婴大关可破至此；中期留坠魔谷（原著引煞破关处）
+      startLocation: "luoyun_waimen",
+      completeFlag: "arc8_complete",
+      nextChapter: null,        // 边界大战/坠魔谷/大晋（后续篇章·钩子）
+      currencyName: "灵石",
+      // 动漫第7季（153-176）考据：藏拙入宗（隐修为至练气·药园轮回）→雪云狐/银月→试剑大会（灵眼树+定灵丹）
+      // →凝结元婴（157·三段心魔劫：恐惧之相/美梦之相/无瓶之我——"就算没有小绿瓶，我依然是我"）
+      // →结婴任长老/慕沛灵之约→苍坤上人遗迹（后续增量）。
+    },
   ],
 
   get(id) { return this.list.find(c => c.id === id) || null; },

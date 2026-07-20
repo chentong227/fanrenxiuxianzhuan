@@ -8492,7 +8492,7 @@ const UI = {
    * mode="save"：系统菜单进——各槽「存入」，占用槽二次确认覆盖；自动档只读展示。
    * mode="load"：主菜单/终章屏进——有档的槽「读取」。 */
   openSaveSlots(mode) {
-    const CH_NAME = { qixuan: "七玄门", huangfeng: "黄枫谷", modao: "魔道争锋", zaibie: "再别天南", starsea: "乱星海", xinghaifeichi: "星海飞驰", waihaifengyun: "外海风云" };
+    const CH_NAME = { qixuan: "七玄门", huangfeng: "黄枫谷", modao: "魔道争锋", zaibie: "再别天南", starsea: "乱星海", xinghaifeichi: "星海飞驰", waihaifengyun: "外海风云", chongfantiannan: "重返天南" };
     const fmtT = (t) => {
       if (!t) return "";
       const d = new Date(t);

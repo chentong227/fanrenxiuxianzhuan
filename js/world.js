@@ -545,6 +545,32 @@ WORLD.locations = [
     encounters: [],
   },
 
+  /* ========== 重返天南篇（chongfantiannan·动漫153~176）·v352 ========== */
+  {
+    id: "luoyun_waimen", arc: "chongfantiannan",
+    name: "落云宗 · 药园洞府",
+    desc: "云梦山脉腹地的天道盟核心宗门。你把修为藏到练气层次通过入门选拔，领了看管药园的差事——从七玄门的药童到落云宗的药园杂役，兜兜转转一百多年，你又回到了草药香里。没人知道，这个低眉顺目的药园杂役，是能以凡人之躯搏杀六道传人的结丹大圆满。",
+    travelCost: 1,
+    home: true,
+    env: { depth: { fg: "interior", far: 0.4 } },
+    actions: ["cultivate", "breakthrough", "rest", "bottle", "alchemy", "gather", "spar"],
+    map: { x: 30, y: 52 },
+    unlock: (s) => !!(s.flags && s.flags.cft_ruzong_done),
+    encounters: [],
+    landmarks: [
+      { id: "yaotian", icon: "🌿", x: 24, y: 46, label: "药田",
+        look(s) {
+          return { text: "满园灵药按时令排开，长势喜人——比百药园那会儿你打理得还用心。锄头把上的茧和一百多年前长在同一个位置。你忽然想起马师伯那句「园里的事，园子都记得」。", kind: "event",
+            once: true, repeat: "药田齐整，灵气氤氲。", effect(st) { st.mood = Math.min(st.moodMax, st.mood + 2); } };
+        } },
+      { id: "julingzhen", icon: "⚙", x: 74, y: 40, label: "拘灵阵",
+        look(s) {
+          return { text: "洞府四角埋着你亲手布下的拘灵法阵——阵纹深处又缠了几道遮蔽气机的暗手。药园杂役的洞府里藏着结丹大圆满的气息，靠的就是这几笔。谨慎，是你活到今天的头一样本事。", kind: "event",
+            once: true, repeat: "阵纹幽幽，气机被拢得密不透风。" };
+        } },
+    ],
+  },
+
   /* ========== 外海风云篇（waihaifengyun·动漫125~152）·docs/waihaifengyun-design.md ========== */
   {
     id: "waihai_dongfu", arc: "waihaifengyun",
@@ -658,6 +684,10 @@ WORLD._landContinent = {
       desc: "胥国七派之一——远观之地，且记在心头。" },
     { id: "farsea",   name: "乱星海（极远）", pos: { x: 86, y: 42 }, locs: [], silhouette: true,
       desc: "天南以东的无尽海域，星罗万岛，妖修横行。路远得连舆图都画不全。" },
+    // v352 重返天南篇：云梦山脉（落云宗所在——天道盟核心地界）
+    { id: "yunmeng", name: "云梦山脉", pos: { x: 22, y: 58 }, locs: ["luoyun_waimen"], localMap: "luoyun_waimen",
+      desc: "天南腹地的连绵大脉，天道盟核心门派落云宗坐镇于此。三派试剑大会的风声正紧，山中修士往来渐密。", months: 3, danger: "中",
+      gate: (s) => (s.flags && s.flags.cft_ruzong_done) ? null : "落云宗尚无你的名字" },
   ],
   routes: [
     { from: "caixia", to: "qingniu", terrain: "官道" },
@@ -671,6 +701,9 @@ WORLD._landContinent = {
     // 魔道前线（polish-modao A3）：北境战线两条路——渲染层随节点 hidden 同隐
     { from: "qianxian", to: "huangfeng", terrain: "山道" },
     { from: "qianxian", to: "yuejing", terrain: "官道" },
+    // v352 重返天南篇：云梦山脉两条路（太南谷南下 / 嘉元城取道）
+    { from: "tainangu", to: "yunmeng", terrain: "山道" },
+    { from: "jiayuan", to: "yunmeng", terrain: "丘陵" },
   ],
   /* —— L3 州（v147 §10.4「拆越国→镜/建/岚州」；v148 去格子：州块多边形不再渲染，州仅作分组）：凡俗政区。
    *   区分度：L3＝州名题字（点州名看一州城·宗），L4＝点状城/宗（点钉启程/下钻 L5）。

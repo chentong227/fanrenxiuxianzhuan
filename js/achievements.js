@@ -18,7 +18,9 @@
     { id: "foundation",  icon: "⛰", name: "筑基问道",   desc: "服丹破关，凝练道基——迈入筑基期。",
       cond: (s, R) => R(s) === "foundation" || R(s) === "core" },
     { id: "core",        icon: "💠", name: "金丹大道",   desc: "三转重元，结丹功成——迈入结丹期。",
-      cond: (s, R) => R(s) === "core" },
+      cond: (s, R) => R(s) === "core" || R(s) === "nascent" },
+    { id: "nascent",     icon: "👶", name: "婴变出窍",   desc: "破碎金丹，元婴自识海孕生——「就算没有小绿瓶，我依然是我。」",
+      cond: (s, R) => R(s) === "nascent" },
     { id: "centenarian", icon: "🕯", name: "百岁修士",   desc: "寿过百岁——凡人早已换了三代人。",
       cond: (s) => (s.age || 0) >= 100 },
 

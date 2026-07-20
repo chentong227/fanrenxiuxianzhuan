@@ -4479,7 +4479,13 @@ const Engine = {
       gains.push(`心魔 -${wasBig ? 12 : 5}（道心愈坚）`);
       if (typeof UI !== "undefined" && UI.breakthroughCeremony) UI.breakthroughCeremony(nr, gains, wasBig);
       if (typeof Sfx !== "undefined") Sfx.play("bell");
-      if (wasBig) {
+      if (wasBig && nr.tier === "nascent" && nr.layer === 1) {
+        // v352 凝婴功成（全游戏最高潮·动漫 157 破劫独白）：初心回溯——"就算没有小绿瓶，我依然是我"
+        this.log("幻象轰然崩塌的那一瞬，你想起的不是什么惊天机缘——是五里沟捡红浆果的自己、是厉飞雨那句「跟俺去看遍大千世界」、是燕家堡舍身的刘师兄、是墨大夫赴死前坦然的背影。你对着那个托着小绿瓶的「自己」，一字一句道：「机缘由天，修持在己。小绿瓶是我握牢的机缘——但从来不是它定义我。就算没有它，我，依然是韩立。」", "good");
+        this.log("识海深处轰鸣如潮——金丹寸寸碎裂，一个盘膝而坐、眉目与你一般无二的小人自碎丹中冉冉升起，周身青光流转。婴变出窍，元婴成形！自此神识千里、法力如渊，寿数六百载——天南之地，你已站到了修仙界的最顶层。", "good");
+        this.addMilestone("凝结元婴：婴变出窍（两百年修行的总清算）", "medal");
+        if (s.flags) s.flags.ach_nascent = true;
+      } else if (wasBig) {
         this.log(`心魔劫已渡！你脱胎换骨，正式跻身「${nr.name}」——这一步，多少修士求而不得。`, "good");
       } else {
         this.log(`灵力冲关，经脉拓宽——你顺势突破至「${nr.name}」！`, "good");
@@ -7574,31 +7580,51 @@ const Engine = {
         introNote: null,
       }, extra || {});
 
-      // Phase 1: 执念之相——HP×1.5，纯对攻（v350 镜像：它使你的招）
-      const phase1 = mkDemon(demonName, p1Hp, demonAtk, {
-        introNote: face.taunt || null,
-        attacks: mirror || undefined,
-      });
-
-      // Phase 2: 心魔反扑——本体回血 + 两个心魔分身（clones）
-      // 分身血少但分散玩家输出——须先清分身再集火本体，否则回血压不住
-      const phase2Name = face.name ? face.name.replace("心魔 · ", "心魔劫 · ") : "心魔劫";
-      const phase2 = mkDemon(`${phase2Name}·反扑`, p2Hp, demonAtk, {
-        introNote: "心魔不灭——它汲取你的道心裂隙愈合伤痕，更裂出两道分身围攻！须先清分身、再集火本体——否则回血压不住！",
-        _demonRegen: true,
-      });
-      const cloneA = mkDemon(`${phase2Name}·分身甲`, cloneHp, Math.round(demonAtk * 0.6), {
-        introNote: null,
-      });
-      const cloneB = mkDemon(`${phase2Name}·分身乙`, cloneHp, Math.round(demonAtk * 0.6), {
-        introNote: null,
-      });
-
-      // Phase 3: 道心一击——狂暴（攻击力×1.5），须撑过最后一击
-      const phase3 = mkDemon(`${phase2Name}·狂相`, p3Hp, Math.round(demonAtk * 1.5), {
-        introNote: "心魔濒死反扑——分身尽碎，它将所有执念凝于一击，狂暴之力铺天盖地！撑过这一波，道心即成！",
-        _demonEnrage: true,
-      });
+      // v352 凝婴大关特化（动漫 157 三段心魔劫·全游戏最高潮）：
+      // 恐惧之相（故乡血/凡身/小瓶暴露）→ 美梦之相（重聚/成亲/飞升——温柔刀）→ 无瓶之我（终极镜像）
+      const isNascent = !!(nextRealm && nextRealm.tier === "nascent");
+      let phase1, phase2, cloneA, cloneB, phase3;
+      if (isNascent) {
+        phase1 = mkDemon("心魔劫 · 恐惧之相", p1Hp, demonAtk, {
+          introNote: "幻境骤起——五里沟的老屋在烧，爹娘小妹倒在血泊里；下一瞬你修为尽失、重坠凡身，满修仙界都在追杀那个「藏着神秘小瓶的贼」……它把你深埋心底、连自己都不敢看的恐惧，一一搬到眼前！稳住道心，把这些幻象一剑剑劈碎！",
+          attacks: mirror || undefined,
+        });
+        phase2 = mkDemon("心魔劫 · 美梦之相", p2Hp, demonAtk, {
+          introNote: "血雾散尽，幻境陡然一暖——爹娘还在，小妹的花轿抬回了门口；南宫婉一袭嫁衣立在灯下；再往后，你称霸天南、飞升灵界、与天地同寿……美梦裂出两道分身缠上来：温柔刀最难挡，沉溺一瞬便是数世！",
+          _demonRegen: true,
+        });
+        cloneA = mkDemon("美梦之相·团圆", cloneHp, Math.round(demonAtk * 0.6), { introNote: null });
+        cloneB = mkDemon("美梦之相·长生", cloneHp, Math.round(demonAtk * 0.6), { introNote: null });
+        phase3 = mkDemon("心魔劫 · 无瓶之我", p3Hp, Math.round(demonAtk * 1.5), {
+          introNote: "幻象尽碎，最后立在你面前的——是你自己。它袖中托着那只小绿瓶，冷冷开口：「没有它，你不过是五里沟一个考不进七玄门的农家小子。没有小绿瓶——你还是韩立吗？」它用你的招、你的身法、你两百年的一切向你压来！",
+          _demonEnrage: true,
+          attacks: mirror || undefined,
+        });
+      } else {
+        // Phase 1: 执念之相——HP×1.5，纯对攻（v350 镜像：它使你的招）
+        phase1 = mkDemon(demonName, p1Hp, demonAtk, {
+          introNote: face.taunt || null,
+          attacks: mirror || undefined,
+        });
+        // Phase 2: 心魔反扑——本体回血 + 两个心魔分身（clones）
+        // 分身血少但分散玩家输出——须先清分身再集火本体，否则回血压不住
+        const phase2Name = face.name ? face.name.replace("心魔 · ", "心魔劫 · ") : "心魔劫";
+        phase2 = mkDemon(`${phase2Name}·反扑`, p2Hp, demonAtk, {
+          introNote: "心魔不灭——它汲取你的道心裂隙愈合伤痕，更裂出两道分身围攻！须先清分身、再集火本体——否则回血压不住！",
+          _demonRegen: true,
+        });
+        cloneA = mkDemon(`${phase2Name}·分身甲`, cloneHp, Math.round(demonAtk * 0.6), {
+          introNote: null,
+        });
+        cloneB = mkDemon(`${phase2Name}·分身乙`, cloneHp, Math.round(demonAtk * 0.6), {
+          introNote: null,
+        });
+        // Phase 3: 道心一击——狂暴（攻击力×1.5），须撑过最后一击
+        phase3 = mkDemon(`${phase2Name}·狂相`, p3Hp, Math.round(demonAtk * 1.5), {
+          introNote: "心魔濒死反扑——分身尽碎，它将所有执念凝于一击，狂暴之力铺天盖地！撑过这一波，道心即成！",
+          _demonEnrage: true,
+        });
+      }
 
       this._combat = new CombatAPI.Combat({
         player,
@@ -7636,6 +7662,9 @@ const Engine = {
     s.combat = true;
     this._combat.startRound();
     this.log(intro, "event");
+    if (isBig && nextRealm && nextRealm.tier === "nascent") {
+      this._combat._log("破碎金丹的剧痛自丹田炸开——元婴将成未成的一瞬，识海洞开，心魔如潮水般涌了进来。这一关，是你两百年修行路的总清算。");
+    }
     if (face.taunt) this._combat._log(face.taunt);
     if (mirror) this._combat._log(`它抬手起势的架势你再熟悉不过——那是你自己的招。最了解你的对手，从来都是你自己。`);
     UI.openCombat(this._combat, this._combatMeta);

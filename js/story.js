@@ -9486,6 +9486,179 @@ const STORY = [
       },
     ],
   },
+
+  /* ============================================================
+   * 重返天南篇（chongfantiannan·v352）——动漫第7季（153~176）
+   * 藏拙入宗 → 药园轮回 → 试剑大会（灵眼树/定灵丹）→ 凝婴大关（157 三段心魔劫）→ 结婴任长老
+   * ============================================================ */
+
+  // —— S1/S2·开篇：别离与藏拙入宗（153~156 前段浓缩） ——
+  {
+    id: "cft_open",
+    skipIf: (s) => s.flags.cft_ruzong_done,
+    cond: (s) => s.flags.arc7_complete && !s.flags.cft_ruzong_done,
+    bgm: "daily",
+    title: "重返天南 · 藏拙入宗",
+    objTitle: "重返天南 · 启",
+    objHint: "要在天南冲击元婴，须寻一处灵脉深厚的宗门蛰伏。落云宗广收门人——但你的身份，一丝也露不得。",
+    text(s) {
+      return [
+        { scene: "云梦山脉 · 山道" },
+        { amb: "day" },
+        { shot: "establish" },
+        "与紫灵、梅凝就此别过。她们有各自的路，你有你的——道上的人聚散如云，能同行一程已是缘分。",
+        { aside: "丹药对如今的修为已近无用，闭门苦修也快到了尽头。要凝婴，须借一处灵脉深厚之地，更须一个谁也不会多看一眼的身份。" },
+        "云梦山脉，落云宗。天道盟核心门派，广收门人——山门前的长队从辰时排到日暮，大多是十几岁的少年。",
+        { shot: "pushIn", ms: 1200 },
+        "你排在队尾，把一身修为敛到练气层次。执事扫过你的灵根，皱了皱眉——资质平平，年纪又大，本该刷下去。",
+        { say: "落云宗执事", tone: "翻着名册头也不抬", text: "「会些什么？」" },
+        { say: "韩立", emo: "calm", tone: "低眉顺目", text: "「认得些草药，会侍弄药田。」" },
+        "执事笔尖一顿，抬眼又打量了你一遍——药园正缺个老成些的杂役。",
+        { say: "落云宗执事", tone: "把腰牌扔过来", text: "「药园缺人。明日卯时上工，误了时辰自己滚下山去。」" },
+        { aside: "腰牌入手，你垂着眼谢过——袖中那只手稳如磐石。结丹大圆满的气机在拘灵暗手下伏得纹丝不动。从七玄门的药童，到落云宗的药园杂役……一百多年，兜兜转转，你又回到了草药香里。" },
+      ];
+    },
+    onArrive(s) {
+      if (typeof Chapters !== "undefined") { Chapters.unlock("chongfantiannan"); Chapters.enter("chongfantiannan"); }
+      State.setFlag("cft_ruzong_done");
+      // 藏拙：示人境界压到练气十层（revealedRealm 机制——观气/比斗按此示人）
+      s.revealedRealm = Math.min(s.revealedRealm != null ? s.revealedRealm : s.realmIndex, 9);
+      Engine.writeLedger("cft_ruzong", "重返天南——把结丹大圆满的修为藏到练气层次，以药园杂役的身份混入落云宗（谁也不知道这个低眉顺目的杂役是谁）");
+      Engine.addMilestone("重返天南：藏拙入落云宗（药园杂役·轮回一环）", "story");
+      Engine.toast("重返天南篇 · 启——落云宗药园安身");
+    },
+    choices: [
+      {
+        text: "领了腰牌，去药园安顿",
+        hint: "开辟洞府·布拘灵阵·潜修开始",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 6);
+          return { text: "药园后坡有间没人要的破石屋，你花了三个晚上把它改成洞府——拘灵阵拢灵气，遮息阵藏气机，比外海孤崖那座还要严实三分。白日锄地浇园，入夜盘膝苦修。凝婴之路，就从这畦药田起步（心境+6）。", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— S4·试剑大会（浓缩）：得灵眼之树根须与定灵丹（凝婴护道之资） ——
+  {
+    id: "cft_shijian",
+    skipIf: (s) => s.flags.cft_shijian_done,
+    cond: (s) => s.flags.cft_ruzong_done && !s.flags.cft_shijian_done && s.realmIndex >= 20,
+    bgm: "tense",
+    title: "试剑大会 · 乱中取宝",
+    objTitle: "试剑大会",
+    objHint: "云梦山三派试剑大会开锣——魔道的探子也混了进来。乱局，正是取宝的好时机。",
+    text(s) {
+      return [
+        { scene: "云梦山 · 试剑峰" },
+        { shot: "establish" },
+        "三派试剑大会开锣，各宗弟子云集试剑峰。你以药园杂役的身份跟着后勤队上山——真正让你上山的理由，是峰后禁地里那株灵眼之树。",
+        { aside: "灵眼之树的根须，是炼定灵丹的主引。凝婴心魔劫凶险冠绝人界，幻境千重——没有定灵丹保那一点清明，多少结丹大圆满栽在最后一步。" },
+        { shot: "pushIn", ms: 1200 },
+        "比试正酣，异变陡生——魔道六宗的探子发难，试剑峰大乱！各派长老纷纷出手，禁地的封禁在混战中裂开了一线。",
+        { say: "韩立", emo: "serious", tone: "眼皮一抬", text: "「……来得正好。」" },
+        "旁人往外逃，你往里走。血影遁一闪，人已在禁地深处——灵眼之树亭亭如盖，树下还散落着前人未及带走的两枚定灵丹。",
+        { aside: "根须取三尺，够炼两炉；定灵丹落袋。前后不过十息，你退出禁地时，外头的乱局才刚到高潮。趁乱取利而不恋战——这是你活了两百年的规矩。" },
+      ];
+    },
+    onArrive(s) {
+      State.setFlag("cft_shijian_done");
+      State.give("dingling_dan", 2);
+      Engine.writeLedger("cft_shijian", "试剑大会魔道生乱，趁乱潜入禁地——取灵眼之树根须三尺、拾定灵丹两枚（凝婴护道之资到手）");
+      Engine.addMilestone("试剑大会：乱中取得灵眼树根须与定灵丹", "bigitem");
+      Engine.toast("定灵丹 ×2 到手——凝婴护道之资");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      {
+        text: "揣好丹药，悄然下山",
+        hint: "万事俱备——只欠修为满盈",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 5);
+          return { text: "下山路上，后勤队的杂役们还在议论峰顶的大战。你背着药篓走在最后，袖中两枚定灵丹温润生光。九曲灵参、定灵丹、灵脉洞府——凝婴的每一样，都齐了。剩下的，是把修为堆到满盈，然后……赌上这一世。（心境+5）", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
+
+  // —— S5 前奏·凝婴门前：万事俱备的提示卡 ——
+  {
+    id: "cft_nying_gate",
+    skipIf: (s) => s.flags.cft_nying_gate_done || (s.realmIndex >= 21),
+    cond: (s) => s.flags.cft_shijian_done && !s.flags.cft_nying_gate_done
+      && s.realmIndex === 20 && s.cultivation >= (DATA.realms[20].culMax * 0.6),
+    bgm: "tense",
+    title: "凝婴 · 门前",
+    objTitle: "凝婴之关",
+    objHint: "修为将盈、灵参在手、定灵丹护道——破碎金丹、化丹为婴的那一步，就在洞府蒲团上。（洞府「尝试突破」开启元婴关）",
+    text: [
+      { scene: "落云宗 · 药园洞府" },
+      { amb: "night" },
+      "夜深人静，你盘膝于洞府蒲团，掌心托着那株九曲灵参——参须如龙，灵光流转。",
+      { aside: "破碎金丹，化丹为婴。成，则寿元大增、神通蜕变，天南之地再无几人可制你；败，则金丹碎裂、境界跌落，百年苦修付诸东流。" },
+      { say: "韩立", emo: "calm", tone: "闭目良久，忽而睁眼", text: "「从五里沟到这里，两百年。……该赌的时候，我从没有含糊过。」" },
+    ],
+    onArrive(s) {
+      State.setFlag("cft_nying_gate_done");
+      Engine.toast("元婴关已开——修为满盈后于洞府「尝试突破」");
+    },
+    choices: [
+      { text: "（凝神静气，只待修为满盈）", hint: "洞府·尝试突破 → 元婴关·婴变出窍",
+        effect() { return { text: "你把灵参收回玉盒，重新入定。窗外月过中天，药园里虫声如织——大战之前，格外的静。", kind: "sys" }; }, resolve: "advance" },
+    ],
+  },
+
+  // —— S6·结婴之后：任长老 + 章程钩子（苍坤遗迹/边界大战 留后续增量） ——
+  {
+    id: "cft_jieying_after",
+    skipIf: (s) => s.flags.cft_jieying_after_done,
+    cond: (s) => s.realmIndex >= 21 && s.flags.cft_ruzong_done && !s.flags.cft_jieying_after_done,
+    bgm: "triumph",
+    title: "元婴 · 落云宗长老",
+    objTitle: "元婴初成",
+    objHint: "婴变出窍，脱胎换骨——藏了多年的身份，也该亮一亮了。",
+    text(s) {
+      return [
+        { scene: "落云宗 · 大殿" },
+        { shot: "establish" },
+        "凝婴的动静终究瞒不过山中的元婴耳目。三日后，落云宗两位太上长老——程天坤与吕洛——亲自到了药园。",
+        { say: "程天坤", tone: "打量着你，目光复杂", text: "「药园杂役……好一个药园杂役。阁下藏得，可真够深的。」" },
+        { say: "韩立", emo: "calm", tone: "拂去衣上药尘，淡淡一笑", text: "「借贵宗宝地清修数十年，叨扰了。」" },
+        "没有兴师问罪——元婴修士面前，规矩是用来重写的。落云宗当夜设宴，请你出任太上长老，宗门上下与有荣焉。",
+        { aside: "自此，天南修仙界的名录上多了一位「韩长老」。慕沛灵奉茶时望过来的那一眼欲言又止——三十年之约的事，且放一放吧。山外，试剑大会未了的暗流、魔道六宗的探子、更远处大晋的风声……都在等着元婴初成的你。" },
+        {
+          guide: {
+            tag: "重返天南篇 · 上　——　凝婴功成",
+            title: "全游戏最高潮 · 已过",
+            hint: "元婴初期达成。前路：苍坤上人遗迹（王蝉旧怨·四大宝盒）、边界大战（黄龙山）、坠魔谷（引煞破关·元婴中期）——随后续增量实装。",
+            cta: "（婴变出窍·天南风云再起）",
+          },
+        },
+      ];
+    },
+    onArrive(s) {
+      State.setFlag("cft_jieying_after_done");
+      // 身份亮明：示人境界抬到元婴（藏拙落幕——韩长老之名传开）
+      s.revealedRealm = s.realmIndex;
+      Engine.addFame(30, "落云宗新晋太上长老——两百岁上下的元婴修士，天南百年未有");
+      Engine.writeLedger("cft_jieying", "凝婴功成——落云宗设宴请为太上长老，藏了几十年的身份就此亮明。天南名录自此多了一位「韩长老」");
+      Engine.addMilestone("元婴初成：出任落云宗太上长老", "medal");
+      if (typeof Sfx !== "undefined") Sfx.play("success");
+    },
+    choices: [
+      {
+        text: "受长老之位，继续在药园洞府清修",
+        hint: "身份变了，蒲团没变",
+        effect(s) {
+          s.mood = Math.min(s.moodMax, (s.mood || 0) + 10);
+          return { text: "宴罢人散，你婉拒了主峰的长老洞府，回到药园后坡那间石屋。程天坤愣了半晌，抚掌大笑：「妙人！」\n\n蒲团还是那个蒲团，只是坐上去的人，已非吴下阿蒙。（心境+10）", kind: "good" };
+        },
+        resolve: "advance",
+      },
+    ],
+  },
 ];
 
 window.STORY = STORY;

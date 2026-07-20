@@ -60,6 +60,13 @@ DATA.realms = [
   { tier: "core", layer: 2, name: "结丹中期",   culMax: 38000, spMax: 11500, lifespan: 0 },
   { tier: "core", layer: 3, name: "结丹后期",   culMax: 52000, spMax: 14500, lifespan: 100 },
   { tier: "core", layer: 4, name: "结丹大圆满", culMax: 70000, spMax: 18000, lifespan: 0 },
+  // —— 元婴期（v352·重返天南篇）：破碎金丹、化丹为婴——「婴变出窍」之劫（DATA.bigRealmRites.nascent）。
+  //    动漫 157 集三段心魔劫（恐惧之相/美梦之相/无瓶之我）随凝婴大关特化实装。
+  //    元婴初期为本篇 cap；中期留给坠魔谷（原著引煞破关处·煞气系统的正主戏）。
+  { tier: "nascent", layer: 1, name: "元婴初期",   culMax: 95000,  spMax: 24000, lifespan: 600, big: true },
+  { tier: "nascent", layer: 2, name: "元婴中期",   culMax: 130000, spMax: 31000, lifespan: 0 },
+  { tier: "nascent", layer: 3, name: "元婴后期",   culMax: 180000, spMax: 40000, lifespan: 150 },
+  { tier: "nascent", layer: 4, name: "元婴大圆满", culMax: 240000, spMax: 50000, lifespan: 0 },
 ];
 
 // 本篇可突破到的最高境界索引（练气七层之后即进入主线收尾，封锁筑基）
@@ -344,9 +351,12 @@ DATA.items = {
   // canon H1：大衍诀残卷=黄枫谷篇末叶师叔之乱当场拾得（雷万鹤所赠·动漫 ep17）——实物在囊即惦记，参研须待神识大成（星海篇）
   dayan_canjuan: { name: "《大衍诀》残卷", rarity: "epic", type: "treasure", keepsake: true, bound: true,
     desc: "叶师叔之乱中拾得的千竹教神识功法残卷——雷万鹤看不出深浅，谷中无人修得动。神识一触便头痛欲裂：此物太深，须待神识远超同侪之日，方能翻开第一页。（卷首古字：大衍）" },
-  // canon P2·九曲灵参（正典虚天殿收获·大幅提高进阶元婴几率——元婴线大件·炼化随重返天南篇实装）
+  // canon P2·九曲灵参（正典虚天殿收获·大幅提高进阶元婴几率——元婴关破关大件·重返天南篇兑现）
   jiuqu_lingshen: { name: "九曲灵参", rarity: "epic", type: "treasure",
-    desc: "虚天殿中所得的一株九曲盘结的万年灵参，参须如龙、灵气氤氲欲滴。此物大补元气、更能大幅提高进阶元婴的几率——多少结丹大圆满的老怪求了一辈子求不来。收好它：破婴之日，就是它出土之时。（元婴关·破关大件·随重返天南篇实装）" },
+    desc: "虚天殿中所得的一株九曲盘结的万年灵参，参须如龙、灵气氤氲欲滴。此物大补元气、更能大幅提高进阶元婴的几率——多少结丹大圆满的老怪求了一辈子求不来。破婴之日，就是它出土之时。（元婴关·破关主材）" },
+  // v352 定灵丹（动漫 157 考据：心魔幻境最深处"保持一点清明"的正是它）——试剑大会所得丹方炼成
+  dingling_dan: { name: "定灵丹", rarity: "epic", type: "treasure",
+    desc: "以灵眼之树的根须为引炼成的定神灵丹——服之神台如镜，任幻象千重、总留一点清明不灭。凝婴心魔劫凶险冠绝人界，怀中揣上一两颗，是过来人用命换来的忠告。（元婴关·护道之资：冲关时自动叠服·护道心）" },
 };
 
 /* ---------- 法器装备体系（v1）：大多做属性+特性（被动），少数做战斗装备（主动技）----------
@@ -564,14 +574,17 @@ DATA.bigRealmRites = {
   },
   nascent: {
     name: "元婴关 · 婴变出窍",
-    intro: "破碎金丹，化丹为婴，元婴自识海孕生。此乃脱胎换骨之劫，元神离体最易遭心魔反噬，一念之差便万劫不复。",
+    intro: "破碎金丹，化丹为婴，元婴自识海孕生。此乃脱胎换骨之劫，元神离体最易遭心魔反噬，一念之差便万劫不复。九曲灵参可保凝婴一线生机；定灵丹能在幻境最深处留住一点清明。",
     require: [
+      { kind: "item", id: "jiuqu_lingshen", n: 1, label: "九曲灵参（虚天殿旧藏）" },
       { kind: "stat", key: "spiritRatio", min: 0.98, label: "灵力极盈" },
       { kind: "stat", key: "moodRatio", min: 0.8, label: "道心通明" },
-      { kind: "stat", key: "demonMax", min: 20, label: "心魔尽伏（≤20）" },
+      { kind: "stat", key: "demonMax", min: 20, label: "煞气尽伏（≤20）" },
     ],
-    consume: [],
-    trialHp: 700, trialRounds: 14, failRealmLoss: true,
+    consume: [{ id: "jiuqu_lingshen", n: 1 }],
+    // v352 凝婴大关：动漫 157 三段心魔劫（恐惧之相/美梦之相/无瓶之我）——数值走三阶段拆分（engine 特化）
+    trialHp: 640, trialRounds: 16, failRealmLoss: true,
+    extra: { id: "dingling_dan", max: 2 },   // 定灵丹：幻境最深处的那一点清明（余丹加持通道复用）
   },
 };
 
