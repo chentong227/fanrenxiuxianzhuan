@@ -164,6 +164,49 @@ body.font-scaled #combat-log { font-size: calc(13px * var(--font-scale, 1)); }
   body.font-scaled .story-text { font-size: calc(16px * var(--font-scale, 1)); }
 }
 
+/* ===== v348 行动按钮情绪化：突破就绪呼吸 / 淬煞暗红 ===== */
+.btn-action.bt-ready {
+  border-color: rgba(212, 176, 106, .75);
+  animation: btReady 2.2s ease-in-out infinite;
+}
+@keyframes btReady {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 176, 106, 0); }
+  50% { box-shadow: 0 0 14px 2px rgba(212, 176, 106, .25); }
+}
+body.motion-off .btn-action.bt-ready, body.motion-lite .btn-action.bt-ready { animation: none; box-shadow: 0 0 10px 1px rgba(212, 176, 106, .2); }
+.btn-action[data-action="cuisha"] {
+  border-color: rgba(190, 70, 60, .55);
+  background: linear-gradient(180deg, rgba(120, 30, 24, .16), rgba(0, 0, 0, .18)), var(--bg-panel-2);
+}
+.btn-action[data-action="cuisha"]:hover { border-color: rgba(220, 90, 76, .8); }
+
+/* ===== 成就横幅（v348）：达成时顶部滑入的金框落章卡 ===== */
+.ach-banner {
+  position: fixed; top: -84px; left: 50%; transform: translateX(-50%);
+  z-index: 1200; display: flex; align-items: center; gap: 12px;
+  padding: 10px 22px 10px 14px; border-radius: 12px;
+  background: linear-gradient(180deg, rgba(38, 30, 20, .97), rgba(24, 18, 12, .97));
+  border: 1px solid rgba(212, 176, 106, .65);
+  box-shadow: 0 6px 30px rgba(0, 0, 0, .6), 0 0 18px rgba(212, 176, 106, .12) inset;
+  transition: top .45s cubic-bezier(.2, .9, .25, 1.15);
+  pointer-events: none;
+}
+.ach-banner.show { top: 14px; }
+.ach-banner .ab-icon {
+  font-size: 26px; line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(212, 176, 106, .5));
+}
+.ach-banner .ab-body { display: flex; flex-direction: column; }
+.ach-banner .ab-body i {
+  font-style: normal; font-size: 10px; letter-spacing: 4px;
+  color: rgba(212, 176, 106, .75);
+}
+.ach-banner .ab-body b {
+  font-family: var(--font-title, serif); font-size: 17px; letter-spacing: 2px;
+  color: var(--gold-bright, #e8c87e);
+  text-shadow: 0 0 10px rgba(212, 176, 106, .3);
+}
+
 /* ===== 成就图鉴（v344） ===== */
 .ach-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-height: 56vh; overflow-y: auto; }
 .ach-row {
@@ -4668,8 +4711,9 @@ body.motion-off .scene-stage[data-depth="on"] .scene-fg::after { animation: none
 }
 .story-skip[hidden] { display: none; }   /* button 的 display:inline-flex 会盖掉 hidden，显式压回 */
 
-/* v344 台词回看：入口钮挂在跳过键左侧；面板=半透明覆卷 */
-.story-backlog-btn { right: auto; left: 18px; }
+/* v344 台词回看：入口钮挂在右上跳过键左侧（v348 修：原 left:18px 与幕名题字重叠——
+ * 左上角属于「青牛镇·韩家」金字幕名，功能键全部靠右列队） */
+.story-backlog-btn { right: 112px; }
 .story-backlog {
   position: absolute; inset: 0; z-index: 12;
   background: rgba(8, 6, 5, .72); backdrop-filter: blur(2px);

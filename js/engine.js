@@ -1148,6 +1148,7 @@ const Engine = {
     if (qty < 1) { this.toast("纹银不足", true); return; }
     s.silver -= price * qty;
     State.give(itemId, qty);
+    if (typeof Sfx !== "undefined") Sfx.play("coin");   // v348 成交声：铜钱落袋
     this.log(`你花了 ${price * qty} 两纹银，购得「${DATA.items[itemId].name}」${qty > 1 ? `×${qty}` : ""}。`, "event");
     State.save();
     UI.renderAll();
@@ -1168,6 +1169,7 @@ const Engine = {
     const qty = Math.min(Math.max(1, n | 0 || 1), State.count(itemId));
     State.take(itemId, qty);
     s.silver += price * qty;
+    if (typeof Sfx !== "undefined") Sfx.play("coin");   // v348 成交声
     this.log(`皮货行掌柜验过「${item.name}」${qty > 1 ? `×${qty}` : ""}，${buyerOn ? "咬牙照翻倍的行情" : "点头"}付银 ${price * qty} 两。`, "event");
     State.save();
     UI.renderAll();
@@ -1353,6 +1355,7 @@ const Engine = {
     if (State.count("lingshi") < price) { this.toast(`需要灵石 ×${price}`, true); return; }
     State.take("lingshi", price);
     State.give(itemId, g.n || 1);
+    if (typeof Sfx !== "undefined") Sfx.play("coin");   // v348 成交声
     s.flags.fangshi_visited = (s.flags.fangshi_visited || 0) + 1;
     const item = DATA.items[itemId];
     this.log(`【万宝楼】购得「${item.name}」${g.n > 1 ? `×${g.n}` : ""}（灵石-${price}${onSale ? `·八折让利，省 ${g.price - price}` : ""}）。`, "event");
@@ -1488,6 +1491,7 @@ const Engine = {
       this.log(`【万宝楼】售出「${item.name}」${qty > 1 ? `×${qty}` : ""}，灵石+${got}。`, "event");
     }
     this.toast(`灵石+${got}`);
+    if (typeof Sfx !== "undefined") Sfx.play("coin");   // v348 成交声
     State.save();
     UI.renderAll();
     UI.openWanbao();
@@ -1603,6 +1607,7 @@ const Engine = {
     if (State.count("lingshi") < g.price) { this.toast(`需要灵石 ×${g.price}`, true); return; }
     State.take("lingshi", g.price);
     State.give(buyId, g.n || 1);
+    if (typeof Sfx !== "undefined") Sfx.play("coin");   // v348 成交声
     s.flags.fair_bought = (s.flags.fair_bought || 0) + 1;
     const item = DATA.items[buyId];
     this.log(`【小会】你以灵石×${g.price}购得「${item.name}」${g.n > 1 ? `×${g.n}` : ""}。`, "good");
@@ -1634,6 +1639,7 @@ const Engine = {
       State.give("lingshi", 1);
       this.log("【小会】你售出「毒草」×2，换得灵石×1。收草的摊主与你心照不宣地对视了一眼。", "event");
     } else return;
+    if (typeof Sfx !== "undefined") Sfx.play("coin");   // v348 成交声
     s.flags.fair_bought = (s.flags.fair_bought || 0) + 1;
     this.checkStory();
     State.save();
@@ -4030,7 +4036,12 @@ const Engine = {
     if (r.reason) {
       this.toast(`闭关中断（${r.reason}）：实修 ${r.done}/${r.plan} 月${restNote}，修为 +${r.gain}${sideNote}`, false);
     } else {
-      this.toast(`闭关圆满：${r.done} 月${restNote}，修为 +${r.gain}${sideNote}`, false);
+      // v348 收功仪式：半年以上的长闭关值得一张收功卡（岁月有分量，不该只是一条 toast 掠过）
+      if (r.done >= 6 && typeof UI !== "undefined" && UI.showRetreatDone) {
+        UI.showRetreatDone(r);
+      } else {
+        this.toast(`闭关圆满：${r.done} 月${restNote}，修为 +${r.gain}${sideNote}`, false);
+      }
       this.log(`这一程闭关圆满收功：潜修 ${r.done} 月${restNote}，修为共精进 ${r.gain}${sideNote ? `（兼修所得：${r.side}）` : ""}。`, "sys");
     }
     // 中断且还差得多：留一个限时续闭快捷（renderActions 读取），玩家不必重开菜单再点两下

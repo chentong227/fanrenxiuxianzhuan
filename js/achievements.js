@@ -89,12 +89,12 @@
         hits.push(a);
       });
       if (hits.length) {
-        // 每枚都入年表；报喜逐条（v345：toast 已带排队——老档补判连中数枚不再只见最后一枚）
+        // 每枚都入年表；报喜走专属横幅（v348：金框滑入卡自带排队），无横幅环境退回 toast
         hits.forEach(a => {
           (s.milestones = s.milestones || []).push({ t: `第${s.year || 1}年${s.month || 1}月 · ${s.age || "?"}岁`, title: `成就：${a.name}`, kind: "deed" });
-          if (typeof root.UI !== "undefined" && root.UI.toast) root.UI.toast(`成就达成 ${a.icon}「${a.name}」`, false, 3200);
+          if (typeof root.UI !== "undefined" && root.UI.showAchBanner) root.UI.showAchBanner(a);
+          else if (typeof root.UI !== "undefined" && root.UI.toast) root.UI.toast(`成就达成 ${a.icon}「${a.name}」`, false, 3200);
         });
-        if (typeof root.Sfx !== "undefined" && root.Sfx.play) root.Sfx.play("chime");
       }
     },
     unlockedCount(s) {

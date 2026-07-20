@@ -126,6 +126,12 @@
     close(c) { noise(c, { dur: 0.07, gain: 0.013, band: 1400 }); },
     // 翻纸：剧情推进
     page(c) { noise(c, { dur: 0.1, gain: 0.028, band: 1500 }); },
+    // 铜钱落袋（v348）：买卖成交——两记高频金属叮当+细碎余韵，交易的"落袋为安"
+    coin(c) {
+      tone(c, { freq: 2794, dur: 0.07, gain: 0.03, type: "triangle" });
+      tone(c, { freq: 3520, dur: 0.1, gain: 0.024, type: "triangle", delay: 0.06 });
+      noise(c, { dur: 0.05, gain: 0.008, band: 5200, delay: 0.1 });
+    },
     // 入戏磬：题字卡
     chime(c) { tone(c, { freq: 988, dur: 1.0, gain: 0.05 }); tone(c, { freq: 1481, dur: 0.8, gain: 0.022, delay: 0.02 }); },
     // 剑鸣：攻击（v308 加厚）
@@ -907,6 +913,23 @@
         }
       } catch (e) {}
     });
+  }
+
+  // v348 自动播放解锁兜底：浏览器策略下，用户交互前 BGM.play() 会被拒（静默吞掉）——
+  // 读档进游戏若全程无点击（等待剧情自动演出），玩家只听得到一片死寂还以为坏了。
+  // 首次真实交互（pointerdown/keydown 任一）时补一脚：该播没播的 BGM 立即拉起。
+  if (root.document) {
+    const unlock = () => {
+      try {
+        const c = ac();
+        if (c && c.state === "suspended") c.resume();
+        if (!muted && bgmEl && bgmEl.paused && !bgmEl._hiddenPause) bgmEl.play().catch(() => {});
+      } catch (e) {}
+      root.document.removeEventListener("pointerdown", unlock, true);
+      root.document.removeEventListener("keydown", unlock, true);
+    };
+    root.document.addEventListener("pointerdown", unlock, true);
+    root.document.addEventListener("keydown", unlock, true);
   }
 
   // 通用点击音：按钮/选项等（委托监听，轻量）

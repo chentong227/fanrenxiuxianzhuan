@@ -938,6 +938,7 @@ const UI = {
   _actBtnHtml(a, loc, focus, labels) {
     const custom = loc.actionLabels && loc.actionLabels[a];
     let hintTxt = !custom && this.ACT_HINTS[a] ? this.ACT_HINTS[a] : "";
+    let extraCls = "";
     // v344 事前预览：突破按钮直接亮当前成功率——点开面板前就能算计"要不要再备一手"
     if (a === "breakthrough" && !custom) {
       try {
@@ -946,13 +947,17 @@ const UI = {
           const pct = Math.round(Engine.breakthroughRate() * 100);
           const col = pct >= 70 ? "var(--jade-bright)" : pct >= 40 ? "var(--gold)" : "var(--red)";
           hintTxt = `当前成率约 <b style="color:${col}">${pct}%</b> · 面板有明细`;
+          // v348 呼吸引导：修为满盈可冲关=核心循环的收获时刻，按钮金边呼吸把它标出来
+          const rlm = State.realm();
+          if (rlm && State.data.cultivation >= rlm.culMax) extraCls = " bt-ready";
         } else if (chk.ok) {
           hintTxt = "大境界破关 · 必历心魔劫";
+          extraCls = " bt-ready";
         }
       } catch (e) {}
     }
     const hint = hintTxt ? `<span class="act-sub">${hintTxt}</span>` : "";
-    return `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}" data-action="${a}">${custom || labels[a] || a}${hint}</button>`;
+    return `<button class="btn btn-action${a === focus ? " btn-guide-focus" : ""}${extraCls}" data-action="${a}">${custom || labels[a] || a}${hint}</button>`;
   },
 
   // 根据当前地点动态生成可用行动按钮
@@ -2115,6 +2120,21 @@ const UI = {
       dialog.classList.add("scene-beat");
       speakerEl.innerHTML = "";
       this._typeText(textEl, `<span class="scene-line">· ${b.text} ·</span>`, true);
+      // v348 场景随字走：过场报「演武厅」画面却还是药庐=出戏——场景名能对上已有地点图就顺手换底
+      // （仅无 CG 的剧情生效：CG 是导演钦点的画面，不让地点图顶掉）
+      try {
+        const st0 = this._story;
+        if (typeof Art !== "undefined" && typeof WORLD !== "undefined" && !(st0 && st0.stage && st0.stage.cg)) {
+          const hit = WORLD.locations.find(l => l.name && (l.name === b.text || l.name.indexOf(b.text) >= 0 || b.text.indexOf(l.name) >= 0));
+          const url = hit && Art.locUrl ? Art.locUrl(hit) : null;
+          const bgEl = this.el("story-bg");
+          if (url && bgEl && (bgEl.style.backgroundImage || "").indexOf(url) < 0) {
+            bgEl.style.backgroundImage = `url("${url}")`;
+            const farEl = this.el("story-far");
+            if (farEl) farEl.style.backgroundImage = `url("${url}")`;
+          }
+        }
+      } catch (e) {}
     } else {
       dialog.classList.remove("scene-beat");
       const who = b.who;
@@ -5316,6 +5336,12 @@ const UI = {
       showdown:  { t: "夺 舍 之 夜", s: "成败生死，皆在今夜", cls: "b-purple" },
       jinguang:  { t: "暗 算 金 光 上 人", s: "硬拼必败，唯毒与暗器可破", cls: "b-gold" },
       breakthrough: { t: meta.big ? "渡 劫 · 心 魔 劫" : "突 破 · 心 战", s: meta.big ? "脱胎换骨，九死一生" : "降伏心魔，方能更进一层", cls: "b-jade" },
+      // v348 横幅补全：常见战型不再一律套「遭遇敌袭」——演武是演武、比斗是比斗
+      spar:      { t: "演 武 较 技", s: enemyName + " 应战——点到即止，拳脚无眼", cls: "b-jade" },
+      fame_duel: { t: "当 众 比 斗", s: "满场目光都在你身上——赢要赢得漂亮", cls: "b-gold" },
+      revenge:   { t: "仇 人 当 面", s: "血债血偿，今日了断", cls: "b-red" },
+      patrol:    { t: "巡 逻 遇 敌", s: "魔修犯境——与同袍并肩，杀！", cls: "b-red" },
+      wanhunt:   { t: "结 伴 狩 猎", s: "与万小山同行——护他周全", cls: "b-jade" },
     };
     const b = banners[meta.type] || banners.encounter;
     el.className = "combat-banner " + b.cls;
@@ -8154,6 +8180,40 @@ const UI = {
     this.renderAll();
   },
 
+  /* v348 闭关收功卡：长闭关（≥6月）圆满时的仪式一拍——岁月与所得摆在眼前，
+   * 复用突破仪式的 ceremony 视觉语言（同一套卡=同一个世界的规矩）。 */
+  showRetreatDone(r) {
+    let ov = this.el("ceremony-overlay");
+    if (!ov) {
+      ov = document.createElement("div");
+      ov.id = "ceremony-overlay";
+      ov.className = "ceremony-overlay";
+      document.body.appendChild(ov);
+    }
+    const s = State.data;
+    const yrs = r.done >= 12 ? `${Math.floor(r.done / 12)}年${r.done % 12 ? `零${r.done % 12}月` : ""}` : `${r.done}月`;
+    const rows = [
+      `· 潜修 ${yrs}${r.rest ? `（另停功调息 ${r.rest} 月）` : ""}`,
+      `· 修为 +${r.gain}`,
+      ...(r.side ? [`· 兼修所得：${r.side}`] : []),
+      `· 现境：${(State.realm() || {}).name || ""}　修为 ${s.cultivation}/${(State.realm() || {}).culMax || "?"}`,
+    ];
+    ov.innerHTML = `
+      <div class="cer-inner">
+        <div class="cer-title">收 功</div>
+        <div class="cer-realm">静室尘埃落定</div>
+        <div class="cer-text">${r.done >= 24
+          ? "推门而出，山中草木已换了颜色。指尖一缕真元流转，比入关时凝实了不知多少——这几年，没有白坐。"
+          : "香灰积了厚厚一层，你缓缓吐出一口浊气。经脉里的真元比入关时充盈圆润——这一程，值了。"}</div>
+        <div class="cer-gains">${rows.map(g => `<div class="cer-gain">${g}</div>`).join("")}</div>
+        <div class="cer-actions">
+          <button class="btn btn-primary" onclick="UI._setbackEnd()">推门出关</button>
+        </div>
+      </div>`;
+    ov.classList.add("show");
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
+  },
+
   /* -------- 系统菜单（手机端 ☰ 收纳全部系统入口）-------- */
   openSystemMenu() {
     const soundOn = (typeof Sfx !== "undefined") && Sfx.enabled();
@@ -8274,6 +8334,34 @@ const UI = {
     } catch (e) {
       this.toast("出图失败：" + e.message, true);
     }
+  },
+
+  /* v348 成就横幅：达成时顶部滑入金框卡（图标+名号），比 toast 更有"落章"的分量。
+   * 连锁解锁排队逐张放（2.6s/张）——老档补判连中数枚也一张张看清。 */
+  showAchBanner(a) {
+    this._achQ = this._achQ || [];
+    this._achQ.push(a);
+    if (!this._achShowing) this._achNext();
+  },
+  _achNext() {
+    const a = (this._achQ || []).shift();
+    if (!a) { this._achShowing = false; return; }
+    this._achShowing = true;
+    let el = this._achBannerEl;
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "ach-banner";
+      document.body.appendChild(el);
+      this._achBannerEl = el;
+    }
+    el.innerHTML = `<span class="ab-icon">${a.icon || "★"}</span><span class="ab-body"><i>成 就 达 成</i><b>${a.name}</b></span>`;
+    el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+    if (typeof Sfx !== "undefined") Sfx.play("chime");
+    clearTimeout(this._achTimer);
+    this._achTimer = setTimeout(() => {
+      el.classList.remove("show");
+      setTimeout(() => this._achNext(), 320);
+    }, 2600);
   },
 
   /* -------- 成就图鉴（v344）：达成的亮字带日期，未达成的灰字留悬念 -------- */
