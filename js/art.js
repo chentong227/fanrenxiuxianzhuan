@@ -105,6 +105,7 @@
   const LOC_SCENE = {
     fangshi: "huangfeng_gate",       // 坊市·万宝楼飞檐≈山门坊市
     modao_front: "pano_kuangdong",   // 前线待命营·矿道舆图
+    luoyun_waimen: "baiyao_yuan",    // v352 落云宗药园洞府——复用百药园场景（宗门药园气质同源；专属图待生图批）
   };
   // P2 视听一致性（审美审计 jank#9）：库存 CG 补映射——金鼓原/越矿地点屏不再落水墨兜底
   // （wulong_tan/guwai_lin/tainan_yelin 专属场景随 P2 生图批入库后在 SCENES 注册）
