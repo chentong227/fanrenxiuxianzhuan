@@ -71,7 +71,7 @@
     // 惰性检查：State.save 时调——新达成的立即报喜（幂等，flag 防重）
     check(s) {
       if (!s || !s.flags) return;
-      let hit = null;
+      const hits = [];
       LIST.forEach(a => {
         const key = "ach_ok_" + a.id;
         if (s.flags[key]) return;
@@ -80,12 +80,14 @@
         if (!ok) return;
         s.flags[key] = true;
         (s.achLog = s.achLog || []).push({ id: a.id, t: `${s.year || 1}年${s.month || 1}月` });
-        hit = a;
+        hits.push(a);
       });
-      if (hit) {
-        // 直接入年表（不走 addMilestone——那会再弹一条"道途留痕"，双 toast 吵）
-        (s.milestones = s.milestones || []).push({ t: `第${s.year || 1}年${s.month || 1}月 · ${s.age || "?"}岁`, title: `成就：${hit.name}`, kind: "deed" });
-        if (typeof root.UI !== "undefined" && root.UI.toast) root.UI.toast(`成就达成 ${hit.icon}「${hit.name}」`, false, 4200);
+      if (hits.length) {
+        // 每枚都入年表；报喜逐条（v345：toast 已带排队——老档补判连中数枚不再只见最后一枚）
+        hits.forEach(a => {
+          (s.milestones = s.milestones || []).push({ t: `第${s.year || 1}年${s.month || 1}月 · ${s.age || "?"}岁`, title: `成就：${a.name}`, kind: "deed" });
+          if (typeof root.UI !== "undefined" && root.UI.toast) root.UI.toast(`成就达成 ${a.icon}「${a.name}」`, false, 3200);
+        });
         if (typeof root.Sfx !== "undefined" && root.Sfx.play) root.Sfx.play("chime");
       }
     },

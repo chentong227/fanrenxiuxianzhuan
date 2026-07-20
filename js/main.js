@@ -61,6 +61,8 @@ const Main = {
     if (typeof Settings !== "undefined" && Settings.applyMotionClass) Settings.applyMotionClass();
     // v344 字号档：启动即应用（挂 html --font-scale 变量，阅读面文字等比放大）
     if (typeof Settings !== "undefined" && Settings.applyFontScale) Settings.applyFontScale();
+    // v345 剧情长按快进：对话框按住连放（一次性挂监听）
+    if (typeof UI !== "undefined" && UI.initStoryHold) UI.initStoryHold();
 
     // 演武场/调试入口本局不落档（v340）：这些入口 State.create 覆盖内存态后每步行动都会 save()，
     // 玩家点一次演武链接=真档被冲掉。检出任一调试参数即挂旗，State.save 全程放空枪。
@@ -80,7 +82,10 @@ const Main = {
         if (this._lastErrToast && now - this._lastErrToast < 30000) return;
         this._lastErrToast = now;
         if (typeof UI !== "undefined" && UI.toast && State.data) {
-          UI.toast("出了点小差错——进度每月自动留档，若卡住请刷新页面", true, 5200);
+          // v345 急救入口：报错提示本身可点——一键导出备份，崩溃现场先保住档
+          UI.toast("出了点小差错——进度每月自动留档；点此导出备份档", true, 6500);
+          const t = UI.el && UI.el("toast");
+          if (t) t.onclick = () => { t.hidden = true; if (UI.exportSave) UI.exportSave(); };
         }
       } catch (e) {}
     });
@@ -655,7 +660,7 @@ const Main = {
       UI.toast("读取存档成功");
       // v344 前情提要：隔了 12 小时以上回坑，先给一张「上回说到」卡——十秒找回状态。
       // 有待决剧情/舆图时也弹（关掉提要正好接着看剧情卡），演武局(_ephemeral)不弹。
-      if (!State._ephemeral && s.savedAt && Date.now() - s.savedAt > 12 * 3600 * 1000 && UI.showRecapCard) {
+      if (!State._ephemeral && !s.flags.no_recap && s.savedAt && Date.now() - s.savedAt > 12 * 3600 * 1000 && UI.showRecapCard) {
         setTimeout(() => UI.showRecapCard(), 450);
       }
     }

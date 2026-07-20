@@ -553,6 +553,10 @@
   const FALLBACK = { town: "daily", journey: "daily", fair: "daily", combat_wild: "combat", combat_secret: "combat", boss: "combat", sorrow: "tense", triumph: null };
   const KNOWN_TRACKS = BGM_FILES;   // C3 切轨校验：合法轨名白名单
   let curTrack = null;
+  // v345 BGM 最短驻留：起播 8s 内的再切轨挂起延后、只认最后目标（快速穿梭地点不轰耳朵）
+  const BGM_DWELL = 8000;
+  let bgmLastSwitch = 0;
+  let bgmPend = null;
 
   // （fadeVol 唯一实现见下文「环境床状态」段——此处旧副本已删：同名函数声明后者覆盖前者，
   //   留两份只会埋"改了不生效"的坑。）
@@ -732,7 +736,28 @@
         if (track != null && typeof console !== "undefined" && console.warn) console.warn("[audio] 未知 BGM 轨：" + track + "（已忽略）");
         return;
       }
-      if (curTrack === track && !opts.force) return;
+      if (curTrack === track && !opts.force) {
+        // 同轨重申：清掉挂起的延迟切轨（最短驻留期间玩家又走回原地=不用切了）
+        if (bgmPend) { clearTimeout(bgmPend.timer); bgmPend = null; }
+        return;
+      }
+      // v345 最短驻留：上一轨起播不足 8s 又要切（快速穿梭地点）——不硬切，
+      // 记下最后一个目标，驻留期满再一次到位。连切只认最后一站，耳朵不再被 crossfade 轰。
+      // 战斗/危局轨（combat*/boss/tense/triumph）豁免：开战换乐必须立到，氛围不等驻留。
+      const urgent = /^(combat|boss|tense|triumph)/.test(track) || /^(combat|boss|tense)/.test(curTrack || "");
+      if (!opts.force && !urgent && bgmLastSwitch && Date.now() - bgmLastSwitch < BGM_DWELL) {
+        if (bgmPend) clearTimeout(bgmPend.timer);
+        const wait = BGM_DWELL - (Date.now() - bgmLastSwitch);
+        bgmPend = { track, timer: setTimeout(() => {
+          const t2 = bgmPend ? bgmPend.track : null;
+          bgmPend = null;
+          if (t2 && t2 !== curTrack) Sfx.bgm(t2, Object.assign({}, opts, { force: false }));
+        }, wait) };
+        bgmPend.track = track;
+        return;
+      }
+      if (bgmPend) { clearTimeout(bgmPend.timer); bgmPend = null; }
+      bgmLastSwitch = Date.now();
       curTrack = track;
       const xf = opts.fade != null ? opts.fade : 600;   // 交叉淡化时长（ms）
       if (BGM_FILES.includes(track)) {

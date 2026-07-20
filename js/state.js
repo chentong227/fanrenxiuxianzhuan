@@ -133,8 +133,13 @@ const State = {
     try {
       this.data.savedAt = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
+      // v345 落档指示：每月首存闪一粒墨点（写没写上，眼角有数）；失败则红点常驻警示
+      try { if (typeof UI !== "undefined" && UI.flashSaveDot) UI.flashSaveDot((this.data.year || 1) * 12 + (this.data.month || 1), true); } catch (e) {}
       return true;
-    } catch (e) { return false; }
+    } catch (e) {
+      try { if (typeof UI !== "undefined" && UI.flashSaveDot) UI.flashSaveDot(null, false); } catch (e2) {}
+      return false;
+    }
   },
   load() {
     try {

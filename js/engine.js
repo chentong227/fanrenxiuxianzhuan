@@ -701,6 +701,14 @@ const Engine = {
   doAction(action) {
     if (State.data.pendingEvent) { this.toast("先处理眼前之事"); return; }
     if (State.data.combat) { this.toast("酣战之中，无暇他顾"); return; }
+    // v345 防连点：结算类行动（耗月的）350ms 内只认第一下——手抖双击不再双结算两个月。
+    // 开面板类（cultivate/market 等）不上锁：面板自身幂等，重开无害。
+    const SETTLE = { adventure: 1, rest: 1, gather: 1, spar: 1, alchemy: 1, investigate: 1, xingyi: 1, yaoyuan: 1, xunluo: 1, xiuzhen: 1, board: 1, rumor: 1, hunt: 1 };
+    if (SETTLE[action]) {
+      const now = Date.now();
+      if (this._actLockAt && now - this._actLockAt < 350) return;
+      this._actLockAt = now;
+    }
     const s = State.data;
 
     // L3: 行动过程叠层动画
@@ -1116,7 +1124,7 @@ const Engine = {
   },
 
   /* -------- 采买（集镇）-------- */
-  buy(itemId) {
+  buy(itemId, n) {
     const s = State.data;
     // 符箓是修仙界稀货：凡人集镇偶有流出（polish A6：20→12——决战物资的银两出口要买得起；
     // anqi 上架=唯一"想买买不到"的刚需补上）
@@ -1126,10 +1134,13 @@ const Engine = {
     if (!price) return;
     // 黑市窗口（涟漪链）：赃丹贱卖
     if (itemId === "qingyuan_dan" && s.rippleWindow && s.rippleWindow.id === "cheap_pills") price = 3;
-    if (s.silver < price) { this.toast("纹银不足", true); return; }
-    s.silver -= price;
-    State.give(itemId, 1);
-    this.log(`你花了 ${price} 两纹银，购得「${DATA.items[itemId].name}」。`, "event");
+    // v345 批量买：n>1=按囊中银两封顶一次买齐（买 5 张符不用点 5 下）
+    const want = Math.max(1, n | 0 || 1);
+    const qty = Math.min(want, Math.floor(s.silver / price));
+    if (qty < 1) { this.toast("纹银不足", true); return; }
+    s.silver -= price * qty;
+    State.give(itemId, qty);
+    this.log(`你花了 ${price * qty} 两纹银，购得「${DATA.items[itemId].name}」${qty > 1 ? `×${qty}` : ""}。`, "event");
     State.save();
     UI.renderAll();
     UI.openMarket();
@@ -3018,6 +3029,20 @@ const Engine = {
       effect: (s) => Engine._journeyActionCaravan(s, j),
     });
 
+    // 6. 折返（v345·点错目的地的后悔药）：走了多远回程就多远——不凭空传送，账照实算
+    if (j.from && !j.back && j.leg >= 1 && j.leg < j.total) {
+      const backName = fromNode ? fromNode.name : "出发地";
+      choices.push({
+        text: `折返回「${backName}」`,
+        hint: `回程约 ${j.leg} 月——此行到此为止`,
+        effect: (sd) => {
+          const oldTo = j.to, oldToName = j.toName;
+          sd.journey = { to: j.from, toName: backName, leg: 0, total: Math.max(1, j.leg), from: oldTo, back: true };
+          return { text: `你勒转方向，循来路折返——去「${oldToName}」的念头，且搁下了。`, kind: "sys" };
+        },
+      });
+    }
+
     return {
       title: `旅途 · 第${j.leg}/${j.total}月`,
       text: `从「${fromNode ? fromNode.name : "出发地"}」往「${j.toName}」——${terrainDesc[terrain] || terrainDesc["官道"]}`,
@@ -3853,6 +3878,8 @@ const Engine = {
   doCultivate(months, focus) {
     const s = State.data;
     if (s.pendingEvent || s.combat) return;
+    // v345 习惯记忆：记住这次闭的月数，下次开面板默认高亮同档
+    if (s.flags) s.flags.last_cult_months = months;
     // M6·闭关兼修方向（Build 三路时间互斥的闭关切口）：剑意/药理/制符 三选一兼修——
     // 修为吃 ×0.85 分心成本（cultivate() 内结算），副轴按实修月数在收功时一并入账。
     this._cultFocus = focus || null;
@@ -5043,10 +5070,12 @@ const Engine = {
     State.data.combat = true;
     this._combat.startRound();
     this.log(`你在${State.location().name}遭遇「${tmpl.name}」，斗法一触即发！`, "bad");
-    if (enemy.introNote) this._combat._log(`【敌情】${enemy.introNote}`);
-    // v343 观气：开打第一拍先给一眼胜负直觉——敛息的修士只见「深浅莫测」（神识够深方可窥破）
+    // v345 合并展示：敌情+观气拼成一条（旧版开战瞬间连刷两条，浮条只显最后一条=敌情必被顶掉）
     const gz = this.assessFoe(tmpl);
-    if (gz) this._combat._log(`【${gz.label.replace("观气：", "观气】")}${gz.tone === "veil" ? "——此獠藏得极深，小心为上" : ""}`);
+    const gzTxt = gz ? `【${gz.label.replace("观气：", "观气】")}${gz.tone === "veil" ? "——此獠藏得极深，小心为上" : ""}` : "";
+    if (enemy.introNote && gzTxt) this._combat._log(`【敌情】${enemy.introNote}　${gzTxt}`);
+    else if (enemy.introNote) this._combat._log(`【敌情】${enemy.introNote}`);
+    else if (gzTxt) this._combat._log(gzTxt);
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -8971,6 +9000,29 @@ const Engine = {
     this.checkStory();
     State.save();
     UI.renderAll();
+  },
+
+  /* v345 连服至满：按丹效主属性（血>灵>心境）循环服用直到满/丹尽（封顶 8 颗防误耗）。
+   * 复用 useItem 单颗管线——效果折算/特殊文案/成就钩全部同源，只省玩家的手。 */
+  useItemToFull(itemId) {
+    const item = DATA.items[itemId];
+    if (!item || item.type !== "pill") return;
+    const e = item.effect || {};
+    const s = State.data;
+    const stat = () => {
+      if (e.hp) return [s.hp, s.hpMax];
+      if (e.sp) return [s.spirit, (State.realm() || {}).spMax || 0];
+      if (e.mood) return [s.mood, s.moodMax];
+      return null;
+    };
+    let taken = 0;
+    while (taken < 8 && State.count(itemId) > 0) {
+      const st = stat();
+      if (!st || st[0] >= st[1]) break;
+      this.useItem(itemId);
+      taken += 1;
+    }
+    if (!taken) this.toast("已然充盈，无须再服");
   },
 
   /* ===========================================================

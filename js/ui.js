@@ -1095,6 +1095,16 @@ const UI = {
       bb.textContent = ripe ? "小瓶✦" : "小瓶";
       bb.classList.toggle("bottle-ripe", ripe);
     }
+    // v345 通货进账浮字：灵石/纹银入账走 _floatGain 同一条反馈链——奇遇捡了钱不用去日志里找账。
+    // 只报进账不报支出（花钱之处自有商店/面板反馈，负数浮字徒增噪音）。
+    const curMoney = { silver: s.silver || 0, lingshi: (typeof State.count === "function") ? State.count("lingshi") : 0 };
+    if (this._prevMoney) {
+      ["silver", "lingshi"].forEach(k => {
+        const d = curMoney[k] - this._prevMoney[k];
+        if (d > 0 && !s.combat) this._floatGain(k, d);
+      });
+    }
+    this._prevMoney = curMoney;
   },
 
   _seasonOf(month) {
@@ -1171,7 +1181,7 @@ const UI = {
     this._prevBars[key] = cur;
   },
   _floatGain(key, delta) {
-    const labels = { cul: "修为", sp: "灵力", hp: "气血", mood: "心境", demon: "心魔" };
+    const labels = { cul: "修为", sp: "灵力", hp: "气血", mood: "心境", demon: "心魔", silver: "纹银", lingshi: "灵石" };
     // 心魔上涨是坏事——用警示色；其余增益用上扬绿。多条同刻增益纵向错开，避免叠成一团读不清。
     const bad = key === "demon";
     const el = document.createElement("div");
@@ -1244,6 +1254,10 @@ const UI = {
     const isSeed = !!DATA.bottle.crops[itemId] || itemId === "lingcao" || itemId === "duyao_cao";
     let actions = "";
     if (isPill) actions += `<button class="btn btn-primary" onclick="Engine.useItem('${itemId}'); UI.closeModal();">服用</button>`;
+    // v345 连服至满：回复类丹药存量>1 时给一键补满（按主属性缺口自动算颗数）
+    if (isPill && State.count(itemId) > 1 && item.effect && (item.effect.hp || item.effect.sp || item.effect.mood) && !item.effect.cul) {
+      actions += `<button class="btn btn-secondary" onclick="Engine.useItemToFull('${itemId}'); UI.closeModal();">连服至满（自动止于满值/丹尽）</button>`;
+    }
     if (State.data.bottle.unlocked && DATA.bottle.crops[itemId]) {
       actions += `<button class="btn btn-secondary" onclick="UI.closeModal(); UI.openBottle();">投入小绿瓶</button>`;
     }
@@ -1708,6 +1722,7 @@ const UI = {
   // 演出原语（cam/actor/fx/sfx/bgm）是舞台指令，自动连演不阻塞；撞上台词/交互/wait 才停。
   storyAdvance() {
     const st = this._story; if (!st) return;
+    if (this._suppressNextAdvance) { this._suppressNextAdvance = false; return; }   // v345 长按松手余波
     if (st.titling) return;           // 题字卡期间由卡自己处理
     if (st.beatActive) return;        // 交互 beat 进行中：轻触无效（由 beat 自己结算）
     if (st.stageActive) { this._stageAdvance(); return; }  // 舞台模式：轻触交给 Stage 运行器
@@ -2140,6 +2155,40 @@ const UI = {
     if (box) box.hidden = true;
   },
 
+  /* v345 长按快进：按住对话框 550ms 起连放（每 240ms 一句，打字瞬完），松手即停。
+   * 撞上抉择/交互 beat/题字卡自动刹车。重温旧剧情的中间档——比逐句点快、比「跳过」保留阅读。 */
+  initStoryHold() {
+    if (this._storyHoldInit) return;
+    this._storyHoldInit = true;
+    const dlg = this.el("story-dialog");
+    if (!dlg) return;
+    const stop = () => {
+      clearTimeout(this._ffArm);
+      if (this._ffTimer) {
+        clearInterval(this._ffTimer); this._ffTimer = null;
+        dlg.classList.remove("fast-forward");
+        // 松手瞬间的 click 会再推一句——压掉它（长按≠多点一下）
+        this._suppressNextAdvance = true;
+        setTimeout(() => { this._suppressNextAdvance = false; }, 320);
+      }
+    };
+    dlg.addEventListener("pointerdown", () => {
+      clearTimeout(this._ffArm);
+      this._ffArm = setTimeout(() => {
+        const st = this._story;
+        if (!st || st.done || st.titling || st.beatActive || st.stageActive) return;
+        dlg.classList.add("fast-forward");
+        this._ffTimer = setInterval(() => {
+          const s2 = this._story;
+          if (!s2 || s2.done || s2.titling || s2.beatActive || s2.stageActive) { stop(); return; }
+          if (s2.typing) this._typeFinish();
+          else this._storyPlayNext();
+        }, 240);
+      }, 550);
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(ev => dlg.addEventListener(ev, stop));
+  },
+
   // 随时可跳：清演出计时/镜头，直达本幕抉择
   storySkip() {
     const st = this._story; if (!st || st.done) return;
@@ -2178,6 +2227,13 @@ const UI = {
     }
     if (img.getAttribute("src") !== url) img.src = url;
     img.alt = alt || "";
+    // v345 弱网兜底：立绘 404 不留裂图痕——拆掉图框退回纯对话布局（清 set 键，之后换图可重试）
+    img.onerror = () => {
+      box.innerHTML = "";
+      box.classList.remove("on", "dim");
+      box.dataset.set = "";
+      if (this._story) this._story.leftKey = null;
+    };
     return firstShow;
   },
 
@@ -2750,9 +2806,11 @@ const UI = {
       { m: 12, label: "闭关一年", note: "潜心苦修" },
       { m: 36, label: "闭关三年", note: "心无旁骛，岁月如梭" },
     ];
+    // v345 习惯记忆：上次闭的月数档高亮（金边+「上次」角标），老玩家闭关两点完成
+    const lastM = s.flags && s.flags.last_cult_months;
     const optHtml = opts.map(o =>
-      `<button class="btn btn-secondary" style="text-align:left" onclick="UI.closeSheet(); Engine.doCultivate(${o.m}, ${focusArg});">
-        ${o.label}　<span style="color:var(--ink-dim);font-size:12px">预计修为+${Math.round(perMonth * o.m * focusMul)}　${o.note}</span>
+      `<button class="btn btn-secondary${o.m === lastM ? " opt-last" : ""}" style="text-align:left" onclick="UI.closeSheet(); Engine.doCultivate(${o.m}, ${focusArg});">
+        ${o.label}${o.m === lastM ? '<span class="last-tag">上次</span>' : ""}　<span style="color:var(--ink-dim);font-size:12px">预计修为+${Math.round(perMonth * o.m * focusMul)}　${o.note}</span>
       </button>`
     ).join("");
     // 一键闭关至本层圆满（省去反复点击，但插曲/耗时照常结算）
@@ -4780,11 +4838,13 @@ const UI = {
     ];
     const html = shop.map(it => {
       const item = DATA.items[it.id];
+      // v345 批量买：银两够 5 份的货挂「×5」——买符备战不用连点
+      const canFive = s.silver >= it.price * 5;
       return `<div class="market-item">
         <span><span class="iname ${item.rarity==='rare'?'rare':item.rarity==='epic'?'epic':''}">${item.name}</span>
           ${it.sale ? '<span style="color:var(--red);font-size:11px">　黑市贱卖</span>' : ''}
           <span style="color:var(--ink-dim);font-size:12px">　${item.desc}</span></span>
-        <button class="btn btn-mini" onclick="Engine.buy('${it.id}')"><span class="mprice">${it.price}两</span></button>
+        <span class="sell-btns"><button class="btn btn-mini" onclick="Engine.buy('${it.id}')"><span class="mprice">${it.price}两</span></button>${canFive ? `<button class="btn btn-mini" onclick="Engine.buy('${it.id}', 5)">×5</button>` : ""}</span>
       </div>`;
     }).join("");
     // polish A6：皮货行收购（wanbaoSell 同构·八折）——妖材战利在本章即可变现
@@ -5775,14 +5835,46 @@ const UI = {
     if (!Engine._combat) return;
     const e = Engine._combat.enemies[i];
     if (!e || !e.alive) return;
-    this._combatTarget = i;
     if (this._armed && this._armed.kind === "enemy") {
+      this._combatTarget = i;
       const id = this._armed.id;
       this._armed = null;
       Engine.combatCast(id, i);
       return;
     }
+    // v345 再点已锁目标=查敌情：交手记下的招式册（情报面纱 L1）战中直查，不用退场翻图鉴
+    if (this._combatTarget === i) { this.showFoeIntel(i); return; }
+    this._combatTarget = i;
     this.renderCombat(Engine._combat, Engine._combatMeta);
+  },
+
+  /* v345 战中敌情速查：只报"你已经知道的"——交手过的招式（s.intelMoves）+ 打出来的行属克制
+   * （s.intelElems）+ 眼前可见的甲盾血量。没交手过的招不剧透（情报面纱不破）。 */
+  showFoeIntel(i) {
+    const c = Engine._combat;
+    if (!c) return;
+    const e = c.enemies[i];
+    const el = this.el("combat-intent");
+    if (!e || !el) return;
+    const s = State.data;
+    const known = (s.intelMoves && s.intelMoves[e.name]) || [];
+    const moveTxt = known.length
+      ? known.map(m => {
+          const def = (e.attacks || []).find(a => a.name === m);
+          return def ? `${m}（约${def.dmg}伤${def.kind === "charge" ? "·蓄力" : def.kind === "pierce" ? "·穿透" : ""}）` : m;
+        }).join("　")
+      : "尚未见过它出招——打过才知底细";
+    const ELEM_NAME = (typeof CombatAPI !== "undefined" && CombatAPI.ELEM_NAME) || {};
+    const elemKnown = s.intelElems && s.intelElems[e.name];
+    const parts = [
+      `<b>${e.name}</b>　气血 ${Math.max(0, Math.round(e.hp))}/${e.hpMax}${e.armor ? `　甲 ${e.armor}` : ""}${e.shield ? `　盾 ${Math.round(e.shield)}` : ""}`,
+      `已知招式：${moveTxt}`,
+      elemKnown ? `道基行属：${ELEM_NAME[elemKnown] || elemKnown}（可循五行相克压它）` : "",
+    ].filter(Boolean);
+    el.hidden = false;
+    el.innerHTML = `📖 ${parts.join("<br>")}`;
+    clearTimeout(this._intentTimer);
+    this._intentTimer = setTimeout(() => { el.hidden = true; }, 5200);
   },
   /* —— 二次确认（群战）：点法术=上膛，再点目标/格子=施放 ——
    * 择敌：攻击/减益类且场上多敌——点敌方立绘确认（单敌不啰嗦，直接放）
@@ -6377,6 +6469,12 @@ const UI = {
         + (key ? " lf-key" : "")
         + (/造成|毒发|胜|趁虚|落空|砸了个空/.test(last) ? " lf-hit" : /受到|败|砸在|耗尽/.test(last) ? " lf-hurt" : "");
       el.textContent = last;
+      // v345 浮条即入口：一闪而过没看清？点它=展开完整战录（与「录」按钮同效）
+      el.style.pointerEvents = "auto"; el.style.cursor = "pointer";
+      el.onclick = () => {
+        const lg2 = this.el("combat-log");
+        if (lg2) { lg2.hidden = false; lg2.scrollTop = lg2.scrollHeight; }
+      };
       box.appendChild(el);
       clearTimeout(this._floatTimer);
       this._floatTimer = setTimeout(() => el.remove(), key ? 3800 : 3200);
@@ -6729,9 +6827,15 @@ const UI = {
       const cdLeft = c.cooldownLeft ? c.cooldownLeft(id) : 0;
       const usable = afford && inR;
       const eMp = p.spellMp ? p.spellMp(id, sp) : (sp.mp || 0);
+      // v345 禁用给具体账：差多少灵力/该挪几步，写在牌面上（"灵力不足"四个字不解决问题）
+      const nearestD = c.enemies.reduce((m, e2) => e2.alive ? Math.min(m, Math.abs(e2.pos - p.pos)) : m, 99);
       const why = !afford
-        ? (cdLeft > 0 ? `回气${cdLeft}` : noPouch ? "无存货" : eMp > p.mp ? "灵力不足" : sp.quick && c._pQuickUsed ? "瞬发已用" : "行动已尽")
-        : (!inR ? "射程外" : "");
+        ? (cdLeft > 0 ? `回气${cdLeft}` : noPouch ? "无存货" : eMp > p.mp ? `灵力差${Math.ceil(eMp - p.mp)}` : sp.quick && c._pQuickUsed ? "瞬发已用" : "行动已尽")
+        : (!inR
+          ? (sp.range && nearestD < 99 && nearestD > sp.range[1] ? `差${nearestD - sp.range[1]}步近身`
+            : sp.range && nearestD < 99 && nearestD < sp.range[0] ? "太近·须拉开"
+            : "射程外")
+          : "");
       const pouchTxt = (sp.consume ? `<span class="spouch ${noPouch ? 'empty' : ''}">×${p.pouch[sp.consume] || 0}</span>` : "")
         + (why ? `<span class="spouch empty">${why}</span>` : "");
       const dispName = (id === "zhayan" && p.swordMastery) ? "眨眼剑法·大成" : sp.name;
@@ -8171,6 +8275,7 @@ const UI = {
       ${s.pendingEvent ? `<p style="color:var(--gold);font-size:13px">有一段剧情正待你抉择——关掉此卡便见。</p>` : ""}
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="UI.closeModal()">想起来了，继续修行</button>
+        <button class="btn btn-ghost" style="font-size:12px" onclick="State.data.flags.no_recap=true; State.save(); UI.closeModal(); UI.toast('好——本档不再弹前情提要')">本档不再提示</button>
       </div>
     `);
   },
@@ -8185,10 +8290,13 @@ const UI = {
       const d = new Date(t);
       return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     };
+    // v345 「最新」角标：四个档位靠时间戳肉眼比对易读错档——最近写入的槽直接标出来
+    const newestT = Math.max(...[-1, 0, 1, 2].map(n => { const i = State.slotInfo(n); return (i && !i.corrupt && i.savedAt) || 0; }));
     const row = (n, label) => {
       const info = State.slotInfo(n);
+      const isNewest = !!(info && !info.corrupt && info.savedAt && info.savedAt === newestT && newestT > 0);
       const meta = info && !info.corrupt
-        ? `<b>${info.name}</b> · ${info.realm} · 第${info.year}年${info.month}月 · ${CH_NAME[info.chapter] || info.chapter}<span class="slot-time">${fmtT(info.savedAt)}</span>`
+        ? `<b>${info.name}</b> · ${info.realm} · 第${info.year}年${info.month}月 · ${CH_NAME[info.chapter] || info.chapter}${isNewest ? '<span class="slot-newest">最新</span>' : ""}<span class="slot-time">${fmtT(info.savedAt)}</span>`
         : (info && info.corrupt ? `<span style="color:var(--red)">档案损毁</span>` : `<span style="color:var(--ink-faint)">空</span>`);
       let act = "";
       if (mode === "save") {
@@ -8277,16 +8385,39 @@ const UI = {
         try {
           const s = JSON.parse(rd.result);
           if (!s || typeof s.realmIndex !== "number" || !s.flags) throw new Error("不是本游戏的存档文件");
-          localStorage.setItem("frxxz_save_v1", rd.result);
-          if (!State.load()) throw new Error("存档解析失败");
-          this.closeModal();
-          this.toast("存档已导入——重续仙缘");
-          if (typeof Main !== "undefined" && Main._afterLoadEnter) Main._afterLoadEnter();
+          // v345 先预览再确认：旧版选完文件直接覆盖自动档——选错文件=现有进度无声蒸发。
+          // 解析出道号/境界/年月摆出来，玩家点头才动真格。
+          this._pendingImport = rd.result;
+          const realm = (DATA.realms[s.realmIndex] || {}).name || "凡夫";
+          const fmtT = s.savedAt ? new Date(s.savedAt).toLocaleString() : "——";
+          this.openModal(`
+            <h2>确认导入这份存档？</h2>
+            <div class="save-slot" style="margin:10px 0">
+              <div class="slot-meta"><b>${(typeof s.name === "string" && s.name) || "韩立"}</b> · ${realm} · 第${s.year || 1}年${s.month || 1}月<span class="slot-time">落档时刻：${fmtT}</span></div>
+            </div>
+            <p style="color:var(--ink-dim);font-size:13px">导入后将<b style="color:var(--red)">覆盖当前自动档</b>并直接进入这份进度（手动档位一/二/三不受影响）。</p>
+            <div class="modal-actions">
+              <button class="btn btn-primary" onclick="UI._confirmImport()">确认导入，重续仙缘</button>
+              <button class="btn btn-ghost" onclick="UI._pendingImport=null; UI.closeModal(); UI.openSystemMenu()">再想想</button>
+            </div>
+          `);
         } catch (e) { this.toast("导入失败：" + e.message, true); }
       };
       rd.readAsText(f);
     };
     input.click();
+  },
+  _confirmImport() {
+    const raw = this._pendingImport;
+    this._pendingImport = null;
+    if (!raw) return;
+    try {
+      localStorage.setItem("frxxz_save_v1", raw);
+      if (!State.load()) throw new Error("存档解析失败");
+      this.closeModal();
+      this.toast("存档已导入——重续仙缘");
+      if (typeof Main !== "undefined" && Main._afterLoadEnter) Main._afterLoadEnter();
+    } catch (e) { this.toast("导入失败：" + e.message, true); }
   },
 
   /* -------- §9 体验设置（演出速度 / 动效强度 / 震动）-------- */
@@ -8423,13 +8554,60 @@ const UI = {
     ov.hidden = true;
   },
 
+  /* v345 落档墨点：每月首存在右下角闪一粒墨点（0.9s 淡去）——"进度存上没有"眼角有数；
+   * 写盘失败（储存满/隐私模式）红点常驻 + 一次性 toast 警示。 */
+  flashSaveDot(monthKey, ok) {
+    let dot = this._saveDot;
+    if (!dot) {
+      dot = document.createElement("div");
+      dot.className = "save-dot";
+      document.body.appendChild(dot);
+      this._saveDot = dot;
+    }
+    if (!ok) {
+      dot.classList.add("fail", "show");
+      if (!this._saveFailWarned) {
+        this._saveFailWarned = true;
+        this.toast("存档写入失败——储存空间不足或隐私模式，请尽快「导出备份」", true, 6000);
+      }
+      return;
+    }
+    dot.classList.remove("fail");
+    if (monthKey === this._saveDotMonth) return;   // 同月多次落档只闪一次（每步行动都会存，别晃眼）
+    this._saveDotMonth = monthKey;
+    dot.classList.remove("show"); void dot.offsetWidth; dot.classList.add("show");
+    clearTimeout(this._saveDotTimer);
+    this._saveDotTimer = setTimeout(() => dot.classList.remove("show"), 950);
+  },
+
+  /* v345 toast 排队：多条提示同时到（成就+奇遇+落档）不再互相顶掉——
+   * 正在显示时入队（≤3 条，去重），显完一条接一条。 */
   toast(msg, bad = false, ms = 2200) {
+    this._toastQ = this._toastQ || [];
+    if (this._toastShowing) {
+      const t0 = this.el("toast");
+      if (t0 && t0.textContent === msg) return;               // 与当前同文=丢弃
+      if (this._toastQ.some(q => q[0] === msg)) return;        // 队里已有=丢弃
+      if (this._toastQ.length < 3) this._toastQ.push([msg, bad, ms]);
+      return;
+    }
+    this._toastShow(msg, bad, ms);
+  },
+  _toastShow(msg, bad, ms) {
     const t = this.el("toast");
+    if (!t) return;
     t.textContent = msg;
     t.className = "toast" + (bad ? " bad" : "");
+    t.onclick = null;                                          // 上一条挂的点击动作（如报错急救）不留给下一条
     t.hidden = false;
+    this._toastShowing = true;
     clearTimeout(this._toastTimer);
-    this._toastTimer = setTimeout(() => { t.hidden = true; }, ms);
+    this._toastTimer = setTimeout(() => {
+      t.hidden = true;
+      this._toastShowing = false;
+      const nx = (this._toastQ || []).shift();
+      if (nx) setTimeout(() => this._toastShow(nx[0], nx[1], nx[2]), 160);
+    }, ms);
   },
 };
 
