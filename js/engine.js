@@ -4561,6 +4561,8 @@ const Engine = {
         if (!spells.includes(sk)) spells.push(sk);
       });
     }
+    // v350 引煞入体：煞气积到 70 以上，战中那张暗红的牌自己浮出来——诱惑摆在手边（突破心战不给：心魔劫里引煞=自杀）
+    if ((s.demon || 0) >= 70 && !spells.includes("yinsha")) spells.push("yinsha");
     // 青竹蜂云剑·本命法宝（星海飞驰篇·S5 炼成后持有即入战）——本命飞剑 qingzhu_jian + 辟邪神雷二式
     // 雷遁 leidun：御「风雷翅」方可施展（外海风云篇夺翅后 flightId=feng_lei_chi → gearTrait("fenglei") 即通）
     if (State.count("qingzhu_fengyun_jian") > 0) {
@@ -7511,6 +7513,21 @@ const Engine = {
 
     // 心魔具象：你最重的业障，就是它的脸（剧情记忆 × 战斗引擎）
     const face = this._demonFace();
+    // v350 镜像心魔（乘法·你的build×心魔战）：心魔以你之招攻你之身——
+    // 取你手上最强三式攻击法术做它的招牌（名字原样·伤害按心魔基数配平），
+    // "最了解你的对手是你自己"从一句话变成战报里的事实。
+    const mirror = (() => {
+      try {
+        const SP = CombatAPI.SPELLS;
+        const mine = (s.spells || []).map(id => SP[id]).filter(sp => sp && sp.type === "atk" && sp.dmg);
+        if (!mine.length) return null;
+        mine.sort((a, b) => b.dmg - a.dmg);
+        const base = isBig ? 14 : 9;
+        return mine.slice(0, 3).map((sp, i) => (i === 0
+          ? { name: sp.name, dmg: Math.round(base * 1.5), kind: "charge", weight: 5, range: [1, 3], aim: "cell" }
+          : { name: sp.name, dmg: base, kind: "normal", weight: 10, range: [1, 3] }));
+      } catch (e) { return null; }
+    })();
 
     let bottleneckHp, maxRounds, demonName, demonAtk, intro;
     if (isBig) {
@@ -7531,6 +7548,8 @@ const Engine = {
 
     const player = this.playerFighter();
     player.hp = Math.max(20, daoxin); player.hpMax = player.hp;
+    // v350 心战禁引煞：心魔劫里引煞入体=给心魔喂粮（叙事悖论），那张暗红的牌收起来
+    player.spells = player.spells.filter(sk => sk !== "yinsha");
 
     if (isBig) {
       // —— P0-1 心魔战三阶段：执念之相 → 心魔反扑 → 道心一击 ——
@@ -7555,9 +7574,10 @@ const Engine = {
         introNote: null,
       }, extra || {});
 
-      // Phase 1: 执念之相——HP×1.5，纯对攻
+      // Phase 1: 执念之相——HP×1.5，纯对攻（v350 镜像：它使你的招）
       const phase1 = mkDemon(demonName, p1Hp, demonAtk, {
         introNote: face.taunt || null,
+        attacks: mirror || undefined,
       });
 
       // Phase 2: 心魔反扑——本体回血 + 两个心魔分身（clones）
@@ -7600,12 +7620,13 @@ const Engine = {
         }
       };
     } else {
-      // 小境界心战：保持原样（单阶段）
+      // 小境界心战：保持原样（单阶段·v350 镜像：它使你的招）
       this._combat = new CombatAPI.Combat({
         player,
         enemies: [{ name: demonName, hp: Math.max(20, bottleneckHp),
                     sense: 5, agility: 0, move: 2, mp: 999,
                     atkName: "心魔反噬", atk: demonAtk,
+                    attacks: mirror || undefined,
                     introNote: face.taunt || null }],
         maxRounds,
         mode: "breakthrough",
@@ -7616,6 +7637,7 @@ const Engine = {
     this._combat.startRound();
     this.log(intro, "event");
     if (face.taunt) this._combat._log(face.taunt);
+    if (mirror) this._combat._log(`它抬手起势的架势你再熟悉不过——那是你自己的招。最了解你的对手，从来都是你自己。`);
     UI.openCombat(this._combat, this._combatMeta);
   },
 
@@ -7773,6 +7795,12 @@ const Engine = {
     // 同步战中消耗的底牌（毒、暗器、符箓）回主背包；侧位单位损耗回写
     this._syncPouchBack();
     this._syncSideBack();
+
+    // v350 引煞入体·战后清算：魔借的力，账现在算——煞气+10、辞条点破依赖的滋味
+    if (c.player && c.player._shaOn && meta.type !== "breakthrough") {
+      s.demon = clamp((s.demon || 0) + 10, 0, 100);
+      this.log(`收势之后，引出来的煞气并不肯乖乖归位——它在经脉里多盘桓了一刻才沉回丹田，比来时更重了一分（煞气+10）。你活动了一下手指：不得不承认，那股力量……用起来很顺手。`, "bad");
+    }
 
     // 同步玩家气血与灵力回主状态（突破是"道心"，不回写气血）
     // 灵力按比例回写灵力：战中耗了三成灵力=灵力掉三成——连战共享一池，

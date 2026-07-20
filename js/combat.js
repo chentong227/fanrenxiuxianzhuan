@@ -77,6 +77,10 @@
     /* —— 战内丹药（瞬发：灵力恢复链的实战落点——灵力池整场不复，丹药是续命的那口气）—— */
     jinchuang_yao: { name: "服金疮药", mp: 0, range: [0, 0], type: "heal", heal: 40, quick: true, consume: "huixue_dan", source: "item", tier: 0,
                 desc: "战中匀出一瞬吞下金疮药，气血回稳（瞬发，不占行动）。消耗一份金疮药。" },
+    // v350 引煞入体（煞气≥70 战中浮现·浮士德按钮）：伤害+30%，每回合灼血、战后煞气+10——
+    // 打不过的坎，魔替你打；账，日后再算。一场限一次，开弓没有回头箭。
+    yinsha: { name: "引煞入体", mp: 0, range: [0, 0], type: "buff", shaMode: true, oncePerRound: true, source: "art", tier: 0, school: "sha",
+                desc: "引动丹田深处积压的煞气灌入四肢百骸——本场出手狠三分（伤害+30%），但煞气灼经每回合暗耗气血，战后煞气反涨（+10）。走火入魔的路，就是这么一步步走出来的。" },
     huiyuan_dan: { name: "回元丹", mp: 0, range: [0, 0], type: "buff", regen: 40, quick: true, consume: "huiyuan_dan", source: "item", tier: 0,
                 desc: "一口吞下、灵力回涌 +40（瞬发，不占行动）。灵力池整场不复——这一粒，常是续命的那口气。消耗一枚回元丹。" },
 
@@ -1003,6 +1007,12 @@
       this.round++;
       this.player.exposed = false;
       this.player._blinkTurn = false;   // 雷遁只管一回合（再遁再耗神雷）
+      // v350 引煞入体·灼血：煞气过体如火燎经脉——每回合掉血（约 4% 血上限·至少 3），压不死人但疼
+      if (this.player._shaOn && this.round > 1 && this.player.hp > 1) {
+        const burn = Math.max(3, Math.round(this.player.hpMax * 0.04));
+        this.player.hp = clampNum(this.player.hp - burn, 1, this.player.hpMax);
+        this._log(`煞气灼经，气血暗耗（-${burn}）——这股力量在啃你的本钱。`);
+      }
       // 神雷附剑余威递减
       if (this.player._leiEnchant > 0) {
         this.player._leiEnchant--;
@@ -1434,6 +1444,8 @@
         if (caster.swordMastery && sp.source === "art" && sp.school === "mu") {
           baseDmg = Math.round(baseDmg * 1.10);
         }
+        // v350 引煞入体：煞气灌注的出手狠三分（乘性——高境界不稀释）
+        if (caster._shaOn) baseDmg = Math.round(baseDmg * 1.3);
         baseDmg = Math.max(1, Math.round(baseDmg * auxMul * (caster.dmgBonus || 1)));
         // 贴身惩罚：御物/法术类远程攻击在距离1施展不开（-30%）——武学的主场
         let closeSqueeze = false;
@@ -1642,6 +1654,13 @@
           if (sp.expose) caster.exposed = true;
           this._log(`${caster.name} 敛息凝神，灵力回涌 +${got}（${Math.round(caster.mp)}/${caster.mpMax}）${sp.expose ? "——但破绽毕露！" : ""}`);
           this._emitFx(this._refOf(caster), "heal", "回元 " + got);
+        }
+        // v350 引煞入体（煞气系统·浮士德按钮）：本场伤害+30%，代价每回合灼血、战后煞气+10。
+        // 一场只能引一次（开弓没有回头箭）——魔给你力量，账日后再算。
+        if (sp.shaMode && !caster._shaOn) {
+          caster._shaOn = true;
+          this._log(`${caster.name} 咬牙引动丹田深处的煞气——阴戾之气顺经脉倒灌，眼底泛起血丝，出手骤然狠了三分！（伤害+30%·每回合灼血·战后煞气反涨）`);
+          this._emitFx(this._refOf(caster), "crit", "入 魔");
         }
       }
     }

@@ -69,6 +69,170 @@ const FORTUNES = [
       },
     ],
   },
+  /* ===== 心结了结（v350·救赎回路）：煞念行径欠下的账，给一条亲手还清的路——
+   * 了结不只是数值回落，是把「那件事」从心里放下（账本留痕·煞气实降）。 ===== */
+  {
+    id: "sha_amends_stall",
+    title: "旧摊仍在",
+    text: "集市转角，你一眼认出那个药摊——摊主还是那张脸，只是看谁都多了三分提防。他不记得你，可你记得你自己做过什么。",
+    weight: 26,
+    once: true,
+    cond: (s) => !!s.flags.sha_stole_stall && (s.silver || 0) >= 10,
+    choices: [
+      {
+        text: "把银子压在摊角，多出数倍",
+        hint: "纹银-10 · 心头那笔账，清了",
+        effect(s) {
+          s.silver -= 10;
+          s.demon = clamp(s.demon - 8, 0, 100);
+          s.mood = Math.min(s.moodMax, s.mood + 6);
+          s.flags.sha_stole_stall = false;
+          Engine.writeLedger("sha_amends_stall", "回到当日顺手牵羊的药摊，压下十两银子——欠的账，亲手还了");
+          return { text: "你趁摊主转身，把十两银子压在摊角的秤砣下，转身走人。走出半条街，身后传来摊主又惊又疑的嚷嚷。\n\n你没回头，可脚步轻了——丹田里那股阴戾之气，散了一缕（煞气-8·心境+6）。有些账，还了才知道它压了你多久。", kind: "good" };
+        },
+      },
+      { text: "装作没看见，绕开", effect(s) { s.mood = Math.max(0, s.mood - 2); return { text: "你绕开了那个摊子，脚步比来时快了些（心境-2）。账还在。", kind: "sys" }; } },
+    ],
+  },
+  {
+    id: "sha_deer_mound",
+    title: "洼地无鹿",
+    text: "又路过那片洼地。灵草长回来了些，风一吹，草浪的形状像一头卧着的鹿。你在原地站了很久。",
+    weight: 26,
+    once: true,
+    cond: (s) => !!s.flags.sha_slew_deer,
+    choices: [
+      {
+        text: "堆石为冢，插草为香",
+        hint: "半日 · 心头那双眼睛，安了",
+        effect(s) {
+          s.demon = clamp(s.demon - 8, 0, 100);
+          s.mood = Math.min(s.moodMax, s.mood + 4);
+          s.flags.sha_slew_deer = false;
+          Engine.writeLedger("sha_deer_mound", "回到猎鹿的洼地堆石立冢——通灵之物的那双眼睛，终于闭上了");
+          return { text: "你搬来溪边的卵石，一块块垒成小小的冢，又拔了三根长草插在石缝里，权当香烛。\n\n「是我着了魔。」你对着石冢说了一句，说完自己都愣了愣。\n\n下山的路上，梦里纠缠多日的那双眼睛没有再出现（煞气-8·心境+4）。", kind: "good" };
+        },
+      },
+      { text: "此地不宜久留", effect() { return { text: "你加快脚步离开了洼地。风声在身后响了很久。", kind: "sys" }; } },
+    ],
+  },
+
+  /* ===== v350 新奇遇批：两则单发 + 一条两步托孤链（跨奇遇的因果——凡人修仙的人情账） ===== */
+  {
+    id: "rainy_lodging",
+    title: "雨夜借宿",
+    text: "暴雨来得又急又狠，前不着村后不着店，唯有山坳里一户亮着油灯的农家。开门的老汉打量你半晌，侧身让了路：「屋漏，莫嫌。」灶上温着半锅野菜糊糊。",
+    where: ["town", "jiayuan_city", "qingniu"],
+    weight: 9,
+    cooldown: 36,
+    choices: [
+      {
+        text: "留下银钱，天亮便走",
+        hint: "纹银-2 · 受人屋檐，还人情分",
+        cond: (s) => (s.silver || 0) >= 2,
+        effect(s) {
+          s.silver -= 2; s.mood = Math.min(s.moodMax, s.mood + 5);
+          return { text: "你把两块碎银压在灶台上。老汉连连摆手，你按住他的手：「柴钱。」\n\n后半夜雨声渐歇，你睡了入山以来最沉的一觉。天没亮就起身赶路，身后柴门吱呀一声——老汉站在门口，朝你的背影拱了拱手（心境+5）。", kind: "good" };
+        },
+      },
+      {
+        text: "施法替他修屋",
+        hint: "耗灵力8 · 凡人看不见的举手之劳",
+        cond: (s) => (s.spirit || 0) >= 8,
+        effect(s) {
+          s.spirit -= 8; s.mood = Math.min(s.moodMax, s.mood + 7);
+          s.demon = clamp(s.demon - 3, 0, 100);
+          return { text: "老汉睡熟后，你立在院中掐诀——漏雨的茅顶无声地自己续上了新草，歪斜的房梁直了三分，灶膛里的火也旺了一圈。\n\n做完这些你有点想笑：修仙这些年，头一回用灵力干木匠的活。可不知怎么，心里那点常年不散的阴翳，轻了一线（心境+7·煞气-3）。", kind: "good" };
+        },
+      },
+      { text: "裹紧外袍蹲屋檐下，不进门", effect(s) { s.mood = Math.max(0, s.mood - 2); return { text: "你在屋檐下蹲了半宿。雨停时浑身潮冷，老汉开门看见你，欲言又止（心境-2）。", kind: "sys" }; } },
+    ],
+  },
+  {
+    id: "fallen_disciple_relic",
+    title: "同门遗物",
+    text: "坊市旧货摊上，一枚黄枫谷的记名弟子腰牌混在杂物里——牌角刻着个小小的「周」字，牌绳磨得发亮。摊主说是从收山货的贩子手里论斤称来的。这一脉的弟子，多半是折在哪次历练里了。",
+    where: ["fangshi"],
+    weight: 8,
+    once: true,
+    choices: [
+      {
+        text: "买下腰牌，托执法堂送还其家",
+        hint: "灵石-1 · 让他魂归故里",
+        cond: (s) => State.count("lingshi") >= 1,
+        effect(s) {
+          State.take("lingshi", 1);
+          s.mood = Math.min(s.moodMax, s.mood + 6);
+          Engine.addFame(3, "买回阵亡同门的腰牌，托执法堂送还其家");
+          Engine.writeLedger("relic_returned", "坊市旧货摊上买回一枚阵亡同门的腰牌，托执法堂送还其家人");
+          return { text: "你放下灵石拿起腰牌，摊主嘟囔着「一块破木牌」。\n\n执法堂的师兄接过腰牌看了看，神色郑重了几分：「周家二郎，前年谷外没回来的。」他抱拳，「道友仁义。」\n\n修仙人命如草芥——可草芥也有家（心境+6·名望+3）。", kind: "good" };
+        },
+      },
+      { text: "一块旧木牌罢了", effect() { return { text: "你放下腰牌走开了。身后摊主还在吆喝，那枚小小的「周」字埋回杂物堆里。", kind: "sys" }; } },
+    ],
+  },
+  /* —— 托孤两步链：垂死散修的信物 → 城镇里寻他妹妹兑现（跨奇遇因果·人情有回响） —— */
+  {
+    id: "dying_wanderer",
+    title: "道旁托孤",
+    text: "道旁草丛里躺着个胸口塌陷的散修，出的气多进的气少——是遭了妖兽还是遭了人，已问不出了。见你过来，他用尽力气从怀里摸出一支素银簪子：「李家坳……我妹……阿秀……」",
+    weight: 7,
+    once: true,
+    cond: (s) => s.realmIndex >= 3,
+    choices: [
+      {
+        text: "接过簪子：「安心去。」",
+        hint: "一诺千金——记入行囊，他日兑现",
+        effect(s) {
+          s.flags.wanderer_relic = true;
+          s.mood = Math.max(0, s.mood - 2);
+          Engine.writeLedger("wanderer_relic", "道旁接过垂死散修的素银簪——托付给他妹妹阿秀的遗物（这一诺，得找机会还）");
+          return { text: "你接过簪子。他盯着你看了两息，像要把你的脸刻下来，然后忽然笑了一下，头一歪。\n\n你替他合上眼，就地垒了个浅坟。簪子贴身收好——李家坳，阿秀。修仙人接了凡人的托付，就得还（心境-2·此诺已入账本）。", kind: "event" };
+        },
+      },
+      {
+        text: "摇头走开——修仙人不沾因果",
+        effect(s) {
+          s.demon = clamp(s.demon + 4, 0, 100);
+          return { text: "你别过脸走了。身后那口气断在什么时候，你没有回头看。\n\n走出很远，袖中的手还是攥着的（煞气+4）。", kind: "bad" };
+        },
+      },
+    ],
+  },
+  {
+    id: "wanderer_sister",
+    title: "李家坳 · 阿秀",
+    text: "打听了些时日，你终于在镇子边寻到那个替人浆洗衣裳的姑娘。她手上全是冻疮，听你说明来意，手里的木盆哐当落了地。",
+    where: ["town", "jiayuan_city", "qingniu"],
+    weight: 30,
+    once: true,
+    cond: (s) => !!s.flags.wanderer_relic,
+    choices: [
+      {
+        text: "交还银簪，再留下些银钱",
+        hint: "纹银-5 · 一诺，两清",
+        effect(s) {
+          s.flags.wanderer_relic = false;
+          s.silver = Math.max(0, (s.silver || 0) - 5);
+          s.mood = Math.min(s.moodMax, s.mood + 8);
+          s.demon = clamp(s.demon - 5, 0, 100);
+          Engine.addFame(4, "千里递还亡者遗物，一诺千金");
+          Engine.writeLedger("wanderer_relic_done", "把素银簪交到了阿秀手上，又留了五两银子——道旁那一诺，还清了");
+          return { text: "姑娘捧着簪子跪坐在地上哭了很久，你站在一旁没有催。\n\n临走你把五两银子压在她家窗台上。她追出来要还，你已走远。\n\n「哥说过会给我捎银簪子的。」身后传来带着哭腔的一句，「谢谢仙长——他没骗我。」\n\n袖中空了，心里也松了（心境+8·煞气-5·名望+4）。", kind: "good" };
+        },
+      },
+      {
+        text: "只还簪子，不多言语",
+        effect(s) {
+          s.flags.wanderer_relic = false;
+          s.mood = Math.min(s.moodMax, s.mood + 5);
+          Engine.writeLedger("wanderer_relic_done", "把素银簪交到了阿秀手上——道旁那一诺，还了");
+          return { text: "你把簪子放进她掌心，转身就走。托付之物送到，因果两清（心境+5）。", kind: "good" };
+        },
+      },
+    ],
+  },
+
   {
     id: "old_herb",
     title: "崖畔奇草",
@@ -469,6 +633,7 @@ const FORTUNES = [
           s.demon = clamp(s.demon + 5, 0, 100);
           if (Math.random() < 0.35 + (s.speed || 0) * 0.03) {
             State.give("lingcao", 2);
+            s.flags.sha_stole_stall = true;   // v350 心结：这笔账记下了——他日可赎
             return { text: "一个念头压过所有盘算——你袖子一拂卷了摊上的货就走，身法快得没人看清。回过神来，掌心的灵草硌得慌：这不像你，或者说……这越来越像你了（心魔+5）。", kind: "bad" };
           }
           const loss = Math.min(s.silver || 0, 5);
@@ -514,6 +679,7 @@ const FORTUNES = [
           if (Math.random() < 0.3 + (s.sense || 0) * 0.02) {
             State.give("lingcao", 3);
             State.give("duyao_cao", 1);
+            s.flags.sha_slew_deer = true;   // v350 心结：那双眼睛会回来找你——他日可赎
             return { text: "你出手比念头还快。白鹿倒下时眼里没有惊惧，只有一种近乎悲悯的平静——它衔来引路的洼地里，你采走了所有灵草。夜里你梦见那双眼睛（心魔+8·心境-6）。", kind: "bad" };
           }
           return { text: "剑光落空——白鹿一跃没入深林，快得不似凡物。你立在原地，惊觉自己方才那一剑竟是杀招。心口那点阴翳，又厚了一层（心魔+8·心境-6）。", kind: "bad" };

@@ -999,6 +999,20 @@ WORLD.enemies = {
       { name: "狠命抡刀", dmg: 20, kind: "charge", weight: 6, aim: "cell", range: [1, 1] },
     ],
   },
+  // v350 新妖王·青睛枭王：夜行妖禽——身法快（move 3）、点名俯击（cell 蓄力）、贴身弱
+  // （打法：他快你稳——蓄力点名时挪开半步，落地硬直窗口全力反打；远程手段优先）
+  beast_xiaowang: {
+    name: "青睛枭王", hp: 205, sense: 9, speed: 16, agility: 14, move: 3, mp: 55,
+    tactics: "feral", elem: "mu", nature: "beast", stubborn: true,
+    introNote: "正是异闻中那头夜猎巨枭！翼展丈余、来去无声——它的「贯胸俯击」自高处点名而落，站着不动就是靶子：蓄力那一拍挪开半步，趁它落地收翅的硬直全力反打。它皮薄血少但身法极快，远程法术与暗器是正解。",
+    attacks: [
+      { name: "裂风爪击", dmg: 24, kind: "normal", weight: 12, range: [1, 1] },
+      { name: "贯胸俯击", dmg: 34, kind: "charge", weight: 7, aim: "cell", lunge: true, range: [1, 5] },
+      { name: "翎羽如刀", dmg: 15, kind: "pierce", weight: 6, range: [2, 4] },
+    ],
+    reward: { lingshi: 2 },
+    namedLoot: { yaodan_1: 1 },
+  },
   rogue_cultivator: {
     // lane:1=法修天性缩在阵后放术（编队成立时生效；落单时引擎自动压上战位排——无敌龟壳不存在）
     name: "散修", hp: 130, sense: 9, speed: 11, agility: 8, move: 1, mp: 52, tactics: "cunning", qiLayer: 3, elem: "tu", armor: 2, lane: 1,
@@ -1527,6 +1541,14 @@ WORLD.beastRumors = [
       "谷外巡山的弟子又少回来一个，带队的师兄只叮嘱：莫往林子最深处去。",
       "你在谷外林间见到大片被踏平的灌木，断口齐整，似有巨物反复经行。",
       "夜风里传来一声谁也认不出的兽吼，林梢惊起一片飞鸟——它就在不远处的林子深处。",
+    ] },
+  // v350 新妖王：青睛枭王（黄枫谷第三头·夜行妖禽——移动快、点名俯击，与蟒/林祖宗路数错开）
+  { id: "beast_xiaowang", area: "huangfeng", title: "青睛枭王夜猎",
+    rumor: "坊市里的散修最近入夜不敢赶路——都说谷外岭上有头翼展丈余的巨枭，一双眼睛碧幽幽的，专挑落单的下手。",
+    clues: [
+      "又一个夜行的散修被寻见时躺在官道旁，肩头两个对穿的血洞——像被巨钳凿的，郎中说那是爪痕。",
+      "你在岭边老松下捡到一根尺长的翎羽，铁青色，边缘薄得能割破手指。",
+      "月黑之夜，头顶掠过一片无声的阴影，快得只余一阵腥风——它盯上这条道了。",
     ] },
 ];
 

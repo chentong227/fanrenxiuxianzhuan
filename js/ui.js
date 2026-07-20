@@ -8778,6 +8778,7 @@ const SEAL_CHARS = {
   "长春吐纳": "吐", "长春护体": "护", "凝神静气": "凝", "眨眼剑法": "剑", "眨眼连击": "连",
   "喂毒一击": "毒", "暗器飞针": "针", "运功镇魂": "魂",
   "长春功": "春", "青元剑诀": "青", "大衍诀": "衍", "眨眼身法": "身",
+  "引煞入体": "煞",
 };
 function sealChar(name) {
   if (SEAL_CHARS[name]) return SEAL_CHARS[name];
@@ -8795,7 +8796,8 @@ function spellEffectText(sp) {
   if (sp.type === "heal") return "回血" + sp.heal;
   if (sp.type === "def") return "护体" + sp.shield;
   if (sp.type === "debuff") return sp.poison ? `下毒${sp.poison.dmg}/回合` : "减益";
-  if (sp.type === "buff") return "蓄力·下回合灵气+" + (sp.nextQiBonus || 0);
+  if (sp.shaMode) return "伤害+30%·灼血·战后煞气+10";
+  if (sp.type === "buff") return sp.regen ? `回元${sp.regen}` : "蓄力·下回合灵气+" + (sp.nextQiBonus || 0);
   return "";
 }
 function effectText(e) {
