@@ -8249,6 +8249,7 @@ const UI = {
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openBigitems()">大件图鉴</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openRumors()">传闻图鉴</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openAchievements()">成就图鉴${typeof ACH !== "undefined" && State.data ? `（${ACH.unlockedCount(State.data)}/${ACH.LIST.length}）` : ""}</button>
+        <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openHandbook()">修行札记（系统指南）</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openChronicle()">风云录</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTechniques()">功法 · 配装</button>
         <button class="btn btn-secondary" onclick="UI.closeModal(); UI.openTreasury()">法宝 · 装备位</button>
@@ -8387,6 +8388,54 @@ const UI = {
       el.classList.remove("show");
       setTimeout(() => this._achNext(), 320);
     }, 2600);
+  },
+
+  /* -------- 修行札记（v350）：游戏内系统指南——老玩家的口传心授，不是说明书 -------- */
+  openHandbook() {
+    const S = (title, lines) => `<div class="hb-sec"><div class="hb-title">${title}</div>${lines.map(l => `<div class="hb-line">${l}</div>`).join("")}</div>`;
+    this.openModal(`
+      <h2>修行札记</h2>
+      <p style="color:var(--ink-dim);font-size:12px">前人趟出来的路数，记在这里。道途凶险，多看一眼少走十年弯路。</p>
+      <div class="handbook">
+        ${S("修行之道", [
+          "闭关涨修为，修为满盈六成方可冲关——满盈再冲，成率最高。",
+          "突破面板列明每一分加减：心境养高、煞气压低、灵力充盈，再嗑一颗凝神丹，成率是经营出来的。",
+          "大境界（筑基/结丹）须备齐秘仪之物，必历心魔劫——败不致死，但道基受挫。",
+        ])}
+        ${S("煞气与心魔", [
+          "杀戮积煞，人形最重。煞气积于身，攻心则为魔——冲关时化作心战。",
+          "调息压煞、善行消解；欠下的心结（抢过的摊、猎过的鹿）可以回头了结。",
+          "煞气满盈必遭反噬：修为溃散、卧床数月。≥85 时就该警醒了。",
+          "煞气 ≥70 战中会浮出「引煞入体」——伤害+30%，但那是饮鸩止渴，账日后算。",
+          "听闻北地大晋的佛宗有转煞的正法……那是后话。",
+        ])}
+        ${S("观气与尔虞我诈", [
+          "猎杀按钮下有观气直觉：胜算在握/势均力敌/凶多吉少/敌势远胜——莫要送死。",
+          "敛息的修士只见「深浅莫测」：神识够深可窥破，交过手的人藏不住斤两，威胁逼出的底细连敛息也罩不住。",
+          "你煞气重时，别人也在打量你——阴戾外露，交情都长得慢。",
+        ])}
+        ${S("战斗要诀", [
+          "格子是命：敌人蓄力点名（红雾柱）那一拍，挪开半步就是白给它看。",
+          "五行相克是硬倍率——打不动就换行属，火符灼金、神雷克邪。",
+          "再点一次已锁定的敌人=查它的底（见过的招式/克制行属）。",
+          "灰掉的牌写着为什么：「灵力差3」就回元，「差2步近身」就挪步。",
+          "打不过就遁——遁走不是输，负伤逃脱也好过身死道消。",
+        ])}
+        ${S("保命之道", [
+          "每月自动落档（右下角墨点一闪）；系统菜单可存三个手动档。",
+          "身死那一刻不落档——终章处「回档再来」，自动档永远停在你活着的最后一月。",
+          "头一回濒死会被好心人救起（交情深的故人在场就是他）；两年内再倒，神仙难救。",
+          "导出存档=下载备份文件，换设备、清浏览器都不怕。",
+        ])}
+        ${S("经营之道", [
+          "小绿瓶是最大的底牌：催熟灵草、种出千年药——按月打理别荒了。",
+          "妖王伏诛后三个月内妖材卖价翻倍——赶着行情出货。",
+          "威名 ≥30 集镇买九折卖加一成；春采药多一株、冬调息心境更稳。",
+          "异闻线索攒满三条再去猎——观气说「敌势远胜」时，先回去练。",
+        ])}
+      </div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="UI.closeModal(); UI.openSystemMenu()">合上札记</button></div>
+    `);
   },
 
   /* -------- 成就图鉴（v344）：达成的亮字带日期，未达成的灰字留悬念 -------- */

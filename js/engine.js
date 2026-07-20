@@ -7867,6 +7867,16 @@ const Engine = {
       return;
     }
 
+    // v350 剧情战杀戮积煞（数值审计补漏）：决战/暗算这类杀人的仗同样记账——
+    // 否则稳健玩家全程见不到煞气线（相士 25 线都够不着）。演武/比斗/心战/巡逻豁免
+    // （点到即止、或军令大义），encounter 已在自己分支按敌性质细算。
+    {
+      const NO_SHA = { encounter: 1, spar: 1, fame_duel: 1, breakthrough: 1, patrol: 1, xunluo: 1, wentianren_demo: 1, lify_revisit: 1 };
+      if (win && meta.type && !NO_SHA[meta.type]) {
+        s.demon = clamp((s.demon || 0) + 3, 0, 100);
+      }
+    }
+
     // 战后复盘一句话：胜归因关键手，败点明死因（败得明白才有再战的方向）
     if (win && c.stats && Object.keys(c.stats).length) {
       const top = Object.entries(c.stats).sort((a, b) => b[1] - a[1])[0];
@@ -9811,7 +9821,7 @@ const Engine = {
     s.flags.sha_bursts = (s.flags.sha_bursts || 0) + 1;
     const culLoss = Math.round((s.cultivation || 0) * 0.5);
     s.cultivation = Math.max(0, (s.cultivation || 0) - culLoss);
-    s.demon = 55;
+    s.demon = 45;   // v350 数值审计：55→45——反噬间缓冲拉长（杀伐流 10 年 3 爆过频，压到约 2）
     s.flags.sha_warn85 = false;
     this.passTime(2);   // 卧床两月（先过月再压血：passTime 的月回血不该把重伤养满）
     s.hp = Math.max(1, Math.round(s.hpMax * 0.35));

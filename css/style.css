@@ -189,6 +189,19 @@ body.motion-off .btn-action.bt-ready, body.motion-lite .btn-action.bt-ready { an
 }
 .btn-action[data-action="cuisha"]:hover { border-color: rgba(220, 90, 76, .8); }
 
+/* ===== 修行札记（v350）：游戏内系统指南 ===== */
+.handbook { max-height: 58vh; overflow-y: auto; padding-right: 4px; }
+.hb-sec { margin-bottom: 14px; }
+.hb-title {
+  color: var(--gold); font-size: 14px; letter-spacing: 3px; margin-bottom: 6px;
+  padding-left: 9px; border-left: 3px solid var(--gold);
+}
+.hb-line {
+  font-size: 13px; line-height: 1.75; color: var(--ink);
+  padding: 2px 0 2px 14px; position: relative;
+}
+.hb-line::before { content: "·"; position: absolute; left: 3px; color: var(--ink-faint); }
+
 /* ===== 成就横幅（v348）：达成时顶部滑入的金框落章卡 ===== */
 .ach-banner {
   position: fixed; top: -84px; left: 50%; transform: translateX(-50%);
